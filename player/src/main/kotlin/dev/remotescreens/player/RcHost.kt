@@ -55,6 +55,21 @@ class RcHost(
             s.player.visibility = if (s.slot == Slot.MAIN) View.VISIBLE else View.GONE
             view.addView(s.player, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
         }
+        // A text that changes while it is measured registers a relayout boundary in the middle of the partial
+        // layout pass, which then throws ConcurrentModificationException on every frame (alpha20). A full pass
+        // never walks that list, so the partial pass is never left to run.
+        view.viewTreeObserver.addOnPreDrawListener {
+            for (s in slots) if (s.shown) fullLayoutIfDirty(s.player)
+            true
+        }
+    }
+
+    private fun fullLayoutIfDirty(player: RemoteComposePlayer) {
+        val root = runCatching { player.document?.document?.rootLayoutComponent }.getOrNull() ?: return
+        if (root.needsMeasure()) {
+            root.clearDirtyBoundaries()
+            root.invalidateMeasure()
+        }
     }
 
     val hasDocument: Boolean get() = main.shown
