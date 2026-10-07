@@ -5,6 +5,7 @@ package dev.remotescreens.server.render
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcContentScale
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
+import androidx.compose.remote.creation.dsl.RcPaintStyle
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
@@ -59,7 +60,7 @@ object CardRenderer {
                             "lock" -> ctx.lockCard(entityId, e)
                             "climate" -> ctx.climateCard(entityId, e, body)
                             "media" -> ctx.mediaCard(entityId, e, body)
-                            "weather" -> ctx.weatherCard(entityId, e)
+                            "weather" -> ctx.weatherCard(entityId, e, body)
                             "history" -> ctx.historyCard(entityId, body, panelH - 140f)
                             "camera" -> ctx.cameraCard(entityId, body, panelH - 120f)
                             "alarm" -> ctx.alarmCard(entityId, e, body)
@@ -301,7 +302,7 @@ object CardRenderer {
         }
     }
 
-    private fun DocContext.weatherCard(entityId: String, e: EntityState?) {
+    private fun DocContext.weatherCard(entityId: String, e: EntityState?, width: Float) {
         structural(entityId) { it?.state ?: "" }
         refreshEvery(1800)
         val ink = role(Role.INK)
@@ -332,16 +333,20 @@ object CardRenderer {
                 Spacer(Modifier.width(c.u.px(10f)))
                 c.label(d.rain?.let { "$it%" } ?: "", Type.BODY, c.role(Role.ACCENT), modifier = Modifier.width(c.u.px(48f)))
                 c.label(d.low?.let { "${it.roundToInt()}°" } ?: "", Type.BODY, soft, modifier = Modifier.width(c.u.px(40f)))
-                Box(Modifier.horizontalWeight(1f).padding(c.u.px(6f), 0f, c.u.px(6f), 0f)) {
-                    val span = (hi - lo).coerceAtLeast(1.0)
-                    val start = (((d.low ?: lo) - lo) / span).toFloat()
-                    val end = (((d.high ?: hi) - lo) / span).toFloat()
-                    Row(Modifier.fillMaxWidth().size(0f, c.u.px(6f)).clip(c.rounded(3f)).background(c.role(Role.DIVIDER))) {
-                        if (start > 0f) Spacer(Modifier.horizontalWeight(start))
-                        Box(Modifier.horizontalWeight((end - start).coerceAtLeast(0.05f)).size(0f, c.u.px(6f)).background(c.role(Role.WARN)))
-                        if (end < 1f) Spacer(Modifier.horizontalWeight(1f - end))
-                    }
+                val span = (hi - lo).coerceAtLeast(1.0)
+                val start = (((d.low ?: lo) - lo) / span).toFloat().coerceIn(0f, 1f)
+                val end = (((d.high ?: hi) - lo) / span).toFloat().coerceIn(start, 1f)
+                val barW = c.u.px((width - 60f - 28f - 10f - 48f - 40f - 40f - 12f).coerceAtLeast(40f))
+                val barH = c.u.px(6f)
+                Spacer(Modifier.width(c.u.px(6f)))
+                Canvas(Modifier.size(barW, barH)) {
+                    paint { color(c.role(Role.DIVIDER)); style(RcPaintStyle.Fill) }
+                    drawRoundRect(0f, 0f, barW, barH, barH / 2f, barH / 2f)
+                    paint { color(c.role(Role.WARN)) }
+                    val l = start * barW
+                    drawRoundRect(l, 0f, maxOf(end * barW, l + barH), barH, barH / 2f, barH / 2f)
                 }
+                Spacer(Modifier.width(c.u.px(6f)))
                 c.label(d.high?.let { "${it.roundToInt()}°" } ?: "", Type.BODY, ink, 600f, modifier = Modifier.width(c.u.px(40f)))
             }
         }

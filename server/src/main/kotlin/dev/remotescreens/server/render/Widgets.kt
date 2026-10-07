@@ -7,6 +7,7 @@ import androidx.compose.remote.creation.dsl.RcColor
 import androidx.compose.remote.creation.dsl.RcFloat
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcInteger
+import androidx.compose.remote.creation.dsl.RcPaintStyle
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcText
 import androidx.compose.remote.creation.dsl.RcTextAlign
@@ -73,7 +74,7 @@ fun DocContext.icon(name: String?, sizeDp: Float, color: RcColor, visible: RcInt
     scope.Canvas(m) {
         save {
             scale(px / 24f, px / 24f)
-            paint { color(color) }
+            paint { color(color); style(RcPaintStyle.Fill) }
             drawPath(p)
         }
     }
@@ -156,7 +157,7 @@ fun DocContext.levelBar(
     val h = u.px(heightDp)
     scope.Box(Modifier.size(w, h).clip(rounded(heightDp / 2f)).background(track)) {
         Canvas(Modifier.size(w, h)) {
-            paint { color(fill) }
+            paint { color(fill); style(RcPaintStyle.Fill) }
             drawRect(0f.rf, 0f.rf, level * w, h.rf)
         }
         Row(Modifier.size(w, h)) {

@@ -8,6 +8,7 @@ import dev.remotescreens.server.I18n
 import dev.remotescreens.server.ha.DemoHome
 import dev.remotescreens.server.ha.DemoLayout
 import dev.remotescreens.shared.Catalogue
+import dev.remotescreens.shared.Reflow
 import dev.remotescreens.shared.VarType
 import kotlinx.coroutines.runBlocking
 import java.io.ByteArrayInputStream
@@ -42,6 +43,16 @@ class RenderTest {
             core.getNamedVariables(NamedVariable.INT_TYPE) + core.getNamedVariables(NamedVariable.FLOAT_TYPE) + core.getNamedVariables(NamedVariable.COLOR_TYPE)
         val unread = vars.keys.filter { "USER:$it" !in declared && !it.startsWith("sys.") }
         assertTrue(unread.isEmpty(), "values sent but never declared: $unread")
+    }
+
+    @Test
+    fun everyDemoTileHasItsOwnCell() {
+        val screen = DemoLayout.screen()
+        for (page in screen.pages) {
+            val placed = Reflow.place(page.tiles, screen.grid)
+            assertEquals(page.tiles.map { it.id }.sorted(), placed.map { it.tile.id }.sorted(), "tiles dropped from ${page.id}")
+            for (p in placed) assertEquals(p.tile.col to p.tile.row, p.col to p.row, "${p.tile.id} moved on ${page.id}")
+        }
     }
 
     @Test

@@ -132,7 +132,9 @@ object ScreenRenderer {
         for (p in placed) {
             val full = p.tile.full || (p.w == spec.cols && p.h == spec.rows)
             val box = TileBox(spec.x(p.col), spec.y(p.row), spec.w(p.w), spec.h(p.h), p.w, p.h, full)
-            tile(p.tile, box, pageIndex)
+            val t = p.tile
+            val named = if (t.effectiveKind() == "nav" && t.name == null) t.copy(name = screen.pages.firstOrNull { it.id == t.options["page"] }?.title) else t
+            tile(named, box, pageIndex)
         }
         if (visible.size > 1 && !page.hidden) pageDots(spec, visible, index)
     }
