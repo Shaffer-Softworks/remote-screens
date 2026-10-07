@@ -11,11 +11,9 @@ import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.horizontalWeight
-import androidx.compose.remote.creation.dsl.offset
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.width
-import androidx.compose.remote.creation.modifiers.CircleShape
 import dev.remotescreens.server.I18n
 import dev.remotescreens.server.ha.EntityState
 import dev.remotescreens.server.ha.HaConfig
@@ -40,6 +38,7 @@ class RenderedDoc(
     val ctx: DocContext,
     val pageIds: List<String> = emptyList(),
     val homePage: Int = 0,
+    val swipePages: List<Int> = emptyList(),
     val builtAt: Long = System.currentTimeMillis(),
 ) {
     val entities: Set<String> = (ctx.bindings.mapNotNull { it.entityId } + ctx.structure.map { it.first }).toSet()
@@ -106,7 +105,7 @@ object ScreenRenderer {
                 }
             }
         }
-        return RenderedDoc(bytes, ctx, pages.map { it.id }, home)
+        return RenderedDoc(bytes, ctx, pages.map { it.id }, home, visible)
     }
 
     private fun DocContext.page(
@@ -122,10 +121,12 @@ object ScreenRenderer {
         if (showBar) topBar(screen, page, spec, back = page.hidden, home = home)
         val placed = Reflow.place(page.tiles.filter { tileUsable(it) }, screen.grid)
         if (placed.isEmpty()) {
-            scope.Box(Modifier.offset(0f, u.px(spec.topBar)).size(u.px(spec.widthDp), u.px(spec.heightDp - spec.topBar - spec.pageBar)),
-                horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-                this@page.label(this@page.i18n.t("ui.empty_page"), Type.TITLE, this@page.role(Role.INK_SOFT), align = RcTextAlign.Center, lines = 3,
-                    modifier = Modifier.width(this@page.u.px(spec.widthDp * 0.7f)))
+            at(0f, spec.topBar) {
+                scope.Box(Modifier.size(u.px(spec.widthDp), u.px(spec.heightDp - spec.topBar - spec.pageBar)),
+                    horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
+                    this@page.label(this@page.i18n.t("ui.empty_page"), Type.TITLE, this@page.role(Role.INK_SOFT), align = RcTextAlign.Center, lines = 3,
+                        modifier = Modifier.width(this@page.u.px(spec.widthDp * 0.7f)))
+                }
             }
         }
         for (p in placed) {
@@ -174,18 +175,18 @@ object ScreenRenderer {
         val dot = 8f
         val hit = 28f
         val rowW = visible.size * hit
-        scope.Row(
-            Modifier.offset(u.px((spec.widthDp - rowW) / 2f), u.px(spec.heightDp - spec.pageBar - 2f)).size(u.px(rowW), u.px(hit)),
+        at((spec.widthDp - rowW) / 2f, spec.heightDp - hit) { scope.Row(
+            Modifier.size(u.px(rowW), u.px(hit)),
             horizontal = RcRowHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center,
         ) {
             val c = this@pageDots
             for (i in visible) {
                 Box(c.tap(Modifier.size(c.u.px(hit), c.u.px(hit)), ActionRef("_", "page", i.toString())),
                     horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-                    Box(Modifier.size(c.u.px(dot), c.u.px(dot)).clip(CircleShape()).background(c.role(if (i == current) Role.INK else Role.INK_FAINT)))
+                    Box(Modifier.size(c.u.px(dot), c.u.px(dot)).clip(c.rounded((dot) / 2f)).background(c.role(if (i == current) Role.INK else Role.INK_FAINT)))
                 }
             }
-        }
+        } }
     }
 
     /** The clock, the outdoor temperature and who is home: values every page shows. */

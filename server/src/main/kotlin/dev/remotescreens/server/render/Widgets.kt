@@ -15,6 +15,7 @@ import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
 import androidx.compose.remote.creation.dsl.fillMaxHeight
+import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.horizontalWeight
@@ -25,7 +26,6 @@ import androidx.compose.remote.creation.dsl.rsp
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.visibility
 import androidx.compose.remote.creation.dsl.width
-import androidx.compose.remote.creation.modifiers.CircleShape
 import androidx.compose.remote.creation.modifiers.RoundedRectShape
 import dev.remotescreens.shared.ActionRef
 
@@ -43,6 +43,14 @@ object Type {
 }
 
 fun DocContext.rounded(dp: Float) = u.px(dp).let { RoundedRectShape(it, it, it, it) }
+
+/**
+ * Places [content] at ([xDp], [yDp]) of the parent. `Modifier.offset` only moves the drawing; the player finds what
+ * was tapped from the layout, so a placed tap target must be moved by padding instead.
+ */
+fun DocContext.at(xDp: Float, yDp: Float, content: () -> Unit) {
+    scope.Box(Modifier.fillMaxSize().padding(u.px(xDp), u.px(yDp), 0f, 0f)) { content() }
+}
 
 fun DocContext.tap(m: Modifier, ref: ActionRef?, hold: ActionRef? = null): Modifier {
     var out = m
@@ -121,7 +129,7 @@ fun DocContext.key(
 ) {
     var m = modifier.height(u.px(heightDp))
     m = if (widthDp != null) m.width(u.px(widthDp)) else m
-    m = m.clip(if (round) CircleShape() else rounded(heightDp / 2.6f)).background(bg)
+    m = m.clip(rounded(if (round) heightDp / 2f else heightDp / 2.6f)).background(bg)
     m = tap(m, ref)
     scope.Row(m.padding(u.px(12f), 0f, u.px(12f), 0f), horizontal = RcRowHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
         if (icon != null) this@key.icon(icon, if (text == null) heightDp * 0.5f else 20f, ink)
@@ -132,7 +140,8 @@ fun DocContext.key(
 
 /**
  * A bar from 0 to 1 that follows [level], with [steps] taps across it: a tap on step i sends [refAt] (i + 1).
- * Remote Compose has no drag that reports a value, so a slider is a row of steps.
+ * Remote Compose has no drag that reports a value, so a slider is a row of steps. The fill is painted: a width
+ * bound to a variable is measured once and does not follow it.
  */
 fun DocContext.levelBar(
     level: RcFloat,
@@ -146,7 +155,10 @@ fun DocContext.levelBar(
     val w = u.px(widthDp)
     val h = u.px(heightDp)
     scope.Box(Modifier.size(w, h).clip(rounded(heightDp / 2f)).background(track)) {
-        Box(Modifier.width(level * w).fillMaxHeight().background(fill))
+        Canvas(Modifier.size(w, h)) {
+            paint { color(fill) }
+            drawRect(0f.rf, 0f.rf, level * w, h.rf)
+        }
         Row(Modifier.size(w, h)) {
             for (i in 1..steps) Box(this@levelBar.tap(Modifier.horizontalWeight(1f).fillMaxHeight(), refAt(i)))
         }
@@ -176,7 +188,7 @@ fun DocContext.gap(dp: Float) = scope.Spacer(Modifier.size(u.px(dp), u.px(dp)))
 /** A circle with a word in it, standing in for a person's photo. */
 fun DocContext.initials(name: String, sizeDp: Float, bg: RcColor, ink: RcColor) {
     val letters = name.split(' ').filter { it.isNotBlank() }.take(2).joinToString("") { it.take(1).uppercase() }
-    scope.Box(Modifier.size(u.px(sizeDp), u.px(sizeDp)).clip(CircleShape()).background(bg), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
+    scope.Box(Modifier.size(u.px(sizeDp), u.px(sizeDp)).clip(rounded((sizeDp) / 2f)).background(bg), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
         this@initials.label(letters, sizeDp * 0.38f, ink, weight = 600f)
     }
 }

@@ -17,12 +17,10 @@ import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.horizontalWeight
-import androidx.compose.remote.creation.dsl.offset
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
-import androidx.compose.remote.creation.modifiers.CircleShape
 import dev.remotescreens.server.ha.EntityState
 import dev.remotescreens.shared.ActionRef
 import dev.remotescreens.shared.Catalogue
@@ -72,9 +70,9 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
     val holdRef = tapRef(tile, tile.hold, spec, pageIndex, hold = true)
     if (tapRef != null && entityId != null && spec?.predict?.containsKey(tapRef.verb) == true) predict(tapRef, entityId)
 
-    val m = Modifier.offset(u.px(box.x), u.px(box.y)).size(u.px(box.w), u.px(box.h))
+    val m = Modifier.size(u.px(box.w), u.px(box.h))
         .clip(rounded(if (box.full) 28f else 20f)).background(color(V.t(tile.id, "bg")))
-    scope.Box(tap(m, tapRef, holdRef)) {
+    at(box.x, box.y) { scope.Box(tap(m, tapRef, holdRef)) {
         val ctx = this@tile
         when (kind) {
             "clock" -> ctx.clockTile(tile, box)
@@ -92,7 +90,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
             "sensor" -> if (tile.options["graph"] == "true" && box.h >= 150f) ctx.historyTile(tile, box) else ctx.entityTile(tile, box, spec, e)
             else -> ctx.entityTile(tile, box, spec, e)
         }
-    }
+    } }
 }
 
 private fun DocContext.tileIcon(tile: Tile, spec: TypeSpec?, e: EntityState?, sizeDp: Float) {
@@ -205,7 +203,7 @@ private fun DocContext.bedsideTile(tile: Tile, box: TileBox) {
                 c.bindTileColors(keyTile.id, entityId, Pastel.forDomain(spec?.domain))
                 val ref = tapRef(keyTile, TapAction(), spec, { null }, hold = false)
                 if (ref != null && spec?.predict?.containsKey(ref.verb) == true) c.predict(ref, entityId)
-                Box(c.tap(Modifier.size(c.u.px(76f), c.u.px(76f)).clip(CircleShape()).background(c.color(V.t(keyTile.id, "bg"))), ref),
+                Box(c.tap(Modifier.size(c.u.px(76f), c.u.px(76f)).clip(c.rounded((76f) / 2f)).background(c.color(V.t(keyTile.id, "bg"))), ref),
                     horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
                     c.tileIcon(keyTile, spec, c.states[entityId], 34f)
                 }
@@ -232,7 +230,7 @@ private fun DocContext.personTile(tile: Tile, box: TileBox, e: EntityState?) {
         val pic = e?.attr("entity_picture")
         if (pic != null) {
             c.picture(PictureSlot("pic.$id", pic, c.u.px(44f).toInt(), c.u.px(44f).toInt(), 0, round = true))
-            Image(c.image("pic.$id", c.u.px(44f).toInt(), c.u.px(44f).toInt()), Modifier.size(c.u.px(44f), c.u.px(44f)).clip(CircleShape()), contentScale = RcContentScale.Crop)
+            Image(c.image("pic.$id", c.u.px(44f).toInt(), c.u.px(44f).toInt()), Modifier.size(c.u.px(44f), c.u.px(44f)).clip(c.rounded((44f) / 2f)), contentScale = RcContentScale.Crop)
         } else {
             c.initials(e?.name ?: id, 44f, c.color(V.t(tile.id, "fill")), ink)
         }
@@ -358,7 +356,7 @@ private fun DocContext.mediaTile(tile: Tile, box: TileBox, e: EntityState?) {
                 c.gap(8f)
                 Row(Modifier.fillMaxWidth(), horizontal = RcRowHorizontalPositioning.SpaceBetween, vertical = RcVerticalPositioning.Center) {
                     c.key(ActionRef(tile.id, "previous"), icon = "skip-previous", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(V.t(tile.id, "fill")), ink = ink)
-                    Box(c.tap(Modifier.size(c.u.px(52f), c.u.px(52f)).clip(CircleShape()).background(ink), ActionRef(tile.id, "play_pause")),
+                    Box(c.tap(Modifier.size(c.u.px(52f), c.u.px(52f)).clip(c.rounded((52f) / 2f)).background(ink), ActionRef(tile.id, "play_pause")),
                         horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
                         c.icon("pause", 28f, c.color(V.t(tile.id, "bg")), c.int(V.e(id, "playing")))
                         c.icon("play", 28f, c.color(V.t(tile.id, "bg")), c.int(V.e(id, "notplaying")))
@@ -495,12 +493,12 @@ fun DocContext.energyFlow(scopeId: String, wDp: Float, hDp: Float, compact: Bool
         for ((key, entity, icon) in nodes + Triple("home", "", "home")) {
             val (x, y) = spots.getValue(key)
             val tint = when (key) { "solar" -> Pastel.YELLOW; "grid" -> Pastel.BLUE; "battery" -> Pastel.GREEN; else -> Pastel.GREY }
-            Column(
-                Modifier.offset(c.u.px(x - r), c.u.px(y - r)).size(c.u.px(2 * r), c.u.px(2 * r + 22f)),
+            c.at(x - r, y - r) { c.scope.Column(
+                Modifier.size(c.u.px(2 * r), c.u.px(2 * r + 22f)),
                 horizontal = RcHorizontalPositioning.Center,
             ) {
                 val hold = if (entity.isNotEmpty()) ActionRef("e:$entity", "card", "history") else null
-                Box(c.tap(Modifier.size(c.u.px(2 * r), c.u.px(2 * r)).clip(CircleShape()).background(c.fixed(tint.bg(c.dark))), hold),
+                Box(c.tap(Modifier.size(c.u.px(2 * r), c.u.px(2 * r)).clip(c.rounded((2 * r) / 2f)).background(c.fixed(tint.bg(c.dark))), hold),
                     horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
                     Column(horizontal = RcHorizontalPositioning.Center) {
                         c.icon(icon, if (compact) 18f else 24f, c.fixed(tint.ink(c.dark)))
@@ -508,10 +506,10 @@ fun DocContext.energyFlow(scopeId: String, wDp: Float, hDp: Float, compact: Bool
                     }
                 }
                 c.label(c.i18n.t(if (key == "battery") "ui.battery_source" else if (key == "home") "ui.house" else "ui.$key"), Type.CAPTION, ink2, align = RcTextAlign.Center)
-            }
+            } }
         }
         if (!compact && prefs.devices.isNotEmpty()) {
-            Column(Modifier.offset(c.u.px(12f), c.u.px(hDp - 20f - 22f * prefs.devices.size.coerceAtMost(4)))) {
+            c.at(12f, hDp - 20f - 22f * prefs.devices.size.coerceAtMost(4)) { c.scope.Column {
                 for ((name, entity) in prefs.devices.take(4)) {
                     c.bindEntity(entity)
                     Row(vertical = RcVerticalPositioning.Center) {
@@ -520,7 +518,7 @@ fun DocContext.energyFlow(scopeId: String, wDp: Float, hDp: Float, compact: Bool
                         c.label(c.text(V.e(entity, "state")), Type.CAPTION, ink, 600f)
                     }
                 }
-            }
+            } }
         }
     }
 }

@@ -148,6 +148,8 @@ sealed interface ServerMessage {
         val predictions: Map<String, List<VarValue>> = emptyMap(),
         val homePage: Int = 0,
         val pageCount: Int = 1,
+        /** The pages a swipe moves through, in order; hidden pages are left out. Empty is every page. */
+        val swipePages: List<Int> = emptyList(),
         /** Seconds before an alert closes by itself; 0 keeps it. */
         val timeout: Int = 0,
     ) : ServerMessage

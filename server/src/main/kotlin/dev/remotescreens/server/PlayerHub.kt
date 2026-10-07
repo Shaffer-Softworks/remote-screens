@@ -339,7 +339,7 @@ class PlayerHub(
             send(ServerMessage.Document(
                 slot = slot, rev = entry.rev, data = Base64.getEncoder().encodeToString(doc.bytes), vars = all,
                 predictions = doc.predictions(states, ::foresee), homePage = doc.homePage, pageCount = doc.pageIds.size.coerceAtLeast(1),
-                timeout = timeout,
+                swipePages = doc.swipePages, timeout = timeout,
             ))
             sendPictures(entry, states, force = true)
         }

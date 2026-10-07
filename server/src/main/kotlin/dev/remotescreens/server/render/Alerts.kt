@@ -15,7 +15,6 @@ import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.width
-import androidx.compose.remote.creation.modifiers.CircleShape
 import dev.remotescreens.shared.ActionRef
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -63,7 +62,7 @@ object AlertRenderer {
                 horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
                 Column(ctx.tap(Modifier.width(ctx.u.px(panelW)).clip(ctx.rounded(28f)).background(ctx.role(Role.CARD)), ActionRef("_", "noop"))
                     .padding(ctx.u.px(24f)), horizontal = RcHorizontalPositioning.Center) {
-                    Box(Modifier.size(ctx.u.px(64f), ctx.u.px(64f)).clip(CircleShape()).background(ctx.role(tone)),
+                    Box(Modifier.size(ctx.u.px(64f), ctx.u.px(64f)).clip(ctx.rounded((64f) / 2f)).background(ctx.role(tone)),
                         horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
                         ctx.icon(alert.icon ?: if (alert.level == "info") "bell-ring" else "alert", 36f, ctx.role(Role.KEY_ON_INK))
                     }

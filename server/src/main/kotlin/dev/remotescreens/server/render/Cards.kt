@@ -18,7 +18,6 @@ import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.verticalScroll
 import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
-import androidx.compose.remote.creation.modifiers.CircleShape
 import dev.remotescreens.server.ha.EntityState
 import dev.remotescreens.shared.ActionRef
 import dev.remotescreens.shared.Catalogue
@@ -107,7 +106,7 @@ object CardRenderer {
         predict(r, entityId)
         scope.Box(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
             val c = this@bigToggle
-            Box(c.tap(Modifier.size(c.u.px(132f), c.u.px(132f)).clip(CircleShape()).background(c.color(V.t(TILE, "bg"))), r),
+            Box(c.tap(Modifier.size(c.u.px(132f), c.u.px(132f)).clip(c.rounded((132f) / 2f)).background(c.color(V.t(TILE, "bg"))), r),
                 horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
                 c.toggleIcon(entityId, spec?.icon ?: "power", spec?.iconOn, 64f, c.color(V.t(TILE, "icon")))
             }
@@ -159,7 +158,7 @@ object CardRenderer {
         scope.Row(Modifier.fillMaxWidth(), horizontal = RcRowHorizontalPositioning.SpaceBetween) {
             val c = this@swatches
             for ((argb, r) in colors) {
-                Box(c.tap(Modifier.size(c.u.px(46f), c.u.px(46f)).clip(CircleShape()).background(c.fixed(argb or 0xFF000000.toInt())), r))
+                Box(c.tap(Modifier.size(c.u.px(46f), c.u.px(46f)).clip(c.rounded((46f) / 2f)).background(c.fixed(argb or 0xFF000000.toInt())), r))
             }
         }
     }
@@ -275,7 +274,7 @@ object CardRenderer {
             Row(horizontal = RcRowHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
                 c.key(ref(entityId, "previous"), icon = "skip-previous", heightDp = 60f, widthDp = 60f, round = true)
                 Spacer(Modifier.width(c.u.px(18f)))
-                Box(c.tap(Modifier.size(c.u.px(80f), c.u.px(80f)).clip(CircleShape()).background(c.role(Role.KEY_ON)), ref(entityId, "play_pause")),
+                Box(c.tap(Modifier.size(c.u.px(80f), c.u.px(80f)).clip(c.rounded((80f) / 2f)).background(c.role(Role.KEY_ON)), ref(entityId, "play_pause")),
                     horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
                     c.icon("pause", 40f, c.role(Role.KEY_ON_INK), c.int(V.e(entityId, "playing")))
                     c.icon("play", 40f, c.role(Role.KEY_ON_INK), c.int(V.e(entityId, "notplaying")))
