@@ -6,6 +6,9 @@ local.properties
 .idea/
 .DS_Store
 node_modules/
+__pycache__/
+.pytest_cache/
+.venv/
 editor/dist/
 server/src/main/resources/static/
 /data/

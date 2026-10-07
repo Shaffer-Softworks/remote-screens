@@ -1,0 +1,78 @@
+show_alert:
+  fields:
+    screens:
+      selector:
+        device:
+          integration: remote_screens
+          multiple: true
+    title:
+      required: true
+      example: Someone is at the door
+      selector:
+        text:
+    message:
+      example: The doorbell rang
+      selector:
+        text:
+          multiline: true
+    icon:
+      example: mdi:doorbell
+      selector:
+        icon:
+    level:
+      default: info
+      selector:
+        select:
+          translation_key: level
+          options:
+            - info
+            - warning
+            - danger
+    camera:
+      selector:
+        entity:
+          domain: camera
+    buttons:
+      example: '[{"title": "Open", "service": "lock.open", "data": {"entity_id": "lock.front_door"}}]'
+      selector:
+        object:
+    timeout:
+      default: 30
+      selector:
+        number:
+          min: 0
+          max: 3600
+          unit_of_measurement: s
+    tag:
+      example: doorbell
+      selector:
+        text:
+
+open_page:
+  fields:
+    screens:
+      selector:
+        device:
+          integration: remote_screens
+          multiple: true
+    page:
+      required: true
+      example: Rooms
+      selector:
+        text:
+
+wake:
+  fields:
+    screens:
+      selector:
+        device:
+          integration: remote_screens
+          multiple: true
+
+close:
+  fields:
+    screens:
+      selector:
+        device:
+          integration: remote_screens
+          multiple: true

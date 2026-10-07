@@ -1,0 +1,107 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "Connect to the Remote Screens add-on. With the add-on installed, Home Assistant finds it by itself; otherwise enter its address and the key from its data folder (`api_key`).",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "api_key": "API key"
+        }
+      },
+      "hassio_confirm": {
+        "description": "Set up the Remote Screens add-on, so its screens get settings entities and its services?"
+      },
+      "reauth_confirm": {
+        "description": "The add-on refused the key. Enter the key from its data folder (`api_key`).",
+        "data": {
+          "api_key": "API key"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication"
+    },
+    "abort": {
+      "already_configured": "Service is already configured",
+      "reauth_successful": "Re-authentication was successful"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "connected": { "name": "Connected" }
+    },
+    "number": {
+      "brightness": { "name": "Brightness" },
+      "standby_minutes": { "name": "Standby after" },
+      "standby_brightness": { "name": "Standby brightness" },
+      "night_brightness": { "name": "Night brightness" },
+      "back_to_home": { "name": "Back to home after" }
+    },
+    "select": {
+      "page": { "name": "Page" }
+    },
+    "switch": {
+      "dark_mode": { "name": "Dark mode" },
+      "night_dark": { "name": "Dark at night" },
+      "swipe": { "name": "Swipe between pages" }
+    },
+    "time": {
+      "night_start": { "name": "Night starts" },
+      "night_end": { "name": "Night ends" }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "Remote Screens is not set up." },
+    "unknown_screen": { "message": "{id} is not a Remote Screens screen." }
+  },
+  "selector": {
+    "level": {
+      "options": {
+        "info": "Information",
+        "warning": "Warning",
+        "danger": "Danger"
+      }
+    }
+  },
+  "services": {
+    "show_alert": {
+      "name": "Show alert",
+      "description": "Shows a message over the screens, with an optional camera and up to two buttons.",
+      "fields": {
+        "screens": { "name": "Screens", "description": "The screens to show it on; none is every screen." },
+        "title": { "name": "Title", "description": "The alert's title." },
+        "message": { "name": "Message", "description": "Text under the title." },
+        "icon": { "name": "Icon", "description": "An MDI icon." },
+        "level": { "name": "Level", "description": "Colours the alert." },
+        "camera": { "name": "Camera", "description": "A camera shown under the message, such as the doorbell." },
+        "buttons": { "name": "Buttons", "description": "Up to two buttons, each with a title and an optional service and data. A button also fires remote_screens_alert_action." },
+        "timeout": { "name": "Timeout", "description": "Seconds before it closes by itself; 0 keeps it until tapped." },
+        "tag": { "name": "Tag", "description": "Sent back in remote_screens_alert_action, so an automation can tell alerts apart." }
+      }
+    },
+    "open_page": {
+      "name": "Open page",
+      "description": "Opens a page on the screens, waking them.",
+      "fields": {
+        "screens": { "name": "Screens", "description": "The screens; none is every screen." },
+        "page": { "name": "Page", "description": "The page's title, id or number (1 is the first)." }
+      }
+    },
+    "wake": {
+      "name": "Wake",
+      "description": "Wakes the screens from standby.",
+      "fields": {
+        "screens": { "name": "Screens", "description": "The screens; none is every screen." }
+      }
+    },
+    "close": {
+      "name": "Close",
+      "description": "Closes alerts and cards shown over the pages.",
+      "fields": {
+        "screens": { "name": "Screens", "description": "The screens; none is every screen." }
+      }
+    }
+  }
+}
