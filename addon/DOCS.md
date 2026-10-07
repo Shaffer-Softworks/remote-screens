@@ -94,5 +94,8 @@ The add-on uses the host network so tablets can find it over mDNS (`_remotescree
 Layouts and paired tablets are kept in `/data/layouts.json` and included in Home Assistant backups. A tablet's
 token is stored as a hash only. To remove a tablet, use **Forget** in the editor; it must then be paired again.
 
-Map tiles come from OpenStreetMap, whose tile servers ask for light use: the add-on caches them and only fetches
-what a map tile shows.
+## Options
+
+| Option | What |
+| ------ | ---- |
+| `map_tiles` | Where map tiles come from, as a URL with `{z}`, `{x}` and `{y}`. Empty is OpenStreetMap, whose tile servers ask for light use: the add-on caches tiles and only fetches what a map shows. With many tablets, or for another map style, use a tile provider you have a key for. |

@@ -35,7 +35,7 @@ import kotlin.math.tan
  * The pictures documents show, fetched and sized here so a tablet never talks to Home Assistant or the internet:
  * camera frames and album art from Home Assistant, maps drawn from OpenStreetMap tiles with a marker for each person.
  */
-class Pictures(private val ha: HomeAssistant, private val http: HttpClient) {
+class Pictures(private val ha: HomeAssistant, private val http: HttpClient, private val tileUrl: String = Config.OSM_TILES) {
     private val log = LoggerFactory.getLogger(Pictures::class.java)
     private val tiles = ConcurrentHashMap<String, BufferedImage>()
 
@@ -126,11 +126,12 @@ class Pictures(private val ha: HomeAssistant, private val http: HttpClient) {
         return img
     }
 
-    /** OpenStreetMap's own tiles: free for light use with a named User-Agent and caching (CARTO now asks for a key). */
+    /** OpenStreetMap's own tiles by default: free for light use with a named User-Agent and caching. */
     private suspend fun tile(z: Int, x: Int, y: Int): BufferedImage? {
         val key = "$z/$x/$y"
         tiles[key]?.let { return it }
-        val bytes = runCatching { fetchUrl("https://tile.openstreetmap.org/$z/$x/$y.png") }.getOrNull() ?: return null
+        val url = tileUrl.replace("{z}", "$z").replace("{x}", "$x").replace("{y}", "$y")
+        val bytes = runCatching { fetchUrl(url) }.getOrNull() ?: return null
         val img = ImageIO.read(ByteArrayInputStream(bytes)) ?: return null
         if (tiles.size > 400) tiles.clear()
         tiles[key] = img

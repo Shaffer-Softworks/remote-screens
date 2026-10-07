@@ -20,6 +20,10 @@ discovery:
   - remote_screens
 # Tablets find the add-on over mDNS and connect to port 8100, so it lives on the host's network.
 host_network: true
+options:
+  map_tiles: ""
+schema:
+  map_tiles: str?
 ports:
   8100/tcp: 8100
 ports_description:

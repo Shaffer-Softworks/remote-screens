@@ -1,0 +1,6 @@
+configuration:
+  map_tiles:
+    name: Map tiles
+    description: >-
+      Address of the map tiles, with {z}, {x} and {y}, for example from a tile provider you have a key for.
+      Leave empty for OpenStreetMap.

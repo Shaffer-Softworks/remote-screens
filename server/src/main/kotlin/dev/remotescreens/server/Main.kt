@@ -71,7 +71,7 @@ fun main() {
     if (config.demo && store.data.value.screens.isEmpty()) store.update { it.copy(screens = listOf(DemoLayout.screen())) }
     val http = HttpClient(ClientCIO) { engine { requestTimeout = 15_000 } }
     val languages = Languages(ha, store)
-    val hub = PlayerHub(config, ha, store, DataFetcher(ha), Pictures(ha, http), languages, scope, apk = { apk(config) })
+    val hub = PlayerHub(config, ha, store, DataFetcher(ha), Pictures(ha, http, config.mapTiles), languages, scope, apk = { apk(config) })
     val apiKey = apiKey(config.dataDir)
     hub.start()
     scope.launch { ha.connected.collect { if (it) languages.loadHomeAssistantWords() } }
