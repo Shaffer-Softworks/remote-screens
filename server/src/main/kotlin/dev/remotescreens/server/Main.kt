@@ -9,6 +9,7 @@ import dev.remotescreens.shared.Protocol
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO as ClientCIO
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -43,6 +44,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
@@ -64,12 +66,15 @@ import kotlin.time.Duration.Companion.seconds
 private val log = LoggerFactory.getLogger("RemoteScreens")
 
 fun main() {
-    val config = Config.fromEnv()
+    val http = HttpClient(ClientCIO) { engine { requestTimeout = 15_000 } }
+    val config = Config.fromEnv().let { c ->
+        if (!c.supervisor || System.getenv("REMOTE_SCREENS_INGRESS_PORT") != null) c
+        else c.copy(ingressPort = runBlocking { supervisorIngressPort(http, c.token) } ?: c.ingressPort)
+    }
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val ha: HomeAssistant = if (config.demo) DemoHome() else HaClient(config.haWebSocket, config.haRest, config.token, scope).also { it.start() }
     val store = LayoutStore(config.dataDir)
     if (config.demo && store.data.value.screens.isEmpty()) store.update { it.copy(screens = listOf(DemoLayout.screen())) }
-    val http = HttpClient(ClientCIO) { engine { requestTimeout = 15_000 } }
     val languages = Languages(ha, store)
     val hub = PlayerHub(config, ha, store, DataFetcher(ha), Pictures(ha, http, config.mapTiles), languages, scope, apk = { apk(config) })
     val apiKey = apiKey(config.dataDir)
@@ -149,6 +154,15 @@ fun Application.module(config: Config, ha: HomeAssistant, store: LayoutStore, hu
         }
     }
 }
+
+/**
+ * On the host network a fixed ingress port could be taken by another add-on, so `ingress_port: 0` lets the
+ * Supervisor choose a free one, which it then tells us here.
+ */
+private suspend fun supervisorIngressPort(http: HttpClient, token: String): Int? = runCatching {
+    val body = http.get("http://supervisor/addons/self/info") { bearerAuth(token) }.bodyAsText()
+    Json.parseToJsonElement(body).jsonObject["data"]?.jsonObject?.get("ingress_port")?.jsonPrimitive?.int?.takeIf { it > 0 }
+}.onFailure { log.warn("Could not ask the Supervisor for the ingress port: {}", it.message) }.getOrNull()
 
 /** The key the integration sends; made once and kept with the layouts. */
 private fun apiKey(dir: File): String {

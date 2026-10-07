@@ -11,7 +11,8 @@ startup: application
 boot: auto
 image: ghcr.io/sickkick/remote-screens-{arch}
 ingress: true
-ingress_port: 8099
+# 0: the Supervisor picks a free port, since on the host network 8099 is often taken.
+ingress_port: 0
 panel_icon: mdi:tablet-dashboard
 panel_title: Remote Screens
 homeassistant_api: true

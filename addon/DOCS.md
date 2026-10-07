@@ -85,7 +85,7 @@ permission to install apps from Remote Screens, then asks you to confirm each up
 | Port | What |
 | ---- | ---- |
 | 8100 | Tablets connect here (WebSocket), and the integration's API |
-| 8099 | The editor, through ingress only |
+| (free port) | The editor, through ingress only; the Supervisor picks a free port so it never clashes |
 
 The add-on uses the host network so tablets can find it over mDNS (`_remotescreens._tcp`).
 
