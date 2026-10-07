@@ -1,0 +1,15 @@
+Remote Screens
+
+This product includes the following third-party material.
+
+Material Design Icons (server/src/main/resources/mdi.json, the icons drawn on the screens and in the editor)
+  Copyright (c) Pictogrammers
+  Licensed under the Apache License, Version 2.0
+  https://github.com/Templarian/MaterialDesign
+
+Map tiles are fetched at run time from OpenStreetMap and are not part of this repository.
+  Map data (c) OpenStreetMap contributors, available under the Open Database License
+  https://www.openstreetmap.org/copyright
+
+Libraries used at build and run time (AndroidX Remote Compose, Ktor, kotlinx, Vue, Vite and others) keep their
+own licenses, listed with each package.

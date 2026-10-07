@@ -17,11 +17,24 @@ android {
         versionName = addonVersion
     }
 
+    val keystore = System.getenv("PLAYER_KEYSTORE")?.let(::file)?.takeIf { it.isFile }
+    signingConfigs {
+        if (keystore != null) {
+            create("release") {
+                storeFile = keystore
+                storePassword = System.getenv("PLAYER_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("PLAYER_KEY_ALIAS")
+                keyPassword = System.getenv("PLAYER_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            // Signed in CI with the release key; locally the debug key keeps `assembleRelease` working.
-            signingConfig = signingConfigs.getByName("debug")
+            // Tablets only take an update signed with the key they were installed with, so releases need the same
+            // key every time. Without PLAYER_KEYSTORE the debug key keeps `assembleRelease` working locally.
+            signingConfig = signingConfigs.getByName(if (keystore != null) "release" else "debug")
         }
     }
 
