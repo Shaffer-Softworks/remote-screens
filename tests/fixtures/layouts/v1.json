@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "screens": [
+    {
+      "id": "hall",
+      "name": "Hall tablet",
+      "grid": { "cols": 4, "rows": 3 },
+      "pages": [
+        {
+          "id": "home",
+          "title": "Home",
+          "tiles": [
+            { "id": "t1", "entityId": "light.hall", "col": 0, "row": 0, "w": 2, "h": 1, "color": "yellow", "icon": "lightbulb", "name": "Hall" },
+            { "id": "t2", "kind": "clock", "col": 2, "row": 0 },
+            { "id": "t3", "entityId": "script.goodnight", "col": 3, "row": 0, "tap": { "type": "action", "service": "script.turn_on", "data": { "entity_id": "script.goodnight" } }, "hold": { "type": "none" } },
+            { "id": "t4", "kind": "nav", "col": 0, "row": 1, "tap": { "type": "page", "page": "more" } },
+            { "id": "t5", "entityId": "sensor.power", "col": 1, "row": 1, "w": 1, "h": 2, "options": { "show": "history" } }
+          ]
+        },
+        {
+          "id": "more",
+          "title": "More",
+          "hidden": true,
+          "tiles": [{ "id": "t6", "entityId": "camera.door", "full": true }]
+        }
+      ],
+      "homePage": "home",
+      "settings": {
+        "brightness": 70,
+        "darkMode": true,
+        "standbyMinutes": 5,
+        "standbyBrightness": 10,
+        "nightStart": "22:30",
+        "nightEnd": "06:45",
+        "nightBrightness": 3,
+        "nightDark": true,
+        "backToHomeSeconds": 120,
+        "swipe": false,
+        "orientation": 2
+      },
+      "topBar": { "show": true, "clock": true, "temperatureEntity": "sensor.outdoor", "people": false }
+    }
+  ],
+  "players": [
+    {
+      "deviceId": "a1b2c3",
+      "name": "Hall tablet",
+      "screenId": "hall",
+      "tokenHash": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "widthDp": 1280,
+      "heightDp": 800,
+      "appVersion": 1,
+      "lastSeen": 1791380000000
+    },
+    { "deviceId": "waiting", "name": "New tablet" }
+  ],
+  "preferences": { "language": "nl", "clock24h": true }
+}

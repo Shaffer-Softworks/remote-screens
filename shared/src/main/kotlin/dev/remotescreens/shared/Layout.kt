@@ -107,7 +107,7 @@ data class ScreenSettings(
     /** Seconds before the screen returns to the home page; 0 is never. */
     val backToHomeSeconds: Int = 0,
     val swipe: Boolean = true,
-    /** 0 follows the device, else 90/180/270 or `portrait`/`landscape` locked via 1/2. */
+    /** 0 follows the device, 1 locks portrait, 2 locks landscape. */
     val orientation: Int = 0,
 ) {
     fun validated(): ScreenSettings = copy(

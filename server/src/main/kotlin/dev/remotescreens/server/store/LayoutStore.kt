@@ -72,10 +72,10 @@ object Migrations {
         // 1 -> 2 goes here when schema 2 exists.
     )
 
-    fun migrate(raw: JsonObject): JsonObject {
+    fun migrate(raw: JsonObject, steps: Map<Int, (JsonObject) -> JsonObject> = this.steps, target: Int = SCHEMA_VERSION): JsonObject {
         var obj = raw
         var version = (obj["schemaVersion"] as? JsonPrimitive)?.intOrNull ?: 1
-        while (version < SCHEMA_VERSION) {
+        while (version < target) {
             val step = steps[version] ?: error("no migration from schema $version")
             obj = step(obj)
             version++

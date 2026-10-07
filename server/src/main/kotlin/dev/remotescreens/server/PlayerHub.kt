@@ -591,7 +591,7 @@ class Languages(private val ha: HomeAssistant, private val store: LayoutStore) {
 
     fun current(): I18n {
         val prefs = store.data.value.preferences
-        val lang = (prefs.language ?: ha.config.value.language).let { l -> if (l.substringBefore('-') in I18n.SUPPORTED) l else "en" }
+        val lang = (prefs.language ?: ha.config.value.language).ifBlank { "en" }
         val clock = prefs.clock24h ?: I18n.default24h(lang)
         val k = "$lang|$clock"
         cached?.takeIf { key == k }?.let { return it }
