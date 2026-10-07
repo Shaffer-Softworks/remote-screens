@@ -33,7 +33,7 @@ import kotlin.math.tan
 
 /**
  * The pictures documents show, fetched and sized here so a tablet never talks to Home Assistant or the internet:
- * camera frames and album art from Home Assistant, maps drawn from CARTO tiles with a marker for each person.
+ * camera frames and album art from Home Assistant, maps drawn from OpenStreetMap tiles with a marker for each person.
  */
 class Pictures(private val ha: HomeAssistant, private val http: HttpClient) {
     private val log = LoggerFactory.getLogger(Pictures::class.java)
@@ -60,7 +60,7 @@ class Pictures(private val ha: HomeAssistant, private val http: HttpClient) {
             }
         }
         encode(fit(image, slot.widthPx, slot.heightPx, slot.crop), slot.round)
-    }.onFailure { log.debug("Picture {} failed: {}", slot.name, it.message) }.getOrNull()
+    }.onFailure { log.warn("Picture {} failed: {}", slot.name, it.toString()) }.getOrNull()
 
     private suspend fun fetchUrl(url: String): ByteArray? {
         val r = http.get(url) { header("User-Agent", USER_AGENT) }
@@ -95,14 +95,17 @@ class Pictures(private val ha: HomeAssistant, private val http: HttpClient) {
         val cy = latToY(centreLat, zoom)
         val left = cx - w / 2.0
         val top = cy - h / 2.0
-        val layer = if (dark) "dark_all" else "light_all"
         for (tx in floor(left / 256).toInt()..floor((left + w) / 256).toInt()) {
             for (ty in floor(top / 256).toInt()..floor((top + h) / 256).toInt()) {
                 val n = 1 shl zoom
                 if (ty < 0 || ty >= n) continue
-                val tile = tile(layer, zoom, ((tx % n) + n) % n, ty) ?: continue
+                val tile = tile(zoom, ((tx % n) + n) % n, ty) ?: continue
                 g.drawImage(tile, (tx * 256 - left).roundToInt(), (ty * 256 - top).roundToInt(), null)
             }
+        }
+        if (dark) {
+            g.color = Color(0, 0, 0, 140)
+            g.fillRect(0, 0, w, h)
         }
         val r = max(14.0, min(w, h) / 14.0)
         g.font = Font(Font.SANS_SERIF, Font.BOLD, (r * 0.8).roundToInt())
@@ -123,10 +126,11 @@ class Pictures(private val ha: HomeAssistant, private val http: HttpClient) {
         return img
     }
 
-    private suspend fun tile(layer: String, z: Int, x: Int, y: Int): BufferedImage? {
-        val key = "$layer/$z/$x/$y"
+    /** OpenStreetMap's own tiles: free for light use with a named User-Agent and caching (CARTO now asks for a key). */
+    private suspend fun tile(z: Int, x: Int, y: Int): BufferedImage? {
+        val key = "$z/$x/$y"
         tiles[key]?.let { return it }
-        val bytes = runCatching { fetchUrl("https://basemaps.cartocdn.com/$layer/$z/$x/$y.png") }.getOrNull() ?: return null
+        val bytes = runCatching { fetchUrl("https://tile.openstreetmap.org/$z/$x/$y.png") }.getOrNull() ?: return null
         val img = ImageIO.read(ByteArrayInputStream(bytes)) ?: return null
         if (tiles.size > 400) tiles.clear()
         tiles[key] = img

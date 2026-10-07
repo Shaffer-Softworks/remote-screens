@@ -94,7 +94,7 @@
   "ui.grid": "Grid",
   "ui.battery_source": "Battery",
   "ui.house": "Home",
-  "ui.map_credit": "© OpenStreetMap contributors © CARTO",
+  "ui.map_credit": "© OpenStreetMap contributors",
   "ui.not_connected": "Not connected to Home Assistant",
   "ui.identify": "This is {name}",
   "ui.pair_title": "Add this screen",
