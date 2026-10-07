@@ -8,6 +8,8 @@ import MdiIcon from './MdiIcon.vue'
 
 const emit = defineEmits<{ edit: [screen: Screen] }>()
 
+const RELEASES = 'https://github.com/sickkick/remote-screens/releases/latest'
+
 const PRESETS = [
   { label: '10" tablet, landscape (1280 × 800)', w: 1280, h: 800 },
   { label: '10" tablet, portrait (800 × 1280)', w: 800, h: 1280 },
@@ -152,7 +154,8 @@ function suggested(p: PlayerStatus): string {
     <section>
       <div class="row heading">
         <h3 class="grow">Tablets</h3>
-        <a href="api/player.apk" class="muted">Download the player app</a>
+        <a v-if="state.info?.playerApp" href="api/player.apk" class="muted">Download the player app ({{ state.info.playerApp }})</a>
+        <a v-else :href="RELEASES" target="_blank" rel="noopener" class="muted">Get the player app from GitHub</a>
       </div>
 
       <div v-if="waiting.length" class="card waiting">

@@ -34,7 +34,11 @@ import kotlinx.serialization.json.jsonObject
 import java.util.UUID
 
 @Serializable
-data class Info(val version: String, val demo: Boolean, val connected: Boolean, val language: String, val haVersion: String, val locationName: String)
+data class Info(
+    val version: String, val demo: Boolean, val connected: Boolean, val language: String, val haVersion: String, val locationName: String,
+    /** The version of the player app the add-on can hand out, or null when it has none. */
+    val playerApp: String? = null,
+)
 
 @Serializable
 data class EntityInfo(val entityId: String, val name: String, val state: String, val domain: String, val area: String?, val icon: String?, val unit: String?)
@@ -68,7 +72,8 @@ fun Route.editorApi(config: Config, ha: HomeAssistant, store: LayoutStore, hub: 
     route("/api") {
         get("/info") {
             val c = ha.config.value
-            call.respond(Info(config.version, config.demo, ha.connected.value, store.data.value.preferences.language ?: c.language, c.version, c.locationName))
+            call.respond(Info(config.version, config.demo, ha.connected.value, store.data.value.preferences.language ?: c.language, c.version, c.locationName,
+                apk()?.let { it.versionName.ifEmpty { it.versionCode.toString() } }))
         }
         get("/layout") { call.respond(store.data.value.redacted()) }
         put("/preferences") {

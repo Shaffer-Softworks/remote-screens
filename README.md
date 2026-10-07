@@ -59,6 +59,8 @@ REMOTE_SCREENS_INGRESS_PORT=18099 REMOTE_SCREENS_PLAYER_PORT=18100 \
 server/build/install/server/bin/server
 ```
 
+To hand out the player app from it, add `REMOTE_SCREENS_APK=<dir>` with a folder holding `remote-screens.apk` and a
+`version.json` such as `{"versionCode": 100, "versionName": "0.1.0"}` (`tools/package_addon.sh` writes both).
 The editor is then at <http://localhost:18099> (or run `npm run dev` in `editor/`, which proxies the API to it).
 In the Android emulator, start the player with
 `adb shell am start -n dev.remotescreens.player/.MainActivity --es server 10.0.2.2:18100`.

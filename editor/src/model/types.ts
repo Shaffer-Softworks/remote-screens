@@ -117,6 +117,8 @@ export interface Info {
   language: string
   haVersion: string
   locationName: string
+  /** The player app version the add-on hands out; absent when it has none. */
+  playerApp?: string
 }
 
 export function domainOf(tile: Pick<Tile, 'entityId'>): string | undefined {
