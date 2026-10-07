@@ -10,6 +10,7 @@ editor/dist/
 server/src/main/resources/static/
 /data/
 /docker/data/
+/addon/dist/
 /docker/ha_token
 *.keystore
 *.jks

@@ -13,9 +13,11 @@ import dev.remotescreens.shared.Page
 import dev.remotescreens.shared.Preferences
 import dev.remotescreens.shared.Screen
 import dev.remotescreens.shared.ScreenSettings
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondFile
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
@@ -62,7 +64,7 @@ data class IntegrationScreen(val id: String, val name: String, val settings: Scr
 class BadRequest(message: String) : Exception(message)
 
 /** The editor's API, under ingress. */
-fun Route.editorApi(config: Config, ha: HomeAssistant, store: LayoutStore, hub: PlayerHub) {
+fun Route.editorApi(config: Config, ha: HomeAssistant, store: LayoutStore, hub: PlayerHub, apk: () -> ApkInfo?) {
     route("/api") {
         get("/info") {
             val c = ha.config.value
@@ -96,6 +98,11 @@ fun Route.editorApi(config: Config, ha: HomeAssistant, store: LayoutStore, hub: 
         }
 
         get("/players") { call.respond(hub.status()) }
+        get("/player.apk") {
+            val file = apk()?.file ?: return@get call.respond(HttpStatusCode.NotFound)
+            call.response.headers.append(HttpHeaders.ContentDisposition, "attachment; filename=remote-screens.apk")
+            call.respondFile(file)
+        }
         post("/pair") {
             val req = call.receive<Adopt>()
             val ok = hub.adopt(req.code ?: throw BadRequest("No code"), req.screenId, req.name)

@@ -125,7 +125,7 @@ fun Application.module(config: Config, ha: HomeAssistant, store: LayoutStore, hu
     routing {
         port(config.ingressPort) {
             install(onlyIngress)
-            editorApi(config, ha, store, hub)
+            editorApi(config, ha, store, hub) { apk(config) }
             val static = config.staticDir
             if (static != null) {
                 staticFiles("/", static) { default("index.html") }

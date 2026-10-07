@@ -1,0 +1,27 @@
+# Remote Screens without the Supervisor: Home Assistant Container, Core, or a development machine.
+#
+#   1. Make a long-lived access token in Home Assistant (your profile, Security) and save it as docker/ha_token.
+#   2. Set HA_URL below, then: docker compose -f docker/compose.yaml up -d
+#   3. Open the editor at http://127.0.0.1:8099 (it listens on this machine only; there is no login).
+#
+# Leave out HA_URL and the token and it starts with a made-up demo home.
+services:
+  remote-screens:
+    image: ghcr.io/sickkick/remote-screens-amd64:latest
+    restart: unless-stopped
+    # Tablets find it over mDNS, which needs the host's network.
+    network_mode: host
+    environment:
+      HA_URL: http://127.0.0.1:8123
+      HA_TOKEN_FILE: /run/secrets/ha_token
+      REMOTE_SCREENS_DATA: /data
+      # Set to 0.0.0.0 to reach the editor from other machines. It has no login of its own.
+      REMOTE_SCREENS_BIND: 127.0.0.1
+    volumes:
+      - ./data:/data
+    secrets:
+      - ha_token
+
+secrets:
+  ha_token:
+    file: ./ha_token
