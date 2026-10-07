@@ -36,7 +36,7 @@ class Updater(private val context: Context, private val http: HttpClient) {
             val id = installer.createSession(params)
             installer.openSession(id).use { session ->
                 session.openWrite("remote-screens", 0, file.length()).use { out -> file.inputStream().use { it.copyTo(out) }; session.fsync(out) }
-                val intent = PendingIntent.getBroadcast(context, id, Intent("dev.remotescreens.player.INSTALLED").setPackage(context.packageName),
+                val intent = PendingIntent.getBroadcast(context, id, Intent(context, InstallReceiver::class.java),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
                 session.commit(intent.intentSender)
             }

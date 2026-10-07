@@ -4,6 +4,8 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.content.res.Configuration
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -349,7 +351,22 @@ class MainActivity : Activity() {
             }
         }
         box.addView(forget)
+        if (!isHomeApp() && !android.provider.Settings.canDrawOverlays(this)) {
+            // Android only lets an app open itself (after a restart or an update) as the home app or with this.
+            box.addView(Button(this).apply {
+                text = getString(R.string.allow_self_start)
+                setOnClickListener {
+                    dialog.dismiss()
+                    startActivity(Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+                }
+            })
+        }
         dialog.show()
+    }
+
+    private fun isHomeApp(): Boolean {
+        val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        return packageManager.resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo?.packageName == packageName
     }
 
     private fun askAddress() {

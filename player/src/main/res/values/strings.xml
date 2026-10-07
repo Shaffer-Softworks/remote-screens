@@ -27,5 +27,7 @@
     <string name="update_ready">An update of Remote Screens is ready (%1$s).</string>
     <string name="install">Install</string>
     <string name="later">Later</string>
+    <string name="allow_self_start">Open by itself after a restart or update</string>
+    <string name="update_failed">The update could not be installed.</string>
     <string name="update_permission">Allow Remote Screens to install updates, then try again.</string>
 </resources>

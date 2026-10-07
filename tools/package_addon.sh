@@ -17,8 +17,9 @@ cp -R "$root/editor/dist/." "$dist/static/"
 apk="${1:-}"
 if [ -n "$apk" ]; then
   cp "$apk" "$dist/apk/remote-screens.apk"
-  version_code=$(sed -n 's/.*versionCode = \([0-9]*\).*/\1/p' "$root/player/build.gradle.kts" | head -1)
   version_name=$(cat "$root/addon/VERSION")
+  # The same sum as versionCode in player/build.gradle.kts.
+  version_code=$(echo "$version_name" | awk -F'[.-]' '{ print $1 * 10000 + $2 * 100 + $3 }')
   printf '{"versionCode": %s, "versionName": "%s"}\n' "$version_code" "$version_name" > "$dist/apk/version.json"
 fi
 echo "addon/dist ready"
