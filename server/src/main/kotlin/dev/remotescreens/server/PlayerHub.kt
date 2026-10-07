@@ -252,6 +252,7 @@ class PlayerHub(
         var battery: Int? = null
         private var dark = false
         private var preview: Screen? = null
+        private var previewJob: Job? = null
 
         private inner class Shown(val slot: Slot, val doc: RenderedDoc, val rebuild: suspend () -> RenderedDoc?) {
             var rev = 0
@@ -412,7 +413,7 @@ class PlayerHub(
         }
 
         suspend fun layoutChanged(screen: Screen?) {
-            if (preview != null) return
+            endPreview()
             if (screenId != null && screen == null) {
                 closeAll()
                 return welcome()
@@ -425,13 +426,26 @@ class PlayerHub(
         }
 
         suspend fun showPreview(screen: Screen) {
+            endPreview()
             preview = screen
-            showMain(screen)
-            jobs += scope.launch {
+            showWithSettings(screen)
+            previewJob = scope.launch {
                 delay(PREVIEW_MS)
                 preview = null
-                screen()?.let { showMain(it) }
-            }
+                screen()?.let { showWithSettings(it) }
+            }.also { jobs += it }
+        }
+
+        private fun endPreview() {
+            previewJob?.cancel()
+            previewJob = null
+            preview = null
+        }
+
+        private suspend fun showWithSettings(screen: Screen) {
+            dark = darkNow(screen.settings)
+            send(ServerMessage.Settings(screen.settings))
+            showMain(screen)
         }
 
         suspend fun receive(msg: PlayerMessage) {
