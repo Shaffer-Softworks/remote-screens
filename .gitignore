@@ -1,0 +1,17 @@
+.gradle/
+build/
+.kotlin/
+local.properties
+*.iml
+.idea/
+.DS_Store
+node_modules/
+editor/dist/
+server/src/main/resources/static/
+/data/
+/docker/data/
+/docker/ha_token
+*.keystore
+*.jks
+# Unrelated file that predates this project
+/tools.yaml
