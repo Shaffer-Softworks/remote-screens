@@ -1,0 +1,14 @@
+domain: humidifier
+name: Humidifier
+icon: air-humidifier-off
+icon_on: air-humidifier
+toggle: true
+on_states: [on]
+tap: toggle
+card: toggle
+sizes: [1x1, 2x1]
+actions:
+  toggle: {service: humidifier.toggle}
+  humidity: {service: humidifier.set_humidity, data: {humidity: $arg}}
+predict:
+  toggle: {state: "!"}

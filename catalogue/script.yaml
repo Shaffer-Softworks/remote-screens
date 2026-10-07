@@ -1,0 +1,12 @@
+domain: script
+name: Script
+icon: script-text
+icon_on: script-text-play
+on_states: [on]
+tap: action
+card: none
+sizes: [1x1, 2x1, 1x2, 2x2, full]
+actions:
+  activate: {service: script.turn_on}
+  toggle: {service: script.toggle}
+default_verb: activate

@@ -1,0 +1,8 @@
+domain: binary_sensor
+name: Binary sensor
+icon: checkbox-blank-circle-outline
+icon_on: checkbox-marked-circle
+on_states: [on]
+tap: card
+card: history
+sizes: [1x1, 2x1]

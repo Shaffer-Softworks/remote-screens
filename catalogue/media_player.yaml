@@ -1,0 +1,24 @@
+domain: media_player
+name: Media player
+icon: speaker
+icon_on: speaker-play
+toggle: false
+on_states: [playing, paused, on, buffering]
+tap: card
+card: media
+controls: [transport, volume]
+sizes: [1x1, 2x1, 1x2, 2x2, full]
+actions:
+  play_pause: {service: media_player.media_play_pause}
+  next: {service: media_player.media_next_track}
+  previous: {service: media_player.media_previous_track}
+  volume: {service: media_player.volume_set, data: {volume_level: "$arg/100"}, relative: "volume_level*100"}
+  mute: {service: media_player.volume_mute, data: {is_volume_muted: $arg}}
+  shuffle: {service: media_player.shuffle_set, data: {shuffle: $arg}}
+  repeat: {service: media_player.repeat_set, data: {repeat: $arg}}
+  source: {service: media_player.select_source, data: {source: $arg}}
+  play_media: {service: media_player.play_media, data: {media_content_id: $arg, media_content_type: music}}
+  turn_off: {service: media_player.turn_off}
+predict:
+  play_pause: {state: "play_pause"}
+  volume: {attributes: {volume_level: "$arg/100"}}

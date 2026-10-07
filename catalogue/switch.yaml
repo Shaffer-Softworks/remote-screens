@@ -1,0 +1,15 @@
+domain: switch
+name: Switch
+icon: toggle-switch-variant-off
+icon_on: toggle-switch-variant
+toggle: true
+on_states: [on]
+tap: toggle
+card: toggle
+sizes: [1x1, 2x1, 1x2, 2x2, full]
+actions:
+  toggle: {service: switch.toggle}
+  on: {service: switch.turn_on}
+  off: {service: switch.turn_off}
+predict:
+  toggle: {state: "!"}

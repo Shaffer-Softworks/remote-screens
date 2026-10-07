@@ -1,0 +1,17 @@
+domain: lock
+name: Lock
+icon: lock-open-variant
+icon_on: lock
+toggle: true
+on_states: [locked]
+tap: toggle
+card: lock
+sizes: [1x1, 2x1, 1x2, 2x2]
+actions:
+  lock: {service: lock.lock}
+  unlock: {service: lock.unlock, confirm: true}
+  open: {service: lock.open, confirm: true}
+  toggle: {service: lock.lock}
+predict:
+  lock: {state: "locking"}
+  unlock: {state: "unlocking"}

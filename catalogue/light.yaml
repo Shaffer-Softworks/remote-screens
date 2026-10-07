@@ -1,0 +1,23 @@
+domain: light
+name: Light
+icon: lightbulb
+icon_on: lightbulb-on
+toggle: true
+on_states: [on]
+tap: toggle
+card: light
+controls: [brightness]
+sizes: [1x1, 2x1, 1x2, 2x2, full]
+actions:
+  toggle: {service: light.toggle}
+  on: {service: light.turn_on}
+  off: {service: light.turn_off}
+  brightness: {service: light.turn_on, data: {brightness_pct: $arg}, relative: "brightness/2.55"}
+  hue: {service: light.turn_on, data: {hs_color: [$arg, 80]}}
+  kelvin: {service: light.turn_on, data: {color_temp_kelvin: $arg}}
+  effect: {service: light.turn_on, data: {effect: $arg}}
+predict:
+  toggle: {state: "!"}
+  on: {state: "on"}
+  off: {state: "off"}
+  brightness: {state: "on", attributes: {brightness: "$arg*2.55"}}

@@ -1,0 +1,16 @@
+domain: climate
+name: Climate
+icon: thermostat
+on_states: [heat, cool, heat_cool, auto, dry, fan_only]
+tap: card
+card: climate
+controls: [stepper, modes]
+sizes: [1x1, 2x1, 1x2, 2x2, full]
+actions:
+  temperature: {service: climate.set_temperature, data: {temperature: $arg}, relative: temperature}
+  mode: {service: climate.set_hvac_mode, data: {hvac_mode: $arg}}
+  preset: {service: climate.set_preset_mode, data: {preset_mode: $arg}}
+  fan: {service: climate.set_fan_mode, data: {fan_mode: $arg}}
+predict:
+  temperature: {attributes: {temperature: $arg}}
+  mode: {state: $arg}

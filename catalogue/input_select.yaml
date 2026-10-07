@@ -1,0 +1,10 @@
+domain: input_select
+name: Select helper
+icon: format-list-bulleted
+tap: card
+card: select
+sizes: [1x1, 2x1]
+actions:
+  option: {service: input_select.select_option, data: {option: $arg}}
+predict:
+  option: {state: $arg}

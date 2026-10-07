@@ -1,0 +1,6 @@
+domain: weather
+name: Weather
+icon: weather-partly-cloudy
+tap: card
+card: weather
+sizes: [1x1, 2x1, 1x2, 2x2, full]

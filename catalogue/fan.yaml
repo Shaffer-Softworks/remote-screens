@@ -1,0 +1,16 @@
+domain: fan
+name: Fan
+icon: fan-off
+icon_on: fan
+toggle: true
+on_states: [on]
+tap: toggle
+card: fan
+controls: [percentage]
+sizes: [1x1, 2x1, 1x2, 2x2, full]
+actions:
+  toggle: {service: fan.toggle}
+  percentage: {service: fan.set_percentage, data: {percentage: $arg}, relative: percentage}
+predict:
+  toggle: {state: "!"}
+  percentage: {state: "on", attributes: {percentage: $arg}}

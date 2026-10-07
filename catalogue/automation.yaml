@@ -1,0 +1,14 @@
+domain: automation
+name: Automation
+icon: robot-off
+icon_on: robot
+toggle: true
+on_states: [on]
+tap: toggle
+card: toggle
+sizes: [1x1, 2x1]
+actions:
+  toggle: {service: automation.toggle}
+  trigger: {service: automation.trigger}
+predict:
+  toggle: {state: "!"}

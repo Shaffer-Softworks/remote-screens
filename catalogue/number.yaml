@@ -1,0 +1,11 @@
+domain: number
+name: Number
+icon: ray-vertex
+tap: card
+card: number
+controls: [slider]
+sizes: [1x1, 2x1, 1x2]
+actions:
+  value: {service: number.set_value, data: {value: $arg}, relative: state}
+predict:
+  value: {state: $arg}

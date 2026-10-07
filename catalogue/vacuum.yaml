@@ -1,0 +1,17 @@
+domain: vacuum
+name: Vacuum
+icon: robot-vacuum
+on_states: [cleaning, returning]
+tap: card
+card: vacuum
+sizes: [1x1, 2x1, 2x2]
+actions:
+  start: {service: vacuum.start}
+  pause: {service: vacuum.pause}
+  stop: {service: vacuum.stop}
+  dock: {service: vacuum.return_to_base}
+  locate: {service: vacuum.locate}
+  fan_speed: {service: vacuum.set_fan_speed, data: {fan_speed: $arg}}
+predict:
+  start: {state: "cleaning"}
+  dock: {state: "returning"}

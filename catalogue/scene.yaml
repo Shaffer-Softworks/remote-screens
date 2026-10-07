@@ -1,0 +1,9 @@
+domain: scene
+name: Scene
+icon: palette
+tap: action
+card: none
+sizes: [1x1, 2x1, 1x2, 2x2, full]
+actions:
+  activate: {service: scene.turn_on}
+default_verb: activate

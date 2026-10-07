@@ -1,0 +1,9 @@
+domain: input_button
+name: Button helper
+icon: gesture-tap-button
+tap: action
+card: none
+sizes: [1x1, 2x1]
+actions:
+  activate: {service: input_button.press}
+default_verb: activate

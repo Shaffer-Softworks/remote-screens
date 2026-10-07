@@ -1,0 +1,7 @@
+domain: sensor
+name: Sensor
+icon: eye
+tap: card
+card: history
+sizes: [1x1, 2x1, 1x2, 2x2]
+options: [graph]

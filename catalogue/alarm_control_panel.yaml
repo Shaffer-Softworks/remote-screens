@@ -1,0 +1,14 @@
+domain: alarm_control_panel
+name: Alarm
+icon: shield-off
+icon_on: shield-lock
+on_states: [armed_away, armed_home, armed_night, armed_vacation, armed_custom_bypass, triggered]
+tap: card
+card: alarm
+sizes: [1x1, 2x1, 2x2]
+actions:
+  disarm: {service: alarm_control_panel.alarm_disarm, data: {code: $code}}
+  arm_away: {service: alarm_control_panel.alarm_arm_away, data: {code: $code}}
+  arm_home: {service: alarm_control_panel.alarm_arm_home, data: {code: $code}}
+  arm_night: {service: alarm_control_panel.alarm_arm_night, data: {code: $code}}
+  arm_vacation: {service: alarm_control_panel.alarm_arm_vacation, data: {code: $code}}

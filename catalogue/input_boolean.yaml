@@ -1,0 +1,13 @@
+domain: input_boolean
+name: Toggle helper
+icon: toggle-switch-outline
+icon_on: toggle-switch
+toggle: true
+on_states: [on]
+tap: toggle
+card: toggle
+sizes: [1x1, 2x1, 1x2, 2x2, full]
+actions:
+  toggle: {service: input_boolean.toggle}
+predict:
+  toggle: {state: "!"}

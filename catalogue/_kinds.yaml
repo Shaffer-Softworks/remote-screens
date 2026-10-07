@@ -1,0 +1,9 @@
+# Tiles that are not an entity type of their own.
+kinds:
+  clock: {name: Clock, icon: clock-outline, sizes: [1x1, 2x1, 2x2, full], card: none}
+  bedside: {name: Bedside clock, icon: bed-clock, sizes: [full], card: none}
+  nav: {name: Go to page, icon: arrow-right-circle, sizes: [1x1, 2x1], card: none}
+  history: {name: History graph, icon: chart-line, sizes: [2x1, 2x2, full], card: history, needs_entity: true}
+  energy: {name: Energy now, icon: lightning-bolt, sizes: [2x2, full], card: energy}
+  map: {name: Map, icon: map, sizes: [2x2, full], card: map}
+  favourite: {name: Favourite music, icon: playlist-music, sizes: [1x1, 2x1, 2x2], card: none, needs_entity: true}

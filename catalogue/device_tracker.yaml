@@ -1,0 +1,7 @@
+domain: device_tracker
+name: Device tracker
+icon: map-marker
+on_states: [home]
+tap: card
+card: map
+sizes: [1x1, 2x1, 2x2]

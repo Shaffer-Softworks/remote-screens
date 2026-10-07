@@ -1,0 +1,8 @@
+domain: person
+name: Person
+icon: account
+on_states: [home]
+tap: card
+card: map
+sizes: [1x1, 2x1, 2x2]
+options: [map]

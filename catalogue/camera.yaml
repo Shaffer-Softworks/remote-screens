@@ -1,0 +1,7 @@
+domain: camera
+name: Camera
+icon: cctv
+tap: card
+card: camera
+sizes: [1x1, 2x1, 2x2, full]
+options: [live]
