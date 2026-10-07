@@ -16,7 +16,8 @@ object DemoLayout {
         grid = GridSize(5, 3),
         topBar = TopBar(temperatureEntity = "sensor.outdoor_temperature"),
         pages = listOf(
-            Page("home", "Home", listOf(
+            Page("home", "Home", listOf(Tile("h1", kind = "home", full = true)), icon = "home"),
+            Page("living", "Living room", icon = "sofa", tiles = listOf(
                 Tile("t1", "light.living_room", col = 0, row = 0, w = 2),
                 Tile("t2", "light.table_lamp", col = 2, row = 0),
                 Tile("t3", "switch.coffee_machine", col = 3, row = 0),
@@ -27,7 +28,7 @@ object DemoLayout {
                 Tile("t8", "scene.movie_night", col = 3, row = 2),
                 Tile("t9", kind = "nav", col = 4, row = 2, options = mapOf("page" to "more")),
             )),
-            Page("rooms", "Rooms", listOf(
+            Page("rooms", "Rooms", icon = "floor-plan", tiles = listOf(
                 Tile("r1", "cover.living_room_curtains", col = 0, row = 0, w = 2),
                 Tile("r2", "fan.bedroom", col = 2, row = 0, w = 2),
                 Tile("r3", "sensor.kitchen_temperature", col = 0, row = 1, w = 2, h = 2, options = mapOf("graph" to "true")),
@@ -47,7 +48,8 @@ object DemoLayout {
                 Tile("m10", kind = "favourite", entityId = "media_player.living_room", col = 4, row = 2,
                     options = mapOf("content_id" to "playlist:1", "title" to "Sunday Morning")),
             )),
-            Page("night", "Night", listOf(Tile("n1", kind = "bedside", full = true))),
+            Page("weather", "Weather", listOf(Tile("w1", "weather.home", full = true)), icon = "weather-partly-cloudy"),
+            Page("night", "Night", listOf(Tile("n1", kind = "bedside", full = true)), icon = "weather-night"),
         ),
     )
 }

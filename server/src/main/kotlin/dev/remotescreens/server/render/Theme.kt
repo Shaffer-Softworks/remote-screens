@@ -1,45 +1,60 @@
 package dev.remotescreens.server.render
 
 /**
- * Every colour of the screens, in one table. Each role has a light and a dark value. Code asks for a role, never for
- * a hex value; `ThemeTest` keeps hex colours out of the other files.
+ * Every colour of the screens, in one table: the RPI wall panel's dark greys, teal and blue. Code asks for a role,
+ * never for a hex value; `ThemeTest` keeps hex colours out of the other files.
  */
-enum class Role(val light: Long, val dark: Long) {
-    PAGE(0xFFF3F1EC, 0xFF0E0F11),
-    CARD(0xFFFFFFFF, 0xFF1C1E22),
-    CARD_OFF(0xFFFFFFFF, 0xFF1C1E22),
-    INK(0xFF1D1D1F, 0xFFECECEF),
-    INK_SOFT(0xFF6E6E73, 0xFF9A9AA2),
-    INK_FAINT(0xFFB8B8BD, 0xFF4A4C52),
-    DIVIDER(0xFFE6E3DC, 0xFF2A2C31),
-    ACCENT(0xFF3A6FF7, 0xFF7BA2FF),
-    OK(0xFF2E9E5B, 0xFF5CCB88),
-    WARN(0xFFE08A1E, 0xFFF0AE55),
-    DANGER(0xFFD64545, 0xFFFF7A7A),
-    SCRIM(0x99000000, 0xCC000000),
-    KEY(0xFFF0EEE9, 0xFF2A2C31),
-    KEY_ON(0xFF1D1D1F, 0xFFECECEF),
-    KEY_ON_INK(0xFFFFFFFF, 0xFF111214),
+enum class Role(private val value: Long) {
+    PAGE(0xFF494949),
+    CARD(0xFF333333),
+    CARD_HEADER(0xFF494949),
+    CARD_EDGE(0xFF000000),
+    HEADER(0xFF494949),
+    HEADER_DARK(0xFF2F2E2E),
+    NAV(0xFF2F2E2E),
+    NAV_ON(0xFF14E1BA),
+    NAV_LINE(0xFF03DAC5),
+    INK(0xFFFFFFFF),
+    INK_SOFT(0xFFCACACA),
+    INK_DIM(0xFF939393),
+    INK_FAINT(0xFF5C5C5C),
+    INK_DARK(0xFF000000),
+    DIVIDER(0xFF4A4A4A),
+    TRACK(0xFF1B1B1B),
+    ACCENT(0xFF14E1BA),
+    ACCENT_DARK(0xFF1DA48C),
+    ACCENT_SOFT(0xFF03DAC5),
+    BLUE(0xFF0986DB),
+    HOME(0xFF14E1BA),
+    HOME_STRIP(0xFFFFFFFF),
+    WEATHER_TITLE(0xFFFFBB33),
+    STRIP(0xFF3B3B3B),
+    OK(0xFF289907),
+    WARN(0xFFF57C00),
+    DANGER(0xFFA21C1C),
+    SCRIM(0xCC000000),
+    KEY(0xFF5C5C5C),
+    KEY_ON(0xFF14E1BA),
+    KEY_ON_INK(0xFF2F2E2E),
     ;
 
-    fun argb(dark: Boolean): Int = (if (dark) this.dark else light).toInt()
+    val argb: Int get() = value.toInt()
 }
 
-/** The pastel a tile wears when it is on. Keys are stored in layouts: never rename one. */
-enum class Pastel(val key: String, val light: Long, val dark: Long, val inkLight: Long, val inkDark: Long) {
-    YELLOW("yellow", 0xFFFFE9A8, 0xFF5C4A12, 0xFF3D2F00, 0xFFFFE9A8),
-    ORANGE("orange", 0xFFFFD3AE, 0xFF5E3414, 0xFF4A2200, 0xFFFFD3AE),
-    RED("red", 0xFFFFC4C0, 0xFF5E1F1C, 0xFF4D0A06, 0xFFFFC4C0),
-    PINK("pink", 0xFFFAC8E3, 0xFF5A2140, 0xFF4A0B2D, 0xFFFAC8E3),
-    PURPLE("purple", 0xFFDCCBFA, 0xFF3D2B63, 0xFF2A1458, 0xFFDCCBFA),
-    BLUE("blue", 0xFFC4DBFF, 0xFF1E3A66, 0xFF0B2A5C, 0xFFC4DBFF),
-    TEAL("teal", 0xFFBDEBE4, 0xFF184C46, 0xFF053D36, 0xFFBDEBE4),
-    GREEN("green", 0xFFCDEDC0, 0xFF2A4B1F, 0xFF173D0A, 0xFFCDEDC0),
-    GREY("grey", 0xFFE3E3E6, 0xFF3A3C42, 0xFF26272B, 0xFFE3E3E6),
+/** The accent a tile lights up in when it is on. Keys are stored in layouts: never rename one. */
+enum class Pastel(val key: String, private val value: Long) {
+    YELLOW("yellow", 0xFFFFC94D),
+    ORANGE("orange", 0xFFFF9800),
+    RED("red", 0xFFFF6E6E),
+    PINK("pink", 0xFFF48FB1),
+    PURPLE("purple", 0xFFB39DDB),
+    BLUE("blue", 0xFF0986DB),
+    TEAL("teal", 0xFF14E1BA),
+    GREEN("green", 0xFF5CCB5F),
+    GREY("grey", 0xFFCACACA),
     ;
 
-    fun bg(dark: Boolean): Int = (if (dark) this.dark else light).toInt()
-    fun ink(dark: Boolean): Int = (if (dark) inkDark else inkLight).toInt()
+    val argb: Int get() = value.toInt()
 
     companion object {
         fun of(key: String?): Pastel? = entries.firstOrNull { it.key == key }
@@ -54,7 +69,7 @@ enum class Pastel(val key: String, val light: Long, val dark: Long, val inkLight
             "lock", "alarm_control_panel" -> GREEN
             "scene", "script", "button" -> PURPLE
             "vacuum" -> TEAL
-            else -> BLUE
+            else -> TEAL
         }
     }
 }

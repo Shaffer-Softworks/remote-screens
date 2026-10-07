@@ -36,6 +36,7 @@ export interface Page {
   title: string
   tiles: Tile[]
   hidden?: boolean
+  icon?: string
 }
 
 export interface ScreenSettings {

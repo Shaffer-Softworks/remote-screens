@@ -41,6 +41,7 @@
   "ui.no_history": "Sin historial",
   "ui.humidity": "Humedad {value}",
   "ui.wind": "Viento {value}",
+  "ui.pressure": "Presión {value}",
   "ui.people_home": "{count} en casa",
   "ui.nobody_home": "Nadie en casa",
   "ui.solar": "Solar",
@@ -52,5 +53,10 @@
   "ui.identify": "Esta es {name}",
   "ui.pair_title": "Añadir esta pantalla",
   "ui.pair_body": "Abre Remote Screens en Home Assistant e introduce este código",
-  "ui.empty_page": "Aquí no hay nada todavía. Añade mosaicos en Remote Screens en Home Assistant."
+  "ui.empty_page": "Aquí no hay nada todavía. Añade mosaicos en Remote Screens en Home Assistant.",
+  "ui.settings": "Ajustes",
+  "ui.outside_now": "Temperatura exterior ahora",
+  "ui.next_event": "Próximo evento",
+  "ui.no_events": "No hay eventos próximos",
+  "ui.all_day": "Todo el día"
 }

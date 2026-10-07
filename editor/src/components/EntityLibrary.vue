@@ -14,7 +14,7 @@ const query = ref('')
 const onPage = computed(() => new Set(props.page.tiles.map((t) => t.entityId).filter(Boolean)))
 
 /** Tiles that are no entity. History and favourite music are an entity shown another way (see the tile drawer). */
-const KINDS = ['clock', 'bedside', 'nav', 'energy', 'map']
+const KINDS = ['home', 'clock', 'bedside', 'nav', 'energy', 'map']
 
 /** Entity types with a tile; the rest are left out. */
 const supported = (e: EntityInfo) => e.domain in CATALOGUE

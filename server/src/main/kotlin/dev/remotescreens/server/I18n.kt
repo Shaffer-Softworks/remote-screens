@@ -50,7 +50,12 @@ class I18n(val language: String, private val own: Map<String, String>, private v
     fun date(t: ZonedDateTime): String =
         t.format(DateTimeFormatter.ofPattern("EEEE d MMMM", locale)).replaceFirstChar { it.titlecase(locale) }
 
+    /** "24 MAY 2024". */
+    fun day(t: ZonedDateTime): String = t.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale)).replace(".", "").uppercase(locale)
+
     fun weekday(t: ZonedDateTime): String = t.format(DateTimeFormatter.ofPattern("EEE", locale))
+
+    fun fullWeekday(t: ZonedDateTime): String = t.format(DateTimeFormatter.ofPattern("EEEE", locale)).replaceFirstChar { it.titlecase(locale) }
 
     fun shortDate(t: ZonedDateTime): String = t.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale))
 

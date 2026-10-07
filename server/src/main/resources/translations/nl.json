@@ -41,6 +41,7 @@
   "ui.no_history": "Geen geschiedenis",
   "ui.humidity": "Luchtvochtigheid {value}",
   "ui.wind": "Wind {value}",
+  "ui.pressure": "Luchtdruk {value}",
   "ui.people_home": "{count} thuis",
   "ui.nobody_home": "Niemand thuis",
   "ui.solar": "Zon",
@@ -52,5 +53,10 @@
   "ui.identify": "Dit is {name}",
   "ui.pair_title": "Dit scherm toevoegen",
   "ui.pair_body": "Open Remote Screens in Home Assistant en voer deze code in",
-  "ui.empty_page": "Hier staat nog niets. Voeg tegels toe in Remote Screens in Home Assistant."
+  "ui.empty_page": "Hier staat nog niets. Voeg tegels toe in Remote Screens in Home Assistant.",
+  "ui.settings": "Instellingen",
+  "ui.outside_now": "Buitentemperatuur nu",
+  "ui.next_event": "Volgende afspraak",
+  "ui.no_events": "Geen afspraken gepland",
+  "ui.all_day": "Hele dag"
 }

@@ -215,7 +215,7 @@ class PlayerHub(
     fun clockVars(): List<VarValue> {
         val now = ZonedDateTime.now(zone())
         val i18n = languages.current()
-        return listOf(VarValue.string(V.TIME, i18n.time(now)), VarValue.string(V.DATE, i18n.date(now)))
+        return listOf(VarValue.string(V.TIME, i18n.time(now)), VarValue.string(V.DATE, i18n.date(now)), VarValue.string(V.DAY, i18n.day(now)))
     }
 
     private suspend fun clock() {

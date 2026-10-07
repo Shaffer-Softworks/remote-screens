@@ -60,7 +60,7 @@ object AlertRenderer {
             }
             Box(ctx.tap(Modifier.fillMaxSize().background(ctx.role(Role.SCRIM)), ActionRef("alert", "dismiss")),
                 horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-                Column(ctx.tap(Modifier.width(ctx.u.px(panelW)).clip(ctx.rounded(28f)).background(ctx.role(Role.CARD)), ActionRef("_", "noop"))
+                Column(ctx.tap(Modifier.width(ctx.u.px(panelW)).clip(ctx.rounded(10f)).background(ctx.role(Role.CARD)), ActionRef("_", "noop"))
                     .padding(ctx.u.px(24f)), horizontal = RcHorizontalPositioning.Center) {
                     Box(Modifier.size(ctx.u.px(64f), ctx.u.px(64f)).clip(ctx.rounded((64f) / 2f)).background(ctx.role(tone)),
                         horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {

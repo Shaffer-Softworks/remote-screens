@@ -3,15 +3,16 @@
 package dev.remotescreens.server.render
 
 import androidx.compose.remote.creation.dsl.Modifier
+import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
-import androidx.compose.remote.creation.dsl.clip
+import androidx.compose.remote.creation.dsl.fillMaxHeight
 import androidx.compose.remote.creation.dsl.fillMaxSize
+import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.horizontalWeight
-import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.width
 import dev.remotescreens.server.I18n
@@ -120,9 +121,10 @@ object ScreenRenderer {
     ) {
         if (showBar) topBar(screen, page, spec, back = page.hidden, home = home)
         val placed = Reflow.place(page.tiles.filter { tileUsable(it) }, screen.grid)
+        val contentH = spec.heightDp - spec.topBar - spec.navBar
         if (placed.isEmpty()) {
             at(0f, spec.topBar) {
-                scope.Box(Modifier.size(u.px(spec.widthDp), u.px(spec.heightDp - spec.topBar - spec.pageBar)),
+                scope.Box(Modifier.size(u.px(spec.widthDp), u.px(contentH)),
                     horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
                     this@page.label(this@page.i18n.t("ui.empty_page"), Type.TITLE, this@page.role(Role.INK_SOFT), align = RcTextAlign.Center, lines = 3,
                         modifier = Modifier.width(this@page.u.px(spec.widthDp * 0.7f)))
@@ -130,13 +132,17 @@ object ScreenRenderer {
             }
         }
         for (p in placed) {
-            val full = p.tile.full || (p.w == spec.cols && p.h == spec.rows)
-            val box = TileBox(spec.x(p.col), spec.y(p.row), spec.w(p.w), spec.h(p.h), p.w, p.h, full)
             val t = p.tile
+            val full = t.full || (p.w == spec.cols && p.h == spec.rows)
+            val box = if (t.edgeToEdge()) {
+                TileBox(0f, spec.topBar, spec.widthDp, contentH, p.w, p.h, full = true, edge = true)
+            } else {
+                TileBox(spec.x(p.col), spec.y(p.row), spec.w(p.w), spec.h(p.h), p.w, p.h, full)
+            }
             val named = if (t.effectiveKind() == "nav" && t.name == null) t.copy(name = screen.pages.firstOrNull { it.id == t.options["page"] }?.title) else t
             tile(named, box, pageIndex)
         }
-        if (visible.size > 1 && !page.hidden) pageDots(spec, visible, index)
+        navBar(screen, spec, visible, index, home)
     }
 
     private fun DocContext.tileUsable(t: dev.remotescreens.shared.Tile): Boolean {
@@ -144,52 +150,88 @@ object ScreenRenderer {
         return spec != null && (t.entityId != null || !spec.needsEntity)
     }
 
+    /**
+     * The RPI header: the time and date on a dark block at the left, the outdoor temperature and who is home at the
+     * right. A hidden page puts a Back key and its title in between.
+     */
     private fun DocContext.topBar(screen: Screen, page: Page, spec: GridSpec, back: Boolean, home: Int) {
         val ink = role(Role.INK)
-        val soft = role(Role.INK_SOFT)
-        val settings = ActionRef("_", "settings")
         scope.Row(
-            tap(Modifier.size(u.px(spec.widthDp), u.px(spec.topBar)).padding(u.px(spec.padding + 4f), 0f, u.px(spec.padding + 4f), 0f), null, settings),
+            Modifier.size(u.px(spec.widthDp), u.px(spec.topBar)).background(role(Role.HEADER)),
             vertical = RcVerticalPositioning.Center,
         ) {
             val c = this@topBar
-            if (back) {
-                c.key(ActionRef("_", "back", home.toString()), icon = "arrow-left", heightDp = 34f, widthDp = 34f, round = true)
-                Spacer(Modifier.width(c.u.px(10f)))
+            if (screen.topBar.clock) {
+                Row(
+                    Modifier.width(c.u.px(minOf(350f, spec.widthDp * 0.42f))).fillMaxHeight().background(c.role(Role.HEADER_DARK)),
+                    horizontal = RcRowHorizontalPositioning.SpaceEvenly, vertical = RcVerticalPositioning.Center,
+                ) {
+                    c.label(c.text(V.TIME), HEADER_SP, ink, 700f)
+                    c.label(c.text(V.DAY), HEADER_SP, ink)
+                }
             }
-            c.label(page.title, Type.TITLE + 2f, ink, 600f, modifier = Modifier.horizontalWeight(1f))
+            Spacer(Modifier.width(c.u.px(spec.padding + 8f)))
+            Row(Modifier.horizontalWeight(1f), vertical = RcVerticalPositioning.Center) {
+                if (back) {
+                    c.key(ActionRef("_", "back", home.toString()), icon = "arrow-left", heightDp = 34f, widthDp = 34f, round = true)
+                    Spacer(Modifier.width(c.u.px(10f)))
+                    c.label(page.title, Type.TITLE, ink, 500f)
+                }
+            }
             if (screen.topBar.temperatureEntity != null) {
-                c.icon("thermometer", 18f, soft)
-                c.label(c.text(V.TEMP), Type.BODY, soft, 500f)
-                Spacer(Modifier.width(c.u.px(14f)))
+                c.icon("thermometer", 26f, c.role(Role.BLUE))
+                Spacer(Modifier.width(c.u.px(4f)))
+                c.label(c.text(V.TEMP), HEADER_SP, ink)
+                Spacer(Modifier.width(c.u.px(15f)))
             }
             if (screen.topBar.people) {
-                c.icon("home-account", 18f, soft)
+                c.icon("home-account", 26f, c.role(Role.ACCENT_SOFT))
                 Spacer(Modifier.width(c.u.px(4f)))
-                c.label(c.text(V.PEOPLE), Type.BODY, soft, 500f)
-                Spacer(Modifier.width(c.u.px(14f)))
+                c.label(c.text(V.PEOPLE), HEADER_SP, ink)
+                Spacer(Modifier.width(c.u.px(15f)))
             }
-            if (screen.topBar.clock) c.label(c.text(V.TIME), Type.TITLE, ink, 600f)
+            Spacer(Modifier.width(c.u.px(5f)))
         }
     }
 
-    private fun DocContext.pageDots(spec: GridSpec, visible: List<Int>, current: Int) {
-        val dot = 8f
-        val hit = 28f
-        val rowW = visible.size * hit
-        at((spec.widthDp - rowW) / 2f, spec.heightDp - hit) { scope.Row(
-            Modifier.size(u.px(rowW), u.px(hit)),
-            horizontal = RcRowHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center,
-        ) {
-            val c = this@pageDots
-            for (i in visible) {
-                Box(c.tap(Modifier.size(c.u.px(hit), c.u.px(hit)), ActionRef("_", "page", i.toString())),
-                    horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-                    Box(Modifier.size(c.u.px(dot), c.u.px(dot)).clip(c.rounded((dot) / 2f)).background(c.role(if (i == current) Role.INK else Role.INK_FAINT)))
+    /**
+     * The RPI navigation bar: a teal line over a dark row of square buttons, one per visible page and Settings last,
+     * the current page's button filled teal. Buttons narrow when there are more than the width holds.
+     */
+    private fun DocContext.navBar(screen: Screen, spec: GridSpec, visible: List<Int>, current: Int, home: Int) {
+        val line = 2f
+        val barH = spec.navBar - line
+        val count = visible.size + 1
+        val buttonW = minOf(barH, spec.widthDp / count)
+        at(0f, spec.heightDp - spec.navBar) { scope.Column(Modifier.size(u.px(spec.widthDp), u.px(spec.navBar))) {
+            val c = this@navBar
+            Box(Modifier.size(c.u.px(spec.widthDp), c.u.px(line)).background(c.role(Role.NAV_LINE)))
+            Row(
+                Modifier.size(c.u.px(spec.widthDp), c.u.px(barH)).background(c.role(Role.NAV)),
+                horizontal = if (count > 2) RcRowHorizontalPositioning.SpaceBetween else RcRowHorizontalPositioning.SpaceEvenly,
+                vertical = RcVerticalPositioning.Center,
+            ) {
+                for (i in visible) {
+                    val p = screen.pages[i]
+                    c.navButton(p.title, p.icon ?: if (i == home) "home" else "view-dashboard", buttonW, barH, i == current, ActionRef("_", "page", i.toString()))
                 }
+                c.navButton(c.i18n.t("ui.settings"), "cog", buttonW, barH, false, ActionRef("_", "settings"))
             }
         } }
     }
+
+    private fun DocContext.navButton(title: String, icon: String, wDp: Float, hDp: Float, on: Boolean, ref: ActionRef) {
+        var m = Modifier.size(u.px(wDp), u.px(hDp))
+        if (on) m = m.background(role(Role.NAV_ON))
+        scope.Column(tap(m, ref), horizontal = RcHorizontalPositioning.Center, vertical = RcColumnVerticalPositioning.Center) {
+            val c = this@navButton
+            c.icon(icon, minOf(40f, hDp * 0.4f), c.role(Role.INK))
+            Spacer(Modifier.height(c.u.px(5f)))
+            c.label(title.uppercase(c.i18n.locale), 10f, c.role(Role.INK), align = RcTextAlign.Center, modifier = Modifier.width(c.u.px(wDp - 4f)))
+        }
+    }
+
+    private const val HEADER_SP = 20f
 
     /** The clock, the outdoor temperature and who is home: values every page shows. */
     private fun DocContext.bindSystem(screen: Screen) {

@@ -41,6 +41,7 @@
   "ui.no_history": "Pas d'historique",
   "ui.humidity": "Humidité {value}",
   "ui.wind": "Vent {value}",
+  "ui.pressure": "Pression {value}",
   "ui.people_home": "{count} à la maison",
   "ui.nobody_home": "Personne à la maison",
   "ui.solar": "Solaire",
@@ -52,5 +53,10 @@
   "ui.identify": "Voici {name}",
   "ui.pair_title": "Ajouter cet écran",
   "ui.pair_body": "Ouvrez Remote Screens dans Home Assistant et saisissez ce code",
-  "ui.empty_page": "Rien ici pour l'instant. Ajoutez des tuiles dans Remote Screens dans Home Assistant."
+  "ui.empty_page": "Rien ici pour l'instant. Ajoutez des tuiles dans Remote Screens dans Home Assistant.",
+  "ui.settings": "Réglages",
+  "ui.outside_now": "Température extérieure",
+  "ui.next_event": "Prochain événement",
+  "ui.no_events": "Aucun événement à venir",
+  "ui.all_day": "Toute la journée"
 }

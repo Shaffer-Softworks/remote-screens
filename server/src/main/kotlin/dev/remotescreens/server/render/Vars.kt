@@ -19,6 +19,8 @@ object V {
     const val PAGE = "page"
     const val TIME = "sys.time"
     const val DATE = "sys.date"
+    /** The date as the header shows it: "24 MAY 2024". */
+    const val DAY = "sys.day"
     const val TEMP = "sys.temp"
     const val PEOPLE = "sys.people"
     const val CONNECTED = "sys.connected"
@@ -45,34 +47,38 @@ private class EntityBinding(val id: String, val ctx: DocContext, val name: Strin
     }
 }
 
-/** A tile's colours follow whether its entity is on. */
+/**
+ * A tile's colours follow whether its entity is on. The card itself stays grey; being on lights its icon, the strip
+ * under its header (`line`) and its round badge (`bg`, with `bgink` drawn on it) in the tile's accent.
+ */
 fun DocContext.bindTileColors(tileId: String, entityId: String?, pastel: Pastel, alwaysOn: Boolean = false) {
-    val dark = dark
     bind(entityId) { states ->
         val e = entityId?.let { states[it] }
         val view = Present.view(e, i18n)
         val on = alwaysOn || view.on
         val avail = entityId == null || view.available
+        val lit = on && avail
         listOf(
-            VarValue.color(V.t(tileId, "bg"), if (on && avail) pastel.bg(dark) else Role.CARD_OFF.argb(dark)),
-            VarValue.color(V.t(tileId, "ink"), if (!avail) Role.INK_FAINT.argb(dark) else if (on) pastel.ink(dark) else Role.INK.argb(dark)),
-            VarValue.color(V.t(tileId, "ink2"), if (!avail) Role.INK_FAINT.argb(dark) else if (on) pastel.ink(dark) else Role.INK_SOFT.argb(dark)),
-            VarValue.color(V.t(tileId, "icon"), if (!avail) Role.INK_FAINT.argb(dark) else if (on) pastel.ink(dark) else Role.INK_SOFT.argb(dark)),
-            VarValue.color(V.t(tileId, "fill"), if (on) pastel.ink(dark) and 0x00FFFFFF or 0x33000000 else Role.DIVIDER.argb(dark)),
+            VarValue.color(V.t(tileId, "bg"), if (lit) pastel.argb else Role.KEY.argb),
+            VarValue.color(V.t(tileId, "bgink"), if (lit) Role.KEY_ON_INK.argb else Role.INK.argb),
+            VarValue.color(V.t(tileId, "line"), if (lit) pastel.argb else Role.CARD_HEADER.argb),
+            VarValue.color(V.t(tileId, "ink"), if (!avail) Role.INK_FAINT.argb else Role.INK.argb),
+            VarValue.color(V.t(tileId, "ink2"), if (!avail) Role.INK_FAINT.argb else Role.INK_SOFT.argb),
+            VarValue.color(V.t(tileId, "icon"), if (!avail) Role.INK_FAINT.argb else if (on) pastel.argb else Role.INK_DIM.argb),
+            VarValue.color(V.t(tileId, "fill"), Role.KEY.argb),
         )
     }
 }
 
-/** A row of choices (modes, options, speeds): the chosen one is dark on light, the rest plain. */
+/** A row of choices (modes, options, speeds): the chosen one is teal, the rest plain grey keys. */
 fun DocContext.bindChoices(scopeId: String, group: String, entityId: String, choices: List<String>, chosen: (EntityState) -> String?) {
-    val dark = dark
     bind(entityId) { states ->
         val current = states[entityId]?.let(chosen)
         choices.flatMapIndexed { i, c ->
             val on = c == current
             listOf(
-                VarValue.color(V.o(scopeId, group, i, "bg"), (if (on) Role.KEY_ON else Role.KEY).argb(dark)),
-                VarValue.color(V.o(scopeId, group, i, "ink"), (if (on) Role.KEY_ON_INK else Role.INK).argb(dark)),
+                VarValue.color(V.o(scopeId, group, i, "bg"), (if (on) Role.KEY_ON else Role.KEY).argb),
+                VarValue.color(V.o(scopeId, group, i, "ink"), (if (on) Role.KEY_ON_INK else Role.INK).argb),
             )
         }
     }

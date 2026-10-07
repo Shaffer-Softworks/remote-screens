@@ -38,7 +38,7 @@ class RenderTest {
 
         val vars = doc.vars(ha.states.value)
         assertEquals("Ceiling light", vars["e.light.living_room.name"]?.value)
-        assertEquals(VarType.COLOR, vars["t.t1.bg"]?.type)
+        assertEquals(VarType.COLOR, vars["t.t1.line"]?.type)
         val declared = core.getNamedVariables(NamedVariable.STRING_TYPE).toSet() +
             core.getNamedVariables(NamedVariable.INT_TYPE) + core.getNamedVariables(NamedVariable.FLOAT_TYPE) + core.getNamedVariables(NamedVariable.COLOR_TYPE)
         val unread = vars.keys.filter { "USER:$it" !in declared && !it.startsWith("sys.") }
@@ -63,11 +63,37 @@ class RenderTest {
     }
 
     @Test
-    fun darkAndLightDiffer() {
+    fun aTileLightsUpWhenItsEntityIsOn() {
+        val doc = ScreenRenderer.render(DemoLayout.screen(), tablet, input())
+        val states = ha.states.value
+        val off = doc.vars(states)
+        val on = doc.vars(states + ("light.table_lamp" to states.getValue("light.table_lamp").with("on")))
+        assertEquals(Role.CARD_HEADER.argb, off["t.t2.line"]?.asColor())
+        assertEquals(Pastel.YELLOW.argb, on["t.t2.line"]?.asColor())
+        assertEquals(Pastel.YELLOW.argb, on["t.t2.icon"]?.asColor())
+    }
+
+    @Test
+    fun theHomePanelShowsTheNextEventAndWhoIsHome() {
+        val doc = ScreenRenderer.render(DemoLayout.screen(), tablet, input())
+        val vars = doc.vars(ha.states.value)
+        assertEquals("Dentist appointment", vars["t.h1.ev.title"]?.value)
+        assertEquals("Family · Main St", vars["t.h1.ev.meta"]?.value)
+        assertEquals("HOME", vars["t.h1.where.person.sam"]?.value)
+        assertEquals("AWAY", vars["t.h1.where.person.alex"]?.value)
+        assertEquals("14°", vars["t.h1.temp"]?.value)
+    }
+
+    @Test
+    fun aFullWeatherTileIsTheRpiWeatherPage() {
         val screen = DemoLayout.screen()
-        val light = ScreenRenderer.render(screen, tablet, input()).vars(ha.states.value)
-        val dark = ScreenRenderer.render(screen, tablet, input(dark = true)).vars(ha.states.value)
-        assertTrue(light["t.t2.bg"] != dark["t.t2.bg"])
+        val data = runBlocking { DataFetcher(ha).forScreen(screen) }
+        val doc = ScreenRenderer.render(screen, tablet, input(data))
+        val vars = doc.vars(ha.states.value)
+        assertEquals("Wind 12 km/h", vars["t.w1.wind_speed"]?.value)
+        assertEquals("Humidity 71%", vars["t.w1.humidity"]?.value)
+        assertEquals("Pressure 1,013 hPa", vars["t.w1.pressure"]?.value)
+        assertEquals("14°", vars["e.weather.home.value"]?.value)
     }
 
     @Test

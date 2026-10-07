@@ -17,7 +17,8 @@ data class GridSpec(
     val padding: Float,
     val gap: Float,
     val topBar: Float,
-    val pageBar: Float,
+    /** The bottom navigation bar: a 2 dp line over a row of 100 dp page buttons. */
+    val navBar: Float,
     val cellW: Float,
     val cellH: Float,
 ) {
@@ -36,8 +37,8 @@ object Grid {
     const val MAX_CELLS = 8
     const val PADDING = 12f
     const val GAP = 10f
-    const val TOP_BAR = 44f
-    const val PAGE_BAR = 24f
+    const val TOP_BAR = 48f
+    const val NAV_BAR = 102f
 
     /** The grid a device of this size gets when it is adopted. */
     fun suggest(widthDp: Float, heightDp: Float): GridSize {
@@ -60,7 +61,7 @@ object Grid {
             padding = PADDING,
             gap = GAP,
             topBar = if (showTopBar) TOP_BAR else 0f,
-            pageBar = PAGE_BAR,
+            navBar = NAV_BAR,
             cellW = cellW,
             cellH = cellH,
         )
@@ -68,7 +69,7 @@ object Grid {
 
     private fun available(widthDp: Float, heightDp: Float, showTopBar: Boolean): Pair<Float, Float> {
         val top = if (showTopBar) TOP_BAR else 0f
-        return (widthDp - 2 * PADDING) to (heightDp - top - PAGE_BAR - 2 * PADDING)
+        return (widthDp - 2 * PADDING) to (heightDp - top - NAV_BAR - 2 * PADDING)
     }
 
     private fun fit(avail: Float): Int =

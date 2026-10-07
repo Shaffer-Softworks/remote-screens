@@ -13,6 +13,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.CacheControl
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -131,7 +132,14 @@ fun Application.editorModule(config: Config, ha: HomeAssistant, store: LayoutSto
         editorApi(config, ha, store, hub) { apk(config) }
         val static = config.staticDir
         if (static != null) {
-            staticFiles("/", static) { default("index.html") }
+            staticFiles("/", static) {
+                default("index.html")
+                // Built assets have hashed names; index.html must be refetched so an update reaches the browser.
+                cacheControl { file ->
+                    if (file.parentFile?.name == "assets") listOf(CacheControl.MaxAge(31_536_000, visibility = CacheControl.Visibility.Public))
+                    else listOf(CacheControl.NoCache(null))
+                }
+            }
         } else {
             get("/") { call.respondText("Remote Screens ${config.version}: the editor is not built. Run `npm run build` in editor/.", ContentType.Text.Plain) }
         }

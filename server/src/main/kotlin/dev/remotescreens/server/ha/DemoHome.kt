@@ -212,7 +212,8 @@ class DemoHome : HomeAssistant {
             EntityState("lock.front_door", "locked", attrs("friendly_name" to "Front door", "supported_features" to 1)),
             EntityState("climate.living_room", "heat", attrs("friendly_name" to "Heating", "current_temperature" to 20.5, "temperature" to 21.0, "min_temp" to 7, "max_temp" to 30, "target_temp_step" to 0.5, "hvac_modes" to listOf("off", "heat", "auto"), "hvac_action" to "heating", "supported_features" to 1)),
             EntityState("media_player.living_room", "playing", attrs("friendly_name" to "Living room speaker", "media_title" to "Clair de Lune", "media_artist" to "Debussy", "media_album_name" to "Suite bergamasque", "volume_level" to 0.35, "supported_features" to 152463, "entity_picture" to "/api/media_player_proxy/media_player.living_room", "source_list" to listOf("Spotify", "Radio"))),
-            EntityState("weather.home", "partlycloudy", attrs("friendly_name" to "Home", "temperature" to 14.2, "temperature_unit" to "°C", "humidity" to 71, "wind_speed" to 12, "supported_features" to 3)),
+            EntityState("weather.home", "partlycloudy", attrs("friendly_name" to "Home", "temperature" to 14.2, "temperature_unit" to "°C", "humidity" to 71, "wind_speed" to 12, "wind_speed_unit" to "km/h",
+                "pressure" to 1013, "pressure_unit" to "hPa", "supported_features" to 3)),
             EntityState("camera.front_door", "idle", attrs("friendly_name" to "Front door camera", "entity_picture" to "/api/camera_proxy/camera.front_door")),
             EntityState("alarm_control_panel.house", "disarmed", attrs("friendly_name" to "House alarm", "code_format" to "number", "supported_features" to 63)),
             EntityState("input_select.washing_program", "Cotton eco", attrs("friendly_name" to "Washing machine", "options" to listOf("Cotton", "Cotton eco", "Synthetics", "Wool", "Quick 15'"))),
@@ -221,6 +222,8 @@ class DemoHome : HomeAssistant {
             EntityState("person.sam", "home", attrs("friendly_name" to "Sam", "latitude" to 52.37, "longitude" to 4.89)),
             EntityState("person.alex", "not_home", attrs("friendly_name" to "Alex", "latitude" to 52.35, "longitude" to 4.92)),
             EntityState("button.doorbell_test", "unknown", attrs("friendly_name" to "Test doorbell")),
+            EntityState("calendar.family", "off", attrs("friendly_name" to "Family", "message" to "Dentist appointment", "location" to "Main St",
+                "all_day" to false, "start_time" to "${java.time.LocalDate.now().plusDays(1)} 19:30:00", "end_time" to "${java.time.LocalDate.now().plusDays(1)} 20:30:00")),
             EntityState("sun.sun", "above_horizon", attrs("friendly_name" to "Sun", "next_rising" to "2026-10-08T07:45:00+00:00", "next_setting" to "2026-10-07T18:40:00+00:00")),
         )
 

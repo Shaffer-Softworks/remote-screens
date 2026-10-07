@@ -47,7 +47,7 @@ object CardRenderer {
             ctx.bindTileColors(TILE, entityId, Pastel.forDomain(e?.domain), alwaysOn = card in setOf("camera", "map", "energy", "history"))
             Box(ctx.tap(Modifier.fillMaxSize().background(ctx.role(Role.SCRIM)), ActionRef("_", "close")),
                 horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-                Column(ctx.tap(Modifier.size(ctx.u.px(panelW), ctx.u.px(panelH)).clip(ctx.rounded(28f)).background(ctx.role(Role.CARD)), ActionRef("_", "noop"))
+                Column(ctx.tap(Modifier.size(ctx.u.px(panelW), ctx.u.px(panelH)).clip(ctx.rounded(10f)).background(ctx.role(Role.CARD)), ActionRef("_", "noop"))
                     .padding(ctx.u.px(20f))) {
                     ctx.header(entityId, card)
                     ctx.gap(12f)
@@ -109,7 +109,7 @@ object CardRenderer {
             val c = this@bigToggle
             Box(c.tap(Modifier.size(c.u.px(132f), c.u.px(132f)).clip(c.rounded((132f) / 2f)).background(c.color(V.t(TILE, "bg"))), r),
                 horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-                c.toggleIcon(entityId, spec?.icon ?: "power", spec?.iconOn, 64f, c.color(V.t(TILE, "icon")))
+                c.toggleIcon(entityId, spec?.icon ?: "power", spec?.iconOn, 64f, c.color(V.t(TILE, "bgink")))
             }
         }
     }
@@ -478,7 +478,7 @@ object CardRenderer {
         val ph = u.px(h).toInt()
         val who = if (entityId.startsWith("person.") || entityId.startsWith("device_tracker.")) listOf(entityId) else states.keys.filter { it.startsWith("person.") }
         for (p in who) structural(p) { s -> "${s?.number("latitude")},${s?.number("longitude")}" }
-        picture(PictureSlot("map.card", "map:${if (dark) "dark" else "light"}:${who.joinToString(",")}", pw, ph, 0))
+        picture(PictureSlot("map.card", "map:dark:${who.joinToString(",")}", pw, ph, 0))
         scope.Image(image("map.card", pw, ph), Modifier.size(u.px(w), u.px(h)).clip(rounded(16f)), contentScale = RcContentScale.Crop)
         label(i18n.t("ui.map_credit"), Type.CAPTION, role(Role.INK_SOFT))
     }

@@ -88,6 +88,7 @@
   "ui.no_history": "No history",
   "ui.humidity": "Humidity {value}",
   "ui.wind": "Wind {value}",
+  "ui.pressure": "Pressure {value}",
   "ui.people_home": "{count} home",
   "ui.nobody_home": "Nobody home",
   "ui.solar": "Solar",
@@ -99,5 +100,10 @@
   "ui.identify": "This is {name}",
   "ui.pair_title": "Add this screen",
   "ui.pair_body": "Open Remote Screens in Home Assistant and enter this code",
-  "ui.empty_page": "Nothing here yet. Add tiles in Remote Screens in Home Assistant."
+  "ui.empty_page": "Nothing here yet. Add tiles in Remote Screens in Home Assistant.",
+  "ui.settings": "Settings",
+  "ui.outside_now": "Temperature outside now",
+  "ui.next_event": "Next event",
+  "ui.no_events": "No upcoming events",
+  "ui.all_day": "All day"
 }

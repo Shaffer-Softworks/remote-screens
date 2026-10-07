@@ -41,7 +41,11 @@ const device = computed(() => devices.value.find((d) => d.key === deviceKey.valu
 
 const moved = computed(() => {
   const placed = reflow(page.value.tiles, screen.value.grid)
-  const ids = new Set(placed.filter((p) => p.col !== p.tile.col || p.row !== p.tile.row || p.w !== p.tile.w || p.h !== p.tile.h).map((p) => p.tile.id))
+  const ids = new Set(
+    placed
+      .filter((p) => !p.tile.full && (p.col !== p.tile.col || p.row !== p.tile.row || p.w !== p.tile.w || p.h !== p.tile.h))
+      .map((p) => p.tile.id),
+  )
   const dropped = page.value.tiles.length - placed.length
   return { ids, dropped }
 })

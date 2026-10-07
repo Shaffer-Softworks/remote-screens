@@ -41,6 +41,7 @@
   "ui.no_history": "Brak historii",
   "ui.humidity": "Wilgotność {value}",
   "ui.wind": "Wiatr {value}",
+  "ui.pressure": "Ciśnienie {value}",
   "ui.people_home": "W domu: {count}",
   "ui.nobody_home": "Nikogo w domu",
   "ui.solar": "Słońce",
@@ -52,5 +53,10 @@
   "ui.identify": "To jest {name}",
   "ui.pair_title": "Dodaj ten ekran",
   "ui.pair_body": "Otwórz Remote Screens w Home Assistant i wpisz ten kod",
-  "ui.empty_page": "Nic tu jeszcze nie ma. Dodaj kafelki w Remote Screens w Home Assistant."
+  "ui.empty_page": "Nic tu jeszcze nie ma. Dodaj kafelki w Remote Screens w Home Assistant.",
+  "ui.settings": "Ustawienia",
+  "ui.outside_now": "Temperatura na zewnątrz",
+  "ui.next_event": "Następne wydarzenie",
+  "ui.no_events": "Brak nadchodzących wydarzeń",
+  "ui.all_day": "Cały dzień"
 }

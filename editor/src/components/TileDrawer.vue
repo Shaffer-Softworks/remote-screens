@@ -175,7 +175,7 @@ const pageTitle = (id: string) => props.screen.pages.find((p) => p.id === id)?.t
         <button
           class="swatch auto"
           :class="{ on: !tile.color }"
-          :style="{ background: pastel(undefined, domain).light }"
+          :style="{ background: pastel(undefined, domain).color }"
           title="Default"
           @click="tile.color = undefined"
         >
@@ -186,7 +186,7 @@ const pageTitle = (id: string) => props.screen.pages.find((p) => p.id === id)?.t
           :key="p.key"
           class="swatch"
           :class="{ on: tile.color === p.key }"
-          :style="{ background: p.light }"
+          :style="{ background: p.color }"
           :title="p.key"
           @click="tile.color = p.key"
         />

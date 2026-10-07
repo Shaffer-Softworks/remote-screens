@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Page, Screen } from '../model/types'
+import IconPicker from './IconPicker.vue'
 import MdiIcon from './MdiIcon.vue'
 
 const props = defineProps<{ screen: Screen; page: Page }>()
@@ -27,10 +28,14 @@ const isHome = computed({
 <template>
   <div class="panel">
     <label class="field">Title<input v-model="page.title" maxlength="40" /></label>
+    <div v-if="!page.hidden" class="field">
+      <span class="label">Navigation bar icon</span>
+      <IconPicker v-model="page.icon" :placeholder="isHome ? 'home' : 'view-dashboard'" />
+    </div>
     <label class="check"><input v-model="isHome" type="checkbox" :disabled="isHome" /> Home page</label>
     <label class="check">
       <input v-model="page.hidden" type="checkbox" :disabled="isHome" />
-      Hidden: no page dot, opened from a "Go to page" tile, with a Back key
+      Hidden: no button in the navigation bar, opened from a "Go to page" tile, with a Back key
     </label>
     <div class="row">
       <button class="icon" title="Move left" :disabled="index === 0" @click="shift(-1)">
@@ -50,5 +55,13 @@ const isHome = computed({
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
 }
 </style>

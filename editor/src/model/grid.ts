@@ -10,8 +10,8 @@ export const MIN_CELLS = 2
 export const MAX_CELLS = 8
 export const PADDING = 12
 export const GAP = 10
-export const TOP_BAR = 44
-export const PAGE_BAR = 24
+export const TOP_BAR = 48
+export const NAV_BAR = 102
 
 export interface GridSpec {
   cols: number
@@ -21,7 +21,7 @@ export interface GridSpec {
   padding: number
   gap: number
   topBar: number
-  pageBar: number
+  navBar: number
   cellW: number
   cellH: number
   large: boolean
@@ -33,7 +33,7 @@ export interface GridSpec {
 
 function available(widthDp: number, heightDp: number, showTopBar: boolean): [number, number] {
   const top = showTopBar ? TOP_BAR : 0
-  return [f(widthDp - 2 * PADDING), f(f(f(heightDp - top) - PAGE_BAR) - 2 * PADDING)]
+  return [f(widthDp - 2 * PADDING), f(f(f(heightDp - top) - NAV_BAR) - 2 * PADDING)]
 }
 
 function clamp(v: number, lo: number, hi: number): number {
@@ -70,7 +70,7 @@ export function spec(size: GridSize, widthDp: number, heightDp: number, showTopB
     padding: PADDING,
     gap: GAP,
     topBar,
-    pageBar: PAGE_BAR,
+    navBar: NAV_BAR,
     cellW,
     cellH,
     large: cellW >= 170 && cellH >= 170,

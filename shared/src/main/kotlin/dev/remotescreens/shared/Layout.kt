@@ -44,8 +44,10 @@ data class Page(
     val id: String,
     val title: String,
     val tiles: List<Tile> = emptyList(),
-    /** A hidden page has no page dot and is opened from a navigation tile, with a Back key. */
+    /** A hidden page has no button in the navigation bar and is opened from a navigation tile, with a Back key. */
     val hidden: Boolean = false,
+    /** The icon of the page's button in the navigation bar, or null for the default. */
+    val icon: String? = null,
 )
 
 @Serializable
@@ -106,7 +108,7 @@ data class ScreenSettings(
     val nightDark: Boolean = true,
     /** Seconds before the screen returns to the home page; 0 is never. */
     val backToHomeSeconds: Int = 0,
-    val swipe: Boolean = true,
+    val swipe: Boolean = false,
     /** 0 follows the device, 1 locks portrait, 2 locks landscape. */
     val orientation: Int = 0,
 ) {

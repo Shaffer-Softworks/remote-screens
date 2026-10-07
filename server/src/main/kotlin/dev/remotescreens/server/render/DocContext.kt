@@ -62,7 +62,7 @@ class DocContext(
     fun float(name: String, initial: Float = 0f): RcFloat = declare(floats, name, { float(name, initial) }) { scope.remoteNamedFloat(Rc.USER + name, initial) }
     fun color(name: String, initial: Int = 0): RcColor = declare(colors, name, { color(name, initial) }) { scope.remoteNamedColor(Rc.USER + name, initial) }
     fun fixed(argb: Int): RcColor = declare(colors, "#" + argb.toUInt().toString(16), { fixed(argb) }) { scope.remoteColor(argb) }
-    fun role(r: Role): RcColor = fixed(r.argb(dark))
+    fun role(r: Role): RcColor = fixed(r.argb)
 
     /** Whether the document has a named variable [name], so a value for it is worth sending. */
     fun declares(name: String): Boolean = name in texts || name in ints || name in floats || name in colors

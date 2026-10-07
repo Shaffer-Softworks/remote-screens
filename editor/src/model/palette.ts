@@ -1,23 +1,40 @@
-// The pastel tile colours of the add-on's theme (server/.../render/Theme.kt, Pastel).
+// The RPI theme of the add-on (server/.../render/Theme.kt): the screen's fixed colours (Role) and the accent a tile
+// lights up in when it is on (Pastel).
+
+export const RPI = {
+  page: '#494949',
+  card: '#333333',
+  cardHeader: '#494949',
+  header: '#494949',
+  headerDark: '#2F2E2E',
+  nav: '#2F2E2E',
+  navOn: '#14E1BA',
+  navLine: '#03DAC5',
+  ink: '#FFFFFF',
+  inkSoft: '#CACACA',
+  inkDim: '#939393',
+  accentDark: '#1DA48C',
+  accentSoft: '#03DAC5',
+  blue: '#0986DB',
+  home: '#14E1BA',
+  homeStrip: '#FFFFFF',
+}
 
 export interface Pastel {
   key: string
-  light: string
-  dark: string
-  inkLight: string
-  inkDark: string
+  color: string
 }
 
 export const PASTELS: Pastel[] = [
-  { key: 'yellow', light: '#FFE9A8', dark: '#5C4A12', inkLight: '#3D2F00', inkDark: '#FFE9A8' },
-  { key: 'orange', light: '#FFD3AE', dark: '#5E3414', inkLight: '#4A2200', inkDark: '#FFD3AE' },
-  { key: 'red', light: '#FFC4C0', dark: '#5E1F1C', inkLight: '#4D0A06', inkDark: '#FFC4C0' },
-  { key: 'pink', light: '#FAC8E3', dark: '#5A2140', inkLight: '#4A0B2D', inkDark: '#FAC8E3' },
-  { key: 'purple', light: '#DCCBFA', dark: '#3D2B63', inkLight: '#2A1458', inkDark: '#DCCBFA' },
-  { key: 'blue', light: '#C4DBFF', dark: '#1E3A66', inkLight: '#0B2A5C', inkDark: '#C4DBFF' },
-  { key: 'teal', light: '#BDEBE4', dark: '#184C46', inkLight: '#053D36', inkDark: '#BDEBE4' },
-  { key: 'green', light: '#CDEDC0', dark: '#2A4B1F', inkLight: '#173D0A', inkDark: '#CDEDC0' },
-  { key: 'grey', light: '#E3E3E6', dark: '#3A3C42', inkLight: '#26272B', inkDark: '#E3E3E6' },
+  { key: 'yellow', color: '#FFC94D' },
+  { key: 'orange', color: '#FF9800' },
+  { key: 'red', color: '#FF6E6E' },
+  { key: 'pink', color: '#F48FB1' },
+  { key: 'purple', color: '#B39DDB' },
+  { key: 'blue', color: '#0986DB' },
+  { key: 'teal', color: '#14E1BA' },
+  { key: 'green', color: '#5CCB5F' },
+  { key: 'grey', color: '#CACACA' },
 ]
 
 const BY_DOMAIN: Record<string, string> = {
@@ -37,6 +54,6 @@ const BY_DOMAIN: Record<string, string> = {
 }
 
 export function pastel(key: string | undefined, domain: string | undefined): Pastel {
-  const k = key ?? (domain && BY_DOMAIN[domain]) ?? 'blue'
-  return PASTELS.find((p) => p.key === k) ?? PASTELS[5]
+  const k = key ?? (domain && BY_DOMAIN[domain]) ?? 'teal'
+  return PASTELS.find((p) => p.key === k) ?? PASTELS[6]
 }

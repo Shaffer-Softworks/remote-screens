@@ -41,6 +41,7 @@
   "ui.no_history": "Kein Verlauf",
   "ui.humidity": "Luftfeuchte {value}",
   "ui.wind": "Wind {value}",
+  "ui.pressure": "Luftdruck {value}",
   "ui.people_home": "{count} zu Hause",
   "ui.nobody_home": "Niemand zu Hause",
   "ui.solar": "Solar",
@@ -52,5 +53,10 @@
   "ui.identify": "Das ist {name}",
   "ui.pair_title": "Diesen Bildschirm hinzufügen",
   "ui.pair_body": "Öffne Remote Screens in Home Assistant und gib diesen Code ein",
-  "ui.empty_page": "Hier ist noch nichts. Füge Kacheln in Remote Screens in Home Assistant hinzu."
+  "ui.empty_page": "Hier ist noch nichts. Füge Kacheln in Remote Screens in Home Assistant hinzu.",
+  "ui.settings": "Einstellungen",
+  "ui.outside_now": "Außentemperatur jetzt",
+  "ui.next_event": "Nächster Termin",
+  "ui.no_events": "Keine anstehenden Termine",
+  "ui.all_day": "Ganztägig"
 }
