@@ -28,8 +28,6 @@ data class Config(
     val mapTiles: String = OSM_TILES,
 ) {
     companion object {
-        /** The Supervisor's address for ingress; editor requests must come from it. */
-        const val INGRESS_PEER = "172.30.32.2"
         const val OSM_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 
         fun fromEnv(env: Map<String, String> = System.getenv()): Config {
@@ -67,6 +65,16 @@ data class Config(
             val url = raw?.trim().orEmpty()
             val ok = (url.startsWith("https://") || url.startsWith("http://")) && listOf("{z}", "{x}", "{y}").all { it in url }
             return if (ok) url else OSM_TILES
+        }
+
+        /**
+         * Whether an editor request comes from the Supervisor's network (172.30.32.0/23), which ingress uses.
+         * On the host network the peer isn't always the Supervisor's own 172.30.32.2, and Java may report it
+         * IPv6-mapped.
+         */
+        fun isIngressPeer(address: String): Boolean {
+            val parts = address.removePrefix("::ffff:").split('.').mapNotNull { it.toIntOrNull() }
+            return parts.size == 4 && parts[0] == 172 && parts[1] == 30 && parts[2] in 32..33
         }
 
         /** The options the Supervisor writes from the add-on's configuration tab. */

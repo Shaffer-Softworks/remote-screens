@@ -34,7 +34,6 @@ import io.ktor.server.response.respond
 import io.ktor.server.response.respondFile
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
-import io.ktor.server.routing.port
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
@@ -89,23 +88,21 @@ fun main() {
     val mdns = runCatching { advertise(config) }.onFailure { log.warn("mDNS not available: {}", it.message) }.getOrNull()
     if (config.supervisor) scope.launch { runCatching { discovery(config, http, apiKey) }.onFailure { log.warn("Discovery failed: {}", it.message) } }
 
-    val server = embeddedServer(CIO, configure = {
-        connector { host = config.ingressHost; port = config.ingressPort }
-        connector { host = "0.0.0.0"; port = config.playerPort }
-    }) {
-        module(config, ha, store, hub, apiKey)
-    }
+    // One server per port: Ktor routes `port(...)` by the Host header, which ingress sets to Home Assistant's.
+    val editor = embeddedServer(CIO, host = config.ingressHost, port = config.ingressPort) { editorModule(config, ha, store, hub) }
+    val players = embeddedServer(CIO, host = "0.0.0.0", port = config.playerPort) { playerModule(config, store, hub, apiKey) }
     Runtime.getRuntime().addShutdownHook(Thread {
         mdns?.unregisterAllServices()
         mdns?.close()
-        server.stop(500, 2000)
+        editor.stop(500, 2000)
+        players.stop(500, 2000)
     })
-    server.start(wait = true)
+    editor.start(wait = false)
+    players.start(wait = true)
 }
 
-fun Application.module(config: Config, ha: HomeAssistant, store: LayoutStore, hub: PlayerHub, apiKey: String) {
+private fun Application.common() {
     install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true; encodeDefaults = true; explicitNulls = false }) }
-    install(WebSockets) { pingPeriod = 20.seconds; maxFrameSize = 32L * 1024 * 1024 }
     install(StatusPages) {
         exception<BadRequest> { call, e -> call.respond(HttpStatusCode.BadRequest, mapOf("error" to e.message)) }
         exception<ContentTransformationException> { call, e -> call.respond(HttpStatusCode.BadRequest, mapOf("error" to (e.message ?: "Bad request"))) }
@@ -115,42 +112,53 @@ fun Application.module(config: Config, ha: HomeAssistant, store: LayoutStore, hu
             call.respond(HttpStatusCode.InternalServerError, mapOf("error" to (e.message ?: "Error")))
         }
     }
+}
 
+/** The editor, reached through ingress. */
+fun Application.editorModule(config: Config, ha: HomeAssistant, store: LayoutStore, hub: PlayerHub) {
+    common()
     val onlyIngress = createRouteScopedPlugin("OnlyIngress") {
         onCall { call ->
-            if (config.supervisor && call.request.origin.remoteAddress != Config.INGRESS_PEER) call.respond(HttpStatusCode.Forbidden)
+            val peer = call.request.origin.remoteAddress
+            if (config.supervisor && !Config.isIngressPeer(peer)) {
+                log.warn("Refused an editor request from {}", peer)
+                call.respond(HttpStatusCode.Forbidden)
+            }
         }
     }
+    routing {
+        install(onlyIngress)
+        editorApi(config, ha, store, hub) { apk(config) }
+        val static = config.staticDir
+        if (static != null) {
+            staticFiles("/", static) { default("index.html") }
+        } else {
+            get("/") { call.respondText("Remote Screens ${config.version}: the editor is not built. Run `npm run build` in editor/.", ContentType.Text.Plain) }
+        }
+    }
+}
+
+/** Tablets and the integration, on the network. */
+fun Application.playerModule(config: Config, store: LayoutStore, hub: PlayerHub, apiKey: String) {
+    common()
+    install(WebSockets) { pingPeriod = 20.seconds; maxFrameSize = 32L * 1024 * 1024 }
     val integrationKey = createRouteScopedPlugin("IntegrationKey") {
         onCall { call ->
             if (call.request.header(HttpHeaders.Authorization) != "Bearer $apiKey") call.respond(HttpStatusCode.Unauthorized)
         }
     }
-
     routing {
-        port(config.ingressPort) {
-            install(onlyIngress)
-            editorApi(config, ha, store, hub) { apk(config) }
-            val static = config.staticDir
-            if (static != null) {
-                staticFiles("/", static) { default("index.html") }
-            } else {
-                get("/") { call.respondText("Remote Screens ${config.version}: the editor is not built. Run `npm run build` in editor/.", ContentType.Text.Plain) }
-            }
+        get("/health") { call.respondText("ok") }
+        webSocket("/player") { hub.serve(this, call.request.origin.remoteAddress) }
+        get("/player/apk") {
+            val info = apk(config)
+            if (info == null || !PlayerHub.trusted(store, call.request.queryParameters["token"])) return@get call.respond(HttpStatusCode.NotFound)
+            call.response.headers.append(HttpHeaders.ContentDisposition, "attachment; filename=remote-screens.apk")
+            call.respondFile(info.file)
         }
-        port(config.playerPort) {
-            get("/health") { call.respondText("ok") }
-            webSocket("/player") { hub.serve(this, call.request.origin.remoteAddress) }
-            get("/player/apk") {
-                val info = apk(config)
-                if (info == null || !PlayerHub.trusted(store, call.request.queryParameters["token"])) return@get call.respond(HttpStatusCode.NotFound)
-                call.response.headers.append(HttpHeaders.ContentDisposition, "attachment; filename=remote-screens.apk")
-                call.respondFile(info.file)
-            }
-            route("/integration") {
-                install(integrationKey)
-                integrationApi(store, hub)
-            }
+        route("/integration") {
+            install(integrationKey)
+            integrationApi(store, hub)
         }
     }
 }
