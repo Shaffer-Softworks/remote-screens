@@ -42,6 +42,7 @@ dependencies {
 
 tasks.test {
     systemProperty("fixtures.dir", rootProject.file("tests/fixtures").absolutePath)
+    inputs.dir(rootProject.file("tests/fixtures")).withPropertyName("fixtures")
 }
 
 /** One runnable jar for the add-on image. */

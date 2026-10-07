@@ -24,4 +24,9 @@ dependencies {
 
 tasks.test {
     systemProperty("fixtures.dir", rootProject.file("tests/fixtures").absolutePath)
+    inputs.dir(rootProject.file("tests/fixtures")).withPropertyName("fixtures")
+    if (providers.gradleProperty("updateFixtures").isPresent) {
+        systemProperty("fixtures.update", "true")
+        outputs.upToDateWhen { false }
+    }
 }

@@ -30,7 +30,8 @@ data class GridSpec(
 }
 
 object Grid {
-    const val TARGET_CELL = 150f
+    /** About 1.5 inches: 2x3 on a phone, 5x3 on a 10-inch tablet held landscape. */
+    const val TARGET_CELL = 240f
     const val MIN_CELLS = 2
     const val MAX_CELLS = 8
     const val PADDING = 12f
