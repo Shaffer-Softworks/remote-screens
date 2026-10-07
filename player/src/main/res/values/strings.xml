@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Remote Screens</string>
+    <string name="searching">Looking for Remote Screens on your network…</string>
+    <string name="connecting">Connecting to %1$s…</string>
+    <string name="disconnected">Lost the connection. Trying again…</string>
+    <string name="pair_title">Add this screen</string>
+    <string name="pair_body">Open Remote Screens in Home Assistant, choose Players, and enter this code.</string>
+    <string name="enter_address">Enter address</string>
+    <string name="address_hint">192.168.1.10:8100</string>
+    <string name="address_title">Remote Screens address</string>
+    <string name="address_body">The address of your Home Assistant host, with port 8100.</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="settings">Screen settings</string>
+    <string name="brightness">Brightness</string>
+    <string name="dark_mode">Dark mode</string>
+    <string name="standby">Standby after</string>
+    <string name="never">Never</string>
+    <string name="minutes">%1$d min</string>
+    <string name="server">Connected to %1$s</string>
+    <string name="change_server">Change server</string>
+    <string name="forget">Forget this screen</string>
+    <string name="forget_body">The screen must be added again in Home Assistant.</string>
+    <string name="close">Close</string>
+    <string name="identify">This is %1$s</string>
+    <string name="update_ready">An update of Remote Screens is ready (%1$s).</string>
+    <string name="install">Install</string>
+    <string name="later">Later</string>
+    <string name="update_permission">Allow Remote Screens to install updates, then try again.</string>
+</resources>
