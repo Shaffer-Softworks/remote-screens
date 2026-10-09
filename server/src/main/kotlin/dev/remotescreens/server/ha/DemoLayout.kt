@@ -49,6 +49,7 @@ object DemoLayout {
                     options = mapOf("content_id" to "playlist:1", "title" to "Sunday Morning")),
             )),
             Page("weather", "Weather", listOf(Tile("w1", "weather.home", full = true)), icon = "weather-partly-cloudy"),
+            Page("thermostat", "Thermostat", listOf(Tile("c1", "climate.living_room", full = true)), icon = "thermostat"),
             Page("night", "Night", listOf(Tile("n1", kind = "bedside", full = true)), icon = "weather-night"),
         ),
     )

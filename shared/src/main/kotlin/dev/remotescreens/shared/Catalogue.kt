@@ -102,7 +102,7 @@ object Catalogue {
             sizes = listOf("1x1", "2x1", "1x2", "2x2", "full"),
             options = listOf(),
             actions = mapOf("temperature" to ActionSpec("climate.set_temperature", mapOf("temperature" to "\$arg"), false, "temperature"), "mode" to ActionSpec("climate.set_hvac_mode", mapOf("hvac_mode" to "\$arg"), false, null), "preset" to ActionSpec("climate.set_preset_mode", mapOf("preset_mode" to "\$arg"), false, null), "fan" to ActionSpec("climate.set_fan_mode", mapOf("fan_mode" to "\$arg"), false, null)),
-            predict = mapOf("temperature" to PredictSpec(null, mapOf("temperature" to "\$arg")), "mode" to PredictSpec("\$arg", mapOf())),
+            predict = mapOf("temperature" to PredictSpec(null, mapOf("temperature" to "\$arg")), "mode" to PredictSpec("\$arg", mapOf()), "fan" to PredictSpec(null, mapOf("fan_mode" to "\$arg"))),
             needsEntity = true,
         ),
         "cover" to TypeSpec(

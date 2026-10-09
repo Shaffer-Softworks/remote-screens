@@ -58,5 +58,9 @@
   "ui.outside_now": "Temperatura esterna ora",
   "ui.next_event": "Prossimo evento",
   "ui.no_events": "Nessun evento in programma",
-  "ui.all_day": "Tutto il giorno"
+  "ui.all_day": "Tutto il giorno",
+  "ui.adjust_temperature": "Regola la temperatura",
+  "ui.current_temp": "Temp. attuale",
+  "ui.current_humidity": "Umidità attuale",
+  "ui.fan": "Ventola"
 }

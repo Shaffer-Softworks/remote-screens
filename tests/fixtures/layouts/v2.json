@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 2,
+  "screens": [
+    {
+      "id": "kitchen",
+      "name": "Kitchen tablet",
+      "grid": { "cols": 3, "rows": 3 },
+      "pages": [
+        {
+          "id": "home",
+          "title": "Home",
+          "root": {
+            "id": "n1",
+            "type": "column",
+            "size": { "width": "fill", "height": "fill" },
+            "style": { "padding": 16 },
+            "props": { "gap": "12" },
+            "children": [
+              { "id": "n2", "type": "text", "props": { "text": "Kitchen", "fontSize": "28", "weight": "700" } },
+              {
+                "id": "n3",
+                "type": "row",
+                "size": { "width": "fill", "height": "weight:1" },
+                "props": { "gap": "12" },
+                "children": [
+                  {
+                    "id": "n4",
+                    "type": "tile",
+                    "size": { "width": "weight:1", "height": "fill" },
+                    "tile": { "id": "t1", "entityId": "light.kitchen", "color": "yellow" }
+                  },
+                  {
+                    "id": "n5",
+                    "type": "column",
+                    "size": { "width": "weight:1", "height": "fill" },
+                    "style": { "padding": 12, "background": "card", "corner": 12 },
+                    "children": [
+                      { "id": "n6", "type": "text", "bind": { "entityId": "sensor.kitchen_temperature", "format": "value", "suffix": "" } },
+                      { "id": "n7", "type": "button", "props": { "text": "Goodnight", "icon": "weather-night" }, "tap": { "type": "action", "service": "script.turn_on", "data": { "entity_id": "script.goodnight" } } }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "grid",
+          "title": "Grid",
+          "tiles": [{ "id": "t2", "kind": "clock", "col": 0, "row": 0 }]
+        }
+      ],
+      "homePage": "home"
+    }
+  ],
+  "players": [
+    { "deviceId": "k1", "name": "Kitchen tablet", "screenId": "kitchen", "widthDp": 1280, "heightDp": 800, "appVersion": 2, "lastSeen": 1791380000000 }
+  ],
+  "preferences": { "language": "en" }
+}

@@ -69,7 +69,8 @@ class LayoutStore(dir: File) {
  */
 object Migrations {
     private val steps: Map<Int, (JsonObject) -> JsonObject> = mapOf(
-        // 1 -> 2 goes here when schema 2 exists.
+        // Schema 2 adds free-form pages (`Page.root`); every schema 1 page stays a grid page as it is.
+        1 to { it },
     )
 
     fun migrate(raw: JsonObject, steps: Map<Int, (JsonObject) -> JsonObject> = this.steps, target: Int = SCHEMA_VERSION): JsonObject {

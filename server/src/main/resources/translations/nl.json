@@ -58,5 +58,9 @@
   "ui.outside_now": "Buitentemperatuur nu",
   "ui.next_event": "Volgende afspraak",
   "ui.no_events": "Geen afspraken gepland",
-  "ui.all_day": "Hele dag"
+  "ui.all_day": "Hele dag",
+  "ui.adjust_temperature": "Temperatuur instellen",
+  "ui.current_temp": "Huidige temp",
+  "ui.current_humidity": "Huidige vochtigheid",
+  "ui.fan": "Ventilator"
 }

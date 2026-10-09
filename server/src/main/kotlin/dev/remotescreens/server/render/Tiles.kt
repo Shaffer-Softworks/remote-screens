@@ -35,8 +35,8 @@ import kotlin.math.roundToInt
 /** Where a tile sits, in dp. An [edge] tile fills the page from edge to edge, without the grid's margins. */
 data class TileBox(val x: Float, val y: Float, val w: Float, val h: Float, val cols: Int, val rows: Int, val full: Boolean, val edge: Boolean = false)
 
-/** Whether the tile is a page of its own (the home panel, a full weather tile), drawn without a card from edge to edge. */
-fun Tile.edgeToEdge(): Boolean = full && effectiveKind() in setOf("home", "weather")
+/** Whether the tile is a page of its own (the home panel, a full weather or climate tile), drawn without a card from edge to edge. */
+fun Tile.edgeToEdge(): Boolean = full && effectiveKind() in setOf("home", "weather", "climate")
 
 /** What a tap (or a hold) on a tile sends. */
 fun tapRef(tile: Tile, action: TapAction, spec: TypeSpec?, pageIndex: (String) -> Int?, hold: Boolean): ActionRef? {
@@ -86,7 +86,11 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
 
     if (kind == "home" || box.edge) {
         at(box.x, box.y) { scope.Box(tap(Modifier.size(u.px(box.w), u.px(box.h)), tapRef, holdRef)) {
-            if (kind == "home") this@tile.homeTile(tile, box) else this@tile.weatherPanel(tile, box)
+            when (kind) {
+                "home" -> this@tile.homeTile(tile, box)
+                "climate" -> this@tile.thermostatPanel(tile, box)
+                else -> this@tile.weatherPanel(tile, box)
+            }
         } }
         return
     }

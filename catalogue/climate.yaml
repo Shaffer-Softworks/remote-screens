@@ -14,3 +14,4 @@ actions:
 predict:
   temperature: {attributes: {temperature: $arg}}
   mode: {state: $arg}
+  fan: {attributes: {fan_mode: $arg}}

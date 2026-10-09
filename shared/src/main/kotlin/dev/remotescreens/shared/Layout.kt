@@ -4,9 +4,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
-const val SCHEMA_VERSION = 1
+const val SCHEMA_VERSION = 2
 const val MAX_PAGES = 8
 const val MAX_TILES_PER_SCREEN = 96
+const val MAX_NODES_PER_PAGE = 400
+const val MAX_NODE_DEPTH = 16
 
 /** Everything the add-on stores. Written to `/data/layouts.json`. */
 @Serializable
@@ -48,6 +50,99 @@ data class Page(
     val hidden: Boolean = false,
     /** The icon of the page's button in the navigation bar, or null for the default. */
     val icon: String? = null,
+    /** A free-form page: a tree of components laid out like Compose. When set, [tiles] are not drawn. */
+    val root: Node? = null,
+) {
+    /** The grid's tiles, or the tiles a free-form page holds and the components it can be tapped through. */
+    fun allTiles(): List<Tile> = root?.walk()?.mapNotNull { it.asTile() }?.toList() ?: tiles
+}
+
+/** The component types of a free-form page. Containers hold [Node.children]; the rest are leaves. */
+object NodeTypes {
+    val CONTAINERS = setOf("column", "row", "box", "flow")
+    val LEAVES = setOf(
+        "text", "icon", "button", "spacer", "divider", "slider", "image", "tile",
+        "clock", "badge", "avatar", "progress", "graph", "switch", "stepper", "choices",
+        "gauge", "analog", "iconbutton", "keys", "swatches", "keypad",
+    )
+    val ALL = CONTAINERS + LEAVES
+}
+
+/**
+ * One component of a free-form page. Sizes are `wrap`, `fill`, `dp:N` or `weight:N`, as in Compose.
+ * Props by type: `text` (text, fontSize, weight, align, color, lines), `icon` (icon, iconOn, size, color),
+ * `button` (text, icon, color, ink), containers (arrangement, alignment, gap), `slider` (steps), `image` (fit),
+ * `clock` (show: time, date or both; fontSize, color, align), `badge` (text, icon, color), `avatar` (text, size),
+ * `progress` (min, max, color), `graph` (hours, color), `switch` (color), `stepper` (step), `choices` (max),
+ * `gauge` (min, max, color, size), `analog` (size, seconds), `iconbutton` (icon, iconOn, size, color),
+ * `keys` (size), `swatches` (show: colour or white), `keypad` (size). Columns and rows take `scroll`; a `flow`
+ * wraps its children onto new lines. Text takes `marquee`. A bound component takes `showWhen` (on or off).
+ */
+@Serializable
+data class Node(
+    val id: String,
+    val type: String,
+    val children: List<Node> = emptyList(),
+    val props: Map<String, String> = emptyMap(),
+    val size: NodeSize = NodeSize(),
+    val style: NodeStyle = NodeStyle(),
+    val bind: NodeBinding? = null,
+    val tap: TapAction? = null,
+    val hold: TapAction? = null,
+    /** The card a `tile` component shows. */
+    val tile: Tile? = null,
+    /** Kept in the layout but not drawn. */
+    val hidden: Boolean = false,
+) {
+    fun walk(): Sequence<Node> = sequence {
+        yield(this@Node)
+        for (c in children) yieldAll(c.walk())
+    }
+
+    fun depth(): Int = 1 + (children.maxOfOrNull { it.depth() } ?: 0)
+
+    /**
+     * What a tap on this component is about, as a tile, so taps go through the same router as the grid's:
+     * the card of a `tile` component, or a stand-in for a component bound to an entity or given an action.
+     * A graph stands in as a history tile, so its history is fetched; a switch toggles unless told otherwise.
+     */
+    fun asTile(): Tile? = when {
+        type == "tile" -> tile
+        bind?.entityId != null || tap != null || hold != null -> Tile(
+            id = id,
+            entityId = bind?.entityId,
+            kind = if (type == "graph") "history" else null,
+            tap = tap ?: if (type == "switch") TapAction(TapType.TOGGLE) else TapAction(),
+            hold = hold ?: TapAction(TapType.NONE),
+            options = if (type == "graph") mapOf("hours" to (props["hours"] ?: "24")) else emptyMap(),
+        )
+        else -> null
+    }
+}
+
+@Serializable
+data class NodeSize(val width: String = "wrap", val height: String = "wrap")
+
+@Serializable
+data class NodeStyle(
+    val padding: Float = 0f,
+    /** A theme role (`card`, `key`, `accent`) or a pastel key, or null for none. */
+    val background: String? = null,
+    val corner: Float = 0f,
+    /** An outline this many dp wide, 0 for none. */
+    val border: Float = 0f,
+    /** The outline's colour, as [background]; the divider grey when null. */
+    val borderColor: String? = null,
+)
+
+/** What a component shows of an entity: its `state`, `value`, `name`, or the attribute [attribute]. */
+@Serializable
+data class NodeBinding(
+    val entityId: String,
+    val format: String = "state",
+    val attribute: String? = null,
+    val prefix: String = "",
+    val suffix: String = "",
 )
 
 @Serializable

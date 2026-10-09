@@ -120,8 +120,14 @@ object ScreenRenderer {
         showBar: Boolean,
     ) {
         if (showBar) topBar(screen, page, spec, back = page.hidden, home = home)
-        val placed = Reflow.place(page.tiles.filter { tileUsable(it) }, screen.grid)
         val contentH = spec.heightDp - spec.topBar - spec.navBar
+        val root = page.root
+        if (root != null) {
+            freeForm(root, 0f, spec.topBar, spec.widthDp, contentH, pageIndex) { id -> screen.pages.firstOrNull { it.id == id }?.title }
+            navBar(screen, spec, visible, index, home)
+            return
+        }
+        val placed = Reflow.place(page.tiles.filter { tileUsable(it) }, screen.grid)
         if (placed.isEmpty()) {
             at(0f, spec.topBar) {
                 scope.Box(Modifier.size(u.px(spec.widthDp), u.px(contentH)),

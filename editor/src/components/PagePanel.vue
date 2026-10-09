@@ -5,7 +5,7 @@ import IconPicker from './IconPicker.vue'
 import MdiIcon from './MdiIcon.vue'
 
 const props = defineProps<{ screen: Screen; page: Page }>()
-const emit = defineEmits<{ delete: [] }>()
+const emit = defineEmits<{ delete: []; convert: [] }>()
 
 const index = computed(() => props.screen.pages.indexOf(props.page))
 
@@ -37,6 +37,17 @@ const isHome = computed({
       <input v-model="page.hidden" type="checkbox" :disabled="isHome" />
       Hidden: no button in the navigation bar, opened from a "Go to page" tile, with a Back key
     </label>
+    <div class="field">
+      <span class="label">Layout</span>
+      <p class="muted note">
+        {{
+          page.root
+            ? 'Free-form: components laid out in rows, columns and boxes, like Compose.'
+            : 'Grid: tiles placed on the screen\'s columns and rows.'
+        }}
+      </p>
+      <button @click="emit('convert')">{{ page.root ? 'Back to a grid page' : 'Convert to free-form' }}</button>
+    </div>
     <div class="row">
       <button class="icon" title="Move left" :disabled="index === 0" @click="shift(-1)">
         <MdiIcon name="chevron-left" :size="18" />
@@ -63,5 +74,14 @@ const isHome = computed({
   gap: 6px;
   font-size: 12px;
   color: var(--muted);
+}
+
+.field > button {
+  align-self: flex-start;
+  color: var(--ink);
+}
+
+.note {
+  margin: 0;
 }
 </style>

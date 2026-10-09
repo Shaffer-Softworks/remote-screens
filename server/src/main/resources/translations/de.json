@@ -58,5 +58,9 @@
   "ui.outside_now": "Außentemperatur jetzt",
   "ui.next_event": "Nächster Termin",
   "ui.no_events": "Keine anstehenden Termine",
-  "ui.all_day": "Ganztägig"
+  "ui.all_day": "Ganztägig",
+  "ui.adjust_temperature": "Temperatur einstellen",
+  "ui.current_temp": "Aktuelle Temp.",
+  "ui.current_humidity": "Aktuelle Luftfeuchte",
+  "ui.fan": "Lüfter"
 }

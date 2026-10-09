@@ -105,5 +105,9 @@
   "ui.outside_now": "Temperature outside now",
   "ui.next_event": "Next event",
   "ui.no_events": "No upcoming events",
-  "ui.all_day": "All day"
+  "ui.all_day": "All day",
+  "ui.adjust_temperature": "Adjust the temperature",
+  "ui.current_temp": "Current temp",
+  "ui.current_humidity": "Current humidity",
+  "ui.fan": "Fan"
 }

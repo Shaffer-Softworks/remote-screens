@@ -37,6 +37,80 @@ export interface Page {
   tiles: Tile[]
   hidden?: boolean
   icon?: string
+  /** A free-form page: a tree of components. When set, the grid's tiles are not drawn. */
+  root?: Node
+}
+
+export type NodeType =
+  | 'column'
+  | 'row'
+  | 'box'
+  | 'text'
+  | 'icon'
+  | 'button'
+  | 'spacer'
+  | 'divider'
+  | 'slider'
+  | 'image'
+  | 'tile'
+  | 'clock'
+  | 'badge'
+  | 'avatar'
+  | 'progress'
+  | 'graph'
+  | 'switch'
+  | 'stepper'
+  | 'choices'
+  | 'flow'
+  | 'gauge'
+  | 'analog'
+  | 'iconbutton'
+  | 'keys'
+  | 'swatches'
+  | 'keypad'
+
+export const CONTAINERS: readonly NodeType[] = ['column', 'row', 'box', 'flow']
+
+/** `wrap`, `fill`, `dp:N` or `weight:N`, as in Compose. */
+export type SizeSpec = string
+
+export interface NodeSize {
+  width: SizeSpec
+  height: SizeSpec
+}
+
+export interface NodeStyle {
+  padding: number
+  background?: string
+  corner: number
+  /** An outline this many dp wide; absent or 0 for none. */
+  border?: number
+  borderColor?: string
+}
+
+export type BindFormat = 'state' | 'value' | 'name' | 'attribute'
+
+export interface NodeBinding {
+  entityId: string
+  format: BindFormat
+  attribute?: string
+  prefix: string
+  suffix: string
+}
+
+/** One component of a free-form page (shared/.../Layout.kt `Node`). */
+export interface Node {
+  id: string
+  type: NodeType
+  children: Node[]
+  props: Record<string, string>
+  size: NodeSize
+  style: NodeStyle
+  bind?: NodeBinding
+  tap?: TapAction
+  hold?: TapAction
+  tile?: Tile
+  hidden?: boolean
 }
 
 export interface ScreenSettings {

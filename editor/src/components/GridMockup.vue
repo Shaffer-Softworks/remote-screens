@@ -55,9 +55,17 @@ const ON_STATES = ['on', 'open', 'unlocked', 'playing', 'home', 'cleaning', 'hea
 const isHomePanel = (t: Tile) => kindOf(t) === 'home'
 const isWeatherPanel = (t: Tile) => kindOf(t) === 'weather' && t.full === true
 const WEATHER_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+const isThermostatPanel = (t: Tile) => kindOf(t) === 'climate' && t.full === true
+const THERMOSTAT_MODES = [
+  { label: 'Auto', icon: 'thermostat-auto' },
+  { label: 'Heat', icon: 'fire', on: true },
+  { label: 'Cool', icon: 'snowflake' },
+  { label: 'Off', icon: 'power' },
+]
+const DIAL_TICKS = Array.from({ length: 100 }, (_, i) => i * 3.6)
 
 function place(p: { tile: Tile; col: number; row: number; w: number; h: number }) {
-  if ((isHomePanel(p.tile) || isWeatherPanel(p.tile)) && p.tile.full) {
+  if (isHomePanel(p.tile) || isWeatherPanel(p.tile) || isThermostatPanel(p.tile)) {
     return { left: '0px', top: `${g.value.topBar}px`, width: `${props.device.w}px`, height: `${props.device.h - g.value.topBar - g.value.navBar}px` }
   }
   return rect(p.col, p.row, p.w, p.h)
@@ -86,7 +94,7 @@ const hover = ref<{ col: number; row: number; ok: boolean } | null>(null)
 
 function target(col: number, row: number) {
   const d = dragged.value
-  if (!d) return null
+  if (!d || (d.type !== 'tile' && d.type !== 'new')) return null
   const c = d.type === 'tile' ? col - d.grabCol : col
   const r = d.type === 'tile' ? row - d.grabRow : row
   const others = props.page.tiles.filter((t) => d.type !== 'tile' || t.id !== d.id)
@@ -107,7 +115,7 @@ function drop(col: number, row: number): void {
   dragged.value = null
   if (!d || !t?.ok) return
   if (d.type === 'tile') emit('move', d.id, t.col, t.row)
-  else emit('add', { entityId: d.entityId, kind: d.kind }, fitsAt(props.page.tiles, props.screen.grid, t.col, t.row, d.w, d.h) ? t : { col, row })
+  else if (d.type === 'new') emit('add', { entityId: d.entityId, kind: d.kind }, fitsAt(props.page.tiles, props.screen.grid, t.col, t.row, d.w, d.h) ? t : { col, row })
 }
 
 function start(e: DragEvent, p: { tile: Tile; col: number; row: number; w: number; h: number }): void {
@@ -123,10 +131,13 @@ function start(e: DragEvent, p: { tile: Tile; col: number; row: number; w: numbe
   })
 }
 
+/** A free-form page draws its own components (the default slot) in the content area instead of the grid. */
+const free = computed(() => props.page.root !== undefined)
+
 const highlight = computed(() => {
   const h = hover.value
   const d = dragged.value
-  if (!h || !d) return null
+  if (!h || !d || (d.type !== 'tile' && d.type !== 'new')) return null
   return { ...rect(Math.max(0, h.col), Math.max(0, h.row), d.w, d.h), ok: h.ok }
 })
 </script>
@@ -155,7 +166,15 @@ const highlight = computed(() => {
       </div>
 
       <div
-        v-for="c in cells"
+        v-if="free"
+        class="free"
+        :style="{ top: `${g.topBar}px`, width: `${device.w}px`, height: `${device.h - g.topBar - g.navBar}px` }"
+      >
+        <slot />
+      </div>
+
+      <div
+        v-for="c in free ? [] : cells"
         :key="`${c.col}:${c.row}`"
         class="cell"
         :style="rect(c.col, c.row, 1, 1)"
@@ -167,12 +186,13 @@ const highlight = computed(() => {
       <div v-if="highlight" class="landing" :class="{ bad: !highlight.ok }" :style="highlight" />
 
       <div
-        v-for="p in placed"
+        v-for="p in free ? [] : placed"
         :key="p.tile.id"
         class="tile"
         :class="{
           panel: isHomePanel(p.tile),
-          'weather-panel': isWeatherPanel(p.tile),
+          'weather-panel': isWeatherPanel(p.tile) || isThermostatPanel(p.tile),
+          'thermostat-panel': isThermostatPanel(p.tile),
           selected: p.tile.id === selectedId,
           moved: moved.has(p.tile.id),
           dragging: dragged?.type === 'tile' && dragged.id === p.tile.id,
@@ -206,6 +226,29 @@ const highlight = computed(() => {
                 <span class="where">{{ who.state === 'home' ? 'HOME' : 'AWAY' }}</span>
               </span>
             </span>
+          </div>
+        </template>
+        <template v-else-if="isThermostatPanel(p.tile)">
+          <div class="th-top">
+            <div class="th-head"><i class="bar th-bar" /><span>ADJUST THE TEMPERATURE</span></div>
+            <div class="th-fan">Fan<span class="on">Auto</span><span>On</span></div>
+          </div>
+          <div class="th-middle">
+            <span class="th-reading"><span>CURRENT TEMP</span><strong>20.5°</strong></span>
+            <span class="th-key"><MdiIcon name="minus" :size="32" /></span>
+            <svg class="th-dial" viewBox="-200 -200 400 400" width="380" height="380">
+              <circle r="180" fill="rgb(245 124 0 / 30%)" stroke="#fff" stroke-width="14" />
+              <line v-for="a in DIAL_TICKS" :key="a" x1="0" y1="191" x2="0" y2="205" stroke="rgb(245 124 0 / 30%)" :transform="`rotate(${a})`" />
+              <path d="M 0 180 A 180 180 0 1 1 113 -140" fill="none" stroke="#f57c00" stroke-width="14" stroke-linecap="round" />
+              <circle cx="113" cy="-140" r="12" fill="#f57c00" stroke="#fff" stroke-width="3" />
+              <text y="-30" text-anchor="middle" fill="#fff" font-size="20">Heating</text>
+              <text y="30" text-anchor="middle" fill="#fff" font-size="48" font-weight="300">21°</text>
+            </svg>
+            <span class="th-key"><MdiIcon name="plus" :size="32" /></span>
+            <span class="th-reading"><span>CURRENT HUMIDITY</span><strong>45%</strong></span>
+          </div>
+          <div class="th-modes">
+            <span v-for="m in THERMOSTAT_MODES" :key="m.label" :class="{ on: m.on }"><MdiIcon :name="m.icon" :size="22" />{{ m.label }}</span>
           </div>
         </template>
         <template v-else-if="isWeatherPanel(p.tile)">
@@ -245,7 +288,7 @@ const highlight = computed(() => {
         <span v-if="moved.has(p.tile.id)" class="flag" title="Moved or shrunk to fit this grid"><MdiIcon name="alert" :size="18" /></span>
       </div>
 
-      <p v-if="page.tiles.length === 0" class="empty">Drag entities here, or click one in the list.</p>
+      <p v-if="!free && page.tiles.length === 0" class="empty">Drag entities here, or click one in the list.</p>
 
       <div class="nav" :style="{ top: `${device.h - g.navBar}px`, height: `${g.navBar}px` }">
         <div class="buttons" :class="{ between: visiblePages.length + 1 > 2 }">
@@ -342,6 +385,14 @@ const highlight = computed(() => {
   position: absolute;
   border-radius: 10px;
   border: 2px dashed rgb(255 255 255 / 15%);
+}
+
+.free {
+  position: absolute;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .landing {
@@ -477,6 +528,111 @@ const highlight = computed(() => {
   align-items: center;
   gap: 6px;
   font-size: 16px;
+}
+
+.tile.thermostat-panel {
+  align-items: stretch;
+}
+
+.th-head {
+  display: flex;
+  flex-direction: column;
+  padding: 28px 0 0 20px;
+  font-size: 15px;
+}
+
+.th-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.th-fan {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 20px 0 0;
+  font-size: 25px;
+}
+
+.th-fan span {
+  display: grid;
+  place-items: center;
+  width: 90px;
+  height: 50px;
+  border-radius: 8px;
+  background: #5c5c5c;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.th-fan span.on {
+  background: #fff;
+  color: #000;
+}
+
+.th-bar {
+  width: 100px;
+  margin-bottom: 10px;
+}
+
+.th-middle {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+}
+
+.th-reading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  color: #1da48c;
+  font-size: 25px;
+}
+
+.th-reading strong {
+  color: #fff;
+  font-size: 70px;
+  font-weight: 300;
+}
+
+.th-key {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 24px;
+  border-radius: 50%;
+  background: #5c5c5c;
+}
+
+.th-modes {
+  align-self: center;
+  display: flex;
+  gap: 1px;
+  margin-bottom: 20px;
+  padding: 1px;
+  border-radius: 25px;
+  overflow: hidden;
+  background: #939393;
+}
+
+.th-modes span {
+  width: 200px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #494949;
+  font-size: 20px;
+}
+
+.th-modes span.on {
+  background: #1da48c;
 }
 
 .wx-day .soft {

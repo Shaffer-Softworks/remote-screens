@@ -8,7 +8,11 @@ import dev.remotescreens.shared.Grid
 import dev.remotescreens.shared.GridSize
 import dev.remotescreens.shared.LayoutData
 import dev.remotescreens.shared.MAX_PAGES
+import dev.remotescreens.shared.MAX_NODES_PER_PAGE
+import dev.remotescreens.shared.MAX_NODE_DEPTH
 import dev.remotescreens.shared.MAX_TILES_PER_SCREEN
+import dev.remotescreens.shared.Node
+import dev.remotescreens.shared.NodeTypes
 import dev.remotescreens.shared.Page
 import dev.remotescreens.shared.Preferences
 import dev.remotescreens.shared.Screen
@@ -202,9 +206,10 @@ fun validate(s: Screen): Screen {
     if (s.pages.isEmpty()) throw BadRequest("A screen needs a page")
     if (s.pages.size > MAX_PAGES) throw BadRequest("At most $MAX_PAGES pages")
     if (s.pages.map { it.id }.toSet().size != s.pages.size) throw BadRequest("Page ids must differ")
-    val tiles = s.pages.flatMap { it.tiles }
-    if (tiles.size > MAX_TILES_PER_SCREEN) throw BadRequest("At most $MAX_TILES_PER_SCREEN tiles")
+    val tiles = s.pages.flatMap { it.allTiles() }
+    if (s.pages.sumOf { if (it.root == null) it.tiles.size else 0 } > MAX_TILES_PER_SCREEN) throw BadRequest("At most $MAX_TILES_PER_SCREEN tiles")
     if (tiles.map { it.id }.toSet().size != tiles.size) throw BadRequest("Tile ids must differ")
+    for (p in s.pages) p.root?.let { validateTree(it, p.title) }
     val g = s.grid
     if (g.cols !in Grid.MIN_CELLS..Grid.MAX_CELLS || g.rows !in Grid.MIN_CELLS..Grid.MAX_CELLS) throw BadRequest("Grid out of range")
     return s.copy(
@@ -218,6 +223,22 @@ fun validate(s: Screen): Screen {
         },
     )
 }
+
+/** What a free-form page may hold: known components, ids that differ, a bounded size and depth. */
+fun validateTree(root: Node, page: String) {
+    val nodes = root.walk().toList()
+    if (nodes.size > MAX_NODES_PER_PAGE) throw BadRequest("$page: at most $MAX_NODES_PER_PAGE components")
+    if (root.depth() > MAX_NODE_DEPTH) throw BadRequest("$page: components nest at most $MAX_NODE_DEPTH deep")
+    if (nodes.map { it.id }.toSet().size != nodes.size) throw BadRequest("$page: component ids must differ")
+    for (n in nodes) {
+        if (n.type !in NodeTypes.ALL) throw BadRequest("$page: unknown component ${n.type}")
+        if (n.children.isNotEmpty() && n.type !in NodeTypes.CONTAINERS) throw BadRequest("$page: a ${n.type} holds no components")
+        if (n.type == "tile" && n.tile == null) throw BadRequest("$page: tile ${n.id} has no card")
+        for (s in listOf(n.size.width, n.size.height)) if (!SIZE.matches(s)) throw BadRequest("$page: size $s of ${n.id}")
+    }
+}
+
+private val SIZE = Regex("^(wrap|fill|dp:\\d+(\\.\\d+)?|weight:\\d+(\\.\\d+)?)$")
 
 private suspend fun areas(ha: HomeAssistant): List<AreaInfo> =
     (runCatching { ha.command("config/area_registry/list") }.getOrNull() as? JsonArray).orEmpty().mapNotNull { a ->

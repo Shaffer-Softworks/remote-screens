@@ -52,7 +52,7 @@ class ActionRouter(private val ha: HomeAssistant, private val i18n: () -> I18n) 
             return Target(ref.tile, id, id.substringBefore('.'), null)
         }
         if (ref.tile == "card") return null
-        val tile = screen?.pages?.flatMap { it.tiles }?.firstOrNull { it.id == ref.tile } ?: return null
+        val tile = screen?.pages?.flatMap { it.allTiles() }?.firstOrNull { it.id == ref.tile } ?: return null
         return Target(tile.id, tile.entityId, tile.effectiveKind(), tile)
     }
 

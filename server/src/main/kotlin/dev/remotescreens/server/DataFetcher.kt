@@ -34,7 +34,7 @@ class DataFetcher(private val ha: HomeAssistant) {
 
     /** What the screen needs, for its tiles and for any card that may be opened from them. */
     suspend fun forScreen(screen: Screen): RenderData {
-        val tiles = screen.pages.flatMap { it.tiles }
+        val tiles = screen.pages.flatMap { it.allTiles() }
         val weather = tiles.mapNotNull { it.entityId }.filter { it.startsWith("weather.") }.distinct()
         val graphs = tiles.filter { it.effectiveKind() == "history" || (it.effectiveKind() == "sensor" && it.options["graph"] == "true") }
             .mapNotNull { it.entityId }.distinct()

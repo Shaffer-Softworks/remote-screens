@@ -483,8 +483,8 @@ object CardRenderer {
         label(i18n.t("ui.map_credit"), Type.CAPTION, role(Role.INK_SOFT))
     }
 
-    private val HUES = listOf(0, 30, 50, 120, 180, 220, 270, 320)
-    private val KELVINS = listOf(2200, 2700, 3500, 4500, 5500, 6500)
+    val HUES = listOf(0, 30, 50, 120, 180, 220, 270, 320)
+    val KELVINS = listOf(2200, 2700, 3500, 4500, 5500, 6500)
 
     /** The colour of white light at [k] kelvin, near enough for a swatch. */
     fun kelvinColor(k: Int): Int {

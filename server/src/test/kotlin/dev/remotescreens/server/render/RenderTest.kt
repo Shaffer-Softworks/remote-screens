@@ -97,6 +97,24 @@ class RenderTest {
     }
 
     @Test
+    fun aFullClimateTileIsTheRpiThermostatPage() {
+        val doc = ScreenRenderer.render(DemoLayout.screen(), tablet, input())
+        val states = ha.states.value
+        val vars = doc.vars(states)
+        assertEquals("20.5°", vars["t.c1.current"]?.value)
+        assertEquals("45%", vars["t.c1.humidity"]?.value)
+        assertEquals("Heating", vars["t.c1.action"]?.value)
+        assertEquals(Role.WARN.argb, vars["t.c1.dial"]?.asColor())
+        assertEquals(Role.ACCENT_DARK.argb, vars["o.c1.seg.1.bg"]?.asColor(), "Heat is lit (Auto, Heat, Cool, Off)")
+        val cooling = doc.vars(states + ("climate.living_room" to states.getValue("climate.living_room").with("cool")))
+        assertEquals(Role.ACCENT_DARK.argb, cooling["o.c1.seg.2.bg"]?.asColor())
+        assertTrue("c1|temperature|+0.5" in doc.ctx.predicted)
+        assertEquals(Role.INK.argb, vars["o.c1.fan.0.bg"]?.asColor(), "the fan's Auto is lit")
+        assertEquals(Role.KEY.argb, vars["o.c1.fan.1.bg"]?.asColor())
+        assertTrue("c1|fan|on" in doc.ctx.predicted)
+    }
+
+    @Test
     fun aDocumentIsStaleOnlyWhenWhatIsDrawnChanges() {
         val doc = ScreenRenderer.render(DemoLayout.screen(), tablet, input())
         val states = ha.states.value

@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { api } from '../api'
+import { DESIGN, useDesigner } from '../model/design'
 import { firstFree, fitsAt, MAX_CELLS, MIN_CELLS, reflow } from '../model/grid'
+import { history } from '../model/history'
+import { fromGrid, newRoot } from '../model/nodes'
 import { newTile } from '../model/tiles'
-import type { Page, Tile } from '../model/types'
+import type { Page, Screen, Tile } from '../model/types'
 import { attempt, dirty, editing, playersOf, save, toast } from '../store'
+import AttributesPanel from './AttributesPanel.vue'
+import CodeView from './CodeView.vue'
+import ComponentPalette from './ComponentPalette.vue'
+import ComponentTree from './ComponentTree.vue'
+import DesignCanvas from './DesignCanvas.vue'
 import EntityLibrary from './EntityLibrary.vue'
 import GridMockup from './GridMockup.vue'
 import MdiIcon from './MdiIcon.vue'
@@ -21,7 +29,87 @@ const selectedId = ref<string | null>(null)
 const selected = computed<Tile | undefined>(() => page.value.tiles.find((t) => t.id === selectedId.value))
 const panel = ref<'library' | 'page' | 'screen'>('library')
 
-watch(pageId, () => (selectedId.value = null))
+// A free-form page is edited in the designer: palette and tree, canvas or code, attributes.
+const free = computed(() => page.value.root !== undefined)
+const design = useDesigner(page, toast)
+provide(DESIGN, design)
+const node = design.selected
+const view = ref<'design' | 'split' | 'code'>('design')
+const sidePanel = ref<'page' | 'screen'>('page')
+
+watch(pageId, () => {
+  selectedId.value = null
+  design.select(null)
+})
+
+// Undo and redo: a snapshot of the screen once an edit has settled.
+const past = history<Screen>()
+past.reset(screen.value)
+const canUndo = ref(false)
+const canRedo = ref(false)
+let settle: ReturnType<typeof setTimeout> | undefined
+function record(): void {
+  clearTimeout(settle)
+  settle = undefined
+  if (editing.value) past.record(editing.value)
+  canUndo.value = past.canUndo()
+  canRedo.value = past.canRedo()
+}
+watch(
+  () => JSON.stringify(editing.value),
+  () => {
+    clearTimeout(settle)
+    settle = setTimeout(record, 400)
+  },
+)
+function restore(s: Screen | undefined): void {
+  if (!s) return
+  editing.value = s
+  canUndo.value = past.canUndo()
+  canRedo.value = past.canRedo()
+}
+function undo(): void {
+  if (settle) record()
+  restore(past.undo())
+}
+function redo(): void {
+  if (settle) record()
+  restore(past.redo())
+}
+
+function onKey(e: KeyboardEvent): void {
+  const typing = (e.target as HTMLElement | null)?.closest('input, textarea, select, [contenteditable]')
+  const mod = e.metaKey || e.ctrlKey
+  const key = e.key.toLowerCase()
+  if (mod && (key === 'z' || key === 'y')) {
+    if (typing) return
+    e.preventDefault()
+    if (key === 'y' || e.shiftKey) redo()
+    else undo()
+    return
+  }
+  if (typing || !free.value) return
+  if (mod && key === 'd') {
+    e.preventDefault()
+    design.duplicateSelected()
+  } else if ((e.key === 'Delete' || e.key === 'Backspace') && node.value) {
+    e.preventDefault()
+    design.removeSelected()
+  } else if (e.key === 'Escape') design.select(null)
+  else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    e.preventDefault()
+    if (e.altKey) design.shift(e.key === 'ArrowUp' ? -1 : 1)
+    else design.step(e.key === 'ArrowUp' ? 'prev' : 'next')
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    e.preventDefault()
+    design.step(e.key === 'ArrowLeft' ? 'parent' : 'child')
+  }
+}
+onMounted(() => window.addEventListener('keydown', onKey))
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKey)
+  clearTimeout(settle)
+})
 
 // The device the mockup is drawn for: a tablet that shows the screen, else a common size.
 const PRESETS = [
@@ -91,12 +179,32 @@ function removeTile(id: string): void {
   selectedId.value = null
 }
 
-function addPage(): void {
+const choosingPage = ref(false)
+function addPage(kind: 'free' | 'grid'): void {
+  choosingPage.value = false
   if (screen.value.pages.length >= 8) return toast('At most 8 pages')
   const id = `p${Date.now().toString(36)}`
-  screen.value.pages.push({ id, title: `Page ${screen.value.pages.length + 1}`, tiles: [] })
+  const p: Page = { id, title: `Page ${screen.value.pages.length + 1}`, tiles: [] }
+  if (kind === 'free') p.root = newRoot()
+  screen.value.pages.push(p)
   pageId.value = id
   panel.value = 'page'
+  sidePanel.value = 'page'
+}
+
+/** A grid page becomes a column of rows of its cards; a free-form page goes back to an empty grid. */
+function convert(): void {
+  const p = page.value
+  if (p.root) {
+    if (!confirm(`Make ${p.title} a grid page? Its components are removed.`)) return
+    delete p.root
+    p.tiles = []
+    design.select(null)
+    return
+  }
+  p.root = fromGrid(p, screen.value.grid.cols, screen.value.grid.rows)
+  p.tiles = []
+  selectedId.value = null
 }
 
 function deletePage(): void {
@@ -127,6 +235,10 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
     <header class="bar">
       <button class="icon" title="Back to screens" @click="emit('close')"><MdiIcon name="arrow-left" /></button>
       <input v-model="screen.name" class="name" aria-label="Screen name" />
+      <span class="row">
+        <button class="icon" title="Undo (Ctrl+Z)" :disabled="!canUndo" @click="undo"><MdiIcon name="undo" :size="18" /></button>
+        <button class="icon" title="Redo (Ctrl+Shift+Z)" :disabled="!canRedo" @click="redo"><MdiIcon name="redo" :size="18" /></button>
+      </span>
       <span class="grow" />
       <label class="row muted">
         <MdiIcon name="tablet" :size="18" />
@@ -134,7 +246,7 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
           <option v-for="d in devices" :key="d.key" :value="d.key">{{ d.label }} ({{ d.w }} × {{ d.h }})</option>
         </select>
       </label>
-      <span class="row stepper" title="Columns × rows">
+      <span v-if="!free" class="row stepper" title="Columns × rows">
         <button class="icon" :disabled="screen.grid.cols <= MIN_CELLS" @click="resize(screen.grid.cols - 1, screen.grid.rows)">−</button>
         {{ screen.grid.cols }}
         <button class="icon" :disabled="screen.grid.cols >= MAX_CELLS" @click="resize(screen.grid.cols + 1, screen.grid.rows)">+</button>
@@ -164,12 +276,61 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
       >
         <MdiIcon v-if="p.id === screen.homePage" name="home" :size="14" />
         <MdiIcon v-if="p.hidden" name="eye-off-outline" :size="14" />
+        <MdiIcon v-if="p.root" name="vector-square" :size="14" />
         {{ p.title }}
       </button>
-      <button class="icon" title="Add a page" @click="addPage"><MdiIcon name="plus" :size="18" /></button>
+      <span class="new-page">
+        <button class="icon" title="Add a page" @click="choosingPage = !choosingPage"><MdiIcon name="plus" :size="18" /></button>
+        <span v-if="choosingPage" class="menu card">
+          <button @click="addPage('free')">
+            <MdiIcon name="vector-square" :size="18" />
+            <span><strong>Free-form page</strong><small class="muted">Rows, columns and components, like Compose</small></span>
+          </button>
+          <button @click="addPage('grid')">
+            <MdiIcon name="view-grid-outline" :size="18" />
+            <span><strong>Grid page</strong><small class="muted">Tiles on the screen's grid</small></span>
+          </button>
+        </span>
+      </span>
     </nav>
 
-    <main>
+    <main v-if="free" class="designer">
+      <aside class="left card">
+        <ComponentPalette :page="page" />
+        <ComponentTree />
+      </aside>
+
+      <section class="canvas">
+        <div class="toolbar">
+          <div class="segments views-toggle">
+            <button :class="{ active: view === 'design' }" title="Design" @click="view = 'design'"><MdiIcon name="palette-outline" :size="16" /> Design</button>
+            <button :class="{ active: view === 'split' }" title="Split" @click="view = 'split'"><MdiIcon name="view-split-vertical" :size="16" /> Split</button>
+            <button :class="{ active: view === 'code' }" title="Code" @click="view = 'code'"><MdiIcon name="code-json" :size="16" /> Code</button>
+          </div>
+          <span class="grow" />
+          <span class="muted keys">Arrows move the selection · Alt+arrows reorder · Ctrl+D duplicates · Delete removes</span>
+        </div>
+        <div class="views" :class="view">
+          <DesignCanvas v-if="view !== 'code'" :screen="screen" :page="page" :device="device" />
+          <CodeView v-if="view !== 'design'" :page="page" />
+        </div>
+        <p class="muted note">The canvas is close to the tablet, not exact; Preview on device shows the real thing.</p>
+      </section>
+
+      <aside class="side card">
+        <AttributesPanel v-if="node" :node="node" :screen="screen" :is-root="node.id === page.root?.id" />
+        <template v-else>
+          <div class="segments">
+            <button :class="{ active: sidePanel === 'page' }" @click="sidePanel = 'page'">Page</button>
+            <button :class="{ active: sidePanel === 'screen' }" @click="sidePanel = 'screen'">Screen</button>
+          </div>
+          <PagePanel v-if="sidePanel === 'page'" :screen="screen" :page="page" @delete="deletePage" @convert="convert" />
+          <ScreenPanel v-else :screen="screen" />
+        </template>
+      </aside>
+    </main>
+
+    <main v-else>
       <section class="canvas">
         <GridMockup
           :screen="screen"
@@ -204,7 +365,7 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
             <button :class="{ active: panel === 'screen' }" @click="panel = 'screen'">Screen</button>
           </div>
           <EntityLibrary v-if="panel === 'library'" :page="page" @add="add($event)" />
-          <PagePanel v-else-if="panel === 'page'" :screen="screen" :page="page" @delete="deletePage" />
+          <PagePanel v-else-if="panel === 'page'" :screen="screen" :page="page" @delete="deletePage" @convert="convert" />
           <ScreenPanel v-else :screen="screen" />
         </template>
       </aside>
@@ -320,12 +481,97 @@ main {
   border-color: var(--ink);
 }
 
+.new-page {
+  position: relative;
+}
+
+.menu {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  width: 300px;
+}
+
+.menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  border-radius: 10px;
+  text-align: left;
+  padding: 8px 10px;
+}
+
+.menu button:hover {
+  background: var(--bg);
+}
+
+.menu span {
+  display: flex;
+  flex-direction: column;
+}
+
+.left {
+  width: 280px;
+  flex: none;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.views-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  padding: 5px 12px;
+}
+
+.keys {
+  font-size: 12px;
+}
+
+.views {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 12px;
+}
+
+.views.split > * {
+  flex: 1 1 0;
+}
+
+.note {
+  margin: 0;
+  font-size: 12px;
+}
+
+@media (max-width: 1200px) {
+  .keys {
+    display: none;
+  }
+}
+
 @media (max-width: 900px) {
   main {
     flex-direction: column;
   }
 
-  .side {
+  .side,
+  .left {
     width: auto;
   }
 }

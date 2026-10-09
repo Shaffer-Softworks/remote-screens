@@ -53,6 +53,35 @@ const BY_DOMAIN: Record<string, string> = {
   vacuum: 'teal',
 }
 
+/** The server's `Role` names, as a free-form component names a colour. */
+export const ROLES: Record<string, string> = {
+  page: '#494949',
+  card: '#333333',
+  card_header: '#494949',
+  header_dark: '#2F2E2E',
+  key: '#5C5C5C',
+  key_on: '#14E1BA',
+  track: '#1B1B1B',
+  divider: '#4A4A4A',
+  ink: '#FFFFFF',
+  ink_soft: '#CACACA',
+  ink_dim: '#939393',
+  ink_faint: '#5C5C5C',
+  ink_dark: '#000000',
+  accent: '#14E1BA',
+  accent_dark: '#1DA48C',
+  blue: '#0986DB',
+  ok: '#289907',
+  warn: '#F57C00',
+  danger: '#A21C1C',
+}
+
+/** The hex of a role or pastel key, or undefined for neither. */
+export function colorOf(key: string | undefined): string | undefined {
+  if (!key) return undefined
+  return PASTELS.find((p) => p.key === key)?.color ?? ROLES[key]
+}
+
 export function pastel(key: string | undefined, domain: string | undefined): Pastel {
   const k = key ?? (domain && BY_DOMAIN[domain]) ?? 'teal'
   return PASTELS.find((p) => p.key === k) ?? PASTELS[6]

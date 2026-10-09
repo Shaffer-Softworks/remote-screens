@@ -34,6 +34,18 @@ class LayoutStoreTest {
     }
 
     @Test
+    fun theV2FixtureKeepsItsFreeFormTree() {
+        val s = LayoutStore(dirWith(File(fixtures, "v2.json").readText())).data.value.screens.single()
+        val root = s.pages[0].root!!
+        assertEquals("column", root.type)
+        assertEquals(listOf("n1", "n2", "n3", "n4", "n5", "n6", "n7"), root.walk().map { it.id }.toList())
+        assertEquals("light.kitchen", root.walk().first { it.type == "tile" }.tile?.entityId)
+        assertEquals("value", root.walk().first { it.id == "n6" }.bind?.format)
+        assertEquals(null, s.pages[1].root)
+        assertEquals(setOf("t1", "n6", "n7"), s.pages[0].allTiles().map { it.id }.toSet())
+    }
+
+    @Test
     fun theV1FixtureKeepsEveryField() {
         val data = LayoutStore(dirWith(File(fixtures, "v1.json").readText())).data.value
         val s = data.screens.single()
