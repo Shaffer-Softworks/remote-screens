@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { firstFree, fitsAt } from '../model/grid'
-import { PASTELS, pastel } from '../model/palette'
+import { INK_SWATCHES, PASTELS, pastel } from '../model/palette'
 import { iconOf, nameOf, newTileId, sizesOf, specOf } from '../model/tiles'
 import type { Page, Screen, TapAction, TapType, Tile } from '../model/types'
-import { domainOf } from '../model/types'
+import { domainOf, kindOf } from '../model/types'
 import { entityById, state, toast } from '../store'
+import ColorSwatches from './ColorSwatches.vue'
 import IconPicker from './IconPicker.vue'
 import MdiIcon from './MdiIcon.vue'
 
@@ -16,6 +17,8 @@ const entity = computed(() => (props.tile.entityId ? entityById.value.get(props.
 const spec = computed(() => specOf(props.tile))
 const domain = computed(() => domainOf(props.tile))
 const others = computed(() => props.page.tiles.filter((t) => t.id !== props.tile.id))
+/** Drawn as a page of its own, without a card (Tiles.kt `edgeToEdge`). */
+const edgeToEdge = computed(() => kindOf(props.tile) === 'home' || (!!props.tile.full && ['weather', 'climate'].includes(kindOf(props.tile))))
 
 /** An entity may be shown another way: a sensor as a graph, a player as its favourite music. */
 const SHOW_AS: Record<string, { kind: string; label: string }[]> = {
@@ -191,6 +194,11 @@ const pageTitle = (id: string) => props.screen.pages.find((p) => p.id === id)?.t
           @click="tile.color = p.key"
         />
       </div>
+    </div>
+
+    <div v-if="!edgeToEdge" class="field">
+      <span class="label">Border colour</span>
+      <ColorSwatches v-model="tile.borderColor" :keys="INK_SWATCHES" clear-title="The theme's card edge" />
     </div>
 
     <div class="field">

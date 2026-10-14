@@ -210,6 +210,8 @@ data class Tile(
     val icon: String? = null,
     /** A key of the pastel palette (see the theme), or null for the default of the domain. */
     val color: String? = null,
+    /** A pastel or role key for the card's edge, or null for the theme's `card_edge`. */
+    val borderColor: String? = null,
     val tap: TapAction = TapAction(),
     val hold: TapAction = TapAction(type = TapType.CARD),
     val options: Map<String, String> = emptyMap(),

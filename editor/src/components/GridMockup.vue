@@ -70,7 +70,8 @@ function place(p: { tile: Tile; col: number; row: number; w: number; h: number }
   if (isHomePanel(p.tile) || isWeatherPanel(p.tile) || isThermostatPanel(p.tile)) {
     return { left: '0px', top: `${g.value.topBar}px`, width: `${props.device.w}px`, height: `${props.device.h - g.value.topBar - g.value.navBar}px` }
   }
-  return rect(p.col, p.row, p.w, p.h)
+  const edge = p.tile.borderColor ? { borderColor: colorOf(p.tile.borderColor) } : {}
+  return { ...rect(p.col, p.row, p.w, p.h), ...edge }
 }
 
 function hasHeader(p: { tile: Tile; w: number; h: number }): boolean {
