@@ -17,7 +17,37 @@ data class LayoutData(
     val screens: List<Screen> = emptyList(),
     val players: List<PlayerRecord> = emptyList(),
     val preferences: Preferences = Preferences(),
+    /** Themes made in the editor; the built-in ones are not stored. */
+    val themes: List<Theme> = emptyList(),
 )
+
+/**
+ * A custom theme: colours laid over a built-in theme. Keys are the lowercase names of the server's roles (`card`,
+ * `ink_soft`) and pastels (`teal`); values are `#RRGGBB` or `#AARRGGBB`. A key left out takes the [base]'s colour.
+ */
+@Serializable
+data class Theme(
+    val id: String,
+    val name: String,
+    val base: String = "rpi",
+    val roles: Map<String, String> = emptyMap(),
+    val pastels: Map<String, String> = emptyMap(),
+) {
+    fun validated(): Theme = copy(
+        name = name.trim().take(MAX_NAME).ifEmpty { id },
+        base = base.take(MAX_ID),
+        roles = roles.filter { (k, v) -> k.length <= MAX_ID && HEX.matches(v) }.mapValues { it.value.uppercase() },
+        pastels = pastels.filter { (k, v) -> k.length <= MAX_ID && HEX.matches(v) }.mapValues { it.value.uppercase() },
+    )
+
+    companion object {
+        const val MAX_THEMES = 32
+        const val MAX_ID = 40
+        const val MAX_NAME = 60
+        val HEX = Regex("^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
+        val ID = Regex("^[a-z0-9][a-z0-9_-]{0,39}$")
+    }
+}
 
 @Serializable
 data class Preferences(
@@ -219,8 +249,14 @@ data class ScreenSettings(
     val swipe: Boolean = false,
     /** 0 follows the device, 1 locks portrait, 2 locks landscape. */
     val orientation: Int = 0,
+    /** The theme the screen wears, built-in or custom. */
+    val theme: String = "rpi",
+    /** The theme it wears while dark (see [darkMode] and [nightDark]). */
+    val darkTheme: String = "rpi",
 ) {
     fun validated(): ScreenSettings = copy(
+        theme = theme.takeIf { Theme.ID.matches(it) } ?: "rpi",
+        darkTheme = darkTheme.takeIf { Theme.ID.matches(it) } ?: "rpi",
         brightness = brightness.coerceIn(1, 100),
         standbyMinutes = standbyMinutes.coerceIn(0, 240),
         standbyBrightness = standbyBrightness.coerceIn(0, 100),

@@ -42,7 +42,9 @@ class FreeFormTest {
     private val i18n = I18n("en", I18n.load("en"), emptyMap(), true)
     private val tablet = Device(1280, 800, 1.5f)
 
-    private fun input() = RenderInput(ha.states.value, i18n, ha.config.value, RenderData(), false)
+    private fun input() = RenderInput(ha.states.value, i18n, ha.config.value, RenderData())
+    private val Role.argb: Int get() = Themes.RPI[this]
+    private val Pastel.argb: Int get() = Themes.RPI[this]
 
     private fun parse(bytes: ByteArray) = CoreDocument().also { it.initFromBuffer(RemoteComposeBuffer.fromInputStream(ByteArrayInputStream(bytes))) }
 
@@ -279,7 +281,7 @@ class FreeFormTest {
         }
         val screen = validate(demo.copy(pages = pages))
         val data = runBlocking { DataFetcher(ha).forScreen(screen) }
-        val doc = ScreenRenderer.render(screen, tablet, input().let { RenderInput(it.states, it.i18n, it.ha, data, false) })
+        val doc = ScreenRenderer.render(screen, tablet, input().let { RenderInput(it.states, it.i18n, it.ha, data) })
         val vars = doc.vars(ha.states.value)
         assertEquals("Ceiling light", vars["e.light.living_room.name"]?.value)
         val declared = parse(doc.bytes).let { core ->

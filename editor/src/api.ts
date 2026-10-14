@@ -1,6 +1,6 @@
 // The add-on's editor API. Relative, so it works under ingress.
 
-import type { AreaInfo, EntityInfo, GridSize, Info, LayoutData, PlayerStatus, Preferences, Screen } from './model/types'
+import type { AreaInfo, EntityInfo, GridSize, Info, LayoutData, PlayerStatus, Preferences, ResolvedTheme, Screen, Theme } from './model/types'
 
 export class ApiError extends Error {}
 
@@ -32,6 +32,9 @@ export const api = {
     call<Screen>('POST', 'screens', { name, grid, ...size }),
   saveScreen: (s: Screen) => call<Screen>('PUT', `screens/${encodeURIComponent(s.id)}`, s),
   deleteScreen: (id: string) => call<void>('DELETE', `screens/${encodeURIComponent(id)}`),
+  themes: () => call<ResolvedTheme[]>('GET', 'themes'),
+  saveTheme: (t: Theme) => call<ResolvedTheme>('PUT', `themes/${encodeURIComponent(t.id)}`, t),
+  deleteTheme: (id: string) => call<void>('DELETE', `themes/${encodeURIComponent(id)}`),
   players: () => call<PlayerStatus[]>('GET', 'players'),
   pair: (code: string, screenId: string, name?: string) => call<void>('POST', 'pair', { code, screenId, name }),
   adopt: (deviceId: string, screenId: string, name?: string) =>

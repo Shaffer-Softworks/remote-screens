@@ -8,6 +8,9 @@ tablets running a small player app. Live state (on/off, brightness, temperatures
 as updates to variables in the document, so a state change never sends the screen again. Taps go back to the
 add-on, which calls Home Assistant; the tablets hold no Home Assistant token.
 
+Screens wear a theme (built-in or made in the editor) by day and another in dark mode and at night; the add-on
+draws every colour from it (`server/.../render/Themes.kt`), and the editor previews with the same colours.
+
 The idea follows [Tessera](https://github.com/MaxGramser/homeassistant_espscreen), which does this for ESP32
 screens. No Tessera code or assets are used.
 

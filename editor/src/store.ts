@@ -3,6 +3,7 @@
 
 import { computed, reactive, ref } from 'vue'
 import { api } from './api'
+import { setThemes } from './model/palette'
 import type { AreaInfo, EntityInfo, Info, LayoutData, PlayerStatus, Screen } from './model/types'
 
 export const state = reactive({
@@ -41,13 +42,15 @@ export async function attempt<T>(what: () => Promise<T>): Promise<T | undefined>
 
 export async function load(): Promise<void> {
   try {
-    const [info, layout, players, entities, areas] = await Promise.all([
+    const [info, layout, players, entities, areas, themes] = await Promise.all([
       api.info(),
       api.layout(),
       api.players(),
       api.entities(),
       api.areas(),
+      api.themes(),
     ])
+    setThemes(themes)
     Object.assign(state, { info, layout, players, entities, areas, error: '' })
   } catch (e) {
     state.error = e instanceof Error ? e.message : String(e)
@@ -56,6 +59,11 @@ export async function load(): Promise<void> {
 
 export async function refreshLayout(): Promise<void> {
   state.layout = (await attempt(api.layout)) ?? state.layout
+}
+
+export async function refreshThemes(): Promise<void> {
+  const list = await attempt(api.themes)
+  if (list) setThemes(list)
 }
 
 let polling: ReturnType<typeof setInterval> | undefined

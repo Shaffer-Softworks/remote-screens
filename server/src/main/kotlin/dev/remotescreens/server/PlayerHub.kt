@@ -10,6 +10,7 @@ import dev.remotescreens.server.render.Rc
 import dev.remotescreens.server.render.RenderInput
 import dev.remotescreens.server.render.RenderedDoc
 import dev.remotescreens.server.render.ScreenRenderer
+import dev.remotescreens.server.render.Themes
 import dev.remotescreens.server.render.V
 import dev.remotescreens.server.store.LayoutStore
 import dev.remotescreens.shared.ActionRef
@@ -252,7 +253,8 @@ class PlayerHub(
         var awake = true
         var page = 0
         var battery: Int? = null
-        private var dark = false
+        private var themeId = Themes.DEFAULT
+        private var palette = Themes.RPI
         private var preview: Screen? = null
         private var previewJob: Job? = null
 
@@ -314,15 +316,24 @@ class PlayerHub(
             begin(screen)
         }
 
+        /** Picks the screen's theme for now, day or dark; true when it is another than before. */
+        private fun retheme(s: ScreenSettings): Boolean {
+            val id = themeFor(s)
+            val was = themeId
+            themeId = id
+            palette = Themes.resolve(id, store.data.value.themes)
+            return id != was
+        }
+
         private suspend fun begin(screen: Screen) {
-            dark = darkNow(screen.settings)
+            retheme(screen.settings)
             send(ServerMessage.Settings(screen.settings))
             showMain(screen)
             apk()?.takeIf { it.versionCode > hello.appVersion }?.let { send(ServerMessage.UpdateAvailable(it.versionCode, it.versionName, "/player/apk")) }
         }
 
         private suspend fun input(renderData: dev.remotescreens.server.render.RenderData) =
-            RenderInput(ha.states.value, languages.current(), ha.config.value, renderData, dark)
+            RenderInput(ha.states.value, languages.current(), ha.config.value, renderData, palette)
 
         private suspend fun showMain(screen: Screen) {
             val build: suspend () -> RenderedDoc? = {
@@ -407,11 +418,7 @@ class PlayerHub(
 
         suspend fun checkNight() {
             val s = screen() ?: return
-            val d = darkNow(s.settings)
-            if (d != dark) {
-                dark = d
-                for (entry in shown.values.toList()) rebuild(entry)
-            }
+            if (retheme(s.settings)) for (entry in shown.values.toList()) rebuild(entry)
         }
 
         suspend fun layoutChanged(screen: Screen?) {
@@ -422,7 +429,7 @@ class PlayerHub(
             }
             if (screen == null) return
             val main = shown[Slot.MAIN]
-            dark = darkNow(screen.settings)
+            retheme(screen.settings)
             send(ServerMessage.Settings(screen.settings))
             if (main != null) rebuild(main) else showMain(screen)
         }
@@ -445,7 +452,7 @@ class PlayerHub(
         }
 
         private suspend fun showWithSettings(screen: Screen) {
-            dark = darkNow(screen.settings)
+            retheme(screen.settings)
             send(ServerMessage.Settings(screen.settings))
             showMain(screen)
         }
@@ -550,6 +557,8 @@ class PlayerHub(
             alert = null
         }
     }
+
+    private fun themeFor(s: ScreenSettings): String = if (darkNow(s)) s.darkTheme else s.theme
 
     private fun darkNow(s: ScreenSettings): Boolean {
         if (s.darkMode) return true

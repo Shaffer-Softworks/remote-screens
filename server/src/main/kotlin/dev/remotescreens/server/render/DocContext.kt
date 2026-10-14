@@ -23,7 +23,7 @@ import java.awt.image.BufferedImage
  */
 class DocContext(
     val u: Units,
-    val dark: Boolean,
+    val palette: Palette,
     val i18n: I18n,
     val states: Map<String, EntityState>,
     val ha: HaConfig,
@@ -65,7 +65,15 @@ class DocContext(
     /** A fixed text for canvas text operations, which take a declared text rather than a string. */
     fun literal(s: String): RcText = declare(literals, s, { literal(s) }) { scope.remoteText(s) }
     fun fixed(argb: Int): RcColor = declare(colors, "#" + argb.toUInt().toString(16), { fixed(argb) }) { scope.remoteColor(argb) }
-    fun role(r: Role): RcColor = fixed(r.argb)
+    fun role(r: Role): RcColor = fixed(palette[r])
+    fun pastel(p: Pastel): RcColor = fixed(palette[p])
+
+    /** A role or pastel in the screen's theme, so live colours sent later match the document. */
+    val Role.argb: Int get() = palette[this]
+    val Pastel.argb: Int get() = palette[this]
+
+    /** The style a drawn map takes to sit well on the theme's page. */
+    fun mapStyle(): String = if (palette.dark) "dark" else "light"
 
     /** Whether the document has a named variable [name], so a value for it is worth sending. */
     fun declares(name: String): Boolean = name in texts || name in ints || name in floats || name in colors

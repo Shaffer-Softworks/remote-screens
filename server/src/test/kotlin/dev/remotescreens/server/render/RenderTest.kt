@@ -23,7 +23,9 @@ class RenderTest {
     private val i18n = I18n("en", I18n.load("en"), emptyMap(), true)
     private val tablet = Device(1280, 800, 1.5f)
 
-    private fun input(data: RenderData = RenderData(), dark: Boolean = false) = RenderInput(ha.states.value, i18n, ha.config.value, data, dark)
+    private fun input(data: RenderData = RenderData(), palette: Palette = Themes.RPI) = RenderInput(ha.states.value, i18n, ha.config.value, data, palette)
+    private val Role.argb: Int get() = Themes.RPI[this]
+    private val Pastel.argb: Int get() = Themes.RPI[this]
 
     private fun parse(bytes: ByteArray) = CoreDocument().also { it.initFromBuffer(RemoteComposeBuffer.fromInputStream(ByteArrayInputStream(bytes))) }
 
@@ -81,6 +83,21 @@ class RenderTest {
         assertEquals(Role.CARD_HEADER.argb, off["t.t2.line"]?.asColor())
         assertEquals(Pastel.YELLOW.argb, on["t.t2.line"]?.asColor())
         assertEquals(Pastel.YELLOW.argb, on["t.t2.icon"]?.asColor())
+    }
+
+    @Test
+    fun aThemeColoursTheDocumentAndItsLiveColours() {
+        val doc = ScreenRenderer.render(DemoLayout.screen(), tablet, input(palette = Themes.LIGHT))
+        val states = ha.states.value
+        val off = doc.vars(states)
+        val on = doc.vars(states + ("light.table_lamp" to states.getValue("light.table_lamp").with("on")))
+        assertEquals(Themes.LIGHT[Role.CARD_HEADER], off["t.t2.line"]?.asColor())
+        assertEquals(Themes.LIGHT[Pastel.YELLOW], on["t.t2.line"]?.asColor())
+        val page = Themes.LIGHT[Role.PAGE]
+        val bytes = byteArrayOf((page ushr 24).toByte(), (page ushr 16).toByte(), (page ushr 8).toByte(), page.toByte())
+        assertTrue(doc.bytes.asList().windowed(4).any { it == bytes.asList() }, "the light page colour is in the document")
+        val dark = ScreenRenderer.render(DemoLayout.screen(), tablet, input())
+        assertFalse(dark.bytes.asList().windowed(4).any { it == bytes.asList() }, "the RPI document has no light page")
     }
 
     @Test

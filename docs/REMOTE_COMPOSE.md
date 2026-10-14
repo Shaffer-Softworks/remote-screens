@@ -42,6 +42,9 @@ All creation calls go through `server/.../render/Rc.kt` and the tile renderers; 
   variable comes from the add-on (a state change) or the player (a prediction, a page change).
 - `remoteThemedColor(Int, Int)` still passes the colours as ids in alpha21. Don't use it; the add-on picks the
   colour of the screen's theme itself and sends it as a named colour.
+- So a theme is the add-on's, not the document's: `PlayerHub` resolves the screen's theme (or its dark theme, in
+  dark mode and at night) to a `Palette` (`render/Themes.kt`), and `DocContext` draws fixed colours and computes
+  live colours from it. Switching theme rebuilds the document; there is no in-document theme switch.
 
 ## Compression (alpha21)
 

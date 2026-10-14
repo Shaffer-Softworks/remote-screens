@@ -555,7 +555,7 @@ private fun DocContext.mapTile(tile: Tile, box: TileBox, named: Boolean) {
     val h = u.px(box.h).toInt()
     val who = mapPeople(tile)
     for (p in who) structural(p) { s -> "${s?.number("latitude")},${s?.number("longitude")}" }
-    picture(PictureSlot("map.${tile.id}", "map:dark:${who.joinToString(",")}", w, h, 0))
+    picture(PictureSlot("map.${tile.id}", "map:${mapStyle()}:${who.joinToString(",")}", w, h, 0))
     scope.Box(Modifier.fillMaxSize(), vertical = RcVerticalPositioning.Bottom) {
         val c = this@mapTile
         Image(c.image("map.${tile.id}", w, h), Modifier.fillMaxSize(), contentScale = RcContentScale.Crop)

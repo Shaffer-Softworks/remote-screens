@@ -3,6 +3,9 @@ package dev.remotescreens.server
 import dev.remotescreens.server.ha.HomeAssistant
 import dev.remotescreens.server.render.Alert
 import dev.remotescreens.server.render.Icons
+import dev.remotescreens.server.render.Pastel
+import dev.remotescreens.server.render.Role
+import dev.remotescreens.server.render.Themes
 import dev.remotescreens.server.store.LayoutStore
 import dev.remotescreens.shared.DeviceSize
 import dev.remotescreens.shared.Grid
@@ -18,6 +21,7 @@ import dev.remotescreens.shared.Page
 import dev.remotescreens.shared.Preferences
 import dev.remotescreens.shared.Screen
 import dev.remotescreens.shared.ScreenSettings
+import dev.remotescreens.shared.Theme
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
@@ -109,6 +113,20 @@ fun Route.editorApi(config: Config, ha: HomeAssistant, store: LayoutStore, hub: 
         delete("/screens/{id}") {
             val id = call.parameters["id"]!!
             store.update { d -> d.copy(screens = d.screens.filterNot { it.id == id }, players = d.players.map { if (it.screenId == id) it.copy(screenId = null) else it }) }
+            call.respond(HttpStatusCode.NoContent)
+        }
+
+        get("/themes") { call.respond(Themes.all(store.data.value.themes)) }
+        put("/themes/{id}") {
+            val id = call.parameters["id"]!!
+            val theme = validateTheme(call.receive<Theme>().copy(id = id), store.data.value.themes)
+            store.update { d -> d.copy(themes = if (d.themes.any { it.id == id }) d.themes.map { if (it.id == id) theme else it } else d.themes + theme) }
+            call.respond(Themes.all(store.data.value.themes).first { it.id == id })
+        }
+        delete("/themes/{id}") {
+            val id = call.parameters["id"]!!
+            if (Themes.isBuiltin(id)) throw BadRequest("A built-in theme cannot be deleted")
+            store.update { d -> d.copy(themes = d.themes.filterNot { it.id == id }) }
             call.respond(HttpStatusCode.NoContent)
         }
 
@@ -228,6 +246,20 @@ fun validate(s: Screen): Screen {
                 t.copy(w = t.w.coerceIn(1, g.cols), h = t.h.coerceIn(1, g.rows), col = t.col.coerceIn(0, g.cols - 1), row = t.row.coerceIn(0, g.rows - 1))
             })
         },
+    )
+}
+
+/** A custom theme the editor may store: its own id, a built-in base, colours in hex, and room for it. */
+fun validateTheme(t: Theme, existing: List<Theme>): Theme {
+    if (!Theme.ID.matches(t.id)) throw BadRequest("Theme id: lowercase letters, digits, - and _")
+    if (Themes.isBuiltin(t.id)) throw BadRequest("${t.id} is a built-in theme")
+    if (!Themes.isBuiltin(t.base)) throw BadRequest("Unknown base theme ${t.base}")
+    if (existing.none { it.id == t.id } && existing.size >= Theme.MAX_THEMES) throw BadRequest("At most ${Theme.MAX_THEMES} themes")
+    val bad = (t.roles.values + t.pastels.values).firstOrNull { !Theme.HEX.matches(it) }
+    if (bad != null) throw BadRequest("Not a colour: $bad")
+    return t.validated().copy(
+        roles = t.roles.filterKeys { Role.of(it) != null }.mapKeys { it.key.lowercase() }.mapValues { it.value.uppercase() },
+        pastels = t.pastels.filterKeys { Pastel.of(it) != null }.mapValues { it.value.uppercase() },
     )
 }
 

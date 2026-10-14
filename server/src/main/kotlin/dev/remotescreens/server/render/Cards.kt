@@ -478,7 +478,7 @@ object CardRenderer {
         val ph = u.px(h).toInt()
         val who = if (entityId.startsWith("person.") || entityId.startsWith("device_tracker.")) listOf(entityId) else states.keys.filter { it.startsWith("person.") }
         for (p in who) structural(p) { s -> "${s?.number("latitude")},${s?.number("longitude")}" }
-        picture(PictureSlot("map.card", "map:dark:${who.joinToString(",")}", pw, ph, 0))
+        picture(PictureSlot("map.card", "map:${mapStyle()}:${who.joinToString(",")}", pw, ph, 0))
         scope.Image(image("map.card", pw, ph), Modifier.size(u.px(w), u.px(h)).clip(rounded(16f)), contentScale = RcContentScale.Crop)
         label(i18n.t("ui.map_credit"), Type.CAPTION, role(Role.INK_SOFT))
     }

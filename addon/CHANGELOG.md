@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.2
+
+- Themes. Screens come in RPI dark (as before), Light, OLED black and High contrast, and you can make your own
+  in the editor's new Themes page: duplicate a theme, pick its colours, and see them on a live preview.
+- Each screen has a theme and a dark theme. Dark mode, and the night schedule's "dark at night", now switch the
+  screen to its dark theme, so the integration's dark mode switch changes what the screen wears.
+- The editor's canvas draws in the screen's theme, with a Day / Dark switch to preview both.
+- The map follows the theme: light on light themes, dark on dark ones.
+
 ## 0.1.1
 
 - Free-form pages: a layout builder like Android Studio's, with columns, rows, boxes, flows and scrolling lists,

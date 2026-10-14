@@ -125,6 +125,33 @@ export interface ScreenSettings {
   backToHomeSeconds: number
   swipe: boolean
   orientation: number
+  /** Theme id, built-in or custom; absent is `rpi`. */
+  theme?: string
+  /** The theme worn while dark; absent is `rpi`. */
+  darkTheme?: string
+}
+
+/** A custom theme as stored: hex colours laid over a built-in [base]. */
+export interface Theme {
+  id: string
+  name: string
+  base: string
+  roles: Record<string, string>
+  pastels: Record<string, string>
+}
+
+/** A theme as `GET /themes` serves it: every role and pastel resolved to hex. */
+export interface ResolvedTheme {
+  id: string
+  name: string
+  base: string
+  builtin: boolean
+  /** Whether its page is dark, so previews and the map pick a matching style. */
+  dark: boolean
+  roles: Record<string, string>
+  pastels: Record<string, string>
+  /** The custom theme's own overrides; empty for built-ins. */
+  overrides: { roles: Record<string, string>; pastels: Record<string, string> }
 }
 
 export interface TopBar {
@@ -160,6 +187,7 @@ export interface LayoutData {
   schemaVersion: number
   screens: Screen[]
   preferences: Preferences
+  themes?: Theme[]
 }
 
 export interface PlayerStatus {

@@ -228,9 +228,8 @@ private fun DocContext.refs(n: Node, pages: Pages): Pair<ActionRef?, ActionRef?>
 
 /** A theme role (`card`, `ink_soft`) or a pastel key (`yellow`), or null for a key that is neither. */
 private fun DocContext.paint(key: String): RcColor? {
-    Pastel.of(key)?.let { return fixed(it.argb) }
-    val role = Role.entries.firstOrNull { it.name.equals(key, ignoreCase = true) } ?: return null
-    return role(role)
+    Pastel.of(key)?.let { return pastel(it) }
+    return Role.of(key)?.let { role(it) }
 }
 
 private fun DocContext.node(n: Node, self: Dims, axis: Axis, pages: Pages) {

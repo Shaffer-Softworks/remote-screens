@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { DEFAULT_THEME, themes } from '../model/palette'
 import type { Screen } from '../model/types'
 import { state } from '../store'
 
@@ -52,6 +53,18 @@ function num(e: Event, min: number, max: number): number {
     <label class="field">
       Brightness {{ screen.settings.brightness }}%
       <input v-model.number="screen.settings.brightness" type="range" min="1" max="100" />
+    </label>
+    <label class="field">
+      Theme
+      <select :value="screen.settings.theme ?? DEFAULT_THEME" @change="screen.settings.theme = ($event.target as HTMLSelectElement).value">
+        <option v-for="t in themes" :key="t.id" :value="t.id">{{ t.name }}</option>
+      </select>
+    </label>
+    <label class="field">
+      Dark theme (in dark mode and at night)
+      <select :value="screen.settings.darkTheme ?? DEFAULT_THEME" @change="screen.settings.darkTheme = ($event.target as HTMLSelectElement).value">
+        <option v-for="t in themes" :key="t.id" :value="t.id">{{ t.name }}</option>
+      </select>
     </label>
     <label class="check"><input v-model="screen.settings.darkMode" type="checkbox" /> Dark mode</label>
     <label class="check"><input v-model="screen.settings.swipe" type="checkbox" /> Swipe between pages</label>

@@ -7,7 +7,7 @@ import type { PlayerStatus, Screen } from '../model/types'
 import { attempt, playersOf, refreshLayout, state, toast } from '../store'
 import MdiIcon from './MdiIcon.vue'
 
-const emit = defineEmits<{ edit: [screen: Screen] }>()
+const emit = defineEmits<{ edit: [screen: Screen]; themes: [] }>()
 
 const RELEASES = 'https://github.com/sickkick/remote-screens/releases/latest'
 
@@ -148,6 +148,7 @@ function preview(s: Screen) {
     <header class="row">
       <MdiIcon name="tablet-dashboard" :size="28" />
       <h1 class="grow">Remote Screens</h1>
+      <button title="Colours the screens wear" @click="emit('themes')"><MdiIcon name="palette-outline" :size="16" /> Themes</button>
       <span v-if="state.info?.demo" class="badge">Demo</span>
       <span class="pill">
         <span class="dot" :class="{ on: state.info?.connected }" />

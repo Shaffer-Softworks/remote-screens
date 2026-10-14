@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref, watch, watchEffect } from 'vue'
 import { api } from '../api'
 import { DESIGN, useDesigner } from '../model/design'
 import { DENSITIES, PRESETS, clampDp, presetOf, toDp, toPx } from '../model/devices'
 import { firstFree, fitsAt, MAX_CELLS, MIN_CELLS, reflow } from '../model/grid'
 import { history } from '../model/history'
+import { DEFAULT_THEME, activeThemeId } from '../model/palette'
 import { fromGrid, newRoot, parentOf } from '../model/nodes'
 import { newTile } from '../model/tiles'
 import type { Page, Screen, Tile } from '../model/types'
@@ -37,6 +38,13 @@ provide(DESIGN, design)
 const node = design.selected
 const view = ref<'design' | 'split' | 'code'>('design')
 const sidePanel = ref<'page' | 'screen'>('page')
+
+// The canvas draws in the screen's day theme, or the one it wears while dark.
+const previewDark = ref(screen.value.settings.darkMode)
+watchEffect(() => {
+  const s = screen.value.settings
+  activeThemeId.value = (previewDark.value ? s.darkTheme : s.theme) ?? DEFAULT_THEME
+})
 
 watch(pageId, () => {
   selectedId.value = null
@@ -260,6 +268,10 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
         <button class="icon" title="Redo (Ctrl+Shift+Z)" :disabled="!canRedo" @click="redo"><MdiIcon name="redo" :size="18" /></button>
       </span>
       <span class="grow" />
+      <div class="segments" title="Preview the screen's day theme or its dark theme">
+        <button :class="{ active: !previewDark }" @click="previewDark = false"><MdiIcon name="white-balance-sunny" :size="16" /> Day</button>
+        <button :class="{ active: previewDark }" @click="previewDark = true"><MdiIcon name="weather-night" :size="16" /> Dark</button>
+      </div>
       <label class="row muted">
         <MdiIcon name="tablet" :size="18" />
         <select :value="deviceKey" aria-label="Device" @change="pickDevice(($event.target as HTMLSelectElement).value)">

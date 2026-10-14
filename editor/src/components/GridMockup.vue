@@ -238,12 +238,12 @@ const highlight = computed(() => {
             <span class="th-reading"><span>CURRENT TEMP</span><strong>20.5°</strong></span>
             <span class="th-key"><MdiIcon name="minus" :size="32" /></span>
             <svg class="th-dial" viewBox="-200 -200 400 400" width="380" height="380">
-              <circle r="180" fill="rgb(245 124 0 / 30%)" stroke="#fff" stroke-width="14" />
-              <line v-for="a in DIAL_TICKS" :key="a" x1="0" y1="191" x2="0" y2="205" stroke="rgb(245 124 0 / 30%)" :transform="`rotate(${a})`" />
-              <path d="M 0 180 A 180 180 0 1 1 113 -140" fill="none" stroke="#f57c00" stroke-width="14" stroke-linecap="round" />
-              <circle cx="113" cy="-140" r="12" fill="#f57c00" stroke="#fff" stroke-width="3" />
-              <text y="-30" text-anchor="middle" fill="#fff" font-size="20">Heating</text>
-              <text y="30" text-anchor="middle" fill="#fff" font-size="48" font-weight="300">21°</text>
+              <circle r="180" class="dial-glow" stroke-width="14" />
+              <line v-for="a in DIAL_TICKS" :key="a" x1="0" y1="191" x2="0" y2="205" class="dial-tick" :transform="`rotate(${a})`" />
+              <path d="M 0 180 A 180 180 0 1 1 113 -140" fill="none" class="dial-arc" stroke-width="14" stroke-linecap="round" />
+              <circle cx="113" cy="-140" r="12" class="dial-knob" stroke-width="3" />
+              <text y="-30" text-anchor="middle" class="dial-ink" font-size="20">Heating</text>
+              <text y="30" text-anchor="middle" class="dial-ink" font-size="48" font-weight="300">21°</text>
             </svg>
             <span class="th-key"><MdiIcon name="plus" :size="32" /></span>
             <span class="th-reading"><span>CURRENT HUMIDITY</span><strong>45%</strong></span>
@@ -308,7 +308,7 @@ const highlight = computed(() => {
 </template>
 
 <style scoped>
-/* The RPI theme: editor/src/model/palette.ts (RPI) has the same colours. */
+/* Colours are the active theme's (--rc-*, set by model/palette.ts). */
 .room {
   flex: 1;
   min-height: 0;
@@ -321,8 +321,8 @@ const highlight = computed(() => {
   left: 0;
   top: 0;
   transform-origin: 0 0;
-  background: #494949;
-  color: #ffffff;
+  background: var(--rc-page);
+  color: var(--rc-ink);
   border-radius: 18px;
   box-shadow: 0 0 0 10px #1d1d1f, var(--shadow);
   margin: 10px;
@@ -339,7 +339,7 @@ const highlight = computed(() => {
   align-items: center;
   gap: 15px;
   padding-right: 20px;
-  background: #494949;
+  background: var(--rc-header);
   font-size: 20px;
 }
 
@@ -348,7 +348,7 @@ const highlight = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-evenly;
-  background: #2f2e2e;
+  background: var(--rc-header-dark);
 }
 
 .topbar .middle {
@@ -365,7 +365,7 @@ const highlight = computed(() => {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: #5c5c5c;
+  background: var(--rc-key);
 }
 
 .topbar .stat {
@@ -375,11 +375,11 @@ const highlight = computed(() => {
 }
 
 .blue {
-  color: #0986db;
+  color: var(--rc-blue);
 }
 
 .teal {
-  color: #03dac5;
+  color: var(--rc-accent-soft);
 }
 
 .cell {
@@ -413,9 +413,9 @@ const highlight = computed(() => {
 .tile {
   position: absolute;
   box-sizing: border-box;
-  border: 2px solid #000;
+  border: 2px solid var(--rc-card-edge);
   border-radius: 10px;
-  background: #333333;
+  background: var(--rc-card);
   display: flex;
   flex-direction: column;
   cursor: grab;
@@ -429,7 +429,7 @@ const highlight = computed(() => {
   height: 36px;
   line-height: 36px;
   padding: 0 14px;
-  background: #494949;
+  background: var(--rc-card-header);
   font-size: 15px;
   white-space: nowrap;
   overflow: hidden;
@@ -445,7 +445,7 @@ const highlight = computed(() => {
 .tile .line {
   flex: none;
   height: 3px;
-  background: #494949;
+  background: var(--rc-card-header);
 }
 
 .tile .body {
@@ -458,13 +458,13 @@ const highlight = computed(() => {
 }
 
 .tile .icon {
-  color: #939393;
+  color: var(--rc-ink-dim);
 }
 
 .tile.panel {
   border: none;
   border-radius: 0;
-  background: #14e1ba;
+  background: var(--rc-home);
   cursor: pointer;
 }
 
@@ -481,14 +481,14 @@ const highlight = computed(() => {
 .tile.weather-panel {
   border: none;
   border-radius: 0;
-  background: #494949;
+  background: var(--rc-page);
   align-items: center;
   cursor: pointer;
 }
 
 .wx-name {
   margin-top: 16px;
-  color: #ffbb33;
+  color: var(--rc-weather-title);
   font-size: 36px;
 }
 
@@ -518,7 +518,7 @@ const highlight = computed(() => {
   display: flex;
   justify-content: space-evenly;
   padding: 10px;
-  background: #3b3b3b;
+  background: var(--rc-strip);
 }
 
 .wx-day {
@@ -562,14 +562,14 @@ const highlight = computed(() => {
   width: 90px;
   height: 50px;
   border-radius: 8px;
-  background: #5c5c5c;
+  background: var(--rc-key);
   font-size: 16px;
   font-weight: 500;
 }
 
 .th-fan span.on {
-  background: #fff;
-  color: #000;
+  background: var(--rc-ink);
+  color: var(--rc-ink-dark);
 }
 
 .th-bar {
@@ -590,14 +590,36 @@ const highlight = computed(() => {
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  color: #1da48c;
+  color: var(--rc-accent-dark);
   font-size: 25px;
 }
 
 .th-reading strong {
-  color: #fff;
+  color: var(--rc-ink);
   font-size: 70px;
   font-weight: 300;
+}
+
+.dial-glow {
+  fill: color-mix(in srgb, var(--rc-warn) 30%, transparent);
+  stroke: var(--rc-ink);
+}
+
+.dial-tick {
+  stroke: color-mix(in srgb, var(--rc-warn) 30%, transparent);
+}
+
+.dial-arc {
+  stroke: var(--rc-warn);
+}
+
+.dial-knob {
+  fill: var(--rc-warn);
+  stroke: var(--rc-ink);
+}
+
+.dial-ink {
+  fill: var(--rc-ink);
 }
 
 .th-key {
@@ -607,7 +629,7 @@ const highlight = computed(() => {
   height: 64px;
   margin: 0 24px;
   border-radius: 50%;
-  background: #5c5c5c;
+  background: var(--rc-key);
 }
 
 .th-modes {
@@ -618,7 +640,7 @@ const highlight = computed(() => {
   padding: 1px;
   border-radius: 25px;
   overflow: hidden;
-  background: #939393;
+  background: var(--rc-ink-dim);
 }
 
 .th-modes span {
@@ -628,16 +650,16 @@ const highlight = computed(() => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: #494949;
+  background: var(--rc-page);
   font-size: 20px;
 }
 
 .th-modes span.on {
-  background: #1da48c;
+  background: var(--rc-accent-dark);
 }
 
 .wx-day .soft {
-  color: #cacaca;
+  color: var(--rc-ink-soft);
   font-size: 14px;
 }
 
@@ -667,7 +689,7 @@ const highlight = computed(() => {
 }
 
 .state {
-  color: #cacaca;
+  color: var(--rc-ink-soft);
   font-size: 15px;
   white-space: nowrap;
   overflow: hidden;
@@ -713,7 +735,7 @@ const highlight = computed(() => {
   width: 150px;
   height: 10px;
   margin-bottom: 20px;
-  background: #1da48c;
+  background: var(--rc-accent-dark);
 }
 
 .bar.thin {
@@ -741,7 +763,7 @@ const highlight = computed(() => {
 }
 
 .weekday {
-  color: #1da48c;
+  color: var(--rc-accent-dark);
   font-size: 32px;
   font-weight: 300;
 }
@@ -762,8 +784,8 @@ const highlight = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-evenly;
-  background: #fff;
-  color: #000;
+  background: var(--rc-home-strip);
+  color: var(--rc-ink-dark);
 }
 
 .person {
@@ -779,8 +801,8 @@ const highlight = computed(() => {
   width: 70px;
   height: 70px;
   border-radius: 50%;
-  background: #5c5c5c;
-  color: #fff;
+  background: var(--rc-key);
+  color: var(--rc-ink);
   font-size: 26px;
 }
 
@@ -790,7 +812,7 @@ const highlight = computed(() => {
 }
 
 .where {
-  color: #03dac5;
+  color: var(--rc-accent-soft);
 }
 
 .empty {
@@ -810,9 +832,9 @@ const highlight = computed(() => {
   right: 0;
   display: flex;
   flex-direction: column;
-  border-top: 2px solid #03dac5;
+  border-top: 2px solid var(--rc-nav-line);
   box-sizing: border-box;
-  background: #2f2e2e;
+  background: var(--rc-nav);
 }
 
 .nav .buttons {
@@ -837,6 +859,6 @@ const highlight = computed(() => {
 }
 
 .nav .button.on {
-  background: #14e1ba;
+  background: var(--rc-nav-on);
 }
 </style>

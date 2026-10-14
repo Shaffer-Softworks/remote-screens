@@ -78,9 +78,9 @@ class RenderInput(
     val i18n: I18n,
     val ha: HaConfig,
     val data: RenderData,
-    val dark: Boolean,
+    val palette: Palette = Themes.RPI,
 ) {
-    fun context(device: Device) = DocContext(Units(device.density), dark, i18n, states, ha, data)
+    fun context(device: Device) = DocContext(Units(device.density), palette, i18n, states, ha, data)
 }
 
 object ScreenRenderer {

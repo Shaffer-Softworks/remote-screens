@@ -63,7 +63,7 @@ const style = computed<CSSProperties>(() => {
   if (n.value.style.corner) s.borderRadius = `${n.value.style.corner}px`
   const bg = colorOf(n.value.style.background)
   if (bg) s.background = bg
-  if (n.value.style.border) s.border = `${n.value.style.border}px solid ${colorOf(n.value.style.borderColor ?? 'divider') ?? '#4a4a4a'}`
+  if (n.value.style.border) s.border = `${n.value.style.border}px solid ${colorOf(n.value.style.borderColor ?? 'divider') ?? colorOf('divider')}`
   const p = n.value.props
   if (n.value.bind && p.showWhen && (p.showWhen === 'on') !== on.value) s.opacity = 0.35
   switch (n.value.type) {
@@ -92,7 +92,7 @@ const style = computed<CSSProperties>(() => {
       const lines = p.marquee === 'true' ? 1 : Number(p.lines ?? 1)
       s.fontSize = `${Number(p.fontSize ?? 16)}px`
       s.fontWeight = Number(p.weight ?? 400)
-      s.color = colorOf(p.color) ?? '#ffffff'
+      s.color = colorOf(p.color) ?? colorOf('ink')
       s.textAlign = (p.align as CSSProperties['textAlign']) ?? 'start'
       if (lines === 1) Object.assign(s, { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' })
       else Object.assign(s, { display: '-webkit-box', WebkitLineClamp: lines, WebkitBoxOrient: 'vertical', overflow: 'hidden' })
@@ -111,7 +111,7 @@ const style = computed<CSSProperties>(() => {
       if (n.value.size.height === 'wrap') s.height = '48px'
       if (!n.value.style.corner) s.borderRadius = `${48 / 2.6}px`
       if (!bg) s.background = colorOf(p.color ?? 'key')
-      s.color = colorOf(p.ink) ?? '#ffffff'
+      s.color = colorOf(p.ink) ?? colorOf('ink')
       if (!n.value.style.padding) s.padding = '0 12px'
       break
     case 'slider':
@@ -123,7 +123,7 @@ const style = computed<CSSProperties>(() => {
       if (n.value.size.height === 'wrap') s.height = '160px'
       break
     case 'clock':
-      s.color = colorOf(p.color) ?? '#ffffff'
+      s.color = colorOf(p.color) ?? colorOf('ink')
       s.textAlign = (p.align as CSSProperties['textAlign']) ?? 'start'
       s.alignItems = ALIGN[p.align ?? 'start']
       break
@@ -132,7 +132,7 @@ const style = computed<CSSProperties>(() => {
       if (n.value.size.height === 'wrap') s.height = '32px'
       if (!n.value.style.corner) s.borderRadius = '16px'
       if (!bg) s.background = explicit ?? (on.value ? accent.value : colorOf('key'))
-      s.color = explicit || on.value ? '#2f2e2e' : '#ffffff'
+      s.color = explicit || on.value ? colorOf('key_on_ink') : colorOf('ink')
       if (!n.value.style.padding) s.padding = '0 12px'
       break
     }
@@ -153,7 +153,7 @@ const style = computed<CSSProperties>(() => {
       if (n.value.size.width === 'wrap' && n.value.size.height === 'wrap') Object.assign(s, { width: px, height: px })
       if (!n.value.style.corner) s.borderRadius = `${Number(p.size ?? 64) / 2}px`
       if (!bg) s.background = n.value.bind ? (on.value ? accent.value : colorOf('key')) : (colorOf(p.color) ?? colorOf('key'))
-      s.color = n.value.bind && on.value ? '#2f2e2e' : '#ffffff'
+      s.color = n.value.bind && on.value ? colorOf('key_on_ink') : colorOf('ink')
       break
     }
   }
@@ -276,8 +276,8 @@ const icon = computed(() => {
 const iconColor = computed(() => {
   const explicit = colorOf(n.value.props.color)
   if (explicit) return explicit
-  if (!n.value.bind) return '#ffffff'
-  return on.value ? pastel(undefined, n.value.bind.entityId.split('.')[0]).color : '#939393'
+  if (!n.value.bind) return colorOf('ink')
+  return on.value ? pastel(undefined, n.value.bind.entityId.split('.')[0]).color : colorOf('ink_dim')
 })
 
 const sliderFill = computed(() => {
@@ -386,7 +386,7 @@ function end(): void {
       <div class="head">{{ card.name }}</div>
       <i class="line" :style="{ background: card.accent }" />
       <div class="body">
-        <MdiIcon :name="card.icon" :size="30" :style="{ color: card.accent ?? '#939393' }" />
+        <MdiIcon :name="card.icon" :size="30" :style="{ color: card.accent ?? colorOf('ink_dim') }" />
         <span class="grow" />
         <span class="state">{{ card.state }}</span>
       </div>
@@ -395,7 +395,7 @@ function end(): void {
       <span v-if="node.props.show !== 'date'" class="time" :style="{ fontSize: `${Number(node.props.fontSize ?? 44)}px` }">{{ clockTime }}</span>
       <span
         v-if="node.props.show === 'date' || node.props.show === 'both'"
-        :style="node.props.show === 'date' ? { fontSize: `${Number(node.props.fontSize ?? 44)}px` } : { fontSize: `${Math.max(Number(node.props.fontSize ?? 44) * 0.33, 14)}px`, color: '#cacaca' }"
+        :style="node.props.show === 'date' ? { fontSize: `${Number(node.props.fontSize ?? 44)}px` } : { fontSize: `${Math.max(Number(node.props.fontSize ?? 44) * 0.33, 14)}px`, color: colorOf('ink_soft') }"
       >{{ clockDate }}</span>
     </template>
     <template v-else-if="node.type === 'badge'">
@@ -415,7 +415,7 @@ function end(): void {
         <polyline
           points="0,30 10,26 20,28 30,18 40,20 50,12 60,16 70,10 80,14 90,8 100,12"
           fill="none"
-          :stroke="colorOf(node.props.color) ?? '#0986db'"
+          :stroke="colorOf(node.props.color) ?? colorOf('blue')"
           stroke-width="2"
           vector-effect="non-scaling-stroke"
         />
@@ -437,7 +437,7 @@ function end(): void {
     <div v-else-if="node.type === 'gauge'" class="gauge" :style="{ width: `${gauge.size}px`, height: `${gauge.size}px` }">
       <svg :viewBox="`0 0 ${gauge.size} ${gauge.size}`">
         <g :transform="`rotate(135 ${gauge.size / 2} ${gauge.size / 2})`" fill="none" :stroke-width="gauge.stroke" stroke-linecap="round">
-          <circle :cx="gauge.size / 2" :cy="gauge.size / 2" :r="gauge.r" stroke="#1b1b1b" :stroke-dasharray="`${gauge.arc} 9999`" />
+          <circle :cx="gauge.size / 2" :cy="gauge.size / 2" :r="gauge.r" :stroke="colorOf('track')" :stroke-dasharray="`${gauge.arc} 9999`" />
           <circle
             v-if="node.bind && gauge.fill > 0"
             :cx="gauge.size / 2"
@@ -459,21 +459,21 @@ function end(): void {
       stroke-linecap="round"
     >
       <circle cx="50" cy="50" r="50" :fill="colorOf(node.props.color ?? 'card')" />
-      <line v-for="i in 12" :key="i" x1="50" :y1="(i - 1) % 3 === 0 ? 13 : 9" x2="50" y2="5" stroke="#939393" stroke-width="2" :transform="`rotate(${(i - 1) * 30} 50 50)`" />
+      <line v-for="i in 12" :key="i" x1="50" :y1="(i - 1) % 3 === 0 ? 13 : 9" x2="50" y2="5" :stroke="colorOf('ink_dim')" stroke-width="2" :transform="`rotate(${(i - 1) * 30} 50 50)`" />
       <text
         v-for="h in clockNumbers"
         :key="h"
         :x="50 + Math.sin((h * Math.PI) / 6) * 30"
         :y="50 - Math.cos((h * Math.PI) / 6) * 30"
-        fill="#fff"
+        :fill="colorOf('ink')"
         font-size="10"
         text-anchor="middle"
         dominant-baseline="central"
       >{{ h }}</text>
-      <line x1="50" y1="50" x2="50" y2="25" stroke="#fff" stroke-width="5" :transform="`rotate(${hands.hour} 50 50)`" />
-      <line x1="50" y1="50" x2="50" y2="12.5" stroke="#fff" stroke-width="3.5" :transform="`rotate(${hands.minute} 50 50)`" />
-      <line v-if="node.props.seconds === 'true'" x1="50" y1="50" x2="50" y2="9" stroke="#14e1ba" stroke-width="1.2" :transform="`rotate(${hands.second} 50 50)`" />
-      <circle cx="50" cy="50" r="4" fill="#fff" />
+      <line x1="50" y1="50" x2="50" y2="25" :stroke="colorOf('ink')" stroke-width="5" :transform="`rotate(${hands.hour} 50 50)`" />
+      <line x1="50" y1="50" x2="50" y2="12.5" :stroke="colorOf('ink')" stroke-width="3.5" :transform="`rotate(${hands.minute} 50 50)`" />
+      <line v-if="node.props.seconds === 'true'" x1="50" y1="50" x2="50" y2="9" :stroke="colorOf('accent')" stroke-width="1.2" :transform="`rotate(${hands.second} 50 50)`" />
+      <circle cx="50" cy="50" r="4" :fill="colorOf('ink')" />
     </svg>
     <MdiIcon
       v-else-if="node.type === 'iconbutton'"
@@ -654,7 +654,7 @@ function end(): void {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: #5c5c5c;
+  background: var(--rc-key);
   font-weight: 600;
 }
 
@@ -663,7 +663,7 @@ function end(): void {
   width: 100%;
   height: 100%;
   border-radius: inherit;
-  background: #1b1b1b;
+  background: var(--rc-track);
 }
 
 .graph svg {
@@ -694,7 +694,7 @@ function end(): void {
   width: 52px;
   height: 30px;
   border-radius: 15px;
-  background: #5c5c5c;
+  background: var(--rc-key);
   flex: none;
 }
 
@@ -705,7 +705,7 @@ function end(): void {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--rc-ink);
 }
 
 .switch.on i {
@@ -723,7 +723,7 @@ function end(): void {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #5c5c5c;
+  background: var(--rc-key);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -750,7 +750,7 @@ function end(): void {
   align-items: center;
   justify-content: center;
   border-radius: 17px;
-  background: #5c5c5c;
+  background: var(--rc-key);
   font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
@@ -758,8 +758,8 @@ function end(): void {
 }
 
 .choice.on {
-  background: #14e1ba;
-  color: #2f2e2e;
+  background: var(--rc-key-on);
+  color: var(--rc-key-on-ink);
 }
 
 .track {
@@ -767,7 +767,7 @@ function end(): void {
   width: 100%;
   height: 100%;
   border-radius: 999px;
-  background: #1b1b1b;
+  background: var(--rc-track);
   overflow: hidden;
 }
 
@@ -794,8 +794,8 @@ function end(): void {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: #1b1b1b;
-  color: rgb(255 255 255 / 60%);
+  background: var(--rc-track);
+  color: var(--rc-ink-dim);
   font-size: 12px;
   border-radius: inherit;
 }
@@ -805,14 +805,14 @@ function end(): void {
   height: 100%;
   display: flex;
   flex-direction: column;
-  border: 2px solid #000;
+  border: 2px solid var(--rc-card-edge);
   border-radius: 10px;
-  background: #333;
+  background: var(--rc-card);
   overflow: hidden;
 }
 
 .card .head {
-  background: #494949;
+  background: var(--rc-card-header);
   padding: 0 14px;
   height: 36px;
   line-height: 36px;
@@ -825,7 +825,7 @@ function end(): void {
 
 .card .line {
   height: 3px;
-  background: #494949;
+  background: var(--rc-card-header);
   flex: none;
 }
 
@@ -873,7 +873,7 @@ function end(): void {
   right: 0;
   bottom: 1%;
   text-align: center;
-  color: #cacaca;
+  color: var(--rc-ink-soft);
   white-space: nowrap;
 }
 
@@ -897,7 +897,7 @@ function end(): void {
   align-items: center;
   justify-content: center;
   border-radius: 14px;
-  background: #5c5c5c;
+  background: var(--rc-key);
   font-size: 22px;
   font-weight: 500;
 }
@@ -907,7 +907,7 @@ function end(): void {
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  background: #1b1b1b;
+  background: var(--rc-track);
   font-size: 11px;
   color: rgb(255 255 255 / 50%);
   text-align: center;
@@ -946,7 +946,7 @@ function end(): void {
 .card .state {
   font-size: 18px;
   font-weight: 500;
-  color: #cacaca;
+  color: var(--rc-ink-soft);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

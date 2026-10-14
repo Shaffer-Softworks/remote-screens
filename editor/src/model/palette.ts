@@ -1,41 +1,17 @@
-// The RPI theme of the add-on (server/.../render/Theme.kt): the screen's fixed colours (Role) and the accent a tile
-// lights up in when it is on (Pastel).
+// The screen's colours, from the add-on's themes (GET /themes, server/.../render/Themes.kt): the colour of each role
+// (`card`, `ink_soft`) and of each pastel a tile lights up in when it is on. Previews draw in the active theme, which
+// the screen editor picks; the colours are also set as CSS variables (`--rc-card`, `--rc-p-teal`) for stylesheets.
 
-export const RPI = {
-  page: '#494949',
-  card: '#333333',
-  cardHeader: '#494949',
-  header: '#494949',
-  headerDark: '#2F2E2E',
-  nav: '#2F2E2E',
-  navOn: '#14E1BA',
-  navLine: '#03DAC5',
-  ink: '#FFFFFF',
-  inkSoft: '#CACACA',
-  inkDim: '#939393',
-  accentDark: '#1DA48C',
-  accentSoft: '#03DAC5',
-  blue: '#0986DB',
-  home: '#14E1BA',
-  homeStrip: '#FFFFFF',
-}
+import { computed, reactive, ref, watchEffect } from 'vue'
+import type { ResolvedTheme } from './types'
 
 export interface Pastel {
   key: string
   color: string
 }
 
-export const PASTELS: Pastel[] = [
-  { key: 'yellow', color: '#FFC94D' },
-  { key: 'orange', color: '#FF9800' },
-  { key: 'red', color: '#FF6E6E' },
-  { key: 'pink', color: '#F48FB1' },
-  { key: 'purple', color: '#B39DDB' },
-  { key: 'blue', color: '#0986DB' },
-  { key: 'teal', color: '#14E1BA' },
-  { key: 'green', color: '#5CCB5F' },
-  { key: 'grey', color: '#CACACA' },
-]
+/** Pastel keys are stored in layouts: never rename one. */
+export const PASTEL_KEYS = ['yellow', 'orange', 'red', 'pink', 'purple', 'blue', 'teal', 'green', 'grey'] as const
 
 const BY_DOMAIN: Record<string, string> = {
   light: 'yellow',
@@ -53,36 +29,62 @@ const BY_DOMAIN: Record<string, string> = {
   vacuum: 'teal',
 }
 
-/** The server's `Role` names, as a free-form component names a colour. */
-export const ROLES: Record<string, string> = {
-  page: '#494949',
-  card: '#333333',
-  card_header: '#494949',
-  header_dark: '#2F2E2E',
-  key: '#5C5C5C',
-  key_on: '#14E1BA',
-  track: '#1B1B1B',
-  divider: '#4A4A4A',
-  ink: '#FFFFFF',
-  ink_soft: '#CACACA',
-  ink_dim: '#939393',
-  ink_faint: '#5C5C5C',
-  ink_dark: '#000000',
-  accent: '#14E1BA',
-  accent_dark: '#1DA48C',
-  blue: '#0986DB',
-  ok: '#289907',
-  warn: '#F57C00',
-  danger: '#A21C1C',
+export const DEFAULT_THEME = 'rpi'
+
+/** Every theme the add-on knows, built-in first. */
+export const themes = ref<ResolvedTheme[]>([])
+/** The theme previews draw in. */
+export const activeThemeId = ref(DEFAULT_THEME)
+
+export function setThemes(list: ResolvedTheme[]): void {
+  themes.value = list
 }
 
-/** The hex of a role or pastel key, or undefined for neither. */
-export function colorOf(key: string | undefined): string | undefined {
-  if (!key) return undefined
-  return PASTELS.find((p) => p.key === key)?.color ?? ROLES[key]
+/** Theme [id], or the default for an id nobody knows (as the add-on resolves it). */
+export function themeById(id: string | undefined): ResolvedTheme | undefined {
+  return themes.value.find((t) => t.id === id) ?? themes.value.find((t) => t.id === DEFAULT_THEME) ?? themes.value[0]
 }
 
-export function pastel(key: string | undefined, domain: string | undefined): Pastel {
-  const k = key ?? (domain && BY_DOMAIN[domain]) ?? 'teal'
-  return PASTELS.find((p) => p.key === k) ?? PASTELS[6]
+export const activeTheme = computed(() => themeById(activeThemeId.value))
+
+/** The pastels of the active theme, kept in place so templates and lists of keys can use it directly. */
+export const PASTELS: Pastel[] = reactive(PASTEL_KEYS.map((key) => ({ key, color: '' })))
+
+/** `#AARRGGBB` (the add-on's order) as CSS's `#RRGGBBAA`; `#RRGGBB` as it is. */
+export function cssColor(hex: string | undefined): string | undefined {
+  if (!hex) return undefined
+  return hex.length === 9 ? `#${hex.slice(3)}${hex.slice(1, 3)}` : hex
 }
+
+/** The CSS colour of a role or pastel key, or undefined for neither. */
+export function colorOf(key: string | undefined, theme: ResolvedTheme | undefined = activeTheme.value): string | undefined {
+  if (!key || !theme) return undefined
+  return cssColor(theme.pastels[key] ?? theme.roles[key])
+}
+
+/** The colour a tile lights up in: its own pastel, else its domain's. */
+export function pastel(key: string | undefined, domain: string | undefined, theme: ResolvedTheme | undefined = activeTheme.value): Pastel {
+  let k = key ?? (domain && BY_DOMAIN[domain]) ?? 'teal'
+  if (!(PASTEL_KEYS as readonly string[]).includes(k)) k = 'teal'
+  return { key: k, color: cssColor(theme?.pastels[k]) ?? '' }
+}
+
+/** A theme's colours as CSS variables: `--rc-card-header` for roles, `--rc-p-teal` for pastels. */
+export function themeVars(theme: ResolvedTheme | undefined): Record<string, string> {
+  const out: Record<string, string> = {}
+  if (!theme) return out
+  for (const [k, v] of Object.entries(theme.roles)) out[`--rc-${k.replace(/_/g, '-')}`] = cssColor(v)!
+  for (const [k, v] of Object.entries(theme.pastels)) out[`--rc-p-${k}`] = cssColor(v)!
+  return out
+}
+
+watchEffect(
+  () => {
+    const t = activeTheme.value
+    for (const p of PASTELS) p.color = cssColor(t?.pastels[p.key]) ?? ''
+    if (typeof document === 'undefined') return
+    const root = document.documentElement.style
+    for (const [k, v] of Object.entries(themeVars(t))) root.setProperty(k, v)
+  },
+  { flush: 'sync' },
+)

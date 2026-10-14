@@ -41,6 +41,16 @@ favourite (a playlist on a player).
 
 A page can be hidden: it has no page dot and is only reached from a navigation tile, with a Back key.
 
+## Themes
+
+A screen wears a theme: RPI dark (the default), Light, OLED black, High contrast, or one of your own. In the
+screen's settings, pick its **Theme** and its **Dark theme**; the dark theme is worn in dark mode and, with
+**Dark at night**, during the night hours. The editor's Day / Dark switch previews both.
+
+To make your own, open **Themes** on the editor's home page, duplicate any theme and change its colours. Each
+colour you leave alone follows the theme it was made from. Saving sends the change to every tablet wearing it;
+deleting it puts those screens back on RPI dark.
+
 ## Languages
 
 The screens follow Home Assistant's language, or the one set in the editor. The words for states ("Open", "Heat",
