@@ -1,10 +1,30 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { DEFAULT_THEME, themes } from '../model/palette'
-import type { Screen } from '../model/types'
+import { navBar as defaultNavBar, TOP_BAR } from '../model/grid'
+import { BACKGROUND_SWATCHES, DEFAULT_THEME, INK_SWATCHES, themes } from '../model/palette'
+import type { NavBar, Screen } from '../model/types'
 import { state } from '../store'
+import ColorSwatches from './ColorSwatches.vue'
 
-const props = defineProps<{ screen: Screen }>()
+const props = defineProps<{ screen: Screen; deviceWidth?: number }>()
+
+const nav = computed<NavBar>(() => props.screen.navBar ?? (props.screen.navBar = {}))
+
+/** An optional number that is absent for Auto: the checkbox clears it, or sets it to [fallback] to start from. */
+function auto<T extends object>(target: () => T, key: keyof T & string, fallback: () => number) {
+  return computed({
+    get: () => (target() as Record<string, unknown>)[key] === undefined,
+    set: (on: boolean) => {
+      const t = target() as Record<string, unknown>
+      if (on) delete t[key]
+      else t[key] = fallback()
+    },
+  })
+}
+
+const topAuto = auto(() => props.screen.topBar, 'height', () => TOP_BAR)
+const clockAuto = auto(() => props.screen.topBar, 'clockWidth', () => 42)
+const navAuto = auto(() => nav.value, 'height', () => defaultNavBar(props.deviceWidth ?? 1280))
 
 const temperatures = computed(() =>
   state.entities.filter((e) => (e.domain === 'sensor' && /°|K$/.test(e.unit ?? '')) || e.domain === 'weather'),
@@ -35,7 +55,27 @@ function num(e: Event, min: number, max: number): number {
     <h3>Top bar</h3>
     <label class="check"><input v-model="screen.topBar.show" type="checkbox" /> Show the top bar</label>
     <template v-if="screen.topBar.show">
+      <label class="check"><input v-model="topAuto" type="checkbox" /> Default height</label>
+      <label v-if="!topAuto" class="field">
+        Height {{ screen.topBar.height }} dp
+        <input v-model.number="screen.topBar.height" type="range" min="32" max="120" step="2" />
+      </label>
       <label class="check"><input v-model="screen.topBar.clock" type="checkbox" /> Clock</label>
+      <template v-if="screen.topBar.clock">
+        <label class="check sub">
+          <input
+            :checked="screen.topBar.date !== false"
+            type="checkbox"
+            @change="screen.topBar.date = ($event.target as HTMLInputElement).checked"
+          />
+          Date (on screens 600 dp wide or more)
+        </label>
+        <label class="check sub"><input v-model="clockAuto" type="checkbox" /> Default clock width</label>
+        <label v-if="!clockAuto" class="field sub">
+          Clock width {{ screen.topBar.clockWidth }}% of the screen
+          <input v-model.number="screen.topBar.clockWidth" type="range" min="15" max="60" />
+        </label>
+      </template>
       <label class="check"><input v-model="screen.topBar.people" type="checkbox" /> People at home</label>
       <label class="field">
         Temperature
@@ -47,7 +87,50 @@ function num(e: Event, min: number, max: number): number {
           <option v-for="e in temperatures" :key="e.entityId" :value="e.entityId">{{ e.name }}</option>
         </select>
       </label>
+      <div class="field">
+        Background
+        <ColorSwatches v-model="screen.topBar.background" :keys="BACKGROUND_SWATCHES" clear-title="The theme's" />
+      </div>
+      <div v-if="screen.topBar.clock" class="field">
+        Clock background
+        <ColorSwatches v-model="screen.topBar.clockBackground" :keys="BACKGROUND_SWATCHES" clear-title="The theme's" />
+      </div>
     </template>
+
+    <h3>Bottom bar</h3>
+    <label class="check"><input v-model="navAuto" type="checkbox" /> Default height</label>
+    <label v-if="!navAuto" class="field">
+      Height {{ nav.height }} dp
+      <input v-model.number="nav.height" type="range" min="48" max="160" step="2" />
+    </label>
+    <label class="field">
+      Buttons show
+      <select :value="nav.labels ?? 'both'" @change="nav.labels = ($event.target as HTMLSelectElement).value as NavBar['labels']">
+        <option value="both">Icons and names</option>
+        <option value="icons">Icons only</option>
+        <option value="text">Names only</option>
+      </select>
+    </label>
+    <label class="field">
+      Layout
+      <select :value="nav.layout ?? 'spread'" @change="nav.layout = ($event.target as HTMLSelectElement).value as NavBar['layout']">
+        <option value="spread">Spread out</option>
+        <option value="center">Centred</option>
+        <option value="fill">Fill the width</option>
+      </select>
+    </label>
+    <div class="field">
+      Background
+      <ColorSwatches v-model="nav.background" :keys="BACKGROUND_SWATCHES" clear-title="The theme's" />
+    </div>
+    <div class="field">
+      Line
+      <ColorSwatches v-model="nav.line" :keys="INK_SWATCHES" clear-title="The theme's" />
+    </div>
+    <div class="field">
+      Current page
+      <ColorSwatches v-model="nav.active" :keys="BACKGROUND_SWATCHES" clear-title="The theme's" />
+    </div>
 
     <h3>Display</h3>
     <label class="field">
@@ -117,6 +200,10 @@ function num(e: Event, min: number, max: number): number {
 
 h3 {
   margin-top: 6px;
+}
+
+.sub {
+  margin-left: 22px;
 }
 
 .note {

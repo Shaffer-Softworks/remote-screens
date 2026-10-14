@@ -157,8 +157,30 @@ export interface ResolvedTheme {
 export interface TopBar {
   show: boolean
   clock: boolean
+  /** The date beside the time; absent is shown. */
+  date?: boolean
   temperatureEntity?: string
   people: boolean
+  /** dp; absent is the default. */
+  height?: number
+  /** The clock block's share of the width in percent; absent is the default. */
+  clockWidth?: number
+  /** Theme role or pastel key; absent is the theme's header colour. */
+  background?: string
+  clockBackground?: string
+}
+
+export type NavLabels = 'both' | 'icons' | 'text'
+export type NavLayout = 'spread' | 'center' | 'fill'
+
+export interface NavBar {
+  /** dp; absent is the default, smaller on a narrow device. */
+  height?: number
+  labels?: NavLabels
+  layout?: NavLayout
+  background?: string
+  line?: string
+  active?: string
 }
 
 export interface Screen {
@@ -169,6 +191,8 @@ export interface Screen {
   homePage: string
   settings: ScreenSettings
   topBar: TopBar
+  /** Absent in screens saved before the bottom bar had settings; the editor fills it in when it opens one. */
+  navBar?: NavBar
   /** The size the editor draws the screen at until a tablet shows it. */
   designSize?: DeviceSize
 }

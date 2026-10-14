@@ -385,7 +385,7 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
             <button :class="{ active: sidePanel === 'screen' }" @click="sidePanel = 'screen'">Screen</button>
           </div>
           <PagePanel v-if="sidePanel === 'page'" :screen="screen" :page="page" @delete="deletePage" @convert="convert" />
-          <ScreenPanel v-else :screen="screen" />
+          <ScreenPanel v-else :screen="screen" :device-width="device?.w" />
         </template>
       </aside>
     </main>
@@ -426,7 +426,7 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
           </div>
           <EntityLibrary v-if="panel === 'library'" :page="page" @add="add($event)" />
           <PagePanel v-else-if="panel === 'page'" :screen="screen" :page="page" @delete="deletePage" @convert="convert" />
-          <ScreenPanel v-else :screen="screen" />
+          <ScreenPanel v-else :screen="screen" :device-width="device?.w" />
         </template>
       </aside>
     </main>

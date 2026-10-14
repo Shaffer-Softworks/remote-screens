@@ -1,7 +1,7 @@
 // A port of shared/src/main/kotlin/.../Grid.kt. tests/fixtures/grid_parity.json holds the answers both must
 // give, so change both or a test fails. The add-on works in 32-bit floats, hence the Math.fround.
 
-import type { GridSize } from './types'
+import type { GridSize, NavBar, TopBar } from './types'
 
 const f = Math.fround
 
@@ -19,6 +19,15 @@ export const NARROW = 600
 
 export function navBar(widthDp: number): number {
   return widthDp < NARROW ? COMPACT_NAV_BAR : NAV_BAR
+}
+
+/** The height [bar] takes: none when hidden, else its own or the default. */
+export function topBarHeight(bar: TopBar): number {
+  return bar.show ? (bar.height ?? TOP_BAR) : 0
+}
+
+export function navBarHeight(bar: NavBar | undefined, widthDp: number): number {
+  return bar?.height ?? navBar(widthDp)
 }
 
 export interface GridSpec {
@@ -39,9 +48,8 @@ export interface GridSpec {
   h(span: number): number
 }
 
-function available(widthDp: number, heightDp: number, showTopBar: boolean): [number, number] {
-  const top = showTopBar ? TOP_BAR : 0
-  return [f(widthDp - 2 * PADDING), f(f(f(heightDp - top) - navBar(widthDp)) - 2 * PADDING)]
+function available(widthDp: number, heightDp: number, topBar: number, navBar: number): [number, number] {
+  return [f(widthDp - 2 * PADDING), f(f(f(heightDp - topBar) - navBar) - 2 * PADDING)]
 }
 
 function clamp(v: number, lo: number, hi: number): number {
@@ -58,18 +66,19 @@ function round1(v: number): number {
 
 /** The grid a device of this size gets when it is adopted. */
 export function suggest(widthDp: number, heightDp: number): GridSize {
-  const [w, h] = available(widthDp, heightDp, true)
+  const [w, h] = available(widthDp, heightDp, TOP_BAR, navBar(widthDp))
   return { cols: fit(w), rows: fit(h) }
 }
 
-/** The geometry of [size] on a device of [widthDp] by [heightDp]. */
-export function spec(size: GridSize, widthDp: number, heightDp: number, showTopBar = true): GridSpec {
-  const [availW, availH] = available(widthDp, heightDp, showTopBar)
+/** The geometry of [size] on a device of [widthDp] by [heightDp], under a [topBar] and over a [nav] of these heights. */
+export function spec(size: GridSize, widthDp: number, heightDp: number, topBar = TOP_BAR, nav = navBar(widthDp)): GridSpec {
+  topBar = f(topBar)
+  nav = f(nav)
+  const [availW, availH] = available(widthDp, heightDp, topBar, nav)
   const cols = clamp(size.cols, 1, MAX_CELLS)
   const rows = clamp(size.rows, 1, MAX_CELLS)
   const cellW = round1(f(f(availW - f(GAP * (cols - 1))) / cols))
   const cellH = round1(f(f(availH - f(GAP * (rows - 1))) / rows))
-  const topBar = showTopBar ? TOP_BAR : 0
   return {
     cols,
     rows,
@@ -78,7 +87,7 @@ export function spec(size: GridSize, widthDp: number, heightDp: number, showTopB
     padding: PADDING,
     gap: GAP,
     topBar,
-    navBar: navBar(widthDp),
+    navBar: nav,
     cellW,
     cellH,
     large: cellW >= 170 && cellH >= 170,
