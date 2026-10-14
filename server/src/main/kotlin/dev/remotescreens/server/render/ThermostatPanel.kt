@@ -76,13 +76,13 @@ fun DocContext.thermostatPanel(tile: Tile, box: TileBox) {
             if (fans.isNotEmpty()) c.fanModes(tile.id, fans, k)
         }
         Row(Modifier.fillMaxWidth().verticalWeight(1f), vertical = RcVerticalPositioning.Center) {
-            c.reading(c.i18n.t("ui.current_temp"), V.t(tile.id, "current"), k, Modifier.horizontalWeight(1f))
+            c.reading(c.i18n.t("ui.current_temp"), Vars.t(tile.id, "current"), k, Modifier.horizontalWeight(1f))
             c.key(ActionRef(tile.id, "temperature", "-$step"), icon = "minus", heightDp = 64f * k, widthDp = 64f * k, round = true)
             Spacer(Modifier.width(c.u.px(24f * k)))
             c.dial(tile.id, id, minOf(360f * k, box.h * 0.55f))
             Spacer(Modifier.width(c.u.px(24f * k)))
             c.key(ActionRef(tile.id, "temperature", "+$step"), icon = "plus", heightDp = 64f * k, widthDp = 64f * k, round = true)
-            if (humid) c.reading(c.i18n.t("ui.current_humidity"), V.t(tile.id, "humidity"), k, Modifier.horizontalWeight(1f))
+            if (humid) c.reading(c.i18n.t("ui.current_humidity"), Vars.t(tile.id, "humidity"), k, Modifier.horizontalWeight(1f))
             else Spacer(Modifier.horizontalWeight(1f))
         }
         if (modes.isNotEmpty()) {
@@ -92,7 +92,7 @@ fun DocContext.thermostatPanel(tile: Tile, box: TileBox) {
                 Row(Modifier.clip(c.rounded(segH / 2f)).background(c.role(Role.INK_DIM)).padding(c.u.px(1f))) {
                     modes.forEachIndexed { i, m ->
                         if (i > 0) Spacer(Modifier.width(c.u.px(1f)))
-                        val bg = c.color(V.o(tile.id, "seg", i, "bg"))
+                        val bg = c.color(Vars.o(tile.id, "seg", i, "bg"))
                         Row(c.tap(Modifier.size(c.u.px(segW), c.u.px(segH - 2f)).background(bg), ActionRef(tile.id, "mode", m)),
                             horizontal = androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
                             c.icon(MODE_ICONS[m] ?: "thermostat", 22f * k, ink)
@@ -113,9 +113,9 @@ private fun DocContext.fanModes(tileId: String, fans: List<String>, k: Float) {
         c.label(c.i18n.t("ui.fan"), small(25f, k), c.role(Role.INK))
         fans.forEachIndexed { i, m ->
             Spacer(Modifier.width(c.u.px(10f * k)))
-            Box(c.tap(Modifier.size(c.u.px(90f * k), c.u.px(50f * k)).clip(c.rounded(8f * k)).background(c.color(V.o(tileId, "fan", i, "bg"))), ActionRef(tileId, "fan", m)),
+            Box(c.tap(Modifier.size(c.u.px(90f * k), c.u.px(50f * k)).clip(c.rounded(8f * k)).background(c.color(Vars.o(tileId, "fan", i, "bg"))), ActionRef(tileId, "fan", m)),
                 horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-                c.label(c.fanWord(m), small(16f, k), c.color(V.o(tileId, "fan", i, "ink")), 500f)
+                c.label(c.fanWord(m), small(16f, k), c.color(Vars.o(tileId, "fan", i, "ink")), Weight.MEDIUM)
             }
         }
     }
@@ -130,7 +130,7 @@ private fun DocContext.reading(caption: String, varName: String, k: Float, modif
         val c = this@reading
         c.label(caption.uppercase(c.i18n.locale), small(25f, k), c.role(Role.ACCENT_DARK), align = RcTextAlign.Center)
         Spacer(Modifier.height(c.u.px(20f * k)))
-        c.label(c.text(varName), 70f * k, c.role(Role.INK), 300f, align = RcTextAlign.Center)
+        c.label(c.text(varName), 70f * k, c.role(Role.INK), Weight.LIGHT, align = RcTextAlign.Center)
     }
 }
 
@@ -145,8 +145,8 @@ private fun DocContext.dial(tileId: String, entityId: String, diameterDp: Float)
     val cx = px / 2f
     val r = u.px(diameterDp) / 2f
     val t = u.px(ring)
-    val tint = color(V.t(tileId, "dial"))
-    val sweep = float(V.t(tileId, "sweep"))
+    val tint = color(Vars.t(tileId, "dial"))
+    val sweep = float(Vars.t(tileId, "sweep"))
     val ink = role(Role.INK)
     scope.Box(Modifier.size(px, px), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
         val c = this@dial
@@ -174,9 +174,9 @@ private fun DocContext.dial(tileId: String, entityId: String, diameterDp: Float)
             }
         }
         Column(Modifier.size(px, px), horizontal = RcHorizontalPositioning.Center, vertical = RcColumnVerticalPositioning.Center) {
-            c.label(c.text(V.t(tileId, "action")), diameterDp / 18f, ink, align = RcTextAlign.Center)
+            c.label(c.text(Vars.t(tileId, "action")), diameterDp / 18f, ink, align = RcTextAlign.Center)
             Spacer(Modifier.height(c.u.px(diameterDp / 40f)))
-            c.label(c.text(V.e(entityId, "value")), diameterDp / 7.5f, ink, 300f, align = RcTextAlign.Center)
+            c.label(c.text(Vars.e(entityId, "value")), diameterDp / 7.5f, ink, Weight.LIGHT, align = RcTextAlign.Center)
         }
     }
 }
@@ -197,18 +197,18 @@ private fun DocContext.bindThermostat(tileId: String, entityId: String, modes: L
         val target = e?.number("temperature")
         val sweep = target?.let { (((it - lo) / (hi - lo).coerceAtLeast(1.0)).coerceIn(0.0, 1.0) * 360.0).toFloat() } ?: 0f
         listOf(
-            VarValue.string(V.t(tileId, "current"), e?.number("current_temperature")?.let { i18n.number(it, unit) + "°" } ?: "–"),
-            VarValue.string(V.t(tileId, "humidity"), e?.number("current_humidity")?.let { i18n.percent(it.toInt()) } ?: "–"),
-            VarValue.string(V.t(tileId, "action"), action?.let { actionWord(it) } ?: i18n.state("climate", e?.state ?: "off")),
-            VarValue.color(V.t(tileId, "dial"), tint.argb),
-            VarValue.float(V.t(tileId, "sweep"), sweep),
+            VarValue.string(Vars.t(tileId, "current"), e?.number("current_temperature")?.let { i18n.number(it, unit) + "°" } ?: "–"),
+            VarValue.string(Vars.t(tileId, "humidity"), e?.number("current_humidity")?.let { i18n.percent(it.toInt()) } ?: "–"),
+            VarValue.string(Vars.t(tileId, "action"), action?.let { actionWord(it) } ?: i18n.state("climate", e?.state ?: "off")),
+            VarValue.color(Vars.t(tileId, "dial"), tint.argb),
+            VarValue.float(Vars.t(tileId, "sweep"), sweep),
         ) + modes.mapIndexed { i, m ->
-            VarValue.color(V.o(tileId, "seg", i, "bg"), (if (e?.state == m) Role.ACCENT_DARK else Role.PAGE).argb)
+            VarValue.color(Vars.o(tileId, "seg", i, "bg"), (if (e?.state == m) Role.ACCENT_DARK else Role.PAGE).argb)
         } + fans.flatMapIndexed { i, m ->
             val on = e?.attr("fan_mode") == m
             listOf(
-                VarValue.color(V.o(tileId, "fan", i, "bg"), (if (on) Role.INK else Role.KEY).argb),
-                VarValue.color(V.o(tileId, "fan", i, "ink"), (if (on) Role.INK_DARK else Role.INK).argb),
+                VarValue.color(Vars.o(tileId, "fan", i, "bg"), (if (on) Role.INK else Role.KEY).argb),
+                VarValue.color(Vars.o(tileId, "fan", i, "ink"), (if (on) Role.INK_DARK else Role.INK).argb),
             )
         }
     }

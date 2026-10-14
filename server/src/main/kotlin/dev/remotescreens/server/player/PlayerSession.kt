@@ -16,7 +16,7 @@ import dev.remotescreens.server.render.RenderInput
 import dev.remotescreens.server.render.RenderedDoc
 import dev.remotescreens.server.render.ScreenRenderer
 import dev.remotescreens.server.render.Themes
-import dev.remotescreens.server.render.V
+import dev.remotescreens.server.render.Vars
 import dev.remotescreens.shared.ActionRef
 import dev.remotescreens.shared.PlayerMessage
 import dev.remotescreens.shared.PlayerRecord
@@ -229,7 +229,7 @@ class PlayerSession(
         sendPictures(shown, states, isForced = true)
     }
 
-    private fun connectedVar(): VarValue = VarValue.int(V.CONNECTED, if (homeAssistant.isConnected.value) 1 else 0)
+    private fun connectedVar(): VarValue = VarValue.int(Vars.CONNECTED, if (homeAssistant.isConnected.value) 1 else 0)
 
     private fun foresee(ref: ActionRef, entity: EntityState): EntityState? =
         context.actionRouter.foresee(ref, context.actionRouter.target(ref, screen()), entity)

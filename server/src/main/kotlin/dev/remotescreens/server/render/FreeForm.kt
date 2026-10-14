@@ -184,10 +184,10 @@ private val OWN_TAPS = setOf("tile", "slider", "stepper", "choices", "keys", "sw
 private fun DocContext.styled(n: Node, axis: Axis, pages: Pages, base: Modifier = sized(n, axis)): Modifier {
     var m = base
     val id = n.bind?.entityId
-    val when_ = n.props["showWhen"]
-    if (id != null && (when_ == "on" || when_ == "off")) {
+    val showWhen = n.props["showWhen"]
+    if (id != null && (showWhen == "on" || showWhen == "off")) {
         bindEntity(id)
-        m = m.visibility(int(V.e(id, when_)))
+        m = m.visibility(int(Vars.e(id, showWhen)))
         appear(n.props["animate"])?.let { (enter, exit) -> m = m.animationSpec(enterAnimation = enter, exitAnimation = exit) }
     }
     val bg = n.style.background?.let { paint(it) }
@@ -413,7 +413,7 @@ fun nodeVar(nodeId: String) = "n.$nodeId.text"
 
 private fun DocContext.textNode(n: Node, axis: Axis, pages: Pages) {
     val sp = n.props["fontSize"]?.toFloatOrNull() ?: Type.TITLE
-    val weight = n.props["weight"]?.toFloatOrNull() ?: 400f
+    val weight = n.props["weight"]?.toFloatOrNull() ?: Weight.NORMAL
     val ink = n.props["color"]?.let { paint(it) } ?: role(Role.INK)
     val marquee = n.props["marquee"] == "true"
     val lines = if (marquee) 1 else n.props["lines"]?.toIntOrNull()?.coerceIn(1, 20) ?: 1
@@ -449,7 +449,7 @@ private fun DocContext.iconNode(n: Node, axis: Axis, pages: Pages) {
         explicit != null -> explicit
         id != null -> {
             bindTileColors(n.id, id, Pastel.forDomain(domain))
-            color(V.t(n.id, "icon"))
+            color(Vars.t(n.id, "icon"))
         }
         else -> role(Role.INK)
     }
@@ -479,7 +479,7 @@ private fun DocContext.buttonNode(n: Node, axis: Axis, pages: Pages) {
         val c = this@buttonNode
         if (icon != null) c.icon(icon, if (word == null) 24f else 20f, ink)
         if (icon != null && word != null) Spacer(Modifier.width(c.u.px(8f)))
-        if (word != null) c.label(word, Type.BODY, ink, weight = 500f)
+        if (word != null) c.label(word, Type.BODY, ink, weight = Weight.MEDIUM)
     }
 }
 
@@ -500,7 +500,7 @@ private fun DocContext.sliderNode(n: Node, self: Dims, axis: Axis, pages: Pages)
     val h = if (n.size.height == "wrap") 28f else self.h
     scope.Box(styled(n, axis, pages)) {
         val c = this@sliderNode
-        c.levelBar(c.float(V.e(id, "level")), self.w - 2 * n.style.padding, h - 2 * n.style.padding, c.color(V.t(n.id, "icon")), c.role(Role.TRACK), steps) { i ->
+        c.levelBar(c.float(Vars.e(id, "level")), self.w - 2 * n.style.padding, h - 2 * n.style.padding, c.color(Vars.t(n.id, "icon")), c.role(Role.TRACK), steps) { i ->
             val v = min + (max - min) * i / steps
             ActionRef(n.id, verb, if (v % 1.0 == 0.0) v.toInt().toString() else "%.1f".format(Locale.ROOT, v))
         }
@@ -529,7 +529,8 @@ private fun DocContext.tileNode(n: Node, self: Dims, axis: Axis, pages: Pages) {
     val t = n.tile
     val spec = t?.let { Catalogue.of(it.effectiveKind()) }
     val m = sized(n, axis).let { if (n.size.width == "wrap" && n.size.height == "wrap") it.size(u.px(self.w), u.px(self.h)) else it }
-    if (t == null || spec == null || (t.entityId == null && spec.needsEntity)) {
+    val lacksEntity = t?.entityId == null && spec?.needsEntity == true
+    if (t == null || spec == null || lacksEntity) {
         scope.Box(m)
         return
     }
@@ -547,9 +548,9 @@ private fun DocContext.clockNode(n: Node, axis: Axis, pages: Pages) {
     val a = align(n.props["align"])
     scope.Column(styled(n, axis, pages), horizontal = horizontal(n.props["align"])) {
         val c = this@clockNode
-        if (show != "date") c.label(c.text(V.TIME), sp, ink, 300f, align = a)
-        if (show == "date") c.label(c.text(V.DATE), sp, ink, align = a, lines = 2)
-        if (show == "both") c.label(c.text(V.DATE), maxOf(sp * 0.33f, Type.BODY), c.role(Role.INK_SOFT), align = a, lines = 2)
+        if (show != "date") c.label(c.text(Vars.TIME), sp, ink, Weight.LIGHT, align = a)
+        if (show == "date") c.label(c.text(Vars.DATE), sp, ink, align = a, lines = 2)
+        if (show == "both") c.label(c.text(Vars.DATE), maxOf(sp * 0.33f, Type.BODY), c.role(Role.INK_SOFT), align = a, lines = 2)
     }
 }
 
@@ -563,7 +564,7 @@ private fun DocContext.badgeNode(n: Node, axis: Axis, pages: Pages) {
         explicit != null -> explicit to role(Role.KEY_ON_INK)
         id != null -> {
             bindTileColors(n.id, id, Pastel.forDomain(domain))
-            color(V.t(n.id, "bg")) to color(V.t(n.id, "bgink"))
+            color(Vars.t(n.id, "bg")) to color(Vars.t(n.id, "bgink"))
         }
         else -> role(Role.KEY) to role(Role.INK)
     }
@@ -579,8 +580,8 @@ private fun DocContext.badgeNode(n: Node, axis: Axis, pages: Pages) {
             c.icon(icon, 18f, ink)
             Spacer(Modifier.width(c.u.px(6f)))
         }
-        if (id != null && n.props["text"].isNullOrEmpty()) c.label(c.text(V.e(id, "state")), Type.BODY, ink, 500f)
-        else c.label(n.props["text"].orEmpty(), Type.BODY, ink, 500f)
+        if (id != null && n.props["text"].isNullOrEmpty()) c.label(c.text(Vars.e(id, "state")), Type.BODY, ink, Weight.MEDIUM)
+        else c.label(n.props["text"].orEmpty(), Type.BODY, ink, Weight.MEDIUM)
     }
 }
 
@@ -663,7 +664,7 @@ private fun DocContext.switchNode(n: Node, axis: Axis, pages: Pages) {
     val track = if (id != null) {
         bindEntity(id)
         bindTileColors(n.id, id, Pastel.of(n.props["color"]) ?: Pastel.forDomain(id.substringBefore('.')))
-        color(V.t(n.id, "bg"))
+        color(Vars.t(n.id, "bg"))
     } else {
         role(Role.KEY)
     }
@@ -680,8 +681,8 @@ private fun DocContext.switchNode(n: Node, axis: Axis, pages: Pages) {
             if (id == null) {
                 knob(false, null)
             } else {
-                knob(false, V.e(id, "off"))
-                knob(true, V.e(id, "on"))
+                knob(false, Vars.e(id, "off"))
+                knob(true, Vars.e(id, "on"))
             }
         }
     }
@@ -728,8 +729,8 @@ private fun DocContext.stepperNode(n: Node, axis: Axis, pages: Pages) {
         key(down, "minus")
         val middle = if (n.size.width == "wrap") Modifier.width(c.u.px(112f)) else Modifier.horizontalWeight(1f)
         Box(middle, horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-            if (id != null) c.label(c.text(V.e(id, "value")), Type.HEADLINE, ink, 500f, align = RcTextAlign.Center)
-            else c.label("–", Type.HEADLINE, c.role(Role.INK_DIM), 500f, align = RcTextAlign.Center)
+            if (id != null) c.label(c.text(Vars.e(id, "value")), Type.HEADLINE, ink, Weight.MEDIUM, align = RcTextAlign.Center)
+            else c.label("–", Type.HEADLINE, c.role(Role.INK_DIM), Weight.MEDIUM, align = RcTextAlign.Center)
         }
         key(up, "plus")
     }
@@ -777,7 +778,7 @@ private fun DocContext.gaugeNode(n: Node, axis: Axis, pages: Pages) {
         bindLevel(n, id)
     }
     // In the gap under the ring: the entity's name for `@name`, else the words given.
-    val caption = n.props["caption"]?.takeIf { it.isNotBlank() }?.let { if (it == "@name") id?.let { e -> text(V.e(e, "name")) } else literal(it) }
+    val caption = n.props["caption"]?.takeIf { it.isNotBlank() }?.let { if (it == "@name") id?.let { e -> text(Vars.e(e, "name")) } else literal(it) }
     scope.Box(styled(n, axis, pages), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
         val c = this@gaugeNode
         Box(Modifier.size(px, px), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
@@ -793,7 +794,7 @@ private fun DocContext.gaugeNode(n: Node, axis: Axis, pages: Pages) {
                     drawTextAnchored(caption, px / 2f, px - px * 0.06f, 0f, 0f)
                 }
             }
-            if (id != null) c.label(c.text(V.e(id, "value")), maxOf(sizeDp * 0.16f, Type.CAPTION), c.role(Role.INK), 500f, align = RcTextAlign.Center)
+            if (id != null) c.label(c.text(Vars.e(id, "value")), maxOf(sizeDp * 0.16f, Type.CAPTION), c.role(Role.INK), Weight.MEDIUM, align = RcTextAlign.Center)
         }
     }
 }
@@ -853,7 +854,7 @@ private fun DocContext.iconButtonNode(n: Node, axis: Axis, pages: Pages) {
     val (bg, ink) = if (id != null) {
         bindEntity(id)
         bindTileColors(n.id, id, Pastel.of(n.props["color"]) ?: Pastel.forDomain(domain))
-        color(V.t(n.id, "bg")) to color(V.t(n.id, "bgink"))
+        color(Vars.t(n.id, "bg")) to color(Vars.t(n.id, "bgink"))
     } else {
         (n.props["color"]?.let { paint(it) } ?: role(Role.KEY)) to role(Role.INK)
     }
@@ -909,7 +910,7 @@ private fun DocContext.keysNode(n: Node, axis: Axis, pages: Pages) {
                 c.key(ref, icon = icon, heightDp = sizeDp, widthDp = if (stretch) null else sizeDp, round = !stretch, modifier = if (stretch) Modifier.horizontalWeight(1f) else Modifier)
             }
         }
-        if (domain == "lock") c.label(c.text(V.t(n.id, "confirm")), Type.CAPTION, c.role(Role.WARN), 600f)
+        if (domain == "lock") c.label(c.text(Vars.t(n.id, "confirm")), Type.CAPTION, c.role(Role.WARN), Weight.SEMI_BOLD)
     }
 }
 
@@ -934,12 +935,12 @@ private fun DocContext.keypadNode(n: Node, axis: Axis, pages: Pages) {
     val id = n.bind?.entityId
     val sizeDp = n.props["size"]?.toFloatOrNull()?.coerceIn(32f, 160f) ?: 56f
     val keyW = sizeDp * 1.5f
-    val codeVar = V.t("e:${id ?: n.id}", "code")
+    val codeVar = Vars.t("e:${id ?: n.id}", "code")
     if (id != null) bind(id) { listOf(VarValue.string(codeVar, "")) }
     scope.Column(styled(n, axis, pages), horizontal = RcHorizontalPositioning.Center) {
         val c = this@keypadNode
         Box(Modifier.height(c.u.px(56f)), vertical = RcVerticalPositioning.Center) {
-            if (id != null) c.label(c.text(codeVar), Type.VALUE, c.role(Role.INK), 500f, align = RcTextAlign.Center)
+            if (id != null) c.label(c.text(codeVar), Type.VALUE, c.role(Role.INK), Weight.MEDIUM, align = RcTextAlign.Center)
         }
         for (row in listOf(listOf("1", "2", "3"), listOf("4", "5", "6"), listOf("7", "8", "9"), listOf("clear", "0", "back"))) {
             Row(Modifier.padding(0f, 0f, 0f, c.u.px(10f)), horizontal = RcRowHorizontalPositioning.Center) {

@@ -56,8 +56,7 @@ class RenderedDoc(
         val out = LinkedHashMap<String, List<VarValue>>()
         for ((meta, pair) in ctx.predicted) {
             val (ref, entityId) = pair
-            val current = states[entityId] ?: continue
-            val next = foresee(ref, current) ?: continue
+            val next = states[entityId]?.let { foresee(ref, it) } ?: continue
             val after = HashMap(states).also { it[entityId] = next }
             val changed = ctx.bindings.filter { it.entityId == entityId }
                 .flatMap { runCatching { it.compute(after) }.getOrDefault(emptyList()) }
@@ -95,7 +94,7 @@ object ScreenRenderer {
 
         val (bytes, ctx) = DocContext.build(device.widthPx, device.heightPx, screen.name, { input.context(device) }) { ctx ->
             ctx.bindSystem(screen)
-            val page = ctx.int(V.PAGE, home)
+            val page = ctx.int(Vars.PAGE, home)
             Box(Modifier.fillMaxSize().background(ctx.role(Role.PAGE))) {
                 StateLayout(page, Modifier.fillMaxSize()) {
                     pages.forEachIndexed { i, p ->
@@ -172,8 +171,8 @@ object ScreenRenderer {
                     Modifier.width(c.u.px(minOf(350f, spec.widthDp * 0.42f))).fillMaxHeight().background(c.role(Role.HEADER_DARK)),
                     horizontal = RcRowHorizontalPositioning.SpaceEvenly, vertical = RcVerticalPositioning.Center,
                 ) {
-                    c.label(c.text(V.TIME), HEADER_SP, ink, 700f)
-                    if (spec.widthDp >= Grid.NARROW) c.label(c.text(V.DAY), HEADER_SP, ink)
+                    c.label(c.text(Vars.TIME), HEADER_SP, ink, Weight.BOLD)
+                    if (spec.widthDp >= Grid.NARROW) c.label(c.text(Vars.DAY), HEADER_SP, ink)
                 }
             }
             Spacer(Modifier.width(c.u.px(spec.padding + 8f)))
@@ -181,19 +180,19 @@ object ScreenRenderer {
                 if (back) {
                     c.key(ActionRef("_", "back", home.toString()), icon = "arrow-left", heightDp = 34f, widthDp = 34f, round = true)
                     Spacer(Modifier.width(c.u.px(10f)))
-                    c.label(page.title, Type.TITLE, ink, 500f)
+                    c.label(page.title, Type.TITLE, ink, Weight.MEDIUM)
                 }
             }
             if (screen.topBar.temperatureEntity != null) {
                 c.icon("thermometer", 26f, c.role(Role.BLUE))
                 Spacer(Modifier.width(c.u.px(4f)))
-                c.label(c.text(V.TEMP), HEADER_SP, ink)
+                c.label(c.text(Vars.TEMP), HEADER_SP, ink)
                 Spacer(Modifier.width(c.u.px(15f)))
             }
             if (screen.topBar.people) {
                 c.icon("home-account", 26f, c.role(Role.ACCENT_SOFT))
                 Spacer(Modifier.width(c.u.px(4f)))
-                c.label(c.text(V.PEOPLE), HEADER_SP, ink)
+                c.label(c.text(Vars.PEOPLE), HEADER_SP, ink)
                 Spacer(Modifier.width(c.u.px(15f)))
             }
             Spacer(Modifier.width(c.u.px(5f)))
@@ -249,12 +248,12 @@ object ScreenRenderer {
                 t.domain == "weather" -> t.number("temperature")?.let { i18n.number(it, 0) + "°" } ?: ""
                 else -> t.numericState()?.let { i18n.number(it, 0) + "°" } ?: t.state
             }
-            listOf(VarValue.string(V.TEMP, text))
+            listOf(VarValue.string(Vars.TEMP, text))
         }
         for (p in states.keys.filter { it.startsWith("person.") }) bind(p) { emptyList() }
         bind(null) { states ->
             val home = states.values.count { it.domain == "person" && it.state == "home" }
-            listOf(VarValue.string(V.PEOPLE, home.toString()))
+            listOf(VarValue.string(Vars.PEOPLE, home.toString()))
         }
     }
 }

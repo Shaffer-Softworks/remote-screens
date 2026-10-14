@@ -52,12 +52,12 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
     scope.Column(Modifier.fillMaxSize().background(role(Role.PAGE)), horizontal = RcHorizontalPositioning.Center) {
         val c = this@weatherPanel
         Spacer(Modifier.height(c.u.px(16f * k)))
-        c.label(c.text(V.e(id, "name")), 36f * k, c.role(Role.WEATHER_TITLE), align = RcTextAlign.Center)
+        c.label(c.text(Vars.e(id, "name")), 36f * k, c.role(Role.WEATHER_TITLE), align = RcTextAlign.Center)
         Spacer(Modifier.verticalWeight(1f))
         Row(vertical = RcVerticalPositioning.Center) {
             c.icon(Present.weatherIcon(e?.state ?: ""), 110f * k, ink)
             Spacer(Modifier.width(c.u.px(24f * k)))
-            c.label(c.text(V.e(id, "value")), 110f * k, ink, 100f)
+            c.label(c.text(Vars.e(id, "value")), 110f * k, ink, 100f)
         }
         c.label(c.i18n.state("weather", e?.state ?: "unknown"), small(26f, k), ink, align = RcTextAlign.Center)
         if (details.isNotEmpty()) {
@@ -65,7 +65,7 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
             Row(vertical = RcVerticalPositioning.Center) {
                 details.forEachIndexed { i, key ->
                     if (i > 0) Spacer(Modifier.width(c.u.px(50f * k)))
-                    c.label(c.text(V.t(tile.id, key)), small(20f, k), ink)
+                    c.label(c.text(Vars.t(tile.id, key)), small(20f, k), ink)
                 }
             }
         }
@@ -81,7 +81,7 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
                         c.label(c.i18n.state("weather", d.condition), small(14f, k), soft, align = RcTextAlign.Center)
                         Spacer(Modifier.height(c.u.px(4f * k)))
                         Row(vertical = RcVerticalPositioning.Bottom) {
-                            c.label(d.high?.let { "${it.roundToInt()}°" } ?: "–", small(18f, k), ink, 500f)
+                            c.label(d.high?.let { "${it.roundToInt()}°" } ?: "–", small(18f, k), ink, Weight.MEDIUM)
                             c.label(d.low?.let { " / ${it.roundToInt()}°" } ?: "", small(13f, k), soft)
                         }
                     }
@@ -108,7 +108,7 @@ private fun DocContext.bindWeatherDetails(tileId: String, entityId: String, deta
                     else -> measure(it, key, "pressure_unit", "hPa")?.let { v -> i18n.t("ui.pressure", "value" to v) }
                 }
             }
-            VarValue.string(V.t(tileId, key), word ?: "")
+            VarValue.string(Vars.t(tileId, key), word ?: "")
         }
     }
 }

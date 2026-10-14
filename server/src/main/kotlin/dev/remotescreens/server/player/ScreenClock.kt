@@ -2,7 +2,7 @@ package dev.remotescreens.server.player
 
 import dev.remotescreens.server.data.homeassistant.HomeAssistant
 import dev.remotescreens.server.i18n.LanguageRepository
-import dev.remotescreens.server.render.V
+import dev.remotescreens.server.render.Vars
 import dev.remotescreens.shared.ScreenSettings
 import dev.remotescreens.shared.VarValue
 import dev.remotescreens.shared.isDarkAt
@@ -23,9 +23,9 @@ class ScreenClock(
         val now = now()
         val i18n = languageRepository.current()
         return listOf(
-            VarValue.string(V.TIME, i18n.time(now)),
-            VarValue.string(V.DATE, i18n.date(now)),
-            VarValue.string(V.DAY, i18n.day(now)),
+            VarValue.string(Vars.TIME, i18n.time(now)),
+            VarValue.string(Vars.DATE, i18n.date(now)),
+            VarValue.string(Vars.DAY, i18n.day(now)),
         )
     }
 

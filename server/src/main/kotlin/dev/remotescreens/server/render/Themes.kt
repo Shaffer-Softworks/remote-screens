@@ -86,11 +86,8 @@ object Themes {
     fun isBuiltin(id: String): Boolean = id in BUILTIN
 
     /** The palette of theme [id], a custom one laid over its base; the default for an id nobody knows. */
-    fun resolve(id: String?, custom: List<Theme>): Palette {
-        BUILTIN[id]?.let { return it.second }
-        val theme = custom.firstOrNull { it.id == id } ?: return RPI
-        return over(theme)
-    }
+    fun resolve(id: String?, custom: List<Theme>): Palette =
+        BUILTIN[id]?.second ?: custom.firstOrNull { it.id == id }?.let(::over) ?: RPI
 
     private fun over(theme: Theme): Palette {
         val base = BUILTIN[theme.base]?.second ?: RPI

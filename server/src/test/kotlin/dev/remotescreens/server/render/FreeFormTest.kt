@@ -195,8 +195,8 @@ class FreeFormTest {
         assertTrue("sw|toggle|" in doc.ctx.predicted)
         val states = ha.states.value
         val on = doc.vars(states + ("switch.coffee_machine" to states.getValue("switch.coffee_machine").with("on")))
-        assertEquals(V.VISIBLE.toString(), on["e.switch.coffee_machine.on"]?.value)
-        assertEquals(V.GONE.toString(), on["e.switch.coffee_machine.off"]?.value)
+        assertEquals(Vars.VISIBLE.toString(), on["e.switch.coffee_machine.on"]?.value)
+        assertEquals(Vars.GONE.toString(), on["e.switch.coffee_machine.off"]?.value)
     }
 
     @Test
@@ -249,7 +249,7 @@ class FreeFormTest {
         val half = doc.vars(states + ("light.living_room" to lamp.with("on", mapOf("brightness" to kotlinx.serialization.json.JsonPrimitive(128)))))
         assertEquals(0.5f, half[nodeLevel("ring")]?.value?.toString()?.toFloat()!!, 0.01f)
         val off = doc.vars(states + ("light.table_lamp" to states.getValue("light.table_lamp").with("off")))
-        assertEquals(V.GONE.toString(), off["e.light.table_lamp.on"]?.value, "the text bound with showWhen=on is hidden")
+        assertEquals(Vars.GONE.toString(), off["e.light.table_lamp.on"]?.value, "the text bound with showWhen=on is hidden")
     }
 
     @Test
