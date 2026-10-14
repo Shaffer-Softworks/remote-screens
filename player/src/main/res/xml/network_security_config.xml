@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The add-on is on the home network and speaks plain ws:// and http://, like Home Assistant itself on a LAN. -->
-<network-security-config>
-    <base-config cleartextTrafficPermitted="true" />
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <base-config cleartextTrafficPermitted="true" tools:ignore="InsecureBaseConfiguration" />
 </network-security-config>

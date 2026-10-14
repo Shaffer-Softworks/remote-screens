@@ -19,15 +19,22 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v5
+      - name: Detekt
+        run: ./gradlew :shared:detekt :server:detekt :player:detekt
       - name: Tests
-        run: ./gradlew :shared:test :server:test
+        run: ./gradlew :shared:test :server:test :player:testDebugUnitTest
+      - name: Android lint
+        run: ./gradlew :player:lintDebug
       - name: Player app
         run: ./gradlew :player:assembleDebug
       - uses: actions/upload-artifact@v5
         if: always()
         with:
-          name: test-reports
-          path: "*/build/reports/tests/"
+          name: reports
+          path: |
+            */build/reports/tests/
+            */build/reports/detekt/
+            player/build/reports/lint-results-debug.*
           if-no-files-found: ignore
 
   editor:

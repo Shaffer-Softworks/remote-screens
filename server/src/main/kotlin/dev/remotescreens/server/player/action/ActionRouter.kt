@@ -10,6 +10,7 @@ import dev.remotescreens.shared.PredictSpec
 import dev.remotescreens.shared.Screen
 import dev.remotescreens.shared.TapType
 import dev.remotescreens.shared.TypeSpec
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
@@ -53,6 +54,8 @@ class ActionRouter(private val homeAssistant: HomeAssistant, private val i18n: (
                 "code_digit", "code_back", "code_clear" -> typeCode(verb, ref.arg, target, memory)
                 else -> callService(verb, ref, target, entity, memory, nowMs)
             }
+        } catch (cancellation: CancellationException) {
+            throw cancellation
         } catch (e: Exception) {
             logger.warn("Action {} failed: {}", ref.encode(), e.message)
             TapOutcome.Failed(e.message ?: e.javaClass.simpleName)

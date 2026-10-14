@@ -7,9 +7,10 @@ import kotlinx.serialization.json.jsonPrimitive
 /** Material Design Icons, the icon set Home Assistant uses, as SVG path data on a 24 by 24 grid. */
 object Icons {
     private val data by lazy {
-        val text = Icons::class.java.getResourceAsStream("/mdi.json")!!.bufferedReader().readText()
+        val stream = checkNotNull(Icons::class.java.getResourceAsStream("/mdi.json")) { "mdi.json is not bundled" }
+        val text = stream.bufferedReader().use { it.readText() }
         val root = Json.parseToJsonElement(text).jsonObject
-        root["icons"]!!.jsonObject.mapValues { it.value.jsonPrimitive.content }
+        checkNotNull(root["icons"]) { "mdi.json has no icons" }.jsonObject.mapValues { it.value.jsonPrimitive.content }
     }
 
     const val FALLBACK = "help-circle-outline"

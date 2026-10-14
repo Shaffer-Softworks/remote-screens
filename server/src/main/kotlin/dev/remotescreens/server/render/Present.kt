@@ -149,14 +149,13 @@ object Present {
         }
 
     private fun valueOf(e: EntityState, i18n: I18n, stateText: String, word: String): String = when (e.domain) {
-        "sensor", "number", "input_number" -> numberOnly(e, i18n) ?: e.state
+        "sensor", "number", "input_number" -> e.numericState()?.let { numberOnly(e, it, i18n) } ?: e.state
         "climate" -> e.number("temperature")?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + "°" } ?: word
         "weather" -> e.number("temperature")?.let { i18n.number(it, 0) + "°" } ?: word
         else -> stateText
     }
 
-    private fun numberOnly(e: EntityState, i18n: I18n): String? {
-        val v = e.numericState() ?: return null
+    private fun numberOnly(e: EntityState, v: Double, i18n: I18n): String {
         val unit = e.attr("unit_of_measurement").orEmpty()
         val (scaled, _) = scale(v, unit)
         val decimals = when {
@@ -168,8 +167,9 @@ object Present {
     }
 
     fun numberWithUnit(e: EntityState, i18n: I18n): String? {
-        val n = numberOnly(e, i18n) ?: return null
-        val (_, unit) = scale(e.numericState()!!, e.attr("unit_of_measurement").orEmpty())
+        val v = e.numericState() ?: return null
+        val n = numberOnly(e, v, i18n)
+        val (_, unit) = scale(v, e.attr("unit_of_measurement").orEmpty())
         return if (unit.isEmpty()) n else if (unit == "%") "$n %" else "$n $unit"
     }
 
