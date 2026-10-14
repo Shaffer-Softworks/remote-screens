@@ -9,6 +9,9 @@
   fading or sliding in and out.
 - Remote Compose 1.0.0-alpha21. Tablets on this player app receive their screens compressed, well under half
   the size.
+- A clearer home page in the editor: tablets waiting to pair at the top, a preview of each screen, and a tablet
+  list with its status, the screen it shows, and plainly named actions.
+
 ## 0.1.0
 
 - First release: screens of tiles on Android tablets, drawn with Remote Compose, edited in Home Assistant.
