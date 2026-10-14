@@ -39,6 +39,28 @@ const node = design.selected
 const view = ref<'design' | 'split' | 'code'>('design')
 const sidePanel = ref<'page' | 'screen'>('page')
 
+// The palette and the component tree share the left column; drag the divider to give either more room.
+const TREE_MIN = 120
+const PALETTE_MIN = 140
+const treeHeight = ref(Number(localStorage.getItem('rs.treeHeight')) || 360)
+function resizeTree(e: PointerEvent): void {
+  const aside = (e.currentTarget as HTMLElement).parentElement!
+  const startY = e.clientY
+  const startH = treeHeight.value
+  const max = aside.clientHeight - PALETTE_MIN
+  const move = (m: PointerEvent) => {
+    treeHeight.value = Math.round(Math.min(max, Math.max(TREE_MIN, startH + startY - m.clientY)))
+  }
+  const up = () => {
+    window.removeEventListener('pointermove', move)
+    window.removeEventListener('pointerup', up)
+    localStorage.setItem('rs.treeHeight', String(treeHeight.value))
+  }
+  window.addEventListener('pointermove', move)
+  window.addEventListener('pointerup', up)
+  e.preventDefault()
+}
+
 // The canvas draws in the screen's day theme, or the one it wears while dark.
 const previewDark = ref(screen.value.settings.darkMode)
 watchEffect(() => {
@@ -350,8 +372,17 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
 
     <main v-if="free" class="designer">
       <aside class="left card">
-        <ComponentPalette :page="page" />
-        <ComponentTree />
+        <ComponentPalette class="palette-pane" :page="page" />
+        <div
+          class="splitter"
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize component tree"
+          title="Drag to resize"
+          @pointerdown="resizeTree"
+          @dblclick="treeHeight = 360"
+        />
+        <ComponentTree class="tree-pane" :style="{ height: `${treeHeight}px` }" />
       </aside>
 
       <section class="canvas">
@@ -583,10 +614,49 @@ main {
 .left {
   width: 280px;
   flex: none;
-  overflow: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+}
+
+.palette-pane {
+  flex: 1 1 auto;
+  min-height: 140px;
+  overflow: auto;
+  margin: 0 -16px;
+  padding: 0 16px 8px;
+}
+
+.splitter {
+  flex: none;
+  height: 10px;
+  margin: 0 -16px;
+  cursor: row-resize;
+  position: relative;
+  touch-action: none;
+}
+
+.splitter::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 4px;
+  width: 36px;
+  height: 3px;
+  margin-left: -18px;
+  border-radius: 2px;
+  background: var(--muted);
+  opacity: 0.5;
+}
+
+.splitter:hover::after {
+  opacity: 1;
+}
+
+.tree-pane {
+  flex: none;
+  min-height: 120px;
+  padding-top: 6px;
 }
 
 .toolbar {
