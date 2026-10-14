@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { dragged } from '../model/drag'
-import { NARROW, fitsAt, reflow, spec } from '../model/grid'
-import { pastel } from '../model/palette'
+import { NARROW, TOP_BAR, fitsAt, navBar, navBarHeight, reflow, spec, topBarHeight } from '../model/grid'
+import { colorOf, pastel } from '../model/palette'
 import { iconOf, nameOf, stateOf } from '../model/tiles'
 import type { Page, Screen, Tile } from '../model/types'
 import { domainOf, kindOf } from '../model/types'
@@ -31,7 +31,9 @@ onMounted(() => {
 })
 onBeforeUnmount(() => observer?.disconnect())
 
-const g = computed(() => spec(props.screen.grid, props.device.w, props.device.h, props.screen.topBar.show))
+const g = computed(() =>
+  spec(props.screen.grid, props.device.w, props.device.h, topBarHeight(props.screen.topBar), navBarHeight(props.screen.navBar, props.device.w)),
+)
 // The frame is 10px around the device and its margin 10px more.
 const scale = computed(() => Math.max(0.1, Math.min((room.value.w - 24) / props.device.w, (room.value.h - 24) / props.device.h)))
 const placed = computed(() => reflow(props.page.tiles, props.screen.grid))
@@ -85,8 +87,37 @@ function accent(t: Tile): string | null {
 
 const pageTitle = (id: string) => props.screen.pages.find((p) => p.id === id)?.title
 const navIcon = (p: Page) => p.icon ?? (p.id === props.screen.homePage ? 'home' : 'view-dashboard')
-const navButtonW = computed(() => Math.min(g.value.navBar - 2, props.device.w / (visiblePages.value.length + 1)))
-const navIconSize = computed(() => Math.min(40, (g.value.navBar - 2) * 0.4))
+// The bars as ScreenRenderer.kt draws them: text and icons scale with each bar's height against its default.
+const top = computed(() => {
+  const bar = props.screen.topBar
+  const k = Math.min(Math.max(g.value.topBar / TOP_BAR, 0.7), 2)
+  return {
+    k,
+    clockW: bar.clockWidth !== undefined ? (props.device.w * bar.clockWidth) / 100 : Math.min(350, props.device.w * 0.42),
+    date: bar.date !== false && props.device.w >= NARROW,
+    background: colorOf(bar.background),
+    clockBackground: colorOf(bar.clockBackground),
+  }
+})
+const nav = computed(() => {
+  const bar = props.screen.navBar ?? {}
+  const barH = g.value.navBar - 2
+  const count = visiblePages.value.length + 1
+  const layout = bar.layout ?? 'spread'
+  const k = barH / (navBar(props.device.w) - 2)
+  const labels = bar.labels ?? 'both'
+  return {
+    labels,
+    buttonW: layout === 'fill' ? props.device.w / count : Math.min(barH, props.device.w / count),
+    justify: layout === 'center' ? 'center' : layout === 'fill' ? 'flex-start' : count > 2 ? 'space-between' : 'space-evenly',
+    iconSize: labels === 'icons' ? Math.min(48, barH * 0.55) : Math.min(40, barH * 0.4),
+    fontSize: labels === 'text' ? Math.min(Math.max(14 * k, 10), 24) : Math.min(Math.max(10 * k, 9), 16),
+    gap: 5 * Math.min(k, 1.5),
+    background: colorOf(bar.background),
+    line: colorOf(bar.line),
+    active: colorOf(bar.active),
+  }
+})
 const people = computed(() => state.entities.filter((e) => e.domain === 'person'))
 const weather = computed(() => state.entities.find((e) => e.domain === 'weather'))
 
@@ -152,18 +183,24 @@ const highlight = computed(() => {
       @click.self="emit('select', null)"
       @dragleave.self="hover = null"
     >
-      <div v-if="screen.topBar.show" class="topbar" :style="{ height: `${g.topBar}px` }">
-        <div v-if="screen.topBar.clock" class="when" :style="{ width: `${Math.min(350, device.w * 0.42)}px` }">
-          <strong>12:34</strong><span v-if="device.w >= NARROW">24 MAY 2026</span>
+      <div
+        v-if="screen.topBar.show"
+        class="topbar"
+        :style="{ height: `${g.topBar}px`, fontSize: `${20 * top.k}px`, gap: `${15 * top.k}px`, background: top.background }"
+      >
+        <div v-if="screen.topBar.clock" class="when" :style="{ width: `${top.clockW}px`, background: top.clockBackground }">
+          <strong>12:34</strong><span v-if="top.date">24 MAY 2026</span>
         </div>
-        <div class="grow middle">
+        <div class="grow middle" :style="{ fontSize: `${16 * top.k}px` }">
           <template v-if="page.hidden">
-            <span class="back"><MdiIcon name="arrow-left" :size="20" /></span>
+            <span class="back" :style="{ width: `${Math.min(34 * top.k, g.topBar - 6)}px`, height: `${Math.min(34 * top.k, g.topBar - 6)}px` }">
+              <MdiIcon name="arrow-left" :size="20 * top.k" />
+            </span>
             <span>{{ page.title }}</span>
           </template>
         </div>
-        <span v-if="screen.topBar.temperatureEntity" class="stat"><MdiIcon name="thermometer" :size="26" class="blue" />14°</span>
-        <span v-if="screen.topBar.people" class="stat"><MdiIcon name="home-account" :size="26" class="teal" />{{ people.filter((p) => p.state === 'home').length }}</span>
+        <span v-if="screen.topBar.temperatureEntity" class="stat"><MdiIcon name="thermometer" :size="26 * top.k" class="blue" />14°</span>
+        <span v-if="screen.topBar.people" class="stat"><MdiIcon name="home-account" :size="26 * top.k" class="teal" />{{ people.filter((p) => p.state === 'home').length }}</span>
       </div>
 
       <div
@@ -291,15 +328,21 @@ const highlight = computed(() => {
 
       <p v-if="!free && page.tiles.length === 0" class="empty">Drag entities here, or click one in the list.</p>
 
-      <div class="nav" :style="{ top: `${device.h - g.navBar}px`, height: `${g.navBar}px` }">
-        <div class="buttons" :class="{ between: visiblePages.length + 1 > 2 }">
-          <span v-for="p in visiblePages" :key="p.id" class="button" :class="{ on: p.id === page.id }" :style="{ width: `${navButtonW}px` }">
-            <MdiIcon :name="navIcon(p)" :size="navIconSize" />
-            <span>{{ p.title.toUpperCase() }}</span>
-          </span>
-          <span class="button" :style="{ width: `${navButtonW}px` }">
-            <MdiIcon name="cog" :size="navIconSize" />
-            <span>SETTINGS</span>
+      <div
+        class="nav"
+        :class="`labels-${nav.labels}`"
+        :style="{ top: `${device.h - g.navBar}px`, height: `${g.navBar}px`, background: nav.background, borderTopColor: nav.line }"
+      >
+        <div class="buttons" :style="{ justifyContent: nav.justify }">
+          <span
+            v-for="b in [...visiblePages.map((p) => ({ id: p.id, icon: navIcon(p), title: p.title, on: p.id === page.id })), { id: '_settings', icon: 'cog', title: 'Settings', on: false }]"
+            :key="b.id"
+            class="button"
+            :class="{ on: b.on }"
+            :style="{ width: `${nav.buttonW}px`, fontSize: `${nav.fontSize}px`, gap: `${nav.gap}px`, background: b.on ? nav.active : undefined }"
+          >
+            <MdiIcon v-if="nav.labels !== 'text'" :name="b.icon" :size="nav.iconSize" />
+            <span v-if="nav.labels !== 'icons'">{{ b.title.toUpperCase() }}</span>
           </span>
         </div>
       </div>
@@ -840,11 +883,6 @@ const highlight = computed(() => {
 .nav .buttons {
   flex: 1;
   display: flex;
-  justify-content: space-evenly;
-}
-
-.nav .buttons.between {
-  justify-content: space-between;
 }
 
 .nav .button {
@@ -852,10 +890,14 @@ const highlight = computed(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  font-size: 10px;
   overflow: hidden;
   white-space: nowrap;
+}
+
+.nav.labels-text .button {
+  font-weight: 500;
+  white-space: normal;
+  text-align: center;
 }
 
 .nav .button.on {

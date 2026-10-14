@@ -50,6 +50,13 @@ export const activeTheme = computed(() => themeById(activeThemeId.value))
 /** The pastels of the active theme, kept in place so templates and lists of keys can use it directly. */
 export const PASTELS: Pastel[] = reactive(PASTEL_KEYS.map((key) => ({ key, color: '' })))
 
+/** The colours offered for a background: the surface roles, then the pastels. */
+export const BACKGROUND_SWATCHES = [
+  'card', 'card_header', 'page', 'header', 'header_dark', 'nav', 'key', 'track', 'accent', 'blue', 'ok', 'warn', 'danger', ...PASTEL_KEYS,
+]
+/** The colours offered for a line or ink. */
+export const INK_SWATCHES = ['ink', 'ink_soft', 'ink_dim', 'ink_dark', 'accent', 'nav_line', ...PASTEL_KEYS]
+
 /** `#AARRGGBB` (the add-on's order) as CSS's `#RRGGBBAA`; `#RRGGBB` as it is. */
 export function cssColor(hex: string | undefined): string | undefined {
   if (!hex) return undefined

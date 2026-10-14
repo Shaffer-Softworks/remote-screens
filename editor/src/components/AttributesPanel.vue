@@ -5,10 +5,11 @@ import { computed, inject, ref, watch } from 'vue'
 import { CATALOGUE } from '../generated/catalogue'
 import { DESIGN } from '../model/design'
 import { componentOf, isContainer } from '../model/nodes'
-import { PASTELS, colorOf } from '../model/palette'
+import { BACKGROUND_SWATCHES, INK_SWATCHES, PASTELS, colorOf } from '../model/palette'
 import { iconOf, specOf } from '../model/tiles'
 import type { BindFormat, Node, Screen, TapAction, TapType } from '../model/types'
 import { entityById, state } from '../store'
+import ColorSwatches from './ColorSwatches.vue'
 import IconPicker from './IconPicker.vue'
 import MdiIcon from './MdiIcon.vue'
 
@@ -94,9 +95,6 @@ const placeHasNoEffect = computed(() => {
   const cross = props.parentType === 'column' ? n.value.size.width : props.parentType === 'row' ? n.value.size.height : ''
   return cross === 'fill' || cross.startsWith('weight:')
 })
-const ROLE_SWATCHES = ['card', 'card_header', 'page', 'header_dark', 'key', 'track', 'accent', 'blue', 'ok', 'warn', 'danger']
-const INK_SWATCHES = ['ink', 'ink_soft', 'ink_dim', 'ink_dark', 'accent', ...PASTELS.map((x) => x.key)]
-
 // The entity a component shows.
 const entityOptions = computed(() => state.entities)
 const entityDraft = ref('')
@@ -333,18 +331,7 @@ const typeIcon = computed(() => (n.value.type === 'tile' ? 'view-grid-outline' :
       </div>
       <div class="field">
         <span class="label">Background</span>
-        <div class="swatches">
-          <button class="swatch none" :class="{ on: !n.style.background }" title="None" @click="delete n.style.background">∅</button>
-          <button
-            v-for="k in [...ROLE_SWATCHES, ...PASTELS.map((x) => x.key)]"
-            :key="k"
-            class="swatch"
-            :class="{ on: n.style.background === k }"
-            :style="{ background: colorOf(k) }"
-            :title="k"
-            @click="n.style.background = k"
-          />
-        </div>
+        <ColorSwatches v-model="n.style.background" :keys="BACKGROUND_SWATCHES" clear="∅" clear-title="None" />
       </div>
       <label class="field">
         Border (dp)
@@ -364,18 +351,7 @@ const typeIcon = computed(() => (n.value.type === 'tile' ? 'view-grid-outline' :
       </label>
       <div v-if="n.style.border" class="field">
         <span class="label">Border colour</span>
-        <div class="swatches">
-          <button class="swatch auto" :class="{ on: !n.style.borderColor }" title="Default" @click="delete n.style.borderColor">A</button>
-          <button
-            v-for="k in INK_SWATCHES"
-            :key="k"
-            class="swatch"
-            :class="{ on: n.style.borderColor === k }"
-            :style="{ background: colorOf(k) }"
-            :title="k"
-            @click="n.style.borderColor = k"
-          />
-        </div>
+        <ColorSwatches v-model="n.style.borderColor" :keys="INK_SWATCHES" />
       </div>
     </details>
 

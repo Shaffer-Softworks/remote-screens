@@ -5,7 +5,6 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -60,14 +59,19 @@ class GridParityTest {
         })
         put("spec", buildJsonArray {
             for (c in fixture.getValue("spec").jsonArray.map { it.jsonObject }) {
+                // `topBar` is whether the default bar shows, or its height; `navBar`, if given, the bottom bar's.
+                val bar = c.getValue("topBar").jsonPrimitive
+                val top = bar.booleanOrNull?.let { if (it) Grid.TOP_BAR else 0f } ?: bar.float
+                val nav = c["navBar"]?.jsonPrimitive?.float ?: Grid.navBar(c.f("width"))
                 val grid = GridSize(c.i("cols"), c.i("rows"))
-                val s = Grid.spec(grid, c.f("width"), c.f("height"), c.getValue("topBar").jsonPrimitive.boolean)
+                val s = Grid.spec(grid, c.f("width"), c.f("height"), top, nav)
                 add(inputs(c) + ("expect" to buildJsonObject {
                     put("cols", s.cols)
                     put("rows", s.rows)
                     put("cellW", s.cellW)
                     put("cellH", s.cellH)
                     put("topBar", s.topBar)
+                    put("navBar", s.navBar)
                     put("large", s.large)
                     put("x", floats((0 until s.cols).map { s.x(it) }))
                     put("y", floats((0 until s.rows).map { s.y(it) }))

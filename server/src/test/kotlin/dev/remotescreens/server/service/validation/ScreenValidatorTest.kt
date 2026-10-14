@@ -2,7 +2,9 @@ package dev.remotescreens.server.service.validation
 
 import dev.remotescreens.shared.DeviceSize
 import dev.remotescreens.shared.LayoutData
+import dev.remotescreens.shared.NavBar
 import dev.remotescreens.shared.Screen
+import dev.remotescreens.shared.TopBar
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -15,6 +17,25 @@ class ScreenValidatorTest {
         assertEquals(DeviceSize(DeviceSize.MIN, DeviceSize.MAX), s.designSize)
         val validated = ScreenValidator.validate(Screen("s", "Wall", designSize = DeviceSize(1100, 700)))
         assertEquals(DeviceSize(1100, 700), validated.designSize)
+    }
+
+    @Test
+    fun barSettingsAreKeptInRange() {
+        val s = ScreenValidator.validate(
+            Screen(
+                "s", "Wall",
+                topBar = TopBar(height = 999, clockWidth = 1, background = "x".repeat(99)),
+                navBar = NavBar(height = 2, labels = "huge", layout = "diagonal", active = "pink"),
+            ),
+        )
+        assertEquals(TopBar.MAX_HEIGHT, s.topBar.height)
+        assertEquals(TopBar.MIN_CLOCK_WIDTH, s.topBar.clockWidth)
+        assertNull(s.topBar.background)
+        assertEquals(NavBar.MIN_HEIGHT, s.navBar.height)
+        assertEquals("both", s.navBar.labels)
+        assertEquals("spread", s.navBar.layout)
+        assertEquals("pink", s.navBar.active)
+        assertEquals(NavBar(), ScreenValidator.validate(Screen("s", "Wall")).navBar)
     }
 
     @Test
