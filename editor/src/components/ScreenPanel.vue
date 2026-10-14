@@ -58,7 +58,7 @@ function num(e: Event, min: number, max: number): number {
       <label class="check"><input v-model="topAuto" type="checkbox" /> Default height</label>
       <label v-if="!topAuto" class="field">
         Height {{ screen.topBar.height }} dp
-        <input v-model.number="screen.topBar.height" type="range" min="32" max="120" step="2" />
+        <input v-model.number="screen.topBar.height" v-range type="range" min="32" max="120" step="2" />
       </label>
       <label class="check"><input v-model="screen.topBar.clock" type="checkbox" /> Clock</label>
       <template v-if="screen.topBar.clock">
@@ -73,7 +73,7 @@ function num(e: Event, min: number, max: number): number {
         <label class="check sub"><input v-model="clockAuto" type="checkbox" /> Default clock width</label>
         <label v-if="!clockAuto" class="field sub">
           Clock width {{ screen.topBar.clockWidth }}% of the screen
-          <input v-model.number="screen.topBar.clockWidth" type="range" min="15" max="60" />
+          <input v-model.number="screen.topBar.clockWidth" v-range type="range" min="15" max="60" />
         </label>
       </template>
       <label class="check"><input v-model="screen.topBar.people" type="checkbox" /> People at home</label>
@@ -101,7 +101,7 @@ function num(e: Event, min: number, max: number): number {
     <label class="check"><input v-model="navAuto" type="checkbox" /> Default height</label>
     <label v-if="!navAuto" class="field">
       Height {{ nav.height }} dp
-      <input v-model.number="nav.height" type="range" min="48" max="160" step="2" />
+      <input v-model.number="nav.height" v-range type="range" min="48" max="160" step="2" />
     </label>
     <label class="field">
       Buttons show
@@ -135,7 +135,7 @@ function num(e: Event, min: number, max: number): number {
     <h3>Display</h3>
     <label class="field">
       Brightness {{ screen.settings.brightness }}%
-      <input v-model.number="screen.settings.brightness" type="range" min="1" max="100" />
+      <input v-model.number="screen.settings.brightness" v-range type="range" min="1" max="100" />
     </label>
     <label class="field">
       Theme
@@ -171,7 +171,7 @@ function num(e: Event, min: number, max: number): number {
     </label>
     <label class="field">
       Standby brightness {{ screen.settings.standbyBrightness }}%
-      <input v-model.number="screen.settings.standbyBrightness" type="range" min="0" max="100" />
+      <input v-model.number="screen.settings.standbyBrightness" v-range type="range" min="0" max="100" />
     </label>
 
     <h3>Night</h3>
@@ -183,7 +183,7 @@ function num(e: Event, min: number, max: number): number {
       </div>
       <label class="field">
         Night brightness {{ screen.settings.nightBrightness }}%
-        <input v-model.number="screen.settings.nightBrightness" type="range" min="0" max="100" />
+        <input v-model.number="screen.settings.nightBrightness" v-range type="range" min="0" max="100" />
       </label>
       <label class="check"><input v-model="screen.settings.nightDark" type="checkbox" /> Dark at night</label>
     </template>
