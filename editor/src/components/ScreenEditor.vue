@@ -45,6 +45,11 @@ watchEffect(() => {
   const s = screen.value.settings
   activeThemeId.value = (previewDark.value ? s.darkTheme : s.theme) ?? DEFAULT_THEME
 })
+const sameTheme = computed(() => (screen.value.settings.theme ?? DEFAULT_THEME) === (screen.value.settings.darkTheme ?? DEFAULT_THEME))
+function chooseDarkTheme(): void {
+  panel.value = 'screen'
+  sidePanel.value = 'screen'
+}
 
 watch(pageId, () => {
   selectedId.value = null
@@ -272,6 +277,14 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
         <button :class="{ active: !previewDark }" @click="previewDark = false"><MdiIcon name="white-balance-sunny" :size="16" /> Day</button>
         <button :class="{ active: previewDark }" @click="previewDark = true"><MdiIcon name="weather-night" :size="16" /> Dark</button>
       </div>
+      <button
+        v-if="sameTheme"
+        class="icon muted"
+        title="Day and dark use the same theme, so they look alike. Choose a dark theme in the Screen settings."
+        @click="chooseDarkTheme"
+      >
+        <MdiIcon name="information-outline" :size="18" />
+      </button>
       <label class="row muted">
         <MdiIcon name="tablet" :size="18" />
         <select :value="deviceKey" aria-label="Device" @change="pickDevice(($event.target as HTMLSelectElement).value)">
