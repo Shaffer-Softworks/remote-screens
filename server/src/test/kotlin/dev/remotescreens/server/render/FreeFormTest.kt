@@ -9,12 +9,15 @@ import androidx.compose.remote.core.operations.layout.Component
 import androidx.compose.remote.core.operations.layout.Container
 import androidx.compose.remote.core.operations.layout.animation.AnimationSpec
 import androidx.compose.remote.core.operations.layout.managers.BoxLayout
-import dev.remotescreens.server.BadRequest
-import dev.remotescreens.server.DataFetcher
-import dev.remotescreens.server.I18n
-import dev.remotescreens.server.ha.DemoHome
-import dev.remotescreens.server.ha.DemoLayout
-import dev.remotescreens.server.validate
+import io.ktor.server.plugins.BadRequestException
+import dev.remotescreens.server.data.renderdata.RenderDataRepository
+import dev.remotescreens.server.i18n.I18n
+import dev.remotescreens.server.data.homeassistant.demo.DemoHome
+import dev.remotescreens.server.data.homeassistant.demo.DemoLayout
+import dev.remotescreens.server.player.action.ActionRouter
+import dev.remotescreens.server.player.action.TapMemory
+import dev.remotescreens.server.player.action.TapOutcome
+import dev.remotescreens.server.service.validation.ScreenValidator
 import dev.remotescreens.shared.MAX_NODE_DEPTH
 import dev.remotescreens.shared.Node
 import dev.remotescreens.shared.NodeBinding
@@ -192,8 +195,8 @@ class FreeFormTest {
         assertTrue("sw|toggle|" in doc.ctx.predicted)
         val states = ha.states.value
         val on = doc.vars(states + ("switch.coffee_machine" to states.getValue("switch.coffee_machine").with("on")))
-        assertEquals(V.VISIBLE.toString(), on["e.switch.coffee_machine.on"]?.value)
-        assertEquals(V.GONE.toString(), on["e.switch.coffee_machine.off"]?.value)
+        assertEquals(Vars.VISIBLE.toString(), on["e.switch.coffee_machine.on"]?.value)
+        assertEquals(Vars.GONE.toString(), on["e.switch.coffee_machine.off"]?.value)
     }
 
     @Test
@@ -234,7 +237,7 @@ class FreeFormTest {
         val tile = s.pages.first().allTiles().first { it.id == "chart" }
         assertEquals("history", tile.effectiveKind())
         assertEquals("12", tile.options["hours"])
-        val data = runBlocking { DataFetcher(ha).forScreen(s) }
+        val data = runBlocking { RenderDataRepository(ha).forScreen(s) }
         assertTrue("sensor.kitchen_temperature" in data.history.keys)
     }
 
@@ -246,14 +249,14 @@ class FreeFormTest {
         val half = doc.vars(states + ("light.living_room" to lamp.with("on", mapOf("brightness" to kotlinx.serialization.json.JsonPrimitive(128)))))
         assertEquals(0.5f, half[nodeLevel("ring")]?.value?.toString()?.toFloat()!!, 0.01f)
         val off = doc.vars(states + ("light.table_lamp" to states.getValue("light.table_lamp").with("off")))
-        assertEquals(V.GONE.toString(), off["e.light.table_lamp.on"]?.value, "the text bound with showWhen=on is hidden")
+        assertEquals(Vars.GONE.toString(), off["e.light.table_lamp.on"]?.value, "the text bound with showWhen=on is hidden")
     }
 
     @Test
     fun keysKeypadAndSwatchesTapThroughTheRouter() {
         val s = screen(everyType)
-        val router = dev.remotescreens.server.ActionRouter(ha) { i18n }
-        val memory = dev.remotescreens.server.TapMemory()
+        val router = ActionRouter(ha) { i18n }
+        val memory = TapMemory()
         fun tap(ref: ActionRef) = runBlocking { router.handle(ref, s, memory) }
         tap(ActionRef("remote", "next"))
         assertEquals("media_player" to "media_next_track", ha.calls.last().let { it.first to it.second })
@@ -261,7 +264,7 @@ class FreeFormTest {
         assertEquals("light" to "turn_on", ha.calls.last().let { it.first to it.second })
         tap(ActionRef("pad", "code_digit", "1"))
         tap(ActionRef("pad", "code_digit", "2"))
-        assertIs<dev.remotescreens.server.Outcome.Code>(tap(ActionRef("pad", "code_digit", "3")))
+        assertIs<TapOutcome.Code>(tap(ActionRef("pad", "code_digit", "3")))
         tap(ActionRef("arm", "arm_away"))
         val (domain, service, data) = ha.calls.last()
         assertEquals("alarm_control_panel" to "alarm_arm_away", domain to service)
@@ -279,8 +282,8 @@ class FreeFormTest {
             val cards = p.tiles.map { t -> Node("n.${t.id}", "tile", size = NodeSize("weight:1", "fill"), tile = t) }
             p.copy(tiles = emptyList(), root = Node("root.${p.id}", "row", size = NodeSize("fill", "fill"), children = cards))
         }
-        val screen = validate(demo.copy(pages = pages))
-        val data = runBlocking { DataFetcher(ha).forScreen(screen) }
+        val screen = ScreenValidator.validate(demo.copy(pages = pages))
+        val data = runBlocking { RenderDataRepository(ha).forScreen(screen) }
         val doc = ScreenRenderer.render(screen, tablet, input().let { RenderInput(it.states, it.i18n, it.ha, data) })
         val vars = doc.vars(ha.states.value)
         assertEquals("Ceiling light", vars["e.light.living_room.name"]?.value)
@@ -294,13 +297,13 @@ class FreeFormTest {
 
     @Test
     fun aValidTreePasses() {
-        val s = validate(screen(everyType))
+        val s = ScreenValidator.validate(screen(everyType))
         assertEquals(everyType, s.pages.first().root)
     }
 
     @Test
     fun invalidTreesAreRejected() {
-        fun rejects(root: Node) = assertFailsWith<BadRequest> { validate(screen(root)) }
+        fun rejects(root: Node) = assertFailsWith<BadRequestException> { ScreenValidator.validate(screen(root)) }
         rejects(Node("a", "marquee"))
         rejects(Node("a", "text", children = listOf(Node("b", "text"))))
         rejects(Node("a", "column", children = listOf(Node("a", "text"))))
@@ -315,6 +318,6 @@ class FreeFormTest {
     @Test
     fun aTileIdMustDifferFromEveryComponentId() {
         val clash = Node("a", "column", children = listOf(Node("x", "tile", tile = Tile("dup", kind = "clock")), Node("dup", "text", bind = NodeBinding("light.kitchen"))))
-        assertFailsWith<BadRequest> { validate(screen(clash)) }
+        assertFailsWith<BadRequestException> { ScreenValidator.validate(screen(clash)) }
     }
 }

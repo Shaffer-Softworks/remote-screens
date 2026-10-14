@@ -1,7 +1,7 @@
 package dev.remotescreens.server.render
 
-import dev.remotescreens.server.BadRequest
-import dev.remotescreens.server.validateTheme
+import io.ktor.server.plugins.BadRequestException
+import dev.remotescreens.server.service.validation.ThemeValidator
 import dev.remotescreens.shared.Theme
 import java.io.File
 import kotlin.test.Test
@@ -55,14 +55,14 @@ class ThemesTest {
 
     @Test
     fun aStoredThemeIsChecked() {
-        assertFailsWith<BadRequest> { validateTheme(Theme("rpi", "Mine"), emptyList()) }
-        assertFailsWith<BadRequest> { validateTheme(Theme("Bad Id", "Mine"), emptyList()) }
-        assertFailsWith<BadRequest> { validateTheme(Theme("mine", "Mine", base = "mine"), emptyList()) }
-        assertFailsWith<BadRequest> { validateTheme(Theme("mine", "Mine", roles = mapOf("card" to "blue")), emptyList()) }
+        assertFailsWith<BadRequestException> { ThemeValidator.validate(Theme("rpi", "Mine"), emptyList()) }
+        assertFailsWith<BadRequestException> { ThemeValidator.validate(Theme("Bad Id", "Mine"), emptyList()) }
+        assertFailsWith<BadRequestException> { ThemeValidator.validate(Theme("mine", "Mine", base = "mine"), emptyList()) }
+        assertFailsWith<BadRequestException> { ThemeValidator.validate(Theme("mine", "Mine", roles = mapOf("card" to "blue")), emptyList()) }
         val full = (1..Theme.MAX_THEMES).map { Theme("t$it", "T$it") }
-        assertFailsWith<BadRequest> { validateTheme(Theme("mine", "Mine"), full) }
-        validateTheme(Theme("t1", "Again"), full)
-        val ok = validateTheme(Theme("mine", "  ", roles = mapOf("CARD" to "#abcdef", "nope" to "#000000")), emptyList())
+        assertFailsWith<BadRequestException> { ThemeValidator.validate(Theme("mine", "Mine"), full) }
+        ThemeValidator.validate(Theme("t1", "Again"), full)
+        val ok = ThemeValidator.validate(Theme("mine", "  ", roles = mapOf("CARD" to "#abcdef", "nope" to "#000000")), emptyList())
         assertEquals("mine", ok.name)
         assertEquals(mapOf("card" to "#ABCDEF"), ok.roles)
     }

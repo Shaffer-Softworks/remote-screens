@@ -5,8 +5,8 @@ import androidx.compose.remote.core.RemoteComposeBuffer
 import androidx.compose.remote.core.operations.NamedVariable
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.size
-import dev.remotescreens.server.I18n
-import dev.remotescreens.server.ha.HaConfig
+import dev.remotescreens.server.i18n.I18n
+import dev.remotescreens.server.data.homeassistant.HomeAssistantConfig
 import java.io.ByteArrayInputStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,7 +30,7 @@ class NestingProbeTest {
     @Test
     fun buildDeclaresItAtTheTop() {
         val i18n = I18n("en", emptyMap(), emptyMap(), true)
-        val (bytes, _) = DocContext.build(100, 100, "nested", { DocContext(Units(1f), Themes.RPI, i18n, emptyMap(), HaConfig(), RenderData()) }) { ctx ->
+        val (bytes, _) = DocContext.build(100, 100, "nested", { DocContext(Units(1f), Themes.RPI, i18n, emptyMap(), HomeAssistantConfig(), RenderData()) }) { ctx ->
             Box(Modifier.size(50f, 50f)) { Text(ctx.text("inner")) }
         }
         assertEquals(listOf("USER:inner"), names(bytes))

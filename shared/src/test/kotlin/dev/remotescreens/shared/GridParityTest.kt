@@ -60,7 +60,8 @@ class GridParityTest {
         })
         put("spec", buildJsonArray {
             for (c in fixture.getValue("spec").jsonArray.map { it.jsonObject }) {
-                val s = Grid.spec(GridSize(c.i("cols"), c.i("rows")), c.f("width"), c.f("height"), c.getValue("topBar").jsonPrimitive.boolean)
+                val grid = GridSize(c.i("cols"), c.i("rows"))
+                val s = Grid.spec(grid, c.f("width"), c.f("height"), c.getValue("topBar").jsonPrimitive.boolean)
                 add(inputs(c) + ("expect" to buildJsonObject {
                     put("cols", s.cols)
                     put("rows", s.rows)

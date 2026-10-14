@@ -3,10 +3,10 @@ package dev.remotescreens.server.render
 import androidx.compose.remote.core.CoreDocument
 import androidx.compose.remote.core.RemoteComposeBuffer
 import androidx.compose.remote.core.operations.NamedVariable
-import dev.remotescreens.server.DataFetcher
-import dev.remotescreens.server.I18n
-import dev.remotescreens.server.ha.DemoHome
-import dev.remotescreens.server.ha.DemoLayout
+import dev.remotescreens.server.data.renderdata.RenderDataRepository
+import dev.remotescreens.server.i18n.I18n
+import dev.remotescreens.server.data.homeassistant.demo.DemoHome
+import dev.remotescreens.server.data.homeassistant.demo.DemoLayout
 import dev.remotescreens.shared.Catalogue
 import dev.remotescreens.shared.Reflow
 import dev.remotescreens.shared.VarType
@@ -32,7 +32,7 @@ class RenderTest {
     @Test
     fun everyPageOfTheDemoScreenIsOneDocument() {
         val screen = DemoLayout.screen()
-        val data = runBlocking { DataFetcher(ha).forScreen(screen) }
+        val data = runBlocking { RenderDataRepository(ha).forScreen(screen) }
         val doc = ScreenRenderer.render(screen, tablet, input(data))
         val core = parse(doc.bytes)
         assertContains(core.getNamedVariables(NamedVariable.INT_TYPE).toList(), "USER:page")
@@ -50,7 +50,7 @@ class RenderTest {
     @Test
     fun aCompressedDocumentIsSmallerAndReadsTheSame() {
         val screen = DemoLayout.screen()
-        val doc = ScreenRenderer.render(screen, tablet, input(runBlocking { DataFetcher(ha).forScreen(screen) }))
+        val doc = ScreenRenderer.render(screen, tablet, input(runBlocking { RenderDataRepository(ha).forScreen(screen) }))
         val small = Rc.compress(doc.bytes)
         assertTrue(small.size * 2 < doc.bytes.size, "${small.size} of ${doc.bytes.size} bytes")
         val names = { b: ByteArray -> parse(b).getNamedVariables(NamedVariable.STRING_TYPE).toSet() }
@@ -114,7 +114,7 @@ class RenderTest {
     @Test
     fun aFullWeatherTileIsTheRpiWeatherPage() {
         val screen = DemoLayout.screen()
-        val data = runBlocking { DataFetcher(ha).forScreen(screen) }
+        val data = runBlocking { RenderDataRepository(ha).forScreen(screen) }
         val doc = ScreenRenderer.render(screen, tablet, input(data))
         val vars = doc.vars(ha.states.value)
         assertEquals("Wind 12 km/h", vars["t.w1.wind_speed"]?.value)
@@ -154,11 +154,11 @@ class RenderTest {
     fun everyCardBuilds() {
         val ids = ha.states.value.keys.filter { Catalogue.of(it.substringBefore('.'))?.card?.let { c -> c != "none" } == true }
         for (id in ids) {
-            val data = runBlocking { DataFetcher(ha).forCard(id, null) }
+            val data = runBlocking { RenderDataRepository(ha).forCard(id, null) }
             val doc = CardRenderer.render(id, null, tablet, input(data))
             assertTrue(parse(doc.bytes).getNamedVariables(NamedVariable.STRING_TYPE).isNotEmpty(), id)
         }
-        val energy = runBlocking { DataFetcher(ha).forCard(null, "energy") }
+        val energy = runBlocking { RenderDataRepository(ha).forCard(null, "energy") }
         CardRenderer.render("card.energy", "energy", tablet, input(energy))
     }
 

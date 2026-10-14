@@ -83,7 +83,15 @@ def kt_str(s):
 
 
 def kotlin(types):
-    out = [f"// {HEADER}", "package dev.remotescreens.shared", "", "object Catalogue {", "    val types: Map<String, TypeSpec> = mapOf("]
+    out = [
+        f"// {HEADER}",
+        '@file:Suppress("MaxLineLength")',
+        "",
+        "package dev.remotescreens.shared",
+        "",
+        "object Catalogue {",
+        "    val types: Map<String, TypeSpec> = mapOf(",
+    ]
     for key, s in types.items():
         actions = ", ".join(
             f"{kt_str(v)} to ActionSpec({kt_str(a['service'])}, {kt_value(a.get('data', {}))}, {kt_value(a.get('confirm', False))}, {kt_str(a['relative']) if 'relative' in a else 'null'})"
