@@ -92,6 +92,68 @@ textarea:focus {
   outline-offset: -1px;
 }
 
+/* The fill stops at the thumb's centre, which travels from one radius in to one radius short of the end. */
+input[type='range'] {
+  --thumb: 16px;
+  --track: linear-gradient(
+    to right,
+    var(--accent) calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--fill, 0)),
+    var(--line) 0
+  );
+  appearance: none;
+  -webkit-appearance: none;
+  height: var(--thumb);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='range']:focus {
+  outline: none;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--track);
+}
+
+input[type='range']::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--track);
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: var(--thumb);
+  height: var(--thumb);
+  margin-top: calc(2px - var(--thumb) / 2);
+  border: 0;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
+}
+
+input[type='range']::-moz-range-thumb {
+  width: var(--thumb);
+  height: var(--thumb);
+  border: 0;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
+}
+
+input[type='range']:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--accent);
+}
+
+input[type='range']:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--accent);
+}
+
 label.field {
   display: flex;
   flex-direction: column;
