@@ -66,6 +66,7 @@ data class Screen(
     val homePage: String = pages.firstOrNull()?.id ?: "home",
     val settings: ScreenSettings = ScreenSettings(),
     val topBar: TopBar = TopBar(),
+    val navBar: NavBar = NavBar(),
     /** The size the editor draws the screen at until a tablet shows it; a tablet renders at its own size. */
     val designSize: DeviceSize? = null,
 )
@@ -283,9 +284,63 @@ data class ScreenSettings(
 data class TopBar(
     val show: Boolean = true,
     val clock: Boolean = true,
+    /** The date beside the time; never on a narrow device. */
+    val date: Boolean = true,
     val temperatureEntity: String? = null,
     val people: Boolean = true,
-)
+    /** dp, or null for the default. Text and icons scale with it. */
+    val height: Int? = null,
+    /** The dark clock block's share of the screen width in percent, or null for the default. */
+    val clockWidth: Int? = null,
+    /** A theme role or pastel key, as [NodeStyle.background]; null is the theme's header colour. */
+    val background: String? = null,
+    val clockBackground: String? = null,
+) {
+    fun validated(): TopBar = copy(
+        height = height?.coerceIn(MIN_HEIGHT, MAX_HEIGHT),
+        clockWidth = clockWidth?.coerceIn(MIN_CLOCK_WIDTH, MAX_CLOCK_WIDTH),
+        background = background?.takeIf { it.length <= Theme.MAX_ID },
+        clockBackground = clockBackground?.takeIf { it.length <= Theme.MAX_ID },
+    )
+
+    companion object {
+        const val MIN_HEIGHT = 32
+        const val MAX_HEIGHT = 120
+        const val MIN_CLOCK_WIDTH = 15
+        const val MAX_CLOCK_WIDTH = 60
+    }
+}
+
+/** The bottom navigation bar: one button per visible page, then Settings. */
+@Serializable
+data class NavBar(
+    /** dp, or null for the default, which is smaller on a narrow device. Text and icons scale with it. */
+    val height: Int? = null,
+    /** `both`, `icons` or `text`. */
+    val labels: String = "both",
+    /** `spread` (square buttons spaced out), `center` (packed in the middle) or `fill` (stretched to the width). */
+    val layout: String = "spread",
+    /** Theme roles or pastel keys, as [NodeStyle.background]; null is the theme's own. */
+    val background: String? = null,
+    val line: String? = null,
+    val active: String? = null,
+) {
+    fun validated(): NavBar = copy(
+        height = height?.coerceIn(MIN_HEIGHT, MAX_HEIGHT),
+        labels = labels.takeIf { it in LABELS } ?: "both",
+        layout = layout.takeIf { it in LAYOUTS } ?: "spread",
+        background = background?.takeIf { it.length <= Theme.MAX_ID },
+        line = line?.takeIf { it.length <= Theme.MAX_ID },
+        active = active?.takeIf { it.length <= Theme.MAX_ID },
+    )
+
+    companion object {
+        const val MIN_HEIGHT = 48
+        const val MAX_HEIGHT = 160
+        val LABELS = setOf("both", "icons", "text")
+        val LAYOUTS = setOf("spread", "center", "fill")
+    }
+}
 
 /** A tablet that has said hello. Adopted players have a screen and a token. */
 @Serializable

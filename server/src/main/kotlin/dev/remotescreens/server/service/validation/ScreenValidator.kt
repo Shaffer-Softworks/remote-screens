@@ -42,6 +42,8 @@ object ScreenValidator {
             name = normalizeName(screen.name),
             homePage = screen.homePage.takeIf { home -> pages.any { it.id == home } } ?: pages.first().id,
             settings = screen.settings.validated(),
+            topBar = screen.topBar.validated(),
+            navBar = screen.navBar.validated(),
             designSize = screen.designSize?.let(::coerceDesignSize),
             pages = pages.map { page -> clampPage(page, grid.cols, grid.rows) },
         )

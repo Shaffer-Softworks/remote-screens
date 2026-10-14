@@ -8,6 +8,7 @@ import dev.remotescreens.server.i18n.I18n
 import dev.remotescreens.server.data.homeassistant.demo.DemoHome
 import dev.remotescreens.server.data.homeassistant.demo.DemoLayout
 import dev.remotescreens.shared.Catalogue
+import dev.remotescreens.shared.NavBar
 import dev.remotescreens.shared.Reflow
 import dev.remotescreens.shared.VarType
 import kotlinx.coroutines.runBlocking
@@ -166,6 +167,24 @@ class RenderTest {
     fun aPortraitPhoneGetsTheSameScreen() {
         val doc = ScreenRenderer.render(DemoLayout.screen(), Device(400, 860, 2.75f), input())
         assertContains(parse(doc.bytes).getNamedVariables(NamedVariable.STRING_TYPE).toList(), "USER:e.light.living_room.name")
+    }
+
+    @Test
+    fun barsTakeTheirOwnSizeLabelsLayoutAndColours() {
+        val pink = Pastel.PINK.argb
+        val bytes = listOf(24, 16, 8, 0).map { (pink ushr it).toByte() }
+        val plain = ScreenRenderer.render(DemoLayout.screen(), tablet, input())
+        assertFalse(plain.bytes.asList().windowed(4).any { it == bytes }, "the demo screen has no pink")
+        for (labels in NavBar.LABELS) for (layout in NavBar.LAYOUTS) {
+            val screen = DemoLayout.screen().let {
+                it.copy(
+                    topBar = it.topBar.copy(height = 72, clockWidth = 30, date = false, background = "pink"),
+                    navBar = NavBar(height = 56, labels = labels, layout = layout, active = "pink"),
+                )
+            }
+            val doc = ScreenRenderer.render(screen, Device(400, 860, 2.75f), input())
+            assertTrue(doc.bytes.asList().windowed(4).any { it == bytes }, "$labels/$layout: the pink header is drawn")
+        }
     }
 
     @Test
