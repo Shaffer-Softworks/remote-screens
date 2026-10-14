@@ -44,7 +44,7 @@ const shown = computed<ResolvedTheme | undefined>(() => {
 })
 
 const roleKeys = computed(() => Object.keys(shown.value?.roles ?? {}))
-const label = (k: string) => k.replace(/_/g, ' ')
+const label = (k: string) => (k === 'card_edge' ? 'card edge (tile border)' : k.replace(/_/g, ' '))
 
 /** A colour input takes `#RRGGBB`: the add-on's `#AARRGGBB` loses its alpha here and keeps it when set. */
 const rgb = (hex: string | undefined) => (hex && hex.length === 9 ? `#${hex.slice(3)}` : (hex ?? '#000000'))
@@ -188,6 +188,7 @@ const vars = computed(() => themeVars(shown.value))
         </div>
 
         <h3>Roles</h3>
+        <p class="muted hint">Card edge is every tile's border; a tile can override it with its own border colour.</p>
         <div class="colours">
           <label v-for="k in roleKeys" :key="k" class="colour" :class="{ own: draft && draft.roles[k] }">
             <input type="color" :value="rgb(shown.roles[k])" :disabled="!draft" @input="setColour('roles', k, ($event.target as HTMLInputElement).value)" />
@@ -210,7 +211,8 @@ const vars = computed(() => themeVars(shown.value))
   gap: 16px;
 }
 
-.intro {
+.intro,
+.hint {
   margin: 0;
 }
 

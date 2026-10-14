@@ -26,6 +26,7 @@ export interface Tile {
   name?: string
   icon?: string
   color?: string
+  borderColor?: string
   tap: TapAction
   hold: TapAction
   options: Record<string, string>
