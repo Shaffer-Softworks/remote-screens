@@ -91,7 +91,7 @@ jobs:
       - name: Image name
         id: name
         run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/remote-screens-${{ matrix.arch }}" >> "$GITHUB_OUTPUT"
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: addon
           platforms: ${{ matrix.platform }}
