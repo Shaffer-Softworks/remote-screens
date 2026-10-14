@@ -1,7 +1,7 @@
 package dev.remotescreens.server.render
 
-import dev.remotescreens.server.I18n
-import dev.remotescreens.server.ha.EntityState
+import dev.remotescreens.server.i18n.I18n
+import dev.remotescreens.server.data.homeassistant.EntityState
 import dev.remotescreens.shared.Catalogue
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -14,7 +14,7 @@ data class EntityView(
     val on: Boolean,
     /** 0..1 for a bar (brightness, position, volume), or null when the entity has none. */
     val level: Float?,
-    val available: Boolean,
+    val isAvailable: Boolean,
     val icon: String,
 )
 
@@ -58,7 +58,7 @@ object Present {
             else -> stateText
         }
         val icon = iconOverride ?: e.attr("icon") ?: iconFor(e, on)
-        return EntityView(nameOverride ?: e.name, stateText, value, on, level, e.available, icon)
+        return EntityView(nameOverride ?: e.name, stateText, value, on, level, e.isAvailable, icon)
     }
 
     private fun numberOnly(e: EntityState, i18n: I18n): String? {

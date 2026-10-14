@@ -1,6 +1,6 @@
 package dev.remotescreens.server.render
 
-import dev.remotescreens.server.ha.EntityState
+import dev.remotescreens.server.data.homeassistant.EntityState
 import dev.remotescreens.shared.VarValue
 
 /**
@@ -56,7 +56,7 @@ fun DocContext.bindTileColors(tileId: String, entityId: String?, pastel: Pastel,
         val e = entityId?.let { states[it] }
         val view = Present.view(e, i18n)
         val on = alwaysOn || view.on
-        val avail = entityId == null || view.available
+        val avail = entityId == null || view.isAvailable
         val lit = on && avail
         listOf(
             VarValue.color(V.t(tileId, "bg"), if (lit) pastel.argb else Role.KEY.argb),

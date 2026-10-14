@@ -15,7 +15,7 @@ import dev.remotescreens.player.data.preferences.PlayerPreferencesRepository
 import dev.remotescreens.player.data.update.UpdateRepository
 import dev.remotescreens.player.ui.screens.player.remote.RemoteScreenState
 import dev.remotescreens.player.utils.decodeBase64OrNull
-import dev.remotescreens.player.utils.isNightAt
+import dev.remotescreens.shared.isNightAt
 import dev.remotescreens.player.utils.normalizeServerAddress
 import dev.remotescreens.shared.ActionRef
 import dev.remotescreens.shared.PlayerMessage

@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.detekt)
     application
 }
 
@@ -9,7 +10,12 @@ kotlin {
 }
 
 application {
-    mainClass.set("dev.remotescreens.server.MainKt")
+    mainClass.set("dev.remotescreens.server.ApplicationKt")
+}
+
+/** Pre-existing findings in the RemoteCompose render layer; new code must stay clean. */
+detekt {
+    baseline.set(file("detekt-baseline.xml"))
 }
 
 version = providers.fileContents(rootProject.layout.projectDirectory.file("addon/VERSION")).asText.map { it.trim() }.getOrElse("0.0.0")
@@ -50,7 +56,7 @@ tasks.register<Jar>("fatJar") {
     group = "build"
     archiveFileName.set("remote-screens-server.jar")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    manifest { attributes["Main-Class"] = "dev.remotescreens.server.MainKt" }
+    manifest { attributes["Main-Class"] = "dev.remotescreens.server.ApplicationKt" }
     from(sourceSets.main.get().output)
     dependsOn(configurations.runtimeClasspath)
     from({ configurations.runtimeClasspath.get().filter { it.name.endsWith(".jar") }.map { zipTree(it) } }) {

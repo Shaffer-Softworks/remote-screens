@@ -9,9 +9,9 @@ import androidx.compose.remote.creation.dsl.RcInteger
 import androidx.compose.remote.creation.dsl.RcPath
 import androidx.compose.remote.creation.dsl.RcScope
 import androidx.compose.remote.creation.dsl.RcText
-import dev.remotescreens.server.I18n
-import dev.remotescreens.server.ha.EntityState
-import dev.remotescreens.server.ha.HaConfig
+import dev.remotescreens.server.i18n.I18n
+import dev.remotescreens.server.data.homeassistant.EntityState
+import dev.remotescreens.server.data.homeassistant.HomeAssistantConfig
 import dev.remotescreens.shared.ActionRef
 import dev.remotescreens.shared.VarValue
 import java.awt.image.BufferedImage
@@ -26,7 +26,7 @@ class DocContext(
     val palette: Palette,
     val i18n: I18n,
     val states: Map<String, EntityState>,
-    val ha: HaConfig,
+    val ha: HomeAssistantConfig,
     val data: RenderData,
 ) {
     lateinit var scope: RcScope

@@ -61,7 +61,7 @@ data class Preferences(
 data class Screen(
     val id: String,
     val name: String,
-    val grid: GridSize = GridSize(3, 3),
+    val grid: GridSize = GridSize.DEFAULT,
     val pages: List<Page> = listOf(Page(id = "home", title = "Home")),
     val homePage: String = pages.firstOrNull()?.id ?: "home",
     val settings: ScreenSettings = ScreenSettings(),
@@ -71,7 +71,11 @@ data class Screen(
 )
 
 @Serializable
-data class GridSize(val cols: Int, val rows: Int)
+data class GridSize(val cols: Int, val rows: Int) {
+    companion object {
+        val DEFAULT = GridSize(3, 3)
+    }
+}
 
 @Serializable
 data class DeviceSize(val widthDp: Int, val heightDp: Int) {
@@ -257,17 +261,20 @@ data class ScreenSettings(
     fun validated(): ScreenSettings = copy(
         theme = theme.takeIf { Theme.ID.matches(it) } ?: "rpi",
         darkTheme = darkTheme.takeIf { Theme.ID.matches(it) } ?: "rpi",
-        brightness = brightness.coerceIn(1, 100),
-        standbyMinutes = standbyMinutes.coerceIn(0, 240),
-        standbyBrightness = standbyBrightness.coerceIn(0, 100),
-        nightBrightness = nightBrightness.coerceIn(0, 100),
-        backToHomeSeconds = backToHomeSeconds.coerceIn(0, 3600),
+        brightness = brightness.coerceIn(1, MAX_PERCENT),
+        standbyMinutes = standbyMinutes.coerceIn(0, MAX_STANDBY_MINUTES),
+        standbyBrightness = standbyBrightness.coerceIn(0, MAX_PERCENT),
+        nightBrightness = nightBrightness.coerceIn(0, MAX_PERCENT),
+        backToHomeSeconds = backToHomeSeconds.coerceIn(0, MAX_BACK_TO_HOME_SECONDS),
         nightStart = nightStart?.takeIf { HHMM.matches(it) },
         nightEnd = nightEnd?.takeIf { HHMM.matches(it) },
         orientation = orientation.takeIf { it in setOf(0, 1, 2) } ?: 0,
     )
 
     companion object {
+        const val MAX_PERCENT = 100
+        const val MAX_STANDBY_MINUTES = 240
+        const val MAX_BACK_TO_HOME_SECONDS = 3600
         private val HHMM = Regex("^([01]\\d|2[0-3]):[0-5]\\d$")
     }
 }

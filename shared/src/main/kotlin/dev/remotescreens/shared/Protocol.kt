@@ -25,8 +25,11 @@ object Protocol {
 
     fun encode(msg: ServerMessage): String = json.encodeToString(ServerMessage.serializer(), msg)
     fun encode(msg: PlayerMessage): String = json.encodeToString(PlayerMessage.serializer(), msg)
-    fun decodeServer(text: String): ServerMessage? = runCatching { json.decodeFromString(ServerMessage.serializer(), text) }.getOrNull()
-    fun decodePlayer(text: String): PlayerMessage? = runCatching { json.decodeFromString(PlayerMessage.serializer(), text) }.getOrNull()
+    fun decodeServer(text: String): ServerMessage? =
+        runCatching { json.decodeFromString(ServerMessage.serializer(), text) }.getOrNull()
+
+    fun decodePlayer(text: String): PlayerMessage? =
+        runCatching { json.decodeFromString(PlayerMessage.serializer(), text) }.getOrNull()
 }
 
 /** Which document a message is about. The main document holds the pages; the overlay holds a card or an alert. */
@@ -49,15 +52,19 @@ enum class VarType {
 @Serializable
 data class VarValue(val name: String, val type: VarType, val value: String) {
     companion object {
+        private const val HEX_RADIX = 16
+        private const val ARGB_HEX_DIGITS = 8
+
         fun string(name: String, v: String) = VarValue(name, VarType.STRING, v)
         fun int(name: String, v: Int) = VarValue(name, VarType.INT, v.toString())
         fun float(name: String, v: Float) = VarValue(name, VarType.FLOAT, v.toString())
-        fun color(name: String, argb: Int) = VarValue(name, VarType.COLOR, argb.toUInt().toString(16).padStart(8, '0'))
+        fun color(name: String, argb: Int) =
+            VarValue(name, VarType.COLOR, argb.toUInt().toString(HEX_RADIX).padStart(ARGB_HEX_DIGITS, '0'))
     }
 
     fun asInt(): Int = value.toIntOrNull() ?: 0
     fun asFloat(): Float = value.toFloatOrNull() ?: 0f
-    fun asColor(): Int = value.toUIntOrNull(16)?.toInt() ?: 0
+    fun asColor(): Int = value.toUIntOrNull(HEX_RADIX)?.toInt() ?: 0
 }
 
 /**
@@ -74,10 +81,9 @@ data class ActionRef(val tile: String, val verb: String, val arg: String = "") {
         val LOCAL_VERBS = setOf("page", "next", "prev", "back", "close", "noop", "settings")
 
         fun decode(s: String?): ActionRef? {
-            if (s == null) return null
-            val parts = s.split('|', limit = 3)
-            if (parts.size < 2 || parts[0].isEmpty() || parts[1].isEmpty()) return null
-            return ActionRef(parts[0], parts[1], parts.getOrElse(2) { "" })
+            val parts = s?.split('|', limit = 3) ?: return null
+            val isValid = parts.size >= 2 && parts[0].isNotEmpty() && parts[1].isNotEmpty()
+            return if (isValid) ActionRef(parts[0], parts[1], parts.getOrElse(2) { "" }) else null
         }
     }
 }
@@ -115,7 +121,12 @@ sealed interface PlayerMessage {
 
     @Serializable
     @SerialName("state")
-    data class DeviceState(val awake: Boolean, val page: Int, val battery: Int? = null, val charging: Boolean? = null) : PlayerMessage
+    data class DeviceState(
+        val awake: Boolean,
+        val page: Int,
+        val battery: Int? = null,
+        val charging: Boolean? = null,
+    ) : PlayerMessage
 
     @Serializable
     @SerialName("ping")

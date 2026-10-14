@@ -13,7 +13,7 @@ import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.width
-import dev.remotescreens.server.ha.EntityState
+import dev.remotescreens.server.data.homeassistant.EntityState
 import dev.remotescreens.shared.ActionRef
 import dev.remotescreens.shared.Tile
 import dev.remotescreens.shared.VarValue

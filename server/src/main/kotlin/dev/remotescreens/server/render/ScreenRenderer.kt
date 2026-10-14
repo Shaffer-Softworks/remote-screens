@@ -15,9 +15,9 @@ import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.width
-import dev.remotescreens.server.I18n
-import dev.remotescreens.server.ha.EntityState
-import dev.remotescreens.server.ha.HaConfig
+import dev.remotescreens.server.i18n.I18n
+import dev.remotescreens.server.data.homeassistant.EntityState
+import dev.remotescreens.server.data.homeassistant.HomeAssistantConfig
 import dev.remotescreens.shared.ActionRef
 import dev.remotescreens.shared.Catalogue
 import dev.remotescreens.shared.Grid
@@ -76,7 +76,7 @@ class RenderedDoc(
 class RenderInput(
     val states: Map<String, EntityState>,
     val i18n: I18n,
-    val ha: HaConfig,
+    val ha: HomeAssistantConfig,
     val data: RenderData,
     val palette: Palette = Themes.RPI,
 ) {

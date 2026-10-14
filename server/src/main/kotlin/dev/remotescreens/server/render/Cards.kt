@@ -19,7 +19,7 @@ import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.verticalScroll
 import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
-import dev.remotescreens.server.ha.EntityState
+import dev.remotescreens.server.data.homeassistant.EntityState
 import dev.remotescreens.shared.ActionRef
 import dev.remotescreens.shared.Catalogue
 import dev.remotescreens.shared.VarValue

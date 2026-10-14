@@ -81,7 +81,10 @@ object Grid {
     private fun fit(avail: Float): Int =
         ((avail + GAP) / (TARGET_CELL + GAP)).roundToInt().coerceIn(MIN_CELLS, MAX_CELLS)
 
-    private fun round1(v: Float): Float = floor(v * 10f + 0.5f) / 10f
+    private const val TENTHS = 10f
+    private const val HALF = 0.5f
+
+    private fun round1(v: Float): Float = floor(v * TENTHS + HALF) / TENTHS
 }
 
 /**
