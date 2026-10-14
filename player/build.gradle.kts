@@ -16,7 +16,7 @@ android {
     defaultConfig {
         applicationId = "dev.remotescreens.player"
         minSdk = libs.versions.minSdk.get().toInt()
-        targetSdk = 36
+        targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = major * 10000 + minor * 100 + patch
         versionName = addonVersion
     }

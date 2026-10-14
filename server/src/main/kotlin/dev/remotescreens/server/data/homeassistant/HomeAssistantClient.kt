@@ -11,6 +11,7 @@ import io.ktor.client.statement.readRawBytes
 import io.ktor.http.isSuccess
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -25,6 +26,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -78,7 +80,7 @@ class HomeAssistantClient(
     @Volatile
     private var session: DefaultClientWebSocketSession? = null
 
-    // Any failure, a startup command timing out included, must end in a reconnect rather than ending the loop.
+    // Any failure must end in a reconnect rather than ending the loop; only cancelling the scope stops it.
     @Suppress("TooGenericExceptionCaught")
     fun start() {
         scope.launch {
@@ -87,6 +89,10 @@ class HomeAssistantClient(
                 try {
                     connectAndListen()
                     backoffMs = INITIAL_BACKOFF_MS
+                } catch (timeout: TimeoutCancellationException) {
+                    logger.warn("Home Assistant did not answer: {}", timeout.message)
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
                 } catch (e: Exception) {
                     logger.warn("Home Assistant connection lost: {}", e.message)
                 }

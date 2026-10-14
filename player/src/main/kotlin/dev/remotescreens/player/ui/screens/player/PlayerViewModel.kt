@@ -115,7 +115,6 @@ class PlayerViewModel @Inject constructor(
 
     override fun onCleared() {
         connectionRepository.disconnect()
-        super.onCleared()
     }
 
     // region Display and connection

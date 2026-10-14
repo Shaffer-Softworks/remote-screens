@@ -22,7 +22,6 @@
     <string name="change_server">Change server</string>
     <string name="forget">Forget this screen</string>
     <string name="forget_body">The screen must be added again in Home Assistant.</string>
-    <string name="close">Close</string>
     <string name="identify">This is %1$s</string>
     <string name="update_ready">An update of Remote Screens is ready (%1$s).</string>
     <string name="install">Install</string>

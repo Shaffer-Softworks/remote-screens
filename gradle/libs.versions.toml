@@ -21,6 +21,7 @@ detekt = "2.0.0-alpha.6"
 mockito = "5.24.0"
 mockitoKotlin = "6.4.0"
 compileSdk = "37"
+targetSdk = "36"
 minSdk = "26"
 
 [libraries]

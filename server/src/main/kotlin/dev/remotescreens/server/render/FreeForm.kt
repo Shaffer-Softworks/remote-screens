@@ -713,10 +713,10 @@ private fun DocContext.stepperNode(n: Node, axis: Axis, pages: Pages) {
     val step = how?.second?.let { if (it % 1.0 == 0.0) it.toInt().toString() else "%.1f".format(Locale.ROOT, it) }
     val down = how?.let { ActionRef(n.id, it.first, "-$step") }
     val up = how?.let { ActionRef(n.id, it.first, "+$step") }
-    val spec = domain?.let { Catalogue.of(it) }
-    if (id != null && how != null && spec?.predict?.containsKey(how.first) == true) {
-        predict(down!!, id)
-        predict(up!!, id)
+    val isPredictable = how != null && domain?.let { Catalogue.of(it) }?.predict?.containsKey(how.first) == true
+    if (id != null && isPredictable) {
+        down?.let { predict(it, id) }
+        up?.let { predict(it, id) }
     }
     scope.Row(styled(n, axis, pages), horizontal = RcRowHorizontalPositioning.SpaceBetween, vertical = RcVerticalPositioning.Center) {
         val c = this@stepperNode
@@ -898,7 +898,7 @@ private fun DocContext.keysNode(n: Node, axis: Axis, pages: Pages) {
         return
     }
     bindEntity(id)
-    val spec = Catalogue.of(domain!!)
+    val spec = Catalogue.of(id.substringBefore('.'))
     val stretch = n.size.width != "wrap"
     scope.Column(m, horizontal = RcHorizontalPositioning.Center) {
         val c = this@keysNode
