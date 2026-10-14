@@ -25,7 +25,7 @@ jobs:
             echo "Tag ${GITHUB_REF_NAME} does not match addon/VERSION $version"; exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
