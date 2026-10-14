@@ -12,7 +12,7 @@ import { entityById, state } from '../store'
 import IconPicker from './IconPicker.vue'
 import MdiIcon from './MdiIcon.vue'
 
-const props = defineProps<{ node: Node; screen: Screen; isRoot: boolean }>()
+const props = defineProps<{ node: Node; screen: Screen; isRoot: boolean; parentType?: string }>()
 const ctx = inject(DESIGN)!
 
 const n = computed(() => props.node)
@@ -45,6 +45,14 @@ const SHOW_WHEN = [
   { value: 'on', label: 'Only while it is on' },
   { value: 'off', label: 'Only while it is off' },
 ]
+const ANIMATIONS = [
+  { value: '', label: 'Fading' },
+  { value: 'up', label: 'Sliding up' },
+  { value: 'down', label: 'Sliding down' },
+  { value: 'left', label: 'Sliding left' },
+  { value: 'right', label: 'Sliding right' },
+  { value: 'none', label: 'At once' },
+]
 /** The size the player draws when none is set. */
 const SIZES: Record<string, number> = { gauge: 140, analog: 160, iconbutton: 64, keys: 48, swatches: 40, keypad: 56 }
 
@@ -72,6 +80,20 @@ function setAmount(dim: 'width' | 'height', v: number): void {
 }
 
 const BOX_ALIGN = ['top-start', 'top-center', 'top-end', 'center-start', 'center', 'center-end', 'bottom-start', 'bottom-center', 'bottom-end']
+
+/** Where the component sits in its parent, apart from the parent's own alignment. */
+const placeChoices = computed(() =>
+  props.parentType === 'column'
+    ? [{ value: 'start', label: 'Left' }, { value: 'center', label: 'Center' }, { value: 'end', label: 'Right' }]
+    : props.parentType === 'row'
+      ? [{ value: 'top', label: 'Top' }, { value: 'center', label: 'Center' }, { value: 'bottom', label: 'Bottom' }]
+      : [],
+)
+/** Filling across its parent leaves a component no room to move. */
+const placeHasNoEffect = computed(() => {
+  const cross = props.parentType === 'column' ? n.value.size.width : props.parentType === 'row' ? n.value.size.height : ''
+  return cross === 'fill' || cross.startsWith('weight:')
+})
 const ROLE_SWATCHES = ['card', 'card_header', 'page', 'header_dark', 'key', 'track', 'accent', 'blue', 'ok', 'warn', 'danger']
 const INK_SWATCHES = ['ink', 'ink_soft', 'ink_dim', 'ink_dark', 'accent', ...PASTELS.map((x) => x.key)]
 
@@ -222,6 +244,27 @@ const typeIcon = computed(() => (n.value.type === 'tile' ? 'view-grid-outline' :
             :value="amountOf(n.size[dim])"
             @input="setAmount(dim, Number(($event.target as HTMLInputElement).value))"
           />
+        </div>
+      </div>
+      <div v-if="placeChoices.length" class="field">
+        <span class="label">Align in its {{ parentType }}</span>
+        <div class="segments">
+          <button :class="{ active: !p.place }" title="As the parent aligns its contents" @click="setProp('place', undefined)">Default</button>
+          <button v-for="c in placeChoices" :key="c.value" :class="{ active: p.place === c.value }" @click="setProp('place', c.value)">
+            {{ c.label }}
+          </button>
+        </div>
+        <p v-if="p.place && placeHasNoEffect" class="muted note">
+          It fills its {{ parentType }}'s {{ parentType === 'column' ? 'width' : 'height' }}, so set that to Wrap or a size to move it.
+        </p>
+      </div>
+      <div v-else-if="parentType === 'box'" class="field">
+        <span class="label">Align in its box</span>
+        <div class="row">
+          <div class="align-grid">
+            <button v-for="a in BOX_ALIGN" :key="a" :class="{ on: p.place === a }" :title="a" @click="setProp('place', a)" />
+          </div>
+          <button v-if="p.place" class="link" @click="setProp('place', undefined)">Default</button>
         </div>
       </div>
       <template v-if="n.type === 'column' || n.type === 'row'">
@@ -482,10 +525,44 @@ const typeIcon = computed(() => (n.value.type === 'tile' ? 'view-grid-outline' :
         {{ n.type === 'keys' || n.type === 'keypad' ? 'Key size (dp)' : n.type === 'swatches' ? 'Swatch size (dp)' : 'Size (dp)' }}
         <input type="number" min="16" step="4" :value="p.size ?? SIZES[n.type]" @input="setProp('size', ($event.target as HTMLInputElement).value)" />
       </label>
-      <label v-if="n.type === 'analog'" class="check">
-        <input type="checkbox" :checked="p.seconds === 'true'" @change="setProp('seconds', ($event.target as HTMLInputElement).checked ? 'true' : undefined)" />
-        Second hand
-      </label>
+      <template v-if="n.type === 'analog'">
+        <label class="field">
+          Numbers
+          <select :value="p.numbers ?? ''" @change="setProp('numbers', ($event.target as HTMLSelectElement).value)">
+            <option value="">None</option>
+            <option value="quarters">12, 3, 6 and 9</option>
+            <option value="all">All twelve</option>
+          </select>
+        </label>
+        <label class="check">
+          <input type="checkbox" :checked="p.seconds === 'true'" @change="setProp('seconds', ($event.target as HTMLInputElement).checked ? 'true' : undefined)" />
+          Second hand
+        </label>
+      </template>
+      <template v-if="n.type === 'gauge'">
+        <label class="field">
+          Caption under the ring
+          <select
+            :value="!p.caption ? '' : p.caption === '@name' ? '@name' : 'words'"
+            @change="
+              (() => {
+                const v = ($event.target as HTMLSelectElement).value
+                setProp('caption', v === 'words' ? (p.caption && p.caption !== '@name' ? p.caption : 'Caption') : v)
+              })()
+            "
+          >
+            <option value="">None</option>
+            <option v-if="n.bind" value="@name">The entity's name</option>
+            <option value="words">Words of my own</option>
+          </select>
+        </label>
+        <input
+          v-if="p.caption && p.caption !== '@name'"
+          aria-label="Caption"
+          :value="p.caption"
+          @input="setProp('caption', ($event.target as HTMLInputElement).value || 'Caption')"
+        />
+      </template>
       <template v-if="n.type === 'iconbutton'">
         <div class="field">
           <span class="label">Icon</span>
@@ -621,6 +698,12 @@ const typeIcon = computed(() => (n.value.type === 'tile' ? 'view-grid-outline' :
         Shown
         <select :value="p.showWhen ?? ''" @change="setProp('showWhen', ($event.target as HTMLSelectElement).value)">
           <option v-for="s in SHOW_WHEN" :key="s.value" :value="s.value">{{ s.label }}</option>
+        </select>
+      </label>
+      <label v-if="n.bind && p.showWhen" class="field">
+        Comes and goes
+        <select :value="p.animate ?? ''" @change="setProp('animate', ($event.target as HTMLSelectElement).value)">
+          <option v-for="a in ANIMATIONS" :key="a.value" :value="a.value">{{ a.label }}</option>
         </select>
       </label>
     </details>
@@ -779,6 +862,30 @@ summary {
 .align-grid button.on {
   background: var(--accent);
   border-color: var(--accent);
+}
+
+.segments {
+  display: flex;
+  gap: 4px;
+}
+
+.segments button {
+  flex: 1;
+  padding: 6px 4px;
+}
+
+.segments button.active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+
+.link {
+  align-self: center;
+  border: none;
+  background: none;
+  color: var(--accent);
+  padding: 4px;
 }
 
 .note {

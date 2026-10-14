@@ -38,6 +38,7 @@ class DocContext(
     private val images = HashMap<String, RcImage>()
     private val paths = HashMap<String, RcPath>()
     private val metas = HashMap<String, RcText>()
+    private val literals = HashMap<String, RcText>()
 
     val bindings = mutableListOf<Binding>()
     val pictures = mutableListOf<PictureSlot>()
@@ -61,6 +62,8 @@ class DocContext(
     fun int(name: String, initial: Int = 0): RcInteger = declare(ints, name, { int(name, initial) }) { scope.remoteNamedInteger(Rc.USER + name, initial) }
     fun float(name: String, initial: Float = 0f): RcFloat = declare(floats, name, { float(name, initial) }) { scope.remoteNamedFloat(Rc.USER + name, initial) }
     fun color(name: String, initial: Int = 0): RcColor = declare(colors, name, { color(name, initial) }) { scope.remoteNamedColor(Rc.USER + name, initial) }
+    /** A fixed text for canvas text operations, which take a declared text rather than a string. */
+    fun literal(s: String): RcText = declare(literals, s, { literal(s) }) { scope.remoteText(s) }
     fun fixed(argb: Int): RcColor = declare(colors, "#" + argb.toUInt().toString(16), { fixed(argb) }) { scope.remoteColor(argb) }
     fun role(r: Role): RcColor = fixed(r.argb)
 
@@ -105,7 +108,7 @@ class DocContext(
     companion object {
         /**
          * Builds a document twice. Variables, colours, paths and texts declared inside a layout component are lost
-         * when the player reads the document (alpha20), so a first pass finds what [content] declares and the
+         * when the player reads the document (alpha20 and alpha21), so a first pass finds what [content] declares and the
          * second declares all of it at the top before laying anything out.
          */
         fun build(

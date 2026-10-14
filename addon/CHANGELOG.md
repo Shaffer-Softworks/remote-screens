@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.1
+
+- Free-form pages: a layout builder like Android Studio's, with columns, rows, boxes, flows and scrolling lists,
+  and components for text, icons, buttons, sliders, images, cards, clocks, analog clocks, badges, avatars,
+  progress bars, gauges, graphs, switches, steppers, choices, icon buttons, remote keys, colour swatches and a
+  keypad. Borders on any component; text that glides along; components shown only while an entity is on or off,
+  fading or sliding in and out.
+- Remote Compose 1.0.0-alpha21. Tablets on this player app receive their screens compressed, well under half
+  the size.
 ## 0.1.0
 
 - First release: screens of tiles on Android tablets, drawn with Remote Compose, edited in Home Assistant.

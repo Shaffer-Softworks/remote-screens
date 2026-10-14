@@ -2,7 +2,9 @@
 
 package dev.remotescreens.server.render
 
+import androidx.compose.remote.core.operations.layout.animation.AnimationSpec
 import androidx.compose.remote.creation.dsl.Modifier
+import androidx.compose.remote.creation.dsl.animationSpec
 import androidx.compose.remote.creation.dsl.RcBorderShape
 import androidx.compose.remote.creation.dsl.RcColor
 import androidx.compose.remote.creation.dsl.RcFloat
@@ -44,7 +46,7 @@ import kotlin.math.sin
 private enum class Axis { ROW, COLUMN, BOX }
 
 /** A component's size in dp, as near as the server can tell before the player measures it. */
-private data class Dims(val w: Float, val h: Float)
+internal data class Dims(val w: Float, val h: Float)
 
 /** How sizes are written in a layout: `wrap`, `fill`, `dp:N` or `weight:N`. */
 private sealed interface Spec {
@@ -91,6 +93,27 @@ private fun Node.natural(): Dims = when (type) {
     else -> Dims(0f, 0f)
 }
 
+/** About the size [n]'s content takes: a leaf's natural size, a container's children laid end to end, plus padding. */
+internal fun content(n: Node): Dims {
+    fun side(spec: String, natural: Float) = (Spec.of(spec) as? Spec.Dp)?.v ?: natural
+    if (n.type !in setOf("column", "row", "box", "flow")) {
+        val nat = n.natural()
+        val lines = if (n.type == "text") (n.props["lines"]?.toFloatOrNull() ?: 1f).coerceAtLeast(1f) else 1f
+        return Dims(side(n.size.width, nat.w), side(n.size.height, nat.h * lines))
+    }
+    val kids = n.children.filter { !it.hidden }.map(::content)
+    val gap = (n.props["gap"]?.toFloatOrNull() ?: 0f) * (kids.size - 1).coerceAtLeast(0)
+    val inner = when (n.type) {
+        "row" -> Dims(kids.sumOf { it.w.toDouble() }.toFloat() + gap, kids.maxOfOrNull { it.h } ?: 0f)
+        "column" -> Dims(kids.maxOfOrNull { it.w } ?: 0f, kids.sumOf { it.h.toDouble() }.toFloat() + gap)
+        else -> Dims(kids.maxOfOrNull { it.w } ?: 0f, kids.maxOfOrNull { it.h } ?: 0f)
+    }
+    val pad = 2 * n.style.padding
+    return Dims(side(n.size.width, inner.w + pad), side(n.size.height, inner.h + pad))
+}
+
+private fun fills(spec: String) = spec == "fill" || spec.startsWith("weight:")
+
 /**
  * A free-form page: [root] laid out in the content area at ([xDp], [yDp]), [wDp] by [hDp]. Containers become the
  * player's rows, columns and boxes; leaves reuse the widgets the tiles draw with.
@@ -118,29 +141,32 @@ private class Pages(val index: (String) -> Int?, val title: (String) -> String?)
 /** The size of [n] within its parent's inner space [avail]; [share] is what a weight of it comes to. */
 private fun DocContext.resolve(n: Node, avail: Dims, axis: Axis, share: Dims): Dims {
     val nat = n.natural()
-    fun one(s: Spec, room: Float, shared: Float, natural: Float) = when (s) {
-        Spec.Fill -> room
+    fun one(s: Spec, room: Float, shared: Float, natural: Float, main: Boolean) = when (s) {
+        Spec.Fill -> if (main) shared else room
         is Spec.Dp -> s.v
         is Spec.Weight -> shared
         Spec.Wrap -> if (natural > 0f) minOf(natural, room) else room
     }
     return Dims(
-        one(Spec.of(n.size.width), avail.w, if (axis == Axis.ROW) share.w else avail.w, nat.w),
-        one(Spec.of(n.size.height), avail.h, if (axis == Axis.COLUMN) share.h else avail.h, nat.h),
+        one(Spec.of(n.size.width), avail.w, if (axis == Axis.ROW) share.w else avail.w, nat.w, axis == Axis.ROW),
+        one(Spec.of(n.size.height), avail.h, if (axis == Axis.COLUMN) share.h else avail.h, nat.h, axis == Axis.COLUMN),
     )
 }
 
-/** The modifier for [n]'s size: weights along the parent's axis, fills and dp otherwise. */
+/**
+ * The modifier for [n]'s size: weights along the parent's axis, fills and dp otherwise. A fill along a row or a
+ * column is a weight of 1, so components that fill share the room, as in the editor, rather than the first taking all.
+ */
 private fun DocContext.sized(n: Node, axis: Axis): Modifier {
     var m: Modifier = Modifier
     m = when (val s = Spec.of(n.size.width)) {
-        Spec.Fill -> m.fillMaxWidth()
+        Spec.Fill -> if (axis == Axis.ROW) m.horizontalWeight(1f) else m.fillMaxWidth()
         is Spec.Dp -> m.width(u.px(s.v))
         is Spec.Weight -> if (axis == Axis.ROW) m.horizontalWeight(s.v) else m.fillMaxWidth()
         Spec.Wrap -> m
     }
     m = when (val s = Spec.of(n.size.height)) {
-        Spec.Fill -> m.fillMaxHeight()
+        Spec.Fill -> if (axis == Axis.COLUMN) m.verticalWeight(1f) else m.fillMaxHeight()
         is Spec.Dp -> m.height(u.px(s.v))
         is Spec.Weight -> if (axis == Axis.COLUMN) m.verticalWeight(s.v) else m.fillMaxHeight()
         Spec.Wrap -> m
@@ -162,6 +188,7 @@ private fun DocContext.styled(n: Node, axis: Axis, pages: Pages, base: Modifier 
     if (id != null && (when_ == "on" || when_ == "off")) {
         bindEntity(id)
         m = m.visibility(int(V.e(id, when_)))
+        appear(n.props["animate"])?.let { (enter, exit) -> m = m.animationSpec(enterAnimation = enter, exitAnimation = exit) }
     }
     val bg = n.style.background?.let { paint(it) }
     if (n.style.corner > 0f) m = m.clip(rounded(n.style.corner))
@@ -176,6 +203,16 @@ private fun DocContext.styled(n: Node, axis: Axis, pages: Pages, base: Modifier 
     }
     if (n.style.padding > 0f) m = m.padding(u.px(n.style.padding))
     return m
+}
+
+/** How a component that shows and hides comes and goes: a fade unless [animate] names a slide, or `none`. */
+private fun appear(animate: String?): Pair<AnimationSpec.ANIMATION, AnimationSpec.ANIMATION>? = when (animate) {
+    "none" -> null
+    "left" -> AnimationSpec.ANIMATION.SLIDE_LEFT to AnimationSpec.ANIMATION.SLIDE_LEFT
+    "right" -> AnimationSpec.ANIMATION.SLIDE_RIGHT to AnimationSpec.ANIMATION.SLIDE_RIGHT
+    "up" -> AnimationSpec.ANIMATION.SLIDE_TOP to AnimationSpec.ANIMATION.SLIDE_TOP
+    "down" -> AnimationSpec.ANIMATION.SLIDE_BOTTOM to AnimationSpec.ANIMATION.SLIDE_BOTTOM
+    else -> AnimationSpec.ANIMATION.FADE_IN to AnimationSpec.ANIMATION.FADE_OUT
 }
 
 /** What a tap and a hold on [n] send, through the same router as a tile's. */
@@ -246,20 +283,29 @@ private fun DocContext.dividerSize(n: Node, axis: Axis): Modifier {
     return m
 }
 
-private fun DocContext.container(n: Node, self: Dims, axis: Axis, pages: Pages) {
+private fun DocContext.container(n: Node, given: Dims, axis: Axis, pages: Pages) {
     val kids = n.children.filter { !it.hidden }
+    // A wrapped row whose children fill its height is as tall as its tallest child, so cards side by side match,
+    // rather than the fill stretching to the page; a wrapped column whose children fill its width, likewise.
+    val pinH = n.type == "row" && n.size.height == "wrap" && kids.any { fills(it.size.height) }
+    val pinW = n.type == "column" && n.size.width == "wrap" && kids.any { fills(it.size.width) }
+    val self = if (pinH || pinW) content(n).let { Dims(if (pinW) minOf(it.w, given.w) else given.w, if (pinH) minOf(it.h, given.h) else given.h) } else given
     val pad = n.style.padding
     val inner = Dims((self.w - 2 * pad).coerceAtLeast(0f), (self.h - 2 * pad).coerceAtLeast(0f))
     val gap = n.props["gap"]?.toFloatOrNull()?.coerceAtLeast(0f) ?: 0f
     val mine = when (n.type) { "row" -> Axis.ROW; "column" -> Axis.COLUMN; else -> Axis.BOX }
     val sizes = childSizes(kids, inner, mine, gap)
-    var m = styled(n, axis, pages)
+    var base = sized(n, axis)
+    if (pinH) base = base.height(u.px(self.h))
+    if (pinW) base = base.width(u.px(self.w))
+    var m = styled(n, axis, pages, base)
     if (n.props["scroll"] == "true") m = if (mine == Axis.ROW) m.horizontalScroll() else if (mine == Axis.COLUMN) m.verticalScroll() else m
     val ctx = this
     fun children() {
         kids.forEachIndexed { i, c ->
             if (i > 0 && gap > 0f) scope.Spacer(if (mine == Axis.ROW) Modifier.width(u.px(gap)) else Modifier.height(u.px(gap)))
-            ctx.node(c, sizes[i], mine, pages)
+            val place = c.props["place"]
+            if (place == null) ctx.node(c, sizes[i], mine, pages) else ctx.placed(c, place, sizes[i], mine, pages)
         }
     }
     val alignment = n.props["alignment"]
@@ -283,16 +329,45 @@ private fun DocContext.container(n: Node, self: Dims, axis: Axis, pages: Pages) 
     }
 }
 
+/**
+ * [c] aligned on its own within its parent ([place]): across a column (start, center, end), across a row (top,
+ * center, bottom) or anywhere in a box (`top-end`). A box spanning the parent's cross axis, sized like [c] along
+ * the main one, holds it where it asks.
+ */
+private fun DocContext.placed(c: Node, place: String, self: Dims, axis: Axis, pages: Pages) {
+    val ctx = this
+    fun main(spec: String, weight: (Float) -> Modifier, fill: Modifier, dp: (Float) -> Modifier): Modifier =
+        when (val s = Spec.of(spec)) {
+            is Spec.Weight -> weight(s.v)
+            Spec.Fill -> fill
+            is Spec.Dp -> dp(s.v)
+            Spec.Wrap -> Modifier
+        }
+    val (v, h) = place.split('-').let { if (it.size == 2) it[0] to it[1] else it[0] to it[0] }
+    when (axis) {
+        Axis.COLUMN -> scope.Box(
+            main(c.size.height, { Modifier.verticalWeight(it) }, Modifier.verticalWeight(1f), { Modifier.height(u.px(it)) }).fillMaxWidth(),
+            horizontal = horizontal(place), vertical = RcVerticalPositioning.Top,
+        ) { ctx.node(c, self, Axis.BOX, pages) }
+        Axis.ROW -> scope.Box(
+            main(c.size.width, { Modifier.horizontalWeight(it) }, Modifier.horizontalWeight(1f), { Modifier.width(u.px(it)) }).fillMaxHeight(),
+            horizontal = RcHorizontalPositioning.Start, vertical = vertical(place),
+        ) { ctx.node(c, self, Axis.BOX, pages) }
+        Axis.BOX -> scope.Box(Modifier.fillMaxSize(), horizontal = horizontal(h), vertical = vertical(v)) { ctx.node(c, self, Axis.BOX, pages) }
+    }
+}
+
 /** The size of each child: fixed and wrapped ones first, then what is left shared out by weight. */
 private fun DocContext.childSizes(kids: List<Node>, inner: Dims, axis: Axis, gap: Float): List<Dims> {
     if (axis == Axis.BOX) return kids.map { resolve(it, inner, Axis.BOX, inner) }
     val main = { d: Dims -> if (axis == Axis.ROW) d.w else d.h }
     val mainSpec = { n: Node -> Spec.of(if (axis == Axis.ROW) n.size.width else n.size.height) }
-    val fixed = kids.filter { mainSpec(it) !is Spec.Weight }.sumOf { main(resolve(it, inner, axis, Dims(0f, 0f))).toDouble() }.toFloat()
-    val weights = kids.sumOf { (mainSpec(it) as? Spec.Weight)?.v?.toDouble() ?: 0.0 }.toFloat()
+    val weightOf = { n: Node -> when (val s = mainSpec(n)) { is Spec.Weight -> s.v; Spec.Fill -> 1f; else -> 0f } }
+    val fixed = kids.filter { weightOf(it) == 0f }.sumOf { main(resolve(it, inner, axis, Dims(0f, 0f))).toDouble() }.toFloat()
+    val weights = kids.sumOf { weightOf(it).toDouble() }.toFloat()
     val left = (main(inner) - fixed - gap * (kids.size - 1).coerceAtLeast(0)).coerceAtLeast(0f)
     return kids.map { c ->
-        val w = (mainSpec(c) as? Spec.Weight)?.v ?: 0f
+        val w = weightOf(c)
         val part = if (weights > 0f) left * w / weights else 0f
         resolve(c, inner, axis, if (axis == Axis.ROW) Dims(part, inner.h) else Dims(inner.w, part))
     }
@@ -702,6 +777,8 @@ private fun DocContext.gaugeNode(n: Node, axis: Axis, pages: Pages) {
         bindEntity(id)
         bindLevel(n, id)
     }
+    // In the gap under the ring: the entity's name for `@name`, else the words given.
+    val caption = n.props["caption"]?.takeIf { it.isNotBlank() }?.let { if (it == "@name") id?.let { e -> text(V.e(e, "name")) } else literal(it) }
     scope.Box(styled(n, axis, pages), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
         val c = this@gaugeNode
         Box(Modifier.size(px, px), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
@@ -711,6 +788,10 @@ private fun DocContext.gaugeNode(n: Node, axis: Axis, pages: Pages) {
                 if (id != null) {
                     paint { color(fill); style(RcPaintStyle.Stroke); strokeWidth(stroke); strokeCap(RcStrokeCap.Round) }
                     drawArc(inset.rf, inset.rf, (px - inset).rf, (px - inset).rf, 135f.rf, c.float(nodeLevel(n.id)) * 270f)
+                }
+                if (caption != null) {
+                    paint { color(c.role(Role.INK_SOFT)); style(RcPaintStyle.Fill); textSize(px * 0.085f) }
+                    drawTextAnchored(caption, px / 2f, px - px * 0.06f, 0f, 0f)
                 }
             }
             if (id != null) c.label(c.text(V.e(id, "value")), maxOf(sizeDp * 0.16f, Type.CAPTION), c.role(Role.INK), 500f, align = RcTextAlign.Center)
@@ -729,6 +810,7 @@ private fun DocContext.analogNode(n: Node, axis: Axis, pages: Pages) {
     val accent = role(Role.ACCENT)
     val seconds = n.props["seconds"] == "true"
     scope.Box(styled(n, axis, pages), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
+        val c = this@analogNode
         Canvas(Modifier.size(px, px)) {
             paint { color(face); style(RcPaintStyle.Fill) }
             drawCircle(mid, mid, mid)
@@ -737,6 +819,15 @@ private fun DocContext.analogNode(n: Node, axis: Axis, pages: Pages) {
                 val a = i * PI / 6
                 val inner = if (i % 3 == 0) 0.74f else 0.82f
                 drawLine(mid + (sin(a) * mid * inner).toFloat(), mid - (cos(a) * mid * inner).toFloat(), mid + (sin(a) * mid * 0.9f).toFloat(), mid - (cos(a) * mid * 0.9f).toFloat())
+            }
+            val hours = when (n.props["numbers"]) { "all" -> 1..12; "quarters" -> listOf(3, 6, 9, 12); else -> emptyList() }
+            if (hours.any()) {
+                val size = px * 0.1f
+                paint { color(ink); style(RcPaintStyle.Fill); textSize(size) }
+                for (h in hours) {
+                    val a = h * PI / 6
+                    drawTextAnchored(c.literal(h.toString()), mid + (sin(a) * mid * 0.6f).toFloat(), mid - (cos(a) * mid * 0.6f).toFloat(), 0f, 0f)
+                }
             }
             // minutes() is the minute of the day and seconds() the second of the hour.
             fun hand(angle: RcFloat, length: Float, width: Float, colour: RcColor) {

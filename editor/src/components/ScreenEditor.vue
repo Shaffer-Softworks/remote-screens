@@ -2,9 +2,10 @@
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { api } from '../api'
 import { DESIGN, useDesigner } from '../model/design'
+import { DENSITIES, PRESETS, clampDp, presetOf, toDp, toPx } from '../model/devices'
 import { firstFree, fitsAt, MAX_CELLS, MIN_CELLS, reflow } from '../model/grid'
 import { history } from '../model/history'
-import { fromGrid, newRoot } from '../model/nodes'
+import { fromGrid, newRoot, parentOf } from '../model/nodes'
 import { newTile } from '../model/tiles'
 import type { Page, Screen, Tile } from '../model/types'
 import { attempt, dirty, editing, playersOf, save, toast } from '../store'
@@ -111,21 +112,40 @@ onBeforeUnmount(() => {
   clearTimeout(settle)
 })
 
-// The device the mockup is drawn for: a tablet that shows the screen, else a common size.
-const PRESETS = [
-  { key: '1280x800', label: '10" landscape', w: 1280, h: 800 },
-  { key: '800x1280', label: '10" portrait', w: 800, h: 1280 },
-  { key: '960x600', label: '8" landscape', w: 960, h: 600 },
-  { key: '412x915', label: 'Phone', w: 412, h: 915 },
-]
+// The device the mockup is drawn for: a tablet that shows the screen, a common size, or the screen's own size.
+const CUSTOM = 'custom'
 const devices = computed(() => [
   ...playersOf(screen.value.id)
     .filter((p) => p.widthDp > 0)
     .map((p) => ({ key: `p:${p.deviceId}`, label: p.name, w: p.widthDp, h: p.heightDp })),
   ...PRESETS,
+  { key: CUSTOM, label: 'Custom size', w: screen.value.designSize?.widthDp ?? 1280, h: screen.value.designSize?.heightDp ?? 800 },
 ])
-const deviceKey = ref(devices.value[0].key)
+function firstDevice(): string {
+  const tablet = devices.value.find((d) => d.key.startsWith('p:'))
+  if (tablet) return tablet.key
+  const own = screen.value.designSize
+  return own ? (presetOf(own)?.key ?? CUSTOM) : PRESETS[0].key
+}
+const deviceKey = ref(firstDevice())
 const device = computed(() => devices.value.find((d) => d.key === deviceKey.value) ?? devices.value[0])
+
+function pickDevice(key: string): void {
+  // A custom size starts from the size shown before, and is kept with the screen.
+  if (key === CUSTOM && !screen.value.designSize) screen.value.designSize = { widthDp: device.value.w, heightDp: device.value.h }
+  deviceKey.value = key
+}
+/** 0 to type the custom size in dp, else the dpi of a size typed in pixels. */
+const customDpi = ref(0)
+const shownSize = (dp: number) => (customDpi.value ? toPx(dp, customDpi.value) : dp)
+function setCustom(dim: 'widthDp' | 'heightDp', value: number): void {
+  const old = screen.value.designSize ?? { widthDp: device.value.w, heightDp: device.value.h }
+  screen.value.designSize = { ...old, [dim]: clampDp(customDpi.value ? toDp(value, customDpi.value) : value, old[dim]) }
+}
+function rotateCustom(): void {
+  const s = screen.value.designSize
+  if (s) screen.value.designSize = { widthDp: s.heightDp, heightDp: s.widthDp }
+}
 
 const moved = computed(() => {
   const placed = reflow(page.value.tiles, screen.value.grid)
@@ -242,10 +262,32 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
       <span class="grow" />
       <label class="row muted">
         <MdiIcon name="tablet" :size="18" />
-        <select v-model="deviceKey" aria-label="Device">
+        <select :value="deviceKey" aria-label="Device" @change="pickDevice(($event.target as HTMLSelectElement).value)">
           <option v-for="d in devices" :key="d.key" :value="d.key">{{ d.label }} ({{ d.w }} × {{ d.h }})</option>
         </select>
       </label>
+      <span v-if="deviceKey === CUSTOM" class="row custom-size" title="Width × height, in dp or in pixels at a density">
+        <input
+          type="number"
+          aria-label="Width"
+          step="10"
+          :value="shownSize(device.w)"
+          @change="setCustom('widthDp', Number(($event.target as HTMLInputElement).value))"
+        />
+        ×
+        <input
+          type="number"
+          aria-label="Height"
+          step="10"
+          :value="shownSize(device.h)"
+          @change="setCustom('heightDp', Number(($event.target as HTMLInputElement).value))"
+        />
+        <select v-model.number="customDpi" aria-label="Units">
+          <option :value="0">dp</option>
+          <option v-for="d in DENSITIES" :key="d" :value="d">px at {{ d }} dpi</option>
+        </select>
+        <button class="icon" title="Swap width and height" @click="rotateCustom"><MdiIcon name="phone-rotate-landscape" :size="18" /></button>
+      </span>
       <span v-if="!free" class="row stepper" title="Columns × rows">
         <button class="icon" :disabled="screen.grid.cols <= MIN_CELLS" @click="resize(screen.grid.cols - 1, screen.grid.rows)">−</button>
         {{ screen.grid.cols }}
@@ -318,7 +360,13 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
       </section>
 
       <aside class="side card">
-        <AttributesPanel v-if="node" :node="node" :screen="screen" :is-root="node.id === page.root?.id" />
+        <AttributesPanel
+          v-if="node"
+          :node="node"
+          :screen="screen"
+          :is-root="node.id === page.root?.id"
+          :parent-type="page.root ? parentOf(page.root, node.id)?.parent.type : undefined"
+        />
         <template v-else>
           <div class="segments">
             <button :class="{ active: sidePanel === 'page' }" @click="sidePanel = 'page'">Page</button>
@@ -399,6 +447,10 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
 
 .name:hover {
   border-color: var(--line);
+}
+
+.custom-size input {
+  width: 76px;
 }
 
 .stepper button {

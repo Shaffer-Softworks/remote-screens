@@ -1,6 +1,6 @@
 # Remote Compose: what this project leans on
 
-Remote Screens builds its screens with `androidx.compose.remote` **1.0.0-alpha20**. The library is alpha, so this
+Remote Screens builds its screens with `androidx.compose.remote` **1.0.0-alpha21**. The library is alpha, so this
 page records the parts of its API we depend on, what the phase 0 spike proved, and the workarounds. When the
 library is upgraded, check each item here.
 
@@ -12,8 +12,13 @@ All creation calls go through `server/.../render/Rc.kt` and the tile renderers; 
 - `remote-creation-jvm` brings `JvmRcPlatformServices`, so the add-on builds documents without Android.
 - The profile is `PROFILE_ANDROIDX | PROFILE_EXPERIMENTAL` at `CoreDocument.DOCUMENT_API_LEVEL`, with a plain
   `RemoteComposeWriter` as the factory, and the same value in the `DOC_PROFILES` header. Long press
-  (`MODIFIER_MULTI_CLICK`, operation 83) and `Flow` are experimental in alpha20; without the flag the writer throws
-  "Operation 83 is not supported for this version".
+  (`MODIFIER_MULTI_CLICK`, operation 83) and `Flow` are still experimental in alpha21; without the flag the writer
+  throws "Operation 83 is not supported for this version".
+- **`drawTextOnCircle` can't be used.** alpha21 adds it to the DSL, but operation 57 is in no profile's table, so
+  the writer throws "Operation 57 is not supported for this version" and our player could not read it anyway.
+  Clock numbers and gauge captions use `drawTextAnchored` (pan 0, 0 centres the text on the point).
+- Texts for canvas operations (`drawTextAnchored` takes an `RcText`, not a string) are declared through
+  `DocContext.literal`, so they are hoisted like every other declaration.
 - **Declarations inside a layout component are lost.** A `remoteNamedText` (or colour, path, text) declared inside
   a `Box`'s content is written, but `CoreDocument` drops it when it reads the document back. `DocContext.build`
   therefore builds every document twice: a dry run records what the content declares, and the real build declares
@@ -35,8 +40,21 @@ All creation calls go through `server/.../render/Rc.kt` and the tile renderers; 
 - The player overrides it with `setUserLocalString/Int/Color("<name>", value)`; the player adds the `USER:` prefix.
 - An override is sticky until cleared, so the document never sets these itself: every change of a named
   variable comes from the add-on (a state change) or the player (a prediction, a page change).
-- `remoteThemedColor(Int, Int)` in alpha20 passes the colours as ids. Don't use it; the add-on picks the colour of
-  the screen's theme itself and sends it as a named colour.
+- `remoteThemedColor(Int, Int)` still passes the colours as ids in alpha21. Don't use it; the add-on picks the
+  colour of the screen's theme itself and sends it as a named colour.
+
+## Compression (alpha21)
+
+- A document whose header has `COMPRESS = COMPRESSION_DEFLATE` has everything after the header deflated, and
+  alpha21's `RemoteComposeBuffer` inflates it on read. Older players can't read one.
+- So the add-on builds documents uncompressed and `PlayerHub` deflates each with `Rc.compress`
+  (`Header.compressDocument`) only for a player whose hello lists the `deflate` capability. Documents shrink to
+  well under half.
+
+## Show and hide animations (alpha21)
+
+- `Modifier.animationSpec(enterAnimation, exitAnimation)` on a component makes the player animate its visibility
+  changes (fade, or slide from a side). Free-form components with `showWhen` get one; `animate` picks which.
 
 ## Taps: host actions with metadata
 

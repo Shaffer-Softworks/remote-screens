@@ -50,6 +50,15 @@ function size(spec: string, dim: 'width' | 'height'): CSSProperties {
 
 const style = computed<CSSProperties>(() => {
   const s: CSSProperties = { ...size(n.value.size.width, 'width'), ...size(n.value.size.height, 'height') }
+  const place = n.value.props.place
+  if (place && !props.isRoot && props.axis !== 'flow' && !s.alignSelf) {
+    if (props.axis === 'box') {
+      const [v, h] = place.split('-')
+      Object.assign(s, { alignSelf: ALIGN[v] ?? 'flex-start', justifySelf: ALIGN[h ?? v] ?? 'flex-start' })
+    } else {
+      s.alignSelf = ALIGN[place] ?? 'flex-start'
+    }
+  }
   if (n.value.style.padding) s.padding = `${n.value.style.padding}px`
   if (n.value.style.corner) s.borderRadius = `${n.value.style.corner}px`
   const bg = colorOf(n.value.style.background)
@@ -157,8 +166,14 @@ const gauge = computed(() => {
   const r = (size - stroke) / 2
   const arc = 2 * Math.PI * r * 0.75
   const value = entity.value ? (entity.value.unit ? `${entity.value.state} ${entity.value.unit}` : stateOf(entity.value) || entity.value.state) : ''
-  return { size, stroke, r, arc, fill: (arc * progress.value) / 100, value }
+  const c = n.value.props.caption
+  const caption = !c ? '' : c === '@name' ? (entity.value?.name ?? n.value.bind?.entityId ?? '') : c
+  return { size, stroke, r, arc, fill: (arc * progress.value) / 100, value, caption }
 })
+
+const clockNumbers = computed(() =>
+  n.value.props.numbers === 'all' ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : n.value.props.numbers === 'quarters' ? [3, 6, 9, 12] : [],
+)
 
 /** The hands' angles in degrees, from the editor's clock. */
 const hands = computed(() => {
@@ -434,6 +449,7 @@ function end(): void {
         </g>
       </svg>
       <span class="value" :style="{ fontSize: `${Math.max(gauge.size * 0.16, 12)}px` }">{{ node.bind ? gauge.value : '' }}</span>
+      <span v-if="gauge.caption" class="caption" :style="{ fontSize: `${gauge.size * 0.085}px` }">{{ gauge.caption }}</span>
     </div>
     <svg
       v-else-if="node.type === 'analog'"
@@ -444,6 +460,16 @@ function end(): void {
     >
       <circle cx="50" cy="50" r="50" :fill="colorOf(node.props.color ?? 'card')" />
       <line v-for="i in 12" :key="i" x1="50" :y1="(i - 1) % 3 === 0 ? 13 : 9" x2="50" y2="5" stroke="#939393" stroke-width="2" :transform="`rotate(${(i - 1) * 30} 50 50)`" />
+      <text
+        v-for="h in clockNumbers"
+        :key="h"
+        :x="50 + Math.sin((h * Math.PI) / 6) * 30"
+        :y="50 - Math.cos((h * Math.PI) / 6) * 30"
+        fill="#fff"
+        font-size="10"
+        text-anchor="middle"
+        dominant-baseline="central"
+      >{{ h }}</text>
       <line x1="50" y1="50" x2="50" y2="25" stroke="#fff" stroke-width="5" :transform="`rotate(${hands.hour} 50 50)`" />
       <line x1="50" y1="50" x2="50" y2="12.5" stroke="#fff" stroke-width="3.5" :transform="`rotate(${hands.minute} 50 50)`" />
       <line v-if="node.props.seconds === 'true'" x1="50" y1="50" x2="50" y2="9" stroke="#14e1ba" stroke-width="1.2" :transform="`rotate(${hands.second} 50 50)`" />
@@ -839,6 +865,16 @@ function end(): void {
 .gauge .value {
   position: relative;
   font-weight: 500;
+}
+
+.gauge .caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 1%;
+  text-align: center;
+  color: #cacaca;
+  white-space: nowrap;
 }
 
 .t-keys {

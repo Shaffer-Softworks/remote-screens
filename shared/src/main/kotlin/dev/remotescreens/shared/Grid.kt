@@ -17,7 +17,7 @@ data class GridSpec(
     val padding: Float,
     val gap: Float,
     val topBar: Float,
-    /** The bottom navigation bar: a 2 dp line over a row of 100 dp page buttons. */
+    /** The bottom navigation bar: a 2 dp line over a row of page buttons, 100 dp tall or 64 dp on a narrow device. */
     val navBar: Float,
     val cellW: Float,
     val cellH: Float,
@@ -39,6 +39,12 @@ object Grid {
     const val GAP = 10f
     const val TOP_BAR = 48f
     const val NAV_BAR = 102f
+    const val COMPACT_NAV_BAR = 66f
+
+    /** Narrower than this is a phone or a small wall panel: a compact navigation bar and no date in the header. */
+    const val NARROW = 600f
+
+    fun navBar(widthDp: Float): Float = if (widthDp < NARROW) COMPACT_NAV_BAR else NAV_BAR
 
     /** The grid a device of this size gets when it is adopted. */
     fun suggest(widthDp: Float, heightDp: Float): GridSize {
@@ -61,7 +67,7 @@ object Grid {
             padding = PADDING,
             gap = GAP,
             topBar = if (showTopBar) TOP_BAR else 0f,
-            navBar = NAV_BAR,
+            navBar = navBar(widthDp),
             cellW = cellW,
             cellH = cellH,
         )
@@ -69,7 +75,7 @@ object Grid {
 
     private fun available(widthDp: Float, heightDp: Float, showTopBar: Boolean): Pair<Float, Float> {
         val top = if (showTopBar) TOP_BAR else 0f
-        return (widthDp - 2 * PADDING) to (heightDp - top - NAV_BAR - 2 * PADDING)
+        return (widthDp - 2 * PADDING) to (heightDp - top - navBar(widthDp) - 2 * PADDING)
     }
 
     private fun fit(avail: Float): Int =

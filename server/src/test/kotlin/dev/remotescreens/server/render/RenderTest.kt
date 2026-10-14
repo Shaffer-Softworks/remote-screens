@@ -46,6 +46,16 @@ class RenderTest {
     }
 
     @Test
+    fun aCompressedDocumentIsSmallerAndReadsTheSame() {
+        val screen = DemoLayout.screen()
+        val doc = ScreenRenderer.render(screen, tablet, input(runBlocking { DataFetcher(ha).forScreen(screen) }))
+        val small = Rc.compress(doc.bytes)
+        assertTrue(small.size * 2 < doc.bytes.size, "${small.size} of ${doc.bytes.size} bytes")
+        val names = { b: ByteArray -> parse(b).getNamedVariables(NamedVariable.STRING_TYPE).toSet() }
+        assertEquals(names(doc.bytes), names(small))
+    }
+
+    @Test
     fun everyDemoTileHasItsOwnCell() {
         val screen = DemoLayout.screen()
         for (page in screen.pages) {

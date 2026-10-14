@@ -23,8 +23,8 @@ object Rc {
     const val USER = "USER:"
 
     /**
-     * AndroidX operations plus the experimental ones: long press (`MODIFIER_MULTI_CLICK`) and `Flow` are only there
-     * in alpha20. The player reads the same profile from the header.
+     * AndroidX operations plus the experimental ones: long press (`MODIFIER_MULTI_CLICK`) and `Flow` are still only
+     * there in alpha21. The player reads the same profile from the header.
      */
     const val PROFILES = RcProfiles.PROFILE_ANDROIDX or RcProfiles.PROFILE_EXPERIMENTAL
 
@@ -40,6 +40,12 @@ object Rc {
             RemoteComposeWriter.HTag(Header.DOC_CONTENT_DESCRIPTION, description),
             RemoteComposeWriter.HTag(Header.DOC_PROFILES, PROFILES),
         ) { content() }
+
+    /** The player capability that says it reads documents [compress]ed (alpha21 players do). */
+    const val DEFLATE = "deflate"
+
+    /** [document] with everything after its header deflated, for players with the [DEFLATE] capability. */
+    fun compress(document: ByteArray): ByteArray = Header.compressDocument(document, document.size)
 
     /**
      * A path from `M`, `L`, `C` and `Z` with absolute coordinates, as `tools/generate_icons.py` writes them.

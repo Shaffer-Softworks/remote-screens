@@ -12,6 +12,14 @@ export const PADDING = 12
 export const GAP = 10
 export const TOP_BAR = 48
 export const NAV_BAR = 102
+export const COMPACT_NAV_BAR = 66
+
+/** Narrower than this is a phone or a small wall panel: a compact navigation bar and no date in the header. */
+export const NARROW = 600
+
+export function navBar(widthDp: number): number {
+  return widthDp < NARROW ? COMPACT_NAV_BAR : NAV_BAR
+}
 
 export interface GridSpec {
   cols: number
@@ -33,7 +41,7 @@ export interface GridSpec {
 
 function available(widthDp: number, heightDp: number, showTopBar: boolean): [number, number] {
   const top = showTopBar ? TOP_BAR : 0
-  return [f(widthDp - 2 * PADDING), f(f(f(heightDp - top) - NAV_BAR) - 2 * PADDING)]
+  return [f(widthDp - 2 * PADDING), f(f(f(heightDp - top) - navBar(widthDp)) - 2 * PADDING)]
 }
 
 function clamp(v: number, lo: number, hi: number): number {
@@ -70,7 +78,7 @@ export function spec(size: GridSize, widthDp: number, heightDp: number, showTopB
     padding: PADDING,
     gap: GAP,
     topBar,
-    navBar: NAV_BAR,
+    navBar: navBar(widthDp),
     cellW,
     cellH,
     large: cellW >= 170 && cellH >= 170,

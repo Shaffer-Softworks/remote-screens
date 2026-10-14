@@ -65,7 +65,7 @@ The editor is then at <http://localhost:18099> (or run `npm run dev` in `editor/
 In the Android emulator, start the player with
 `adb shell am start -n dev.remotescreens.player/.MainActivity --es server 10.0.2.2:18100`.
 
-[docs/REMOTE_COMPOSE.md](docs/REMOTE_COMPOSE.md) lists what we learned about Remote Compose `1.0.0-alpha20`
+[docs/REMOTE_COMPOSE.md](docs/REMOTE_COMPOSE.md) lists what we learned about Remote Compose `1.0.0-alpha21`
 and the workarounds the code relies on.
 
 ### Releases

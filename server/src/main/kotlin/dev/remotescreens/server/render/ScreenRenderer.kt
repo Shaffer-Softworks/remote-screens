@@ -173,7 +173,7 @@ object ScreenRenderer {
                     horizontal = RcRowHorizontalPositioning.SpaceEvenly, vertical = RcVerticalPositioning.Center,
                 ) {
                     c.label(c.text(V.TIME), HEADER_SP, ink, 700f)
-                    c.label(c.text(V.DAY), HEADER_SP, ink)
+                    if (spec.widthDp >= Grid.NARROW) c.label(c.text(V.DAY), HEADER_SP, ink)
                 }
             }
             Spacer(Modifier.width(c.u.px(spec.padding + 8f)))

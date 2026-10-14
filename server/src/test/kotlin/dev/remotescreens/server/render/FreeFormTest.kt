@@ -1,8 +1,14 @@
 package dev.remotescreens.server.render
 
 import androidx.compose.remote.core.CoreDocument
+import androidx.compose.remote.core.Operation
 import androidx.compose.remote.core.RemoteComposeBuffer
+import androidx.compose.remote.core.operations.DrawTextAnchored
 import androidx.compose.remote.core.operations.NamedVariable
+import androidx.compose.remote.core.operations.layout.Component
+import androidx.compose.remote.core.operations.layout.Container
+import androidx.compose.remote.core.operations.layout.animation.AnimationSpec
+import androidx.compose.remote.core.operations.layout.managers.BoxLayout
 import dev.remotescreens.server.BadRequest
 import dev.remotescreens.server.DataFetcher
 import dev.remotescreens.server.I18n
@@ -70,10 +76,11 @@ class FreeFormTest {
             Node("modes", "choices", size = NodeSize("fill", "wrap"), bind = NodeBinding("climate.living_room")),
             Node("wash", "choices", size = NodeSize("fill", "wrap"), bind = NodeBinding("input_select.washing_program")),
             Node("chips", "flow", size = NodeSize("fill", "wrap"), props = mapOf("gap" to "8"), style = NodeStyle(border = 2f, borderColor = "accent", corner = 12f), children = listOf(
-                Node("ring", "gauge", bind = NodeBinding("light.living_room"), props = mapOf("size" to "120")),
-                Node("face", "analog", props = mapOf("seconds" to "true")),
+                Node("ring", "gauge", bind = NodeBinding("light.living_room"), props = mapOf("size" to "120", "caption" to "@name")),
+                Node("face", "analog", props = mapOf("seconds" to "true", "numbers" to "all")),
+                Node("dial", "gauge", props = mapOf("caption" to "Humidity")),
                 Node("lamp", "iconbutton", bind = NodeBinding("light.table_lamp"), props = mapOf("iconOn" to "lightbulb-on")),
-                Node("onlyOn", "text", bind = NodeBinding("light.table_lamp"), props = mapOf("showWhen" to "on")),
+                Node("onlyOn", "text", bind = NodeBinding("light.table_lamp"), props = mapOf("showWhen" to "on", "animate" to "up")),
             )),
             Node("list", "column", size = NodeSize("fill", "dp:120"), props = mapOf("scroll" to "true"), children = listOf(
                 Node("ticker", "text", size = NodeSize("dp:120", "wrap"), props = mapOf("text" to "A long line that glides along", "marquee" to "true")),
@@ -95,6 +102,53 @@ class FreeFormTest {
         val core = parse(doc.bytes)
         assertContains(core.getNamedVariables(NamedVariable.INT_TYPE).toList(), "USER:page")
         assertTrue(doc.ctx.pictures.any { it.name == "img.cam" && it.source == "/api/camera_proxy/camera.front_door" })
+    }
+
+    private fun ops(list: List<Operation>): List<Operation> = list.flatMap { op -> listOf(op) + if (op is Container) ops(op.list) else emptyList() }
+
+    @Test
+    fun cardsSideBySideThatFillTheirRowsHeightAreAsTallAsTheTallest() {
+        fun card(id: String, withIcon: Boolean) = Node(id, "column", size = NodeSize("fill", "fill"), style = NodeStyle(padding = 20f), props = mapOf("gap" to "12"), children = listOfNotNull(
+            if (withIcon) Node("$id.head", "row", children = listOf(Node("$id.i", "icon"), Node("$id.t", "text", props = mapOf("fontSize" to "16")))) else Node("$id.t", "text", props = mapOf("fontSize" to "16")),
+            Node("$id.sw", "switch"),
+        ))
+        val row = Node("row", "row", size = NodeSize("fill", "wrap"), props = mapOf("gap" to "12"), children = listOf(card("a", true), card("b", false)))
+        // The icon's 32 dp, the gap, the switch's 30 dp and 20 dp of padding top and bottom.
+        assertEquals(32f + 12f + 30f + 40f, content(row).h)
+        val doc = ScreenRenderer.render(screen(Node("root", "column", children = listOf(row))), tablet, input())
+        assertTrue(doc.bytes.isNotEmpty())
+    }
+
+    @Test
+    fun aComponentAlignsOnItsOwnWithinItsParent() {
+        fun boxes(place: String?): List<Pair<Int, Int>> {
+            val card = Node("card", "column", size = NodeSize("fill", "wrap"), children = listOf(
+                Node("name", "text", props = mapOf("text" to "Ceiling fan")),
+                Node("sw", "switch", bind = NodeBinding("light.kitchen"), props = listOfNotNull(place?.let { "place" to it }).toMap()),
+            ))
+            val field = { name: String -> BoxLayout::class.java.getDeclaredField(name).apply { isAccessible = true } }
+            return ops(parse(ScreenRenderer.render(screen(card), tablet, input()).bytes).operations)
+                .filterIsInstance<BoxLayout>().map { field("mHorizontalPositioning").getInt(it) to field("mVerticalPositioning").getInt(it) }
+        }
+        val plain = boxes(null)
+        val right = boxes("end")
+        assertEquals(plain.size + 1, right.size, "the switch sits in a box of its own")
+        assertEquals(1, right.count { it == BoxLayout.END to BoxLayout.TOP } - plain.count { it == BoxLayout.END to BoxLayout.TOP })
+    }
+
+    @Test
+    fun clockNumbersAndGaugeCaptionsAreDrawnAndAComponentSlidesInAndOut() {
+        val dials = Node("root", "column", children = listOf(
+            Node("face", "analog", props = mapOf("numbers" to "all")),
+            Node("ring", "gauge", bind = NodeBinding("light.living_room"), props = mapOf("caption" to "@name")),
+            Node("dial", "gauge", props = mapOf("caption" to "Humidity")),
+        ))
+        // Twelve numbers round the face, one caption under each of the two gauges.
+        assertEquals(14, ops(parse(ScreenRenderer.render(screen(dials), tablet, input()).bytes).operations).count { it is DrawTextAnchored })
+        val all = ops(parse(ScreenRenderer.render(screen(everyType), tablet, input()).bytes).operations)
+        val slides = all.filterIsInstance<Component>().map { it.mAnimationSpec }.filter { it.enterAnimation == AnimationSpec.ANIMATION.SLIDE_TOP }
+        assertEquals(1, slides.size)
+        assertEquals(AnimationSpec.ANIMATION.SLIDE_TOP, slides.single().exitAnimation)
     }
 
     @Test

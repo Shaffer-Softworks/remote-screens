@@ -4,6 +4,7 @@ import dev.remotescreens.server.ha.HomeAssistant
 import dev.remotescreens.server.render.Alert
 import dev.remotescreens.server.render.Icons
 import dev.remotescreens.server.store.LayoutStore
+import dev.remotescreens.shared.DeviceSize
 import dev.remotescreens.shared.Grid
 import dev.remotescreens.shared.GridSize
 import dev.remotescreens.shared.LayoutData
@@ -88,8 +89,13 @@ fun Route.editorApi(config: Config, ha: HomeAssistant, store: LayoutStore, hub: 
 
         post("/screens") {
             val req = call.receive<NewScreen>()
-            val grid = req.grid ?: if (req.widthDp != null && req.heightDp != null) Grid.suggest(req.widthDp.toFloat(), req.heightDp.toFloat()) else GridSize(3, 3)
-            val screen = Screen(id = newId("s"), name = req.name.trim().ifEmpty { "Screen" }.take(60), grid = grid, pages = listOf(Page("home", "Home")))
+            val size = if (req.widthDp != null && req.heightDp != null) sized(DeviceSize(req.widthDp, req.heightDp)) else null
+            val grid = req.grid ?: size?.let { Grid.suggest(it.widthDp.toFloat(), it.heightDp.toFloat()) } ?: GridSize(3, 3)
+            val screen = Screen(
+                id = newId("s"), name = req.name.trim().ifEmpty { "Screen" }.take(60), grid = grid, pages = listOf(Page("home", "Home")),
+                designSize = size,
+                settings = ScreenSettings(orientation = orientationOf(size)),
+            )
             store.update { it.copy(screens = it.screens + screen) }
             call.respond(HttpStatusCode.Created, screen)
         }
@@ -216,12 +222,23 @@ fun validate(s: Screen): Screen {
         name = s.name.trim().ifEmpty { "Screen" }.take(60),
         homePage = s.homePage.takeIf { h -> s.pages.any { it.id == h } } ?: s.pages.first().id,
         settings = s.settings.validated(),
+        designSize = s.designSize?.let(::sized),
         pages = s.pages.map { p ->
             p.copy(title = p.title.take(40), tiles = p.tiles.map { t ->
                 t.copy(w = t.w.coerceIn(1, g.cols), h = t.h.coerceIn(1, g.rows), col = t.col.coerceIn(0, g.cols - 1), row = t.row.coerceIn(0, g.rows - 1))
             })
         },
     )
+}
+
+private fun sized(d: DeviceSize) =
+    DeviceSize(d.widthDp.coerceIn(DeviceSize.MIN, DeviceSize.MAX), d.heightDp.coerceIn(DeviceSize.MIN, DeviceSize.MAX))
+
+/** A screen designed tall or wide stays that way, whatever the tablet's sensor says; a square or unsized one follows it. */
+internal fun orientationOf(size: DeviceSize?): Int = when {
+    size == null || size.widthDp == size.heightDp -> 0
+    size.heightDp > size.widthDp -> 1
+    else -> 2
 }
 
 /** What a free-form page may hold: known components, ids that differ, a bounded size and depth. */

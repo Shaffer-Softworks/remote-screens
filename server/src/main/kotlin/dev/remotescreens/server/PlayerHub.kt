@@ -6,6 +6,7 @@ import dev.remotescreens.server.render.Alert
 import dev.remotescreens.server.render.AlertRenderer
 import dev.remotescreens.server.render.CardRenderer
 import dev.remotescreens.server.render.Device
+import dev.remotescreens.server.render.Rc
 import dev.remotescreens.server.render.RenderInput
 import dev.remotescreens.server.render.RenderedDoc
 import dev.remotescreens.server.render.ScreenRenderer
@@ -244,6 +245,7 @@ class PlayerHub(
         private val sendLock = Mutex()
         private val buildLock = Mutex()
         val device = Device(hello.widthDp, hello.heightDp, hello.density)
+        private val deflate = Rc.DEFLATE in hello.capabilities
         val memory = TapMemory()
         var pairingCode: String? = null
         var screenId: String? = null
@@ -338,7 +340,7 @@ class PlayerHub(
             shown[slot] = entry
             val all = vars.values + clockVars() + VarValue.int(V.CONNECTED, if (ha.connected.value) 1 else 0)
             send(ServerMessage.Document(
-                slot = slot, rev = entry.rev, data = Base64.getEncoder().encodeToString(doc.bytes), vars = all,
+                slot = slot, rev = entry.rev, data = Base64.getEncoder().encodeToString(if (deflate) Rc.compress(doc.bytes) else doc.bytes), vars = all,
                 predictions = doc.predictions(states, ::foresee), homePage = doc.homePage, pageCount = doc.pageIds.size.coerceAtLeast(1),
                 swipePages = doc.swipePages, timeout = timeout,
             ))

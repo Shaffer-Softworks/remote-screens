@@ -142,6 +142,13 @@ export interface Screen {
   homePage: string
   settings: ScreenSettings
   topBar: TopBar
+  /** The size the editor draws the screen at until a tablet shows it. */
+  designSize?: DeviceSize
+}
+
+export interface DeviceSize {
+  widthDp: number
+  heightDp: number
 }
 
 export interface Preferences {

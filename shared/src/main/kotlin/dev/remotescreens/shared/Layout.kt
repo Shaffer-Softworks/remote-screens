@@ -36,10 +36,20 @@ data class Screen(
     val homePage: String = pages.firstOrNull()?.id ?: "home",
     val settings: ScreenSettings = ScreenSettings(),
     val topBar: TopBar = TopBar(),
+    /** The size the editor draws the screen at until a tablet shows it; a tablet renders at its own size. */
+    val designSize: DeviceSize? = null,
 )
 
 @Serializable
 data class GridSize(val cols: Int, val rows: Int)
+
+@Serializable
+data class DeviceSize(val widthDp: Int, val heightDp: Int) {
+    companion object {
+        const val MIN = 200
+        const val MAX = 4000
+    }
+}
 
 @Serializable
 data class Page(
@@ -74,9 +84,12 @@ object NodeTypes {
  * `button` (text, icon, color, ink), containers (arrangement, alignment, gap), `slider` (steps), `image` (fit),
  * `clock` (show: time, date or both; fontSize, color, align), `badge` (text, icon, color), `avatar` (text, size),
  * `progress` (min, max, color), `graph` (hours, color), `switch` (color), `stepper` (step), `choices` (max),
- * `gauge` (min, max, color, size), `analog` (size, seconds), `iconbutton` (icon, iconOn, size, color),
- * `keys` (size), `swatches` (show: colour or white), `keypad` (size). Columns and rows take `scroll`; a `flow`
- * wraps its children onto new lines. Text takes `marquee`. A bound component takes `showWhen` (on or off).
+ * `gauge` (min, max, color, size, caption: words or `@name`), `analog` (size, seconds, numbers: all or quarters),
+ * `iconbutton` (icon, iconOn, size, color), `keys` (size), `swatches` (show: colour or white), `keypad` (size).
+ * Columns and rows take `scroll`; a `flow` wraps its children onto new lines. Text takes `marquee`. A bound
+ * component takes `showWhen` (on or off) and `animate` (fade, left, right, up, down or none) for how it comes and goes.
+ * Any component takes `place`, its own alignment in its parent: start, center or end across a column, top, center or
+ * bottom across a row, or a box position such as `top-end`.
  */
 @Serializable
 data class Node(

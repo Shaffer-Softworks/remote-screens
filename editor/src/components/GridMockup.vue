@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { dragged } from '../model/drag'
-import { fitsAt, reflow, spec } from '../model/grid'
+import { NARROW, fitsAt, reflow, spec } from '../model/grid'
 import { pastel } from '../model/palette'
 import { iconOf, nameOf, stateOf } from '../model/tiles'
 import type { Page, Screen, Tile } from '../model/types'
@@ -86,6 +86,7 @@ function accent(t: Tile): string | null {
 const pageTitle = (id: string) => props.screen.pages.find((p) => p.id === id)?.title
 const navIcon = (p: Page) => p.icon ?? (p.id === props.screen.homePage ? 'home' : 'view-dashboard')
 const navButtonW = computed(() => Math.min(g.value.navBar - 2, props.device.w / (visiblePages.value.length + 1)))
+const navIconSize = computed(() => Math.min(40, (g.value.navBar - 2) * 0.4))
 const people = computed(() => state.entities.filter((e) => e.domain === 'person'))
 const weather = computed(() => state.entities.find((e) => e.domain === 'weather'))
 
@@ -153,7 +154,7 @@ const highlight = computed(() => {
     >
       <div v-if="screen.topBar.show" class="topbar" :style="{ height: `${g.topBar}px` }">
         <div v-if="screen.topBar.clock" class="when" :style="{ width: `${Math.min(350, device.w * 0.42)}px` }">
-          <strong>12:34</strong><span>24 MAY 2026</span>
+          <strong>12:34</strong><span v-if="device.w >= NARROW">24 MAY 2026</span>
         </div>
         <div class="grow middle">
           <template v-if="page.hidden">
@@ -293,11 +294,11 @@ const highlight = computed(() => {
       <div class="nav" :style="{ top: `${device.h - g.navBar}px`, height: `${g.navBar}px` }">
         <div class="buttons" :class="{ between: visiblePages.length + 1 > 2 }">
           <span v-for="p in visiblePages" :key="p.id" class="button" :class="{ on: p.id === page.id }" :style="{ width: `${navButtonW}px` }">
-            <MdiIcon :name="navIcon(p)" :size="40" />
+            <MdiIcon :name="navIcon(p)" :size="navIconSize" />
             <span>{{ p.title.toUpperCase() }}</span>
           </span>
           <span class="button" :style="{ width: `${navButtonW}px` }">
-            <MdiIcon name="cog" :size="40" />
+            <MdiIcon name="cog" :size="navIconSize" />
             <span>SETTINGS</span>
           </span>
         </div>

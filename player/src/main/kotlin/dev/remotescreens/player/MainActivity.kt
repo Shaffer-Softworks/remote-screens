@@ -155,7 +155,7 @@ class MainActivity : Activity() {
             heightDp = h,
             density = d,
             appVersion = version,
-            capabilities = listOf("predictions", "bitmaps", "alerts", "cards", "settings"),
+            capabilities = listOf("predictions", "bitmaps", "alerts", "cards", "settings", "deflate"),
             darkSystem = night,
         )
     }
