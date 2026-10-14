@@ -17,7 +17,7 @@ data class GridSpec(
     val padding: Float,
     val gap: Float,
     val topBar: Float,
-    /** The bottom navigation bar: a 2 dp line over a row of page buttons, 100 dp tall or 64 dp on a narrow device. */
+    /** The bottom navigation bar: a 2 dp line over a row of page buttons, by default 100 dp tall, 64 dp when narrow. */
     val navBar: Float,
     val cellW: Float,
     val cellH: Float,
@@ -46,15 +46,26 @@ object Grid {
 
     fun navBar(widthDp: Float): Float = if (widthDp < NARROW) COMPACT_NAV_BAR else NAV_BAR
 
+    /** The height [bar] takes: none when hidden, else its own or the default. */
+    fun topBarHeight(bar: TopBar): Float = if (!bar.show) 0f else bar.height?.toFloat() ?: TOP_BAR
+
+    fun navBarHeight(bar: NavBar, widthDp: Float): Float = bar.height?.toFloat() ?: navBar(widthDp)
+
     /** The grid a device of this size gets when it is adopted. */
     fun suggest(widthDp: Float, heightDp: Float): GridSize {
-        val (availW, availH) = available(widthDp, heightDp, showTopBar = true)
+        val (availW, availH) = available(widthDp, heightDp, TOP_BAR, navBar(widthDp))
         return GridSize(fit(availW), fit(availH))
     }
 
-    /** The geometry of [size] on a device of [widthDp] by [heightDp]. */
-    fun spec(size: GridSize, widthDp: Float, heightDp: Float, showTopBar: Boolean = true): GridSpec {
-        val (availW, availH) = available(widthDp, heightDp, showTopBar)
+    /** The geometry of [size] on a device of [widthDp] by [heightDp], between bars [topBar] and [navBar] dp tall. */
+    fun spec(
+        size: GridSize,
+        widthDp: Float,
+        heightDp: Float,
+        topBar: Float = TOP_BAR,
+        navBar: Float = navBar(widthDp),
+    ): GridSpec {
+        val (availW, availH) = available(widthDp, heightDp, topBar, navBar)
         val cols = size.cols.coerceIn(1, MAX_CELLS)
         val rows = size.rows.coerceIn(1, MAX_CELLS)
         val cellW = round1((availW - GAP * (cols - 1)) / cols)
@@ -66,17 +77,15 @@ object Grid {
             heightDp = heightDp,
             padding = PADDING,
             gap = GAP,
-            topBar = if (showTopBar) TOP_BAR else 0f,
-            navBar = navBar(widthDp),
+            topBar = topBar,
+            navBar = navBar,
             cellW = cellW,
             cellH = cellH,
         )
     }
 
-    private fun available(widthDp: Float, heightDp: Float, showTopBar: Boolean): Pair<Float, Float> {
-        val top = if (showTopBar) TOP_BAR else 0f
-        return (widthDp - 2 * PADDING) to (heightDp - top - navBar(widthDp) - 2 * PADDING)
-    }
+    private fun available(widthDp: Float, heightDp: Float, topBar: Float, navBar: Float): Pair<Float, Float> =
+        (widthDp - 2 * PADDING) to (heightDp - topBar - navBar - 2 * PADDING)
 
     private fun fit(avail: Float): Int =
         ((avail + GAP) / (TARGET_CELL + GAP)).roundToInt().coerceIn(MIN_CELLS, MAX_CELLS)

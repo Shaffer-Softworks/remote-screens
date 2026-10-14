@@ -80,6 +80,7 @@ export function pollPlayers(): void {
 
 export function open(screen: Screen | null): void {
   editing.value = screen ? (JSON.parse(JSON.stringify(screen)) as Screen) : null
+  if (editing.value) editing.value.navBar ??= {}
   saved.value = screen ? JSON.stringify(editing.value) : ''
 }
 

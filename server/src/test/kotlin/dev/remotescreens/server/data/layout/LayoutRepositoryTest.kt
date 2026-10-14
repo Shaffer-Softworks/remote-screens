@@ -1,5 +1,6 @@
 package dev.remotescreens.server.data.layout
 
+import dev.remotescreens.shared.NavBar
 import dev.remotescreens.shared.SCHEMA_VERSION
 import dev.remotescreens.shared.Screen
 import kotlinx.serialization.json.JsonObject
@@ -57,6 +58,9 @@ class LayoutRepositoryTest {
         assertEquals("06:45", s.settings.nightEnd)
         assertEquals(2, s.settings.orientation)
         assertEquals("sensor.outdoor", s.topBar.temperatureEntity)
+        assertEquals(null, s.topBar.height)
+        assertTrue(s.topBar.date)
+        assertEquals(NavBar(), s.navBar)
         assertEquals("nl", data.preferences.language)
         assertEquals(1280, data.players.first().widthDp)
     }
