@@ -8,8 +8,20 @@ remoteCompose = "1.0.0-alpha21"
 logback = "1.5.18"
 jmdns = "3.6.1"
 junit = "4.13.2"
-androidxCore = "1.13.0"
-androidxActivity = "1.9.0"
+androidxCore = "1.19.1"
+androidxActivity = "1.13.0"
+androidxLifecycle = "2.11.0"
+androidxHilt = "1.4.0"
+composeBom = "2026.09.00"
+dataStore = "1.2.1"
+hilt = "2.60.1"
+ksp = "2.3.8"
+timber = "5.0.1"
+detekt = "2.0.0-alpha.6"
+mockito = "5.24.0"
+mockitoKotlin = "6.4.0"
+compileSdk = "37"
+minSdk = "26"
 
 [libraries]
 remote-core = { module = "androidx.compose.remote:remote-core", version.ref = "remoteCompose" }
@@ -39,9 +51,32 @@ logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 jmdns = { module = "org.jmdns:jmdns", version.ref = "jmdns" }
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
-androidx-activity = { module = "androidx.activity:activity-ktx", version.ref = "androidxActivity" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivity" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidxLifecycle" }
+androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "androidxLifecycle" }
+androidx-lifecycle-viewmodel-savedstate = { module = "androidx.lifecycle:lifecycle-viewmodel-savedstate", version.ref = "androidxLifecycle" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "dataStore" }
+
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+compose-foundation = { module = "androidx.compose.foundation:foundation" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
+androidx-hilt-lifecycle-viewmodel-compose = { module = "androidx.hilt:hilt-lifecycle-viewmodel-compose", version.ref = "androidxHilt" }
+
+timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }

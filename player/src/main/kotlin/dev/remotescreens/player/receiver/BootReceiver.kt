@@ -1,8 +1,9 @@
-package dev.remotescreens.player
+package dev.remotescreens.player.receiver
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import dev.remotescreens.player.MainActivity
 
 /** Opens the screen when the tablet starts, or after an update. */
 class BootReceiver : BroadcastReceiver() {

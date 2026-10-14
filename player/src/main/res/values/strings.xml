@@ -15,7 +15,7 @@
     <string name="settings">Screen settings</string>
     <string name="brightness">Brightness</string>
     <string name="dark_mode">Dark mode</string>
-    <string name="standby">Standby after</string>
+    <string name="standby">Standby after: %1$s</string>
     <string name="never">Never</string>
     <string name="minutes">%1$d min</string>
     <string name="server">Connected to %1$s</string>
