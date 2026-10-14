@@ -68,6 +68,9 @@ private val NO_HEADER = setOf("clock", "bedside", "energy", "person", "device_tr
 private const val CARD_EDGE = 2f
 private const val HEADER_LINE = 3f
 
+/** The tile's own border colour, else the theme's card edge. */
+private fun DocContext.edgeOf(tile: Tile) = tile.borderColor?.let { paint(it) } ?: role(Role.CARD_EDGE)
+
 /**
  * A tile is an RPI card: a black edge, a grey body and, where there is room, a darker header strip with its name.
  * The strip's bottom line takes the tile's accent while the entity is on.
@@ -104,7 +107,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
     val body = inner.copy(h = inner.h - if (hasHeader) headerH + HEADER_LINE else 0f)
     val named = !hasHeader
 
-    val m = Modifier.size(u.px(box.w), u.px(box.h)).clip(rounded(10f)).background(tile.borderColor?.let { paint(it) } ?: role(Role.CARD_EDGE)).padding(u.px(CARD_EDGE))
+    val m = Modifier.size(u.px(box.w), u.px(box.h)).clip(rounded(10f)).background(edgeOf(tile)).padding(u.px(CARD_EDGE))
     at(box.x, box.y) { scope.Box(tap(m, tapRef, holdRef)) {
         val ctx = this@tile
         Column(Modifier.fillMaxSize().clip(ctx.rounded(8f)).background(ctx.role(Role.CARD))) {
