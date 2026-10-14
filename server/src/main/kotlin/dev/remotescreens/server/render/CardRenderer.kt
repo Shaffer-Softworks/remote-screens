@@ -58,7 +58,7 @@ object CardRenderer {
                             "fan" -> ctx.fanCard(entityId, e, body)
                             "cover" -> ctx.coverCard(entityId, e, body)
                             "lock" -> ctx.lockCard(entityId, e)
-                            "climate" -> ctx.climateCard(entityId, e, body)
+                            "climate" -> ctx.climateCard(entityId, e)
                             "media" -> ctx.mediaCard(entityId, e, body)
                             "weather" -> ctx.weatherCard(entityId, e, body)
                             "history" -> ctx.historyCard(entityId, body, panelH - 140f)
@@ -66,9 +66,9 @@ object CardRenderer {
                             "alarm" -> ctx.alarmCard(entityId, e, body)
                             "select" -> ctx.selectCard(entityId, e)
                             "number" -> ctx.numberCard(entityId, e, body)
-                            "vacuum" -> ctx.vacuumCard(entityId, e, body)
+                            "vacuum" -> ctx.vacuumCard(entityId, e)
                             "map" -> ctx.mapCard(entityId, body, panelH - 120f)
-                            "energy" -> ctx.energyFlow("card", body, panelH - 120f, compact = false)
+                            "energy" -> ctx.energyFlow(body, panelH - 120f, compact = false)
                             else -> ctx.toggleCard(entityId, e)
                         }
                     }
@@ -92,10 +92,10 @@ object CardRenderer {
             Spacer(Modifier.width(c.u.px(14f)))
             Column(Modifier.horizontalWeight(1f)) {
                 if (card == "energy") {
-                    c.label(c.i18n.t("ui.house"), Type.HEADLINE, ink, 600f)
+                    c.label(c.i18n.t("ui.house"), Type.HEADLINE, ink, Weight.SEMI_BOLD)
                 } else {
-                    c.label(c.text(V.e(entityId, "name")), Type.HEADLINE, ink, 600f)
-                    c.label(c.text(V.e(entityId, "state")), Type.BODY, soft)
+                    c.label(c.text(Vars.e(entityId, "name")), Type.HEADLINE, ink, Weight.SEMI_BOLD)
+                    c.label(c.text(Vars.e(entityId, "state")), Type.BODY, soft)
                 }
             }
         }
@@ -107,21 +107,21 @@ object CardRenderer {
         predict(r, entityId)
         scope.Box(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
             val c = this@bigToggle
-            Box(c.tap(Modifier.size(c.u.px(132f), c.u.px(132f)).clip(c.rounded((132f) / 2f)).background(c.color(V.t(TILE, "bg"))), r),
+            Box(c.tap(Modifier.size(c.u.px(132f), c.u.px(132f)).clip(c.rounded((132f) / 2f)).background(c.color(Vars.t(TILE, "bg"))), r),
                 horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-                c.toggleIcon(entityId, spec?.icon ?: "power", spec?.iconOn, 64f, c.color(V.t(TILE, "bgink")))
+                c.toggleIcon(entityId, spec?.icon ?: "power", spec?.iconOn, 64f, c.color(Vars.t(TILE, "bgink")))
             }
         }
     }
 
     private fun DocContext.section(title: String) {
         gap(18f)
-        label(title, Type.BODY, role(Role.INK_SOFT), 600f)
+        label(title, Type.BODY, role(Role.INK_SOFT), Weight.SEMI_BOLD)
         gap(8f)
     }
 
     private fun DocContext.bar(entityId: String, verb: String, width: Float, min: Double = 0.0, max: Double = 100.0, level: String = "level") {
-        levelBar(float(V.e(entityId, level)), width, 52f, role(Role.INK), role(Role.KEY), 10) { i ->
+        levelBar(float(Vars.e(entityId, level)), width, 52f, role(Role.INK), role(Role.KEY), 10) { i ->
             val v = min + (max - min) * i / 10.0
             ref(entityId, verb, if (v % 1.0 == 0.0) v.toInt().toString() else "%.1f".format(java.util.Locale.ROOT, v))
         }
@@ -171,7 +171,7 @@ object CardRenderer {
             val c = this@flowKeys
             choices.forEachIndexed { i, (value, word) ->
                 Box(Modifier.padding(0f, 0f, c.u.px(8f), c.u.px(8f))) {
-                    c.key(ref(entityId, verb, value), text = word, bg = c.color(V.o(entityId, verb, i, "bg")), ink = c.color(V.o(entityId, verb, i, "ink")), heightDp = 42f)
+                    c.key(ref(entityId, verb, value), text = word, bg = c.color(Vars.o(entityId, verb, i, "bg")), ink = c.color(Vars.o(entityId, verb, i, "ink")), heightDp = 42f)
                 }
             }
         }
@@ -200,7 +200,7 @@ object CardRenderer {
             bar(entityId, "position", w)
         }
         if (e?.supports(128) == true) {
-            bind(entityId) { s -> listOf(VarValue.float(V.e(entityId, "tilt"), ((s[entityId]?.number("current_tilt_position") ?: 0.0) / 100).toFloat())) }
+            bind(entityId) { s -> listOf(VarValue.float(Vars.e(entityId, "tilt"), ((s[entityId]?.number("current_tilt_position") ?: 0.0) / 100).toFloat())) }
             section(i18n.t("ui.tilt"))
             bar(entityId, "tilt", w, level = "tilt")
         }
@@ -211,7 +211,7 @@ object CardRenderer {
         bigToggle(entityId, e)
         gap(10f)
         scope.Box(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
-            this@lockCard.label(this@lockCard.text(V.t("e:$entityId", "confirm")), Type.TITLE, this@lockCard.role(Role.WARN), 600f, align = RcTextAlign.Center)
+            this@lockCard.label(this@lockCard.text(Vars.t("e:$entityId", "confirm")), Type.TITLE, this@lockCard.role(Role.WARN), Weight.SEMI_BOLD, align = RcTextAlign.Center)
         }
         if (e?.supports(1) == true) {
             gap(14f)
@@ -219,7 +219,7 @@ object CardRenderer {
         }
     }
 
-    private fun DocContext.climateCard(entityId: String, e: EntityState?, w: Float) {
+    private fun DocContext.climateCard(entityId: String, e: EntityState?) {
         val step = e?.number("target_temp_step") ?: if (ha.temperatureUnit.contains("F")) 1.0 else 0.5
         predict(ref(entityId, "temperature", "+$step"), entityId)
         predict(ref(entityId, "temperature", "-$step"), entityId)
@@ -229,7 +229,7 @@ object CardRenderer {
             c.key(ref(entityId, "temperature", "-$step"), icon = "minus", heightDp = 72f, widthDp = 72f, round = true)
             Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
                 c.label(c.i18n.t("ui.target"), Type.BODY, c.role(Role.INK_SOFT), align = RcTextAlign.Center)
-                c.label(c.text(V.e(entityId, "value")), Type.DISPLAY, c.role(Role.INK), 400f, align = RcTextAlign.Center)
+                c.label(c.text(Vars.e(entityId, "value")), Type.DISPLAY, c.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)
             }
             c.key(ref(entityId, "temperature", "+$step"), icon = "plus", heightDp = 72f, widthDp = 72f, round = true)
         }
@@ -258,10 +258,10 @@ object CardRenderer {
         bind(entityId) { states ->
             val s = states[entityId]
             listOf(
-                VarValue.string(V.e(entityId, "title"), s?.attr("media_title") ?: ""),
-                VarValue.string(V.e(entityId, "artist"), listOfNotNull(s?.attr("media_artist"), s?.attr("media_album_name")).joinToString(" · ")),
-                VarValue.int(V.e(entityId, "playing"), if (s?.state == "playing") V.VISIBLE else V.GONE),
-                VarValue.int(V.e(entityId, "notplaying"), if (s?.state == "playing") V.GONE else V.VISIBLE),
+                VarValue.string(Vars.e(entityId, "title"), s?.attr("media_title") ?: ""),
+                VarValue.string(Vars.e(entityId, "artist"), listOfNotNull(s?.attr("media_artist"), s?.attr("media_album_name")).joinToString(" · ")),
+                VarValue.int(Vars.e(entityId, "playing"), if (s?.state == "playing") Vars.VISIBLE else Vars.GONE),
+                VarValue.int(Vars.e(entityId, "notplaying"), if (s?.state == "playing") Vars.GONE else Vars.VISIBLE),
             )
         }
         predict(ref(entityId, "play_pause"), entityId)
@@ -269,16 +269,16 @@ object CardRenderer {
             val c = this@mediaCard
             Image(c.image("art.card.$entityId", px, px), Modifier.size(c.u.px(art), c.u.px(art)).clip(c.rounded(20f)), contentScale = RcContentScale.Crop)
             c.gap(14f)
-            c.label(c.text(V.e(entityId, "title")), Type.HEADLINE, c.role(Role.INK), 600f, align = RcTextAlign.Center)
-            c.label(c.text(V.e(entityId, "artist")), Type.BODY, c.role(Role.INK_SOFT), align = RcTextAlign.Center)
+            c.label(c.text(Vars.e(entityId, "title")), Type.HEADLINE, c.role(Role.INK), Weight.SEMI_BOLD, align = RcTextAlign.Center)
+            c.label(c.text(Vars.e(entityId, "artist")), Type.BODY, c.role(Role.INK_SOFT), align = RcTextAlign.Center)
             c.gap(14f)
             Row(horizontal = RcRowHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
                 c.key(ref(entityId, "previous"), icon = "skip-previous", heightDp = 60f, widthDp = 60f, round = true)
                 Spacer(Modifier.width(c.u.px(18f)))
                 Box(c.tap(Modifier.size(c.u.px(80f), c.u.px(80f)).clip(c.rounded((80f) / 2f)).background(c.role(Role.KEY_ON)), ref(entityId, "play_pause")),
                     horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-                    c.icon("pause", 40f, c.role(Role.KEY_ON_INK), c.int(V.e(entityId, "playing")))
-                    c.icon("play", 40f, c.role(Role.KEY_ON_INK), c.int(V.e(entityId, "notplaying")))
+                    c.icon("pause", 40f, c.role(Role.KEY_ON_INK), c.int(Vars.e(entityId, "playing")))
+                    c.icon("play", 40f, c.role(Role.KEY_ON_INK), c.int(Vars.e(entityId, "notplaying")))
                 }
                 Spacer(Modifier.width(c.u.px(18f)))
                 c.key(ref(entityId, "next"), icon = "skip-next", heightDp = 60f, widthDp = 60f, round = true)
@@ -313,7 +313,7 @@ object CardRenderer {
             c.icon(Present.weatherIcon(e?.state ?: ""), 72f, ink)
             Spacer(Modifier.width(c.u.px(16f)))
             Column {
-                c.label(c.text(V.e(entityId, "value")), Type.DISPLAY, ink, 400f)
+                c.label(c.text(Vars.e(entityId, "value")), Type.DISPLAY, ink, Weight.NORMAL)
                 val details = listOfNotNull(
                     e?.number("humidity")?.let { c.i18n.t("ui.humidity", "value" to c.i18n.percent(it.roundToInt())) },
                     e?.number("wind_speed")?.let { c.i18n.t("ui.wind", "value" to "${it.roundToInt()} ${e.attr("wind_speed_unit") ?: "km/h"}") },
@@ -328,7 +328,7 @@ object CardRenderer {
         for (d in days.take(7)) {
             scope.Row(Modifier.fillMaxWidth().padding(0f, u.px(6f), 0f, u.px(6f)), vertical = RcVerticalPositioning.Center) {
                 val c = this@weatherCard
-                c.label(c.i18n.weekday(d.time.withZoneSameInstant(zone)), Type.TITLE, ink, 500f, modifier = Modifier.width(c.u.px(60f)))
+                c.label(c.i18n.weekday(d.time.withZoneSameInstant(zone)), Type.TITLE, ink, Weight.MEDIUM, modifier = Modifier.width(c.u.px(60f)))
                 c.icon(Present.weatherIcon(d.condition), 28f, ink)
                 Spacer(Modifier.width(c.u.px(10f)))
                 c.label(d.rain?.let { "$it%" } ?: "", Type.BODY, c.role(Role.ACCENT), modifier = Modifier.width(c.u.px(48f)))
@@ -347,7 +347,7 @@ object CardRenderer {
                     drawRoundRect(l, 0f, maxOf(end * barW, l + barH), barH, barH / 2f, barH / 2f)
                 }
                 Spacer(Modifier.width(c.u.px(6f)))
-                c.label(d.high?.let { "${it.roundToInt()}°" } ?: "", Type.BODY, ink, 600f, modifier = Modifier.width(c.u.px(40f)))
+                c.label(d.high?.let { "${it.roundToInt()}°" } ?: "", Type.BODY, ink, Weight.SEMI_BOLD, modifier = Modifier.width(c.u.px(40f)))
             }
         }
     }
@@ -362,8 +362,8 @@ object CardRenderer {
             val unit = e.attr("unit_of_measurement").orEmpty()
             scope.Row(Modifier.fillMaxWidth()) {
                 val c = this@historyCard
-                c.label(c.i18n.t("ui.max", "value" to "${c.i18n.number(max.second, 1)} $unit"), Type.BODY, c.role(Role.DANGER), 500f, modifier = Modifier.horizontalWeight(1f))
-                c.label(c.i18n.t("ui.min", "value" to "${c.i18n.number(min.second, 1)} $unit"), Type.BODY, c.role(Role.ACCENT), 500f)
+                c.label(c.i18n.t("ui.max", "value" to "${c.i18n.number(max.second, 1)} $unit"), Type.BODY, c.role(Role.DANGER), Weight.MEDIUM, modifier = Modifier.horizontalWeight(1f))
+                c.label(c.i18n.t("ui.min", "value" to "${c.i18n.number(min.second, 1)} $unit"), Type.BODY, c.role(Role.ACCENT), Weight.MEDIUM)
             }
             gap(10f)
         }
@@ -384,7 +384,7 @@ object CardRenderer {
             "arm_night".takeIf { features and 4 != 0 }, "arm_vacation".takeIf { features and 32 != 0 },
         )
         bind(entityId) { states ->
-            listOf(VarValue.string(V.t("e:$entityId", "code"), ""))
+            listOf(VarValue.string(Vars.t("e:$entityId", "code"), ""))
         }
         gap(8f)
         scope.Flow(Modifier.fillMaxWidth()) {
@@ -404,7 +404,7 @@ object CardRenderer {
 
     private fun DocContext.keypad(entityId: String, w: Float) {
         scope.Box(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
-            this@keypad.label(this@keypad.text(V.t("e:$entityId", "code")), Type.DISPLAY, this@keypad.role(Role.INK), 500f, align = RcTextAlign.Center)
+            this@keypad.label(this@keypad.text(Vars.t("e:$entityId", "code")), Type.DISPLAY, this@keypad.role(Role.INK), Weight.MEDIUM, align = RcTextAlign.Center)
         }
         gap(8f)
         val keyW = minOf((w - 24f) / 3f, 110f)
@@ -431,7 +431,7 @@ object CardRenderer {
         bindChoices(entityId, "option", entityId, options) { it.state }
         options.forEachIndexed { i, o ->
             key(ref(entityId, "option", o), text = o, heightDp = 52f, modifier = Modifier.fillMaxWidth(),
-                bg = color(V.o(entityId, "option", i, "bg")), ink = color(V.o(entityId, "option", i, "ink")))
+                bg = color(Vars.o(entityId, "option", i, "bg")), ink = color(Vars.o(entityId, "option", i, "ink")))
             gap(8f)
         }
     }
@@ -445,7 +445,7 @@ object CardRenderer {
             val c = this@numberCard
             c.key(ref(entityId, "value", "-$step"), icon = "minus", heightDp = 64f, widthDp = 64f, round = true)
             Box(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
-                c.label(c.text(V.e(entityId, "state")), Type.DISPLAY, c.role(Role.INK), 400f, align = RcTextAlign.Center)
+                c.label(c.text(Vars.e(entityId, "state")), Type.DISPLAY, c.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)
             }
             c.key(ref(entityId, "value", "+$step"), icon = "plus", heightDp = 64f, widthDp = 64f, round = true)
         }
@@ -453,7 +453,7 @@ object CardRenderer {
         bar(entityId, "value", w, min, max)
     }
 
-    private fun DocContext.vacuumCard(entityId: String, e: EntityState?, w: Float) {
+    private fun DocContext.vacuumCard(entityId: String, e: EntityState?) {
         gap(8f)
         scope.Row(Modifier.fillMaxWidth()) {
             val c = this@vacuumCard

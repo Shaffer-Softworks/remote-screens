@@ -22,6 +22,8 @@ object Rc {
     /** The prefix the player's `setUserLocal*` puts before a name. */
     const val USER = "USER:"
 
+    private const val ERROR_SNIPPET_LENGTH = 40
+
     /**
      * AndroidX operations plus the experimental ones: long press (`MODIFIER_MULTI_CLICK`) and `Flow` are still only
      * there in alpha21. The player reads the same profile from the header.
@@ -63,7 +65,9 @@ object Rc {
                 "C" -> p.cubicTo(n(), n(), n(), n(), n(), n())
                 "Z" -> p.close()
                 "" -> Unit
-                else -> throw IllegalArgumentException("Unexpected path command at $i in ${d.take(40)}")
+                else -> throw IllegalArgumentException(
+                    "Unexpected path command at $i in ${d.take(ERROR_SNIPPET_LENGTH)}",
+                )
             }
         }
         return p

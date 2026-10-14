@@ -40,7 +40,8 @@ fun Tile.edgeToEdge(): Boolean = full && effectiveKind() in setOf("home", "weath
 
 /** What a tap (or a hold) on a tile sends. */
 fun tapRef(tile: Tile, action: TapAction, spec: TypeSpec?, pageIndex: (String) -> Int?, hold: Boolean): ActionRef? {
-    fun card() = if (spec != null && spec.card != "none" && (tile.entityId != null || !spec.needsEntity)) ActionRef(tile.id, "card") else null
+    val hasEntityFor = tile.entityId != null || spec?.needsEntity == false
+    fun card() = if (spec != null && spec.card != "none" && hasEntityFor) ActionRef(tile.id, "card") else null
     return when (action.type) {
         TapType.NONE -> null
         TapType.TOGGLE -> ActionRef(tile.id, "toggle")
@@ -112,7 +113,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
                     vertical = RcVerticalPositioning.Center) {
                     ctx.headerTitle(tile, kind, if (headerH >= 44f) Type.TITLE else Type.BODY + 1f)
                 }
-                Box(Modifier.fillMaxWidth().height(ctx.u.px(HEADER_LINE)).background(ctx.color(V.t(tile.id, "line"))))
+                Box(Modifier.fillMaxWidth().height(ctx.u.px(HEADER_LINE)).background(ctx.color(Vars.t(tile.id, "line"))))
             }
             Box(Modifier.fillMaxWidth().verticalWeight(1f)) {
                 when (kind) {
@@ -124,7 +125,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
                     "media_player" -> ctx.mediaTile(tile, body, e)
                     "camera" -> ctx.cameraTile(tile, body, named)
                     "history" -> ctx.historyTile(tile, body, named)
-                    "energy" -> ctx.energyFlow(tile.id, body.w, body.h, compact = !body.full && body.w < 400f)
+                    "energy" -> ctx.energyFlow(body.w, body.h, compact = !body.full && body.w < 400f)
                     "map" -> ctx.mapTile(tile, body, named)
                     "person", "device_tracker" -> if (asMap) ctx.mapTile(tile, body, named) else ctx.personTile(tile, body, e)
                     "favourite" -> ctx.favouriteTile(tile, body, named)
@@ -138,21 +139,21 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
 
 /** The words of a card's header strip: the entity's name, or the tile's own for tiles without one. */
 private fun DocContext.headerTitle(tile: Tile, kind: String, sp: Float) {
-    val ink = color(V.t(tile.id, "ink"))
+    val ink = color(Vars.t(tile.id, "ink"))
     val id = tile.entityId
     when {
         kind == "map" && id == null -> {
             val who = mapPeople(tile)
             label(tile.name ?: i18n.t("ui.people_home", "count" to who.count { states[it]?.state == "home" }), sp, ink)
         }
-        id != null && kind != "favourite" -> label(text(V.e(id, "name")), sp, ink)
+        id != null && kind != "favourite" -> label(text(Vars.e(id, "name")), sp, ink)
         else -> label(tile.name ?: tile.options["title"] ?: Catalogue.of(kind)?.name ?: "", sp, ink)
     }
 }
 
 private fun DocContext.tileIcon(tile: Tile, spec: TypeSpec?, e: EntityState?, sizeDp: Float, colorKey: String = "icon") {
     val id = tile.entityId
-    val ink = color(V.t(tile.id, colorKey))
+    val ink = color(Vars.t(tile.id, colorKey))
     val override = tile.icon ?: e?.attr("icon")
     when {
         override != null -> icon(override, sizeDp, ink)
@@ -169,10 +170,10 @@ private fun DocContext.tileIcon(tile: Tile, spec: TypeSpec?, e: EntityState?, si
 /** The tile most entities get: an icon, the name and a line about the state, with a control where there is room. */
 private fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, e: EntityState?, named: Boolean = true) {
     val id = tile.entityId
-    val name = if (id != null && named) text(V.e(id, "name")) else null
-    val state = if (id != null) text(V.e(id, "state")) else null
-    val ink = color(V.t(tile.id, "ink"))
-    val ink2 = color(V.t(tile.id, "ink2"))
+    val name = if (id != null && named) text(Vars.e(id, "name")) else null
+    val state = if (id != null) text(Vars.e(id, "state")) else null
+    val ink = color(Vars.t(tile.id, "ink"))
+    val ink2 = color(Vars.t(tile.id, "ink2"))
     val pad = if (box.w < 130f) 12f else 16f
     val short = box.h < 120f
     val wide = (box.w >= 2 * box.h * 0.9f && box.h < 150f) || short
@@ -189,7 +190,7 @@ private fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, e: 
         scope.Column(Modifier.fillMaxSize().padding(u.px(24f)), horizontal = RcHorizontalPositioning.Center, vertical = RcColumnVerticalPositioning.Center) {
             this@entityTile.tileIcon(tile, spec, e, 120f)
             this@entityTile.gap(16f)
-            if (name != null) this@entityTile.label(name, Type.DISPLAY * 0.8f, ink, 600f, align = RcTextAlign.Center)
+            if (name != null) this@entityTile.label(name, Type.DISPLAY * 0.8f, ink, Weight.SEMI_BOLD, align = RcTextAlign.Center)
             if (state != null) this@entityTile.label(state, Type.HEADLINE, ink2, align = RcTextAlign.Center)
         }
         return
@@ -199,8 +200,8 @@ private fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, e: 
             this@entityTile.tileIcon(tile, spec, e, 36f)
             Spacer(Modifier.width(this@entityTile.u.px(14f)))
             Column(Modifier.horizontalWeight(1f)) {
-                if (name != null) this@entityTile.label(name, Type.TITLE, ink, 600f)
-                if (state != null) this@entityTile.label(state, if (bigValue) Type.HEADLINE else Type.BODY, ink2, if (bigValue) 500f else 400f)
+                if (name != null) this@entityTile.label(name, Type.TITLE, ink, Weight.SEMI_BOLD)
+                if (state != null) this@entityTile.label(state, if (bigValue) Type.HEADLINE else Type.BODY, ink2, if (bigValue) Weight.MEDIUM else Weight.NORMAL)
             }
         }
         return
@@ -213,14 +214,14 @@ private fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, e: 
             if (tile.domain == "lock") c.lockConfirmBadge(tile)
         }
         Spacer(Modifier.verticalWeight(1f))
-        if (bigValue && state != null) c.label(state, if (box.h >= 150f) Type.VALUE else Type.HEADLINE, ink, 500f)
-        if (name != null) c.label(name, Type.BODY + if (box.h >= 150f) 2f else 0f, ink, 600f, lines = if (state == null || bigValue) 2 else 1)
+        if (bigValue && state != null) c.label(state, if (box.h >= 150f) Type.VALUE else Type.HEADLINE, ink, Weight.MEDIUM)
+        if (name != null) c.label(name, Type.BODY + if (box.h >= 150f) 2f else 0f, ink, Weight.SEMI_BOLD, lines = if (state == null || bigValue) 2 else 1)
         if (state != null && !bigValue) c.label(state, if (named) Type.CAPTION + 1f else Type.TITLE, ink2)
         if (hasLevel && id != null) {
             c.gap(10f)
             val verb = when (tile.domain) { "light" -> "brightness"; "fan" -> "percentage"; "cover" -> "position"; "media_player" -> "volume"; else -> "value" }
             val (min, max) = if (tile.domain in setOf("number", "input_number")) (e?.number("min") ?: 0.0) to (e?.number("max") ?: 100.0) else 0.0 to 100.0
-            c.levelBar(c.float(V.e(id, "level")), box.w - 2 * pad, 28f, color(V.t(tile.id, "icon")), role(Role.TRACK), 10) { i ->
+            c.levelBar(c.float(Vars.e(id, "level")), box.w - 2 * pad, 28f, color(Vars.t(tile.id, "icon")), role(Role.TRACK), 10) { i ->
                 val v = min + (max - min) * i / 10.0
                 ActionRef(tile.id, verb, if (v % 1.0 == 0.0) v.toInt().toString() else "%.1f".format(java.util.Locale.ROOT, v))
             }
@@ -230,17 +231,17 @@ private fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, e: 
 
 /** "Tap again to unlock" on a lock tile, shown by the add-on between the two taps. */
 private fun DocContext.lockConfirmBadge(tile: Tile) {
-    val t = text(V.t(tile.id, "confirm"))
-    label(t, Type.CAPTION, role(Role.WARN), 600f)
+    val t = text(Vars.t(tile.id, "confirm"))
+    label(t, Type.CAPTION, role(Role.WARN), Weight.SEMI_BOLD)
 }
 
 private fun DocContext.clockTile(tile: Tile, box: TileBox) {
-    val ink = color(V.t(tile.id, "ink"))
-    val ink2 = color(V.t(tile.id, "ink2"))
+    val ink = color(Vars.t(tile.id, "ink"))
+    val ink2 = color(Vars.t(tile.id, "ink2"))
     val big = minOf(box.h * 0.38f, box.w * 0.22f).coerceAtLeast(Type.HEADLINE)
     scope.Column(Modifier.fillMaxSize().padding(u.px(14f)), horizontal = RcHorizontalPositioning.Center, vertical = RcColumnVerticalPositioning.Center) {
-        this@clockTile.label(this@clockTile.text(V.TIME), big, ink, 300f, align = RcTextAlign.Center)
-        this@clockTile.label(this@clockTile.text(V.DATE), Type.BODY, ink2, align = RcTextAlign.Center, lines = 2)
+        this@clockTile.label(this@clockTile.text(Vars.TIME), big, ink, Weight.LIGHT, align = RcTextAlign.Center)
+        this@clockTile.label(this@clockTile.text(Vars.DATE), Type.BODY, ink2, align = RcTextAlign.Center, lines = 2)
     }
 }
 
@@ -250,7 +251,7 @@ private fun DocContext.bedsideTile(tile: Tile, box: TileBox) {
     val keys = tile.options["keys"].orEmpty().split(',').map { it.trim() }.filter { it.isNotEmpty() }.take(3)
     scope.Column(Modifier.fillMaxSize().padding(u.px(24f)), horizontal = RcHorizontalPositioning.Center, vertical = RcColumnVerticalPositioning.Center) {
         val c = this@bedsideTile
-        c.label(c.text(V.TIME), minOf(box.w * 0.24f, box.h * 0.4f), ink, 200f, align = RcTextAlign.Center)
+        c.label(c.text(Vars.TIME), minOf(box.w * 0.24f, box.h * 0.4f), ink, 200f, align = RcTextAlign.Center)
         c.gap(24f)
         Row(horizontal = RcRowHorizontalPositioning.Center) {
             keys.forEachIndexed { i, entityId ->
@@ -261,7 +262,7 @@ private fun DocContext.bedsideTile(tile: Tile, box: TileBox) {
                 c.bindTileColors(keyTile.id, entityId, Pastel.forDomain(spec?.domain))
                 val ref = tapRef(keyTile, TapAction(), spec, { null }, hold = false)
                 if (ref != null && spec?.predict?.containsKey(ref.verb) == true) c.predict(ref, entityId)
-                Box(c.tap(Modifier.size(c.u.px(76f), c.u.px(76f)).clip(c.rounded((76f) / 2f)).background(c.color(V.t(keyTile.id, "bg"))), ref),
+                Box(c.tap(Modifier.size(c.u.px(76f), c.u.px(76f)).clip(c.rounded((76f) / 2f)).background(c.color(Vars.t(keyTile.id, "bg"))), ref),
                     horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
                     c.tileIcon(keyTile, spec, c.states[entityId], 34f, colorKey = "bgink")
                 }
@@ -271,13 +272,13 @@ private fun DocContext.bedsideTile(tile: Tile, box: TileBox) {
 }
 
 private fun DocContext.navTile(tile: Tile, box: TileBox, named: Boolean) {
-    val ink = color(V.t(tile.id, "ink"))
+    val ink = color(Vars.t(tile.id, "ink"))
     scope.Column(Modifier.fillMaxSize().padding(u.px(16f)), vertical = if (named) RcColumnVerticalPositioning.Top else RcColumnVerticalPositioning.Center,
         horizontal = if (named) RcHorizontalPositioning.Start else RcHorizontalPositioning.Center) {
-        this@navTile.icon(tile.icon ?: "arrow-right-circle", if (named) 32f else minOf(56f, box.h * 0.45f), color(V.t(tile.id, "icon")))
+        this@navTile.icon(tile.icon ?: "arrow-right-circle", if (named) 32f else minOf(56f, box.h * 0.45f), color(Vars.t(tile.id, "icon")))
         if (named) {
             Spacer(Modifier.verticalWeight(1f))
-            this@navTile.label(tile.name ?: "", Type.TITLE, ink, 600f, lines = 2)
+            this@navTile.label(tile.name ?: "", Type.TITLE, ink, Weight.SEMI_BOLD, lines = 2)
         }
     }
 }
@@ -285,16 +286,16 @@ private fun DocContext.navTile(tile: Tile, box: TileBox, named: Boolean) {
 /** A person as the RPI home strip shows one: a round photo, the name, and HOME or AWAY in teal. */
 private fun DocContext.personTile(tile: Tile, box: TileBox, e: EntityState?) {
     val id = tile.entityId ?: return
-    val ink = color(V.t(tile.id, "ink"))
-    bindWhere(V.t(tile.id, "where"), id)
+    val ink = color(Vars.t(tile.id, "ink"))
+    bindWhere(Vars.t(tile.id, "where"), id)
     if (box.h < 140f) {
         scope.Row(Modifier.fillMaxSize().padding(u.px(12f)), horizontal = RcRowHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
             val c = this@personTile
             c.photo(e, id, "pic.$id", minOf(56f, box.h - 24f, box.w * 0.35f).coerceAtLeast(28f))
             Spacer(Modifier.width(c.u.px(12f)))
             Column {
-                c.label(c.text(V.e(id, "name")), Type.TITLE, ink, 500f)
-                c.label(c.text(V.t(tile.id, "where")), Type.BODY, c.role(Role.ACCENT_SOFT), 600f)
+                c.label(c.text(Vars.e(id, "name")), Type.TITLE, ink, Weight.MEDIUM)
+                c.label(c.text(Vars.t(tile.id, "where")), Type.BODY, c.role(Role.ACCENT_SOFT), Weight.SEMI_BOLD)
             }
         }
         return
@@ -304,8 +305,8 @@ private fun DocContext.personTile(tile: Tile, box: TileBox, e: EntityState?) {
         val c = this@personTile
         c.photo(e, id, "pic.$id", photo)
         c.gap(8f)
-        c.label(c.text(V.e(id, "name")), Type.TITLE, ink, 500f, align = RcTextAlign.Center)
-        c.label(c.text(V.t(tile.id, "where")), Type.BODY, c.role(Role.ACCENT_SOFT), 600f, align = RcTextAlign.Center)
+        c.label(c.text(Vars.e(id, "name")), Type.TITLE, ink, Weight.MEDIUM, align = RcTextAlign.Center)
+        c.label(c.text(Vars.t(tile.id, "where")), Type.BODY, c.role(Role.ACCENT_SOFT), Weight.SEMI_BOLD, align = RcTextAlign.Center)
     }
 }
 
@@ -332,8 +333,8 @@ fun DocContext.bindWhere(varName: String, personId: String) {
 
 private fun DocContext.weatherTile(tile: Tile, box: TileBox, e: EntityState?, named: Boolean) {
     val id = tile.entityId ?: return
-    val ink = color(V.t(tile.id, "ink"))
-    val ink2 = color(V.t(tile.id, "ink2"))
+    val ink = color(Vars.t(tile.id, "ink"))
+    val ink2 = color(Vars.t(tile.id, "ink2"))
     structural(id) { it?.state ?: "" }
     refreshEvery(1800)
     val days = data.forecasts[id].orEmpty()
@@ -349,7 +350,7 @@ private fun DocContext.weatherTile(tile: Tile, box: TileBox, e: EntityState?, na
             c.icon(Present.weatherIcon(e?.state ?: ""), if (box.h >= 150f) 52f else 36f, ink)
             Spacer(Modifier.width(c.u.px(10f)))
             Column(Modifier.horizontalWeight(1f)) {
-                c.label(c.text(V.e(id, "value")), Type.HEADLINE, ink, 500f)
+                c.label(c.text(Vars.e(id, "value")), Type.HEADLINE, ink, Weight.MEDIUM)
                 c.label(c.i18n.state("weather", e?.state ?: "unknown"), Type.CAPTION + 1f, ink2)
             }
         }
@@ -365,15 +366,15 @@ private fun DocContext.weatherTile(tile: Tile, box: TileBox, e: EntityState?, na
                 }
             }
         } else if (named) {
-            c.label(c.text(V.e(id, "name")), Type.BODY, ink, 600f)
+            c.label(c.text(Vars.e(id, "name")), Type.BODY, ink, Weight.SEMI_BOLD)
         }
     }
 }
 
 private fun DocContext.climateTile(tile: Tile, box: TileBox, e: EntityState?, named: Boolean) {
     val id = tile.entityId ?: return
-    val ink = color(V.t(tile.id, "ink"))
-    val ink2 = color(V.t(tile.id, "ink2"))
+    val ink = color(Vars.t(tile.id, "ink"))
+    val ink2 = color(Vars.t(tile.id, "ink2"))
     val step = e?.number("target_temp_step") ?: if (ha.temperatureUnit.contains("F")) 1.0 else 0.5
     val stepper = box.w >= 200f || box.h >= 150f
     val modes = e?.list("hvac_modes").orEmpty()
@@ -386,25 +387,25 @@ private fun DocContext.climateTile(tile: Tile, box: TileBox, e: EntityState?, na
             c.tileIcon(tile, Catalogue.of("climate"), e, 30f)
             Spacer(Modifier.width(c.u.px(10f)))
             Column(Modifier.horizontalWeight(1f)) {
-                if (named) c.label(c.text(V.e(id, "name")), Type.BODY, ink, 600f)
-                c.label(c.text(V.e(id, "state")), if (named) Type.CAPTION + 1f else Type.BODY, ink2)
+                if (named) c.label(c.text(Vars.e(id, "name")), Type.BODY, ink, Weight.SEMI_BOLD)
+                c.label(c.text(Vars.e(id, "state")), if (named) Type.CAPTION + 1f else Type.BODY, ink2)
             }
         }
         Spacer(Modifier.verticalWeight(1f))
         if (stepper && box.w < 200f) {
-            c.label(c.text(V.e(id, "value")), Type.VALUE, ink, 500f)
+            c.label(c.text(Vars.e(id, "value")), Type.VALUE, ink, Weight.MEDIUM)
             c.gap(8f)
             Row(Modifier.fillMaxWidth(), horizontal = RcRowHorizontalPositioning.SpaceBetween, vertical = RcVerticalPositioning.Center) {
-                c.key(ActionRef(tile.id, "temperature", "-$step"), icon = "minus", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(V.t(tile.id, "fill")), ink = ink)
-                c.key(ActionRef(tile.id, "temperature", "+$step"), icon = "plus", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(V.t(tile.id, "fill")), ink = ink)
+                c.key(ActionRef(tile.id, "temperature", "-$step"), icon = "minus", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)
+                c.key(ActionRef(tile.id, "temperature", "+$step"), icon = "plus", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)
             }
         } else if (stepper) {
             Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
-                c.key(ActionRef(tile.id, "temperature", "-$step"), icon = "minus", heightDp = 48f, widthDp = 48f, round = true, bg = c.color(V.t(tile.id, "fill")), ink = ink)
+                c.key(ActionRef(tile.id, "temperature", "-$step"), icon = "minus", heightDp = 48f, widthDp = 48f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)
                 Box(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
-                    c.label(c.text(V.e(id, "value")), Type.VALUE + 4f, ink, 500f, align = RcTextAlign.Center)
+                    c.label(c.text(Vars.e(id, "value")), Type.VALUE + 4f, ink, Weight.MEDIUM, align = RcTextAlign.Center)
                 }
-                c.key(ActionRef(tile.id, "temperature", "+$step"), icon = "plus", heightDp = 48f, widthDp = 48f, round = true, bg = c.color(V.t(tile.id, "fill")), ink = ink)
+                c.key(ActionRef(tile.id, "temperature", "+$step"), icon = "plus", heightDp = 48f, widthDp = 48f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)
             }
             if (box.h >= 260f && modes.isNotEmpty()) {
                 c.gap(10f)
@@ -412,7 +413,7 @@ private fun DocContext.climateTile(tile: Tile, box: TileBox, e: EntityState?, na
                 c.choiceRow(tile.id, "mode", modes.take(4).map { it to c.i18n.state("climate", it) }, { ActionRef(tile.id, "mode", it) }, 40f, MODE_ICONS)
             }
         } else {
-            c.label(c.text(V.e(id, "value")), Type.HEADLINE, ink, 500f)
+            c.label(c.text(Vars.e(id, "value")), Type.HEADLINE, ink, Weight.MEDIUM)
         }
     }
 }
@@ -424,16 +425,16 @@ val MODE_ICONS = mapOf(
 
 private fun DocContext.mediaTile(tile: Tile, box: TileBox, e: EntityState?) {
     val id = tile.entityId ?: return
-    val ink = color(V.t(tile.id, "ink"))
-    val ink2 = color(V.t(tile.id, "ink2"))
+    val ink = color(Vars.t(tile.id, "ink"))
+    val ink2 = color(Vars.t(tile.id, "ink2"))
     val big = box.w >= 200f && box.h >= 150f
     bind(id) { states ->
         val s = states[id]
         listOf(
-            dev.remotescreens.shared.VarValue.string(V.e(id, "title"), s?.attr("media_title") ?: s?.name ?: ""),
-            dev.remotescreens.shared.VarValue.string(V.e(id, "artist"), listOfNotNull(s?.attr("media_artist"), s?.attr("media_album_name")).joinToString(" · ").ifEmpty { i18n.state("media_player", s?.state ?: "off") }),
-            dev.remotescreens.shared.VarValue.int(V.e(id, "playing"), if (s?.state == "playing") V.VISIBLE else V.GONE),
-            dev.remotescreens.shared.VarValue.int(V.e(id, "notplaying"), if (s?.state == "playing") V.GONE else V.VISIBLE),
+            dev.remotescreens.shared.VarValue.string(Vars.e(id, "title"), s?.attr("media_title") ?: s?.name ?: ""),
+            dev.remotescreens.shared.VarValue.string(Vars.e(id, "artist"), listOfNotNull(s?.attr("media_artist"), s?.attr("media_album_name")).joinToString(" · ").ifEmpty { i18n.state("media_player", s?.state ?: "off") }),
+            dev.remotescreens.shared.VarValue.int(Vars.e(id, "playing"), if (s?.state == "playing") Vars.VISIBLE else Vars.GONE),
+            dev.remotescreens.shared.VarValue.int(Vars.e(id, "notplaying"), if (s?.state == "playing") Vars.GONE else Vars.VISIBLE),
         )
     }
     predict(ActionRef(tile.id, "play_pause"), id)
@@ -447,18 +448,18 @@ private fun DocContext.mediaTile(tile: Tile, box: TileBox, e: EntityState?) {
         Column(Modifier.fillMaxSize().padding(c.u.px(14f))) {
             c.tileIcon(tile, Catalogue.of("media_player"), e, 28f)
             Spacer(Modifier.verticalWeight(1f))
-            c.label(c.text(V.e(id, "title")), if (big) Type.TITLE + 2f else Type.BODY, ink, 600f, lines = if (big) 2 else 1)
-            c.label(c.text(V.e(id, "artist")), Type.CAPTION + 1f, ink2)
+            c.label(c.text(Vars.e(id, "title")), if (big) Type.TITLE + 2f else Type.BODY, ink, Weight.SEMI_BOLD, lines = if (big) 2 else 1)
+            c.label(c.text(Vars.e(id, "artist")), Type.CAPTION + 1f, ink2)
             if (box.w >= 200f || box.h >= 150f) {
                 c.gap(8f)
                 Row(Modifier.fillMaxWidth(), horizontal = RcRowHorizontalPositioning.SpaceBetween, vertical = RcVerticalPositioning.Center) {
-                    c.key(ActionRef(tile.id, "previous"), icon = "skip-previous", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(V.t(tile.id, "fill")), ink = ink)
+                    c.key(ActionRef(tile.id, "previous"), icon = "skip-previous", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)
                     Box(c.tap(Modifier.size(c.u.px(52f), c.u.px(52f)).clip(c.rounded((52f) / 2f)).background(ink), ActionRef(tile.id, "play_pause")),
                         horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-                        c.icon("pause", 28f, c.color(V.t(tile.id, "bg")), c.int(V.e(id, "playing")))
-                        c.icon("play", 28f, c.color(V.t(tile.id, "bg")), c.int(V.e(id, "notplaying")))
+                        c.icon("pause", 28f, c.color(Vars.t(tile.id, "bg")), c.int(Vars.e(id, "playing")))
+                        c.icon("play", 28f, c.color(Vars.t(tile.id, "bg")), c.int(Vars.e(id, "notplaying")))
                     }
-                    c.key(ActionRef(tile.id, "next"), icon = "skip-next", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(V.t(tile.id, "fill")), ink = ink)
+                    c.key(ActionRef(tile.id, "next"), icon = "skip-next", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)
                 }
             }
         }
@@ -476,14 +477,14 @@ private fun DocContext.cameraTile(tile: Tile, box: TileBox, named: Boolean) {
         Image(c.image("cam.$id.${tile.id}", w, h), Modifier.fillMaxSize(), contentScale = if (tile.options["fit"] == "whole") RcContentScale.Fit else RcContentScale.Crop)
         if (named && tile.options["name"] != "false") {
             Box(Modifier.fillMaxWidth().background(c.role(Role.SCRIM)).padding(c.u.px(10f))) {
-                c.label(c.text(V.e(id, "name")), Type.BODY, c.role(Role.INK), 600f)
+                c.label(c.text(Vars.e(id, "name")), Type.BODY, c.role(Role.INK), Weight.SEMI_BOLD)
             }
         }
     }
 }
 
 private fun DocContext.favouriteTile(tile: Tile, box: TileBox, named: Boolean) {
-    val ink = color(V.t(tile.id, "ink"))
+    val ink = color(Vars.t(tile.id, "ink"))
     val art = tile.options["image"]
     scope.Box(Modifier.fillMaxSize()) {
         val c = this@favouriteTile
@@ -493,9 +494,9 @@ private fun DocContext.favouriteTile(tile: Tile, box: TileBox, named: Boolean) {
             Image(c.image("fav.${tile.id}", w, h), Modifier.fillMaxSize(), contentScale = RcContentScale.Crop, alpha = 0.45f)
         }
         Column(Modifier.fillMaxSize().padding(c.u.px(14f))) {
-            c.icon(tile.icon ?: "playlist-music", 28f, c.color(V.t(tile.id, "icon")))
+            c.icon(tile.icon ?: "playlist-music", 28f, c.color(Vars.t(tile.id, "icon")))
             Spacer(Modifier.verticalWeight(1f))
-            if (named) c.label(tile.name ?: tile.options["title"] ?: "", Type.BODY + 1f, ink, 600f, lines = 2)
+            if (named) c.label(tile.name ?: tile.options["title"] ?: "", Type.BODY + 1f, ink, Weight.SEMI_BOLD, lines = 2)
         }
     }
 }
@@ -503,20 +504,20 @@ private fun DocContext.favouriteTile(tile: Tile, box: TileBox, named: Boolean) {
 /** A history graph drawn from the recorder, with its highest and lowest value. */
 fun DocContext.historyTile(tile: Tile, box: TileBox, named: Boolean = true) {
     val id = tile.entityId ?: return
-    val ink = color(V.t(tile.id, "ink"))
-    val ink2 = color(V.t(tile.id, "ink2"))
+    val ink = color(Vars.t(tile.id, "ink"))
+    val ink2 = color(Vars.t(tile.id, "ink2"))
     refreshEvery(300)
     val points = data.history[id].orEmpty()
     scope.Column(Modifier.fillMaxSize().padding(u.px(14f))) {
         val c = this@historyTile
         Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
             Column(Modifier.horizontalWeight(1f)) {
-                if (named) c.label(c.text(V.e(id, "name")), Type.BODY, ink, 600f)
-                c.label(c.text(V.e(id, "state")), Type.HEADLINE, ink, 500f)
+                if (named) c.label(c.text(Vars.e(id, "name")), Type.BODY, ink, Weight.SEMI_BOLD)
+                c.label(c.text(Vars.e(id, "state")), Type.HEADLINE, ink, Weight.MEDIUM)
             }
         }
         c.gap(6f)
-        c.graph(points, box.w - 28f, (box.h - if (named) 90f else 70f).coerceAtLeast(30f), c.color(V.t(tile.id, "icon")), ink2)
+        c.graph(points, box.w - 28f, (box.h - if (named) 90f else 70f).coerceAtLeast(30f), c.color(Vars.t(tile.id, "icon")), ink2)
     }
 }
 
@@ -561,14 +562,14 @@ private fun DocContext.mapTile(tile: Tile, box: TileBox, named: Boolean) {
         Image(c.image("map.${tile.id}", w, h), Modifier.fillMaxSize(), contentScale = RcContentScale.Crop)
         if (named) {
             Box(Modifier.fillMaxWidth().background(c.role(Role.CARD_HEADER)).padding(c.u.px(8f))) {
-                c.label(tile.name ?: c.i18n.t("ui.people_home", "count" to who.count { c.states[it]?.state == "home" }), Type.CAPTION + 1f, c.role(Role.INK), 600f)
+                c.label(tile.name ?: c.i18n.t("ui.people_home", "count" to who.count { c.states[it]?.state == "home" }), Type.CAPTION + 1f, c.role(Role.INK), Weight.SEMI_BOLD)
             }
         }
     }
 }
 
 /** Solar, the grid and the battery around the house, with the power of each, as Home Assistant's energy settings name them. */
-fun DocContext.energyFlow(scopeId: String, wDp: Float, hDp: Float, compact: Boolean) {
+fun DocContext.energyFlow(wDp: Float, hDp: Float, compact: Boolean) {
     val prefs = data.energy ?: return
     val nodes = listOfNotNull(
         prefs.solar?.let { Triple("solar", it, "solar-power-variant") },
@@ -604,7 +605,7 @@ fun DocContext.energyFlow(scopeId: String, wDp: Float, hDp: Float, compact: Bool
                     horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
                     Column(horizontal = RcHorizontalPositioning.Center) {
                         c.icon(icon, if (compact) 18f else 24f, c.role(Role.KEY_ON_INK))
-                        if (entity.isNotEmpty()) c.label(c.text(V.e(entity, "state")), if (compact) Type.CAPTION - 1f else Type.CAPTION, c.role(Role.KEY_ON_INK), 600f, align = RcTextAlign.Center)
+                        if (entity.isNotEmpty()) c.label(c.text(Vars.e(entity, "state")), if (compact) Type.CAPTION - 1f else Type.CAPTION, c.role(Role.KEY_ON_INK), Weight.SEMI_BOLD, align = RcTextAlign.Center)
                     }
                 }
                 c.label(c.i18n.t(if (key == "battery") "ui.battery_source" else if (key == "home") "ui.house" else "ui.$key"), Type.CAPTION, ink2, align = RcTextAlign.Center)
@@ -617,7 +618,7 @@ fun DocContext.energyFlow(scopeId: String, wDp: Float, hDp: Float, compact: Bool
                     Row(vertical = RcVerticalPositioning.Center) {
                         c.label(name, Type.CAPTION, ink2)
                         Spacer(Modifier.width(c.u.px(6f)))
-                        c.label(c.text(V.e(entity, "state")), Type.CAPTION, ink, 600f)
+                        c.label(c.text(Vars.e(entity, "state")), Type.CAPTION, ink, Weight.SEMI_BOLD)
                     }
                 }
             } }

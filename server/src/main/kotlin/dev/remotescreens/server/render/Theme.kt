@@ -96,10 +96,21 @@ class Palette(private val roles: IntArray, private val pastels: IntArray) {
     )
 
     private fun luminance(argb: Int): Float {
-        val r = (argb shr 16) and 0xFF
-        val g = (argb shr 8) and 0xFF
-        val b = argb and 0xFF
-        return (0.299f * r + 0.587f * g + 0.114f * b) / 255f
+        val r = (argb shr RED_SHIFT) and CHANNEL_MASK
+        val g = (argb shr GREEN_SHIFT) and CHANNEL_MASK
+        val b = argb and CHANNEL_MASK
+        return (RED_LUMA * r + GREEN_LUMA * g + BLUE_LUMA * b) / CHANNEL_MASK
+    }
+
+    private companion object {
+        const val RED_SHIFT = 16
+        const val GREEN_SHIFT = 8
+        const val CHANNEL_MASK = 0xFF
+
+        /** ITU-R BT.601 luma weights. */
+        const val RED_LUMA = 0.299f
+        const val GREEN_LUMA = 0.587f
+        const val BLUE_LUMA = 0.114f
     }
 }
 
