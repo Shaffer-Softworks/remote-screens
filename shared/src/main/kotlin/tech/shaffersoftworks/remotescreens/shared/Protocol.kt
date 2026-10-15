@@ -16,6 +16,9 @@ object Protocol {
     const val INGRESS_PORT = 8099
     const val MDNS_TYPE = "_remotescreens._tcp.local."
 
+    /** A player that can play [ServerMessage.Video]. Only it is sent one, so no camera streams for one that can't. */
+    const val CAPABILITY_VIDEO = "video"
+
     val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = false
@@ -130,6 +133,19 @@ sealed interface PlayerMessage {
         val kiosk: String? = null,
     ) : PlayerMessage
 
+    /**
+     * The video over [componentId] of document [rev] in [slot] stopped, so the add-on can start the camera's stream
+     * again. [httpCode] is the add-on's answer when it was an error, such as 404 once Home Assistant ended the stream.
+     */
+    @Serializable
+    @SerialName("video_failed")
+    data class VideoFailed(
+        val slot: Slot,
+        val rev: Int,
+        val componentId: Int,
+        val httpCode: Int? = null,
+    ) : PlayerMessage
+
     @Serializable
     @SerialName("ping")
     data object Ping : PlayerMessage
@@ -175,6 +191,22 @@ sealed interface ServerMessage {
     @Serializable
     @SerialName("bitmap")
     data class Bitmap(val name: String, val data: String) : ServerMessage
+
+    /**
+     * A camera's live video, played over the image with component id [componentId] in document [rev] of [slot], where
+     * the image's own picture shows until it plays. [path] is on the add-on's player port and wants the player's token.
+     * [crop] fills the image and cuts the edges off, as the image does; else the whole picture fits inside it.
+     * Only for players with [Protocol.CAPABILITY_VIDEO]; it ends when the document goes.
+     */
+    @Serializable
+    @SerialName("video")
+    data class Video(
+        val slot: Slot,
+        val rev: Int,
+        val componentId: Int,
+        val path: String,
+        val crop: Boolean,
+    ) : ServerMessage
 
     @Serializable
     @SerialName("settings")
