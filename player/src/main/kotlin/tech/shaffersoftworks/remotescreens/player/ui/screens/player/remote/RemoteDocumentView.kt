@@ -137,7 +137,12 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
         }
         bounds.offset(player.left, player.top)
         val params = liveVideoView.layoutParams as LayoutParams
-        val placed = Rect(params.leftMargin, params.topMargin, params.leftMargin + params.width, params.topMargin + params.height)
+        val placed = Rect(
+            params.leftMargin,
+            params.topMargin,
+            params.leftMargin + params.width,
+            params.topMargin + params.height,
+        )
         if (placed != bounds) {
             params.leftMargin = bounds.left
             params.topMargin = bounds.top
@@ -154,22 +159,31 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
      * fails closed on that path alone (that left the overlay invisible and only the snapshot showed).
      */
     private fun componentBounds(player: RemoteComposePlayer, componentId: Int): Rect? {
-        val component = runCatching { player.document?.document?.getComponent(componentId) }.getOrNull() ?: return null
-        val width = component.width.roundToInt()
-        val height = component.height.roundToInt()
-        if (width <= 0 || height <= 0) return null
-        val context = remoteContextOf(player)
-        if (context != null) {
+        val component = runCatching { player.document?.document?.getComponent(componentId) }.getOrNull()
+        val width = component?.width?.roundToInt() ?: 0
+        val height = component?.height?.roundToInt() ?: 0
+        if (component == null || width <= 0 || height <= 0) return null
+        val fromWindow = remoteContextOf(player)?.let { context ->
             val loc = floatArrayOf(0f, 0f)
-            val located = runCatching {
+            runCatching {
                 component.getLocationInWindow(context, loc)
-                Rect(loc[0].roundToInt(), loc[1].roundToInt(), loc[0].roundToInt() + width, loc[1].roundToInt() + height)
+                val left = loc[0].roundToInt()
+                val top = loc[1].roundToInt()
+                Rect(left, top, left + width, top + height)
             }.getOrNull()
-            if (located != null) return located
         }
-        val box = IntArray(4)
-        runCatching { component.getBoundsInSemanticParent(box, null) }.getOrNull() ?: return null
-        return Rect(box[0], box[1], box[2], box[3])
+        return fromWindow ?: run {
+            val box = IntArray(SEMANTIC_BOUND_SIZE)
+            val found = runCatching {
+                component.getBoundsInSemanticParent(box, null)
+                true
+            }.getOrDefault(false)
+            if (found) {
+                Rect(box[BOUND_LEFT], box[BOUND_TOP], box[BOUND_RIGHT], box[BOUND_BOTTOM])
+            } else {
+                null
+            }
+        }
     }
 
     private fun remoteContextOf(player: RemoteComposePlayer): RemoteContext? = runCatching {
@@ -230,5 +244,14 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
             VarType.FLOAT -> setUserLocalFloat(value.name, value.asFloat())
             VarType.COLOR -> setUserLocalColor(value.name, value.asColor())
         }
+    }
+
+    companion object {
+        /** [Component.getBoundsInSemanticParent] writes left, top, right, bottom into a length-4 array. */
+        private const val SEMANTIC_BOUND_SIZE = 4
+        private const val BOUND_LEFT = 0
+        private const val BOUND_TOP = 1
+        private const val BOUND_RIGHT = 2
+        private const val BOUND_BOTTOM = 3
     }
 }

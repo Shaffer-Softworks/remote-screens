@@ -43,14 +43,25 @@ class CameraStreamService(
     /** The path on the player port that plays [entityId], or null when the camera cannot stream. */
     suspend fun hlsPath(entityId: String): String? {
         forgetIdle()
-        byEntity[entityId]?.let { active ->
-            if (tokens.containsKey(active.token)) {
-                tokens[active.token] = now()
-                return "$PLAYER_PATH/${active.token}/${active.file}"
-            }
+        return cachedPath(entityId) ?: newPath(entityId)
+    }
+
+    /** A still-warm token for [entityId], or null when the cache misses or the token was forgotten. */
+    private fun cachedPath(entityId: String): String? {
+        val active = byEntity[entityId] ?: return null
+        return if (tokens.containsKey(active.token)) {
+            tokens[active.token] = now()
+            "$PLAYER_PATH/${active.token}/${active.file}"
+        } else {
             byEntity.remove(entityId, active)
+            null
         }
-        val (token, file) = startStream(entityId)?.let(HOME_ASSISTANT_HLS_URL::matchEntire)?.destructured ?: return null
+    }
+
+    /** Asks Home Assistant for a new stream and remembers its token. */
+    private suspend fun newPath(entityId: String): String? {
+        val match = startStream(entityId)?.let(HOME_ASSISTANT_HLS_URL::matchEntire) ?: return null
+        val (token, file) = match.destructured
         tokens[token] = now()
         byEntity[entityId] = ActiveStream(token, file)
         return "$PLAYER_PATH/$token/$file"
