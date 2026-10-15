@@ -6,6 +6,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.BatteryManager
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -60,4 +61,8 @@ class DeviceRepository @Inject constructor(
     fun canSelfStart(): Boolean = isHomeApp() || canDrawOverlays()
 
     fun canInstallPackages(): Boolean = context.packageManager.canRequestPackageInstalls()
+
+    /** Doze cuts the network and ignores wake locks on an unplugged tablet, so standby could not be woken. */
+    fun isIgnoringBatteryOptimizations(): Boolean =
+        context.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(context.packageName)
 }

@@ -28,6 +28,8 @@
     <string name="later">Later</string>
     <string name="allow_self_start">Open by itself after a restart or update</string>
     <string name="allow_screen_off">Allow turning the screen off in standby</string>
+    <string name="allow_unrestricted_battery">Stay connected while the screen is off</string>
+    <string name="battery_restricted">Battery optimization is on: Home Assistant may not be able to wake this screen from standby while it is unplugged.</string>
     <string name="screen_off_explanation">Remote Screens locks the tablet to turn the screen off in standby, and turns it back on when Home Assistant wakes it.</string>
     <string name="update_failed">The update could not be installed.</string>
     <string name="update_permission">Allow Remote Screens to install updates, then try again.</string>

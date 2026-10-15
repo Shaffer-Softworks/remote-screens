@@ -23,7 +23,6 @@ private const val HEX_RADIX = 16
  * declared, how to compute their values from Home Assistant's states, the pictures to send, and the actions whose
  * effect can be shown before Home Assistant answers. Every renderer extends it, so its functions stay on one class.
  */
-@Suppress("TooManyFunctions")
 class DocContext(
     val u: Units,
     val palette: Palette,

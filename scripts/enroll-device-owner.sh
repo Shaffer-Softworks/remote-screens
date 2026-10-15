@@ -161,4 +161,8 @@ echo "$OUT"
 echo "==> Device owner status:"
 adb shell dpm list-owners 2>/dev/null || true
 
+# Lock task hides the system dialog that asks for this, so a locked kiosk can only get it from here.
+echo "==> Exempting ${PACKAGE} from battery optimization (keeps standby connected on battery)…"
+adb shell dumpsys deviceidle whitelist "+${PACKAGE}" || echo "WARN: Could not exempt from battery optimization." >&2
+
 echo "==> Done. Open the app, pair it, then turn on the screen's Kiosk lock in Home Assistant or the editor."

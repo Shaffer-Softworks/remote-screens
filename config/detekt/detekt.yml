@@ -9,3 +9,7 @@ complexity:
     ignoreAnnotated: ['Composable']
   LongMethod:
     ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    allowedFunctionsPerClass: 20
+    allowedFunctionsPerFile: 20
+    allowedFunctionsPerObject: 20
