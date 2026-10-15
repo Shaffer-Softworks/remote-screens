@@ -73,6 +73,11 @@ dependencies {
     implementation(libs.remote.player.core)
     implementation(libs.remote.player.view)
 
+    // Cameras' live video
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.exoplayer.hls)
+    implementation(libs.media3.ui)
+
     // AndroidX
     implementation(libs.androidx.core)
     implementation(libs.androidx.activity.compose)
