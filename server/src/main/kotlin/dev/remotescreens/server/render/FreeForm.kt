@@ -227,11 +227,8 @@ private fun DocContext.refs(n: Node, pages: Pages): Pair<ActionRef?, ActionRef?>
 }
 
 /** A theme role (`card`, `ink_soft`), a pastel key (`yellow`) or a `#RRGGBB` / `#AARRGGBB` colour, or null for none. */
-internal fun DocContext.paint(key: String): RcColor? {
-    Pastel.of(key)?.let { return pastel(it) }
-    Themes.parse(key)?.let { return fixed(it) }
-    return Role.of(key)?.let { role(it) }
-}
+internal fun DocContext.paint(key: String): RcColor? =
+    Pastel.of(key)?.let { pastel(it) } ?: Themes.parse(key)?.let { fixed(it) } ?: Role.of(key)?.let { role(it) }
 
 /** The ARGB a tile lights up in: its pastel key or own hex colour, else [fallback]. */
 internal fun DocContext.accent(key: String?, fallback: Pastel): Int =
