@@ -27,7 +27,7 @@ jobs:
         run: ./gradlew :player:lintDebug
       - name: Player app
         run: ./gradlew :player:assembleDebug
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: reports
