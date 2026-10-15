@@ -12,6 +12,7 @@ import dev.remotescreens.player.ui.screens.player.PlayerViewModel
 import dev.remotescreens.player.ui.theme.RemoteScreensTheme
 import dev.remotescreens.player.utils.hideSystemBars
 import dev.remotescreens.player.utils.measureDisplay
+import dev.remotescreens.player.utils.showOverLockScreen
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -20,6 +21,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        showOverLockScreen()
         hideSystemBars()
         setContent {
             RemoteScreensTheme {
@@ -32,6 +34,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         hideSystemBars()
+        viewModel.onResumed()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

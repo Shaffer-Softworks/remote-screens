@@ -1,4 +1,4 @@
-"""Dark mode, dark at night and swiping between pages."""
+"""Dark mode, dark at night, swiping between pages and turning the screen off in standby."""
 
 from __future__ import annotations
 
@@ -23,6 +23,9 @@ SWITCHES: tuple[SettingSwitchDescription, ...] = (
     SettingSwitchDescription(key="dark_mode", setting="darkMode"),
     SettingSwitchDescription(key="night_dark", setting="nightDark", entity_category=EntityCategory.CONFIG),
     SettingSwitchDescription(key="swipe", setting="swipe", entity_category=EntityCategory.CONFIG),
+    SettingSwitchDescription(
+        key="standby_screen_off", setting="standbyScreenOff", entity_category=EntityCategory.CONFIG,
+    ),
 )
 
 

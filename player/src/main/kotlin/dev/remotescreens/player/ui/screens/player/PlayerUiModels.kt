@@ -16,6 +16,8 @@ data class SettingsDialogState(
     val server: String?,
     /** Whether to offer the permission that lets the app open itself after a restart or an update. */
     val canOfferSelfStart: Boolean,
+    /** Whether to offer the device admin that standby needs to turn the screen off. */
+    val canOfferScreenOff: Boolean = false,
     val isForgetConfirmationVisible: Boolean = false,
 )
 
@@ -27,4 +29,5 @@ sealed interface PlayerEvent {
     data class ShowMessageResource(@StringRes val messageRes: Int) : PlayerEvent
     data object OpenInstallPermissionSettings : PlayerEvent
     data object OpenOverlayPermissionSettings : PlayerEvent
+    data object OpenScreenOffAdminSettings : PlayerEvent
 }

@@ -173,6 +173,11 @@ function num(e: Event, min: number, max: number): number {
       Standby brightness {{ screen.settings.standbyBrightness }}%
       <input v-model.number="screen.settings.standbyBrightness" v-range type="range" min="0" max="100" />
     </label>
+    <label class="check"><input v-model="screen.settings.standbyScreenOff" type="checkbox" /> Turn the screen off in standby</label>
+    <p v-if="screen.settings.standbyScreenOff" class="note muted">
+      The tablet asks once to let Remote Screens lock it (Settings on the tablet). A touch can't wake a screen that is
+      off: use the power button or the Wake action in Home Assistant.
+    </p>
 
     <h3>Night</h3>
     <label class="check"><input v-model="night" type="checkbox" /> Night mode</label>
