@@ -132,4 +132,76 @@ class RemoteScreenStateTest {
         assertTrue(state.values.isEmpty())
         assertEquals(2, state.page)
     }
+
+    private fun overlay(slot: Slot, rev: Int) = ServerMessage.Document(slot = slot, rev = rev, data = "")
+
+    private fun video(rev: Int, url: String = "http://addon:8100/stream/hls/abc/master_playlist.m3u8") =
+        SlotVideo(rev, componentId = 0x5C_0000, url = url, token = "token", crop = false)
+
+    @Test
+    fun `a card's video plays`() {
+        val state = RemoteScreenState()
+            .withDocument(overlay(Slot.OVERLAY, rev = 2), documentBytes)
+            .withVideo(Slot.OVERLAY, video(rev = 2))
+
+        assertEquals(Slot.OVERLAY to video(rev = 2), state.playingVideo)
+    }
+
+    @Test
+    fun `a video for a document that is gone is dropped`() {
+        val state = RemoteScreenState()
+            .withDocument(overlay(Slot.OVERLAY, rev = 3), documentBytes)
+            .withVideo(Slot.OVERLAY, video(rev = 2))
+
+        assertNull(state.playingVideo)
+        assertTrue(state.videos.isEmpty())
+    }
+
+    @Test
+    fun `only the alert's video plays over a card, and the card's comes back when it closes`() {
+        val state = RemoteScreenState()
+            .withDocument(overlay(Slot.OVERLAY, rev = 2), documentBytes)
+            .withVideo(Slot.OVERLAY, video(rev = 2))
+            .withDocument(overlay(Slot.ALERT, rev = 3), documentBytes)
+            .withVideo(Slot.ALERT, video(rev = 3))
+
+        assertEquals(Slot.ALERT to video(rev = 3), state.playingVideo)
+        assertEquals(Slot.OVERLAY to video(rev = 2), state.closed(Slot.ALERT).playingVideo)
+    }
+
+    @Test
+    fun `an alert without a camera hides the card's video`() {
+        val state = RemoteScreenState()
+            .withDocument(overlay(Slot.OVERLAY, rev = 2), documentBytes)
+            .withVideo(Slot.OVERLAY, video(rev = 2))
+            .withDocument(overlay(Slot.ALERT, rev = 3), documentBytes)
+
+        assertNull(state.playingVideo)
+    }
+
+    @Test
+    fun `a new document or closing the card ends its video`() {
+        val playing = RemoteScreenState()
+            .withDocument(overlay(Slot.OVERLAY, rev = 2), documentBytes)
+            .withVideo(Slot.OVERLAY, video(rev = 2))
+
+        assertTrue(playing.withDocument(overlay(Slot.OVERLAY, rev = 4), documentBytes).videos.isEmpty())
+        assertTrue(playing.closed(Slot.OVERLAY).videos.isEmpty())
+        assertTrue(playing.cleared().videos.isEmpty())
+    }
+
+    @Test
+    fun `a stopped video is forgotten unless the add-on already sent a newer one`() {
+        val stopped = video(rev = 2)
+        val restarted = video(rev = 2, url = "http://addon:8100/stream/hls/def/master_playlist.m3u8")
+        val state = RemoteScreenState()
+            .withDocument(overlay(Slot.OVERLAY, rev = 2), documentBytes)
+            .withVideo(Slot.OVERLAY, stopped)
+
+        assertNull(state.withoutVideo(Slot.OVERLAY, stopped).playingVideo)
+        assertEquals(
+            Slot.OVERLAY to restarted,
+            state.withVideo(Slot.OVERLAY, restarted).withoutVideo(Slot.OVERLAY, stopped).playingVideo,
+        )
+    }
 }

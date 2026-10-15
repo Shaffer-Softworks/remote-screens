@@ -16,6 +16,18 @@ class SlotDocument(
 )
 
 /**
+ * A camera's live video over the image with [componentId] in document [revision] of a slot. [url] is on the add-on
+ * and wants [token], the player's own, as a bearer. [crop] fills the image; else the whole picture fits inside it.
+ */
+data class SlotVideo(
+    val revision: Int,
+    val componentId: Int,
+    val url: String,
+    val token: String,
+    val crop: Boolean,
+)
+
+/**
  * Everything the Remote Compose players show: the pages of the screen, a card over them, an alert over both.
  * Values go to every shown document; each document takes the ones it names.
  */
@@ -24,6 +36,8 @@ data class RemoteScreenState(
     val documents: Map<Slot, SlotDocument> = emptyMap(),
     val values: Map<String, VarValue> = emptyMap(),
     val bitmaps: Map<String, Bitmap> = emptyMap(),
+    /** Live video the add-on started for a shown document; it goes with the document. */
+    val videos: Map<Slot, SlotVideo> = emptyMap(),
     val page: Int = 0,
     val homePage: Int = 0,
     val pageCount: Int = 1,
@@ -42,6 +56,13 @@ data class RemoteScreenState(
             else -> null
         }
 
+    /** The video to play: only the topmost card's or alert's, as a tablet may decode one stream at a time. */
+    val playingVideo: Pair<Slot, SlotVideo>?
+        get() {
+            val slot = topOverlay ?: return null
+            return videos[slot]?.takeIf { it.revision == documents[slot]?.revision }?.let { slot to it }
+        }
+
     /** The page to show after a new main document: the same one if it still exists, otherwise home. */
     val pageAfterNewDocument: Int get() = if (page < pageCount) page else homePage
 
@@ -55,6 +76,7 @@ data class RemoteScreenState(
         val updated = copy(
             documents = documents + (message.slot to document),
             values = values + message.vars.associateBy(VarValue::name),
+            videos = videos - message.slot,
         )
         if (message.slot != Slot.MAIN) return updated
         val newPageCount = message.pageCount.coerceAtLeast(1)
@@ -87,11 +109,20 @@ data class RemoteScreenState(
 
     fun withBitmap(name: String, bitmap: Bitmap): RemoteScreenState = copy(bitmaps = bitmaps + (name to bitmap))
 
+    /** A video for a document that is no longer shown is dropped. */
+    fun withVideo(slot: Slot, video: SlotVideo): RemoteScreenState =
+        if (documents[slot]?.revision == video.revision) copy(videos = videos + (slot to video)) else this
+
+    /** Forgets [video] once it stopped; a newer one the add-on sent for the slot stays. */
+    fun withoutVideo(slot: Slot, video: SlotVideo): RemoteScreenState =
+        if (videos[slot] == video) copy(videos = videos - slot) else this
+
     fun withPage(index: Int): RemoteScreenState = copy(page = index.coerceIn(0, pageCount - 1))
 
     /** The main document cannot be closed, only replaced or cleared. */
-    fun closed(slot: Slot): RemoteScreenState = if (slot == Slot.MAIN) this else copy(documents = documents - slot)
+    fun closed(slot: Slot): RemoteScreenState =
+        if (slot == Slot.MAIN) this else copy(documents = documents - slot, videos = videos - slot)
 
     /** Hides every document and forgets the values, as when the screen must be paired again. */
-    fun cleared(): RemoteScreenState = copy(documents = emptyMap(), values = emptyMap())
+    fun cleared(): RemoteScreenState = copy(documents = emptyMap(), values = emptyMap(), videos = emptyMap())
 }

@@ -7,6 +7,8 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistantConfig
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistantEvent
+import io.ktor.http.HttpStatusCode
+import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -161,6 +163,10 @@ class DemoHome : HomeAssistant {
     }
 
     override suspend fun fetch(path: String): ByteArray? = picture(path.hashCode())
+
+    /** The demo cameras have no video, so screens fall back to their snapshots. */
+    override suspend fun stream(path: String, onBody: suspend (contentType: String?, body: ByteReadChannel) -> Unit): Int =
+        HttpStatusCode.NotFound.value
 
     private fun forecasts(ids: List<String>): JsonElement = buildJsonObject {
         for (id in ids) put(id, buildJsonObject {

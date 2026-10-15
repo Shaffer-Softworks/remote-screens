@@ -33,6 +33,7 @@ import tech.shaffersoftworks.remotescreens.player.R
 import tech.shaffersoftworks.remotescreens.player.receiver.ScreenOffAdminReceiver
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteDocumentView
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteScreenState
+import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotVideo
 import tech.shaffersoftworks.remotescreens.player.ui.theme.Page
 import tech.shaffersoftworks.remotescreens.player.ui.views.AddressDialog
 import tech.shaffersoftworks.remotescreens.player.ui.views.ForgetScreenDialog
@@ -71,8 +72,10 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
         RemoteScreen(
             state = viewState.remoteScreen,
             isSwipeEnabled = viewState.isSwipeEnabled,
+            isVideoAllowed = viewState.isAwake,
             onAction = viewModel::onDocumentAction,
             onSwipe = viewModel::onSwipe,
+            onVideoFailed = viewModel::onVideoFailed,
         )
         viewState.infoPanel?.let { infoPanel ->
             InfoPanel(
@@ -100,8 +103,10 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
 private fun RemoteScreen(
     state: RemoteScreenState,
     isSwipeEnabled: Boolean,
+    isVideoAllowed: Boolean,
     onAction: (Slot, Int, String) -> Unit,
     onSwipe: (Boolean) -> Unit,
+    onVideoFailed: (Slot, SlotVideo, Int?) -> Unit,
 ) {
     AndroidView(
         factory = { context -> RemoteDocumentView(context) },
@@ -109,7 +114,9 @@ private fun RemoteScreen(
         update = { remoteDocumentView ->
             remoteDocumentView.onAction = onAction
             remoteDocumentView.onSwipe = onSwipe
+            remoteDocumentView.onVideoFailed = onVideoFailed
             remoteDocumentView.isSwipeEnabled = isSwipeEnabled
+            remoteDocumentView.isVideoAllowed = isVideoAllowed
             remoteDocumentView.render(state)
         },
     )
