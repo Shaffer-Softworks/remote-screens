@@ -86,6 +86,8 @@ class PlayerViewModel @Inject constructor(
         /** Unlocked on the tablet with the PIN, until "Lock again" or Home Assistant turns the kiosk on again. */
         val isLocallyUnlocked: Boolean = false,
         val isKioskPinDialogVisible: Boolean = false,
+        /** Battery optimization may cut the connection while the screen is off; checked again on every resume. */
+        val isBatteryRestricted: Boolean = false,
     ) {
         private val scheduledBrightnessPercent: Int
             get() = when {
@@ -443,6 +445,7 @@ class PlayerViewModel @Inject constructor(
 
     /** The window is shown again. After standby turned the screen off, that means the power button was pressed. */
     fun onResumed() {
+        _viewState.update { it.copy(isBatteryRestricted = !deviceRepository.isIgnoringBatteryOptimizations()) }
         if (screenPowerRepository.isScreenOff) onUserInteraction()
     }
 
@@ -569,6 +572,9 @@ class PlayerViewModel @Inject constructor(
                     canOfferScreenOff = !isKioskLocked &&
                         currentState.screenSettings.standbyScreenOff &&
                         !screenPowerRepository.canTurnScreenOff(),
+                    canOfferUnrestrictedBattery = !isKioskLocked &&
+                        currentState.screenSettings.standbyScreenOff &&
+                        !deviceRepository.isIgnoringBatteryOptimizations(),
                     kioskAction = kioskAction,
                     canRemoveDeviceOwner = !isKioskLocked && kioskManager.isDeviceOwner(),
                 ),
@@ -628,6 +634,11 @@ class PlayerViewModel @Inject constructor(
     fun onAllowScreenOffRequested() {
         onSettingsDismissed()
         viewModelScope.launch { _events.send(PlayerEvent.OpenScreenOffAdminSettings) }
+    }
+
+    fun onAllowUnrestrictedBatteryRequested() {
+        onSettingsDismissed()
+        viewModelScope.launch { _events.send(PlayerEvent.RequestUnrestrictedBattery) }
     }
 
     fun onAllowSelfStartRequested() {

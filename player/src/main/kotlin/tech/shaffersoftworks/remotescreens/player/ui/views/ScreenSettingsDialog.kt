@@ -42,6 +42,7 @@ fun ScreenSettingsDialog(
     server: String?,
     canOfferSelfStart: Boolean,
     canOfferScreenOff: Boolean,
+    canOfferUnrestrictedBattery: Boolean,
     kioskAction: KioskAction?,
     canRemoveDeviceOwner: Boolean,
     onBrightnessPreview: (Int) -> Unit,
@@ -51,6 +52,7 @@ fun ScreenSettingsDialog(
     onForget: () -> Unit,
     onAllowSelfStart: () -> Unit,
     onAllowScreenOff: () -> Unit,
+    onAllowUnrestrictedBattery: () -> Unit,
     onUnlockKiosk: () -> Unit,
     onLockKioskAgain: () -> Unit,
     onRemoveDeviceOwner: () -> Unit,
@@ -111,6 +113,11 @@ fun ScreenSettingsDialog(
                 if (canOfferScreenOff) {
                     TextButton(onClick = onAllowScreenOff) { Text(stringResource(R.string.allow_screen_off)) }
                 }
+                if (canOfferUnrestrictedBattery) {
+                    TextButton(onClick = onAllowUnrestrictedBattery) {
+                        Text(stringResource(R.string.allow_unrestricted_battery))
+                    }
+                }
                 when (kioskAction) {
                     KioskAction.UNLOCK -> TextButton(onClick = onUnlockKiosk) {
                         Text(stringResource(R.string.kiosk_unlock))
@@ -161,6 +168,7 @@ private fun ScreenSettingsDialogPreview() {
             server = "192.168.1.10:8100",
             canOfferSelfStart = true,
             canOfferScreenOff = true,
+            canOfferUnrestrictedBattery = true,
             kioskAction = KioskAction.UNLOCK,
             canRemoveDeviceOwner = false,
             onBrightnessPreview = {},
@@ -170,6 +178,7 @@ private fun ScreenSettingsDialogPreview() {
             onForget = {},
             onAllowSelfStart = {},
             onAllowScreenOff = {},
+            onAllowUnrestrictedBattery = {},
             onUnlockKiosk = {},
             onLockKioskAgain = {},
             onRemoveDeviceOwner = {},

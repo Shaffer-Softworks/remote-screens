@@ -33,6 +33,10 @@ class PlayerPreferencesRepository @Inject constructor(
     val isKioskSuppressed: Flow<Boolean> =
         dataStore.data.map { preferences -> preferences[KIOSK_SUPPRESSED_KEY] ?: false }
 
+    /** Set by QR enrollment: ask once to leave battery optimization before lock task hides that dialog. */
+    val isBatteryPromptPending: Flow<Boolean> =
+        dataStore.data.map { preferences -> preferences[BATTERY_PROMPT_PENDING_KEY] ?: false }
+
     /** A random id made on first use and kept for good, so the add-on knows this screen again. */
     suspend fun deviceId(): String {
         val updatedPreferences = dataStore.edit { preferences ->
@@ -65,6 +69,10 @@ class PlayerPreferencesRepository @Inject constructor(
         dataStore.edit { preferences -> preferences[KIOSK_SUPPRESSED_KEY] = isSuppressed }
     }
 
+    suspend fun setBatteryPromptPending(isPending: Boolean) {
+        dataStore.edit { preferences -> preferences[BATTERY_PROMPT_PENDING_KEY] = isPending }
+    }
+
     suspend fun forget() {
         dataStore.edit { preferences ->
             preferences.remove(TOKEN_KEY)
@@ -79,5 +87,6 @@ class PlayerPreferencesRepository @Inject constructor(
         val SCREEN_NAME_KEY = stringPreferencesKey("screen_name")
         val KIOSK_ENABLED_KEY = booleanPreferencesKey("kiosk_enabled")
         val KIOSK_SUPPRESSED_KEY = booleanPreferencesKey("kiosk_suppressed")
+        val BATTERY_PROMPT_PENDING_KEY = booleanPreferencesKey("battery_prompt_pending")
     }
 }

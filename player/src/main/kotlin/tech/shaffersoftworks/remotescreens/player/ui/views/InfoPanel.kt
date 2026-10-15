@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +34,7 @@ private val CODE_VERTICAL_PADDING = 16.dp
 private val TITLE_TEXT_SIZE = 28.sp
 private val CODE_TEXT_SIZE = 72.sp
 private val BODY_TEXT_SIZE = 18.sp
+private val NOTE_TEXT_SIZE = 14.sp
 private val CODE_LETTER_SPACING = 0.1.em
 
 /** What the screen shows while there is no document yet: searching, connecting, or the code to pair with. */
@@ -41,6 +43,8 @@ fun InfoPanel(
     state: InfoPanelState,
     onEnterAddress: () -> Unit,
     modifier: Modifier = Modifier,
+    canOfferUnrestrictedBattery: Boolean = false,
+    onAllowUnrestrictedBattery: () -> Unit = {},
 ) {
     val pairingCode = (state as? InfoPanelState.Pairing)?.code
     val title = if (pairingCode != null) stringResource(R.string.pair_title) else stringResource(R.string.app_name)
@@ -77,6 +81,18 @@ fun InfoPanel(
             Spacer(Modifier.height(PANEL_PADDING))
             Button(onClick = onEnterAddress) { Text(stringResource(R.string.enter_address)) }
         }
+        if (canOfferUnrestrictedBattery) {
+            Spacer(Modifier.height(PANEL_PADDING))
+            Text(
+                text = stringResource(R.string.battery_restricted),
+                color = InkSoft,
+                fontSize = NOTE_TEXT_SIZE,
+                textAlign = TextAlign.Center,
+            )
+            TextButton(onClick = onAllowUnrestrictedBattery) {
+                Text(stringResource(R.string.allow_unrestricted_battery))
+            }
+        }
     }
 }
 
@@ -89,5 +105,7 @@ private fun InfoPanelPairingPreview() {
 @Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun InfoPanelSearchingPreview() {
-    RemoteScreensTheme { InfoPanel(state = InfoPanelState.Searching, onEnterAddress = {}) }
+    RemoteScreensTheme {
+        InfoPanel(state = InfoPanelState.Searching, onEnterAddress = {}, canOfferUnrestrictedBattery = true)
+    }
 }

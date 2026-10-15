@@ -36,7 +36,6 @@ private const val IDENTIFY_SECONDS = 5
  * slot, an alert above both. Documents are built once and then kept up to date by sending only the values that
  * changed; a document is built again when something drawn into it changes.
  */
-@Suppress("TooManyFunctions")
 class PlayerHub(
     private val sessionContext: PlayerSessionContext,
     private val playerTokens: PlayerTokens = PlayerTokens(),

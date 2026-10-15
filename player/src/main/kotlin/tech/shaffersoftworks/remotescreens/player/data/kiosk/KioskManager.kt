@@ -13,6 +13,7 @@ import android.os.UserManager
 import androidx.core.content.IntentCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import tech.shaffersoftworks.remotescreens.player.MainActivity
+import tech.shaffersoftworks.remotescreens.player.data.device.DeviceRepository
 import tech.shaffersoftworks.remotescreens.player.data.preferences.PlayerPreferencesRepository
 import tech.shaffersoftworks.remotescreens.player.di.IoScope
 import tech.shaffersoftworks.remotescreens.player.receiver.LockTaskDeviceAdminReceiver
@@ -50,6 +51,7 @@ private val KIOSK_USER_RESTRICTIONS = listOf(
 class KioskManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val preferencesRepository: PlayerPreferencesRepository,
+    private val deviceRepository: DeviceRepository,
     @IoScope private val ioScope: CoroutineScope,
 ) {
     private val devicePolicyManager = context.getSystemService(DevicePolicyManager::class.java)
@@ -115,9 +117,21 @@ class KioskManager @Inject constructor(
         )
         val server = adminExtras?.getString(EXTRA_SERVER)?.let(::normalizeServerAddress)
         ioScope.launch {
+            // Before the kiosk turns on, so the first lock already sees it.
+            preferencesRepository.setBatteryPromptPending(true)
             preferencesRepository.setKioskEnabled(true)
             if (server != null) preferencesRepository.setServer(server)
         }
+    }
+
+    /**
+     * Whether to show the battery optimization dialog before locking. It is offered only once after QR enrollment,
+     * so a "Deny" does not keep the kiosk from locking.
+     */
+    suspend fun consumeBatteryPrompt(): Boolean {
+        if (!preferencesRepository.isBatteryPromptPending.first()) return false
+        preferencesRepository.setBatteryPromptPending(false)
+        return isDeviceOwner() && !deviceRepository.isIgnoringBatteryOptimizations()
     }
 
     /**

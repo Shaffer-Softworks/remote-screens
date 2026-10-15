@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
@@ -74,7 +75,13 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
             onSwipe = viewModel::onSwipe,
         )
         viewState.infoPanel?.let { infoPanel ->
-            InfoPanel(state = infoPanel, onEnterAddress = viewModel::openAddressDialog)
+            InfoPanel(
+                state = infoPanel,
+                onEnterAddress = viewModel::openAddressDialog,
+                // Lock task hides the system dialog the button opens.
+                canOfferUnrestrictedBattery = viewState.isBatteryRestricted && viewState.isKioskWanted != true,
+                onAllowUnrestrictedBattery = viewModel::onAllowUnrestrictedBatteryRequested,
+            )
         }
         viewState.identifyScreenName?.let { screenName -> IdentifyBadge(screenName = screenName) }
         if (viewState.isBlackout) {
@@ -119,6 +126,7 @@ private fun PlayerDialogs(viewState: PlayerViewModel.ViewState, viewModel: Playe
                 server = settingsDialog.server,
                 canOfferSelfStart = settingsDialog.canOfferSelfStart,
                 canOfferScreenOff = settingsDialog.canOfferScreenOff,
+                canOfferUnrestrictedBattery = settingsDialog.canOfferUnrestrictedBattery,
                 kioskAction = settingsDialog.kioskAction,
                 canRemoveDeviceOwner = settingsDialog.canRemoveDeviceOwner,
                 onBrightnessPreview = viewModel::onSettingsBrightnessPreview,
@@ -128,6 +136,7 @@ private fun PlayerDialogs(viewState: PlayerViewModel.ViewState, viewModel: Playe
                 onForget = viewModel::onForgetRequested,
                 onAllowSelfStart = viewModel::onAllowSelfStartRequested,
                 onAllowScreenOff = viewModel::onAllowScreenOffRequested,
+                onAllowUnrestrictedBattery = viewModel::onAllowUnrestrictedBatteryRequested,
                 onUnlockKiosk = viewModel::onUnlockKioskRequested,
                 onLockKioskAgain = viewModel::onLockKioskAgainRequested,
                 onRemoveDeviceOwner = viewModel::onRemoveDeviceOwnerRequested,
@@ -189,10 +198,16 @@ private fun handleEvent(context: Context, activity: Activity?, event: PlayerEven
             Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()),
         )
         PlayerEvent.OpenScreenOffAdminSettings -> context.startActivity(screenOffAdminIntent(context))
+        PlayerEvent.RequestUnrestrictedBattery -> context.startActivity(unrestrictedBatteryIntent(context))
         // Pinning comes back when the activity resumes after the confirmation.
         PlayerEvent.StopScreenPinning -> activity?.stopLockTask()
     }
 }
+
+/** Google Play only allows asking directly when Doze breaks the app; the add-on's sideloaded build qualifies. */
+@SuppressLint("BatteryLife")
+internal fun unrestrictedBatteryIntent(context: Context): Intent =
+    Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, "package:${context.packageName}".toUri())
 
 private fun screenOffAdminIntent(context: Context): Intent {
     val adminComponent = ComponentName(context, ScreenOffAdminReceiver::class.java)
