@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { PASTELS, activeThemeId, colorOf, cssColor, pastel, rgbOf, setThemes, themeById, themeVars } from './palette'
+import { PASTELS, activeThemeId, alphaOf, colorOf, cssColor, packHex, pastel, rgbOf, setThemes, themeById, themeVars } from './palette'
 import type { ResolvedTheme } from './types'
 
 function theme(id: string, page: string, teal: string): ResolvedTheme {
@@ -52,6 +52,16 @@ describe('theme palette', () => {
     expect(rgbOf('#80ABCDEF')).toBe('#abcdef')
     expect(rgbOf('teal')).toBe('#14e1ba')
     expect(rgbOf(undefined)).toBe('#000000')
+  })
+
+  it('reads and packs alpha in the add-on order', () => {
+    expect(alphaOf('#80ABCDEF')).toBe(0x80)
+    expect(alphaOf('#ABCDEF')).toBe(0xff)
+    expect(alphaOf('scrim')).toBe(0xcc)
+    expect(alphaOf(undefined)).toBe(0xff)
+    expect(packHex('#abcdef', 0x80)).toBe('#80ABCDEF')
+    expect(packHex('#ABCDEF', 0xff)).toBe('#ABCDEF')
+    expect(packHex('#abcdef')).toBe('#ABCDEF')
   })
 
   it('keeps the pastel list in step with the active theme', () => {

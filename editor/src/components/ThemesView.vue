@@ -4,6 +4,7 @@ import { api } from '../api'
 import { PASTEL_KEYS, cssColor, themeById, themeVars, themes } from '../model/palette'
 import type { ResolvedTheme, Theme } from '../model/types'
 import { attempt, refreshThemes, state, toast } from '../store'
+import ColorInput from './ColorInput.vue'
 import MdiIcon from './MdiIcon.vue'
 
 const emit = defineEmits<{ close: [] }>()
@@ -46,14 +47,10 @@ const shown = computed<ResolvedTheme | undefined>(() => {
 const roleKeys = computed(() => Object.keys(shown.value?.roles ?? {}))
 const label = (k: string) => (k === 'card_edge' ? 'card edge (tile border)' : k.replace(/_/g, ' '))
 
-/** A colour input takes `#RRGGBB`: the add-on's `#AARRGGBB` loses its alpha here and keeps it when set. */
-const rgb = (hex: string | undefined) => (hex && hex.length === 9 ? `#${hex.slice(3)}` : (hex ?? '#000000'))
-
 function setColour(kind: 'roles' | 'pastels', key: string, value: string): void {
   const d = draft.value
   if (!d) return
-  const was = shown.value?.[kind][key] ?? ''
-  const hex = (was.length === 9 ? `#${was.slice(1, 3)}${value.slice(1)}` : value).toUpperCase()
+  const hex = value.toUpperCase()
   const base = themeById(d.base)?.[kind][key]
   if (base === hex) delete d[kind][key]
   else d[kind][key] = hex
@@ -180,21 +177,29 @@ const vars = computed(() => themeVars(shown.value))
 
         <h3>Pastels</h3>
         <div class="colours">
-          <label v-for="k in PASTEL_KEYS" :key="k" class="colour" :class="{ own: draft && draft.pastels[k] }">
-            <input type="color" :value="rgb(shown.pastels[k])" :disabled="!draft" @input="setColour('pastels', k, ($event.target as HTMLInputElement).value)" />
+          <div v-for="k in PASTEL_KEYS" :key="k" class="colour" :class="{ own: draft && draft.pastels[k] }">
+            <ColorInput
+              :model-value="shown.pastels[k]"
+              :disabled="!draft"
+              @update:model-value="setColour('pastels', k, $event!)"
+            />
             <span class="grow">{{ label(k) }}</span>
-            <button v-if="draft && draft.pastels[k]" class="icon quiet" title="Back to the base's" @click.prevent="reset('pastels', k)"><MdiIcon name="restore" :size="14" /></button>
-          </label>
+            <button v-if="draft && draft.pastels[k]" class="icon quiet" title="Back to the base's" @click="reset('pastels', k)"><MdiIcon name="restore" :size="14" /></button>
+          </div>
         </div>
 
         <h3>Roles</h3>
         <p class="muted hint">Card edge is every tile's border; a tile can override it with its own border colour.</p>
         <div class="colours">
-          <label v-for="k in roleKeys" :key="k" class="colour" :class="{ own: draft && draft.roles[k] }">
-            <input type="color" :value="rgb(shown.roles[k])" :disabled="!draft" @input="setColour('roles', k, ($event.target as HTMLInputElement).value)" />
+          <div v-for="k in roleKeys" :key="k" class="colour" :class="{ own: draft && draft.roles[k] }">
+            <ColorInput
+              :model-value="shown.roles[k]"
+              :disabled="!draft"
+              @update:model-value="setColour('roles', k, $event!)"
+            />
             <span class="grow">{{ label(k) }}</span>
-            <button v-if="draft && draft.roles[k]" class="icon quiet" title="Back to the base's" @click.prevent="reset('roles', k)"><MdiIcon name="restore" :size="14" /></button>
-          </label>
+            <button v-if="draft && draft.roles[k]" class="icon quiet" title="Back to the base's" @click="reset('roles', k)"><MdiIcon name="restore" :size="14" /></button>
+          </div>
         </div>
       </section>
     </div>
@@ -285,7 +290,7 @@ const vars = computed(() => themeVars(shown.value))
 
 .colours {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 6px;
 }
 
@@ -303,11 +308,9 @@ const vars = computed(() => themeVars(shown.value))
   font-weight: 500;
 }
 
-.colour input {
-  width: 34px;
-  height: 26px;
-  padding: 0 2px;
-  flex: none;
+.colour :deep(.color-input) {
+  flex: 1;
+  min-width: 0;
 }
 
 /* The preview, drawn in the theme's colours. */
