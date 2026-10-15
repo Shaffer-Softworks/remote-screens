@@ -1,0 +1,51 @@
+---
+description: Player standby — why it never started (settings reset the countdown), the fix, the "Turn the screen off in standby" setting (device admin lockNow), how to diagnose standby on a real tablet, gotchas, what's not verified
+globs: player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/PlayerViewModel.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/PlayerScreen.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/data/device/ScreenPowerRepository.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/receiver/ScreenOffAdminReceiver.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/utils/WindowExtensions.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/MainActivity.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/views/ScreenSettingsDialog.kt,player/src/main/res/xml/device_admin.xml,shared/src/main/kotlin/tech/shaffersoftworks/remotescreens/shared/Layout.kt,custom_components/remote_screens/switch.py,editor/src/components/ScreenPanel.vue
+alwaysApply: false
+---
+
+# Standby and screen off (PR #17, merged Oct 2026)
+
+## How standby works
+
+- The player never lets Android turn the screen off on its own: `MainActivity` sets `FLAG_KEEP_SCREEN_ON`.
+- After `standbyMinutes` with no touch, `PlayerViewModel.setAwake(false)`: window brightness drops to `standbyBrightness` (floor `0.01`, the backlight stays on). At standby brightness 0, `PlayerScreen` also draws a full-screen black `Box` (`ViewState.isBlackout`). On AMOLED (Galaxy Tab S5e) that looks fully off; on LCD the backlight glows.
+- With `ScreenSettings.standbyScreenOff` and a device admin, standby really turns the screen off (see below).
+
+## The bug (fixed in #17)
+
+- Symptom: a Samsung SM-T725 never went into standby (10 min, brightness 0).
+- Cause: every `ServerMessage.Settings` called `applyScreenSettings` → `onUserInteraction()`, i.e. counted as a touch. The add-on sends `Settings` on every (re)connect (`begin`, twice: before and after `Welcome`), every layout save (`layoutChanged`), every HA settings patch and every preview, so the countdown kept restarting before 10 minutes.
+- Fix: `onServerSettings` stores the settings without waking; `restartClocks()` only when `standbyMinutes` or `backToHomeSeconds` changed; standby turned off (0) while asleep wakes the screen. The tablet's own settings dialog (`onSettingsConfirmed` → `applyScreenSettings`) still counts as a touch.
+- Still restart the countdown (by design): touches, alerts and overlays, `OpenPage`, `Wake(true)`, identify.
+
+## "Turn the screen off in standby" (decisions: user chose, Oct 2026)
+
+- Method: device admin `DevicePolicyManager.lockNow()` (not clearing `FLAG_KEEP_SCREEN_ON`, not `WRITE_SETTINGS`). Scope: per-screen setting (`ScreenSettings.standbyScreenOff`, default false), editor checkbox under Standby, HA switch `standby_screen_off` ("Screen off in standby").
+- `ScreenPowerRepository` (Hilt singleton): `turnScreenOff()` takes a partial wake lock (so the WebSocket survives and HA can wake it) then `lockNow()`; `turnScreenOn()` takes a 5 s `SCREEN_BRIGHT_WAKE_LOCK | ACQUIRE_CAUSES_WAKEUP` and drops the partial lock. `canTurnScreenOff()` accepts `ScreenOffAdminReceiver` or the kiosk's `LockTaskDeviceAdminReceiver` (added with kiosk lock, #19).
+- `PlayerViewModel.updateScreenPower()` runs on every awake change and when `standbyScreenOff` changes. `onResumed()` (from `MainActivity.onResume`) treats a resume while the screen is off as a power-button wake.
+- `MainActivity.showOverLockScreen()` (`setShowWhenLocked(true)`): waking shows the player, not the keyguard.
+- Without the admin, standby falls back to dimming; the settings dialog offers "Allow turning the screen off in standby" (`ACTION_ADD_DEVICE_ADMIN`) when the setting is on and no admin is active.
+- A screen that is off can't be woken by touch: power button, `remote_screens.wake`, alert, `OpenPage`.
+
+## Diagnosing standby on a tablet
+
+- Release builds print no app logs (Timber is debug only). A debug build signed with the local debug key installs over a debug-key-signed release with `adb install -r` and keeps the pairing.
+- Debug-only `Timber.d` lines in `PlayerViewModel`: `Message <type>`, `Standby clock restarted: <n> min`, `Awake: <bool>`. Read them with `adb logcat -d -v time -s PlayerViewModel`.
+- Window brightness: `adb shell dumpsys window windows | grep -A3 '<package>/<package>.MainActivity}:' | grep sbrt` (`sbrt=1.0` awake at 100%).
+- Pending coroutine timers: `adb shell dumpsys activity <package>` lists the main looper queue (`HandlerContext` messages with `when=+…`); a timer whose `when` jumps back up means its job was cancelled and relaunched.
+- Phantom touches: `adb shell getevent -lt | grep 'BTN_TOUCH.*DOWN'`.
+- The add-on's `/integration` and `/api` routes need the key / ingress; from the tablet only `/health` answers. HA's Remote Screens entities were `unavailable` at the time; "Charles's Desk" in HA is an ESP32 (CYD) screen from another integration, not this app.
+
+## Gotchas
+
+- Since #20 the app ID is `tech.shaffersoftworks.remotescreens.player`. The SM-T725 (`R32R5006XNT`, 10.11.0.160, add-on at 10.11.0.17:8100) still had the old `dev.remotescreens.player` debug build from this investigation: a different app, so it needs the new one installed and paired again.
+- An add-on older than #17 drops `standbyScreenOff` when decoding settings; the add-on and the integration must be redeployed for the setting to reach tablets.
+- The partial wake lock is fine plugged in; on battery, Doze can still cut the connection, and the screen would then only wake by the power button.
+- Commits from Cursor here get a `Co-authored-by: Cursor` trailer injected; strip it before pushing (rebuild with `git commit-tree`), see the user's no-attribution rule.
+
+## Not verified
+
+- On a tablet: the standby fix only (standby started on time while the add-on re-sent settings).
+- Not tried on a tablet: `lockNow()` screen off, waking from HA or the power button, showing over the lock screen, the device admin grant flow.
+- Not run locally: editor `vue-tsc` (no `npx` on this Mac) and the HA integration tests (`pytest_homeassistant_custom_component` not installed).
