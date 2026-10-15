@@ -94,8 +94,12 @@ class LiveVideoView(context: Context) : FrameLayout(context) {
     fun play(video: SlotVideo) {
         stop()
         this.video = video
-        // Fill the image's box; Fit left letterboxing that showed the snapshot beside the stream.
-        aspectRatioFrame.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+        // Crop fills the image's box; Fit shows the whole frame (black letterboxing hides the snapshot behind).
+        aspectRatioFrame.resizeMode = if (video.crop) {
+            AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+        } else {
+            AspectRatioFrameLayout.RESIZE_MODE_FIT
+        }
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setDefaultRequestProperties(mapOf("Authorization" to "Bearer ${video.token}"))
             .setConnectTimeoutMs(CONNECT_TIMEOUT_MS)

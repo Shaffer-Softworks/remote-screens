@@ -533,7 +533,14 @@ private fun DocContext.imageNode(n: Node, self: Dims, axis: Axis, pages: Pages) 
     val fit = n.props["fit"] == "whole"
     val slot = "img.${n.id}"
     picture(PictureSlot(slot, if (camera) "/api/camera_proxy/$id" else "attr:$id:entity_picture", w, h, if (camera) 10 else 0, crop = !fit))
-    scope.Image(image(slot, w, h), m, contentScale = if (fit) RcContentScale.Fit else RcContentScale.Crop)
+    // Put taps on a Box: Image drops onClick in the document (alpha21), so a camera never opened its card.
+    scope.Box(m) {
+        Image(
+            this@imageNode.image(slot, w, h),
+            Modifier.fillMaxSize(),
+            contentScale = if (fit) RcContentScale.Fit else RcContentScale.Crop,
+        )
+    }
 }
 
 /** One of the grid's cards, at the size the layout gives it. */
