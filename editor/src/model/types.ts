@@ -119,6 +119,7 @@ export interface ScreenSettings {
   darkMode: boolean
   standbyMinutes: number
   standbyBrightness: number
+  standbyScreenOff?: boolean
   nightStart?: string
   nightEnd?: string
   nightBrightness: number

@@ -246,6 +246,8 @@ data class ScreenSettings(
     val darkMode: Boolean = false,
     val standbyMinutes: Int = 10,
     val standbyBrightness: Int = 0,
+    /** Standby turns the screen off instead of dimming it, once the tablet allows the app to lock it. */
+    val standbyScreenOff: Boolean = false,
     /** "HH:MM", both or neither. */
     val nightStart: String? = null,
     val nightEnd: String? = null,

@@ -13,7 +13,8 @@
     "switch": {
       "dark_mode": { "default": "mdi:theme-light-dark" },
       "night_dark": { "default": "mdi:weather-night" },
-      "swipe": { "default": "mdi:gesture-swipe-horizontal" }
+      "swipe": { "default": "mdi:gesture-swipe-horizontal" },
+      "standby_screen_off": { "default": "mdi:monitor-off" }
     },
     "time": {
       "night_start": { "default": "mdi:weather-sunset-down" },

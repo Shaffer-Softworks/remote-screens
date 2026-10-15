@@ -28,6 +28,10 @@ address of your Home Assistant host with port 8100.
 - If you would rather keep your launcher, open the app's settings (long press the top bar) and choose **Open by
   itself after a restart or update**. Android calls this permission "Display over other apps".
 - Keep the tablet plugged in. The screen dims on its own after the standby time and at night.
+- To turn the screen fully off in standby instead of dimming it, tick **Turn the screen off in standby** for the
+  screen, then on the tablet open the app's settings and choose **Allow turning the screen off in standby** (Android
+  asks to activate Remote Screens as a device admin). A screen that is off does not wake on a touch: press the power
+  button, or call `remote_screens.wake` from Home Assistant.
 
 ## Tiles
 
