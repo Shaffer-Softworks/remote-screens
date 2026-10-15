@@ -7,7 +7,7 @@ import { DESIGN } from '../model/design'
 import { componentOf, isContainer } from '../model/nodes'
 import { BACKGROUND_SWATCHES, INK_SWATCHES, PASTEL_KEYS, colorOf } from '../model/palette'
 import { iconOf, specOf } from '../model/tiles'
-import type { BindFormat, Node, Screen, TapAction, TapType } from '../model/types'
+import type { BindFormat, Node, PaddingSide, Screen, TapAction, TapType } from '../model/types'
 import { entityById, state } from '../store'
 import ColorSwatches from './ColorSwatches.vue'
 import IconPicker from './IconPicker.vue'
@@ -56,6 +56,19 @@ const ANIMATIONS = [
 ]
 /** The size the player draws when none is set. */
 const SIZES: Record<string, number> = { gauge: 140, analog: 160, iconbutton: 64, keys: 48, swatches: 40, keypad: 56 }
+const SIDES: { key: PaddingSide; label: string }[] = [
+  { key: 'paddingStart', label: 'Start' },
+  { key: 'paddingTop', label: 'Top' },
+  { key: 'paddingEnd', label: 'End' },
+  { key: 'paddingBottom', label: 'Bottom' },
+]
+
+/** Sets one side's padding; a blank side takes the padding all round. */
+function setPadding(side: PaddingSide, value: string): void {
+  const v = Number(value)
+  if (value === '' || !Number.isFinite(v) || v < 0) delete n.value.style[side]
+  else n.value.style[side] = v
+}
 
 function setProp(key: string, value: string | undefined): void {
   if (value === undefined || value === '') delete n.value.props[key]
@@ -328,6 +341,19 @@ const typeIcon = computed(() => (n.value.type === 'tile' ? 'view-grid-outline' :
       <div class="row two">
         <label class="field">Padding (dp)<input v-model.number="n.style.padding" type="number" min="0" step="2" /></label>
         <label class="field">Corner (dp)<input v-model.number="n.style.corner" type="number" min="0" step="2" /></label>
+      </div>
+      <div class="row two">
+        <label v-for="side in SIDES" :key="side.key" class="field">
+          {{ side.label }}
+          <input
+            type="number"
+            min="0"
+            step="2"
+            :placeholder="String(n.style.padding)"
+            :value="n.style[side.key] ?? ''"
+            @input="setPadding(side.key, ($event.target as HTMLInputElement).value)"
+          />
+        </label>
       </div>
       <div class="field">
         <span class="label">Background</span>

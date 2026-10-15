@@ -108,8 +108,7 @@ internal fun content(n: Node): Dims {
         "column" -> Dims(kids.maxOfOrNull { it.w } ?: 0f, kids.sumOf { it.h.toDouble() }.toFloat() + gap)
         else -> Dims(kids.maxOfOrNull { it.w } ?: 0f, kids.maxOfOrNull { it.h } ?: 0f)
     }
-    val pad = 2 * n.style.padding
-    return Dims(side(n.size.width, inner.w + pad), side(n.size.height, inner.h + pad))
+    return Dims(side(n.size.width, inner.w + n.style.padX), side(n.size.height, inner.h + n.style.padY))
 }
 
 private fun fills(spec: String) = spec == "fill" || spec.startsWith("weight:")
@@ -201,7 +200,8 @@ private fun DocContext.styled(n: Node, axis: Axis, pages: Pages, base: Modifier 
         val (onTap, onHold) = refs(n, pages)
         m = tap(m, onTap, onHold)
     }
-    if (n.style.padding > 0f) m = m.padding(u.px(n.style.padding))
+    val s = n.style
+    if (s.padded) m = m.padding(u.px(s.start), u.px(s.top), u.px(s.end), u.px(s.bottom))
     return m
 }
 
@@ -302,8 +302,7 @@ private fun DocContext.container(n: Node, given: Dims, axis: Axis, pages: Pages)
     val pinH = n.type == "row" && n.size.height == "wrap" && kids.any { fills(it.size.height) }
     val pinW = n.type == "column" && n.size.width == "wrap" && kids.any { fills(it.size.width) }
     val self = if (pinH || pinW) content(n).let { Dims(if (pinW) minOf(it.w, given.w) else given.w, if (pinH) minOf(it.h, given.h) else given.h) } else given
-    val pad = n.style.padding
-    val inner = Dims((self.w - 2 * pad).coerceAtLeast(0f), (self.h - 2 * pad).coerceAtLeast(0f))
+    val inner = Dims((self.w - n.style.padX).coerceAtLeast(0f), (self.h - n.style.padY).coerceAtLeast(0f))
     val gap = n.props["gap"]?.toFloatOrNull()?.coerceAtLeast(0f) ?: 0f
     val mine = when (n.type) { "row" -> Axis.ROW; "column" -> Axis.COLUMN; else -> Axis.BOX }
     val sizes = childSizes(kids, inner, mine, gap)
@@ -485,7 +484,7 @@ private fun DocContext.buttonNode(n: Node, axis: Axis, pages: Pages) {
     if (n.size.height == "wrap") base = base.height(u.px(48f))
     base = base.clip(rounded(if (n.style.corner > 0f) n.style.corner else 48f / 2.6f))
     if (n.style.background == null) base = base.background(bg)
-    val m = styled(n, axis, pages, base).let { if (n.style.padding == 0f) it.padding(u.px(12f), 0f, u.px(12f), 0f) else it }
+    val m = styled(n, axis, pages, base).let { if (!n.style.padded) it.padding(u.px(12f), 0f, u.px(12f), 0f) else it }
     val word = n.props["text"]?.takeIf { it.isNotEmpty() }
     val icon = n.props["icon"]?.takeIf { it.isNotEmpty() }
     scope.Row(m, horizontal = RcRowHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
@@ -513,7 +512,7 @@ private fun DocContext.sliderNode(n: Node, self: Dims, axis: Axis, pages: Pages)
     val h = if (n.size.height == "wrap") 28f else self.h
     scope.Box(styled(n, axis, pages)) {
         val c = this@sliderNode
-        c.levelBar(c.float(Vars.e(id, "level")), self.w - 2 * n.style.padding, h - 2 * n.style.padding, c.color(Vars.t(n.id, "icon")), c.role(Role.TRACK), steps) { i ->
+        c.levelBar(c.float(Vars.e(id, "level")), self.w - n.style.padX, h - n.style.padY, c.color(Vars.t(n.id, "icon")), c.role(Role.TRACK), steps) { i ->
             val v = min + (max - min) * i / steps
             ActionRef(n.id, verb, if (v % 1.0 == 0.0) v.toInt().toString() else "%.1f".format(Locale.ROOT, v))
         }
@@ -585,7 +584,7 @@ private fun DocContext.badgeNode(n: Node, axis: Axis, pages: Pages) {
     if (n.size.height == "wrap") base = base.height(u.px(32f))
     base = base.clip(rounded(if (n.style.corner > 0f) n.style.corner else 16f))
     if (n.style.background == null) base = base.background(bg)
-    val m = styled(n, axis, pages, base).let { if (n.style.padding == 0f) it.padding(u.px(12f), 0f, u.px(12f), 0f) else it }
+    val m = styled(n, axis, pages, base).let { if (!n.style.padded) it.padding(u.px(12f), 0f, u.px(12f), 0f) else it }
     val icon = n.props["icon"]?.takeIf { it.isNotEmpty() } ?: id?.let { states[it]?.attr("icon") } ?: domain?.let { Catalogue.of(it)?.icon }
     scope.Row(m, horizontal = RcRowHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
         val c = this@badgeNode
@@ -635,9 +634,8 @@ private fun DocContext.bindLevel(n: Node, id: String) {
  */
 private fun DocContext.progressNode(n: Node, self: Dims, axis: Axis, pages: Pages) {
     val id = n.bind?.entityId
-    val pad = n.style.padding
-    val w = u.px((self.w - 2 * pad).coerceAtLeast(1f))
-    val h = (self.h - 2 * pad).coerceAtLeast(1f)
+    val w = u.px((self.w - n.style.padX).coerceAtLeast(1f))
+    val h = (self.h - n.style.padY).coerceAtLeast(1f)
     val fill = n.props["color"]?.let { paint(it) } ?: fixed(Pastel.forDomain(id?.substringBefore('.')).argb)
     if (id != null) bindLevel(n, id)
     scope.Box(styled(n, axis, pages, measured(n, axis, self))) {
@@ -663,11 +661,12 @@ private fun DocContext.graphNode(n: Node, self: Dims, axis: Axis, pages: Pages) 
         return
     }
     refreshEvery(300)
-    val pad = n.style.padding
     val line = n.props["color"]?.let { paint(it) } ?: fixed(Pastel.BLUE.argb)
+    val w = (self.w - n.style.padX).coerceAtLeast(1f)
+    val h = (self.h - n.style.padY).coerceAtLeast(1f)
     scope.Box(m) {
         val c = this@graphNode
-        c.graph(c.data.history[id].orEmpty(), (self.w - 2 * pad).coerceAtLeast(1f), (self.h - 2 * pad).coerceAtLeast(1f), line, c.role(Role.INK_SOFT))
+        c.graph(c.data.history[id].orEmpty(), w, h, line, c.role(Role.INK_SOFT))
     }
 }
 
@@ -771,7 +770,7 @@ private fun DocContext.choicesNode(n: Node, self: Dims, axis: Axis, pages: Pages
     structural(id) { it?.list(set.attribute)?.joinToString() ?: "" }
     val shown = set.choices.take(n.props["max"]?.toIntOrNull()?.coerceIn(2, 8) ?: 4)
     bindChoices(n.id, "c", id, shown, set.chosen)
-    val h = (self.h - 2 * n.style.padding).coerceAtLeast(28f)
+    val h = (self.h - n.style.padY).coerceAtLeast(28f)
     scope.Box(m, vertical = RcVerticalPositioning.Center) {
         this@choicesNode.choiceRow(n.id, "c", shown.map { it to set.word(it) }, { ActionRef(n.id, set.verb, it) }, h, set.icons)
     }
