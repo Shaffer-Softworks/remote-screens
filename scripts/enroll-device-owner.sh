@@ -16,8 +16,8 @@
 
 set -euo pipefail
 
-ADMIN_COMPONENT="dev.remotescreens.player/dev.remotescreens.player.receiver.LockTaskDeviceAdminReceiver"
-PACKAGE="dev.remotescreens.player"
+ADMIN_COMPONENT="tech.shaffersoftworks.remotescreens.player/tech.shaffersoftworks.remotescreens.player.receiver.LockTaskDeviceAdminReceiver"
+PACKAGE="tech.shaffersoftworks.remotescreens.player"
 
 FRESH=false
 RESET_ADMIN=false

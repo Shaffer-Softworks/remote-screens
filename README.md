@@ -98,7 +98,10 @@ To hand out the player app from it, add `REMOTE_SCREENS_APK=<dir>` with a folder
 `version.json` such as `{"versionCode": 100, "versionName": "0.1.0"}` (`tools/package_addon.sh` writes both).
 The editor is then at <http://localhost:18099> (or run `npm run dev` in `editor/`, which proxies the API to it).
 In the Android emulator, start the player with
-`adb shell am start -n dev.remotescreens.player/.MainActivity --es server 10.0.2.2:18100`.
+`adb shell am start -n tech.shaffersoftworks.remotescreens.player/.MainActivity --es server 10.0.2.2:18100`.
+
+The player's application ID was `dev.remotescreens.player` before; Android treats the renamed app as a different
+one, so uninstall the old build first (kiosk tablets need a factory reset and a new enrollment).
 
 [docs/REMOTE_COMPOSE.md](docs/REMOTE_COMPOSE.md) lists what we learned about Remote Compose `1.0.0-alpha21`
 and the workarounds the code relies on.
