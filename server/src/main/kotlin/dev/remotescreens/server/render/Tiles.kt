@@ -80,9 +80,8 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
     val spec = Catalogue.of(kind)
     val entityId = tile.entityId
     val e = entityId?.let { states[it] }
-    val pastel = Pastel.of(tile.color) ?: Pastel.forDomain(tile.domain ?: kind)
     if (entityId != null) bindEntity(entityId, tile.name, tile.icon)
-    bindTileColors(tile.id, entityId, pastel, alwaysOn = kind in ALWAYS_LIT)
+    bindTileColors(tile.id, entityId, accent(tile.color, Pastel.forDomain(tile.domain ?: kind)), alwaysOn = kind in ALWAYS_LIT)
 
     val tapRef = tapRef(tile, tile.tap, spec, pageIndex, hold = false)
     val holdRef = tapRef(tile, tile.hold, spec, pageIndex, hold = true)

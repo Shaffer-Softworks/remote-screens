@@ -1,14 +1,32 @@
 <script setup lang="ts">
-import { colorOf } from '../model/palette'
+import { colorOf, isHex, rgbOf } from '../model/palette'
 
-// A row of theme colours (role or pastel keys) to pick one from; the first button clears the choice.
-withDefaults(defineProps<{ keys: string[]; clear?: string; clearTitle?: string }>(), { clear: 'A', clearTitle: 'Default' })
+// A row of theme colours (role or pastel keys) to pick one from; the first button clears the choice and the last
+// picks any colour, stored as `#RRGGBB`.
+const props = withDefaults(defineProps<{ keys: string[]; clear?: string; clearTitle?: string; clearColor?: string }>(), {
+  clear: 'A',
+  clearTitle: 'Default',
+  clearColor: undefined,
+})
 const model = defineModel<string | undefined>()
+
+function pick(e: Event) {
+  model.value = (e.target as HTMLInputElement).value.toUpperCase()
+}
 </script>
 
 <template>
   <div class="swatches">
-    <button type="button" class="swatch clear" :class="{ on: !model }" :title="clearTitle" @click="model = undefined">{{ clear }}</button>
+    <button
+      type="button"
+      class="swatch clear"
+      :class="{ on: !model }"
+      :style="props.clearColor ? { background: props.clearColor } : {}"
+      :title="clearTitle"
+      @click="model = undefined"
+    >
+      {{ clear }}
+    </button>
     <button
       v-for="k in keys"
       :key="k"
@@ -19,6 +37,9 @@ const model = defineModel<string | undefined>()
       :title="k"
       @click="model = k"
     />
+    <label class="swatch custom" :class="{ on: isHex(model) }" :style="isHex(model) ? { background: colorOf(model) } : {}" :title="isHex(model) ? model : 'Any colour'">
+      <input type="color" :value="rgbOf(model)" @input="pick" />
+    </label>
   </div>
 </template>
 
@@ -42,5 +63,21 @@ const model = defineModel<string | undefined>()
 .swatch.on {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent);
+}
+
+.custom {
+  position: relative;
+  box-sizing: border-box;
+  cursor: pointer;
+  background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+}
+
+.custom input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 </style>

@@ -5,7 +5,7 @@ import { computed, inject, ref, watch } from 'vue'
 import { CATALOGUE } from '../generated/catalogue'
 import { DESIGN } from '../model/design'
 import { componentOf, isContainer } from '../model/nodes'
-import { BACKGROUND_SWATCHES, INK_SWATCHES, PASTELS, colorOf } from '../model/palette'
+import { BACKGROUND_SWATCHES, INK_SWATCHES, PASTEL_KEYS, colorOf } from '../model/palette'
 import { iconOf, specOf } from '../model/tiles'
 import type { BindFormat, Node, Screen, TapAction, TapType } from '../model/types'
 import { entityById, state } from '../store'
@@ -406,17 +406,14 @@ const typeIcon = computed(() => (n.value.type === 'tile' ? 'view-grid-outline' :
         </div>
         <div class="field">
           <span class="label">Button colour</span>
-          <div class="swatches">
-            <button
-              v-for="k in ['key', 'key_on', 'accent', 'blue', 'danger', ...PASTELS.map((x) => x.key)]"
-              :key="k"
-              class="swatch"
-              :class="{ on: (p.color ?? 'key') === k }"
-              :style="{ background: colorOf(k) }"
-              :title="k"
-              @click="setProp('color', k === 'key' ? undefined : k)"
-            />
-          </div>
+          <ColorSwatches
+            :model-value="p.color"
+            :keys="['key_on', 'accent', 'blue', 'danger', ...PASTEL_KEYS]"
+            clear=""
+            clear-title="key"
+            :clear-color="colorOf('key')"
+            @update:model-value="setProp('color', $event)"
+          />
         </div>
       </template>
       <label v-if="n.type === 'slider'" class="field">Steps<input type="number" min="2" max="20" :value="p.steps ?? 10" @input="setProp('steps', ($event.target as HTMLInputElement).value)" /></label>
@@ -476,18 +473,7 @@ const typeIcon = computed(() => (n.value.type === 'tile' ? 'view-grid-outline' :
       </label>
       <div v-if="n.type === 'switch'" class="field">
         <span class="label">Colour while on</span>
-        <div class="swatches">
-          <button class="swatch auto" :class="{ on: !p.color }" title="The entity's" @click="setProp('color', undefined)">A</button>
-          <button
-            v-for="x in PASTELS"
-            :key="x.key"
-            class="swatch"
-            :class="{ on: p.color === x.key }"
-            :style="{ background: x.color }"
-            :title="x.key"
-            @click="setProp('color', x.key)"
-          />
-        </div>
+        <ColorSwatches :model-value="p.color" :keys="[...PASTEL_KEYS]" clear-title="The entity's" @update:model-value="setProp('color', $event)" />
       </div>
       <label v-if="n.type === 'stepper'" class="field">
         Step
@@ -550,18 +536,7 @@ const typeIcon = computed(() => (n.value.type === 'tile' ? 'view-grid-outline' :
         </div>
         <div class="field">
           <span class="label">{{ n.bind ? 'Colour while on' : 'Colour' }}</span>
-          <div class="swatches">
-            <button class="swatch auto" :class="{ on: !p.color }" title="Default" @click="setProp('color', undefined)">A</button>
-            <button
-              v-for="x in PASTELS"
-              :key="x.key"
-              class="swatch"
-              :class="{ on: p.color === x.key }"
-              :style="{ background: x.color }"
-              :title="x.key"
-              @click="setProp('color', x.key)"
-            />
-          </div>
+          <ColorSwatches :model-value="p.color" :keys="[...PASTEL_KEYS]" @update:model-value="setProp('color', $event)" />
         </div>
       </template>
       <label v-if="n.type === 'swatches'" class="field">
@@ -573,25 +548,11 @@ const typeIcon = computed(() => (n.value.type === 'tile' ? 'view-grid-outline' :
       </label>
       <div v-if="COLOURED.includes(n.type)" class="field">
         <span class="label">{{ n.type === 'button' ? 'Label colour' : n.type === 'analog' ? 'Face colour' : 'Colour' }}</span>
-        <div class="swatches">
-          <button
-            class="swatch auto"
-            :class="{ on: !(n.type === 'button' ? p.ink : p.color) }"
-            title="Default"
-            @click="setProp(n.type === 'button' ? 'ink' : 'color', undefined)"
-          >
-            A
-          </button>
-          <button
-            v-for="k in INK_SWATCHES"
-            :key="k"
-            class="swatch"
-            :class="{ on: (n.type === 'button' ? p.ink : p.color) === k }"
-            :style="{ background: colorOf(k) }"
-            :title="k"
-            @click="setProp(n.type === 'button' ? 'ink' : 'color', k)"
-          />
-        </div>
+        <ColorSwatches
+          :model-value="n.type === 'button' ? p.ink : p.color"
+          :keys="INK_SWATCHES"
+          @update:model-value="setProp(n.type === 'button' ? 'ink' : 'color', $event)"
+        />
       </div>
 
       <template v-if="n.type === 'tile' && tile">
@@ -625,18 +586,7 @@ const typeIcon = computed(() => (n.value.type === 'tile' ? 'view-grid-outline' :
         </div>
         <div class="field">
           <span class="label">Accent</span>
-          <div class="swatches">
-            <button class="swatch auto" :class="{ on: !tile.color }" title="Default" @click="tile.color = undefined">A</button>
-            <button
-              v-for="x in PASTELS"
-              :key="x.key"
-              class="swatch"
-              :class="{ on: tile.color === x.key }"
-              :style="{ background: x.color }"
-              :title="x.key"
-              @click="tile.color = x.key"
-            />
-          </div>
+          <ColorSwatches v-model="tile.color" :keys="[...PASTEL_KEYS]" />
         </div>
       </template>
     </details>
@@ -799,27 +749,6 @@ summary {
 
 .num {
   width: 90px;
-}
-
-.swatches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.swatch {
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border-radius: 50%;
-  border: 2px solid var(--line);
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.swatch.on {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .align-grid {

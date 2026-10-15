@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { firstFree, fitsAt } from '../model/grid'
-import { INK_SWATCHES, PASTELS, pastel } from '../model/palette'
+import { INK_SWATCHES, PASTEL_KEYS, pastel } from '../model/palette'
 import { iconOf, nameOf, newTileId, sizesOf, specOf } from '../model/tiles'
 import type { Page, Screen, TapAction, TapType, Tile } from '../model/types'
 import { domainOf, kindOf } from '../model/types'
@@ -174,26 +174,7 @@ const pageTitle = (id: string) => props.screen.pages.find((p) => p.id === id)?.t
 
     <div class="field">
       <span class="label">Colour</span>
-      <div class="swatches">
-        <button
-          class="swatch auto"
-          :class="{ on: !tile.color }"
-          :style="{ background: pastel(undefined, domain).color }"
-          title="Default"
-          @click="tile.color = undefined"
-        >
-          A
-        </button>
-        <button
-          v-for="p in PASTELS"
-          :key="p.key"
-          class="swatch"
-          :class="{ on: tile.color === p.key }"
-          :style="{ background: p.color }"
-          :title="p.key"
-          @click="tile.color = p.key"
-        />
-      </div>
+      <ColorSwatches v-model="tile.color" :keys="[...PASTEL_KEYS]" :clear-color="pastel(undefined, domain).color" />
     </div>
 
     <div v-if="!edgeToEdge" class="field">
@@ -292,26 +273,6 @@ const pageTitle = (id: string) => props.screen.pages.find((p) => p.id === id)?.t
 
 .wrap {
   flex-wrap: wrap;
-}
-
-.swatches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.swatch {
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  color: #333;
-  font-size: 11px;
-}
-
-.swatch.on {
-  border-color: var(--ink);
 }
 
 .check {
