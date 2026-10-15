@@ -181,7 +181,22 @@ data class NodeStyle(
     val border: Float = 0f,
     /** The outline's colour, as [background]; the divider grey when null. */
     val borderColor: String? = null,
-)
+    /** One side's padding in dp, or null for [padding]. */
+    val paddingStart: Float? = null,
+    val paddingTop: Float? = null,
+    val paddingEnd: Float? = null,
+    val paddingBottom: Float? = null,
+) {
+    val start: Float get() = paddingStart ?: padding
+    val top: Float get() = paddingTop ?: padding
+    val end: Float get() = paddingEnd ?: padding
+    val bottom: Float get() = paddingBottom ?: padding
+
+    /** The padding across, start plus end, and down, top plus bottom. */
+    val padX: Float get() = start + end
+    val padY: Float get() = top + bottom
+    val padded: Boolean get() = start > 0f || top > 0f || end > 0f || bottom > 0f
+}
 
 /** What a component shows of an entity: its `state`, `value`, `name`, or the attribute [attribute]. */
 @Serializable

@@ -87,7 +87,15 @@ export interface NodeStyle {
   /** An outline this many dp wide; absent or 0 for none. */
   border?: number
   borderColor?: string
+  /** One side's padding in dp; absent for `padding`. */
+  paddingStart?: number
+  paddingTop?: number
+  paddingEnd?: number
+  paddingBottom?: number
 }
+
+export const PADDING_SIDES = ['paddingStart', 'paddingTop', 'paddingEnd', 'paddingBottom'] as const
+export type PaddingSide = (typeof PADDING_SIDES)[number]
 
 export type BindFormat = 'state' | 'value' | 'name' | 'attribute'
 

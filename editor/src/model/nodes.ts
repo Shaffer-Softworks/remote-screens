@@ -2,7 +2,7 @@
 // in place on the tree the editor holds, like the grid's tiles.
 
 import { newTile, newTileId } from './tiles'
-import { CONTAINERS, type Node, type NodeType, type Page, type Tile } from './types'
+import { CONTAINERS, PADDING_SIDES, type Node, type NodeType, type Page, type Tile } from './types'
 
 export const MAX_NODES = 400
 export const MAX_DEPTH = 16
@@ -275,6 +275,12 @@ export function sibling(root: Node, id: string, step: -1 | 1): Node | undefined 
   const p = parentOf(root, id)
   if (!p) return undefined
   return p.parent.children[p.index + step]
+}
+
+/** [n]'s padding on each side, start, top, end and bottom: its own for the side, else its `padding`. */
+export function paddingOf(n: Node): [number, number, number, number] {
+  const s = n.style
+  return PADDING_SIDES.map((k) => s[k] ?? s.padding) as [number, number, number, number]
 }
 
 /** Fills in what the add-on would take as defaults, so typed JSON may leave them out. */

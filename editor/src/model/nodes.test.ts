@@ -19,6 +19,7 @@ import {
   newNode,
   newRoot,
   normalize,
+  paddingOf,
   parentOf,
   pathTo,
   problems,
@@ -137,6 +138,12 @@ describe('the palette', () => {
     const addOn = new Set([...block.matchAll(/"([a-z]+)"/g)].map((m) => m[1]))
     addOn.delete('tile')
     expect(new Set(COMPONENTS.map((c) => c.type))).toEqual(addOn)
+  })
+
+  it('takes each side its own padding, else the padding all round', () => {
+    const n = newNode('box')
+    n.style = { padding: 8, corner: 0, paddingTop: 0, paddingEnd: 20 }
+    expect(paddingOf(n)).toEqual([8, 0, 20, 8])
   })
 
   it('makes a card as a padded, rounded column', () => {

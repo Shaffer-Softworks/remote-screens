@@ -5,6 +5,7 @@ ktor = "3.5.2"
 serialization = "1.11.0"
 coroutines = "1.11.0"
 remoteCompose = "1.0.0-alpha21"
+media3 = "1.11.1"
 logback = "1.5.18"
 jmdns = "3.6.1"
 junit = "4.13.2"
@@ -30,6 +31,9 @@ remote-creation-core = { module = "androidx.compose.remote:remote-creation-core"
 remote-creation-jvm = { module = "androidx.compose.remote:remote-creation-jvm", version.ref = "remoteCompose" }
 remote-player-core = { module = "androidx.compose.remote:remote-player-core", version.ref = "remoteCompose" }
 remote-player-view = { module = "androidx.compose.remote:remote-player-view", version.ref = "remoteCompose" }
+media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
+media3-exoplayer-hls = { module = "androidx.media3:media3-exoplayer-hls", version.ref = "media3" }
+media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
 
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }

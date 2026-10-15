@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.data.homeassistant
 
+import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.json.JsonElement
@@ -27,4 +28,10 @@ interface HomeAssistant {
 
     /** A GET on the REST API or a path Home Assistant serves, such as `/api/camera_proxy/camera.door`. */
     suspend fun fetch(path: String): ByteArray?
+
+    /**
+     * A GET on a path Home Assistant serves, with its body handed to [onBody] as it arrives rather than read whole:
+     * for a camera's video. [onBody] is only called on success. Returns the HTTP status.
+     */
+    suspend fun stream(path: String, onBody: suspend (contentType: String?, body: ByteReadChannel) -> Unit): Int
 }

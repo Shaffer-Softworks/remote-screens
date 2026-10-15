@@ -5,7 +5,7 @@ import { computed, inject, ref, type CSSProperties } from 'vue'
 import { CATALOGUE } from '../generated/catalogue'
 import { DESIGN } from '../model/design'
 import { dragged } from '../model/drag'
-import { isContainer, type Where } from '../model/nodes'
+import { isContainer, paddingOf, type Where } from '../model/nodes'
 import { colorOf, pastel } from '../model/palette'
 import { iconOf, nameOf, stateOf } from '../model/tiles'
 import type { Node } from '../model/types'
@@ -59,7 +59,9 @@ const style = computed<CSSProperties>(() => {
       s.alignSelf = ALIGN[place] ?? 'flex-start'
     }
   }
-  if (n.value.style.padding) s.padding = `${n.value.style.padding}px`
+  const [ps, pt, pe, pb] = paddingOf(n.value)
+  const padded = ps > 0 || pt > 0 || pe > 0 || pb > 0
+  if (padded) s.padding = `${pt}px ${pe}px ${pb}px ${ps}px`
   if (n.value.style.corner) s.borderRadius = `${n.value.style.corner}px`
   const bg = colorOf(n.value.style.background)
   if (bg) s.background = bg
@@ -112,7 +114,7 @@ const style = computed<CSSProperties>(() => {
       if (!n.value.style.corner) s.borderRadius = `${48 / 2.6}px`
       if (!bg) s.background = colorOf(p.color ?? 'key')
       s.color = colorOf(p.ink) ?? colorOf('ink')
-      if (!n.value.style.padding) s.padding = '0 12px'
+      if (!padded) s.padding = '0 12px'
       break
     case 'slider':
       if (n.value.size.height === 'wrap') s.height = '28px'
@@ -133,7 +135,7 @@ const style = computed<CSSProperties>(() => {
       if (!n.value.style.corner) s.borderRadius = '16px'
       if (!bg) s.background = explicit ?? (on.value ? accent.value : colorOf('key'))
       s.color = explicit || on.value ? colorOf('key_on_ink') : colorOf('ink')
-      if (!n.value.style.padding) s.padding = '0 12px'
+      if (!padded) s.padding = '0 12px'
       break
     }
     case 'progress':
