@@ -437,6 +437,8 @@ class PlayerSession(
     }
 
     private suspend fun openCard(entityId: String?, kind: String?) {
+        // Start the HLS stream while the card builds so the first frame is not waiting on camera/stream.
+        warmCameraStream(entityId = entityId, kind = kind)
         val build: suspend () -> RenderedDoc? = {
             val renderData = context.renderDataRepository.forCard(entityId, kind)
             CardRenderer.render(entityId ?: "card.$kind", kind, device, renderInput(renderData))
@@ -447,12 +449,27 @@ class PlayerSession(
 
     suspend fun showAlert(alert: Alert) {
         currentAlert = alert
+        warmCameraStream(camera = alert.camera)
         val build: suspend () -> RenderedDoc? = {
             currentAlert?.let { AlertRenderer.render(it, device, renderInput(RenderData())) }
         }
         val doc = buildMutex.withLock { build() } ?: return
         send(ServerMessage.Wake(true))
         show(Slot.ALERT, doc, build, timeoutSeconds = alert.timeout)
+    }
+
+    /** Asks Home Assistant for an HLS path in the background so [sendVideo] can reuse a warm stream. */
+    private fun warmCameraStream(entityId: String? = null, kind: String? = null, camera: String? = null) {
+        if (!supportsVideo) return
+        val id = when {
+            !camera.isNullOrBlank() -> camera
+            entityId?.startsWith("camera.") == true -> entityId
+            kind == "camera" && !entityId.isNullOrBlank() -> entityId
+            else -> return
+        }
+        context.scope.launch {
+            runCatching { context.cameraStreamService.hlsPath(id) }
+        }
     }
 
     /** Closes the alert; for one of its buttons, also calls the button's service and tells Home Assistant. */

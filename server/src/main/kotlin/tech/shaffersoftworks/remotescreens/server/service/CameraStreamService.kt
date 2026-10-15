@@ -37,11 +37,22 @@ class CameraStreamService(
     /** Token to the last time a tablet asked for it. */
     private val tokens = ConcurrentHashMap<String, Long>()
 
+    /** Open streams by camera, so opening the same card again skips another `camera/stream` wait. */
+    private val byEntity = ConcurrentHashMap<String, ActiveStream>()
+
     /** The path on the player port that plays [entityId], or null when the camera cannot stream. */
     suspend fun hlsPath(entityId: String): String? {
-        val (token, file) = startStream(entityId)?.let(HOME_ASSISTANT_HLS_URL::matchEntire)?.destructured ?: return null
         forgetIdle()
+        byEntity[entityId]?.let { active ->
+            if (tokens.containsKey(active.token)) {
+                tokens[active.token] = now()
+                return "$PLAYER_PATH/${active.token}/${active.file}"
+            }
+            byEntity.remove(entityId, active)
+        }
+        val (token, file) = startStream(entityId)?.let(HOME_ASSISTANT_HLS_URL::matchEntire)?.destructured ?: return null
         tokens[token] = now()
+        byEntity[entityId] = ActiveStream(token, file)
         return "$PLAYER_PATH/$token/$file"
     }
 
@@ -84,8 +95,16 @@ class CameraStreamService(
 
     private fun forgetIdle() {
         val oldest = now() - IDLE_STREAM_MINUTES * MILLISECONDS_PER_MINUTE
-        tokens.entries.removeIf { (_, lastUsed) -> lastUsed < oldest }
+        val dropped = mutableSetOf<String>()
+        tokens.entries.removeIf { (token, lastUsed) ->
+            (lastUsed < oldest).also { if (it) dropped += token }
+        }
+        if (dropped.isNotEmpty()) {
+            byEntity.entries.removeIf { (_, active) -> active.token in dropped }
+        }
     }
+
+    private data class ActiveStream(val token: String, val file: String)
 
     companion object {
         /** Where the player port serves streams: `/stream/hls/<token>/<file>`. */

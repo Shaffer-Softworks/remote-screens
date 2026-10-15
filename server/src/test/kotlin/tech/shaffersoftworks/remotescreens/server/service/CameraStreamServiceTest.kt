@@ -86,6 +86,15 @@ class CameraStreamServiceTest {
     }
 
     @Test
+    fun aWarmStreamIsReusedWithoutCallingCameraStreamAgain() = runTest {
+        assertEquals("/stream/hls/$TOKEN/master_playlist.m3u8", service.hlsPath("camera.front_door"))
+        assertEquals(1, home.commands.size)
+
+        assertEquals("/stream/hls/$TOKEN/master_playlist.m3u8", service.hlsPath("camera.front_door"))
+        assertEquals(1, home.commands.size, "reopening the card should reuse the warm token")
+    }
+
+    @Test
     fun aCameraThatCannotStreamHasNoPath() = runTest {
         assertNull(service.hlsPath("camera.still"))
     }
