@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.1.8
+
+- Faster live camera start: begin Home Assistant's HLS stream while the card or alert builds, reuse a warm
+  stream when the same camera is opened again, and keep the player closer to the live edge.
+
+## 0.1.7
+
+- Restore live camera video when the overlay could not resolve the image's bounds (it stayed invisible and only
+  the snapshot showed). The overlay sits above the document again and falls back if the library location fails.
+
+## 0.1.6
+
+- Fix the camera card's double preview: live video is hosted inside the document player (same coordinates as
+  clicks), fills the image, and covers the snapshot so it no longer floats over the title.
+
+## 0.1.5
+
+- Fix the camera card's live video sitting over the header: the overlay now uses the document's own bounds
+  (with padding), so it covers the snapshot instead of showing a second, shifted preview.
+
+## 0.1.4
+
+- Fix live camera video: Home Assistant's low-latency HLS parts (`segment/1.0.m4s`) are relayed to the tablet
+  instead of returning 404, so the card's stream plays instead of sticking on the snapshot.
+
+## 0.1.3
+
+- Live camera video on cards and alerts. Tablets that can play video get Home Assistant's HLS stream over the
+  snapshot; without a stream, or on an older player, the snapshot stays.
+- Player app updates: bump this version whenever the APK changes so tablets are offered the new build. The app
+  id is `tech.shaffersoftworks.remotescreens.player`; tablets still on `dev.remotescreens.player` must uninstall
+  (kiosk tablets: factory reset and enroll again).
+
 ## 0.1.2
 
 - Themes. Screens come in RPI dark (as before), Light, OLED black and High contrast, and you can make your own

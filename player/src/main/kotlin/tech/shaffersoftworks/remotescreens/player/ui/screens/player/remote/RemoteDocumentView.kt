@@ -6,7 +6,10 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Rect
+import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
+import androidx.compose.remote.core.RemoteContext
 import androidx.compose.remote.player.view.RemoteComposePlayer
 import tech.shaffersoftworks.remotescreens.shared.Slot
 import tech.shaffersoftworks.remotescreens.shared.VarType
@@ -105,10 +108,12 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
         }
     }
 
-    /** Just above its document, so a card's video stays under an alert. */
+    /** Just above its document player, so a card's video stays under an alert. */
     private fun startVideo(slot: Slot, video: SlotVideo) {
-        removeView(liveVideoView)
-        addView(liveVideoView, indexOfChild(players.getValue(slot)) + 1, LayoutParams(0, 0))
+        (liveVideoView.parent as? ViewGroup)?.removeView(liveVideoView)
+        val params = LayoutParams(0, 0).apply { gravity = Gravity.TOP or Gravity.START }
+        addView(liveVideoView, indexOfChild(players.getValue(slot)) + 1, params)
+        liveVideoView.bringToFront()
         liveVideoView.visibility = View.INVISIBLE
         videoSlot = slot
         liveVideoView.play(video)
@@ -118,7 +123,7 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
     private fun stopVideo() {
         liveVideoView.stop()
         videoSlot = null
-        removeView(liveVideoView)
+        (liveVideoView.parent as? ViewGroup)?.removeView(liveVideoView)
     }
 
     /** Over the image the video belongs to, wherever the document laid it out, scrolled, this frame. */
@@ -132,8 +137,12 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
         }
         bounds.offset(player.left, player.top)
         val params = liveVideoView.layoutParams as LayoutParams
-        val placed = Rect(params.leftMargin, params.topMargin, params.leftMargin + params.width, 0)
-        placed.bottom = params.topMargin + params.height
+        val placed = Rect(
+            params.leftMargin,
+            params.topMargin,
+            params.leftMargin + params.width,
+            params.topMargin + params.height,
+        )
         if (placed != bounds) {
             params.leftMargin = bounds.left
             params.topMargin = bounds.top
@@ -141,27 +150,48 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
             params.height = bounds.height()
             liveVideoView.layoutParams = params
         }
+        liveVideoView.bringToFront()
         liveVideoView.visibility = View.VISIBLE
     }
 
-    /** Where component [componentId] of [player]'s document is this frame, in the player; null until laid out. */
+    /**
+     * Where component [componentId] sits in [player]'s document. Uses the library location when it works; never
+     * fails closed on that path alone (that left the overlay invisible and only the snapshot showed).
+     */
     private fun componentBounds(player: RemoteComposePlayer, componentId: Int): Rect? {
-        val component = runCatching { player.document?.document?.getComponent(componentId) }.getOrNull() ?: return null
-        // As the document finds where a touch lands: each parent's offset and scroll, but not the image's own scroll.
-        var left = component.x
-        var top = component.y
-        var parent = component.parent
-        while (parent != null) {
-            left += parent.x + parent.scrollX
-            top += parent.y + parent.scrollY
-            parent = parent.parent
+        val component = runCatching { player.document?.document?.getComponent(componentId) }.getOrNull()
+        val width = component?.width?.roundToInt() ?: 0
+        val height = component?.height?.roundToInt() ?: 0
+        if (component == null || width <= 0 || height <= 0) return null
+        val fromWindow = remoteContextOf(player)?.let { context ->
+            val loc = floatArrayOf(0f, 0f)
+            runCatching {
+                component.getLocationInWindow(context, loc)
+                val left = loc[0].roundToInt()
+                val top = loc[1].roundToInt()
+                Rect(left, top, left + width, top + height)
+            }.getOrNull()
         }
-        val width = component.width.roundToInt()
-        val height = component.height.roundToInt()
-        val x = left.roundToInt()
-        val y = top.roundToInt()
-        return if (width > 0 && height > 0) Rect(x, y, x + width, y + height) else null
+        return fromWindow ?: run {
+            val box = IntArray(SEMANTIC_BOUND_SIZE)
+            val found = runCatching {
+                component.getBoundsInSemanticParent(box, null)
+                true
+            }.getOrDefault(false)
+            if (found) {
+                Rect(box[BOUND_LEFT], box[BOUND_TOP], box[BOUND_RIGHT], box[BOUND_BOTTOM])
+            } else {
+                null
+            }
+        }
     }
+
+    private fun remoteContextOf(player: RemoteComposePlayer): RemoteContext? = runCatching {
+        RemoteComposePlayer::class.java.getDeclaredMethod("getRemoteContext").run {
+            isAccessible = true
+            invoke(player) as RemoteContext
+        }
+    }.getOrNull()
 
     private fun loadNewDocuments(state: RemoteScreenState): Set<Slot> {
         val newlyLoaded = mutableSetOf<Slot>()
@@ -214,5 +244,14 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
             VarType.FLOAT -> setUserLocalFloat(value.name, value.asFloat())
             VarType.COLOR -> setUserLocalColor(value.name, value.asColor())
         }
+    }
+
+    companion object {
+        /** [Component.getBoundsInSemanticParent] writes left, top, right, bottom into a length-4 array. */
+        private const val SEMANTIC_BOUND_SIZE = 4
+        private const val BOUND_LEFT = 0
+        private const val BOUND_TOP = 1
+        private const val BOUND_RIGHT = 2
+        private const val BOUND_BOTTOM = 3
     }
 }

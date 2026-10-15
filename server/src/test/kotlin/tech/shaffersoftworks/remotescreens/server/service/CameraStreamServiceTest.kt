@@ -86,6 +86,15 @@ class CameraStreamServiceTest {
     }
 
     @Test
+    fun aWarmStreamIsReusedWithoutCallingCameraStreamAgain() = runTest {
+        assertEquals("/stream/hls/$TOKEN/master_playlist.m3u8", service.hlsPath("camera.front_door"))
+        assertEquals(1, home.commands.size)
+
+        assertEquals("/stream/hls/$TOKEN/master_playlist.m3u8", service.hlsPath("camera.front_door"))
+        assertEquals(1, home.commands.size, "reopening the card should reuse the warm token")
+    }
+
+    @Test
     fun aCameraThatCannotStreamHasNoPath() = runTest {
         assertNull(service.hlsPath("camera.still"))
     }
@@ -96,8 +105,14 @@ class CameraStreamServiceTest {
 
         assertEquals(200 to "#EXTM3U\n", relay(TOKEN, "playlist.m3u8", "_HLS_msn=12&_HLS_part=3"))
         assertEquals(200, relay(TOKEN, "segment/12.m4s").first)
+        // LL-HLS parts are named segment/{seq}.{part}.m4s — a second dot in the file name.
+        assertEquals(200, relay(TOKEN, "segment/12.0.m4s").first)
         assertEquals(
-            listOf("/api/hls/$TOKEN/playlist.m3u8?_HLS_msn=12&_HLS_part=3", "/api/hls/$TOKEN/segment/12.m4s"),
+            listOf(
+                "/api/hls/$TOKEN/playlist.m3u8?_HLS_msn=12&_HLS_part=3",
+                "/api/hls/$TOKEN/segment/12.m4s",
+                "/api/hls/$TOKEN/segment/12.0.m4s",
+            ),
             home.fetched,
         )
     }

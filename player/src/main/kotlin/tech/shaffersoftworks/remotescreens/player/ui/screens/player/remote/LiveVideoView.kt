@@ -2,6 +2,7 @@ package tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Color
 import android.graphics.Outline
 import android.view.Gravity
 import android.view.TextureView
@@ -26,6 +27,12 @@ import timber.log.Timber
 private const val CORNER_DP = 16f
 private const val LIVE_MAX_SPEED = 8f
 private const val MAX_BUFFER_MS = 30_000
+private const val CONNECT_TIMEOUT_MS = 3_000
+private const val READ_TIMEOUT_MS = 5_000
+/** Stay near the live edge so the first playable parts are enough to start. */
+private const val LIVE_TARGET_OFFSET_MS = 2_000L
+private const val LIVE_MIN_OFFSET_MS = 500L
+private const val LIVE_MAX_OFFSET_MS = 5_000L
 
 /**
  * Plays one camera's live HLS video from the add-on, rounded like the image it covers. It stays see-through until its
@@ -53,6 +60,8 @@ class LiveVideoView(context: Context) : FrameLayout(context) {
         }
 
         override fun onRenderedFirstFrame() {
+            // Opaque so Fit letterboxing does not show the snapshot through as a second preview.
+            setBackgroundColor(Color.BLACK)
             alpha = 1f
         }
 
@@ -76,22 +85,36 @@ class LiveVideoView(context: Context) : FrameLayout(context) {
             }
         }
         clipToOutline = true
+        clipChildren = true
+        isClickable = false
+        isFocusable = false
         alpha = 0f
     }
 
     fun play(video: SlotVideo) {
         stop()
         this.video = video
-        aspectRatioFrame.resizeMode = if (video.crop) {
-            AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-        } else {
-            AspectRatioFrameLayout.RESIZE_MODE_FIT
-        }
+        // Fill the image's box; Fit left letterboxing that showed the snapshot beside the stream.
+        aspectRatioFrame.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setDefaultRequestProperties(mapOf("Authorization" to "Bearer ${video.token}"))
+            .setConnectTimeoutMs(CONNECT_TIMEOUT_MS)
+            .setReadTimeoutMs(READ_TIMEOUT_MS)
+            .setAllowCrossProtocolRedirects(true)
         // Start as soon as anything has loaded and catch up quickly, as a camera is only worth watching live.
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(0, MAX_BUFFER_MS, 0, 0)
+            .build()
+        val mediaItem = MediaItem.Builder()
+            .setUri(video.url)
+            .setLiveConfiguration(
+                MediaItem.LiveConfiguration.Builder()
+                    .setTargetOffsetMs(LIVE_TARGET_OFFSET_MS)
+                    .setMinOffsetMs(LIVE_MIN_OFFSET_MS)
+                    .setMaxOffsetMs(LIVE_MAX_OFFSET_MS)
+                    .setMaxPlaybackSpeed(LIVE_MAX_SPEED)
+                    .build(),
+            )
             .build()
         player = ExoPlayer.Builder(context)
             .setMediaSourceFactory(DefaultMediaSourceFactory(httpDataSourceFactory).setLiveMaxSpeed(LIVE_MAX_SPEED))
@@ -101,7 +124,7 @@ class LiveVideoView(context: Context) : FrameLayout(context) {
                 volume = 0f
                 setVideoTextureView(textureView)
                 addListener(listener)
-                setMediaItem(MediaItem.fromUri(video.url))
+                setMediaItem(mediaItem)
                 prepare()
                 playWhenReady = true
             }
@@ -111,6 +134,7 @@ class LiveVideoView(context: Context) : FrameLayout(context) {
         player?.release()
         player = null
         video = null
+        background = null
         alpha = 0f
     }
 }

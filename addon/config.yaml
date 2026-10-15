@@ -1,5 +1,5 @@
 name: Remote Screens
-version: "0.1.2"
+version: "0.1.8"
 slug: remote_screens
 description: Home Assistant screens on Android tablets, drawn with Remote Compose
 url: https://github.com/sickkick/remote-screens

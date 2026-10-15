@@ -15,7 +15,13 @@ import java.util.concurrent.ConcurrentHashMap
 private const val IDLE_STREAM_MINUTES = 5L
 private const val MILLISECONDS_PER_MINUTE = 60_000L
 private val HOME_ASSISTANT_HLS_URL = Regex("^/api/hls/([A-Za-z0-9_-]+)/([A-Za-z0-9_./-]+)$")
-private val STREAM_FILE = Regex("^[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*\\.[a-z0-9]+$")
+/**
+ * A playlist or segment under the stream token. Home Assistant's low-latency HLS names parts
+ * `segment/{seq}.{part}.m4s` (a digit, a dot, a digit), which a path segment of only `[A-Za-z0-9_-]` would refuse.
+ */
+private val STREAM_FILE =
+    Regex("^[A-Za-z0-9_-]+(/(\\d+\\.\\d+|\\d+|[A-Za-z0-9_-]+))*\\.[a-z0-9]+$")
+
 
 /**
  * A camera's live video for the tablets, which never reach Home Assistant themselves: Home Assistant starts an HLS
@@ -31,11 +37,33 @@ class CameraStreamService(
     /** Token to the last time a tablet asked for it. */
     private val tokens = ConcurrentHashMap<String, Long>()
 
+    /** Open streams by camera, so opening the same card again skips another `camera/stream` wait. */
+    private val byEntity = ConcurrentHashMap<String, ActiveStream>()
+
     /** The path on the player port that plays [entityId], or null when the camera cannot stream. */
     suspend fun hlsPath(entityId: String): String? {
-        val (token, file) = startStream(entityId)?.let(HOME_ASSISTANT_HLS_URL::matchEntire)?.destructured ?: return null
         forgetIdle()
+        return cachedPath(entityId) ?: newPath(entityId)
+    }
+
+    /** A still-warm token for [entityId], or null when the cache misses or the token was forgotten. */
+    private fun cachedPath(entityId: String): String? {
+        val active = byEntity[entityId] ?: return null
+        return if (tokens.containsKey(active.token)) {
+            tokens[active.token] = now()
+            "$PLAYER_PATH/${active.token}/${active.file}"
+        } else {
+            byEntity.remove(entityId, active)
+            null
+        }
+    }
+
+    /** Asks Home Assistant for a new stream and remembers its token. */
+    private suspend fun newPath(entityId: String): String? {
+        val match = startStream(entityId)?.let(HOME_ASSISTANT_HLS_URL::matchEntire) ?: return null
+        val (token, file) = match.destructured
         tokens[token] = now()
+        byEntity[entityId] = ActiveStream(token, file)
         return "$PLAYER_PATH/$token/$file"
     }
 
@@ -78,8 +106,16 @@ class CameraStreamService(
 
     private fun forgetIdle() {
         val oldest = now() - IDLE_STREAM_MINUTES * MILLISECONDS_PER_MINUTE
-        tokens.entries.removeIf { (_, lastUsed) -> lastUsed < oldest }
+        val dropped = mutableSetOf<String>()
+        tokens.entries.removeIf { (token, lastUsed) ->
+            (lastUsed < oldest).also { if (it) dropped += token }
+        }
+        if (dropped.isNotEmpty()) {
+            byEntity.entries.removeIf { (_, active) -> active.token in dropped }
+        }
     }
+
+    private data class ActiveStream(val token: String, val file: String)
 
     companion object {
         /** Where the player port serves streams: `/stream/hls/<token>/<file>`. */
