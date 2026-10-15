@@ -262,8 +262,13 @@ data class ScreenSettings(
     val theme: String = "rpi",
     /** The theme it wears while dark (see [darkMode] and [nightDark]). */
     val darkTheme: String = "rpi",
+    /** Keeps the player in front: lock task when it is the device owner, screen pinning otherwise. */
+    val kiosk: Boolean = false,
+    /** The digits that unlock the kiosk on the tablet; null leaves unlocking to Home Assistant. */
+    val kioskPin: String? = null,
 ) {
     fun validated(): ScreenSettings = copy(
+        kioskPin = kioskPin?.takeIf { KIOSK_PIN.matches(it) },
         theme = theme.takeIf { Theme.ID.matches(it) } ?: "rpi",
         darkTheme = darkTheme.takeIf { Theme.ID.matches(it) } ?: "rpi",
         brightness = brightness.coerceIn(1, MAX_PERCENT),
@@ -281,6 +286,7 @@ data class ScreenSettings(
         const val MAX_STANDBY_MINUTES = 240
         const val MAX_BACK_TO_HOME_SECONDS = 3600
         private val HHMM = Regex("^([01]\\d|2[0-3]):[0-5]\\d$")
+        val KIOSK_PIN = Regex("^\\d{4,8}$")
     }
 }
 

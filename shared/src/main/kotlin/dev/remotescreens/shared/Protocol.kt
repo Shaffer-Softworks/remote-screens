@@ -126,6 +126,8 @@ sealed interface PlayerMessage {
         val page: Int,
         val battery: Int? = null,
         val charging: Boolean? = null,
+        /** `off`, `pinned` (screen pinning) or `locked` (lock task as the device owner); null from older players. */
+        val kiosk: String? = null,
     ) : PlayerMessage
 
     @Serializable

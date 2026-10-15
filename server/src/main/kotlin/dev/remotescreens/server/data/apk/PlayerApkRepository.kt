@@ -8,7 +8,16 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 
 /** A newer player app, offered to tablets that run an older one. */
-data class PlayerApk(val versionCode: Int, val versionName: String, val file: File) {
+data class PlayerApk(
+    val versionCode: Int,
+    val versionName: String,
+    val file: File,
+    /**
+     * SHA-256 of the signing certificate, URL-safe Base64 without padding, as QR enrollment wants it. It stays the
+     * same across updates; null when `version.json` was written without it.
+     */
+    val signatureChecksum: String? = null,
+) {
     val displayVersion: String get() = versionName.ifEmpty { versionCode.toString() }
 }
 
@@ -24,6 +33,7 @@ class PlayerApkRepository(private val apkDir: File?) {
                 versionCode = checkNotNull(meta["versionCode"]).jsonPrimitive.int,
                 versionName = meta["versionName"]?.jsonPrimitive?.contentOrNull.orEmpty(),
                 file = file,
+                signatureChecksum = meta["signatureChecksum"]?.jsonPrimitive?.contentOrNull?.ifBlank { null },
             )
         }.getOrNull()
     }

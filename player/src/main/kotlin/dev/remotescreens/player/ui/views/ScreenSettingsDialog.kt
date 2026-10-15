@@ -25,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import dev.remotescreens.player.R
+import dev.remotescreens.player.ui.screens.player.KioskAction
 import dev.remotescreens.player.ui.theme.RemoteScreensTheme
 import dev.remotescreens.shared.ScreenSettings
 import kotlin.math.roundToInt
@@ -41,6 +42,8 @@ fun ScreenSettingsDialog(
     server: String?,
     canOfferSelfStart: Boolean,
     canOfferScreenOff: Boolean,
+    kioskAction: KioskAction?,
+    canRemoveDeviceOwner: Boolean,
     onBrightnessPreview: (Int) -> Unit,
     onConfirm: (brightnessPercent: Int, isDarkMode: Boolean, standbyMinutes: Int) -> Unit,
     onDismiss: () -> Unit,
@@ -48,6 +51,9 @@ fun ScreenSettingsDialog(
     onForget: () -> Unit,
     onAllowSelfStart: () -> Unit,
     onAllowScreenOff: () -> Unit,
+    onUnlockKiosk: () -> Unit,
+    onLockKioskAgain: () -> Unit,
+    onRemoveDeviceOwner: () -> Unit,
 ) {
     var brightnessPercent by remember(settings) {
         mutableFloatStateOf(settings.brightness.coerceIn(MIN_BRIGHTNESS_PERCENT, MAX_BRIGHTNESS_PERCENT).toFloat())
@@ -105,6 +111,20 @@ fun ScreenSettingsDialog(
                 if (canOfferScreenOff) {
                     TextButton(onClick = onAllowScreenOff) { Text(stringResource(R.string.allow_screen_off)) }
                 }
+                when (kioskAction) {
+                    KioskAction.UNLOCK -> TextButton(onClick = onUnlockKiosk) {
+                        Text(stringResource(R.string.kiosk_unlock))
+                    }
+                    KioskAction.LOCK_AGAIN -> TextButton(onClick = onLockKioskAgain) {
+                        Text(stringResource(R.string.kiosk_lock_again))
+                    }
+                    null -> Unit
+                }
+                if (canRemoveDeviceOwner) {
+                    TextButton(onClick = onRemoveDeviceOwner) {
+                        Text(stringResource(R.string.kiosk_remove_device_owner))
+                    }
+                }
             }
         },
         confirmButton = {
@@ -141,6 +161,8 @@ private fun ScreenSettingsDialogPreview() {
             server = "192.168.1.10:8100",
             canOfferSelfStart = true,
             canOfferScreenOff = true,
+            kioskAction = KioskAction.UNLOCK,
+            canRemoveDeviceOwner = false,
             onBrightnessPreview = {},
             onConfirm = { _, _, _ -> },
             onDismiss = {},
@@ -148,6 +170,9 @@ private fun ScreenSettingsDialogPreview() {
             onForget = {},
             onAllowSelfStart = {},
             onAllowScreenOff = {},
+            onUnlockKiosk = {},
+            onLockKioskAgain = {},
+            onRemoveDeviceOwner = {},
         )
     }
 }

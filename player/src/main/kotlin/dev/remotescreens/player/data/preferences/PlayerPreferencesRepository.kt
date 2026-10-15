@@ -2,6 +2,7 @@ package dev.remotescreens.player.data.preferences
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
@@ -22,6 +23,16 @@ class PlayerPreferencesRepository @Inject constructor(
 
     val screenName: Flow<String?> = dataStore.data.map { preferences -> preferences[SCREEN_NAME_KEY] }
 
+    /**
+     * The screen's Kiosk lock setting, kept so the lock comes back after a restart before the add-on answers. QR
+     * enrollment turns it on before the screen is even added.
+     */
+    val isKioskEnabled: Flow<Boolean> = dataStore.data.map { preferences -> preferences[KIOSK_ENABLED_KEY] ?: false }
+
+    /** Unlocked on the tablet with the PIN. Kept on disk so a crash does not lock a tablet unlocked on purpose. */
+    val isKioskSuppressed: Flow<Boolean> =
+        dataStore.data.map { preferences -> preferences[KIOSK_SUPPRESSED_KEY] ?: false }
+
     /** A random id made on first use and kept for good, so the add-on knows this screen again. */
     suspend fun deviceId(): String {
         val updatedPreferences = dataStore.edit { preferences ->
@@ -41,6 +52,19 @@ class PlayerPreferencesRepository @Inject constructor(
         }
     }
 
+    /** Turning the kiosk on again from Home Assistant also ends an unlock made on the tablet. */
+    suspend fun setKioskEnabled(isEnabled: Boolean) {
+        dataStore.edit { preferences ->
+            val wasEnabled = preferences[KIOSK_ENABLED_KEY] ?: false
+            preferences[KIOSK_ENABLED_KEY] = isEnabled
+            if (isEnabled && !wasEnabled) preferences.remove(KIOSK_SUPPRESSED_KEY)
+        }
+    }
+
+    suspend fun setKioskSuppressed(isSuppressed: Boolean) {
+        dataStore.edit { preferences -> preferences[KIOSK_SUPPRESSED_KEY] = isSuppressed }
+    }
+
     suspend fun forget() {
         dataStore.edit { preferences ->
             preferences.remove(TOKEN_KEY)
@@ -53,5 +77,7 @@ class PlayerPreferencesRepository @Inject constructor(
         val SERVER_KEY = stringPreferencesKey("server")
         val TOKEN_KEY = stringPreferencesKey("token")
         val SCREEN_NAME_KEY = stringPreferencesKey("screen_name")
+        val KIOSK_ENABLED_KEY = booleanPreferencesKey("kiosk_enabled")
+        val KIOSK_SUPPRESSED_KEY = booleanPreferencesKey("kiosk_suppressed")
     }
 }

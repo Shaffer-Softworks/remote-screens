@@ -63,3 +63,23 @@ data class IntegrationScreenResponse(
 
 @Serializable
 data class ErrorResponse(val error: String)
+
+/** What the editor asks for a QR enrollment code. The Wi-Fi password only goes into the code; it is never stored. */
+@Serializable
+data class EnrollmentRequest(
+    val wifiSsid: String? = null,
+    val wifiPassword: String? = null,
+    /** `WPA`, `WEP` or `NONE`. */
+    val wifiSecurity: String? = null,
+    /** The add-on's address as tablets reach it, when the one it finds by itself is wrong. */
+    val host: String? = null,
+)
+
+@Serializable
+data class EnrollmentResponse(
+    /** The JSON to put in the QR code. */
+    val provisioning: String,
+    val downloadUrl: String,
+    /** Epoch milliseconds after which the code no longer downloads the app. */
+    val expiresAt: Long,
+)

@@ -33,6 +33,60 @@ address of your Home Assistant host with port 8100.
   asks to activate Remote Screens as a device admin). A screen that is off does not wake on a touch: press the power
   button, or call `remote_screens.wake` from Home Assistant.
 
+## Kiosk lock
+
+With **Kiosk lock** on, a screen's tablet stays on Remote Screens: Home, Recents, the notifications and the power
+menu cannot leave it. Turn it on with the screen's **Kiosk lock** switch in Home Assistant, or **Lock the tablet to
+this screen** in the editor. The lock is strongest on a tablet enrolled as a kiosk (Android calls this the *device
+owner*); any other tablet gets Android's screen pinning instead.
+
+### Enroll with a QR code
+
+No computer is needed. The tablet must be factory reset (or new), with no Google account added.
+
+1. In the editor, under **Tablets**, choose **Enroll a tablet**. Optionally give the Wi-Fi the tablet should join,
+   then **Show QR code**. The Wi-Fi password only goes into the code; the add-on does not keep it.
+2. On the tablet's first Welcome screen, tap the same spot six times. A QR scanner opens (some tablets ask for Wi-Fi
+   first).
+3. Scan the code. The tablet joins Wi-Fi, downloads the player app from the add-on and sets itself up as a kiosk.
+4. Pair it with a screen as usual.
+
+The code works for an hour, for as many tablets as you like. An enrolled tablet starts locked and stays locked until
+it is paired; from then on it follows its screen's **Kiosk lock**, so turn that on (before pairing, to keep it
+locked throughout).
+
+### Enroll with adb
+
+For tablets without the QR scanner (some AOSP and Fire tablets) or ones already set up, connect the tablet with USB
+debugging on and run, from this repository:
+
+```sh
+./scripts/enroll-device-owner.sh --fresh remote-screens.apk
+```
+
+`--fresh` reinstalls the app, which clears its data, so pair the tablet again afterwards. Android only accepts this
+on a tablet with no accounts (Settings, Accounts), so remove them or factory reset first. Run the script with
+`--help` for the other options.
+
+### Without enrolling
+
+A tablet that is not enrolled pins the app instead. Android asks to confirm the first time. Pinning keeps the
+navigation bar, and holding Back and Recents unpins the app; turn on Android's **Ask for PIN before unpinning**
+(Settings, Security, App pinning) so only you can. The app pins itself again when it comes back to the front.
+
+### Unlocking on the tablet
+
+Give the screen a **Kiosk PIN** (4 to 8 digits) in Home Assistant or the editor. Long pressing the top bar then
+asks for the PIN, and the settings offer **Unlock tablet**; **Lock again** undoes it. The tablet stays unlocked,
+even after a restart, until it is locked again there or the screen's Kiosk lock is turned off and on. Without a PIN,
+the tablet can only be unlocked from Home Assistant or the editor.
+
+### Stop managing a tablet
+
+To give an enrolled tablet back its normal use, unlock it (turn Kiosk lock off, or use the PIN), open the settings
+and choose **Stop managing this tablet**. The app can then be uninstalled like any other. A factory reset does the
+same.
+
 ## Tiles
 
 Every tile follows its entity live. A tap does the obvious thing for its type (toggle a light, open a cover's

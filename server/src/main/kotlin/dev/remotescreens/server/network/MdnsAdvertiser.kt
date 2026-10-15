@@ -2,13 +2,8 @@ package dev.remotescreens.server.network
 
 import dev.remotescreens.shared.Protocol
 import org.slf4j.LoggerFactory
-import java.net.Inet4Address
-import java.net.InetAddress
-import java.net.NetworkInterface
 import javax.jmdns.JmDNS
 import javax.jmdns.ServiceInfo
-
-private val IGNORED_INTERFACE_PREFIXES = listOf("docker", "veth", "hassio")
 
 /** Lets tablets on the network find the add-on without typing an address. */
 class MdnsAdvertiser(private val playerPort: Int, private val serverVersion: String) {
@@ -31,14 +26,4 @@ class MdnsAdvertiser(private val playerPort: Int, private val serverVersion: Str
         jmdns?.close()
         jmdns = null
     }
-
-    private fun siteLocalAddress(): InetAddress? = NetworkInterface.getNetworkInterfaces().toList()
-        .filter { networkInterface ->
-            networkInterface.isUp &&
-                !networkInterface.isLoopback &&
-                !networkInterface.isVirtual &&
-                IGNORED_INTERFACE_PREFIXES.none { networkInterface.name.startsWith(it) }
-        }
-        .flatMap { it.inetAddresses.toList() }
-        .firstOrNull { it is Inet4Address && it.isSiteLocalAddress }
 }

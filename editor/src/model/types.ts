@@ -131,6 +131,10 @@ export interface ScreenSettings {
   theme?: string
   /** The theme worn while dark; absent is `rpi`. */
   darkTheme?: string
+  /** Lock task on enrolled tablets, screen pinning on others. */
+  kiosk?: boolean
+  /** 4 to 8 digits that unlock the kiosk on the tablet. */
+  kioskPin?: string | null
 }
 
 /** A custom theme as stored: hex colours laid over a built-in [base]. */
@@ -229,6 +233,24 @@ export interface PlayerStatus {
   awake: boolean
   page: number
   battery?: number
+  /** `off`, `pinned` or `locked`. */
+  kiosk?: string
+}
+
+/** Asks for a QR enrollment code. The Wi-Fi password only goes into the code. */
+export interface EnrollmentRequest {
+  wifiSsid?: string
+  wifiPassword?: string
+  wifiSecurity?: 'WPA' | 'WEP' | 'NONE'
+  host?: string
+}
+
+export interface Enrollment {
+  /** The JSON a factory-reset tablet scans. */
+  provisioning: string
+  downloadUrl: string
+  /** Epoch milliseconds. */
+  expiresAt: number
 }
 
 export interface EntityInfo {

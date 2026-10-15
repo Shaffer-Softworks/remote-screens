@@ -1,6 +1,19 @@
 // The add-on's editor API. Relative, so it works under ingress.
 
-import type { AreaInfo, EntityInfo, GridSize, Info, LayoutData, PlayerStatus, Preferences, ResolvedTheme, Screen, Theme } from './model/types'
+import type {
+  AreaInfo,
+  Enrollment,
+  EnrollmentRequest,
+  EntityInfo,
+  GridSize,
+  Info,
+  LayoutData,
+  PlayerStatus,
+  Preferences,
+  ResolvedTheme,
+  Screen,
+  Theme,
+} from './model/types'
 
 export class ApiError extends Error {}
 
@@ -43,6 +56,7 @@ export const api = {
   forgetPlayer: (deviceId: string) => call<void>('DELETE', `players/${encodeURIComponent(deviceId)}`),
   identify: (deviceId: string) => call<void>('POST', `players/${encodeURIComponent(deviceId)}/identify`),
   preview: (deviceId: string, s: Screen) => call<void>('POST', `players/${encodeURIComponent(deviceId)}/preview`, s),
+  enrollment: (request: EnrollmentRequest) => call<Enrollment>('POST', 'enrollment', request),
   entities: () => call<EntityInfo[]>('GET', 'entities'),
   areas: () => call<AreaInfo[]>('GET', 'areas'),
   searchIcons: (q: string) => call<string[]>('GET', `icons?q=${encodeURIComponent(q)}`),

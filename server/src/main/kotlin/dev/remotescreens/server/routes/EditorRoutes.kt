@@ -7,8 +7,12 @@ import dev.remotescreens.server.render.Alert
 import dev.remotescreens.server.render.Icons
 import dev.remotescreens.server.routes.model.AdoptPlayerRequest
 import dev.remotescreens.server.routes.model.CreateScreenRequest
+import dev.remotescreens.server.routes.model.EnrollmentRequest
+import dev.remotescreens.server.routes.model.ErrorResponse
 import dev.remotescreens.server.routes.model.RenamePlayerRequest
 import dev.remotescreens.server.routes.model.ServerInfoResponse
+import dev.remotescreens.server.service.EnrollmentService
+import dev.remotescreens.server.service.EnrollmentUnavailableException
 import dev.remotescreens.server.service.HomeAssistantCatalogService
 import dev.remotescreens.server.service.ScreenService
 import dev.remotescreens.server.service.ThemeService
@@ -40,6 +44,7 @@ fun Route.editorRoutes(dependencies: ServerDependencies) {
         screenRoutes(dependencies.screenService)
         themeRoutes(dependencies.themeService)
         playerManagementRoutes(dependencies.playerHub, dependencies.playerApkRepository)
+        enrollmentRoutes(dependencies.enrollmentService)
         homeAssistantRoutes(dependencies.homeAssistantCatalogService)
         post("/alert") {
             dependencies.playerHub.showAlert(call.receive<Alert>())
@@ -136,6 +141,17 @@ private fun Route.playerManagementRoutes(playerHub: PlayerHub, playerApkReposito
             val screen = ScreenValidator.validate(call.receive<Screen>())
             val isShown = playerHub.preview(call.parameters.getOrFail("id"), screen)
             call.respond(if (isShown) HttpStatusCode.NoContent else HttpStatusCode.NotFound)
+        }
+    }
+}
+
+private fun Route.enrollmentRoutes(enrollmentService: EnrollmentService) {
+    post("/enrollment") {
+        val request = call.receive<EnrollmentRequest>()
+        try {
+            call.respond(enrollmentService.createEnrollment(request))
+        } catch (exception: EnrollmentUnavailableException) {
+            call.respond(HttpStatusCode.Conflict, ErrorResponse(exception.message.orEmpty()))
         }
     }
 }

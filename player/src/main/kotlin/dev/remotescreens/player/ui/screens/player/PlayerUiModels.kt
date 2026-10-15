@@ -18,8 +18,14 @@ data class SettingsDialogState(
     val canOfferSelfStart: Boolean,
     /** Whether to offer the device admin that standby needs to turn the screen off. */
     val canOfferScreenOff: Boolean = false,
+    /** What the kiosk button does; null hides it (no kiosk, or locked without the PIN entered). */
+    val kioskAction: KioskAction? = null,
+    /** Offered once the kiosk is unlocked, so the tablet can leave kiosk duty without a factory reset. */
+    val canRemoveDeviceOwner: Boolean = false,
     val isForgetConfirmationVisible: Boolean = false,
 )
+
+enum class KioskAction { UNLOCK, LOCK_AGAIN }
 
 data class AddressDialogState(val initialAddress: String)
 
@@ -30,4 +36,7 @@ sealed interface PlayerEvent {
     data object OpenInstallPermissionSettings : PlayerEvent
     data object OpenOverlayPermissionSettings : PlayerEvent
     data object OpenScreenOffAdminSettings : PlayerEvent
+
+    /** Screen pinning would hide the screen where Android asks to confirm an update. */
+    data object StopScreenPinning : PlayerEvent
 }

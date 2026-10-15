@@ -43,6 +43,22 @@ async def test_settings_go_to_the_add_on(hass: HomeAssistant, client: AsyncMock,
     client.set_settings.assert_awaited_with("demo", {"darkMode": True})
 
 
+async def test_the_kiosk_lock_and_its_pin_go_to_the_add_on(hass: HomeAssistant, client: AsyncMock, entry) -> None:
+    await setup(hass, entry)
+    await hass.services.async_call("switch", "turn_on", {"entity_id": "switch.living_room_kiosk_lock"}, blocking=True)
+    client.set_settings.assert_awaited_with("demo", {"kiosk": True})
+    assert hass.states.get("switch.living_room_kiosk_lock").state == "on"
+
+    await hass.services.async_call("text", "set_value", {"entity_id": "text.living_room_kiosk_pin", "value": "2468"}, blocking=True)
+    client.set_settings.assert_awaited_with("demo", {"kioskPin": "2468"})
+
+    await hass.services.async_call("text", "set_value", {"entity_id": "text.living_room_kiosk_pin", "value": ""}, blocking=True)
+    client.set_settings.assert_awaited_with("demo", {"kioskPin": None})
+
+    with pytest.raises(ValueError):
+        await hass.services.async_call("text", "set_value", {"entity_id": "text.living_room_kiosk_pin", "value": "12"}, blocking=True)
+
+
 async def test_one_end_of_the_night_brings_the_other(hass: HomeAssistant, client: AsyncMock, entry) -> None:
     await setup(hass, entry)
     await hass.services.async_call("time", "set_value", {"entity_id": "time.living_room_night_starts", "time": "23:30"}, blocking=True)

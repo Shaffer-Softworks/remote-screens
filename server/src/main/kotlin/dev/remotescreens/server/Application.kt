@@ -140,7 +140,7 @@ fun Application.playerModule(dependencies: ServerDependencies) {
         maxFrameSize = MAX_WEBSOCKET_FRAME_BYTES
     }
     routing {
-        playerRoutes(dependencies.playerHub, dependencies.playerApkRepository)
+        playerRoutes(dependencies.playerHub, dependencies.playerApkRepository, dependencies.enrollmentService)
         route("/integration") {
             install(IntegrationKey) { apiKey = dependencies.apiKeyRepository.apiKey }
             integrationRoutes(dependencies.screenService, dependencies.playerHub)
