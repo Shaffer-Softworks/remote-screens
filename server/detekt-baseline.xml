@@ -451,9 +451,9 @@
     <ID>MaxLineLength:Tiles.kt:c.label(c.text(Vars.t(tile.id, "where")), Type.BODY, c.role(Role.ACCENT_SOFT), Weight.SEMI_BOLD, align = RcTextAlign.Center)</ID>
     <ID>MaxLineLength:Tiles.kt:c.label(listOfNotNull(d.high?.let { "${it.roundToInt()}°" }, d.low?.let { "${it.roundToInt()}°" }).joinToString(" "), Type.CAPTION, ink, align = RcTextAlign.Center)</ID>
     <ID>MaxLineLength:Tiles.kt:c.label(tile.name ?: c.i18n.t("ui.people_home", "count" to who.count { c.states[it]?.state == "home" }), Type.CAPTION + 1f, c.role(Role.INK), Weight.SEMI_BOLD)</ID>
-    <ID>MaxLineLength:Tiles.kt:dev.remotescreens.shared.VarValue.int(Vars.e(id, "notplaying"), if (s?.state == "playing") Vars.GONE else Vars.VISIBLE)</ID>
-    <ID>MaxLineLength:Tiles.kt:dev.remotescreens.shared.VarValue.int(Vars.e(id, "playing"), if (s?.state == "playing") Vars.VISIBLE else Vars.GONE)</ID>
-    <ID>MaxLineLength:Tiles.kt:dev.remotescreens.shared.VarValue.string(Vars.e(id, "artist"), listOfNotNull(s?.attr("media_artist"), s?.attr("media_album_name")).joinToString(" · ").ifEmpty { i18n.state("media_player", s?.state ?: "off") })</ID>
+    <ID>MaxLineLength:Tiles.kt:VarValue.int(Vars.e(id, "notplaying"), if (s?.state == "playing") Vars.GONE else Vars.VISIBLE)</ID>
+    <ID>MaxLineLength:Tiles.kt:VarValue.int(Vars.e(id, "playing"), if (s?.state == "playing") Vars.VISIBLE else Vars.GONE)</ID>
+    <ID>MaxLineLength:Tiles.kt:VarValue.string(Vars.e(id, "artist"), listOfNotNull(s?.attr("media_artist"), s?.attr("media_album_name")).joinToString(" · ").ifEmpty { i18n.state("media_player", s?.state ?: "off") })</ID>
     <ID>MaxLineLength:Tiles.kt:fun</ID>
     <ID>MaxLineLength:Tiles.kt:fun px</ID>
     <ID>MaxLineLength:Tiles.kt:if (bigValue &amp;&amp; state != null) c.label(state, if (box.h &gt;= 150f) Type.VALUE else Type.HEADLINE, ink, Weight.MEDIUM)</ID>
@@ -479,7 +479,7 @@
     <ID>MaxLineLength:WeatherPanel.kt:Row</ID>
     <ID>MaxLineLength:WeatherPanel.kt:c.label(c.i18n.fullWeekday(d.time.withZoneSameInstant(zone)), small(16f, k), ink, align = RcTextAlign.Center)</ID>
     <ID>TooManyFunctions:CardRenderer.kt:CardRenderer</ID>
-    <ID>TooManyFunctions:FreeForm.kt:dev.remotescreens.server.render.FreeForm.kt</ID>
-    <ID>TooManyFunctions:Tiles.kt:dev.remotescreens.server.render.Tiles.kt</ID>
+    <ID>TooManyFunctions:FreeForm.kt:tech.shaffersoftworks.remotescreens.server.render.FreeForm.kt</ID>
+    <ID>TooManyFunctions:Tiles.kt:tech.shaffersoftworks.remotescreens.server.render.Tiles.kt</ID>
   </CurrentIssues>
 </SmellBaseline>

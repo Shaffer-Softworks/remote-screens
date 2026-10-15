@@ -132,7 +132,7 @@ describe('the component tree', () => {
 
 describe('the palette', () => {
   it('offers every component type the add-on draws, and no other', () => {
-    const kotlin = readFileSync(fileURLToPath(new URL('../../../shared/src/main/kotlin/dev/remotescreens/shared/Layout.kt', import.meta.url)), 'utf8')
+    const kotlin = readFileSync(fileURLToPath(new URL('../../../shared/src/main/kotlin/tech/shaffersoftworks/remotescreens/shared/Layout.kt', import.meta.url)), 'utf8')
     const block = kotlin.slice(kotlin.indexOf('object NodeTypes'), kotlin.indexOf('val ALL'))
     const addOn = new Set([...block.matchAll(/"([a-z]+)"/g)].map((m) => m[1]))
     addOn.delete('tile')

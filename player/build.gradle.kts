@@ -10,11 +10,11 @@ val addonVersion = rootProject.file("addon/VERSION").readText().trim()
 val (major, minor, patch) = addonVersion.split('.').map { it.toInt() }
 
 android {
-    namespace = "dev.remotescreens.player"
+    namespace = "tech.shaffersoftworks.remotescreens.player"
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "dev.remotescreens.player"
+        applicationId = "tech.shaffersoftworks.remotescreens.player"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = major * 10000 + minor * 100 + patch

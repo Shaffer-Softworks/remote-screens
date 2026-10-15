@@ -148,6 +148,10 @@ work the same way.
 When the add-on has a newer player app than a tablet, the tablet offers to install it. Android asks once for
 permission to install apps from Remote Screens, then asks you to confirm each update.
 
+The player app's ID changed from `dev.remotescreens.player` to `tech.shaffersoftworks.remotescreens.player`, so a
+tablet running the old app cannot update to it. Uninstall the old app, install the new one and pair the tablet again.
+A tablet enrolled as a kiosk has to be factory reset and enrolled again.
+
 ## Network
 
 | Port | What |

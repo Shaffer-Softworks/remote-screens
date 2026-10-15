@@ -7,7 +7,7 @@
     <logger name="javax.jmdns" level="WARN"/>
     <logger name="io.netty" level="WARN"/>
     <logger name="io.ktor" level="INFO"/>
-    <logger name="dev.remotescreens" level="${REMOTE_SCREENS_LOG:-INFO}"/>
+    <logger name="tech.shaffersoftworks.remotescreens" level="${REMOTE_SCREENS_LOG:-INFO}"/>
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
     </root>
