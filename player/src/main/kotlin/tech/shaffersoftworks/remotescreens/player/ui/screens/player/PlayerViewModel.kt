@@ -44,6 +44,7 @@ import java.time.LocalTime
 import javax.inject.Inject
 
 private const val MILLISECONDS_PER_SECOND = 1_000L
+private val CLOSE_METADATA = ActionRef("_", "close").encode()
 private const val MILLISECONDS_PER_MINUTE = 60_000L
 private const val NIGHT_CHECK_INTERVAL_MS = 60_000L
 private const val MIN_IDENTIFY_SECONDS = 1
@@ -394,9 +395,13 @@ class PlayerViewModel @Inject constructor(
         sendDeviceState()
     }
 
+    /** Closes [slot], and tells the add-on so it stops rebuilding the document and sending it again. */
     private fun closeSlot(slot: Slot) {
         if (slot == Slot.ALERT) alertTimeoutJob?.cancel()
+        if (slot == Slot.MAIN) return
+        val document = _viewState.value.remoteScreen.documents[slot] ?: return
         updateRemoteScreen { it.closed(slot) }
+        send(PlayerMessage.Action(slot, document.revision, CLOSE_METADATA))
     }
 
     private fun closeTopOverlay(): Boolean {

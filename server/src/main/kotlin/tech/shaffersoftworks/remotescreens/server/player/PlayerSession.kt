@@ -404,7 +404,10 @@ class PlayerSession(
         }
         when {
             ref.tile == "alert" -> handleAlertAction(ref)
-            ref.local -> if (ref.verb == "close" && message.slot != Slot.MAIN) shownDocuments.remove(message.slot)
+            ref.local -> if (ref.verb == "close" && message.slot != Slot.MAIN) {
+                shownDocuments.remove(message.slot)
+                if (message.slot == Slot.ALERT) currentAlert = null
+            }
             else -> handleOutcome(context.actionRouter.handle(ref, screen(), tapMemory))
         }
     }
