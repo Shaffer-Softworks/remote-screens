@@ -285,7 +285,18 @@ private fun DocContext.dividerSize(n: Node, axis: Axis): Modifier {
 }
 
 private fun DocContext.container(n: Node, given: Dims, axis: Axis, pages: Pages) {
-    val kids = n.children.filter { !it.hidden }
+    // A wrapped row is as wide as its children, so one that fills it takes its content's width, as in the editor,
+    // rather than a weight that takes all the room the row could grow to and pushes its siblings off; a wrapped
+    // column's children, likewise down it.
+    val looseW = n.type == "row" && n.size.width == "wrap"
+    val looseH = n.type == "column" && n.size.height == "wrap"
+    val kids = n.children.filter { !it.hidden }.map { c ->
+        when {
+            looseW && fills(c.size.width) -> c.copy(size = c.size.copy(width = "wrap"))
+            looseH && fills(c.size.height) -> c.copy(size = c.size.copy(height = "wrap"))
+            else -> c
+        }
+    }
     // A wrapped row whose children fill its height is as tall as its tallest child, so cards side by side match,
     // rather than the fill stretching to the page; a wrapped column whose children fill its width, likewise.
     val pinH = n.type == "row" && n.size.height == "wrap" && kids.any { fills(it.size.height) }
