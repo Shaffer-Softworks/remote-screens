@@ -7,8 +7,12 @@ import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
+import io.ktor.client.request.prepareGet
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.readRawBytes
+import io.ktor.http.HttpHeaders
 import io.ktor.http.isSuccess
+import io.ktor.utils.io.ByteReadChannel
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.CancellationException
@@ -197,6 +201,15 @@ class HomeAssistantClient(
         val response = httpClient.get(restBaseUrl.removeSuffix("/api") + path) { bearerAuth(accessToken) }
         return if (response.status.isSuccess()) response.readRawBytes() else null
     }
+
+    override suspend fun stream(
+        path: String,
+        onBody: suspend (contentType: String?, body: ByteReadChannel) -> Unit,
+    ): Int = httpClient.prepareGet(restBaseUrl.removeSuffix("/api") + path) { bearerAuth(accessToken) }
+        .execute { response ->
+            if (response.status.isSuccess()) onBody(response.headers[HttpHeaders.ContentType], response.bodyAsChannel())
+            response.status.value
+        }
 
     private suspend fun DefaultClientWebSocketSession.readJson(): JsonObject {
         val frame = incoming.receive()

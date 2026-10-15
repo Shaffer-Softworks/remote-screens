@@ -9,6 +9,7 @@ import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
+import androidx.compose.remote.creation.dsl.componentId
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.horizontalWeight
@@ -135,10 +136,11 @@ object AlertRenderer {
         val pw = u.px(widthDp).toInt()
         val ph = u.px(heightDp).toInt()
         picture(PictureSlot("alert.cam", "/api/camera_proxy/$camera", pw, ph, CAMERA_FIT))
+        val video = liveVideo(camera, crop = true)
         gap(TITLE_GAP_DP)
         scope.Image(
             image("alert.cam", pw, ph),
-            Modifier.size(u.px(widthDp), u.px(heightDp)).clip(rounded(CAMERA_CORNER_DP)),
+            Modifier.size(u.px(widthDp), u.px(heightDp)).clip(rounded(CAMERA_CORNER_DP)).componentId(video),
             contentScale = RcContentScale.Crop,
         )
     }

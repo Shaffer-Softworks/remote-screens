@@ -9,6 +9,7 @@ import tech.shaffersoftworks.remotescreens.server.render.AlertButton
 import tech.shaffersoftworks.remotescreens.server.render.AlertRenderer
 import tech.shaffersoftworks.remotescreens.server.render.CardRenderer
 import tech.shaffersoftworks.remotescreens.server.render.Device
+import tech.shaffersoftworks.remotescreens.server.render.LiveVideo
 import tech.shaffersoftworks.remotescreens.server.render.Palette
 import tech.shaffersoftworks.remotescreens.server.render.Rc
 import tech.shaffersoftworks.remotescreens.server.render.RenderData
@@ -62,6 +63,7 @@ class PlayerSession(
     private val buildMutex = Mutex()
     private val device = Device(hello.widthDp, hello.heightDp, hello.density)
     private val supportsDeflate = Rc.DEFLATE in hello.capabilities
+    private val supportsVideo = Protocol.CAPABILITY_VIDEO in hello.capabilities
     private val tapMemory = TapMemory()
 
     var pairingCode: String? = null
@@ -88,6 +90,8 @@ class PlayerSession(
         var sentVars: Map<String, VarValue> = emptyMap()
         val pictureKeys = HashMap<String, String?>()
         val pictureSentAtMs = HashMap<String, Long>()
+        /** Component id to how many times its video was started again after the player said it stopped. */
+        val videoRestarts = HashMap<Int, Int>()
     }
 
     private val shownDocuments = ConcurrentHashMap<Slot, ShownDocument>()
@@ -229,6 +233,30 @@ class PlayerSession(
             ),
         )
         sendPictures(shown, states, isForced = true)
+        for (video in doc.ctx.videos) sendVideo(shown, video)
+    }
+
+    /** Starts [video]'s stream and tells the player where it is; without a stream, the image's picture stays. */
+    private fun sendVideo(shown: ShownDocument, video: LiveVideo) {
+        if (!supportsVideo) return
+        context.scope.launch {
+            val path = context.cameraStreamService.hlsPath(video.entityId) ?: return@launch
+            if (shownDocuments[shown.slot] === shown) {
+                send(ServerMessage.Video(shown.slot, shown.revision, video.componentId, path, video.crop))
+            }
+        }
+    }
+
+    private fun restartVideo(message: PlayerMessage.VideoFailed) {
+        val shown = shownDocuments[message.slot]?.takeIf { it.revision == message.rev } ?: return
+        val video = shown.doc.ctx.videos.firstOrNull { it.componentId == message.componentId } ?: return
+        val restarts = shown.videoRestarts.getOrDefault(video.componentId, 0)
+        if (restarts < MAX_VIDEO_RESTARTS) {
+            shown.videoRestarts[video.componentId] = restarts + 1
+            sendVideo(shown, video)
+        } else {
+            logger.info("Video of {} keeps stopping (HTTP {}); its picture stays", video.entityId, message.httpCode)
+        }
     }
 
     private fun connectedVar(): VarValue = VarValue.int(Vars.CONNECTED, if (homeAssistant.isConnected.value) 1 else 0)
@@ -362,6 +390,7 @@ class PlayerSession(
             is PlayerMessage.SettingsChanged ->
                 screenId?.let { id -> context.screenService.updateSettings(id) { message.settings } }
             is PlayerMessage.Action -> handleAction(message)
+            is PlayerMessage.VideoFailed -> restartVideo(message)
             is PlayerMessage.Hello -> Unit
         }
     }
@@ -478,8 +507,9 @@ class PlayerSession(
     }
 
     companion object {
-        val FEATURES = listOf("predictions", "bitmaps", "alerts", "cards", "settings")
+        val FEATURES = listOf("predictions", "bitmaps", "alerts", "cards", "settings", Protocol.CAPABILITY_VIDEO)
         const val RESYNC_MS = 3000L
+        const val MAX_VIDEO_RESTARTS = 3
         const val PREVIEW_MS = 5 * 60_000L
     }
 }

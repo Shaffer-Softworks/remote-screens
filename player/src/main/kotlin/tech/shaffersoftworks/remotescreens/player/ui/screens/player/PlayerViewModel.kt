@@ -17,11 +17,13 @@ import tech.shaffersoftworks.remotescreens.player.data.kiosk.KioskState
 import tech.shaffersoftworks.remotescreens.player.data.preferences.PlayerPreferencesRepository
 import tech.shaffersoftworks.remotescreens.player.data.update.UpdateRepository
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteScreenState
+import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotVideo
 import tech.shaffersoftworks.remotescreens.player.utils.decodeBase64OrNull
 import tech.shaffersoftworks.remotescreens.shared.isNightAt
 import tech.shaffersoftworks.remotescreens.player.utils.normalizeServerAddress
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
+import tech.shaffersoftworks.remotescreens.shared.Protocol
 import tech.shaffersoftworks.remotescreens.shared.ScreenSettings
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Slot
@@ -48,7 +50,8 @@ private const val NIGHT_CHECK_INTERVAL_MS = 60_000L
 private const val MIN_IDENTIFY_SECONDS = 1
 private const val MAX_IDENTIFY_SECONDS = 60
 private const val PAIRING_CODE_GROUP_SIZE = 3
-private val PLAYER_CAPABILITIES = listOf("predictions", "bitmaps", "alerts", "cards", "settings", "deflate")
+private val PLAYER_CAPABILITIES =
+    listOf("predictions", "bitmaps", "alerts", "cards", "settings", "deflate", Protocol.CAPABILITY_VIDEO)
 
 /**
  * Runs a wall screen: finds and talks to the add-on, keeps the documents it sends, and does what a wall screen does
@@ -254,6 +257,7 @@ class PlayerViewModel @Inject constructor(
             is ServerMessage.Wake -> wake(message.awake)
             is ServerMessage.UpdateAvailable -> onUpdateAvailable(message)
             is ServerMessage.Toast -> _events.send(PlayerEvent.ShowMessage(message.text))
+            is ServerMessage.Video -> onVideo(message)
             ServerMessage.Pong -> Unit
         }
     }
@@ -301,6 +305,19 @@ class PlayerViewModel @Inject constructor(
             val bitmap = imageDecoder.decodeBitmap(message.data) ?: return@launch
             updateRemoteScreen { it.withBitmap(message.name, bitmap) }
         }
+    }
+
+    private suspend fun onVideo(message: ServerMessage.Video) {
+        val server = connectionRepository.server.value ?: return
+        val token = preferencesRepository.token.first() ?: return
+        val video = SlotVideo(message.rev, message.componentId, "http://$server${message.path}", token, message.crop)
+        updateRemoteScreen { it.withVideo(message.slot, video) }
+    }
+
+    /** The add-on starts the camera's stream again, as Home Assistant ends one nobody watched for a while. */
+    fun onVideoFailed(slot: Slot, video: SlotVideo, httpCode: Int?) {
+        updateRemoteScreen { it.withoutVideo(slot, video) }
+        send(PlayerMessage.VideoFailed(slot, video.revision, video.componentId, httpCode))
     }
 
     private suspend fun onUpdateAvailable(update: ServerMessage.UpdateAvailable) {

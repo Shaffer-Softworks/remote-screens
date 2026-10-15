@@ -17,6 +17,7 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class RenderTest {
@@ -191,5 +192,34 @@ class RenderTest {
     fun anAlertBuilds() {
         val doc = AlertRenderer.render(Alert("Doorbell", "Someone is at the door", camera = "camera.front_door", buttons = listOf(AlertButton("Open"))), tablet, input())
         assertEquals(1, doc.ctx.pictures.size)
+    }
+
+    @Test
+    fun theDoorbellsVideoPlaysOverItsImageCroppedLikeIt() {
+        val doc = AlertRenderer.render(Alert("Doorbell", camera = "camera.front_door"), tablet, input())
+
+        val video = doc.ctx.videos.single()
+        assertEquals(LiveVideo("camera.front_door", LiveVideo.FIRST_COMPONENT_ID, crop = true), video)
+        assertImageFound(doc, video.componentId)
+    }
+
+    @Test
+    fun aCameraCardsVideoPlaysOverItsImageFittedLikeIt() {
+        val doc = CardRenderer.render("camera.front_door", null, tablet, input())
+
+        val video = doc.ctx.videos.single()
+        assertEquals(LiveVideo("camera.front_door", LiveVideo.FIRST_COMPONENT_ID, crop = false), video)
+        assertImageFound(doc, video.componentId)
+    }
+
+    @Test
+    fun anAlertWithoutACameraHasNoVideo() {
+        assertTrue(AlertRenderer.render(Alert("Washer done"), tablet, input()).ctx.videos.isEmpty())
+    }
+
+    /** The player finds the image by its id once it has read the document, as it must to lay the video over it. */
+    private fun assertImageFound(doc: RenderedDoc, componentId: Int) {
+        val component = assertNotNull(parse(doc.bytes).getComponent(componentId), "component $componentId")
+        assertEquals(componentId, component.componentId)
     }
 }
