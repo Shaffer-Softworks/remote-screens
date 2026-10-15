@@ -1,0 +1,48 @@
+---
+description: Configurable top bar and bottom navigation bar (PR #11) — the TopBar/NavBar model, bar heights in the grid math and parity fixtures, how the renderer scales the bars, and the editor controls and preview
+globs: shared/src/main/kotlin/**/Layout.kt,shared/src/main/kotlin/**/Grid.kt,shared/src/test/kotlin/**/GridParityTest.kt,tests/fixtures/grid_parity.json,server/src/main/kotlin/**/render/ScreenRenderer.kt,server/src/main/kotlin/**/validation/ScreenValidator.kt,editor/src/model/grid.ts,editor/src/model/grid.test.ts,editor/src/components/ScreenPanel.vue,editor/src/components/GridMockup.vue
+alwaysApply: false
+---
+
+# Configurable top and bottom bars (PR #11, merged Oct 2026)
+
+## Model (`shared/.../Layout.kt`, mirrored in `editor/src/model/types.ts`)
+
+- `TopBar` gained `date` (default true), `height: Int?` (null is the default 48 dp, clamped 32–120), `clockWidth: Int?` (percent of the screen width, null is the old `min(350, 42%)`, clamped 15–60), and `background` / `clockBackground`.
+- New `Screen.navBar: NavBar`: `height: Int?` (null is 102 dp, or 66 dp under 600 dp wide, clamped 48–160), `labels` (`both` | `icons` | `text`), `layout` (`spread` | `center` | `fill`), and colours `background`, `line`, `active`.
+- Colour fields take a theme role, a pastel key or `#RRGGBB` (hex since PR #15). The server resolves them with `paint()` in `FreeForm.kt`.
+- Every field defaults to today's look, so old layouts load unchanged and the schema version didn't change. `TopBar.validated()` and `NavBar.validated()` clamp values and reset unknown options; `ScreenValidator.validate` calls both.
+- `navBar` is optional in TypeScript. `store.open()` sets `navBar ??= {}` before taking the saved copy, so opening an old screen doesn't mark it as changed.
+
+## Grid math (keep Kotlin and TypeScript in step)
+
+- `Grid.spec(size, w, h, topBar = TOP_BAR, navBar = navBar(w))` takes bar heights in dp, not a show-top-bar flag. `Grid.topBarHeight(TopBar)` returns 0 when the bar is hidden; `Grid.navBarHeight(NavBar, w)`. `suggest()` (used on adoption) still uses the defaults.
+- `grid.ts` mirrors it with `Math.fround`. Its `spec` takes `(size, w, h, topBar, nav)`.
+- `grid_parity.json` spec cases: `topBar` is either a boolean (whether the default bar shows) or a height in dp, plus an optional `navBar` height. The answers include `navBar`. Regenerate with `./gradlew :shared:test -PupdateFixtures`, then check the diff only adds lines.
+
+## Renderer (`ScreenRenderer.kt`)
+
+- Top bar scale `k = (spec.topBar / TOP_BAR).coerceIn(0.7, 2)` multiplies the header text, the icons, the Back key (capped at `topBar - 6`) and the spacers. The date shows only when `date` is on and the screen is at least `Grid.NARROW` wide.
+- Bottom bar scale = bar height against that width's default bar, so the default heights draw exactly as before (10 sp labels, 5 dp gap). `navArrangement()` picks the row arrangement (kept out of `navBar()` for detekt's complexity limit). `fill` makes each button `width / count` wide; the other layouts use square buttons.
+- The new sizes are named constants (`NAV_LINE`, `NAV_ICON_ONLY_*`, `NAV_WORD_ONLY_*`, `NAV_LABEL_*_SP`, `NAV_GAP_MAX_SCALE`). The detekt baseline matches magic numbers by value, so any new literal fails CI; old ones such as 0.42f and 26f are baselined.
+
+## Editor
+
+- `ScreenPanel.vue`:
+  - Top bar: "Default height" and "Default clock width" checkboxes, each showing a slider when unticked; Date (under Clock); background and clock-block swatches.
+  - New Bottom bar section: height, Buttons show, Layout, and swatches for the background, line and current page.
+  - The `auto()` helper turns an optional number into a checkbox: ticking it removes the field, unticking sets a starting value.
+  - It takes a `deviceWidth` prop from `ScreenEditor.vue` (`device?.w`) to pick the starting nav height.
+- `GridMockup.vue` repeats the renderer's sizing in `top` and `nav` computed values: change both together.
+- Sliders need `v-range` (PR #12), and colour rows use `ColorSwatches.vue` (see `editor-sliders-and-theme-preview-context.mdc`).
+
+## Tests
+
+- `RenderTest.barsTakeTheirOwnSizeLabelsLayoutAndColours`: every labels × layout combination on a phone, checked by finding the pink pastel's bytes in the document.
+- `ScreenValidatorTest.barSettingsAreKeptInRange`; `LayoutRepositoryTest.theV1FixtureKeepsEveryField` checks the default bars; `grid.test.ts` "bar heights".
+
+## How the PR was made (worth repeating)
+
+- Local `main` was behind a big refactor (LayoutStore became LayoutRepository, validation moved from `Api.kt` into `ScreenValidator`, `V` became `Vars`, raw weights became `Weight`). The work was ported in a worktree from `origin/main`: `git diff -- <own files> > patch`, then `git apply --3way --exclude=<deleted files>`, with the deleted files' changes done by hand. `git apply` is all-or-nothing, so one missing file rejects the whole patch.
+- Another session's work (sliders, theme hint) was mixed into the same files. It was kept out by excluding files and stripping `v-range` from the patch.
+- zsh doesn't split an unquoted `$FILES`; use `${=FILES}`.
