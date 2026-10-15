@@ -68,6 +68,7 @@ class ServerDependencies(
             screenService = screenService,
             renderDataRepository = renderDataRepository,
             pictureRepository = pictureRepository,
+            cameraStreamService = cameraStreamService,
             languageRepository = languageRepository,
             playerApkRepository = playerApkRepository,
             actionRouter = ActionRouter(homeAssistant) { languageRepository.current() },

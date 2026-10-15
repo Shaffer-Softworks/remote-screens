@@ -253,6 +253,8 @@ class PlayerViewModel @Inject constructor(
             is ServerMessage.Wake -> wake(message.awake)
             is ServerMessage.UpdateAvailable -> onUpdateAvailable(message)
             is ServerMessage.Toast -> _events.send(PlayerEvent.ShowMessage(message.text))
+            // Not sent until the player declares Protocol.CAPABILITY_VIDEO.
+            is ServerMessage.Video -> Unit
             ServerMessage.Pong -> Unit
         }
     }

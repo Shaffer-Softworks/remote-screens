@@ -11,6 +11,7 @@ import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
+import androidx.compose.remote.creation.dsl.componentId
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.horizontalWeight
@@ -374,7 +375,12 @@ object CardRenderer {
         val pw = u.px(w).toInt()
         val ph = u.px(h).toInt()
         picture(PictureSlot("cam.card.$entityId", "/api/camera_proxy/$entityId", pw, ph, 4, crop = false))
-        scope.Image(image("cam.card.$entityId", pw, ph), Modifier.size(u.px(w), u.px(h)).clip(rounded(16f)), contentScale = RcContentScale.Fit)
+        val video = liveVideo(entityId, crop = false)
+        scope.Image(
+            image("cam.card.$entityId", pw, ph),
+            Modifier.size(u.px(w), u.px(h)).clip(rounded(16f)).componentId(video),
+            contentScale = RcContentScale.Fit,
+        )
     }
 
     private fun DocContext.alarmCard(entityId: String, e: EntityState?, w: Float) {
