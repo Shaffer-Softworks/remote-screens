@@ -1,5 +1,7 @@
 package dev.remotescreens.player.ui.screens.player
 
+import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
@@ -25,6 +27,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import dev.remotescreens.player.R
+import dev.remotescreens.player.receiver.ScreenOffAdminReceiver
 import dev.remotescreens.player.ui.screens.player.remote.RemoteDocumentView
 import dev.remotescreens.player.ui.screens.player.remote.RemoteScreenState
 import dev.remotescreens.player.ui.theme.Page
@@ -112,12 +116,14 @@ private fun PlayerDialogs(viewState: PlayerViewModel.ViewState, viewModel: Playe
                 settings = viewState.screenSettings,
                 server = settingsDialog.server,
                 canOfferSelfStart = settingsDialog.canOfferSelfStart,
+                canOfferScreenOff = settingsDialog.canOfferScreenOff,
                 onBrightnessPreview = viewModel::onSettingsBrightnessPreview,
                 onConfirm = viewModel::onSettingsConfirmed,
                 onDismiss = viewModel::onSettingsDismissed,
                 onChangeServer = viewModel::onChangeServerRequested,
                 onForget = viewModel::onForgetRequested,
                 onAllowSelfStart = viewModel::onAllowSelfStartRequested,
+                onAllowScreenOff = viewModel::onAllowScreenOffRequested,
             )
         }
     }
@@ -171,5 +177,13 @@ private fun handleEvent(context: Context, event: PlayerEvent) {
         PlayerEvent.OpenOverlayPermissionSettings -> context.startActivity(
             Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()),
         )
+        PlayerEvent.OpenScreenOffAdminSettings -> context.startActivity(screenOffAdminIntent(context))
     }
+}
+
+private fun screenOffAdminIntent(context: Context): Intent {
+    val adminComponent = ComponentName(context, ScreenOffAdminReceiver::class.java)
+    return Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+        .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
+        .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, context.getString(R.string.screen_off_explanation))
 }

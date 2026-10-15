@@ -5,6 +5,7 @@ import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.os.Build
 import android.util.DisplayMetrics
+import android.view.WindowManager
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -22,6 +23,16 @@ fun Activity.hideSystemBars() {
     WindowInsetsControllerCompat(window, window.decorView).apply {
         hide(WindowInsetsCompat.Type.systemBars())
         systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    }
+}
+
+/** Standby can lock the tablet to turn the screen off; waking up then shows the screen, not the lock screen. */
+fun Activity.showOverLockScreen() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+        setShowWhenLocked(true)
+    } else {
+        @Suppress("DEPRECATION")
+        window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
     }
 }
 

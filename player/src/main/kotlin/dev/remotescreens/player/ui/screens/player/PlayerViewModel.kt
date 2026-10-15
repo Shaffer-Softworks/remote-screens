@@ -9,6 +9,7 @@ import dev.remotescreens.player.data.connection.ConnectionRepository
 import dev.remotescreens.player.data.connection.ConnectionStatus
 import dev.remotescreens.player.data.device.DeviceRepository
 import dev.remotescreens.player.data.device.DisplayInfo
+import dev.remotescreens.player.data.device.ScreenPowerRepository
 import dev.remotescreens.player.data.discovery.DiscoveryRepository
 import dev.remotescreens.player.data.image.ImageDecoder
 import dev.remotescreens.player.data.preferences.PlayerPreferencesRepository
@@ -58,6 +59,7 @@ class PlayerViewModel @Inject constructor(
     private val discoveryRepository: DiscoveryRepository,
     private val updateRepository: UpdateRepository,
     private val deviceRepository: DeviceRepository,
+    private val screenPowerRepository: ScreenPowerRepository,
     private val imageDecoder: ImageDecoder,
 ) : ViewModel() {
 
@@ -214,15 +216,13 @@ class PlayerViewModel @Inject constructor(
 
     @Suppress("CyclomaticComplexMethod")
     private suspend fun handleServerMessage(message: ServerMessage) {
+        Timber.d("Message %s", message::class.simpleName)
         when (message) {
             is ServerMessage.Welcome -> onWelcome(message)
             is ServerMessage.Document -> onDocument(message)
             is ServerMessage.Vars -> updateRemoteScreen { it.withVars(message) }
             is ServerMessage.Bitmap -> onBitmap(message)
-            is ServerMessage.Settings -> {
-                applyScreenSettings(message.settings)
-                _viewState.update { it.copy(isSwipeEnabled = message.settings.swipe) }
-            }
+            is ServerMessage.Settings -> onServerSettings(message.settings)
             is ServerMessage.OpenPage -> {
                 closeTopOverlay()
                 showPage(message.index)
@@ -379,9 +379,14 @@ class PlayerViewModel @Inject constructor(
     /** Any touch: wake up, and start the standby and back-to-home clocks again. */
     fun onUserInteraction() {
         if (!_viewState.value.isAwake) setAwake(true)
+        restartClocks()
+    }
+
+    private fun restartClocks() {
         standbyJob?.cancel()
         backToHomeJob?.cancel()
         val settings = _viewState.value.screenSettings
+        Timber.d("Standby clock restarted: %d min", settings.standbyMinutes)
         if (settings.standbyMinutes > 0) {
             standbyJob = viewModelScope.launch {
                 delay(settings.standbyMinutes * MILLISECONDS_PER_MINUTE)
@@ -403,13 +408,50 @@ class PlayerViewModel @Inject constructor(
 
     private fun setAwake(isAwake: Boolean) {
         if (_viewState.value.isAwake == isAwake) return
+        Timber.d("Awake: %b", isAwake)
         _viewState.update { it.copy(isAwake = isAwake) }
+        updateScreenPower()
         sendDeviceState()
+    }
+
+    private fun updateScreenPower() {
+        val state = _viewState.value
+        if (!state.isAwake && state.screenSettings.standbyScreenOff) {
+            screenPowerRepository.turnScreenOff()
+        } else {
+            screenPowerRepository.turnScreenOn()
+        }
+    }
+
+    /** The window is shown again. After standby turned the screen off, that means the power button was pressed. */
+    fun onResumed() {
+        if (screenPowerRepository.isScreenOff) onUserInteraction()
     }
 
     private fun applyScreenSettings(settings: ScreenSettings) {
         _viewState.update { it.copy(screenSettings = settings, isNight = settings.isNightAt(LocalTime.now())) }
         onUserInteraction()
+    }
+
+    /**
+     * The add-on sends the settings again on every reconnect and layout save, so they are not a touch: they never wake
+     * the screen, and the clocks only start again when their own times change.
+     */
+    private fun onServerSettings(settings: ScreenSettings) {
+        val previousSettings = _viewState.value.screenSettings
+        _viewState.update {
+            it.copy(
+                screenSettings = settings,
+                isSwipeEnabled = settings.swipe,
+                isNight = settings.isNightAt(LocalTime.now()),
+            )
+        }
+        when {
+            !_viewState.value.isAwake && settings.standbyMinutes == 0 -> onUserInteraction()
+            settings.standbyMinutes != previousSettings.standbyMinutes ||
+                settings.backToHomeSeconds != previousSettings.backToHomeSeconds -> restartClocks()
+        }
+        if (settings.standbyScreenOff != previousSettings.standbyScreenOff) updateScreenPower()
     }
 
     private fun observeNightSchedule() {
@@ -431,6 +473,7 @@ class PlayerViewModel @Inject constructor(
                 settingsDialog = SettingsDialogState(
                     server = connectionRepository.server.value,
                     canOfferSelfStart = !deviceRepository.canSelfStart(),
+                    canOfferScreenOff = it.screenSettings.standbyScreenOff && !screenPowerRepository.canTurnScreenOff(),
                 ),
             )
         }
@@ -483,6 +526,11 @@ class PlayerViewModel @Inject constructor(
             updateRemoteScreen { it.cleared() }
             connectionRepository.reconnect()
         }
+    }
+
+    fun onAllowScreenOffRequested() {
+        onSettingsDismissed()
+        viewModelScope.launch { _events.send(PlayerEvent.OpenScreenOffAdminSettings) }
     }
 
     fun onAllowSelfStartRequested() {

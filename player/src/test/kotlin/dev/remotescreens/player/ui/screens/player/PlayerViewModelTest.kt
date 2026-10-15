@@ -6,12 +6,14 @@ import dev.remotescreens.player.data.connection.ConnectionStatus
 import dev.remotescreens.player.data.device.BatteryStatus
 import dev.remotescreens.player.data.device.DeviceRepository
 import dev.remotescreens.player.data.device.DisplayInfo
+import dev.remotescreens.player.data.device.ScreenPowerRepository
 import dev.remotescreens.player.data.discovery.DiscoveryRepository
 import dev.remotescreens.player.data.image.ImageDecoder
 import dev.remotescreens.player.data.preferences.PlayerPreferencesRepository
 import dev.remotescreens.player.data.update.UpdateRepository
 import dev.remotescreens.shared.ActionRef
 import dev.remotescreens.shared.PlayerMessage
+import dev.remotescreens.shared.ScreenSettings
 import dev.remotescreens.shared.ServerMessage
 import dev.remotescreens.shared.Slot
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +35,9 @@ import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyBlocking
 
@@ -60,6 +64,7 @@ class PlayerViewModelTest {
     private val discoveryRepository: DiscoveryRepository = mock {
         on { discoverServers() } doReturn emptyFlow()
     }
+    private val screenPowerRepository: ScreenPowerRepository = mock()
 
     private lateinit var viewModel: PlayerViewModel
 
@@ -73,6 +78,7 @@ class PlayerViewModelTest {
             discoveryRepository = discoveryRepository,
             updateRepository = mock<UpdateRepository>(),
             deviceRepository = deviceRepository,
+            screenPowerRepository = screenPowerRepository,
             imageDecoder = mock<ImageDecoder>(),
         )
     }
@@ -202,6 +208,65 @@ class PlayerViewModelTest {
         viewModel.onUserInteraction()
 
         assertTrue(viewModel.viewState.value.isAwake)
+    }
+
+    @Test
+    fun `settings sent again do not restart the standby clock`() {
+        val settings = ScreenSettings(standbyMinutes = 1)
+        receive(ServerMessage.Settings(settings))
+        testDispatcher.scheduler.advanceTimeBy(50_000)
+
+        receive(ServerMessage.Settings(settings))
+        testDispatcher.scheduler.advanceTimeBy(11_000)
+
+        assertFalse(viewModel.viewState.value.isAwake)
+    }
+
+    @Test
+    fun `settings from the add-on do not wake the screen`() {
+        receive(ServerMessage.Wake(awake = false))
+
+        receive(ServerMessage.Settings(ScreenSettings(standbyMinutes = 5)))
+
+        assertFalse(viewModel.viewState.value.isAwake)
+    }
+
+    @Test
+    fun `turning standby off wakes the screen`() {
+        receive(ServerMessage.Wake(awake = false))
+
+        receive(ServerMessage.Settings(ScreenSettings(standbyMinutes = 0)))
+
+        assertTrue(viewModel.viewState.value.isAwake)
+    }
+
+    @Test
+    fun `standby turns the screen off when the screen asks for it`() {
+        receive(ServerMessage.Settings(ScreenSettings(standbyScreenOff = true)))
+
+        receive(ServerMessage.Wake(awake = false))
+
+        verify(screenPowerRepository).turnScreenOff()
+    }
+
+    @Test
+    fun `standby only dims when the screen does not ask to turn off`() {
+        receive(ServerMessage.Wake(awake = false))
+
+        verify(screenPowerRepository, never()).turnScreenOff()
+    }
+
+    @Test
+    fun `waking turns the screen on again`() {
+        receive(ServerMessage.Settings(ScreenSettings(standbyScreenOff = true)))
+        receive(ServerMessage.Wake(awake = false))
+
+        receive(ServerMessage.Wake(awake = true))
+
+        inOrder(screenPowerRepository) {
+            verify(screenPowerRepository).turnScreenOff()
+            verify(screenPowerRepository).turnScreenOn()
+        }
     }
 
     @Test

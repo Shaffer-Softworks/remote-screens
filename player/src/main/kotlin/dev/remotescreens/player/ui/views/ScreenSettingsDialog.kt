@@ -40,12 +40,14 @@ fun ScreenSettingsDialog(
     settings: ScreenSettings,
     server: String?,
     canOfferSelfStart: Boolean,
+    canOfferScreenOff: Boolean,
     onBrightnessPreview: (Int) -> Unit,
     onConfirm: (brightnessPercent: Int, isDarkMode: Boolean, standbyMinutes: Int) -> Unit,
     onDismiss: () -> Unit,
     onChangeServer: () -> Unit,
     onForget: () -> Unit,
     onAllowSelfStart: () -> Unit,
+    onAllowScreenOff: () -> Unit,
 ) {
     var brightnessPercent by remember(settings) {
         mutableFloatStateOf(settings.brightness.coerceIn(MIN_BRIGHTNESS_PERCENT, MAX_BRIGHTNESS_PERCENT).toFloat())
@@ -100,6 +102,9 @@ fun ScreenSettingsDialog(
                 if (canOfferSelfStart) {
                     TextButton(onClick = onAllowSelfStart) { Text(stringResource(R.string.allow_self_start)) }
                 }
+                if (canOfferScreenOff) {
+                    TextButton(onClick = onAllowScreenOff) { Text(stringResource(R.string.allow_screen_off)) }
+                }
             }
         },
         confirmButton = {
@@ -135,12 +140,14 @@ private fun ScreenSettingsDialogPreview() {
             settings = ScreenSettings(),
             server = "192.168.1.10:8100",
             canOfferSelfStart = true,
+            canOfferScreenOff = true,
             onBrightnessPreview = {},
             onConfirm = { _, _, _ -> },
             onDismiss = {},
             onChangeServer = {},
             onForget = {},
             onAllowSelfStart = {},
+            onAllowScreenOff = {},
         )
     }
 }
