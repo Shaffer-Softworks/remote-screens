@@ -63,14 +63,29 @@ export function cssColor(hex: string | undefined): string | undefined {
   return hex.length === 9 ? `#${hex.slice(3)}${hex.slice(1, 3)}` : hex
 }
 
-/** The CSS colour of a role or pastel key, or undefined for neither. */
+const HEX = /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
+
+/** Whether [value] is a colour of its own (`#RRGGBB` or `#AARRGGBB`) rather than a theme key. */
+export function isHex(value: string | undefined): value is string {
+  return !!value && HEX.test(value)
+}
+
+/** The CSS colour of a role or pastel key or of a hex colour, or undefined for none. */
 export function colorOf(key: string | undefined, theme: ResolvedTheme | undefined = activeTheme.value): string | undefined {
+  if (isHex(key)) return cssColor(key)
   if (!key || !theme) return undefined
   return cssColor(theme.pastels[key] ?? theme.roles[key])
 }
 
-/** The colour a tile lights up in: its own pastel, else its domain's. */
+/** [value] (a key or hex colour) as `#rrggbb` for a colour input, dropping any alpha; black when it is unknown. */
+export function rgbOf(value: string | undefined, theme: ResolvedTheme | undefined = activeTheme.value): string {
+  const hex = isHex(value) ? value : (value && theme && (theme.pastels[value] ?? theme.roles[value])) || undefined
+  return isHex(hex) ? `#${hex.slice(-6)}`.toLowerCase() : '#000000'
+}
+
+/** The colour a tile lights up in: its own pastel or hex colour, else its domain's. */
 export function pastel(key: string | undefined, domain: string | undefined, theme: ResolvedTheme | undefined = activeTheme.value): Pastel {
+  if (isHex(key)) return { key, color: cssColor(key)! }
   let k = key ?? (domain && BY_DOMAIN[domain]) ?? 'teal'
   if (!(PASTEL_KEYS as readonly string[]).includes(k)) k = 'teal'
   return { key: k, color: cssColor(theme?.pastels[k]) ?? '' }

@@ -226,11 +226,13 @@ private fun DocContext.refs(n: Node, pages: Pages): Pair<ActionRef?, ActionRef?>
     return tap to hold
 }
 
-/** A theme role (`card`, `ink_soft`) or a pastel key (`yellow`), or null for a key that is neither. */
-internal fun DocContext.paint(key: String): RcColor? {
-    Pastel.of(key)?.let { return pastel(it) }
-    return Role.of(key)?.let { role(it) }
-}
+/** A theme role (`card`, `ink_soft`), a pastel key (`yellow`) or a `#RRGGBB` / `#AARRGGBB` colour, or null for none. */
+internal fun DocContext.paint(key: String): RcColor? =
+    Pastel.of(key)?.let { pastel(it) } ?: Themes.parse(key)?.let { fixed(it) } ?: Role.of(key)?.let { role(it) }
+
+/** The ARGB a tile lights up in: its pastel key or own hex colour, else [fallback]. */
+internal fun DocContext.accent(key: String?, fallback: Pastel): Int =
+    Pastel.of(key)?.argb ?: key?.let(Themes::parse) ?: fallback.argb
 
 private fun DocContext.node(n: Node, self: Dims, axis: Axis, pages: Pages) {
     if (n.hidden) return
@@ -491,7 +493,7 @@ private fun DocContext.sliderNode(n: Node, self: Dims, axis: Axis, pages: Pages)
         return
     }
     bindEntity(id)
-    bindTileColors(n.id, id, Pastel.of(n.props["color"]) ?: Pastel.forDomain(id.substringBefore('.')))
+    bindTileColors(n.id, id, accent(n.props["color"], Pastel.forDomain(id.substringBefore('.'))))
     val domain = id.substringBefore('.')
     val e = states[id]
     val verb = when (domain) { "light" -> "brightness"; "fan" -> "percentage"; "cover" -> "position"; "media_player" -> "volume"; else -> "value" }
@@ -663,7 +665,7 @@ private fun DocContext.switchNode(n: Node, axis: Axis, pages: Pages) {
     val id = n.bind?.entityId
     val track = if (id != null) {
         bindEntity(id)
-        bindTileColors(n.id, id, Pastel.of(n.props["color"]) ?: Pastel.forDomain(id.substringBefore('.')))
+        bindTileColors(n.id, id, accent(n.props["color"], Pastel.forDomain(id.substringBefore('.'))))
         color(Vars.t(n.id, "bg"))
     } else {
         role(Role.KEY)
@@ -853,7 +855,7 @@ private fun DocContext.iconButtonNode(n: Node, axis: Axis, pages: Pages) {
     val domain = id?.substringBefore('.')
     val (bg, ink) = if (id != null) {
         bindEntity(id)
-        bindTileColors(n.id, id, Pastel.of(n.props["color"]) ?: Pastel.forDomain(domain))
+        bindTileColors(n.id, id, accent(n.props["color"], Pastel.forDomain(domain)))
         color(Vars.t(n.id, "bg")) to color(Vars.t(n.id, "bgink"))
     } else {
         (n.props["color"]?.let { paint(it) } ?: role(Role.KEY)) to role(Role.INK)

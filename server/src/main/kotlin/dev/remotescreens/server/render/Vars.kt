@@ -56,7 +56,11 @@ private class EntityBinding(
  * A tile's colours follow whether its entity is on. The card itself stays grey; being on lights its icon, the strip
  * under its header (`line`) and its round badge (`bg`, with `bgink` drawn on it) in the tile's accent.
  */
-fun DocContext.bindTileColors(tileId: String, entityId: String?, pastel: Pastel, alwaysOn: Boolean = false) {
+fun DocContext.bindTileColors(tileId: String, entityId: String?, pastel: Pastel, alwaysOn: Boolean = false) =
+    bindTileColors(tileId, entityId, pastel.argb, alwaysOn)
+
+/** As above, lit in [accent] (ARGB). */
+fun DocContext.bindTileColors(tileId: String, entityId: String?, accent: Int, alwaysOn: Boolean = false) {
     bind(entityId) { states ->
         val e = entityId?.let { states[it] }
         val view = Present.view(e, i18n)
@@ -65,13 +69,13 @@ fun DocContext.bindTileColors(tileId: String, entityId: String?, pastel: Pastel,
         val lit = on && avail
         val iconColor = when {
             !avail -> Role.INK_FAINT.argb
-            on -> pastel.argb
+            on -> accent
             else -> Role.INK_DIM.argb
         }
         listOf(
-            VarValue.color(Vars.t(tileId, "bg"), if (lit) pastel.argb else Role.KEY.argb),
+            VarValue.color(Vars.t(tileId, "bg"), if (lit) accent else Role.KEY.argb),
             VarValue.color(Vars.t(tileId, "bgink"), if (lit) Role.KEY_ON_INK.argb else Role.INK.argb),
-            VarValue.color(Vars.t(tileId, "line"), if (lit) pastel.argb else Role.CARD_HEADER.argb),
+            VarValue.color(Vars.t(tileId, "line"), if (lit) accent else Role.CARD_HEADER.argb),
             VarValue.color(Vars.t(tileId, "ink"), if (!avail) Role.INK_FAINT.argb else Role.INK.argb),
             VarValue.color(Vars.t(tileId, "ink2"), if (!avail) Role.INK_FAINT.argb else Role.INK_SOFT.argb),
             VarValue.color(Vars.t(tileId, "icon"), iconColor),
