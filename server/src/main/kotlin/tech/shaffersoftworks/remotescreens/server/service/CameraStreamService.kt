@@ -15,7 +15,13 @@ import java.util.concurrent.ConcurrentHashMap
 private const val IDLE_STREAM_MINUTES = 5L
 private const val MILLISECONDS_PER_MINUTE = 60_000L
 private val HOME_ASSISTANT_HLS_URL = Regex("^/api/hls/([A-Za-z0-9_-]+)/([A-Za-z0-9_./-]+)$")
-private val STREAM_FILE = Regex("^[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*\\.[a-z0-9]+$")
+/**
+ * A playlist or segment under the stream token. Home Assistant's low-latency HLS names parts
+ * `segment/{seq}.{part}.m4s` (a digit, a dot, a digit), which a path segment of only `[A-Za-z0-9_-]` would refuse.
+ */
+private val STREAM_FILE =
+    Regex("^[A-Za-z0-9_-]+(/(\\d+\\.\\d+|\\d+|[A-Za-z0-9_-]+))*\\.[a-z0-9]+$")
+
 
 /**
  * A camera's live video for the tablets, which never reach Home Assistant themselves: Home Assistant starts an HLS

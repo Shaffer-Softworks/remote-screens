@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.4
+
+- Fix live camera video: Home Assistant's low-latency HLS parts (`segment/1.0.m4s`) are relayed to the tablet
+  instead of returning 404, so the card's stream plays instead of sticking on the snapshot.
+
+## 0.1.3
+
+- Live camera video on cards and alerts. Tablets that can play video get Home Assistant's HLS stream over the
+  snapshot; without a stream, or on an older player, the snapshot stays.
+- Player app updates: bump this version whenever the APK changes so tablets are offered the new build. The app
+  id is `tech.shaffersoftworks.remotescreens.player`; tablets still on `dev.remotescreens.player` must uninstall
+  (kiosk tablets: factory reset and enroll again).
+
 ## 0.1.2
 
 - Themes. Screens come in RPI dark (as before), Light, OLED black and High contrast, and you can make your own
