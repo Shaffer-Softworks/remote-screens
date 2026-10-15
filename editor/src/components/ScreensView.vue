@@ -5,6 +5,7 @@ import { DENSITIES, PRESETS, clampDp, toDp } from '../model/devices'
 import { reflow, suggest } from '../model/grid'
 import type { PlayerStatus, Screen } from '../model/types'
 import { attempt, playersOf, refreshLayout, state, toast } from '../store'
+import EnrollTabletPanel from './EnrollTabletPanel.vue'
 import MdiIcon from './MdiIcon.vue'
 
 const emit = defineEmits<{ edit: [screen: Screen]; themes: [] }>()
@@ -16,6 +17,7 @@ const waiting = computed(() => state.players.filter((p) => !p.screenId))
 const adopted = computed(() => state.players.filter((p) => p.screenId))
 
 const creating = ref(false)
+const enrolling = ref(false)
 const newName = ref('')
 const newSize = ref('0')
 
@@ -275,6 +277,8 @@ function preview(s: Screen) {
           <span class="status" :class="{ online: p.online }">
             <span class="dot small" :class="{ on: p.online }" /> {{ status(p) }}
             <template v-if="p.battery != null"> · {{ p.battery }}%</template>
+            <span v-if="p.online && p.kiosk === 'locked'" title="Kiosk locked"><MdiIcon name="lock" :size="14" /></span>
+            <span v-else-if="p.online && p.kiosk === 'pinned'" title="Kiosk pinned (screen pinning)"><MdiIcon name="pin" :size="14" /></span>
           </span>
           <select class="shows" :value="p.screenId" :title="`Screen shown on ${p.name}`" @change="move(p, ($event.target as HTMLSelectElement).value)">
             <option v-for="s in screens" :key="s.id" :value="s.id">{{ s.name }}</option>
@@ -303,7 +307,17 @@ function preview(s: Screen) {
           <a v-if="state.info?.playerApp" href="api/player.apk" class="link">Download app ({{ state.info.playerApp }})</a>
           <a v-else :href="RELEASES" target="_blank" rel="noopener" class="link">Get the app on GitHub</a>
         </div>
+
+        <div v-if="state.info?.playerApp" class="row add">
+          <MdiIcon name="lock-outline" :size="20" class="muted" />
+          <span class="grow muted">
+            <strong>Kiosk tablet:</strong> enroll a factory-reset tablet with a QR code, so Kiosk lock keeps everyone on the
+            screen.
+          </span>
+          <button class="link-button" @click="enrolling = !enrolling">Enroll a tablet</button>
+        </div>
       </div>
+      <EnrollTabletPanel v-if="enrolling" class="enroll-panel" @close="enrolling = false" />
     </section>
   </div>
 </template>
@@ -598,6 +612,18 @@ button.quiet {
 .link {
   color: var(--accent);
   white-space: nowrap;
+}
+
+.link-button {
+  color: var(--accent);
+  white-space: nowrap;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.enroll-panel {
+  margin-top: 14px;
 }
 
 .code {

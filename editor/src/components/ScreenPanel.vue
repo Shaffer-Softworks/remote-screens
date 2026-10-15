@@ -48,6 +48,12 @@ function num(e: Event, min: number, max: number): number {
   const v = Number((e.target as HTMLInputElement).value)
   return Math.min(Math.max(Number.isFinite(v) ? Math.round(v) : min, min), max)
 }
+
+/** The kiosk PIN typed in, or null when empty or not 4 to 8 digits (the add-on drops those too). */
+function pin(e: Event): string | null {
+  const v = (e.target as HTMLInputElement).value.trim()
+  return /^\d{4,8}$/.test(v) ? v : null
+}
 </script>
 
 <template>
@@ -191,6 +197,26 @@ function num(e: Event, min: number, max: number): number {
         <input v-model.number="screen.settings.nightBrightness" v-range type="range" min="0" max="100" />
       </label>
       <label class="check"><input v-model="screen.settings.nightDark" type="checkbox" /> Dark at night</label>
+    </template>
+
+    <h3>Kiosk</h3>
+    <label class="check"><input v-model="screen.settings.kiosk" type="checkbox" /> Lock the tablet to this screen</label>
+    <template v-if="screen.settings.kiosk">
+      <label class="field">
+        PIN to unlock on the tablet (4 to 8 digits, empty unlocks only from here or Home Assistant)
+        <input
+          :value="screen.settings.kioskPin ?? ''"
+          type="password"
+          inputmode="numeric"
+          autocomplete="off"
+          maxlength="8"
+          @change="screen.settings.kioskPin = pin($event)"
+        />
+      </label>
+      <p class="note muted">
+        Enrolled tablets (Players, Enroll a tablet) can't be left at all. Others use screen pinning, which holding Back
+        and Overview undoes.
+      </p>
     </template>
     <p class="muted note">Home Assistant can change these too, with the Remote Screens integration's entities.</p>
   </div>

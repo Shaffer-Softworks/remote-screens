@@ -20,6 +20,19 @@ if [ -n "$apk" ]; then
   version_name=$(cat "$root/addon/VERSION")
   # The same sum as versionCode in player/build.gradle.kts.
   version_code=$(echo "$version_name" | awk -F'[.-]' '{ print $1 * 10000 + $2 * 100 + $3 }')
-  printf '{"versionCode": %s, "versionName": "%s"}\n' "$version_code" "$version_name" > "$dist/apk/version.json"
+  # QR enrollment checks the signing certificate: its SHA-256, URL-safe Base64 without padding. Without apksigner
+  # the add-on falls back to the APK's own checksum, which works until the next build.
+  checksum=""
+  apksigner=$(command -v apksigner || ls "${ANDROID_HOME:-$HOME/Library/Android/sdk}"/build-tools/*/apksigner 2>/dev/null | tail -1 || true)
+  if [ -n "$apksigner" ]; then
+    digest=$("$apksigner" verify --print-certs "$apk" 2>/dev/null | awk '/certificate SHA-256 digest/ { print $NF; exit }')
+    if [ -n "$digest" ]; then
+      checksum=$(echo "$digest" | xxd -r -p | base64 | tr '+/' '-_' | tr -d '=\n')
+    fi
+  else
+    echo "apksigner not found: QR enrollment will check the APK itself" >&2
+  fi
+  printf '{"versionCode": %s, "versionName": "%s", "signatureChecksum": "%s"}\n' \
+    "$version_code" "$version_name" "$checksum" > "$dist/apk/version.json"
 fi
 echo "addon/dist ready"

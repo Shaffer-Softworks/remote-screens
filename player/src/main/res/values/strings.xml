@@ -31,4 +31,9 @@
     <string name="screen_off_explanation">Remote Screens locks the tablet to turn the screen off in standby, and turns it back on when Home Assistant wakes it.</string>
     <string name="update_failed">The update could not be installed.</string>
     <string name="update_permission">Allow Remote Screens to install updates, then try again.</string>
+    <string name="kiosk_pin_title">Enter the kiosk PIN</string>
+    <string name="kiosk_pin_wrong">Wrong PIN.</string>
+    <string name="kiosk_unlock">Unlock tablet</string>
+    <string name="kiosk_lock_again">Lock again</string>
+    <string name="kiosk_remove_device_owner">Stop managing this tablet</string>
 </resources>

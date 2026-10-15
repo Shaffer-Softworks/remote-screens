@@ -74,6 +74,8 @@ class PlayerSession(
         private set
     var battery: Int? = null
         private set
+    var kiosk: String? = null
+        private set
 
     private var themeId = Themes.DEFAULT
     private var palette: Palette = Themes.RPI
@@ -355,6 +357,7 @@ class PlayerSession(
                 isAwake = message.awake
                 page = message.page
                 battery = message.battery
+                kiosk = message.kiosk
             }
             is PlayerMessage.SettingsChanged ->
                 screenId?.let { id -> context.screenService.updateSettings(id) { message.settings } }

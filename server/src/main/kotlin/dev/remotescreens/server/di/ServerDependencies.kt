@@ -11,10 +11,12 @@ import dev.remotescreens.server.data.pictures.PictureRepository
 import dev.remotescreens.server.data.renderdata.RenderDataRepository
 import dev.remotescreens.server.data.security.ApiKeyRepository
 import dev.remotescreens.server.i18n.LanguageRepository
+import dev.remotescreens.server.network.siteLocalAddress
 import dev.remotescreens.server.player.PlayerHub
 import dev.remotescreens.server.player.PlayerSessionContext
 import dev.remotescreens.server.player.ScreenClock
 import dev.remotescreens.server.player.action.ActionRouter
+import dev.remotescreens.server.service.EnrollmentService
 import dev.remotescreens.server.service.HomeAssistantCatalogService
 import dev.remotescreens.server.service.ScreenService
 import dev.remotescreens.server.service.ThemeService
@@ -50,6 +52,11 @@ class ServerDependencies(
     val screenService = ScreenService(layoutRepository)
     val themeService = ThemeService(layoutRepository)
     val homeAssistantCatalogService = HomeAssistantCatalogService(homeAssistant)
+    val enrollmentService = EnrollmentService(
+        playerApkRepository = playerApkRepository,
+        playerPort = config.playerPort,
+        defaultHost = { siteLocalAddress()?.hostAddress },
+    )
 
     val playerHub = PlayerHub(
         PlayerSessionContext(

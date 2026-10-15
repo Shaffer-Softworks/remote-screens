@@ -1,5 +1,6 @@
 package dev.remotescreens.player.ui.screens.player
 
+import android.app.Activity
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
@@ -36,6 +37,7 @@ import dev.remotescreens.player.ui.views.AddressDialog
 import dev.remotescreens.player.ui.views.ForgetScreenDialog
 import dev.remotescreens.player.ui.views.IdentifyBadge
 import dev.remotescreens.player.ui.views.InfoPanel
+import dev.remotescreens.player.ui.views.KioskPinDialog
 import dev.remotescreens.player.ui.views.ScreenSettingsDialog
 import dev.remotescreens.player.ui.views.UpdateDialog
 import dev.remotescreens.player.utils.applyScreenOrientation
@@ -117,6 +119,8 @@ private fun PlayerDialogs(viewState: PlayerViewModel.ViewState, viewModel: Playe
                 server = settingsDialog.server,
                 canOfferSelfStart = settingsDialog.canOfferSelfStart,
                 canOfferScreenOff = settingsDialog.canOfferScreenOff,
+                kioskAction = settingsDialog.kioskAction,
+                canRemoveDeviceOwner = settingsDialog.canRemoveDeviceOwner,
                 onBrightnessPreview = viewModel::onSettingsBrightnessPreview,
                 onConfirm = viewModel::onSettingsConfirmed,
                 onDismiss = viewModel::onSettingsDismissed,
@@ -124,8 +128,14 @@ private fun PlayerDialogs(viewState: PlayerViewModel.ViewState, viewModel: Playe
                 onForget = viewModel::onForgetRequested,
                 onAllowSelfStart = viewModel::onAllowSelfStartRequested,
                 onAllowScreenOff = viewModel::onAllowScreenOffRequested,
+                onUnlockKiosk = viewModel::onUnlockKioskRequested,
+                onLockKioskAgain = viewModel::onLockKioskAgainRequested,
+                onRemoveDeviceOwner = viewModel::onRemoveDeviceOwnerRequested,
             )
         }
+    }
+    if (viewState.isKioskPinDialogVisible) {
+        KioskPinDialog(onConfirm = viewModel::onKioskPinEntered, onDismiss = viewModel::onKioskPinDismissed)
     }
     viewState.addressDialog?.let { addressDialog ->
         AddressDialog(
@@ -159,15 +169,16 @@ private fun PlayerWindowEffects(viewState: PlayerViewModel.ViewState) {
 @Composable
 private fun PlayerEvents(viewModel: PlayerViewModel) {
     val context = LocalContext.current
+    val activity = LocalActivity.current
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(viewModel, lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            viewModel.events.collect { event -> handleEvent(context, event) }
+            viewModel.events.collect { event -> handleEvent(context, activity, event) }
         }
     }
 }
 
-private fun handleEvent(context: Context, event: PlayerEvent) {
+private fun handleEvent(context: Context, activity: Activity?, event: PlayerEvent) {
     when (event) {
         is PlayerEvent.ShowMessage -> Toast.makeText(context, event.text, Toast.LENGTH_LONG).show()
         is PlayerEvent.ShowMessageResource -> Toast.makeText(context, event.messageRes, Toast.LENGTH_LONG).show()
@@ -178,6 +189,8 @@ private fun handleEvent(context: Context, event: PlayerEvent) {
             Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()),
         )
         PlayerEvent.OpenScreenOffAdminSettings -> context.startActivity(screenOffAdminIntent(context))
+        // Pinning comes back when the activity resumes after the confirmation.
+        PlayerEvent.StopScreenPinning -> activity?.stopLockTask()
     }
 }
 

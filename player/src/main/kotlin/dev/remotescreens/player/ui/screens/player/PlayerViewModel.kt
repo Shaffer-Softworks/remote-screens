@@ -12,6 +12,8 @@ import dev.remotescreens.player.data.device.DisplayInfo
 import dev.remotescreens.player.data.device.ScreenPowerRepository
 import dev.remotescreens.player.data.discovery.DiscoveryRepository
 import dev.remotescreens.player.data.image.ImageDecoder
+import dev.remotescreens.player.data.kiosk.KioskManager
+import dev.remotescreens.player.data.kiosk.KioskState
 import dev.remotescreens.player.data.preferences.PlayerPreferencesRepository
 import dev.remotescreens.player.data.update.UpdateRepository
 import dev.remotescreens.player.ui.screens.player.remote.RemoteScreenState
@@ -30,6 +32,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -60,6 +63,7 @@ class PlayerViewModel @Inject constructor(
     private val updateRepository: UpdateRepository,
     private val deviceRepository: DeviceRepository,
     private val screenPowerRepository: ScreenPowerRepository,
+    private val kioskManager: KioskManager,
     private val imageDecoder: ImageDecoder,
 ) : ViewModel() {
 
@@ -77,6 +81,11 @@ class PlayerViewModel @Inject constructor(
         val availableUpdate: ServerMessage.UpdateAvailable? = null,
         val settingsDialog: SettingsDialogState? = null,
         val addressDialog: AddressDialogState? = null,
+        /** The screen's Kiosk lock setting as last saved; null until it is read, so a restart does not unlock. */
+        val isKioskEnabled: Boolean? = null,
+        /** Unlocked on the tablet with the PIN, until "Lock again" or Home Assistant turns the kiosk on again. */
+        val isLocallyUnlocked: Boolean = false,
+        val isKioskPinDialogVisible: Boolean = false,
     ) {
         private val scheduledBrightnessPercent: Int
             get() = when {
@@ -91,7 +100,14 @@ class PlayerViewModel @Inject constructor(
         val isBlackout: Boolean get() = !isAwake && scheduledBrightnessPercent == 0
 
         val isAnyDialogVisible: Boolean
-            get() = settingsDialog != null || addressDialog != null || availableUpdate != null
+            get() = settingsDialog != null ||
+                addressDialog != null ||
+                availableUpdate != null ||
+                isKioskPinDialogVisible
+
+        /** Whether the player should be locked in front; null while the saved setting is still being read. */
+        val isKioskWanted: Boolean?
+            get() = isKioskEnabled?.let { isEnabled -> isEnabled && !isLocallyUnlocked }
     }
 
     private val _viewState = MutableStateFlow(ViewState())
@@ -112,6 +128,7 @@ class PlayerViewModel @Inject constructor(
         observeConnectionStatus()
         observeServerMessages()
         observeNightSchedule()
+        observeKiosk()
         onUserInteraction()
     }
 
@@ -200,6 +217,7 @@ class PlayerViewModel @Inject constructor(
                 page = currentState.remoteScreen.page,
                 battery = batteryStatus.levelPercent,
                 charging = batteryStatus.isCharging,
+                kiosk = kioskManager.lockTaskState().name.lowercase(),
             ),
         )
     }
@@ -452,6 +470,9 @@ class PlayerViewModel @Inject constructor(
                 settings.backToHomeSeconds != previousSettings.backToHomeSeconds -> restartClocks()
         }
         if (settings.standbyScreenOff != previousSettings.standbyScreenOff) updateScreenPower()
+        if (settings.kiosk != _viewState.value.isKioskEnabled) {
+            viewModelScope.launch { preferencesRepository.setKioskEnabled(settings.kiosk) }
+        }
     }
 
     private fun observeNightSchedule() {
@@ -465,15 +486,91 @@ class PlayerViewModel @Inject constructor(
 
     // endregion
 
+    // region Kiosk
+
+    private fun observeKiosk() {
+        viewModelScope.launch {
+            combine(
+                preferencesRepository.isKioskEnabled,
+                preferencesRepository.isKioskSuppressed,
+            ) { isEnabled, isSuppressed -> isEnabled to isSuppressed }
+                .collect { (isEnabled, isSuppressed) ->
+                    _viewState.update {
+                        it.copy(isKioskEnabled = isEnabled, isLocallyUnlocked = isEnabled && isSuppressed)
+                    }
+                }
+        }
+    }
+
+    /** The activity locked or unlocked itself; the add-on shows how. */
+    fun onKioskStateChanged() {
+        sendDeviceState()
+    }
+
+    fun onKioskPinEntered(pin: String) {
+        val kioskPin = _viewState.value.screenSettings.kioskPin
+        _viewState.update { it.copy(isKioskPinDialogVisible = false) }
+        if (kioskPin != null && pin == kioskPin) {
+            openSettingsDialog(isPinVerified = true)
+        } else {
+            viewModelScope.launch { _events.send(PlayerEvent.ShowMessageResource(R.string.kiosk_pin_wrong)) }
+        }
+        onUserInteraction()
+    }
+
+    fun onKioskPinDismissed() {
+        _viewState.update { it.copy(isKioskPinDialogVisible = false) }
+        onUserInteraction()
+    }
+
+    fun onUnlockKioskRequested() {
+        onSettingsDismissed()
+        viewModelScope.launch { preferencesRepository.setKioskSuppressed(true) }
+    }
+
+    fun onLockKioskAgainRequested() {
+        onSettingsDismissed()
+        viewModelScope.launch { preferencesRepository.setKioskSuppressed(false) }
+    }
+
+    fun onRemoveDeviceOwnerRequested() {
+        onSettingsDismissed()
+        kioskManager.removeDeviceOwner()
+    }
+
+    // endregion
+
     // region Settings dialog
 
+    /** While the kiosk is locked and has a PIN, the PIN comes first. */
     private fun openSettings() {
-        _viewState.update {
-            it.copy(
+        val currentState = _viewState.value
+        if (currentState.isKioskWanted == true && currentState.screenSettings.kioskPin != null) {
+            _viewState.update { it.copy(isKioskPinDialogVisible = true) }
+        } else {
+            openSettingsDialog(isPinVerified = false)
+        }
+    }
+
+    private fun openSettingsDialog(isPinVerified: Boolean) {
+        _viewState.update { currentState ->
+            val isKioskLocked = currentState.isKioskWanted == true
+            val kioskAction = when {
+                currentState.isKioskEnabled != true -> null
+                currentState.isLocallyUnlocked -> KioskAction.LOCK_AGAIN
+                isPinVerified -> KioskAction.UNLOCK
+                else -> null
+            }
+            currentState.copy(
                 settingsDialog = SettingsDialogState(
                     server = connectionRepository.server.value,
-                    canOfferSelfStart = !deviceRepository.canSelfStart(),
-                    canOfferScreenOff = it.screenSettings.standbyScreenOff && !screenPowerRepository.canTurnScreenOff(),
+                    // Lock task blocks the system screens these buttons open.
+                    canOfferSelfStart = !isKioskLocked && !deviceRepository.canSelfStart(),
+                    canOfferScreenOff = !isKioskLocked &&
+                        currentState.screenSettings.standbyScreenOff &&
+                        !screenPowerRepository.canTurnScreenOff(),
+                    kioskAction = kioskAction,
+                    canRemoveDeviceOwner = !isKioskLocked && kioskManager.isDeviceOwner(),
                 ),
             )
         }
@@ -578,6 +675,8 @@ class PlayerViewModel @Inject constructor(
                 _events.send(PlayerEvent.OpenInstallPermissionSettings)
                 return@launch
             }
+            // The device owner installs without asking; screen pinning would hide Android's confirmation.
+            if (kioskManager.lockTaskState() == KioskState.PINNED) _events.send(PlayerEvent.StopScreenPinning)
             updateRepository.install(server, update.path, token)
         }
     }

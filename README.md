@@ -54,6 +54,23 @@ The editor, opened through ingress, with the made-up demo home:
 How to pair a tablet and lay out a screen is in [addon/DOCS.md](addon/DOCS.md). Without the Supervisor, see
 [docker/compose.yaml](docker/compose.yaml).
 
+## Kiosk lock
+
+A screen's **Kiosk lock** (a switch in Home Assistant, or a setting in the editor) keeps its tablet on Remote
+Screens. Enrolled as a kiosk (Android's *device owner*), the tablet runs in lock task mode: no Home, Recents,
+notifications or power menu. Other tablets fall back to screen pinning. A **Kiosk PIN** unlocks the tablet locally.
+
+1. **QR code.** Factory reset the tablet, tap its Welcome screen six times and scan the code from the editor
+   (**Tablets**, **Enroll a tablet**). The tablet joins Wi-Fi, downloads the app from the add-on and enrolls itself.
+2. **adb**, for tablets without the QR scanner:
+   `./scripts/enroll-device-owner.sh --fresh remote-screens.apk` (tablet with no accounts, USB debugging on).
+
+[addon/DOCS.md](addon/DOCS.md#kiosk-lock) has the details: pinning, the PIN, and how to stop managing a tablet.
+
+QR enrollment checks the APK's signing certificate. `tools/package_addon.sh` writes its checksum to `version.json`
+when `apksigner` (Android SDK build tools, which need Java) is found; without it the add-on sends a checksum of the
+APK file instead, which also works.
+
 ## Development
 
 You need JDK 21, the Android SDK (for the player), Node 24 and Python 3.13.

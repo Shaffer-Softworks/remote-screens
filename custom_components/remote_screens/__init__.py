@@ -35,7 +35,7 @@ from .const import (
 )
 from .coordinator import RemoteScreensConfigEntry, RemoteScreensCoordinator
 
-PLATFORMS = [Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.SWITCH, Platform.TIME]
+PLATFORMS = [Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.SWITCH, Platform.TEXT, Platform.TIME]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 

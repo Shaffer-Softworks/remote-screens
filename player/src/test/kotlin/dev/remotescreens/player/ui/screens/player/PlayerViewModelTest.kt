@@ -9,6 +9,8 @@ import dev.remotescreens.player.data.device.DisplayInfo
 import dev.remotescreens.player.data.device.ScreenPowerRepository
 import dev.remotescreens.player.data.discovery.DiscoveryRepository
 import dev.remotescreens.player.data.image.ImageDecoder
+import dev.remotescreens.player.data.kiosk.KioskManager
+import dev.remotescreens.player.data.kiosk.KioskState
 import dev.remotescreens.player.data.preferences.PlayerPreferencesRepository
 import dev.remotescreens.player.data.update.UpdateRepository
 import dev.remotescreens.shared.ActionRef
@@ -53,10 +55,17 @@ class PlayerViewModelTest {
         on { messages } doReturn serverMessages
         on { server } doReturn connectedServer
     }
+    private val isKioskEnabled = MutableStateFlow(false)
+    private val isKioskSuppressed = MutableStateFlow(false)
     private val preferencesRepository: PlayerPreferencesRepository = mock {
         on { server } doReturn flowOf("10.0.0.5:8100")
         on { token } doReturn flowOf("token")
         on { screenName } doReturn flowOf("Kitchen")
+        on { isKioskEnabled } doReturn isKioskEnabled
+        on { isKioskSuppressed } doReturn isKioskSuppressed
+    }
+    private val kioskManager: KioskManager = mock {
+        on { lockTaskState() } doReturn KioskState.OFF
     }
     private val deviceRepository: DeviceRepository = mock {
         on { batteryStatus() } doReturn BatteryStatus(levelPercent = 50, isCharging = true)
@@ -79,6 +88,7 @@ class PlayerViewModelTest {
             updateRepository = mock<UpdateRepository>(),
             deviceRepository = deviceRepository,
             screenPowerRepository = screenPowerRepository,
+            kioskManager = kioskManager,
             imageDecoder = mock<ImageDecoder>(),
         )
     }
@@ -274,5 +284,105 @@ class PlayerViewModelTest {
         receive(ServerMessage.Identify(seconds = 5))
 
         assertEquals("Kitchen", viewModel.viewState.value.identifyScreenName)
+    }
+
+    private fun lockKiosk(kioskPin: String? = "1234") {
+        isKioskEnabled.value = true
+        receive(ServerMessage.Settings(ScreenSettings(kiosk = true, kioskPin = kioskPin)))
+    }
+
+    private fun openSettings() {
+        viewModel.onDocumentAction(Slot.MAIN, revision = 7, metadata = ActionRef("_", "settings").encode())
+        runCurrent()
+    }
+
+    @Test
+    fun `the kiosk is not applied before the saved setting is read`() {
+        assertNull(viewModel.viewState.value.isKioskWanted)
+
+        runCurrent()
+
+        assertEquals(false, viewModel.viewState.value.isKioskWanted)
+    }
+
+    @Test
+    fun `the kiosk setting from the add-on is saved`() {
+        receive(ServerMessage.Settings(ScreenSettings(kiosk = true)))
+
+        verifyBlocking(preferencesRepository) { setKioskEnabled(true) }
+    }
+
+    @Test
+    fun `a locked kiosk with a pin asks for it before settings`() {
+        lockKiosk()
+
+        openSettings()
+
+        assertTrue(viewModel.viewState.value.isKioskPinDialogVisible)
+        assertNull(viewModel.viewState.value.settingsDialog)
+    }
+
+    @Test
+    fun `the right pin opens settings with the unlock button`() {
+        lockKiosk()
+        openSettings()
+
+        viewModel.onKioskPinEntered("1234")
+        runCurrent()
+
+        val settingsDialog = viewModel.viewState.value.settingsDialog
+        assertEquals(KioskAction.UNLOCK, settingsDialog?.kioskAction)
+        assertFalse(settingsDialog?.canOfferSelfStart ?: true)
+        assertFalse(viewModel.viewState.value.isKioskPinDialogVisible)
+    }
+
+    @Test
+    fun `a wrong pin keeps settings closed`() {
+        lockKiosk()
+        openSettings()
+
+        viewModel.onKioskPinEntered("9999")
+        runCurrent()
+
+        assertNull(viewModel.viewState.value.settingsDialog)
+        assertFalse(viewModel.viewState.value.isKioskPinDialogVisible)
+    }
+
+    @Test
+    fun `a kiosk without a pin opens settings with no way to unlock`() {
+        lockKiosk(kioskPin = null)
+
+        openSettings()
+
+        assertNull(viewModel.viewState.value.settingsDialog?.kioskAction)
+        assertFalse(viewModel.viewState.value.isKioskPinDialogVisible)
+    }
+
+    @Test
+    fun `unlocking on the tablet is saved and lets the player out`() {
+        lockKiosk()
+        assertEquals(true, viewModel.viewState.value.isKioskWanted)
+
+        viewModel.onUnlockKioskRequested()
+        runCurrent()
+        verifyBlocking(preferencesRepository) { setKioskSuppressed(true) }
+
+        isKioskSuppressed.value = true
+        runCurrent()
+        assertEquals(false, viewModel.viewState.value.isKioskWanted)
+    }
+
+    @Test
+    fun `an unlocked kiosk offers to lock again without the pin`() {
+        lockKiosk()
+        isKioskSuppressed.value = true
+        runCurrent()
+
+        openSettings()
+
+        assertEquals(KioskAction.LOCK_AGAIN, viewModel.viewState.value.settingsDialog?.kioskAction)
+        viewModel.onLockKioskAgainRequested()
+        runCurrent()
+        verifyBlocking(preferencesRepository) { setKioskSuppressed(false) }
     }
 }

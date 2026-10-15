@@ -18,4 +18,6 @@ data class PlayerStatus(
     @SerialName("awake") val isAwake: Boolean,
     val page: Int,
     val battery: Int?,
+    /** `off`, `pinned` or `locked`, as the player reports it; null while offline or from older players. */
+    val kiosk: String? = null,
 )

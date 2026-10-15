@@ -121,6 +121,7 @@ class PlayerHub(
             isAwake = session?.isAwake ?: false,
             page = session?.page ?: 0,
             battery = session?.battery,
+            kiosk = session?.kiosk,
         )
     }
 

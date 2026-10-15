@@ -43,7 +43,7 @@ class Connected(RemoteScreensEntity, BinarySensorEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         return {
             "players": [
-                {k: p.get(k) for k in ("name", "online", "awake", "battery", "widthDp", "heightDp", "appVersion")}
+                {k: p.get(k) for k in ("name", "online", "awake", "battery", "kiosk", "widthDp", "heightDp", "appVersion")}
                 for p in self.screen.get("players") or []
             ]
         }
