@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { colorOf, isHex, rgbOf } from '../model/palette'
+import { computed } from 'vue'
+import { colorOf, isHex, packHex, rgbOf } from '../model/palette'
+import ColorInput from './ColorInput.vue'
 
 // A row of theme colours (role or pastel keys) to pick one from; the first button clears the choice and the last
-// picks any colour, stored as `#RRGGBB`.
+// picks any colour, stored as `#RRGGBB` or `#AARRGGBB`.
 const props = withDefaults(defineProps<{ keys: string[]; clear?: string; clearTitle?: string; clearColor?: string }>(), {
   clear: 'A',
   clearTitle: 'Default',
@@ -10,9 +12,13 @@ const props = withDefaults(defineProps<{ keys: string[]; clear?: string; clearTi
 })
 const model = defineModel<string | undefined>()
 
-function pick(e: Event) {
-  model.value = (e.target as HTMLInputElement).value.toUpperCase()
-}
+/** The custom picker's hex: the model when it is hex, else the resolved colour at full opacity to start a pick from. */
+const custom = computed({
+  get: () => (isHex(model.value) ? model.value! : packHex(rgbOf(model.value))),
+  set: (v: string) => {
+    model.value = v
+  },
+})
 </script>
 
 <template>
@@ -37,9 +43,7 @@ function pick(e: Event) {
       :title="k"
       @click="model = k"
     />
-    <label class="swatch custom" :class="{ on: isHex(model) }" :style="isHex(model) ? { background: colorOf(model) } : {}" :title="isHex(model) ? model : 'Any colour'">
-      <input type="color" :value="rgbOf(model)" @input="pick" />
-    </label>
+    <ColorInput v-model="custom" class="custom" :class="{ on: isHex(model) }" compact />
   </div>
 </template>
 
@@ -47,6 +51,7 @@ function pick(e: Event) {
 .swatches {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
 }
 
@@ -60,24 +65,13 @@ function pick(e: Event) {
   font-size: 11px;
 }
 
-.swatch.on {
+.swatch.on,
+.custom.on :deep(.swatch) {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent);
 }
 
-.custom {
-  position: relative;
-  box-sizing: border-box;
-  cursor: pointer;
+.custom:not(.on) :deep(.board) {
   background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
-}
-
-.custom input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
 }
 </style>

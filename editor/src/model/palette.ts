@@ -77,10 +77,29 @@ export function colorOf(key: string | undefined, theme: ResolvedTheme | undefine
   return cssColor(theme.pastels[key] ?? theme.roles[key])
 }
 
+/** Resolve [value] to a stored hex (`#RRGGBB` or `#AARRGGBB`), or undefined when unknown. */
+function hexOf(value: string | undefined, theme: ResolvedTheme | undefined): string | undefined {
+  const hex = isHex(value) ? value : (value && theme && (theme.pastels[value] ?? theme.roles[value])) || undefined
+  return isHex(hex) ? hex : undefined
+}
+
 /** [value] (a key or hex colour) as `#rrggbb` for a colour input, dropping any alpha; black when it is unknown. */
 export function rgbOf(value: string | undefined, theme: ResolvedTheme | undefined = activeTheme.value): string {
-  const hex = isHex(value) ? value : (value && theme && (theme.pastels[value] ?? theme.roles[value])) || undefined
-  return isHex(hex) ? `#${hex.slice(-6)}`.toLowerCase() : '#000000'
+  const hex = hexOf(value, theme)
+  return hex ? `#${hex.slice(-6)}`.toLowerCase() : '#000000'
+}
+
+/** Alpha byte (0–255) of [value]; opaque when it is a 6-digit hex, a theme key without AA, or unknown. */
+export function alphaOf(value: string | undefined, theme: ResolvedTheme | undefined = activeTheme.value): number {
+  const hex = hexOf(value, theme)
+  return hex && hex.length === 9 ? parseInt(hex.slice(1, 3), 16) : 0xff
+}
+
+/** `#RRGGBB` when [alpha] is opaque, else `#AARRGGBB` (the add-on's order). [rgb] may be `#rrggbb` from a colour input. */
+export function packHex(rgb: string, alpha: number = 0xff): string {
+  const body = rgb.replace(/^#/, '').slice(-6).toUpperCase()
+  const a = Math.min(255, Math.max(0, Math.round(alpha)))
+  return a === 0xff ? `#${body}` : `#${a.toString(16).padStart(2, '0').toUpperCase()}${body}`
 }
 
 /** The colour a tile lights up in: its own pastel or hex colour, else its domain's. */
