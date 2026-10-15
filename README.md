@@ -14,6 +14,21 @@ draws every colour from it (`server/.../render/Themes.kt`), and the editor previ
 The idea follows [Tessera](https://github.com/MaxGramser/homeassistant_espscreen), which does this for ESP32
 screens. No Tessera code or assets are used.
 
+## Screenshots
+
+The editor, opened through ingress, with the made-up demo home:
+
+![A screen's home page in the editor](docs/screenshots/editor.png)
+
+| | |
+| --- | --- |
+| ![The Living room page of a screen](docs/screenshots/editor-room.png) | ![Editing a tile's entity, colours, size and actions](docs/screenshots/editor-tile.png) |
+| Lay out tiles on a grid, page by page | Pick a tile's entity, icon, colours, size and actions |
+| ![The list of screens and paired tablets](docs/screenshots/screens.png) | ![The built-in themes and their colours](docs/screenshots/themes.png) |
+| Screens and the tablets showing them | Themes, built-in or your own |
+
+`tools/capture_screenshots.mjs` retakes them from a running demo server.
+
 ## What is in this repository
 
 | Path | What |
