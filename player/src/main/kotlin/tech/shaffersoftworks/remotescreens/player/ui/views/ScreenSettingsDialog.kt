@@ -173,7 +173,7 @@ fun ForgetScreenDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     )
 }
 
-@Preview
+@Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun ScreenSettingsDialogPreview() {
     RemoteScreensTheme {

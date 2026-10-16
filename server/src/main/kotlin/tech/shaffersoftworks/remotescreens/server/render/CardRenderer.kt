@@ -47,6 +47,8 @@ private const val CLOSE_KEY_DP = 40f
 private const val SWATCH_DP = 46f
 private const val FLOW_KEY_H_DP = 48f
 private const val LEVEL_BAR_H_DP = 52f
+/** Segmented level bar height on detail cards (mockup style). */
+private const val SEG_BAR_H_DP = 16f
 private const val MEDIA_CTRL_DP = 60f
 private const val TOGGLE_ICON_DP = 64f
 private const val STEPPER_KEY_DP = 72f
@@ -55,8 +57,10 @@ private const val ROW_GAP_DP = 6f
 private const val FLOW_PAD_DP = 8f
 private const val PANEL_MARGIN_DP = 32f
 private const val PANEL_MAX_WIDTH_DP = 620f
-private const val LEVEL_STEPS = 10
+private const val LEVEL_STEPS = 11
 private const val LEVEL_DEFAULT_MAX = 100.0
+private const val FLOW_KEYS_SEGMENT_MAX = 5
+private const val FLOW_KEY_SEG_H_DP = 42f
 private const val FAN_PERCENTAGE_FLAG = 1
 private const val FAN_OSCILLATE_FLAG = 2
 private const val FAN_DIRECTION_FLAG = 4
@@ -158,18 +162,25 @@ object CardRenderer {
     private fun DocContext.header(entityId: String, card: String) {
         val ink = role(Role.INK)
         val soft = role(Role.INK_SOFT)
+        // Mockup: circular close on the left, title centred (balanced by a matching spacer).
         scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
             val doc = this@header
             doc.key(ActionRef("_", "close"), icon = "close", heightDp = CLOSE_KEY_DP, widthDp = CLOSE_KEY_DP, round = true)
-            Spacer(Modifier.width(doc.units.px(HEADER_GAP_DP)))
-            Column(Modifier.horizontalWeight(1f)) {
+            Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
                 if (card == "energy") {
-                    doc.label(doc.i18n.t("ui.house"), Type.HEADLINE, ink, Weight.SEMI_BOLD)
+                    doc.label(doc.i18n.t("ui.house"), Type.HEADLINE, ink, Weight.SEMI_BOLD, align = RcTextAlign.Center)
                 } else {
-                    doc.label(doc.text(Vars.entity(entityId, Vars.KEY_NAME)), Type.HEADLINE, ink, Weight.SEMI_BOLD)
-                    doc.label(doc.text(Vars.entity(entityId, Vars.KEY_STATE)), Type.BODY, soft)
+                    doc.label(
+                        doc.text(Vars.entity(entityId, Vars.KEY_NAME)),
+                        Type.HEADLINE, ink, Weight.SEMI_BOLD, align = RcTextAlign.Center,
+                    )
+                    doc.label(
+                        doc.text(Vars.entity(entityId, Vars.KEY_STATE)),
+                        Type.BODY, soft, align = RcTextAlign.Center,
+                    )
                 }
             }
+            Spacer(Modifier.size(doc.units.px(CLOSE_KEY_DP), doc.units.px(CLOSE_KEY_DP)))
         }
     }
 
@@ -192,10 +203,36 @@ object CardRenderer {
         gap(FLOW_PAD_DP)
     }
 
-    private fun DocContext.bar(entityId: String, verb: String, width: Float, min: Double = 0.0, max: Double = LEVEL_DEFAULT_MAX, level: String = Vars.KEY_LEVEL) {
-        levelBar(float(Vars.entity(entityId, level)), width, LEVEL_BAR_H_DP, role(Role.INK), role(Role.KEY), LEVEL_STEPS) { i ->
-            val v = min + (max - min) * i / LEVEL_STEPS.toDouble()
-            ref(entityId, verb, if (v % 1.0 == 0.0) v.toInt().toString() else "%.1f".format(java.util.Locale.ROOT, v))
+    private fun DocContext.bar(
+        entityId: String,
+        verb: String,
+        width: Float,
+        min: Double = 0.0,
+        max: Double = LEVEL_DEFAULT_MAX,
+        level: String = Vars.KEY_LEVEL,
+    ) {
+        // Keep the continuous float declared so predictions still update other readers.
+        float(Vars.entity(entityId, level))
+        segmentedLevelBar(
+            entityId = entityId,
+            levelKey = level,
+            widthDp = width,
+            heightDp = SEG_BAR_H_DP,
+            steps = LEVEL_STEPS,
+            levelOf = { states ->
+                if (level == "tilt") {
+                    ((states[entityId]?.number("current_tilt_position") ?: 0.0) / LEVEL_DEFAULT_MAX).toFloat()
+                } else {
+                    Present.view(states[entityId], i18n).level ?: 0f
+                }
+            },
+        ) { step ->
+            val value = min + (max - min) * step / LEVEL_STEPS.toDouble()
+            ref(
+                entityId,
+                verb,
+                if (value % 1.0 == 0.0) value.toInt().toString() else "%.1f".format(java.util.Locale.ROOT, value),
+            )
         }
     }
 
@@ -236,14 +273,29 @@ object CardRenderer {
         }
     }
 
-    /** Choices that wrap onto as many rows as they need. */
-    private fun DocContext.flowKeys(entityId: String, verb: String, choices: List<Pair<String, String>>, chosen: (EntityState) -> String?) {
+    /** Choices that wrap onto as many rows as they need; short lists use a connected segment row. */
+    private fun DocContext.flowKeys(
+        entityId: String,
+        verb: String,
+        choices: List<Pair<String, String>>,
+        chosen: (EntityState) -> String?,
+    ) {
         bindChoices(entityId, verb, entityId, choices.map { it.first }, chosen)
+        if (choices.size in 2..FLOW_KEYS_SEGMENT_MAX) {
+            choiceRow(entityId, verb, choices, { ref(entityId, verb, it) }, FLOW_KEY_SEG_H_DP)
+            return
+        }
         scope.Flow(Modifier.fillMaxWidth()) {
             val doc = this@flowKeys
-            choices.forEachIndexed { i, (value, word) ->
+            choices.forEachIndexed { index, (value, word) ->
                 Box(Modifier.padding(0f, 0f, doc.units.px(FLOW_PAD_DP), doc.units.px(FLOW_PAD_DP))) {
-                    doc.key(ref(entityId, verb, value), text = word, bg = doc.color(Vars.option(entityId, verb, i, Vars.KEY_BG)), ink = doc.color(Vars.option(entityId, verb, i, Vars.KEY_INK)), heightDp = 42f)
+                    doc.key(
+                        ref(entityId, verb, value),
+                        text = word,
+                        bg = doc.color(Vars.option(entityId, verb, index, Vars.KEY_BG)),
+                        ink = doc.color(Vars.option(entityId, verb, index, Vars.KEY_INK)),
+                        heightDp = FLOW_KEY_SEG_H_DP,
+                    )
                 }
             }
         }
@@ -810,8 +862,10 @@ object CardRenderer {
         gap(CARD_GAP_DP)
         key(
             ref(entityId, "reset"),
-            text = i18n.t("ui.reset"), icon = "refresh", heightDp = FLOW_KEY_H_DP,
+            text = i18n.t("ui.reset"),
+            heightDp = FLOW_KEY_H_DP,
             modifier = Modifier.fillMaxWidth(),
+            round = true,
         )
     }
 

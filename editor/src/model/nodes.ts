@@ -111,6 +111,19 @@ export const COMPONENTS: ComponentSpec[] = [
   { id: 'qr', type: 'qr', label: 'QR code', icon: 'qrcode', group: 'Display' },
   { id: 'markdown', type: 'markdown', label: 'Markdown', icon: 'language-markdown-outline', group: 'Basic' },
   { id: 'tabs', type: 'tabs', label: 'Tabs', icon: 'tab', group: 'Layouts' },
+  {
+    id: 'timerkeys',
+    type: 'timerkeys',
+    label: 'Timer controls',
+    icon: 'timer-play-outline',
+    group: 'Controls',
+  },
+  { id: 'todolist', type: 'todolist', label: 'To-do list', icon: 'checkbox-marked-outline', group: 'Controls' },
+  { id: 'events', type: 'events', label: 'Events', icon: 'calendar-month', group: 'Display' },
+  { id: 'mediabar', type: 'mediabar', label: 'Media bar', icon: 'play-box-outline', group: 'Controls' },
+  { id: 'forecast', type: 'forecast', label: 'Forecast', icon: 'weather-partly-cloudy', group: 'Display' },
+  { id: 'presence', type: 'presence', label: 'Presence', icon: 'account-group-outline', group: 'Display' },
+  { id: 'led', type: 'led', label: 'LED', icon: 'circle', group: 'Display' },
 ]
 
 export function componentOf(type: NodeType): ComponentSpec | undefined {
@@ -173,6 +186,10 @@ const DEFAULT_PROPS: Partial<Record<NodeType, Record<string, string>>> = {
   qr: { text: 'https://www.home-assistant.io', size: '160' },
   markdown: { text: '**Hello**\nA short note' },
   tabs: { labels: 'One,Two', gap: '8' },
+  todolist: { max: '8' },
+  events: { max: '3' },
+  forecast: { days: '5' },
+  led: { size: '16' },
 }
 
 /** A new component of [type]; a `tile` needs the card it shows. */

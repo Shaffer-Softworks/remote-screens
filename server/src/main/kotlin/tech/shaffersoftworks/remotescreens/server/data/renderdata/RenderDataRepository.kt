@@ -51,17 +51,21 @@ class RenderDataRepository(private val homeAssistant: HomeAssistant) {
     suspend fun forScreen(screen: Screen): RenderData {
         val tiles = screen.pages.flatMap { it.allTiles() }
         val weatherEntities = tiles.mapNotNull { it.entityId }.filter { it.startsWith("weather.") }.distinct()
+        val todoEntities = tiles.mapNotNull { it.entityId }.filter { it.startsWith("todo.") }.distinct()
         val graphedEntities = tiles.filter(::isGraphed).mapNotNull { it.entityId }.distinct()
         val mediaPlayers = tiles.filter { it.effectiveKind() == "media_player" }.mapNotNull { it.entityId }.distinct()
         val needsEnergy = tiles.any { it.effectiveKind() == "energy" }
         val historyHours = tiles.firstOrNull { it.effectiveKind() == "history" }
             ?.options?.get("hours")?.toIntOrNull()
             ?: DEFAULT_HISTORY_HOURS
+        // Drop cached to-dos so a complete on the page is visible after the next rebuild.
+        for (entityId in todoEntities) todos.remove(entityId)
         return RenderData(
             forecasts = weatherEntities.associateWith { forecast(it) },
             history = graphedEntities.associateWith { history(it, historyHours) },
             energy = if (needsEnergy) energy() else null,
             browse = mediaPlayers.associateWith { browse(it) },
+            todos = todoEntities.associateWith { todoItems(it) },
         )
     }
 

@@ -79,7 +79,7 @@ object DemoLayout {
                     "column",
                     size = NodeSize("fill", "fill"),
                     style = NodeStyle(padding = 16f),
-                    props = mapOf("gap" to "12"),
+                    props = mapOf("gap" to "12", "scroll" to "true"),
                     children = listOf(
                         Node("title", "text", props = mapOf("text" to "Free-form", "fontSize" to "28", "weight" to "700")),
                         Node(
@@ -96,11 +96,27 @@ object DemoLayout {
                         Node(
                             "tabs",
                             "tabs",
-                            size = NodeSize("fill", "weight:1"),
+                            size = NodeSize("fill", "dp:160"),
                             props = mapOf("labels" to "Note,Light", "gap" to "8"),
                             children = listOf(
                                 Node("md", "markdown", props = mapOf("text" to "**Welcome**\nDrag components in the editor.")),
                                 Node("sw", "switch", bind = NodeBinding("light.living_room")),
+                            ),
+                        ),
+                        Node("now", "mediabar", size = NodeSize("fill", "wrap"), bind = NodeBinding("media_player.living_room")),
+                        Node("timerRow", "timerkeys", size = NodeSize("fill", "wrap"), bind = NodeBinding("timer.kitchen")),
+                        Node("days", "forecast", size = NodeSize("fill", "wrap"), bind = NodeBinding("weather.home"), props = mapOf("days" to "5")),
+                        Node("who", "presence", size = NodeSize("fill", "wrap")),
+                        Node("ev", "events", size = NodeSize("fill", "wrap"), bind = NodeBinding("calendar.family")),
+                        Node("todos", "todolist", size = NodeSize("fill", "wrap"), bind = NodeBinding("todo.shopping")),
+                        Node(
+                            "ledRow",
+                            "row",
+                            size = NodeSize("fill", "wrap"),
+                            props = mapOf("gap" to "12", "alignment" to "center"),
+                            children = listOf(
+                                Node("ledLabel", "text", props = mapOf("text" to "Living room")),
+                                Node("dot", "led", bind = NodeBinding("light.living_room"), props = mapOf("size" to "18")),
                             ),
                         ),
                     ),

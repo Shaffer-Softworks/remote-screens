@@ -90,6 +90,8 @@ private const val TALL_HEIGHT_DP = 150f
 private const val WIDE_ASPECT = 0.9f
 private const val LEVEL_MIN_WIDTH_DP = 150f
 private const val LEVEL_BAR_HEIGHT_DP = 28f
+/** Domain-mockup segmented fill under entity tiles (humidifier / hot water). */
+private const val TILE_SEG_BAR_H_DP = 14f
 private const val LEVEL_STEPS = 10
 private const val LEVEL_DEFAULT_MAX = 100.0
 private const val COVER_POSITION_FLAG = 4
@@ -350,13 +352,18 @@ private fun DocContext.entityTileLevelBar(tile: Tile, entityId: String, entitySt
     } else {
         0.0 to LEVEL_DEFAULT_MAX
     }
-    levelBar(
-        float(Vars.entity(entityId, Vars.KEY_LEVEL)),
-        widthDp,
-        LEVEL_BAR_HEIGHT_DP,
-        color(Vars.tile(tile.id, Vars.KEY_ICON)),
-        role(Role.TRACK),
-        LEVEL_STEPS,
+    // Keep the continuous float declared for other readers / predictions.
+    float(Vars.entity(entityId, Vars.KEY_LEVEL))
+    // Domain mockup: discrete teal segments on a dark track (humidifier / hot water).
+    segmentedLevelBar(
+        entityId = entityId,
+        levelKey = Vars.KEY_LEVEL,
+        widthDp = widthDp,
+        heightDp = TILE_SEG_BAR_H_DP,
+        steps = LEVEL_STEPS,
+        levelOf = { states -> Present.view(states[entityId], i18n).level ?: 0f },
+        fillRole = Role.ACCENT,
+        trackRole = Role.TRACK,
     ) { step ->
         val value = minValue + (maxValue - minValue) * step / LEVEL_STEPS.toDouble()
         ActionRef(
