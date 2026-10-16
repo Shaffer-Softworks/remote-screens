@@ -195,9 +195,9 @@ sealed interface ServerMessage {
     data class Bitmap(val name: String, val data: String) : ServerMessage
 
     /**
-     * A camera's live video, played over the image with component id [componentId] in document [rev] of [slot], where
-     * the image's own picture shows until it plays. [path] is on the add-on's player port and wants the player's token.
-     * [crop] fills the image and cuts the edges off, as the image does; else the whole picture fits inside it.
+     * A camera's live video, played over the component with id [componentId] in document [rev] of [slot], where a
+     * spinner or still shows until it plays. [path] is on the add-on's player port and wants the player's token.
+     * [crop] fills the box and cuts the edges off; else the whole picture fits inside it.
      * Only for players with [Protocol.CAPABILITY_VIDEO]; it ends when the document goes.
      */
     @Serializable

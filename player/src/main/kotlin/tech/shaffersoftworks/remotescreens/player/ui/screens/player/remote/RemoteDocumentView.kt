@@ -156,7 +156,7 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
 
     /**
      * Where component [componentId] sits in [player]'s document. Uses the library location when it works; never
-     * fails closed on that path alone (that left the overlay invisible and only the snapshot showed).
+     * fails closed on that path alone (that left the overlay invisible and only the spinner or still showed).
      */
     private fun componentBounds(player: RemoteComposePlayer, componentId: Int): Rect? {
         val component = runCatching { player.document.document.getComponent(componentId) }.getOrNull()

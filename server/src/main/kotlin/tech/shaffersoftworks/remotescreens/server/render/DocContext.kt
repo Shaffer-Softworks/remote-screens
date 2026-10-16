@@ -124,7 +124,7 @@ class DocContext(
         if (pictures.none { it.name == slot.name }) pictures += slot
     }
 
-    /** The component id to give the image [entityId]'s live video plays over, with `Modifier.componentId`. */
+    /** The component id to give the box [entityId]'s live video plays over, with `Modifier.componentId`. */
     fun liveVideo(entityId: String, crop: Boolean): Int {
         val componentId = LiveVideo.FIRST_COMPONENT_ID + videos.size
         videos += LiveVideo(entityId, componentId, crop)
@@ -171,10 +171,10 @@ class DocContext(
 
 class Binding(val entityId: String?, val compute: (Map<String, EntityState>) -> List<VarValue>)
 
-/** A camera's live video over the image with [componentId]; [crop] when the image fills its box rather than fits. */
+/** A camera's live video over the component with [componentId]; [crop] when the feed fills its box rather than fits. */
 data class LiveVideo(val entityId: String, val componentId: Int, val crop: Boolean) {
     companion object {
-        /** Far above the ids the player gives components itself, so the image is the only one with it. */
+        /** Far above the ids the player gives components itself, so the video target is the only one with it. */
         const val FIRST_COMPONENT_ID = 0x5C_0000
     }
 }

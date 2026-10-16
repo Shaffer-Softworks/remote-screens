@@ -16,8 +16,8 @@ class SlotDocument(
 )
 
 /**
- * A camera's live video over the image with [componentId] in document [revision] of a slot. [url] is on the add-on
- * and wants [token], the player's own, as a bearer. [crop] fills the image; else the whole picture fits inside it.
+ * A camera's live video over the component with [componentId] in document [revision] of a slot. [url] is on the add-on
+ * and wants [token], the player's own, as a bearer. [crop] fills the box; else the whole picture fits inside it.
  */
 data class SlotVideo(
     val revision: Int,

@@ -19,6 +19,7 @@ import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.verticalScroll
 import androidx.compose.remote.creation.dsl.verticalWeight
+import androidx.compose.remote.creation.dsl.visibility
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
@@ -38,6 +39,7 @@ private const val PANEL_CORNER_DP = 10f
 private const val SECTION_GAP_DP = 12f
 private const val HEADER_GAP_DP = 14f
 private const val CARD_GAP_DP = 16f
+private const val CAMERA_SPINNER_DP = 48f
 private const val SECTION_TITLE_GAP_DP = 18f
 private const val PANEL_PAD_DP = 20f
 private const val WEATHER_ICON_ROW_DP = 28f
@@ -424,11 +426,21 @@ object CardRenderer {
         val ph = units.px(h).toInt()
         picture(PictureSlot("cam.card.$entityId", "/api/camera_proxy/$entityId", pw, ph, 4, crop = false))
         val video = liveVideo(entityId, crop = false)
-        scope.Image(
-            image("cam.card.$entityId", pw, ph),
-            Modifier.size(units.px(w), units.px(h)).clip(rounded(CARD_GAP_DP)).componentId(video),
-            contentScale = RcContentScale.Fit,
-        )
+        val waiting = int(Vars.entity(entityId, Vars.KEY_CAM_WAITING), Vars.VISIBLE)
+        val still = int(Vars.entity(entityId, Vars.KEY_CAM_STILL), Vars.GONE)
+        val frame = Modifier.size(units.px(w), units.px(h))
+            .clip(rounded(CARD_GAP_DP))
+            .background(role(Role.TRACK))
+            .componentId(video)
+        scope.Box(frame, horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
+            val doc = this@cameraCard
+            Image(
+                doc.image("cam.card.$entityId", pw, ph),
+                Modifier.fillMaxSize().visibility(still),
+                contentScale = RcContentScale.Fit,
+            )
+            doc.spinner(CAMERA_SPINNER_DP, doc.role(Role.ACCENT), waiting)
+        }
     }
 
     private fun DocContext.alarmCard(entityId: String, entityState: EntityState?, w: Float) {

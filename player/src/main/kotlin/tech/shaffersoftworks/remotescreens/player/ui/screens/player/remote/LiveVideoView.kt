@@ -36,8 +36,8 @@ private const val LIVE_MIN_OFFSET_MS = 500L
 private const val LIVE_MAX_OFFSET_MS = 5_000L
 
 /**
- * Plays one camera's live HLS video from the add-on, rounded like the image it covers. It stays see-through until its
- * first frame, so the image's picture shows until then, and it never takes a touch, so taps reach the document.
+ * Plays one camera's live HLS video from the add-on, rounded like the box it covers. It stays see-through until its
+ * first frame, so the card's spinner shows until then, and it never takes a touch, so taps reach the document.
  */
 @SuppressLint("ViewConstructor")
 @OptIn(UnstableApi::class)
@@ -61,7 +61,7 @@ class LiveVideoView(context: Context) : FrameLayout(context) {
         }
 
         override fun onRenderedFirstFrame() {
-            // Opaque so Fit letterboxing does not show the snapshot through as a second preview.
+            // Opaque so Fit letterboxing does not show the spinner through as a second preview.
             setBackgroundColor(Color.BLACK)
             alpha = 1f
         }
@@ -102,7 +102,7 @@ class LiveVideoView(context: Context) : FrameLayout(context) {
     fun play(video: SlotVideo) {
         stop()
         this.video = video
-        // Crop fills the image's box; Fit shows the whole frame (black letterboxing hides the snapshot behind).
+        // Crop fills the video's box; Fit shows the whole frame (black letterboxing hides the spinner behind).
         aspectRatioFrame.resizeMode = if (video.crop) {
             AspectRatioFrameLayout.RESIZE_MODE_ZOOM
         } else {
