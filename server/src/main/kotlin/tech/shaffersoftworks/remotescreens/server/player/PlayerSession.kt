@@ -90,7 +90,7 @@ class PlayerSession(
     private var previewJob: Job? = null
 
     /** A document shown in [slot], with what was last sent for it. */
-    private class ShownDocument(val slot: Slot, val doc: RenderedDoc, val rebuild: suspend () -> RenderedDoc?) {
+    private class ShownDocument(val slot: Slot, val renderedDoc: RenderedDoc, val rebuild: suspend () -> RenderedDoc?) {
         var revision = 0
         var sentVars: Map<String, VarValue> = emptyMap()
         val pictureKeys = HashMap<String, String?>()
@@ -197,7 +197,7 @@ class PlayerSession(
     private fun renderInput(renderData: RenderData) = RenderInput(
         states = homeAssistant.states.value,
         i18n = context.languageRepository.current(),
-        ha = homeAssistant.config.value,
+        homeAssistantConfig = homeAssistant.config.value,
         data = renderData,
         palette = palette,
     )
@@ -207,38 +207,38 @@ class PlayerSession(
 
     private suspend fun showMain(screen: Screen) {
         val rebuild: suspend () -> RenderedDoc? = { screen()?.let { renderScreen(it) } }
-        val doc = buildMutex.withLock { renderScreen(screen) }
-        show(Slot.MAIN, doc, rebuild)
+        val renderedDoc = buildMutex.withLock { renderScreen(screen) }
+        show(Slot.MAIN, renderedDoc, rebuild)
     }
 
     private suspend fun show(
         slot: Slot,
-        doc: RenderedDoc,
+        renderedDoc: RenderedDoc,
         rebuild: suspend () -> RenderedDoc?,
         timeoutSeconds: Int = 0,
     ) {
         val states = homeAssistant.states.value
-        val shown = ShownDocument(slot, doc, rebuild).also { it.revision = ++lastRevision }
-        val vars = doc.vars(states)
+        val shown = ShownDocument(slot, renderedDoc, rebuild).also { it.revision = ++lastRevision }
+        val vars = renderedDoc.vars(states)
         shown.sentVars = vars
         shownDocuments[slot] = shown
         val allVars = vars.values + context.screenClock.clockVars() + connectedVar() + deviceVars()
-        val bytes = if (supportsDeflate) Rc.compress(doc.bytes) else doc.bytes
+        val bytes = if (supportsDeflate) Rc.compress(renderedDoc.bytes) else renderedDoc.bytes
         send(
             ServerMessage.Document(
                 slot = slot,
                 rev = shown.revision,
                 data = Base64.getEncoder().encodeToString(bytes),
                 vars = allVars,
-                predictions = doc.predictions(states, ::foresee),
-                homePage = doc.homePage,
-                pageCount = doc.pageIds.size.coerceAtLeast(1),
-                swipePages = doc.swipePages,
+                predictions = renderedDoc.predictions(states, ::foresee),
+                homePage = renderedDoc.homePage,
+                pageCount = renderedDoc.pageIds.size.coerceAtLeast(1),
+                swipePages = renderedDoc.swipePages,
                 timeout = timeoutSeconds,
             ),
         )
         sendPictures(shown, states, isForced = true)
-        for (video in doc.ctx.videos) sendVideo(shown, video)
+        for (video in renderedDoc.docContext.videos) sendVideo(shown, video)
     }
 
     /** Starts [video]'s stream and tells the player where it is; without a stream, the image's picture stays. */
@@ -254,7 +254,7 @@ class PlayerSession(
 
     private fun restartVideo(message: PlayerMessage.VideoFailed) {
         val shown = shownDocuments[message.slot]?.takeIf { it.revision == message.rev } ?: return
-        val video = shown.doc.ctx.videos.firstOrNull { it.componentId == message.componentId } ?: return
+        val video = shown.renderedDoc.docContext.videos.firstOrNull { it.componentId == message.componentId } ?: return
         val restarts = shown.videoRestarts.getOrDefault(video.componentId, 0)
         if (restarts < MAX_VIDEO_RESTARTS) {
             shown.videoRestarts[video.componentId] = restarts + 1
@@ -284,25 +284,25 @@ class PlayerSession(
     /** Sends what changed in [states]; a document whose structure depends on a changed entity is built again. */
     suspend fun refresh(states: Map<String, EntityState>) {
         for (shown in shownDocuments.values.toList()) {
-            if (shown.doc.stale(states)) {
+            if (shown.renderedDoc.stale(states)) {
                 rebuild(shown)
                 continue
             }
-            val vars = shown.doc.vars(states)
+            val vars = shown.renderedDoc.vars(states)
             val changed = vars.values.filter { shown.sentVars[it.name] != it }
             shown.sentVars = vars
-            if (changed.isNotEmpty()) send(ServerMessage.Vars(changed, shown.doc.predictions(states, ::foresee)))
+            if (changed.isNotEmpty()) send(ServerMessage.Vars(changed, shown.renderedDoc.predictions(states, ::foresee)))
             sendPictures(shown, states, isForced = false)
         }
     }
 
     private suspend fun rebuild(shown: ShownDocument) {
-        val doc = buildMutex.withLock {
+        val renderedDoc = buildMutex.withLock {
             runCatching { shown.rebuild() }
                 .onFailure { logger.warn("Build failed: {}", it.message, it) }
                 .getOrNull()
         } ?: return
-        if (shownDocuments[shown.slot] === shown) show(shown.slot, doc, shown.rebuild)
+        if (shownDocuments[shown.slot] === shown) show(shown.slot, renderedDoc, shown.rebuild)
     }
 
     suspend fun sendVars(vars: List<VarValue>) {
@@ -315,15 +315,15 @@ class PlayerSession(
     private suspend fun resync() {
         val states = homeAssistant.states.value
         for (shown in shownDocuments.values) {
-            val vars = shown.doc.vars(states)
+            val vars = shown.renderedDoc.vars(states)
             shown.sentVars = vars
-            send(ServerMessage.Vars(vars.values.toList(), shown.doc.predictions(states, ::foresee)))
+            send(ServerMessage.Vars(vars.values.toList(), shown.renderedDoc.predictions(states, ::foresee)))
         }
     }
 
     private fun sendPictures(shown: ShownDocument, states: Map<String, EntityState>, isForced: Boolean) {
         val nowMs = System.currentTimeMillis()
-        for (picture in shown.doc.ctx.pictures) {
+        for (picture in shown.renderedDoc.docContext.pictures) {
             val sourceKey = context.pictureRepository.sourceKey(picture, states)
             val lastSentMs = shown.pictureSentAtMs[picture.name] ?: 0
             val isDue = picture.refreshSeconds > 0 && nowMs - lastSentMs >= picture.refreshSeconds * MS_PER_SECOND
@@ -343,10 +343,10 @@ class PlayerSession(
     suspend fun tick(states: Map<String, EntityState>) {
         if (!isAwake) return
         for (shown in shownDocuments.values.toList()) {
-            val ctx = shown.doc.ctx
-            if (ctx.refreshSeconds > 0 && shown.doc.stale(states)) {
+            val docContext = shown.renderedDoc.docContext
+            if (docContext.refreshSeconds > 0 && shown.renderedDoc.stale(states)) {
                 rebuild(shown)
-            } else if (ctx.pictures.any { it.refreshSeconds > 0 }) {
+            } else if (docContext.pictures.any { it.refreshSeconds > 0 }) {
                 sendPictures(shown, states, isForced = false)
             }
         }
@@ -463,8 +463,8 @@ class PlayerSession(
             val renderData = context.renderDataRepository.forCard(entityId, kind)
             CardRenderer.render(entityId ?: "card.$kind", kind, device, renderInput(renderData))
         }
-        val doc = buildMutex.withLock { build() } ?: return
-        show(Slot.OVERLAY, doc, build)
+        val renderedDoc = buildMutex.withLock { build() } ?: return
+        show(Slot.OVERLAY, renderedDoc, build)
     }
 
     suspend fun showAlert(alert: Alert) {
@@ -473,9 +473,9 @@ class PlayerSession(
         val build: suspend () -> RenderedDoc? = {
             currentAlert?.let { AlertRenderer.render(it, device, renderInput(RenderData())) }
         }
-        val doc = buildMutex.withLock { build() } ?: return
+        val renderedDoc = buildMutex.withLock { build() } ?: return
         send(ServerMessage.Wake(true))
-        show(Slot.ALERT, doc, build, timeoutSeconds = alert.timeout)
+        show(Slot.ALERT, renderedDoc, build, timeoutSeconds = alert.timeout)
     }
 
     /** Asks Home Assistant for an HLS path in the background so [sendVideo] can reuse a warm stream. */

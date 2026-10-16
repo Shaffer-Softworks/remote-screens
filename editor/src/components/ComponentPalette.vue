@@ -14,45 +14,54 @@ const tab = ref<'components' | 'entities'>('components')
 const query = ref('')
 
 const groups = computed(() => {
-  const q = query.value.trim().toLowerCase()
+  const needle = query.value.trim().toLowerCase()
   const by = new Map<string, ComponentSpec[]>()
-  for (const c of COMPONENTS) {
-    if (q && !c.label.toLowerCase().includes(q)) continue
-    by.set(c.group, [...(by.get(c.group) ?? []), c])
+  for (const spec of COMPONENTS) {
+    if (needle && !spec.label.toLowerCase().includes(needle)) continue
+    by.set(spec.group, [...(by.get(spec.group) ?? []), spec])
   }
   return [...by.entries()]
 })
 
-function drag(e: DragEvent, c: ComponentSpec): void {
-  dragged.value = { type: 'component', component: c.id }
-  e.dataTransfer?.setData('text/plain', c.id)
+function drag(e: DragEvent, spec: ComponentSpec): void {
+  dragged.value = { type: 'component', component: spec.id }
+  e.dataTransfer?.setData('text/plain', spec.id)
 }
 </script>
 
 <template>
   <div class="palette">
     <div class="segments">
-      <button :class="{ active: tab === 'components' }" @click="tab = 'components'">Components</button>
-      <button :class="{ active: tab === 'entities' }" @click="tab = 'entities'">Home Assistant</button>
+      <button :class="{ active: tab === 'components' }" @click="tab = 'components'">
+        Components
+      </button>
+      <button :class="{ active: tab === 'entities' }" @click="tab = 'entities'">
+        Home Assistant
+      </button>
     </div>
     <template v-if="tab === 'components'">
-      <input v-model="query" type="search" placeholder="Search components" aria-label="Search components" />
+      <input
+        v-model="query"
+        type="search"
+        placeholder="Search components"
+        aria-label="Search components"
+      />
       <p class="muted hint">Drag onto the page or the tree, or click to add after the selection.</p>
       <section v-for="[group, items] in groups" :key="group">
         <h3>{{ group }}</h3>
         <div class="grid">
           <button
-            v-for="c in items"
-            :key="c.id"
+            v-for="spec in items"
+            :key="spec.id"
             class="item"
             draggable="true"
-            :title="`Add a ${c.label.toLowerCase()}`"
-            @dragstart="drag($event, c)"
+            :title="`Add a ${spec.label.toLowerCase()}`"
+            @dragstart="drag($event, spec)"
             @dragend="dragged = null"
-            @click="ctx.addComponent(c.id)"
+            @click="ctx.addComponent(spec.id)"
           >
-            <MdiIcon :name="c.icon" :size="20" />
-            <span>{{ c.label }}</span>
+            <MdiIcon :name="spec.icon" :size="20" />
+            <span>{{ spec.label }}</span>
           </button>
         </div>
       </section>

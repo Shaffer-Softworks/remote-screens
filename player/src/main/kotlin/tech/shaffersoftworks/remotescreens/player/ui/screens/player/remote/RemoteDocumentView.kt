@@ -78,8 +78,8 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
         lastState = state
         loadedDocuments.keys.retainAll(state.documents.keys)
         val newlyLoaded = loadNewDocuments(state)
-        applyChangedValues(state.values, skip = newlyLoaded)
-        applyChangedBitmaps(state.bitmaps, skip = newlyLoaded)
+        applyChangedValues(state.values, excludeSlots = newlyLoaded)
+        applyChangedBitmaps(state.bitmaps, excludeSlots = newlyLoaded)
         appliedValues = state.values
         appliedBitmaps = state.bitmaps
 
@@ -101,19 +101,20 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
     }
 
     private fun renderVideo(state: RemoteScreenState) {
-        val wanted = state.playingVideo?.takeIf { isVideoAllowed && windowVisibility == View.VISIBLE }
+        val activeVideo = state.playingVideo?.takeIf { isVideoAllowed && windowVisibility == View.VISIBLE }
         when {
-            wanted == null -> stopVideo()
-            wanted.first != videoSlot || wanted.second != liveVideoView.video -> startVideo(wanted.first, wanted.second)
+            activeVideo == null -> stopVideo()
+            activeVideo.first != videoSlot || activeVideo.second != liveVideoView.video ->
+                startVideo(activeVideo.first, activeVideo.second)
         }
     }
 
     /** Just above its document player, so a card's video stays under an alert. */
     private fun startVideo(slot: Slot, video: SlotVideo) {
         (liveVideoView.parent as? ViewGroup)?.removeView(liveVideoView)
-        val params = LayoutParams(0, 0).apply { gravity = Gravity.TOP or Gravity.START }
+        val layoutParams = LayoutParams(0, 0).apply { gravity = Gravity.TOP or Gravity.START }
         // Insert above that slot only — never bringToFront, or the overlay sits over alerts and steals taps.
-        addView(liveVideoView, indexOfChild(players.getValue(slot)) + 1, params)
+        addView(liveVideoView, indexOfChild(players.getValue(slot)) + 1, layoutParams)
         liveVideoView.visibility = View.INVISIBLE
         videoSlot = slot
         liveVideoView.play(video)
@@ -136,19 +137,19 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
             return
         }
         bounds.offset(player.left, player.top)
-        val params = liveVideoView.layoutParams as LayoutParams
-        val placed = Rect(
-            params.leftMargin,
-            params.topMargin,
-            params.leftMargin + params.width,
-            params.topMargin + params.height,
+        val layoutParams = liveVideoView.layoutParams as LayoutParams
+        val previousBounds = Rect(
+            layoutParams.leftMargin,
+            layoutParams.topMargin,
+            layoutParams.leftMargin + layoutParams.width,
+            layoutParams.topMargin + layoutParams.height,
         )
-        if (placed != bounds) {
-            params.leftMargin = bounds.left
-            params.topMargin = bounds.top
-            params.width = bounds.width()
-            params.height = bounds.height()
-            liveVideoView.layoutParams = params
+        if (previousBounds != bounds) {
+            layoutParams.leftMargin = bounds.left
+            layoutParams.topMargin = bounds.top
+            layoutParams.width = bounds.width()
+            layoutParams.height = bounds.height()
+            liveVideoView.layoutParams = layoutParams
         }
         liveVideoView.visibility = View.VISIBLE
     }
@@ -158,27 +159,32 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
      * fails closed on that path alone (that left the overlay invisible and only the snapshot showed).
      */
     private fun componentBounds(player: RemoteComposePlayer, componentId: Int): Rect? {
-        val component = runCatching { player.document?.document?.getComponent(componentId) }.getOrNull()
+        val component = runCatching { player.document.document.getComponent(componentId) }.getOrNull()
         val width = component?.width?.roundToInt() ?: 0
         val height = component?.height?.roundToInt() ?: 0
         if (component == null || width <= 0 || height <= 0) return null
-        val fromWindow = remoteContextOf(player)?.let { context ->
-            val loc = floatArrayOf(0f, 0f)
+        val windowBounds = remoteContextOf(player)?.let { remoteContext ->
+            val locationInWindow = floatArrayOf(0f, 0f)
             runCatching {
-                component.getLocationInWindow(context, loc)
-                val left = loc[0].roundToInt()
-                val top = loc[1].roundToInt()
+                component.getLocationInWindow(remoteContext, locationInWindow)
+                val left = locationInWindow[0].roundToInt()
+                val top = locationInWindow[1].roundToInt()
                 Rect(left, top, left + width, top + height)
             }.getOrNull()
         }
-        return fromWindow ?: run {
-            val box = IntArray(SEMANTIC_BOUND_SIZE)
-            val found = runCatching {
-                component.getBoundsInSemanticParent(box, null)
+        return windowBounds ?: run {
+            val semanticBounds = IntArray(SEMANTIC_BOUND_SIZE)
+            val hasSemanticBounds = runCatching {
+                component.getBoundsInSemanticParent(semanticBounds, null)
                 true
             }.getOrDefault(false)
-            if (found) {
-                Rect(box[BOUND_LEFT], box[BOUND_TOP], box[BOUND_RIGHT], box[BOUND_BOTTOM])
+            if (hasSemanticBounds) {
+                Rect(
+                    semanticBounds[BOUND_LEFT],
+                    semanticBounds[BOUND_TOP],
+                    semanticBounds[BOUND_RIGHT],
+                    semanticBounds[BOUND_BOTTOM],
+                )
             } else {
                 null
             }
@@ -210,26 +216,26 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
         return newlyLoaded
     }
 
-    private fun applyChangedValues(values: Map<String, VarValue>, skip: Set<Slot>) {
+    private fun applyChangedValues(values: Map<String, VarValue>, excludeSlots: Set<Slot>) {
         val changedValues = values.values.filter { value -> appliedValues[value.name] != value }
         if (changedValues.isEmpty()) return
-        for (slot in loadedDocuments.keys - skip) {
+        for (slot in loadedDocuments.keys - excludeSlots) {
             val player = players.getValue(slot)
             for (value in changedValues) player.applyValue(value)
         }
     }
 
-    private fun applyChangedBitmaps(bitmaps: Map<String, Bitmap>, skip: Set<Slot>) {
+    private fun applyChangedBitmaps(bitmaps: Map<String, Bitmap>, excludeSlots: Set<Slot>) {
         val changedBitmaps = bitmaps.filter { (name, bitmap) -> appliedBitmaps[name] !== bitmap }
         if (changedBitmaps.isEmpty()) return
-        for (slot in loadedDocuments.keys - skip) {
+        for (slot in loadedDocuments.keys - excludeSlots) {
             val player = players.getValue(slot)
             for ((name, bitmap) in changedBitmaps) player.setUserLocalBitmap(name, bitmap)
         }
     }
 
     private fun fullLayoutIfDirty(player: RemoteComposePlayer) {
-        val rootLayout = runCatching { player.document?.document?.rootLayoutComponent }.getOrNull() ?: return
+        val rootLayout = runCatching { player.document.document.rootLayoutComponent }.getOrNull() ?: return
         if (rootLayout.needsMeasure()) {
             rootLayout.clearDirtyBoundaries()
             rootLayout.invalidateMeasure()

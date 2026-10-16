@@ -19,7 +19,7 @@ function shift(by: number): void {
 
 const isHome = computed({
   get: () => props.screen.homePage === props.page.id,
-  set: (on) => {
+  set: on => {
     if (on) props.screen.homePage = props.page.id
   },
 })
@@ -32,7 +32,9 @@ const isHome = computed({
       <span class="label">Navigation bar icon</span>
       <IconPicker v-model="page.icon" :placeholder="isHome ? 'home' : 'view-dashboard'" />
     </div>
-    <label class="check"><input v-model="isHome" type="checkbox" :disabled="isHome" /> Home page</label>
+    <label class="check"
+      ><input v-model="isHome" type="checkbox" :disabled="isHome" /> Home page</label
+    >
     <label class="check">
       <input v-model="page.hidden" type="checkbox" :disabled="isHome" />
       Hidden: no button in the navigation bar, opened from a "Go to page" tile, with a Back key
@@ -43,20 +45,29 @@ const isHome = computed({
         {{
           page.root
             ? 'Free-form: components laid out in rows, columns and boxes, like Compose.'
-            : 'Grid: tiles placed on the screen\'s columns and rows.'
+            : "Grid: tiles placed on the screen's columns and rows."
         }}
       </p>
-      <button @click="emit('convert')">{{ page.root ? 'Back to a grid page' : 'Convert to free-form' }}</button>
+      <button @click="emit('convert')">
+        {{ page.root ? 'Back to a grid page' : 'Convert to free-form' }}
+      </button>
     </div>
     <div class="row">
       <button class="icon" title="Move left" :disabled="index === 0" @click="shift(-1)">
         <MdiIcon name="chevron-left" :size="18" />
       </button>
-      <button class="icon" title="Move right" :disabled="index === screen.pages.length - 1" @click="shift(1)">
+      <button
+        class="icon"
+        title="Move right"
+        :disabled="index === screen.pages.length - 1"
+        @click="shift(1)"
+      >
         <MdiIcon name="chevron-right" :size="18" />
       </button>
       <span class="grow" />
-      <button class="danger" :disabled="screen.pages.length === 1" @click="emit('delete')">Delete page</button>
+      <button class="danger" :disabled="screen.pages.length === 1" @click="emit('delete')">
+        Delete page
+      </button>
     </div>
   </div>
 </template>

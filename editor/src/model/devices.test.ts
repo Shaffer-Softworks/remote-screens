@@ -21,6 +21,6 @@ describe('device sizes', () => {
     expect(presetOf({ widthDp: 1024, heightDp: 600 })?.key).toBe('1024x600')
     expect(presetOf({ widthDp: 1100, heightDp: 700 })).toBeUndefined()
     expect(presetOf(undefined)).toBeUndefined()
-    expect(new Set(PRESETS.map((p) => p.key)).size).toBe(PRESETS.length)
+    expect(new Set(PRESETS.map(preset => preset.key)).size).toBe(PRESETS.length)
   })
 })

@@ -9,23 +9,31 @@ import MdiIcon from './MdiIcon.vue'
 
 const emit = defineEmits<{ close: [] }>()
 
-const builtins = computed(() => themes.value.filter((t) => t.builtin))
+const builtins = computed(() => themes.value.filter(theme => theme.builtin))
 const selectedId = ref(themes.value[0]?.id ?? '')
-const selected = computed(() => themes.value.find((t) => t.id === selectedId.value))
+const selected = computed(() => themes.value.find(theme => theme.id === selectedId.value))
 
 /** The custom theme being edited: its own colours over its base, as stored. */
 const draft = ref<Theme | null>(null)
-const stored = computed(() => (selected.value && !selected.value.builtin ? JSON.stringify(toTheme(selected.value)) : ''))
+const stored = computed(() =>
+  selected.value && !selected.value.builtin ? JSON.stringify(toTheme(selected.value)) : '',
+)
 const dirty = computed(() => draft.value !== null && JSON.stringify(draft.value) !== stored.value)
 
-function toTheme(t: ResolvedTheme): Theme {
-  return { id: t.id, name: t.name, base: t.base, roles: { ...t.overrides.roles }, pastels: { ...t.overrides.pastels } }
+function toTheme(resolved: ResolvedTheme): Theme {
+  return {
+    id: resolved.id,
+    name: resolved.name,
+    base: resolved.base,
+    roles: { ...resolved.overrides.roles },
+    pastels: { ...resolved.overrides.pastels },
+  }
 }
 
 watch(
   selected,
-  (t) => {
-    draft.value = t && !t.builtin ? toTheme(t) : null
+  theme => {
+    draft.value = theme && !theme.builtin ? toTheme(theme) : null
   },
   { immediate: true },
 )
@@ -37,23 +45,31 @@ function pick(id: string): void {
 
 /** The colours drawn: the draft's over its base, or the selected built-in's. */
 const shown = computed<ResolvedTheme | undefined>(() => {
-  const d = draft.value
-  if (!d) return selected.value
-  const base = themeById(d.base)
+  const draftTheme = draft.value
+  if (!draftTheme) return selected.value
+  const base = themeById(draftTheme.base)
   if (!base) return selected.value
-  return { ...base, id: d.id, name: d.name, builtin: false, roles: { ...base.roles, ...d.roles }, pastels: { ...base.pastels, ...d.pastels } }
+  return {
+    ...base,
+    id: draftTheme.id,
+    name: draftTheme.name,
+    builtin: false,
+    roles: { ...base.roles, ...draftTheme.roles },
+    pastels: { ...base.pastels, ...draftTheme.pastels },
+  }
 })
 
 const roleKeys = computed(() => Object.keys(shown.value?.roles ?? {}))
-const label = (k: string) => (k === 'card_edge' ? 'card edge (tile border)' : k.replace(/_/g, ' '))
+const label = (key: string) =>
+  key === 'card_edge' ? 'card edge (tile border)' : key.replace(/_/g, ' ')
 
 function setColour(kind: 'roles' | 'pastels', key: string, value: string): void {
-  const d = draft.value
-  if (!d) return
+  const draftTheme = draft.value
+  if (!draftTheme) return
   const hex = value.toUpperCase()
-  const base = themeById(d.base)?.[kind][key]
-  if (base === hex) delete d[kind][key]
-  else d[kind][key] = hex
+  const base = themeById(draftTheme.base)?.[kind][key]
+  if (base === hex) delete draftTheme[kind][key]
+  else draftTheme[kind][key] = hex
 }
 
 function reset(kind: 'roles' | 'pastels', key: string): void {
@@ -61,23 +77,30 @@ function reset(kind: 'roles' | 'pastels', key: string): void {
 }
 
 function usedBy(id: string): string[] {
-  return (state.layout?.screens ?? []).filter((s) => s.settings.theme === id || s.settings.darkTheme === id).map((s) => s.name)
+  return (state.layout?.screens ?? [])
+    .filter(screen => screen.settings.theme === id || screen.settings.darkTheme === id)
+    .map(screen => screen.name)
 }
 
 function newId(name: string): string {
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'theme'
-  const taken = new Set(themes.value.map((t) => t.id))
+  const slug =
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 30) || 'theme'
+  const taken = new Set(themes.value.map(theme => theme.id))
   let id = slug
   for (let i = 2; taken.has(id); i++) id = `${slug}-${i}`
   return id
 }
 
-async function duplicate(t: ResolvedTheme): Promise<void> {
+async function duplicate(source: ResolvedTheme): Promise<void> {
   if (dirty.value && !confirm('Leave this theme without saving?')) return
-  const name = `${t.name} copy`
-  const copy: Theme = t.builtin
-    ? { id: newId(name), name, base: t.id, roles: {}, pastels: {} }
-    : { ...toTheme(t), id: newId(name), name }
+  const name = `${source.name} copy`
+  const copy: Theme = source.builtin
+    ? { id: newId(name), name, base: source.id, roles: {}, pastels: {} }
+    : { ...toTheme(source), id: newId(name), name }
   const saved = await attempt(() => api.saveTheme(copy))
   if (!saved) return
   await refreshThemes()
@@ -85,19 +108,19 @@ async function duplicate(t: ResolvedTheme): Promise<void> {
 }
 
 async function save(): Promise<void> {
-  const d = draft.value
-  if (!d) return
-  const saved = await attempt(() => api.saveTheme(JSON.parse(JSON.stringify(d))))
+  const draftTheme = draft.value
+  if (!draftTheme) return
+  const saved = await attempt(() => api.saveTheme(JSON.parse(JSON.stringify(draftTheme))))
   if (!saved) return
   await refreshThemes()
   toast('Theme saved and sent')
 }
 
-async function remove(t: ResolvedTheme): Promise<void> {
-  const users = usedBy(t.id)
+async function remove(theme: ResolvedTheme): Promise<void> {
+  const users = usedBy(theme.id)
   const warning = users.length ? `\n\n${users.join(', ')} will go back to RPI dark.` : ''
-  if (!confirm(`Delete the theme “${t.name}”?${warning}`)) return
-  const deleted = await attempt(() => api.deleteTheme(t.id).then(() => true))
+  if (!confirm(`Delete the theme “${theme.name}”?${warning}`)) return
+  const deleted = await attempt(() => api.deleteTheme(theme.id).then(() => true))
   if (!deleted) return
   await refreshThemes()
   selectedId.value = themes.value[0]?.id ?? ''
@@ -109,29 +132,49 @@ const vars = computed(() => themeVars(shown.value))
 <template>
   <div class="page">
     <header class="row">
-      <button class="icon" title="Back to screens" @click="emit('close')"><MdiIcon name="arrow-left" /></button>
+      <button class="icon" title="Back to screens" @click="emit('close')">
+        <MdiIcon name="arrow-left" />
+      </button>
       <MdiIcon name="palette-outline" :size="28" />
       <h1 class="grow">Themes</h1>
     </header>
     <p class="muted intro">
-      A screen wears one theme by day and another in dark mode and at night (pick them in the screen's settings). Duplicate a
-      theme to make your own; its colours are laid over the theme it was made from.
+      A screen wears one theme by day and another in dark mode and at night (pick them in the
+      screen's settings). Duplicate a theme to make your own; its colours are laid over the theme it
+      was made from.
     </p>
 
     <div class="layout">
       <aside class="card list">
-        <div v-for="t in themes" :key="t.id" class="item" :class="{ active: t.id === selectedId }" @click="pick(t.id)">
+        <div
+          v-for="theme in themes"
+          :key="theme.id"
+          class="item"
+          :class="{ active: theme.id === selectedId }"
+          @click="pick(theme.id)"
+        >
           <span class="chips">
-            <i :style="{ background: cssColor(t.roles.page) }" />
-            <i :style="{ background: cssColor(t.roles.card) }" />
-            <i :style="{ background: cssColor(t.roles.accent) }" />
+            <i :style="{ background: cssColor(theme.roles.page) }" />
+            <i :style="{ background: cssColor(theme.roles.card) }" />
+            <i :style="{ background: cssColor(theme.roles.accent) }" />
           </span>
           <span class="grow">
-            {{ t.name }}
-            <small class="muted">{{ t.builtin ? 'Built-in' : `From ${themeById(t.base)?.name ?? t.base}` }}</small>
+            {{ theme.name }}
+            <small class="muted">{{
+              theme.builtin ? 'Built-in' : `From ${themeById(theme.base)?.name ?? theme.base}`
+            }}</small>
           </span>
-          <button class="icon quiet" title="Duplicate" @click.stop="duplicate(t)"><MdiIcon name="content-copy" :size="16" /></button>
-          <button v-if="!t.builtin" class="icon quiet" title="Delete" @click.stop="remove(t)"><MdiIcon name="delete-outline" :size="16" /></button>
+          <button class="icon quiet" title="Duplicate" @click.stop="duplicate(theme)">
+            <MdiIcon name="content-copy" :size="16" />
+          </button>
+          <button
+            v-if="!theme.builtin"
+            class="icon quiet"
+            title="Delete"
+            @click.stop="remove(theme)"
+          >
+            <MdiIcon name="delete-outline" :size="16" />
+          </button>
         </div>
       </aside>
 
@@ -149,56 +192,103 @@ const vars = computed(() => themeVars(shown.value))
           </template>
           <template v-else>
             <h2 class="grow">{{ shown.name }}</h2>
-            <button class="primary" @click="duplicate(shown)"><MdiIcon name="content-copy" :size="16" /> Duplicate to edit</button>
+            <button class="primary" @click="duplicate(shown)">
+              <MdiIcon name="content-copy" :size="16" /> Duplicate to edit
+            </button>
           </template>
         </div>
-        <p v-if="usedBy(shown.id).length" class="muted">Worn by {{ usedBy(shown.id).join(', ') }}</p>
+        <p v-if="usedBy(shown.id).length" class="muted">
+          Worn by {{ usedBy(shown.id).join(', ') }}
+        </p>
 
         <div class="preview" :style="vars">
-          <div class="pv-top"><span class="pv-when">12:34</span><span class="grow" /><span class="pv-blue">14°</span></div>
+          <div class="pv-top">
+            <span class="pv-when">12:34</span><span class="grow" /><span class="pv-blue">14°</span>
+          </div>
           <div class="pv-body">
             <div class="pv-card">
               <div class="pv-head">Ceiling light</div>
               <i class="pv-line" :style="{ background: 'var(--rc-p-yellow)' }" />
-              <div class="pv-in"><MdiIcon name="lightbulb" :size="26" :style="{ color: 'var(--rc-p-yellow)' }" /><span class="grow" />On</div>
+              <div class="pv-in">
+                <MdiIcon
+                  name="lightbulb"
+                  :size="26"
+                  :style="{ color: 'var(--rc-p-yellow)' }"
+                /><span class="grow" />On
+              </div>
             </div>
             <div class="pv-card">
               <div class="pv-head">Fan</div>
               <i class="pv-line" />
-              <div class="pv-in"><MdiIcon name="fan" :size="26" class="pv-dim" /><span class="grow" /><span class="pv-soft">Off</span></div>
+              <div class="pv-in">
+                <MdiIcon name="fan" :size="26" class="pv-dim" /><span class="grow" /><span
+                  class="pv-soft"
+                  >Off</span
+                >
+              </div>
             </div>
             <div class="pv-card pv-keys">
               <span class="pv-key on">Heat</span><span class="pv-key">Cool</span>
               <span class="pv-track"><i /></span>
             </div>
           </div>
-          <div class="pv-nav"><span class="on"><MdiIcon name="home" :size="18" /></span><span><MdiIcon name="view-dashboard" :size="18" /></span><span><MdiIcon name="cog" :size="18" /></span></div>
+          <div class="pv-nav">
+            <span class="on"><MdiIcon name="home" :size="18" /></span
+            ><span><MdiIcon name="view-dashboard" :size="18" /></span
+            ><span><MdiIcon name="cog" :size="18" /></span>
+          </div>
         </div>
 
         <h3>Pastels</h3>
         <div class="colours">
-          <div v-for="k in PASTEL_KEYS" :key="k" class="colour" :class="{ own: draft && draft.pastels[k] }">
+          <div
+            v-for="k in PASTEL_KEYS"
+            :key="k"
+            class="colour"
+            :class="{ own: draft && draft.pastels[k] }"
+          >
             <ColorInput
               :model-value="shown.pastels[k]"
               :disabled="!draft"
               @update:model-value="setColour('pastels', k, $event!)"
             />
             <span class="grow">{{ label(k) }}</span>
-            <button v-if="draft && draft.pastels[k]" class="icon quiet" title="Back to the base's" @click="reset('pastels', k)"><MdiIcon name="restore" :size="14" /></button>
+            <button
+              v-if="draft && draft.pastels[k]"
+              class="icon quiet"
+              title="Back to the base's"
+              @click="reset('pastels', k)"
+            >
+              <MdiIcon name="restore" :size="14" />
+            </button>
           </div>
         </div>
 
         <h3>Roles</h3>
-        <p class="muted hint">Card edge is every tile's border; a tile can override it with its own border colour.</p>
+        <p class="muted hint">
+          Card edge is every tile's border; a tile can override it with its own border colour.
+        </p>
         <div class="colours">
-          <div v-for="k in roleKeys" :key="k" class="colour" :class="{ own: draft && draft.roles[k] }">
+          <div
+            v-for="k in roleKeys"
+            :key="k"
+            class="colour"
+            :class="{ own: draft && draft.roles[k] }"
+          >
             <ColorInput
               :model-value="shown.roles[k]"
               :disabled="!draft"
               @update:model-value="setColour('roles', k, $event!)"
             />
             <span class="grow">{{ label(k) }}</span>
-            <button v-if="draft && draft.roles[k]" class="icon quiet" title="Back to the base's" @click="reset('roles', k)"><MdiIcon name="restore" :size="14" /></button>
+            <button
+              v-if="draft && draft.roles[k]"
+              class="icon quiet"
+              title="Back to the base's"
+              @click="reset('roles', k)"
+            >
+              <MdiIcon name="restore" :size="14" />
+            </button>
           </div>
         </div>
       </section>

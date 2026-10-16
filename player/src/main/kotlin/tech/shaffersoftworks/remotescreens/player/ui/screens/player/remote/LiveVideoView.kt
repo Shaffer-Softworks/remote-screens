@@ -97,7 +97,7 @@ class LiveVideoView(context: Context) : FrameLayout(context) {
     }
 
     /** Always fall through so the document under the overlay still gets taps (close, keys, text). */
-    override fun dispatchTouchEvent(ev: MotionEvent): Boolean = false
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean = false
 
     fun play(video: SlotVideo) {
         stop()

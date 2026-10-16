@@ -24,11 +24,11 @@ private const val HEX_RADIX = 16
  * effect can be shown before Home Assistant answers. Every renderer extends it, so its functions stay on one class.
  */
 class DocContext(
-    val u: Units,
+    val units: Units,
     val palette: Palette,
     val i18n: I18n,
     val states: Map<String, EntityState>,
-    val ha: HomeAssistantConfig,
+    val homeAssistantConfig: HomeAssistantConfig,
     val data: RenderData,
 ) {
     lateinit var scope: RcScope
@@ -158,13 +158,13 @@ class DocContext(
                 dry.scope = this
                 content(dry)
             }
-            val ctx = newContext()
+            val docContext = newContext()
             val bytes = Rc.document(widthPx, heightPx, description) {
-                ctx.scope = this
-                for (d in dry.declarations) d(ctx)
-                content(ctx)
+                docContext.scope = this
+                for (d in dry.declarations) d(docContext)
+                content(docContext)
             }
-            return bytes to ctx
+            return bytes to docContext
         }
     }
 }

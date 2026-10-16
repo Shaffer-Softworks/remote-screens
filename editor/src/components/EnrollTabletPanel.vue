@@ -17,7 +17,12 @@ const enrollment = ref<Enrollment | null>(null)
 const qrImage = ref('')
 
 const expiresAt = computed(() =>
-  enrollment.value ? new Date(enrollment.value.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+  enrollment.value
+    ? new Date(enrollment.value.expiresAt).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : '',
 )
 
 async function showCode(): Promise<void> {
@@ -30,7 +35,11 @@ async function showCode(): Promise<void> {
   const created = await attempt(() => api.enrollment(request))
   if (!created) return
   enrollment.value = created
-  qrImage.value = await QRCode.toDataURL(created.provisioning, { errorCorrectionLevel: 'M', margin: 2, width: 320 })
+  qrImage.value = await QRCode.toDataURL(created.provisioning, {
+    errorCorrectionLevel: 'M',
+    margin: 2,
+    width: 320,
+  })
 }
 
 /** The Wi-Fi password lives only in the code: forget both once it has been scanned. */
@@ -47,16 +56,21 @@ function done(): void {
     <div class="row">
       <MdiIcon name="qrcode-scan" :size="22" />
       <h2 class="grow">Enroll a tablet as a kiosk</h2>
-      <button class="icon quiet" title="Close" @click="done"><MdiIcon name="close" :size="18" /></button>
+      <button class="icon quiet" title="Close" @click="done">
+        <MdiIcon name="close" :size="18" />
+      </button>
     </div>
     <p class="muted">
-      An enrolled tablet runs only Remote Screens: with <strong>Kiosk lock</strong> on, nobody can leave the screen on
-      the tablet. It has to be factory reset first, with no Google account added.
+      An enrolled tablet runs only Remote Screens: with <strong>Kiosk lock</strong> on, nobody can
+      leave the screen on the tablet. It has to be factory reset first, with no Google account
+      added.
     </p>
 
     <template v-if="!enrollment">
       <div class="row fields">
-        <label class="field grow">Wi-Fi name (optional)<input v-model="wifiSsid" autocomplete="off" /></label>
+        <label class="field grow"
+          >Wi-Fi name (optional)<input v-model="wifiSsid" autocomplete="off"
+        /></label>
         <label class="field">
           Security
           <select v-model="wifiSecurity" :disabled="!wifiSsid.trim()">
@@ -67,7 +81,12 @@ function done(): void {
         </label>
         <label class="field grow">
           Wi-Fi password
-          <input v-model="wifiPassword" type="password" autocomplete="new-password" :disabled="!wifiSsid.trim() || wifiSecurity === 'NONE'" />
+          <input
+            v-model="wifiPassword"
+            type="password"
+            autocomplete="new-password"
+            :disabled="!wifiSsid.trim() || wifiSecurity === 'NONE'"
+          />
         </label>
       </div>
       <label class="field">
@@ -85,9 +104,17 @@ function done(): void {
       <img :src="qrImage" alt="Enrollment QR code" width="320" height="320" />
       <ol class="steps">
         <li>Factory reset the tablet, or start a new one.</li>
-        <li>On the first Welcome screen, tap the same spot six times. A QR scanner opens (some tablets ask for Wi-Fi first).</li>
-        <li>Scan this code. The tablet joins Wi-Fi, downloads Remote Screens from the add-on and finishes setting up.</li>
-        <li>Pair it with a screen as usual, and turn on that screen's <strong>Kiosk lock</strong>.</li>
+        <li>
+          On the first Welcome screen, tap the same spot six times. A QR scanner opens (some tablets
+          ask for Wi-Fi first).
+        </li>
+        <li>
+          Scan this code. The tablet joins Wi-Fi, downloads Remote Screens from the add-on and
+          finishes setting up.
+        </li>
+        <li>
+          Pair it with a screen as usual, and turn on that screen's <strong>Kiosk lock</strong>.
+        </li>
         <li class="muted">The code works for several tablets until {{ expiresAt }}.</li>
       </ol>
     </div>

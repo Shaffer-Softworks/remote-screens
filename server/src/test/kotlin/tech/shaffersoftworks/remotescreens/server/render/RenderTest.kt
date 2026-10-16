@@ -73,7 +73,7 @@ class RenderTest {
     fun aToggleIsForeseen() {
         val doc = ScreenRenderer.render(DemoLayout.screen(), tablet, input())
         val meta = "t2|toggle|"
-        assertTrue(meta in doc.ctx.predicted, "the table lamp's toggle can be predicted")
+        assertTrue(meta in doc.docContext.predicted, "the table lamp's toggle can be predicted")
     }
 
     @Test
@@ -137,10 +137,10 @@ class RenderTest {
         assertEquals(Role.ACCENT_DARK.argb, vars["o.c1.seg.1.bg"]?.asColor(), "Heat is lit (Auto, Heat, Cool, Off)")
         val cooling = doc.vars(states + ("climate.living_room" to states.getValue("climate.living_room").with("cool")))
         assertEquals(Role.ACCENT_DARK.argb, cooling["o.c1.seg.2.bg"]?.asColor())
-        assertTrue("c1|temperature|+0.5" in doc.ctx.predicted)
+        assertTrue("c1|temperature|+0.5" in doc.docContext.predicted)
         assertEquals(Role.INK.argb, vars["o.c1.fan.0.bg"]?.asColor(), "the fan's Auto is lit")
         assertEquals(Role.KEY.argb, vars["o.c1.fan.1.bg"]?.asColor())
-        assertTrue("c1|fan|on" in doc.ctx.predicted)
+        assertTrue("c1|fan|on" in doc.docContext.predicted)
     }
 
     @Test
@@ -211,14 +211,14 @@ class RenderTest {
     @Test
     fun anAlertBuilds() {
         val doc = AlertRenderer.render(Alert("Doorbell", "Someone is at the door", camera = "camera.front_door", buttons = listOf(AlertButton("Open"))), tablet, input())
-        assertEquals(1, doc.ctx.pictures.size)
+        assertEquals(1, doc.docContext.pictures.size)
     }
 
     @Test
     fun theDoorbellsVideoPlaysOverItsImageCroppedLikeIt() {
         val doc = AlertRenderer.render(Alert("Doorbell", camera = "camera.front_door"), tablet, input())
 
-        val video = doc.ctx.videos.single()
+        val video = doc.docContext.videos.single()
         assertEquals(LiveVideo("camera.front_door", LiveVideo.FIRST_COMPONENT_ID, crop = true), video)
         assertImageFound(doc, video.componentId)
     }
@@ -227,14 +227,14 @@ class RenderTest {
     fun aCameraCardsVideoPlaysOverItsImageFittedLikeIt() {
         val doc = CardRenderer.render("camera.front_door", null, tablet, input())
 
-        val video = doc.ctx.videos.single()
+        val video = doc.docContext.videos.single()
         assertEquals(LiveVideo("camera.front_door", LiveVideo.FIRST_COMPONENT_ID, crop = false), video)
         assertImageFound(doc, video.componentId)
     }
 
     @Test
     fun anAlertWithoutACameraHasNoVideo() {
-        assertTrue(AlertRenderer.render(Alert("Washer done"), tablet, input()).ctx.videos.isEmpty())
+        assertTrue(AlertRenderer.render(Alert("Washer done"), tablet, input()).docContext.videos.isEmpty())
     }
 
     /** The player finds the image by its id once it has read the document, as it must to lay the video over it. */

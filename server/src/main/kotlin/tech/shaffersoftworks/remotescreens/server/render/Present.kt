@@ -88,88 +88,88 @@ object Present {
         "exceptional" to "alert-circle-outline",
     )
 
-    fun view(e: EntityState?, i18n: I18n, nameOverride: String? = null, iconOverride: String? = null): EntityView {
-        if (e == null) {
+    fun view(entityState: EntityState?, i18n: I18n, nameOverride: String? = null, iconOverride: String? = null): EntityView {
+        if (entityState == null) {
             val unavailable = i18n.state("", "unavailable")
             return EntityView(nameOverride ?: "?", unavailable, "–", false, null, false, iconOverride ?: Icons.FALLBACK)
         }
-        val spec = Catalogue.of(e.domain)
-        val on = spec?.onStates?.contains(e.state) ?: (e.state == "on")
-        val word = i18n.state(e.domain, e.state, e.attr("device_class"))
-        val level = levelOf(e, on)
-        val stateText = stateTextOf(e, i18n, on, level, word)
-        val value = valueOf(e, i18n, stateText, word)
-        val icon = iconOverride ?: e.attr("icon") ?: iconFor(e, on)
-        return EntityView(nameOverride ?: e.name, stateText, value, on, level, e.isAvailable, icon)
+        val spec = Catalogue.of(entityState.domain)
+        val on = spec?.onStates?.contains(entityState.state) ?: (entityState.state == "on")
+        val word = i18n.state(entityState.domain, entityState.state, entityState.attr("device_class"))
+        val level = levelOf(entityState, on)
+        val stateText = stateTextOf(entityState, i18n, on, level, word)
+        val value = valueOf(entityState, i18n, stateText, word)
+        val icon = iconOverride ?: entityState.attr("icon") ?: iconFor(entityState, on)
+        return EntityView(nameOverride ?: entityState.name, stateText, value, on, level, entityState.isAvailable, icon)
     }
 
     // One branch per Home Assistant domain, as a lookup table would be.
     @Suppress("CyclomaticComplexMethod")
-    private fun levelOf(e: EntityState, on: Boolean): Float? = when (e.domain) {
-        "light" -> if (on) (e.number("brightness")?.toFloat() ?: MAX_BRIGHTNESS) / MAX_BRIGHTNESS else 0f
-        "cover" -> e.number("current_position")?.toFloat()?.div(PERCENT)
-        "fan" -> if (on) (e.number("percentage")?.toFloat() ?: PERCENT) / PERCENT else 0f
-        "media_player" -> e.number("volume_level")?.toFloat()
+    private fun levelOf(entityState: EntityState, on: Boolean): Float? = when (entityState.domain) {
+        "light" -> if (on) (entityState.number("brightness")?.toFloat() ?: MAX_BRIGHTNESS) / MAX_BRIGHTNESS else 0f
+        "cover" -> entityState.number("current_position")?.toFloat()?.div(PERCENT)
+        "fan" -> if (on) (entityState.number("percentage")?.toFloat() ?: PERCENT) / PERCENT else 0f
+        "media_player" -> entityState.number("volume_level")?.toFloat()
         "number", "input_number" -> {
-            val v = e.numericState()
-            val min = e.number("min") ?: 0.0
-            val max = e.number("max") ?: DEFAULT_NUMBER_MAX
+            val v = entityState.numericState()
+            val min = entityState.number("min") ?: 0.0
+            val max = entityState.number("max") ?: DEFAULT_NUMBER_MAX
             if (v != null && max > min) ((v - min) / (max - min)).toFloat() else null
         }
-        "vacuum" -> e.number("battery_level")?.toFloat()?.div(PERCENT)
+        "vacuum" -> entityState.number("battery_level")?.toFloat()?.div(PERCENT)
         else -> null
     }
 
     // One branch per Home Assistant domain, as a lookup table would be.
     @Suppress("CyclomaticComplexMethod")
-    private fun stateTextOf(e: EntityState, i18n: I18n, on: Boolean, level: Float?, word: String): String =
-        when (e.domain) {
-            "light" -> e.number("brightness")
+    private fun stateTextOf(entityState: EntityState, i18n: I18n, on: Boolean, level: Float?, word: String): String =
+        when (entityState.domain) {
+            "light" -> entityState.number("brightness")
                 ?.takeIf { on }
                 ?.let { i18n.percent(((level ?: 0f) * PERCENT).roundToInt()) }
                 ?: word
-            "cover" -> e.number("current_position")
-                ?.takeIf { e.state == "open" }
+            "cover" -> entityState.number("current_position")
+                ?.takeIf { entityState.state == "open" }
                 ?.let { i18n.percent(it.roundToInt()) }
                 ?: word
-            "fan" -> e.number("percentage")?.takeIf { on }?.let { i18n.percent(it.roundToInt()) } ?: word
-            "climate" -> e.number("current_temperature")
-                ?.let { "${i18n.number(it, 1)} ${e.attr("temperature_unit") ?: "°"} · $word" }
+            "fan" -> entityState.number("percentage")?.takeIf { on }?.let { i18n.percent(it.roundToInt()) } ?: word
+            "climate" -> entityState.number("current_temperature")
+                ?.let { "${i18n.number(it, 1)} ${entityState.attr("temperature_unit") ?: "°"} · $word" }
                 ?: word
-            "media_player" -> listOfNotNull(e.attr("media_title"), e.attr("media_artist"))
+            "media_player" -> listOfNotNull(entityState.attr("media_title"), entityState.attr("media_artist"))
                 .joinToString(" · ")
                 .ifEmpty { word }
-            "sensor", "number", "input_number" -> numberWithUnit(e, i18n) ?: e.state
-            "weather" -> e.number("temperature")?.let { "${i18n.number(it, 0)}° · $word" } ?: word
+            "sensor", "number", "input_number" -> numberWithUnit(entityState, i18n) ?: entityState.state
+            "weather" -> entityState.number("temperature")?.let { "${i18n.number(it, 0)}° · $word" } ?: word
             "scene", "button", "input_button" -> ""
             "script" -> if (on) word else ""
-            "vacuum" -> e.number("battery_level")?.let { "$word · ${i18n.percent(it.roundToInt())}" } ?: word
-            "input_select", "select" -> e.state
+            "vacuum" -> entityState.number("battery_level")?.let { "$word · ${i18n.percent(it.roundToInt())}" } ?: word
+            "input_select", "select" -> entityState.state
             else -> word
         }
 
-    private fun valueOf(e: EntityState, i18n: I18n, stateText: String, word: String): String = when (e.domain) {
-        "sensor", "number", "input_number" -> e.numericState()?.let { numberOnly(e, it, i18n) } ?: e.state
-        "climate" -> e.number("temperature")?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + "°" } ?: word
-        "weather" -> e.number("temperature")?.let { i18n.number(it, 0) + "°" } ?: word
+    private fun valueOf(entityState: EntityState, i18n: I18n, stateText: String, word: String): String = when (entityState.domain) {
+        "sensor", "number", "input_number" -> entityState.numericState()?.let { numberOnly(entityState, it, i18n) } ?: entityState.state
+        "climate" -> entityState.number("temperature")?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + "°" } ?: word
+        "weather" -> entityState.number("temperature")?.let { i18n.number(it, 0) + "°" } ?: word
         else -> stateText
     }
 
-    private fun numberOnly(e: EntityState, v: Double, i18n: I18n): String {
-        val unit = e.attr("unit_of_measurement").orEmpty()
+    private fun numberOnly(entityState: EntityState, v: Double, i18n: I18n): String {
+        val unit = entityState.attr("unit_of_measurement").orEmpty()
         val (scaled, _) = scale(v, unit)
         val decimals = when {
             abs(scaled) >= LARGE_VALUE -> 0
-            e.attr("device_class") in setOf("temperature", "humidity") || abs(scaled) >= MEDIUM_VALUE -> 1
+            entityState.attr("device_class") in setOf("temperature", "humidity") || abs(scaled) >= MEDIUM_VALUE -> 1
             else -> if (scaled % 1.0 == 0.0) 0 else 1
         }
         return i18n.number(scaled, decimals)
     }
 
-    fun numberWithUnit(e: EntityState, i18n: I18n): String? {
-        val v = e.numericState() ?: return null
-        val n = numberOnly(e, v, i18n)
-        val (_, unit) = scale(v, e.attr("unit_of_measurement").orEmpty())
+    fun numberWithUnit(entityState: EntityState, i18n: I18n): String? {
+        val v = entityState.numericState() ?: return null
+        val n = numberOnly(entityState, v, i18n)
+        val (_, unit) = scale(v, entityState.attr("unit_of_measurement").orEmpty())
         return if (unit.isEmpty()) n else if (unit == "%") "$n %" else "$n $unit"
     }
 
@@ -183,18 +183,18 @@ object Present {
     // One branch per Home Assistant domain, as a lookup table would be.
     /** Home Assistant's default icon for a state, the common cases of its `domain_icon`. */
     @Suppress("CyclomaticComplexMethod")
-    fun iconFor(e: EntityState, on: Boolean): String {
-        val dc = e.attr("device_class").orEmpty()
-        val spec = Catalogue.of(e.domain)
+    fun iconFor(entityState: EntityState, on: Boolean): String {
+        val dc = entityState.attr("device_class").orEmpty()
+        val spec = Catalogue.of(entityState.domain)
         fun Pair<String, String>.pick() = if (on) first else second
-        return when (e.domain) {
+        return when (entityState.domain) {
             "sensor" -> SENSOR_ICONS[dc] ?: "eye"
             "binary_sensor" -> (BINARY_SENSOR_ICONS[dc] ?: BINARY_SENSOR_DEFAULT).pick()
             "cover" -> (COVER_ICONS[dc] ?: COVER_DEFAULT).pick()
-            "lock" -> LOCK_ICONS[e.state] ?: "lock-open-variant"
-            "weather" -> weatherIcon(e.state)
-            "climate" -> CLIMATE_ICONS[e.state] ?: "thermostat"
-            "alarm_control_panel" -> ALARM_ICONS[e.state] ?: "shield-lock"
+            "lock" -> LOCK_ICONS[entityState.state] ?: "lock-open-variant"
+            "weather" -> weatherIcon(entityState.state)
+            "climate" -> CLIMATE_ICONS[entityState.state] ?: "thermostat"
+            "alarm_control_panel" -> ALARM_ICONS[entityState.state] ?: "shield-lock"
             "person" -> if (on) "account" else "account-arrow-right"
             else -> (if (on) spec?.iconOn else null) ?: spec?.icon ?: Icons.FALLBACK
         }

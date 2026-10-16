@@ -1,0 +1,24 @@
+---
+description: Detekt MagicNumber and named numeric constants (Kotlin); UPPER_SNAKE const at file top
+globs: "**/*.kt,**/*.kts"
+alwaysApply: false
+---
+
+# Kotlin: magic numbers (Detekt `MagicNumber`)
+
+**`MagicNumber`** flags unexplained numeric literals in expressions (often `> 2` or floats like `0.7f`).
+
+## What to do
+
+1. **Introduce a well-named constant** at the top of the file (`private const val` / grouped in a `private object`).
+2. **Name by meaning**, not by value: prefer `CARD_CORNER_DP` over `TEN`, `MARQUEE_GAP_MS` over `ONE_THOUSAND`.
+3. Use **`UPPER_SNAKE_CASE`** for file-level constants (see `kotlin-detekt-top-level-property-naming.mdc`).
+
+## Pragmatic limits
+
+- Obvious loop indices (`0`, `1`) and standard idioms are often fine.
+- When editing `server/.../render/`, clear Detekt-flagged literals rather than leaving them in the baseline.
+
+## After edits
+
+Run `./gradlew :server:detekt` (or the touched module) and trim cleared IDs from `detekt-baseline.xml`.
