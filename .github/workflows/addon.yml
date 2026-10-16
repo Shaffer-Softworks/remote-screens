@@ -4,6 +4,11 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 0.1.12, no v prefix)"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -12,19 +17,61 @@ jobs:
   package:
     name: Player app and add-on files
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      is_release: ${{ steps.version.outputs.is_release }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Need the branch tip so we can push the version bump on dispatch.
+          fetch-depth: 0
       - name: Version
         id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          version=$(cat addon/VERSION)
-          grep -q "^version: \"$version\"$" addon/config.yaml || { echo "addon/config.yaml is not $version"; exit 1; }
-          if [ "${GITHUB_REF_TYPE}" = tag ] && [ "${GITHUB_REF_NAME}" != "v$version" ]; then
-            echo "Tag ${GITHUB_REF_NAME} does not match addon/VERSION $version"; exit 1
+          set -eu
+          if [ "${GITHUB_EVENT_NAME}" = workflow_dispatch ]; then
+            version="${INPUT_VERSION#v}"
+            echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.-].+)?$' \
+              || { echo "Invalid version: $INPUT_VERSION (expected e.g. 0.1.12)"; exit 1; }
+            tag="v$version"
+            if git rev-parse -q --verify "refs/tags/$tag" >/dev/null \
+              || git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+              echo "Tag $tag already exists"; exit 1
+            fi
+            echo "$version" > addon/VERSION
+            sed -i "s/^version: \".*\"$/version: \"$version\"/" addon/config.yaml
+            grep -q "^version: \"$version\"$" addon/config.yaml \
+              || { echo "Failed to set version in addon/config.yaml"; exit 1; }
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add addon/VERSION addon/config.yaml
+            git commit -m "chore: release $version"
+            git tag "$tag"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+            git push origin "$tag"
+            is_release=true
+          else
+            version=$(cat addon/VERSION)
+            grep -q "^version: \"$version\"$" addon/config.yaml \
+              || { echo "addon/config.yaml is not $version"; exit 1; }
+            if [ "${GITHUB_REF_TYPE}" = tag ] && [ "${GITHUB_REF_NAME}" != "v$version" ]; then
+              echo "Tag ${GITHUB_REF_NAME} does not match addon/VERSION $version"; exit 1
+            fi
+            tag="v$version"
+            if [ "${GITHUB_REF_TYPE}" = tag ]; then
+              is_release=true
+            else
+              is_release=false
+            fi
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "is_release=$is_release" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -41,11 +88,12 @@ jobs:
           PLAYER_KEYSTORE_PASSWORD: ${{ secrets.PLAYER_KEYSTORE_PASSWORD }}
           PLAYER_KEY_ALIAS: ${{ secrets.PLAYER_KEY_ALIAS }}
           PLAYER_KEY_PASSWORD: ${{ secrets.PLAYER_KEY_PASSWORD }}
+          IS_RELEASE: ${{ steps.version.outputs.is_release }}
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/player.jks"
             export PLAYER_KEYSTORE="$RUNNER_TEMP/player.jks"
-          elif [ "${GITHUB_REF_TYPE}" = tag ]; then
+          elif [ "$IS_RELEASE" = true ]; then
             echo "A release needs the PLAYER_KEYSTORE_* secrets: tablets only update to an app signed with the same key"; exit 1
           fi
           ./gradlew :player:assembleRelease
@@ -77,6 +125,8 @@ jobs:
             platform: linux/arm64
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.package.outputs.is_release == 'true' && needs.package.outputs.tag || github.sha }}
       - uses: actions/download-artifact@v8
         with:
           name: addon-dist
@@ -95,7 +145,7 @@ jobs:
         with:
           context: addon
           platforms: ${{ matrix.platform }}
-          push: ${{ github.ref_type == 'tag' }}
+          push: ${{ needs.package.outputs.is_release == 'true' }}
           build-args: |
             BUILD_ARCH=${{ matrix.arch }}
             BUILD_VERSION=${{ needs.package.outputs.version }}
@@ -108,19 +158,22 @@ jobs:
   release:
     name: GitHub release
     needs: [package, image]
-    if: github.ref_type == 'tag'
+    if: needs.package.outputs.is_release == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.package.outputs.tag }}
       - uses: actions/download-artifact@v8
         with:
           name: apk
       - name: Release with the player app
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.package.outputs.tag }}
         run: |
           notes=$(awk '/^## /{n++} n==1 && !/^## /' addon/CHANGELOG.md)
-          gh release create "$GITHUB_REF_NAME" remote-screens.apk --title "$GITHUB_REF_NAME" --notes "$notes" \
-            || gh release upload "$GITHUB_REF_NAME" remote-screens.apk --clobber
+          gh release create "$TAG" remote-screens.apk --title "$TAG" --notes "$notes" \
+            || gh release upload "$TAG" remote-screens.apk --clobber

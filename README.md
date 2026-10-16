@@ -108,9 +108,12 @@ and the workarounds the code relies on.
 
 ### Releases
 
-`addon/VERSION` and the `version` in `addon/config.yaml` must match. Pushing a tag `v<version>` runs
-[the release workflow](.github/workflows/addon.yml): it builds the signed player app, packages the add-on,
-pushes `ghcr.io/<owner>/remote-screens-{amd64,aarch64}` and attaches the APK to the GitHub release.
+Run [the release workflow](.github/workflows/addon.yml) from **Actions → Release → Run workflow** and enter
+the version (e.g. `0.1.12`). That commits matching `addon/VERSION` and `addon/config.yaml`, creates tag
+`v<version>`, builds the signed player app, packages the add-on, pushes
+`ghcr.io/<owner>/remote-screens-{amd64,aarch64}`, and attaches the APK to the GitHub release.
+
+You can still release by pushing a tag `v<version>` yourself if those files already match the tag.
 
 Tablets only accept an update signed with the key the app was first installed with, so every release must use
 the same key. The workflow reads it from these repository secrets:
