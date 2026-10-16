@@ -184,6 +184,7 @@ private fun DocContext.edgeOf(tile: Tile) = tile.borderColor?.let { paint(it) } 
  * A tile is an RPI card: a black edge, a grey body and, where there is room, a darker header strip with its name.
  * The strip's bottom line takes the tile's accent while the entity is on.
  */
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
     val kind = tile.effectiveKind()
     val spec = Catalogue.of(kind)
@@ -475,7 +476,10 @@ private fun DocContext.calendarTile(tile: Tile, box: TileBox, @Suppress("UNUSED_
     scope.Column(Modifier.fillMaxSize().padding(units.px(PAD_LG_DP))) {
         val doc = this@calendarTile
         doc.label(doc.text(Vars.tile(tile.id, "ev.day")), Type.CAPTION + 1f, ink2)
-        doc.label(doc.text(Vars.tile(tile.id, "ev.time")), if (box.h >= TALL_HEIGHT_DP) Type.HEADLINE else Type.TITLE, ink, Weight.MEDIUM)
+        doc.label(
+            doc.text(Vars.tile(tile.id, "ev.time")),
+            if (box.h >= TALL_HEIGHT_DP) Type.HEADLINE else Type.TITLE, ink, Weight.MEDIUM,
+        )
         Spacer(Modifier.verticalWeight(1f))
         doc.label(doc.text(Vars.tile(tile.id, "ev.title")), Type.BODY + 1f, ink, Weight.SEMI_BOLD, lines = 2)
         if (named) doc.label(doc.text(Vars.entity(entityId, Vars.KEY_NAME)), Type.CAPTION, ink2)

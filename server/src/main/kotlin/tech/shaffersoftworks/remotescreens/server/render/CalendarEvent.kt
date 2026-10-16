@@ -22,7 +22,9 @@ private val HA_LOCAL = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 /** The next (or in-progress) event on [entityState], or null when the calendar is empty. */
 fun calendarEvent(entityState: EntityState, zone: ZoneId): CalendarEvent? {
     fun time(key: String) =
-        entityState.attr(key)?.let { text -> runCatching { LocalDateTime.parse(text, HA_LOCAL).atZone(zone) }.getOrNull() }
+        entityState.attr(key)?.let { text ->
+            runCatching { LocalDateTime.parse(text, HA_LOCAL).atZone(zone) }.getOrNull()
+        }
     val title = entityState.attr("message")
     val start = time("start_time")
     return if (title == null || start == null) {

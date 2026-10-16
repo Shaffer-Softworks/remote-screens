@@ -157,7 +157,8 @@ object Present {
             "weather" -> entityState.number("temperature")?.let { "${i18n.number(it, 0)}° · $word" } ?: word
             "scene", "button", "input_button" -> ""
             "script" -> if (on) word else ""
-            "vacuum", "lawn_mower" -> entityState.number("battery_level")?.let { "$word · ${i18n.percent(it.roundToInt())}" } ?: word
+            "vacuum", "lawn_mower" ->
+                entityState.number("battery_level")?.let { "$word · ${i18n.percent(it.roundToInt())}" } ?: word
             "input_select", "select", "input_text", "input_datetime" -> entityState.state
             "calendar" -> entityState.attr("message") ?: word
             "todo", "counter" -> entityState.state
@@ -170,6 +171,7 @@ object Present {
             else -> word
         }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun valueOf(entityState: EntityState, i18n: I18n, stateText: String, word: String): String = when (entityState.domain) {
         "sensor", "number", "input_number", "counter", "todo" ->
             entityState.numericState()?.let { numberOnly(entityState, it, i18n) } ?: entityState.state

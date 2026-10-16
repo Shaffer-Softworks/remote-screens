@@ -65,14 +65,18 @@ class DemoHome : HomeAssistant {
             is JsonArray -> e.map { it.jsonPrimitive.content }
             else -> emptyList()
         }
-        if (domain == "weather" && service == "get_forecasts") return forecasts(ids)
-        if (domain == "todo" && service == "get_items") return todoItems(ids)
-        for (id in ids) apply(id, domain, service, data)
-        return null
+        return when {
+            domain == "weather" && service == "get_forecasts" -> forecasts(ids)
+            domain == "todo" && service == "get_items" -> todoItems(ids)
+            else -> {
+                for (id in ids) apply(id, domain, service, data)
+                null
+            }
+        }
     }
 
     // One branch per Home Assistant service the demo answers, as a lookup table would be.
-    @Suppress("CyclomaticComplexMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     private fun apply(id: String, domain: String, service: String, data: JsonObject) {
         val current = _states.value[id] ?: return
         fun num(key: String) = (data[key] as? JsonPrimitive)?.doubleOrNull
@@ -195,6 +199,7 @@ class DemoHome : HomeAssistant {
     private fun on(domain: String) = if (domain == "cover") "open" else "on"
     private fun off(domain: String) = if (domain == "cover") "closed" else "off"
 
+    @Suppress("CyclomaticComplexMethod")
     override suspend fun command(type: String, payload: JsonObject): JsonElement? = when (type) {
         "fire_event" -> {
             val eventType = payload["event_type"]?.jsonPrimitive?.contentOrNull ?: return null
@@ -289,6 +294,7 @@ class DemoHome : HomeAssistant {
             }
         })
 
+        @Suppress("LongMethod")
         fun initialStates(): List<EntityState> = listOf(
             EntityState("light.living_room", "on", attrs("friendly_name" to "Ceiling light", "brightness" to 150, "supported_color_modes" to listOf("hs", "color_temp"), "color_mode" to "hs", "effect_list" to listOf("Rainbow", "Candle", "Pulse"))),
             EntityState("light.table_lamp", "off", attrs("friendly_name" to "Table lamp", "supported_color_modes" to listOf("brightness"))),

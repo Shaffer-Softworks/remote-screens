@@ -1,5 +1,8 @@
 package tech.shaffersoftworks.remotescreens.server.render
 
+/** Length of the opening and closing `**` bold markers combined. */
+private const val BOLD_MARKER_LENGTH = 4
+
 /**
  * Splits constrained markdown into lines the free-form renderer can draw: plain text with optional bold or italic
  * for a whole line (a line that is wrapped in `**…**` or `*…*`). No HTML, links or nested markup.
@@ -10,7 +13,7 @@ object MarkdownLines {
     fun parse(source: String): List<Line> =
         source.replace("\r\n", "\n").replace('\r', '\n').split('\n').map { raw ->
             when {
-                raw.startsWith("**") && raw.endsWith("**") && raw.length >= 4 ->
+                raw.startsWith("**") && raw.endsWith("**") && raw.length >= BOLD_MARKER_LENGTH ->
                     Line(raw.removeSurrounding("**"), bold = true, italic = false)
                 raw.startsWith("*") && raw.endsWith("*") && raw.length >= 2 && !raw.startsWith("**") ->
                     Line(raw.removeSurrounding("*"), bold = false, italic = true)

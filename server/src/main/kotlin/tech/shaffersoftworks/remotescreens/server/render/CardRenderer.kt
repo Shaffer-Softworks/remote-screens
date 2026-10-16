@@ -91,6 +91,7 @@ private const val FORECAST_DAYS = 7
  * The card a long press opens: the whole of one entity, on a panel over the page. A card is its own document in the
  * overlay slot; its taps name the entity as `e:<entity_id>`, so they work whichever tile opened it.
  */
+@Suppress("LargeClass")
 object CardRenderer {
     fun render(entityId: String, kind: String?, device: Device, input: RenderInput): RenderedDoc {
         val entityState = input.states[entityId]
@@ -296,11 +297,20 @@ object CardRenderer {
         section(i18n.t("ui.target_humidity"))
         scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
             val doc = this@humidifierCard
-            doc.key(ref(entityId, "humidity", "-$step"), icon = "minus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true)
+            doc.key(
+                ref(entityId, "humidity", "-$step"),
+                icon = "minus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true,
+            )
             Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
-                doc.label(doc.text(Vars.entity(entityId, Vars.KEY_VALUE)), Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)
+                doc.label(
+                    doc.text(Vars.entity(entityId, Vars.KEY_VALUE)),
+                    Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center,
+                )
             }
-            doc.key(ref(entityId, "humidity", "+$step"), icon = "plus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true)
+            doc.key(
+                ref(entityId, "humidity", "+$step"),
+                icon = "plus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true,
+            )
         }
         gap(CARD_GAP_DP)
         bar(entityId, "humidity", w, min, max)
@@ -398,18 +408,18 @@ object CardRenderer {
         }
     }
 
-    private fun DocContext.climateDualSetpoint(entityId: String, entityState: EntityState?, step: Double) {
+    private fun DocContext.climateDualSetpoint(
+        entityId: String,
+        @Suppress("UNUSED_PARAMETER") entityState: EntityState?,
+        step: Double,
+    ) {
         bind(entityId) { states ->
             val climate = states[entityId]
+            fun tempLabel(attr: String) =
+                climate?.number(attr)?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + "°" } ?: "–"
             listOf(
-                VarValue.string(
-                    Vars.entity(entityId, "temp_low"),
-                    climate?.number("target_temp_low")?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + "°" } ?: "–",
-                ),
-                VarValue.string(
-                    Vars.entity(entityId, "temp_high"),
-                    climate?.number("target_temp_high")?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + "°" } ?: "–",
-                ),
+                VarValue.string(Vars.entity(entityId, "temp_low"), tempLabel("target_temp_low")),
+                VarValue.string(Vars.entity(entityId, "temp_high"), tempLabel("target_temp_high")),
             )
         }
         predict(ref(entityId, "temperature_low", "+$step"), entityId)
@@ -418,22 +428,40 @@ object CardRenderer {
         predict(ref(entityId, "temperature_high", "-$step"), entityId)
         scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
             val doc = this@climateDualSetpoint
-            doc.key(ref(entityId, "temperature_low", "-$step"), icon = "minus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true)
+            doc.key(
+                ref(entityId, "temperature_low", "-$step"),
+                icon = "minus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true,
+            )
             Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
                 doc.label(doc.i18n.t("ui.low"), Type.BODY, doc.role(Role.INK_SOFT), align = RcTextAlign.Center)
-                doc.label(doc.text(Vars.entity(entityId, "temp_low")), Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)
+                doc.label(
+                    doc.text(Vars.entity(entityId, "temp_low")),
+                    Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center,
+                )
             }
-            doc.key(ref(entityId, "temperature_low", "+$step"), icon = "plus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true)
+            doc.key(
+                ref(entityId, "temperature_low", "+$step"),
+                icon = "plus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true,
+            )
         }
         gap(PANEL_CORNER_DP)
         scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
             val doc = this@climateDualSetpoint
-            doc.key(ref(entityId, "temperature_high", "-$step"), icon = "minus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true)
+            doc.key(
+                ref(entityId, "temperature_high", "-$step"),
+                icon = "minus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true,
+            )
             Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
                 doc.label(doc.i18n.t("ui.high"), Type.BODY, doc.role(Role.INK_SOFT), align = RcTextAlign.Center)
-                doc.label(doc.text(Vars.entity(entityId, "temp_high")), Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)
+                doc.label(
+                    doc.text(Vars.entity(entityId, "temp_high")),
+                    Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center,
+                )
             }
-            doc.key(ref(entityId, "temperature_high", "+$step"), icon = "plus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true)
+            doc.key(
+                ref(entityId, "temperature_high", "+$step"),
+                icon = "plus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true,
+            )
         }
     }
 
@@ -684,7 +712,7 @@ object CardRenderer {
         label(i18n.t("ui.map_credit"), Type.CAPTION, role(Role.INK_SOFT))
     }
 
-    private fun DocContext.calendarCard(entityId: String, entityState: EntityState?) {
+    private fun DocContext.calendarCard(@Suppress("UNUSED_PARAMETER") entityId: String, entityState: EntityState?) {
         val zone = runCatching { ZoneId.of(homeAssistantConfig.timeZone) }.getOrDefault(ZoneId.of("UTC"))
         val event = entityState?.let { calendarEvent(it, zone) }
         gap(PANEL_CORNER_DP)
@@ -725,19 +753,38 @@ object CardRenderer {
 
     private fun DocContext.timerCard(entityId: String, entityState: EntityState?) {
         gap(PANEL_CORNER_DP)
-        label(text(Vars.entity(entityId, Vars.KEY_VALUE)), Type.DISPLAY, role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)
+        label(
+            text(Vars.entity(entityId, Vars.KEY_VALUE)),
+            Type.DISPLAY, role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center,
+        )
         gap(CARD_GAP_DP)
         scope.Row(Modifier.fillMaxWidth()) {
             val doc = this@timerCard
-            doc.key(ref(entityId, "start"), text = doc.i18n.t("ui.start"), icon = "play", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))
+            doc.key(
+                ref(entityId, "start"),
+                text = doc.i18n.t("ui.start"), icon = "play", heightDp = 56f,
+                modifier = Modifier.horizontalWeight(1f),
+            )
             Spacer(Modifier.width(doc.units.px(PANEL_CORNER_DP)))
-            doc.key(ref(entityId, "pause"), text = doc.i18n.t("ui.pause"), icon = "pause", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))
+            doc.key(
+                ref(entityId, "pause"),
+                text = doc.i18n.t("ui.pause"), icon = "pause", heightDp = 56f,
+                modifier = Modifier.horizontalWeight(1f),
+            )
             Spacer(Modifier.width(doc.units.px(PANEL_CORNER_DP)))
-            doc.key(ref(entityId, "cancel"), text = doc.i18n.t("ui.cancel"), icon = "close", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))
+            doc.key(
+                ref(entityId, "cancel"),
+                text = doc.i18n.t("ui.cancel"), icon = "close", heightDp = 56f,
+                modifier = Modifier.horizontalWeight(1f),
+            )
         }
         if (entityState?.state == "active" || entityState?.state == "paused") {
             gap(PANEL_CORNER_DP)
-            key(ref(entityId, "finish"), text = i18n.t("ui.finish"), icon = "check", heightDp = FLOW_KEY_H_DP, modifier = Modifier.fillMaxWidth())
+            key(
+                ref(entityId, "finish"),
+                text = i18n.t("ui.finish"), icon = "check", heightDp = FLOW_KEY_H_DP,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 
@@ -745,14 +792,27 @@ object CardRenderer {
         gap(PANEL_CORNER_DP)
         scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
             val doc = this@counterCard
-            doc.key(ref(entityId, "decrement"), icon = "minus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true)
+            doc.key(
+                ref(entityId, "decrement"),
+                icon = "minus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true,
+            )
             Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
-                doc.label(doc.text(Vars.entity(entityId, Vars.KEY_VALUE)), Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)
+                doc.label(
+                    doc.text(Vars.entity(entityId, Vars.KEY_VALUE)),
+                    Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center,
+                )
             }
-            doc.key(ref(entityId, "increment"), icon = "plus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true)
+            doc.key(
+                ref(entityId, "increment"),
+                icon = "plus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true,
+            )
         }
         gap(CARD_GAP_DP)
-        key(ref(entityId, "reset"), text = i18n.t("ui.reset"), icon = "refresh", heightDp = FLOW_KEY_H_DP, modifier = Modifier.fillMaxWidth())
+        key(
+            ref(entityId, "reset"),
+            text = i18n.t("ui.reset"), icon = "refresh", heightDp = FLOW_KEY_H_DP,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 
     private fun DocContext.waterHeaterCard(entityId: String, entityState: EntityState?, w: Float) {
@@ -777,7 +837,11 @@ object CardRenderer {
         if (modes.isNotEmpty()) {
             structural(entityId) { it?.list("operation_list")?.joinToString() ?: "" }
             section(i18n.t("ui.mode"))
-            flowKeys(entityId, "operation", modes.map { it to it.replace('_', ' ').replaceFirstChar(Char::uppercase) }) {
+            flowKeys(
+                entityId,
+                "operation",
+                modes.map { it to it.replace('_', ' ').replaceFirstChar(Char::uppercase) },
+            ) {
                 it.state
             }
         }
@@ -787,11 +851,23 @@ object CardRenderer {
         gap(FLOW_PAD_DP)
         scope.Row(Modifier.fillMaxWidth()) {
             val doc = this@valveCard
-            doc.key(ref(entityId, "open"), text = doc.i18n.t("ui.open"), icon = "valve-open", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))
+            doc.key(
+                ref(entityId, "open"),
+                text = doc.i18n.t("ui.open"), icon = "valve-open", heightDp = 56f,
+                modifier = Modifier.horizontalWeight(1f),
+            )
             Spacer(Modifier.width(doc.units.px(PANEL_CORNER_DP)))
-            doc.key(ref(entityId, "stop"), text = doc.i18n.t("ui.stop"), icon = "stop", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))
+            doc.key(
+                ref(entityId, "stop"),
+                text = doc.i18n.t("ui.stop"), icon = "stop", heightDp = 56f,
+                modifier = Modifier.horizontalWeight(1f),
+            )
             Spacer(Modifier.width(doc.units.px(PANEL_CORNER_DP)))
-            doc.key(ref(entityId, "close"), text = doc.i18n.t("ui.close_cover"), icon = "valve-closed", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))
+            doc.key(
+                ref(entityId, "close"),
+                text = doc.i18n.t("ui.close_cover"), icon = "valve-closed", heightDp = 56f,
+                modifier = Modifier.horizontalWeight(1f),
+            )
         }
         if (entityState?.number("current_position") != null) {
             section(i18n.t("ui.position"))
@@ -823,12 +899,22 @@ object CardRenderer {
 
     private fun DocContext.inputTextCard(entityId: String, entityState: EntityState?) {
         gap(PANEL_CORNER_DP)
-        label(entityState?.state?.ifBlank { i18n.t("ui.empty_text") } ?: "—", Type.HEADLINE, role(Role.INK), Weight.MEDIUM)
+        label(
+            entityState?.state?.ifBlank { i18n.t("ui.empty_text") } ?: "—",
+            Type.HEADLINE, role(Role.INK), Weight.MEDIUM,
+        )
         gap(CARD_GAP_DP)
-        key(ref(entityId, "clear"), text = i18n.t("ui.clear"), icon = "close", heightDp = FLOW_KEY_H_DP, modifier = Modifier.fillMaxWidth())
+        key(
+            ref(entityId, "clear"),
+            text = i18n.t("ui.clear"), icon = "close", heightDp = FLOW_KEY_H_DP,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 
-    private fun DocContext.inputDatetimeCard(entityId: String, entityState: EntityState?) {
+    private fun DocContext.inputDatetimeCard(
+        @Suppress("UNUSED_PARAMETER") entityId: String,
+        entityState: EntityState?,
+    ) {
         gap(PANEL_CORNER_DP)
         label(entityState?.state ?: "—", Type.DISPLAY, role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)
         gap(FLOW_PAD_DP)

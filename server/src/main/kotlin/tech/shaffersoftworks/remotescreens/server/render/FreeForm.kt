@@ -249,7 +249,9 @@ private fun Node.natural(): Dims = when (type) {
     "keypad" -> (props["size"]?.toFloatOrNull() ?: Metrics.KEYPAD_DEFAULT_DP).let {
         Dims(it * Metrics.KEYPAD_KEY_WIDTH_RATIO * Metrics.KEYPAD_COLS + Metrics.KEYPAD_WIDTH_PAD_DP, Metrics.KEYPAD_DEFAULT_DP + Metrics.KEYPAD_ROWS * (it + Metrics.KEYPAD_ROW_GAP_DP))
     }
-    "dial" -> (props["size"]?.toFloatOrNull() ?: Metrics.DIAL_DEFAULT_DP).let { Dims(it, it + Metrics.STEPPER_KEY_DP + Metrics.KEYS_GAP_DP) }
+    "dial" -> (props["size"]?.toFloatOrNull() ?: Metrics.DIAL_DEFAULT_DP).let {
+        Dims(it, it + Metrics.STEPPER_KEY_DP + Metrics.KEYS_GAP_DP)
+    }
     "countdown" -> Dims(Metrics.COUNTDOWN_NATURAL_W, Metrics.COUNTDOWN_NATURAL_H)
     "qr" -> (props["size"]?.toFloatOrNull() ?: Metrics.QR_DEFAULT_DP).let { Dims(it, it) }
     "markdown" -> Dims(
@@ -261,6 +263,7 @@ private fun Node.natural(): Dims = when (type) {
 }
 
 /** About the size [node]'s content takes: a leaf's natural size, a container's children laid end to end, plus padding. */
+@Suppress("CyclomaticComplexMethod")
 internal fun content(node: Node): Dims {
     fun side(spec: String, natural: Float) = (Spec.of(spec) as? Spec.Dp)?.value ?: natural
     if (node.type !in setOf("column", "row", "box", "flow", "tabs")) {
@@ -912,7 +915,10 @@ private fun DocContext.switchNode(node: Node, axis: Axis, pages: Pages) {
 /** What a stepper's keys send for an entity, and by how much a tap moves it. */
 private fun DocContext.stepOf(node: Node, entityState: EntityState?, domain: String?): Pair<String, Double>? {
     val pair = when (domain) {
-        "climate", "water_heater" -> "temperature" to (entityState?.number("target_temp_step") ?: if (homeAssistantConfig.temperatureUnit.contains("F")) Metrics.STEP_TEMP_F else Metrics.STEP_TEMP_C)
+        "climate", "water_heater" -> "temperature" to (
+            entityState?.number("target_temp_step")
+                ?: if (homeAssistantConfig.temperatureUnit.contains("F")) Metrics.STEP_TEMP_F else Metrics.STEP_TEMP_C
+        )
         "humidifier" -> "humidity" to (entityState?.number("humidity_step") ?: Metrics.STEP_PERCENTAGE)
         "number", "input_number" -> "value" to (entityState?.number("step") ?: 1.0)
         "light" -> "brightness" to Metrics.STEP_BRIGHTNESS
@@ -1205,10 +1211,12 @@ private fun DocContext.keypadNode(node: Node, axis: Axis, pages: Pages) {
 }
 
 /** A circular level ring with the bound value in the middle and minus/plus keys under it. */
+@Suppress("CyclomaticComplexMethod")
 private fun DocContext.dialNode(node: Node, axis: Axis, pages: Pages) {
     val id = node.bind?.entityId
     val domain = id?.substringBefore('.')
-    val sizeDp = node.props["size"]?.toFloatOrNull()?.coerceIn(Metrics.DIAL_MIN_DP, Metrics.DIAL_MAX_DP) ?: Metrics.DIAL_DEFAULT_DP
+    val sizeDp = node.props["size"]?.toFloatOrNull()?.coerceIn(Metrics.DIAL_MIN_DP, Metrics.DIAL_MAX_DP)
+        ?: Metrics.DIAL_DEFAULT_DP
     val px = units.px(sizeDp)
     val stroke = px * Metrics.DIAL_STROKE_RATIO
     val inset = stroke / 2f
@@ -1230,24 +1238,46 @@ private fun DocContext.dialNode(node: Node, axis: Axis, pages: Pages) {
         val doc = this@dialNode
         Box(Modifier.size(px, px), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
             Canvas(Modifier.size(px, px)) {
-                paint { color(doc.role(Role.TRACK)); style(RcPaintStyle.Stroke); strokeWidth(stroke); strokeCap(RcStrokeCap.Round) }
+                paint {
+                    color(doc.role(Role.TRACK)); style(RcPaintStyle.Stroke)
+                    strokeWidth(stroke); strokeCap(RcStrokeCap.Round)
+                }
                 drawArc(inset, inset, px - inset, px - inset, Metrics.GAUGE_ARC_START_DEG, Metrics.GAUGE_ARC_SWEEP_DEG)
                 if (id != null) {
-                    paint { color(fill); style(RcPaintStyle.Stroke); strokeWidth(stroke); strokeCap(RcStrokeCap.Round) }
-                    drawArc(inset.rf, inset.rf, (px - inset).rf, (px - inset).rf, Metrics.GAUGE_ARC_START_DEG.rf, doc.float(nodeLevel(node.id)) * Metrics.GAUGE_ARC_SWEEP_DEG)
+                    paint {
+                        color(fill); style(RcPaintStyle.Stroke)
+                        strokeWidth(stroke); strokeCap(RcStrokeCap.Round)
+                    }
+                    val sweep = doc.float(nodeLevel(node.id)) * Metrics.GAUGE_ARC_SWEEP_DEG
+                    drawArc(inset.rf, inset.rf, (px - inset).rf, (px - inset).rf, Metrics.GAUGE_ARC_START_DEG.rf, sweep)
                 }
             }
+            val valueSp = maxOf(sizeDp * Metrics.DIAL_VALUE_SIZE_RATIO, Type.CAPTION)
             if (id != null) {
-                doc.label(doc.text(Vars.entity(id, Vars.KEY_VALUE)), maxOf(sizeDp * Metrics.DIAL_VALUE_SIZE_RATIO, Type.CAPTION), doc.role(Role.INK), Weight.MEDIUM, align = RcTextAlign.Center)
+                doc.label(
+                    doc.text(Vars.entity(id, Vars.KEY_VALUE)),
+                    valueSp, doc.role(Role.INK), Weight.MEDIUM, align = RcTextAlign.Center,
+                )
             } else {
-                doc.label("–", maxOf(sizeDp * Metrics.DIAL_VALUE_SIZE_RATIO, Type.CAPTION), doc.role(Role.INK_DIM), Weight.MEDIUM, align = RcTextAlign.Center)
+                doc.label("–", valueSp, doc.role(Role.INK_DIM), Weight.MEDIUM, align = RcTextAlign.Center)
             }
         }
         doc.gap(Metrics.KEYS_GAP_DP)
         Row(vertical = RcVerticalPositioning.Center) {
             fun key(ref: ActionRef?, icon: String) {
-                if (ref != null) doc.key(ref, icon = icon, heightDp = Metrics.STEPPER_KEY_DP, widthDp = Metrics.STEPPER_KEY_DP, round = true)
-                else Box(Modifier.size(doc.units.px(Metrics.STEPPER_KEY_DP), doc.units.px(Metrics.STEPPER_KEY_DP)).clip(doc.rounded(Metrics.STEPPER_KEY_CORNER_DP)).background(doc.role(Role.KEY)))
+                if (ref != null) {
+                    doc.key(
+                        ref, icon = icon,
+                        heightDp = Metrics.STEPPER_KEY_DP, widthDp = Metrics.STEPPER_KEY_DP, round = true,
+                    )
+                } else {
+                    val knob = doc.units.px(Metrics.STEPPER_KEY_DP)
+                    Box(
+                        Modifier.size(knob, knob)
+                            .clip(doc.rounded(Metrics.STEPPER_KEY_CORNER_DP))
+                            .background(doc.role(Role.KEY)),
+                    )
+                }
             }
             key(down, "minus")
             Spacer(Modifier.width(doc.units.px(Metrics.KEYS_GAP_TOTAL_DP)))
@@ -1265,7 +1295,10 @@ private fun DocContext.countdownNode(node: Node, axis: Axis, pages: Pages) {
     scope.Box(styled(node, axis, pages), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
         val doc = this@countdownNode
         when {
-            id != null -> doc.label(doc.text(Vars.entity(id, Vars.KEY_VALUE)), sp, ink, Weight.LIGHT, align = RcTextAlign.Center)
+            id != null -> doc.label(
+                doc.text(Vars.entity(id, Vars.KEY_VALUE)),
+                sp, ink, Weight.LIGHT, align = RcTextAlign.Center,
+            )
             else -> doc.label(node.props["text"] ?: "0:00", sp, ink, Weight.LIGHT, align = RcTextAlign.Center)
         }
     }
@@ -1273,7 +1306,8 @@ private fun DocContext.countdownNode(node: Node, axis: Axis, pages: Pages) {
 
 /** A QR code of static text, or of a bound entity's state (`qr:@entity.id`). */
 private fun DocContext.qrNode(node: Node, axis: Axis, pages: Pages) {
-    val sizeDp = node.props["size"]?.toFloatOrNull()?.coerceIn(Metrics.QR_MIN_DP, Metrics.QR_MAX_DP) ?: Metrics.QR_DEFAULT_DP
+    val sizeDp = node.props["size"]?.toFloatOrNull()?.coerceIn(Metrics.QR_MIN_DP, Metrics.QR_MAX_DP)
+        ?: Metrics.QR_DEFAULT_DP
     val px = units.px(sizeDp).toInt()
     val id = node.bind?.entityId
     val text = when {
@@ -1286,7 +1320,11 @@ private fun DocContext.qrNode(node: Node, axis: Axis, pages: Pages) {
     val slot = "qr.${node.id}"
     picture(PictureSlot(slot, "qr:$text", px, px, 0, crop = false))
     scope.Box(styled(node, axis, pages), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-        Image(this@qrNode.image(slot, px, px), Modifier.size(units.px(sizeDp), units.px(sizeDp)), contentScale = RcContentScale.Fit)
+        Image(
+            this@qrNode.image(slot, px, px),
+            Modifier.size(units.px(sizeDp), units.px(sizeDp)),
+            contentScale = RcContentScale.Fit,
+        )
     }
 }
 

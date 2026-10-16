@@ -63,13 +63,17 @@ object ServiceDataBuilder {
             return JsonPrimitive(arg == "true")
         }
         val (_, operator, factor) = parseExpression(expression)
-        val number = arg.toDoubleOrNull() ?: return JsonPrimitive(arg)
-        val value = when (operator) {
-            '*' -> number * factor
-            '/' -> number / factor
-            else -> number
+        val number = arg.toDoubleOrNull()
+        return if (number == null) {
+            JsonPrimitive(arg)
+        } else {
+            val value = when (operator) {
+                '*' -> number * factor
+                '/' -> number / factor
+                else -> number
+            }
+            if (operator == '*') JsonPrimitive(value.roundToInt()) else JsonPrimitive(wholeOrDecimal(value))
         }
-        return if (operator == '*') JsonPrimitive(value.roundToInt()) else JsonPrimitive(wholeOrDecimal(value))
     }
 
     fun isArgExpression(text: String): Boolean = text.startsWith(ARG_PLACEHOLDER)

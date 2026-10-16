@@ -54,10 +54,12 @@ internal object HomeAssistantResponseParser {
 
     private fun todoItem(item: JsonObject): TodoItem? {
         val status = item.text("status")
-        if (status != null && status != "needs_action") return null
-        val summary = item.text("summary") ?: return null
-        val uid = item.text("uid") ?: summary
-        return TodoItem(uid = uid, summary = summary)
+        val summary = item.text("summary")
+        return when {
+            status != null && status != "needs_action" -> null
+            summary == null -> null
+            else -> TodoItem(uid = item.text("uid") ?: summary, summary = summary)
+        }
     }
 
     private fun forecast(forecast: JsonObject): Forecast? {

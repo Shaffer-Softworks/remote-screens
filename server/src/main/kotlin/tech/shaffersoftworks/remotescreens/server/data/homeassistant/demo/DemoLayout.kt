@@ -17,6 +17,7 @@ import tech.shaffersoftworks.remotescreens.shared.TopBar
 
 /** A screen over [DemoHome] with a tile of every kind, for demo mode and for tests. */
 object DemoLayout {
+    @Suppress("LongMethod")
     fun screen(): Screen = Screen(
         id = "demo",
         name = "Living room tablet",
