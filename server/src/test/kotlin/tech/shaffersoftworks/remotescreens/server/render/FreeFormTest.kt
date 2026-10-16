@@ -167,7 +167,9 @@ class FreeFormTest {
         // Twelve numbers round the face, one caption under each of the two gauges.
         assertEquals(14, ops(parse(ScreenRenderer.render(screen(dials), tablet, input()).bytes).operations).count { it is DrawTextAnchored })
         val all = ops(parse(ScreenRenderer.render(screen(everyType), tablet, input()).bytes).operations)
-        val slides = all.filterIsInstance<Component>().map { it.mAnimationSpec }.filter { it.enterAnimation == AnimationSpec.ANIMATION.SLIDE_TOP }
+        // showWhen text puts animate on its wrapping Box (Text alone used to carry it).
+        val slides = all.filterIsInstance<BoxLayout>().map { it.mAnimationSpec }
+            .filter { it.enterAnimation == AnimationSpec.ANIMATION.SLIDE_TOP }
         assertEquals(1, slides.size)
         assertEquals(AnimationSpec.ANIMATION.SLIDE_TOP, slides.single().exitAnimation)
     }
