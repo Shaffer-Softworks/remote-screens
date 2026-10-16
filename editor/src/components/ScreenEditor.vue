@@ -26,9 +26,13 @@ const emit = defineEmits<{ close: [] }>()
 
 const screen = computed(() => editing.value!)
 const pageId = ref(screen.value.homePage)
-const page = computed<Page>(() => screen.value.pages.find((p) => p.id === pageId.value) ?? screen.value.pages[0])
+const page = computed<Page>(
+  () => screen.value.pages.find(entry => entry.id === pageId.value) ?? screen.value.pages[0],
+)
 const selectedId = ref<string | null>(null)
-const selected = computed<Tile | undefined>(() => page.value.tiles.find((t) => t.id === selectedId.value))
+const selected = computed<Tile | undefined>(() =>
+  page.value.tiles.find(tile => tile.id === selectedId.value),
+)
 const panel = ref<'library' | 'page' | 'screen'>('library')
 
 // A free-form page is edited in the designer: palette and tree, canvas or code, attributes.
@@ -48,8 +52,10 @@ function resizeTree(e: PointerEvent): void {
   const startY = e.clientY
   const startH = treeHeight.value
   const max = aside.clientHeight - PALETTE_MIN
-  const move = (m: PointerEvent) => {
-    treeHeight.value = Math.round(Math.min(max, Math.max(TREE_MIN, startH + startY - m.clientY)))
+  const move = (moveEvent: PointerEvent) => {
+    treeHeight.value = Math.round(
+      Math.min(max, Math.max(TREE_MIN, startH + startY - moveEvent.clientY)),
+    )
   }
   const up = () => {
     window.removeEventListener('pointermove', move)
@@ -64,10 +70,14 @@ function resizeTree(e: PointerEvent): void {
 // The canvas draws in the screen's day theme, or the one it wears while dark.
 const previewDark = ref(screen.value.settings.darkMode)
 watchEffect(() => {
-  const s = screen.value.settings
-  activeThemeId.value = (previewDark.value ? s.darkTheme : s.theme) ?? DEFAULT_THEME
+  const settings = screen.value.settings
+  activeThemeId.value = (previewDark.value ? settings.darkTheme : settings.theme) ?? DEFAULT_THEME
 })
-const sameTheme = computed(() => (screen.value.settings.theme ?? DEFAULT_THEME) === (screen.value.settings.darkTheme ?? DEFAULT_THEME))
+const sameTheme = computed(
+  () =>
+    (screen.value.settings.theme ?? DEFAULT_THEME) ===
+    (screen.value.settings.darkTheme ?? DEFAULT_THEME),
+)
 function chooseDarkTheme(): void {
   panel.value = 'screen'
   sidePanel.value = 'screen'
@@ -98,9 +108,9 @@ watch(
     settle = setTimeout(record, 400)
   },
 )
-function restore(s: Screen | undefined): void {
-  if (!s) return
-  editing.value = s
+function restore(snapshot: Screen | undefined): void {
+  if (!snapshot) return
+  editing.value = snapshot
   canUndo.value = past.canUndo()
   canRedo.value = past.canRedo()
 }
@@ -114,7 +124,9 @@ function redo(): void {
 }
 
 function onKey(e: KeyboardEvent): void {
-  const typing = (e.target as HTMLElement | null)?.closest('input, textarea, select, [contenteditable]')
+  const typing = (e.target as HTMLElement | null)?.closest(
+    'input, textarea, select, [contenteditable]',
+  )
   const mod = e.metaKey || e.ctrlKey
   const key = e.key.toLowerCase()
   if (mod && (key === 'z' || key === 'y')) {
@@ -151,23 +163,36 @@ onBeforeUnmount(() => {
 const CUSTOM = 'custom'
 const devices = computed(() => [
   ...playersOf(screen.value.id)
-    .filter((p) => p.widthDp > 0)
-    .map((p) => ({ key: `p:${p.deviceId}`, label: p.name, w: p.widthDp, h: p.heightDp })),
+    .filter(player => player.widthDp > 0)
+    .map(player => ({
+      key: `p:${player.deviceId}`,
+      label: player.name,
+      w: player.widthDp,
+      h: player.heightDp,
+    })),
   ...PRESETS,
-  { key: CUSTOM, label: 'Custom size', w: screen.value.designSize?.widthDp ?? 1280, h: screen.value.designSize?.heightDp ?? 800 },
+  {
+    key: CUSTOM,
+    label: 'Custom size',
+    w: screen.value.designSize?.widthDp ?? 1280,
+    h: screen.value.designSize?.heightDp ?? 800,
+  },
 ])
 function firstDevice(): string {
-  const tablet = devices.value.find((d) => d.key.startsWith('p:'))
+  const tablet = devices.value.find(device => device.key.startsWith('p:'))
   if (tablet) return tablet.key
   const own = screen.value.designSize
   return own ? (presetOf(own)?.key ?? CUSTOM) : PRESETS[0].key
 }
 const deviceKey = ref(firstDevice())
-const device = computed(() => devices.value.find((d) => d.key === deviceKey.value) ?? devices.value[0])
+const device = computed(
+  () => devices.value.find(device => device.key === deviceKey.value) ?? devices.value[0],
+)
 
 function pickDevice(key: string): void {
   // A custom size starts from the size shown before, and is kept with the screen.
-  if (key === CUSTOM && !screen.value.designSize) screen.value.designSize = { widthDp: device.value.w, heightDp: device.value.h }
+  if (key === CUSTOM && !screen.value.designSize)
+    screen.value.designSize = { widthDp: device.value.w, heightDp: device.value.h }
   deviceKey.value = key
 }
 /** 0 to type the custom size in dp, else the dpi of a size typed in pixels. */
@@ -175,19 +200,30 @@ const customDpi = ref(0)
 const shownSize = (dp: number) => (customDpi.value ? toPx(dp, customDpi.value) : dp)
 function setCustom(dim: 'widthDp' | 'heightDp', value: number): void {
   const old = screen.value.designSize ?? { widthDp: device.value.w, heightDp: device.value.h }
-  screen.value.designSize = { ...old, [dim]: clampDp(customDpi.value ? toDp(value, customDpi.value) : value, old[dim]) }
+  screen.value.designSize = {
+    ...old,
+    [dim]: clampDp(customDpi.value ? toDp(value, customDpi.value) : value, old[dim]),
+  }
 }
 function rotateCustom(): void {
-  const s = screen.value.designSize
-  if (s) screen.value.designSize = { widthDp: s.heightDp, heightDp: s.widthDp }
+  const designSize = screen.value.designSize
+  if (designSize)
+    screen.value.designSize = { widthDp: designSize.heightDp, heightDp: designSize.widthDp }
 }
 
 const moved = computed(() => {
   const placed = reflow(page.value.tiles, screen.value.grid)
   const ids = new Set(
     placed
-      .filter((p) => !p.tile.full && (p.col !== p.tile.col || p.row !== p.tile.row || p.w !== p.tile.w || p.h !== p.tile.h))
-      .map((p) => p.tile.id),
+      .filter(
+        placement =>
+          !placement.tile.full &&
+          (placement.col !== placement.tile.col ||
+            placement.row !== placement.tile.row ||
+            placement.w !== placement.tile.w ||
+            placement.h !== placement.tile.h),
+      )
+      .map(placement => placement.tile.id),
   )
   const dropped = page.value.tiles.length - placed.length
   return { ids, dropped }
@@ -201,7 +237,10 @@ function resize(cols: number, rows: number): void {
 }
 
 /** Adds a tile for an entity or a kind at a cell, or at the first free spot. */
-function add(source: { entityId?: string; kind?: string }, at?: { col: number; row: number }): void {
+function add(
+  source: { entityId?: string; kind?: string },
+  at?: { col: number; row: number },
+): void {
   const tile = newTile(source, 0, 0)
   const tiles = page.value.tiles
   const grid = screen.value.grid
@@ -225,12 +264,12 @@ function add(source: { entityId?: string; kind?: string }, at?: { col: number; r
 }
 
 function moveTile(id: string, col: number, row: number): void {
-  const t = page.value.tiles.find((x) => x.id === id)
-  if (t) Object.assign(t, { col, row })
+  const tile = page.value.tiles.find(entry => entry.id === id)
+  if (tile) Object.assign(tile, { col, row })
 }
 
 function removeTile(id: string): void {
-  page.value.tiles = page.value.tiles.filter((t) => t.id !== id)
+  page.value.tiles = page.value.tiles.filter(tile => tile.id !== id)
   selectedId.value = null
 }
 
@@ -239,9 +278,9 @@ function addPage(kind: 'free' | 'grid'): void {
   choosingPage.value = false
   if (screen.value.pages.length >= 8) return toast('At most 8 pages')
   const id = `p${Date.now().toString(36)}`
-  const p: Page = { id, title: `Page ${screen.value.pages.length + 1}`, tiles: [] }
-  if (kind === 'free') p.root = newRoot()
-  screen.value.pages.push(p)
+  const newPage: Page = { id, title: `Page ${screen.value.pages.length + 1}`, tiles: [] }
+  if (kind === 'free') newPage.root = newRoot()
+  screen.value.pages.push(newPage)
   pageId.value = id
   panel.value = 'page'
   sidePanel.value = 'page'
@@ -249,16 +288,16 @@ function addPage(kind: 'free' | 'grid'): void {
 
 /** A grid page becomes a column of rows of its cards; a free-form page goes back to an empty grid. */
 function convert(): void {
-  const p = page.value
-  if (p.root) {
-    if (!confirm(`Make ${p.title} a grid page? Its components are removed.`)) return
-    delete p.root
-    p.tiles = []
+  const currentPage = page.value
+  if (currentPage.root) {
+    if (!confirm(`Make ${currentPage.title} a grid page? Its components are removed.`)) return
+    delete currentPage.root
+    currentPage.tiles = []
     design.select(null)
     return
   }
-  p.root = fromGrid(p, screen.value.grid.cols, screen.value.grid.rows)
-  p.tiles = []
+  currentPage.root = fromGrid(currentPage, screen.value.grid.cols, screen.value.grid.rows)
+  currentPage.tiles = []
   selectedId.value = null
 }
 
@@ -266,14 +305,14 @@ function deletePage(): void {
   if (screen.value.pages.length === 1) return
   if (page.value.tiles.length && !confirm(`Delete ${page.value.title} and its tiles?`)) return
   const id = page.value.id
-  screen.value.pages = screen.value.pages.filter((p) => p.id !== id)
+  screen.value.pages = screen.value.pages.filter(entry => entry.id !== id)
   if (screen.value.homePage === id) screen.value.homePage = screen.value.pages[0].id
   pageId.value = screen.value.homePage
 }
 
 const previewOn = ref('')
 async function preview(): Promise<void> {
-  const id = previewOn.value || playersOf(screen.value.id).find((p) => p.online)?.deviceId
+  const id = previewOn.value || playersOf(screen.value.id).find(player => player.online)?.deviceId
   if (!id) return toast('No tablet is online to preview on')
   const shown = await attempt(async () => {
     await api.preview(id, JSON.parse(JSON.stringify(screen.value)))
@@ -282,22 +321,32 @@ async function preview(): Promise<void> {
   if (shown) toast('Shown on the tablet until it is saved or reloaded')
 }
 
-const online = computed(() => playersOf(screen.value.id).filter((p) => p.online))
+const online = computed(() => playersOf(screen.value.id).filter(player => player.online))
 </script>
 
 <template>
   <div class="editor">
     <header class="bar">
-      <button class="icon" title="Back to screens" @click="emit('close')"><MdiIcon name="arrow-left" /></button>
+      <button class="icon" title="Back to screens" @click="emit('close')">
+        <MdiIcon name="arrow-left" />
+      </button>
       <input v-model="screen.name" class="name" aria-label="Screen name" />
       <span class="row">
-        <button class="icon" title="Undo (Ctrl+Z)" :disabled="!canUndo" @click="undo"><MdiIcon name="undo" :size="18" /></button>
-        <button class="icon" title="Redo (Ctrl+Shift+Z)" :disabled="!canRedo" @click="redo"><MdiIcon name="redo" :size="18" /></button>
+        <button class="icon" title="Undo (Ctrl+Z)" :disabled="!canUndo" @click="undo">
+          <MdiIcon name="undo" :size="18" />
+        </button>
+        <button class="icon" title="Redo (Ctrl+Shift+Z)" :disabled="!canRedo" @click="redo">
+          <MdiIcon name="redo" :size="18" />
+        </button>
       </span>
       <span class="grow" />
       <div class="segments" title="Preview the screen's day theme or its dark theme">
-        <button :class="{ active: !previewDark }" @click="previewDark = false"><MdiIcon name="white-balance-sunny" :size="16" /> Day</button>
-        <button :class="{ active: previewDark }" @click="previewDark = true"><MdiIcon name="weather-night" :size="16" /> Dark</button>
+        <button :class="{ active: !previewDark }" @click="previewDark = false">
+          <MdiIcon name="white-balance-sunny" :size="16" /> Day
+        </button>
+        <button :class="{ active: previewDark }" @click="previewDark = true">
+          <MdiIcon name="weather-night" :size="16" /> Dark
+        </button>
       </div>
       <button
         v-if="sameTheme"
@@ -309,11 +358,21 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
       </button>
       <label class="row muted">
         <MdiIcon name="tablet" :size="18" />
-        <select :value="deviceKey" aria-label="Device" @change="pickDevice(($event.target as HTMLSelectElement).value)">
-          <option v-for="d in devices" :key="d.key" :value="d.key">{{ d.label }} ({{ d.w }} × {{ d.h }})</option>
+        <select
+          :value="deviceKey"
+          aria-label="Device"
+          @change="pickDevice(($event.target as HTMLSelectElement).value)"
+        >
+          <option v-for="d in devices" :key="d.key" :value="d.key">
+            {{ d.label }} ({{ d.w }} × {{ d.h }})
+          </option>
         </select>
       </label>
-      <span v-if="deviceKey === CUSTOM" class="row custom-size" title="Width × height, in dp or in pixels at a density">
+      <span
+        v-if="deviceKey === CUSTOM"
+        class="row custom-size"
+        title="Width × height, in dp or in pixels at a density"
+      >
         <input
           type="number"
           aria-label="Width"
@@ -333,23 +392,55 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
           <option :value="0">dp</option>
           <option v-for="d in DENSITIES" :key="d" :value="d">px at {{ d }} dpi</option>
         </select>
-        <button class="icon" title="Swap width and height" @click="rotateCustom"><MdiIcon name="phone-rotate-landscape" :size="18" /></button>
+        <button class="icon" title="Swap width and height" @click="rotateCustom">
+          <MdiIcon name="phone-rotate-landscape" :size="18" />
+        </button>
       </span>
       <span v-if="!free" class="row stepper" title="Columns × rows">
-        <button class="icon" :disabled="screen.grid.cols <= MIN_CELLS" @click="resize(screen.grid.cols - 1, screen.grid.rows)">−</button>
+        <button
+          class="icon"
+          :disabled="screen.grid.cols <= MIN_CELLS"
+          @click="resize(screen.grid.cols - 1, screen.grid.rows)"
+        >
+          −
+        </button>
         {{ screen.grid.cols }}
-        <button class="icon" :disabled="screen.grid.cols >= MAX_CELLS" @click="resize(screen.grid.cols + 1, screen.grid.rows)">+</button>
+        <button
+          class="icon"
+          :disabled="screen.grid.cols >= MAX_CELLS"
+          @click="resize(screen.grid.cols + 1, screen.grid.rows)"
+        >
+          +
+        </button>
         ×
-        <button class="icon" :disabled="screen.grid.rows <= MIN_CELLS" @click="resize(screen.grid.cols, screen.grid.rows - 1)">−</button>
+        <button
+          class="icon"
+          :disabled="screen.grid.rows <= MIN_CELLS"
+          @click="resize(screen.grid.cols, screen.grid.rows - 1)"
+        >
+          −
+        </button>
         {{ screen.grid.rows }}
-        <button class="icon" :disabled="screen.grid.rows >= MAX_CELLS" @click="resize(screen.grid.cols, screen.grid.rows + 1)">+</button>
+        <button
+          class="icon"
+          :disabled="screen.grid.rows >= MAX_CELLS"
+          @click="resize(screen.grid.cols, screen.grid.rows + 1)"
+        >
+          +
+        </button>
       </span>
       <span class="row">
         <select v-if="online.length > 1" v-model="previewOn" aria-label="Preview on">
           <option value="">First tablet</option>
           <option v-for="p in online" :key="p.deviceId" :value="p.deviceId">{{ p.name }}</option>
         </select>
-        <button :disabled="online.length === 0" title="Show this version on a tablet without saving" @click="preview">Preview on device</button>
+        <button
+          :disabled="online.length === 0"
+          title="Show this version on a tablet without saving"
+          @click="preview"
+        >
+          Preview on device
+        </button>
         <button class="primary" :disabled="!dirty" @click="save">Save &amp; send</button>
       </span>
     </header>
@@ -369,15 +460,23 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
         {{ p.title }}
       </button>
       <span class="new-page">
-        <button class="icon" title="Add a page" @click="choosingPage = !choosingPage"><MdiIcon name="plus" :size="18" /></button>
+        <button class="icon" title="Add a page" @click="choosingPage = !choosingPage">
+          <MdiIcon name="plus" :size="18" />
+        </button>
         <span v-if="choosingPage" class="menu card">
           <button @click="addPage('free')">
             <MdiIcon name="vector-square" :size="18" />
-            <span><strong>Free-form page</strong><small class="muted">Rows, columns and components, like Compose</small></span>
+            <span
+              ><strong>Free-form page</strong
+              ><small class="muted">Rows, columns and components, like Compose</small></span
+            >
           </button>
           <button @click="addPage('grid')">
             <MdiIcon name="view-grid-outline" :size="18" />
-            <span><strong>Grid page</strong><small class="muted">Tiles on the screen's grid</small></span>
+            <span
+              ><strong>Grid page</strong
+              ><small class="muted">Tiles on the screen's grid</small></span
+            >
           </button>
         </span>
       </span>
@@ -401,18 +500,29 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
       <section class="canvas">
         <div class="toolbar">
           <div class="segments views-toggle">
-            <button :class="{ active: view === 'design' }" title="Design" @click="view = 'design'"><MdiIcon name="palette-outline" :size="16" /> Design</button>
-            <button :class="{ active: view === 'split' }" title="Split" @click="view = 'split'"><MdiIcon name="view-split-vertical" :size="16" /> Split</button>
-            <button :class="{ active: view === 'code' }" title="Code" @click="view = 'code'"><MdiIcon name="code-json" :size="16" /> Code</button>
+            <button :class="{ active: view === 'design' }" title="Design" @click="view = 'design'">
+              <MdiIcon name="palette-outline" :size="16" /> Design
+            </button>
+            <button :class="{ active: view === 'split' }" title="Split" @click="view = 'split'">
+              <MdiIcon name="view-split-vertical" :size="16" /> Split
+            </button>
+            <button :class="{ active: view === 'code' }" title="Code" @click="view = 'code'">
+              <MdiIcon name="code-json" :size="16" /> Code
+            </button>
           </div>
           <span class="grow" />
-          <span class="muted keys">Arrows move the selection · Alt+arrows reorder · Ctrl+D duplicates · Delete removes</span>
+          <span class="muted keys"
+            >Arrows move the selection · Alt+arrows reorder · Ctrl+D duplicates · Delete
+            removes</span
+          >
         </div>
         <div class="views" :class="view">
           <DesignCanvas v-if="view !== 'code'" :screen="screen" :page="page" :device="device" />
           <CodeView v-if="view !== 'design'" :page="page" />
         </div>
-        <p class="muted note">The canvas is close to the tablet, not exact; Preview on device shows the real thing.</p>
+        <p class="muted note">
+          The canvas is close to the tablet, not exact; Preview on device shows the real thing.
+        </p>
       </section>
 
       <aside class="side card">
@@ -425,10 +535,20 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
         />
         <template v-else>
           <div class="segments">
-            <button :class="{ active: sidePanel === 'page' }" @click="sidePanel = 'page'">Page</button>
-            <button :class="{ active: sidePanel === 'screen' }" @click="sidePanel = 'screen'">Screen</button>
+            <button :class="{ active: sidePanel === 'page' }" @click="sidePanel = 'page'">
+              Page
+            </button>
+            <button :class="{ active: sidePanel === 'screen' }" @click="sidePanel = 'screen'">
+              Screen
+            </button>
           </div>
-          <PagePanel v-if="sidePanel === 'page'" :screen="screen" :page="page" @delete="deletePage" @convert="convert" />
+          <PagePanel
+            v-if="sidePanel === 'page'"
+            :screen="screen"
+            :page="page"
+            @delete="deletePage"
+            @convert="convert"
+          />
           <ScreenPanel v-else :screen="screen" :device-width="device?.w" />
         </template>
       </aside>
@@ -448,8 +568,13 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
         />
         <p v-if="moved.ids.size || moved.dropped" class="warn">
           <MdiIcon name="alert-outline" :size="16" />
-          <template v-if="moved.dropped">{{ moved.dropped }} tile(s) do not fit this grid and are not shown. </template>
-          <template v-if="moved.ids.size">{{ moved.ids.size }} tile(s) were moved or shrunk to fit; drag them to place them.</template>
+          <template v-if="moved.dropped"
+            >{{ moved.dropped }} tile(s) do not fit this grid and are not shown.
+          </template>
+          <template v-if="moved.ids.size"
+            >{{ moved.ids.size }} tile(s) were moved or shrunk to fit; drag them to place
+            them.</template
+          >
         </p>
       </section>
 
@@ -464,12 +589,22 @@ const online = computed(() => playersOf(screen.value.id).filter((p) => p.online)
         />
         <template v-else>
           <div class="segments">
-            <button :class="{ active: panel === 'library' }" @click="panel = 'library'">Add tiles</button>
+            <button :class="{ active: panel === 'library' }" @click="panel = 'library'">
+              Add tiles
+            </button>
             <button :class="{ active: panel === 'page' }" @click="panel = 'page'">Page</button>
-            <button :class="{ active: panel === 'screen' }" @click="panel = 'screen'">Screen</button>
+            <button :class="{ active: panel === 'screen' }" @click="panel = 'screen'">
+              Screen
+            </button>
           </div>
           <EntityLibrary v-if="panel === 'library'" :page="page" @add="add($event)" />
-          <PagePanel v-else-if="panel === 'page'" :screen="screen" :page="page" @delete="deletePage" @convert="convert" />
+          <PagePanel
+            v-else-if="panel === 'page'"
+            :screen="screen"
+            :page="page"
+            @delete="deletePage"
+            @convert="convert"
+          />
           <ScreenPanel v-else :screen="screen" :device-width="device?.w" />
         </template>
       </aside>

@@ -3,6 +3,14 @@ package tech.shaffersoftworks.remotescreens.server.render
 import tech.shaffersoftworks.remotescreens.shared.Theme
 import kotlinx.serialization.Serializable
 
+private const val OPAQUE_ALPHA = 0xFF
+private const val OPAQUE_ARGB_PREFIX = 0xFF000000L
+private const val RGB_MASK = 0xFFFFFF
+private const val ARGB_MASK = 0xFFFFFFFFL
+private const val HEX_RGB_LENGTH = 7
+private const val ALPHA_SHIFT = 24
+private const val HEX_RADIX = 16
+
 /**
  * The built-in themes and the custom ones laid over them. The only file that holds hex colours (see `ThemeTest`).
  */
@@ -115,13 +123,17 @@ object Themes {
     /** `#RRGGBB` or `#AARRGGBB` to ARGB, or null for anything else. */
     fun parse(hex: String): Int? {
         if (!Theme.HEX.matches(hex)) return null
-        val v = hex.substring(1).toLong(16)
-        return (if (hex.length == 7) v or 0xFF000000 else v).toInt()
+        val value = hex.substring(1).toLong(HEX_RADIX)
+        return (if (hex.length == HEX_RGB_LENGTH) value or OPAQUE_ARGB_PREFIX else value).toInt()
     }
 
     fun hex(argb: Int): String {
-        val a = (argb ushr 24) and 0xFF
-        return if (a == 0xFF) "#%06X".format(argb and 0xFFFFFF) else "#%08X".format(argb.toLong() and 0xFFFFFFFF)
+        val alpha = (argb ushr ALPHA_SHIFT) and OPAQUE_ALPHA
+        return if (alpha == OPAQUE_ALPHA) {
+            "#%06X".format(argb and RGB_MASK)
+        } else {
+            "#%08X".format(argb.toLong() and ARGB_MASK)
+        }
     }
 
     private fun palette(roles: Map<Role, Long>, pastels: Map<Pastel, Long>): Palette {

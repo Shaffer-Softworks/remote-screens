@@ -5,8 +5,8 @@ import type { Directive } from 'vue'
 function fill(el: HTMLInputElement): void {
   const min = Number(el.min || 0)
   const max = Number(el.max || 100)
-  const f = max > min ? (Number(el.value) - min) / (max - min) : 0
-  el.style.setProperty('--fill', String(Math.min(Math.max(f, 0), 1)))
+  const fraction = max > min ? (Number(el.value) - min) / (max - min) : 0
+  el.style.setProperty('--fill', String(Math.min(Math.max(fraction, 0), 1)))
 }
 
 const onInput = (e: Event): void => fill(e.target as HTMLInputElement)

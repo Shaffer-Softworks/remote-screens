@@ -26,9 +26,9 @@ export const PRESETS: DevicePreset[] = [
 ]
 
 /** [n] rounded and kept within the add-on's limits; a blank or bad entry becomes [fallback]. */
-export function clampDp(n: number, fallback: number): number {
-  if (!Number.isFinite(n) || n <= 0) return fallback
-  return Math.min(Math.max(Math.round(n), MIN_DP), MAX_DP)
+export function clampDp(value: number, fallback: number): number {
+  if (!Number.isFinite(value) || value <= 0) return fallback
+  return Math.min(Math.max(Math.round(value), MIN_DP), MAX_DP)
 }
 
 /** Android's density buckets, in dpi; a dp is a pixel at 160. */
@@ -46,5 +46,5 @@ export function toPx(dp: number, dpi: number): number {
 
 /** The preset [size] matches, if any. */
 export function presetOf(size: DeviceSize | undefined): DevicePreset | undefined {
-  return size && PRESETS.find((p) => p.w === size.widthDp && p.h === size.heightDp)
+  return size && PRESETS.find(preset => preset.w === size.widthDp && preset.h === size.heightDp)
 }

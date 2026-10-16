@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { alphaOf, cssColor, packHex, rgbOf } from '../model/palette'
 
 // A colour plus opacity: stores `#RRGGBB` when opaque, else `#AARRGGBB` (the add-on's order).
-const props = withDefaults(defineProps<{ disabled?: boolean; compact?: boolean }>(), {
+withDefaults(defineProps<{ disabled?: boolean; compact?: boolean }>(), {
   disabled: false,
   compact: false,
 })

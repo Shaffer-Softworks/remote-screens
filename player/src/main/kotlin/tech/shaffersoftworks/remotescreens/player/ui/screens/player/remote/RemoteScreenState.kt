@@ -60,7 +60,9 @@ data class RemoteScreenState(
     val playingVideo: Pair<Slot, SlotVideo>?
         get() {
             val slot = topOverlay ?: return null
-            return videos[slot]?.takeIf { it.revision == documents[slot]?.revision }?.let { slot to it }
+            return videos[slot]
+                ?.takeIf { video -> video.revision == documents[slot]?.revision }
+                ?.let { video -> slot to video }
         }
 
     /** The page to show after a new main document: the same one if it still exists, otherwise home. */

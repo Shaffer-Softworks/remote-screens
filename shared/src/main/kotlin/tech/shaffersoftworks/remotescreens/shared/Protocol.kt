@@ -26,8 +26,8 @@ object Protocol {
         explicitNulls = false
     }
 
-    fun encode(msg: ServerMessage): String = json.encodeToString(ServerMessage.serializer(), msg)
-    fun encode(msg: PlayerMessage): String = json.encodeToString(PlayerMessage.serializer(), msg)
+    fun encode(message: ServerMessage): String = json.encodeToString(ServerMessage.serializer(), message)
+    fun encode(message: PlayerMessage): String = json.encodeToString(PlayerMessage.serializer(), message)
     fun decodeServer(text: String): ServerMessage? =
         runCatching { json.decodeFromString(ServerMessage.serializer(), text) }.getOrNull()
 
@@ -58,9 +58,9 @@ data class VarValue(val name: String, val type: VarType, val value: String) {
         private const val HEX_RADIX = 16
         private const val ARGB_HEX_DIGITS = 8
 
-        fun string(name: String, v: String) = VarValue(name, VarType.STRING, v)
-        fun int(name: String, v: Int) = VarValue(name, VarType.INT, v.toString())
-        fun float(name: String, v: Float) = VarValue(name, VarType.FLOAT, v.toString())
+        fun string(name: String, value: String) = VarValue(name, VarType.STRING, value)
+        fun int(name: String, value: Int) = VarValue(name, VarType.INT, value.toString())
+        fun float(name: String, value: Float) = VarValue(name, VarType.FLOAT, value.toString())
         fun color(name: String, argb: Int) =
             VarValue(name, VarType.COLOR, argb.toUInt().toString(HEX_RADIX).padStart(ARGB_HEX_DIGITS, '0'))
     }
@@ -83,8 +83,8 @@ data class ActionRef(val tile: String, val verb: String, val arg: String = "") {
     companion object {
         val LOCAL_VERBS = setOf("page", "next", "prev", "back", "close", "noop", "settings")
 
-        fun decode(s: String?): ActionRef? {
-            val parts = s?.split('|', limit = 3) ?: return null
+        fun decode(encoded: String?): ActionRef? {
+            val parts = encoded?.split('|', limit = 3) ?: return null
             val isValid = parts.size >= 2 && parts[0].isNotEmpty() && parts[1].isNotEmpty()
             return if (isValid) ActionRef(parts[0], parts[1], parts.getOrElse(2) { "" }) else null
         }

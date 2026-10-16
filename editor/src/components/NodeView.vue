@@ -15,11 +15,26 @@ import MdiIcon from './MdiIcon.vue'
 
 defineOptions({ name: 'NodeView' })
 
-const props = defineProps<{ node: Node; axis: 'row' | 'column' | 'box' | 'flow'; isRoot?: boolean }>()
+const props = defineProps<{
+  node: Node
+  axis: 'row' | 'column' | 'box' | 'flow'
+  isRoot?: boolean
+}>()
 const ctx = inject(DESIGN)!
 const el = ref<HTMLElement>()
 
-const ON_STATES = ['on', 'open', 'unlocked', 'playing', 'home', 'cleaning', 'heat', 'cool', 'heat_cool', 'auto']
+const ON_STATES = [
+  'on',
+  'open',
+  'unlocked',
+  'playing',
+  'home',
+  'cleaning',
+  'heat',
+  'cool',
+  'heat_cool',
+  'auto',
+]
 const JUSTIFY: Record<string, string> = {
   start: 'flex-start',
   center: 'center',
@@ -28,16 +43,27 @@ const JUSTIFY: Record<string, string> = {
   spaceEvenly: 'space-evenly',
   spaceAround: 'space-around',
 }
-const ALIGN: Record<string, string> = { start: 'flex-start', top: 'flex-start', center: 'center', end: 'flex-end', bottom: 'flex-end' }
+const ALIGN: Record<string, string> = {
+  start: 'flex-start',
+  top: 'flex-start',
+  center: 'center',
+  end: 'flex-end',
+  bottom: 'flex-end',
+}
 
-const n = computed(() => props.node)
-const entity = computed(() => (n.value.bind ? entityById.value.get(n.value.bind.entityId) : undefined))
+const viewNode = computed(() => props.node)
+const entity = computed(() =>
+  viewNode.value.bind ? entityById.value.get(viewNode.value.bind.entityId) : undefined,
+)
 const on = computed(() => !!entity.value && ON_STATES.includes(entity.value.state))
-const selected = computed(() => ctx.selectedId.value === n.value.id)
-const hint = computed(() => (ctx.hint.value?.targetId === n.value.id ? ctx.hint.value.where : null))
+const selected = computed(() => ctx.selectedId.value === viewNode.value.id)
+const hint = computed(() =>
+  ctx.hint.value?.targetId === viewNode.value.id ? ctx.hint.value.where : null,
+)
 
 function size(spec: string, dim: 'width' | 'height'): CSSProperties {
-  const main = (props.axis === 'row' && dim === 'width') || (props.axis === 'column' && dim === 'height')
+  const main =
+    (props.axis === 'row' && dim === 'width') || (props.axis === 'column' && dim === 'height')
   const min = dim === 'width' ? 'minWidth' : 'minHeight'
   if (spec.startsWith('dp:')) return { [dim]: `${Number(spec.slice(3))}px`, flexShrink: 0 }
   if (spec === 'fill' || spec.startsWith('weight:')) {
@@ -49,237 +75,305 @@ function size(spec: string, dim: 'width' | 'height'): CSSProperties {
 }
 
 const style = computed<CSSProperties>(() => {
-  const s: CSSProperties = { ...size(n.value.size.width, 'width'), ...size(n.value.size.height, 'height') }
-  const place = n.value.props.place
-  if (place && !props.isRoot && props.axis !== 'flow' && !s.alignSelf) {
+  const css: CSSProperties = {
+    ...size(viewNode.value.size.width, 'width'),
+    ...size(viewNode.value.size.height, 'height'),
+  }
+  const place = viewNode.value.props.place
+  if (place && !props.isRoot && props.axis !== 'flow' && !css.alignSelf) {
     if (props.axis === 'box') {
-      const [v, h] = place.split('-')
-      Object.assign(s, { alignSelf: ALIGN[v] ?? 'flex-start', justifySelf: ALIGN[h ?? v] ?? 'flex-start' })
+      const [vertical, horizontal] = place.split('-')
+      Object.assign(css, {
+        alignSelf: ALIGN[vertical] ?? 'flex-start',
+        justifySelf: ALIGN[horizontal ?? vertical] ?? 'flex-start',
+      })
     } else {
-      s.alignSelf = ALIGN[place] ?? 'flex-start'
+      css.alignSelf = ALIGN[place] ?? 'flex-start'
     }
   }
-  const [ps, pt, pe, pb] = paddingOf(n.value)
+  const [ps, pt, pe, pb] = paddingOf(viewNode.value)
   const padded = ps > 0 || pt > 0 || pe > 0 || pb > 0
-  if (padded) s.padding = `${pt}px ${pe}px ${pb}px ${ps}px`
-  if (n.value.style.corner) s.borderRadius = `${n.value.style.corner}px`
-  const bg = colorOf(n.value.style.background)
-  if (bg) s.background = bg
-  if (n.value.style.border) s.border = `${n.value.style.border}px solid ${colorOf(n.value.style.borderColor ?? 'divider') ?? colorOf('divider')}`
-  const p = n.value.props
-  if (n.value.bind && p.showWhen && (p.showWhen === 'on') !== on.value) s.opacity = 0.35
-  switch (n.value.type) {
+  if (padded) css.padding = `${pt}px ${pe}px ${pb}px ${ps}px`
+  if (viewNode.value.style.corner) css.borderRadius = `${viewNode.value.style.corner}px`
+  const bg = colorOf(viewNode.value.style.background)
+  if (bg) css.background = bg
+  if (viewNode.value.style.border)
+    css.border = `${viewNode.value.style.border}px solid ${colorOf(viewNode.value.style.borderColor ?? 'divider') ?? colorOf('divider')}`
+  const nodeProps = viewNode.value.props
+  if (viewNode.value.bind && nodeProps.showWhen && (nodeProps.showWhen === 'on') !== on.value)
+    css.opacity = 0.35
+  switch (viewNode.value.type) {
     case 'column':
     case 'row':
-      s.display = 'flex'
-      s.flexDirection = n.value.type
-      s.justifyContent = JUSTIFY[p.arrangement ?? 'start']
-      s.alignItems = ALIGN[p.alignment ?? 'start']
-      if (p.gap) s.gap = `${Number(p.gap)}px`
-      if (p.scroll === 'true') s[n.value.type === 'row' ? 'overflowX' : 'overflowY'] = 'auto'
+      css.display = 'flex'
+      css.flexDirection = viewNode.value.type
+      css.justifyContent = JUSTIFY[nodeProps.arrangement ?? 'start']
+      css.alignItems = ALIGN[nodeProps.alignment ?? 'start']
+      if (nodeProps.gap) css.gap = `${Number(nodeProps.gap)}px`
+      if (nodeProps.scroll === 'true')
+        css[viewNode.value.type === 'row' ? 'overflowX' : 'overflowY'] = 'auto'
       break
     case 'flow':
-      Object.assign(s, { display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', alignContent: 'flex-start' })
-      s.justifyContent = ALIGN[p.alignment ?? 'start']
-      if (p.gap) s.gap = `${Number(p.gap)}px`
+      Object.assign(css, {
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'flex-start',
+        alignContent: 'flex-start',
+      })
+      css.justifyContent = ALIGN[nodeProps.alignment ?? 'start']
+      if (nodeProps.gap) css.gap = `${Number(nodeProps.gap)}px`
       break
     case 'box': {
-      const [v, h] = (p.alignment ?? 'top-start').split('-')
-      s.display = 'grid'
-      s.alignItems = ALIGN[v] ?? 'flex-start'
-      s.justifyItems = ALIGN[h ?? v] ?? 'flex-start'
+      const [vertical, horizontal] = (nodeProps.alignment ?? 'top-start').split('-')
+      css.display = 'grid'
+      css.alignItems = ALIGN[vertical] ?? 'flex-start'
+      css.justifyItems = ALIGN[horizontal ?? vertical] ?? 'flex-start'
       break
     }
     case 'text': {
-      const lines = p.marquee === 'true' ? 1 : Number(p.lines ?? 1)
-      s.fontSize = `${Number(p.fontSize ?? 16)}px`
-      s.fontWeight = Number(p.weight ?? 400)
-      s.color = colorOf(p.color) ?? colorOf('ink')
-      s.textAlign = (p.align as CSSProperties['textAlign']) ?? 'start'
-      if (lines === 1) Object.assign(s, { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' })
-      else Object.assign(s, { display: '-webkit-box', WebkitLineClamp: lines, WebkitBoxOrient: 'vertical', overflow: 'hidden' })
+      const lines = nodeProps.marquee === 'true' ? 1 : Number(nodeProps.lines ?? 1)
+      css.fontSize = `${Number(nodeProps.fontSize ?? 16)}px`
+      css.fontWeight = Number(nodeProps.weight ?? 400)
+      css.color = colorOf(nodeProps.color) ?? colorOf('ink')
+      css.textAlign = (nodeProps.align as CSSProperties['textAlign']) ?? 'start'
+      if (lines === 1)
+        Object.assign(css, { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' })
+      else
+        Object.assign(css, {
+          display: '-webkit-box',
+          WebkitLineClamp: lines,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        })
       break
     }
     case 'spacer':
-      if (n.value.size.width === 'wrap' && n.value.size.height === 'wrap') Object.assign(s, { width: '8px', height: '8px' })
+      if (viewNode.value.size.width === 'wrap' && viewNode.value.size.height === 'wrap')
+        Object.assign(css, { width: '8px', height: '8px' })
       break
     case 'divider':
-      s.background = colorOf(p.color ?? 'divider')
-      if (n.value.size.width === 'wrap' && n.value.size.height === 'wrap') {
-        Object.assign(s, props.axis === 'row' ? { width: '1px', alignSelf: 'stretch' } : { height: '1px', alignSelf: 'stretch' })
+      css.background = colorOf(nodeProps.color ?? 'divider')
+      if (viewNode.value.size.width === 'wrap' && viewNode.value.size.height === 'wrap') {
+        Object.assign(
+          css,
+          props.axis === 'row'
+            ? { width: '1px', alignSelf: 'stretch' }
+            : { height: '1px', alignSelf: 'stretch' },
+        )
       }
       break
     case 'button':
-      if (n.value.size.height === 'wrap') s.height = '48px'
-      if (!n.value.style.corner) s.borderRadius = `${48 / 2.6}px`
-      if (!bg) s.background = colorOf(p.color ?? 'key')
-      s.color = colorOf(p.ink) ?? colorOf('ink')
-      if (!padded) s.padding = '0 12px'
+      if (viewNode.value.size.height === 'wrap') css.height = '48px'
+      if (!viewNode.value.style.corner) css.borderRadius = `${48 / 2.6}px`
+      if (!bg) css.background = colorOf(nodeProps.color ?? 'key')
+      css.color = colorOf(nodeProps.ink) ?? colorOf('ink')
+      if (!padded) css.padding = '0 12px'
       break
     case 'slider':
-      if (n.value.size.height === 'wrap') s.height = '28px'
+      if (viewNode.value.size.height === 'wrap') css.height = '28px'
       break
     case 'image':
     case 'tile':
-      if (n.value.size.width === 'wrap') s.width = '200px'
-      if (n.value.size.height === 'wrap') s.height = '160px'
+      if (viewNode.value.size.width === 'wrap') css.width = '200px'
+      if (viewNode.value.size.height === 'wrap') css.height = '160px'
       break
     case 'clock':
-      s.color = colorOf(p.color) ?? colorOf('ink')
-      s.textAlign = (p.align as CSSProperties['textAlign']) ?? 'start'
-      s.alignItems = ALIGN[p.align ?? 'start']
+      css.color = colorOf(nodeProps.color) ?? colorOf('ink')
+      css.textAlign = (nodeProps.align as CSSProperties['textAlign']) ?? 'start'
+      css.alignItems = ALIGN[nodeProps.align ?? 'start']
       break
     case 'badge': {
-      const explicit = colorOf(p.color)
-      if (n.value.size.height === 'wrap') s.height = '32px'
-      if (!n.value.style.corner) s.borderRadius = '16px'
-      if (!bg) s.background = explicit ?? (on.value ? accent.value : colorOf('key'))
-      s.color = explicit || on.value ? colorOf('key_on_ink') : colorOf('ink')
-      if (!padded) s.padding = '0 12px'
+      const explicit = colorOf(nodeProps.color)
+      if (viewNode.value.size.height === 'wrap') css.height = '32px'
+      if (!viewNode.value.style.corner) css.borderRadius = '16px'
+      if (!bg) css.background = explicit ?? (on.value ? accent.value : colorOf('key'))
+      css.color = explicit || on.value ? colorOf('key_on_ink') : colorOf('ink')
+      if (!padded) css.padding = '0 12px'
       break
     }
     case 'progress':
-      if (n.value.size.width === 'wrap') s.width = '240px'
-      if (n.value.size.height === 'wrap') s.height = '8px'
+      if (viewNode.value.size.width === 'wrap') css.width = '240px'
+      if (viewNode.value.size.height === 'wrap') css.height = '8px'
       break
     case 'graph':
-      if (n.value.size.width === 'wrap') s.width = '280px'
-      if (n.value.size.height === 'wrap') s.height = '120px'
+      if (viewNode.value.size.width === 'wrap') css.width = '280px'
+      if (viewNode.value.size.height === 'wrap') css.height = '120px'
       break
     case 'choices':
-      if (n.value.size.width === 'wrap') s.width = '320px'
-      if (n.value.size.height === 'wrap') s.height = '44px'
+      if (viewNode.value.size.width === 'wrap') css.width = '320px'
+      if (viewNode.value.size.height === 'wrap') css.height = '44px'
       break
     case 'iconbutton': {
-      const px = `${Number(p.size ?? 64)}px`
-      if (n.value.size.width === 'wrap' && n.value.size.height === 'wrap') Object.assign(s, { width: px, height: px })
-      if (!n.value.style.corner) s.borderRadius = `${Number(p.size ?? 64) / 2}px`
-      if (!bg) s.background = n.value.bind ? (on.value ? accent.value : colorOf('key')) : (colorOf(p.color) ?? colorOf('key'))
-      s.color = n.value.bind && on.value ? colorOf('key_on_ink') : colorOf('ink')
+      const px = `${Number(nodeProps.size ?? 64)}px`
+      if (viewNode.value.size.width === 'wrap' && viewNode.value.size.height === 'wrap')
+        Object.assign(css, { width: px, height: px })
+      if (!viewNode.value.style.corner) css.borderRadius = `${Number(nodeProps.size ?? 64) / 2}px`
+      if (!bg)
+        css.background = viewNode.value.bind
+          ? on.value
+            ? accent.value
+            : colorOf('key')
+          : (colorOf(nodeProps.color) ?? colorOf('key'))
+      css.color = viewNode.value.bind && on.value ? colorOf('key_on_ink') : colorOf('ink')
       break
     }
   }
-  return s
+  return css
 })
 
 const gauge = computed(() => {
-  const size = Number(n.value.props.size ?? 140)
+  const size = Number(viewNode.value.props.size ?? 140)
   const stroke = size * 0.1
-  const r = (size - stroke) / 2
-  const arc = 2 * Math.PI * r * 0.75
-  const value = entity.value ? (entity.value.unit ? `${entity.value.state} ${entity.value.unit}` : stateOf(entity.value) || entity.value.state) : ''
-  const c = n.value.props.caption
-  const caption = !c ? '' : c === '@name' ? (entity.value?.name ?? n.value.bind?.entityId ?? '') : c
-  return { size, stroke, r, arc, fill: (arc * progress.value) / 100, value, caption }
+  const radius = (size - stroke) / 2
+  const arc = 2 * Math.PI * radius * 0.75
+  const value = entity.value
+    ? entity.value.unit
+      ? `${entity.value.state} ${entity.value.unit}`
+      : stateOf(entity.value) || entity.value.state
+    : ''
+  const captionProp = viewNode.value.props.caption
+  const caption = !captionProp
+    ? ''
+    : captionProp === '@name'
+      ? (entity.value?.name ?? viewNode.value.bind?.entityId ?? '')
+      : captionProp
+  return { size, stroke, radius, arc, fill: (arc * progress.value) / 100, value, caption }
 })
 
 const clockNumbers = computed(() =>
-  n.value.props.numbers === 'all' ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : n.value.props.numbers === 'quarters' ? [3, 6, 9, 12] : [],
+  viewNode.value.props.numbers === 'all'
+    ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    : viewNode.value.props.numbers === 'quarters'
+      ? [3, 6, 9, 12]
+      : [],
 )
 
 /** The hands' angles in degrees, from the editor's clock. */
 const hands = computed(() => {
-  const h = now.getHours() % 12
-  const m = now.getMinutes()
-  return { hour: h * 30 + m * 0.5, minute: m * 6, second: now.getSeconds() * 6 }
+  const hours = now.getHours() % 12
+  const minutes = now.getMinutes()
+  return { hour: hours * 30 + minutes * 0.5, minute: minutes * 6, second: now.getSeconds() * 6 }
 })
 
 /** The keys the add-on gives the bound entity's remote, as in FreeForm.kt keysOf. */
 const keyIcons = computed(() => {
-  switch (n.value.bind?.entityId.split('.')[0]) {
-    case 'media_player': return ['skip-previous', 'play-pause', 'skip-next']
-    case 'cover': return ['arrow-up', 'stop', 'arrow-down']
-    case 'vacuum': return ['play', 'pause', 'home-import-outline', 'map-marker-outline']
-    case 'lock': return ['lock', 'lock-open-variant']
-    case 'alarm_control_panel': return ['shield-home', 'shield-lock', 'shield-off']
-    case 'light': return ['lightbulb-off-outline', 'lightbulb-on']
-    default: return []
+  switch (viewNode.value.bind?.entityId.split('.')[0]) {
+    case 'media_player':
+      return ['skip-previous', 'play-pause', 'skip-next']
+    case 'cover':
+      return ['arrow-up', 'stop', 'arrow-down']
+    case 'vacuum':
+      return ['play', 'pause', 'home-import-outline', 'map-marker-outline']
+    case 'lock':
+      return ['lock', 'lock-open-variant']
+    case 'alarm_control_panel':
+      return ['shield-home', 'shield-lock', 'shield-off']
+    case 'light':
+      return ['lightbulb-off-outline', 'lightbulb-on']
+    default:
+      return []
   }
 })
 
 const HUES = [0, 30, 50, 120, 180, 220, 270, 320]
 const KELVINS = [2200, 2700, 3500, 4500, 5500, 6500]
 const swatchColours = computed(() =>
-  n.value.props.show === 'white'
-    ? KELVINS.map((k) => {
-        const t = Math.max(0, Math.min(1, (k - 2200) / 4300))
-        return `rgb(255 ${Math.round(190 + 60 * t)} ${Math.round(120 + 135 * t)})`
+  viewNode.value.props.show === 'white'
+    ? KELVINS.map(kelvin => {
+        const warmth = Math.max(0, Math.min(1, (kelvin - 2200) / 4300))
+        return `rgb(255 ${Math.round(190 + 60 * warmth)} ${Math.round(120 + 135 * warmth)})`
       })
-    : HUES.map((h) => `hsl(${h} 100% 72.5%)`),
+    : HUES.map(hue => `hsl(${hue} 100% 72.5%)`),
 )
 const PAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'back']
 
 /** The entity's pastel, as the add-on lights a bound component. */
-const accent = computed(() => pastel(n.value.props.color, n.value.bind?.entityId.split('.')[0]).color)
+const accent = computed(
+  () => pastel(viewNode.value.props.color, viewNode.value.bind?.entityId.split('.')[0]).color,
+)
 
 const now = new Date()
 const clockTime = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 const clockDate = now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })
 
 const initials = computed(() => {
-  const name = entity.value?.name ?? n.value.props.text ?? '?'
-  return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('') || '?'
+  const name = entity.value?.name ?? viewNode.value.props.text ?? '?'
+  return (
+    name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(w => w[0].toUpperCase())
+      .join('') || '?'
+  )
 })
 
 /** How full a progress bar is, from 0 to 100: a number between its limits, or a lit entity half way. */
 const progress = computed(() => {
-  const e = entity.value
-  if (!e) return n.value.bind ? 0 : 50
-  const v = Number(e.state)
-  if (Number.isFinite(v)) {
-    const lo = Number(n.value.props.min ?? 0)
-    const hi = Number(n.value.props.max ?? 100)
-    return hi > lo ? Math.max(0, Math.min(100, ((v - lo) / (hi - lo)) * 100)) : 0
+  const ent = entity.value
+  if (!ent) return viewNode.value.bind ? 0 : 50
+  const numeric = Number(ent.state)
+  if (Number.isFinite(numeric)) {
+    const lo = Number(viewNode.value.props.min ?? 0)
+    const hi = Number(viewNode.value.props.max ?? 100)
+    return hi > lo ? Math.max(0, Math.min(100, ((numeric - lo) / (hi - lo)) * 100)) : 0
   }
   return on.value ? 60 : 0
 })
 
 const stepperValue = computed(() => {
   const e = entity.value
-  if (!n.value.bind) return '–'
-  if (!e) return `‹${n.value.bind.entityId}›`
+  if (!viewNode.value.bind) return '–'
+  if (!e) return `‹${viewNode.value.bind.entityId}›`
   if (e.domain === 'climate') return 'Target'
-  return e.unit ? `${e.state} ${e.unit}` : (stateOf(e) || e.state)
+  return e.unit ? `${e.state} ${e.unit}` : stateOf(e) || e.state
 })
 
 /** The add-on lists the entity's own options; the editor does not know them, so it shows stand-ins. */
 const choiceWords = computed(() => {
-  const d = n.value.bind?.entityId.split('.')[0]
-  const max = Number(n.value.props.max ?? 4)
-  const words = d === 'climate' ? ['Off', 'Heat', 'Cool', 'Auto'] : d === 'light' ? ['Effect 1', 'Effect 2', 'Effect 3'] : ['Option 1', 'Option 2', 'Option 3']
+  const domain = viewNode.value.bind?.entityId.split('.')[0]
+  const max = Number(viewNode.value.props.max ?? 4)
+  const words =
+    domain === 'climate'
+      ? ['Off', 'Heat', 'Cool', 'Auto']
+      : domain === 'light'
+        ? ['Effect 1', 'Effect 2', 'Effect 3']
+        : ['Option 1', 'Option 2', 'Option 3']
   return words.slice(0, max)
 })
 const chosenWord = computed(() => {
-  const s = entity.value?.state.toLowerCase()
-  return choiceWords.value.find((w) => w.toLowerCase() === s) ?? choiceWords.value[0]
+  const stateLower = entity.value?.state.toLowerCase()
+  return choiceWords.value.find(word => word.toLowerCase() === stateLower) ?? choiceWords.value[0]
 })
 
 const text = computed(() => {
-  const b = n.value.bind
-  if (!b) return n.value.props.text ?? ''
-  const e = entity.value
-  let v: string
-  if (!e) v = `‹${b.entityId}›`
-  else if (b.format === 'name') v = e.name
-  else if (b.format === 'value') v = e.unit ? `${e.state} ${e.unit}` : e.state
-  else if (b.format === 'attribute') v = `‹${b.attribute ?? 'attribute'}›`
-  else v = stateOf(e) || e.state
-  return b.prefix + v + b.suffix
+  const bind = viewNode.value.bind
+  if (!bind) return viewNode.value.props.text ?? ''
+  const ent = entity.value
+  let shown: string
+  if (!ent) shown = `‹${bind.entityId}›`
+  else if (bind.format === 'name') shown = ent.name
+  else if (bind.format === 'value') shown = ent.unit ? `${ent.state} ${ent.unit}` : ent.state
+  else if (bind.format === 'attribute') shown = `‹${bind.attribute ?? 'attribute'}›`
+  else shown = stateOf(ent) || ent.state
+  return bind.prefix + shown + bind.suffix
 })
 
 const icon = computed(() => {
-  const p = n.value.props
-  if (on.value && p.iconOn) return p.iconOn
-  if (p.icon) return p.icon
-  const d = n.value.bind?.entityId.split('.')[0]
-  return entity.value?.icon ?? (d && CATALOGUE[d]?.icon) ?? 'help-circle-outline'
+  const nodeProps = viewNode.value.props
+  if (on.value && nodeProps.iconOn) return nodeProps.iconOn
+  if (nodeProps.icon) return nodeProps.icon
+  const domain = viewNode.value.bind?.entityId.split('.')[0]
+  return entity.value?.icon ?? (domain && CATALOGUE[domain]?.icon) ?? 'help-circle-outline'
 })
 
 const iconColor = computed(() => {
-  const explicit = colorOf(n.value.props.color)
+  const explicit = colorOf(viewNode.value.props.color)
   if (explicit) return explicit
-  if (!n.value.bind) return colorOf('ink')
-  return on.value ? pastel(undefined, n.value.bind.entityId.split('.')[0]).color : colorOf('ink_dim')
+  if (!viewNode.value.bind) return colorOf('ink')
+  return on.value
+    ? pastel(undefined, viewNode.value.bind.entityId.split('.')[0]).color
+    : colorOf('ink_dim')
 })
 
 const sliderFill = computed(() => {
@@ -289,46 +383,61 @@ const sliderFill = computed(() => {
 })
 
 const card = computed(() => {
-  const t = n.value.tile
-  if (!t) return undefined
-  const e = t.entityId ? entityById.value.get(t.entityId) : undefined
-  const lit = !!e && ON_STATES.includes(e.state)
-  return { name: nameOf(t, e), icon: iconOf(t, e), state: stateOf(e), accent: lit ? pastel(t.color, domainOf(t)).color : undefined }
+  const tile = viewNode.value.tile
+  if (!tile) return undefined
+  const ent = tile.entityId ? entityById.value.get(tile.entityId) : undefined
+  const lit = !!ent && ON_STATES.includes(ent.state)
+  return {
+    name: nameOf(tile, ent),
+    icon: iconOf(tile, ent),
+    state: stateOf(ent),
+    accent: lit ? pastel(tile.color, domainOf(tile)).color : undefined,
+  }
 })
 
-const empty = computed(() => isContainer(n.value) && n.value.children.length === 0)
-const childAxis = computed(() => (n.value.type === 'row' || n.value.type === 'column' || n.value.type === 'flow' ? n.value.type : 'box'))
+const empty = computed(() => isContainer(viewNode.value) && viewNode.value.children.length === 0)
+const childAxis = computed(() =>
+  viewNode.value.type === 'row' ||
+  viewNode.value.type === 'column' ||
+  viewNode.value.type === 'flow'
+    ? viewNode.value.type
+    : 'box',
+)
 
-function where(e: DragEvent): Where {
+function where(event: DragEvent): Where {
   if (props.isRoot) return 'inside'
-  const r = el.value!.getBoundingClientRect()
-  const f = props.axis === 'row' || props.axis === 'flow' ? (e.clientX - r.left) / r.width : (e.clientY - r.top) / r.height
-  if (isContainer(n.value)) return f < 0.2 ? 'before' : f > 0.8 ? 'after' : 'inside'
-  return f < 0.5 ? 'before' : 'after'
+  const bounds = el.value!.getBoundingClientRect()
+  const fraction =
+    props.axis === 'row' || props.axis === 'flow'
+      ? (event.clientX - bounds.left) / bounds.width
+      : (event.clientY - bounds.top) / bounds.height
+  if (isContainer(viewNode.value))
+    return fraction < 0.2 ? 'before' : fraction > 0.8 ? 'after' : 'inside'
+  return fraction < 0.5 ? 'before' : 'after'
 }
 
 function over(e: DragEvent): void {
   if (!dragged.value) return
   e.stopPropagation()
   let w = where(e)
-  if (!ctx.canDrop(n.value.id, w)) {
-    if (isContainer(n.value) && ctx.canDrop(n.value.id, 'inside')) w = 'inside'
+  if (!ctx.canDrop(viewNode.value.id, w)) {
+    if (isContainer(viewNode.value) && ctx.canDrop(viewNode.value.id, 'inside')) w = 'inside'
     else return
   }
   e.preventDefault()
-  ctx.hint.value = { targetId: n.value.id, where: w }
+  ctx.hint.value = { targetId: viewNode.value.id, where: w }
 }
 
 function drop(e: DragEvent): void {
   e.stopPropagation()
   const h = ctx.hint.value
-  if (h?.targetId === n.value.id) ctx.drop(n.value.id, h.where)
+  if (h?.targetId === viewNode.value.id) ctx.drop(viewNode.value.id, h.where)
 }
 
 function start(e: DragEvent): void {
   e.stopPropagation()
-  e.dataTransfer?.setData('text/plain', n.value.id)
-  const id = n.value.id
+  e.dataTransfer?.setData('text/plain', viewNode.value.id)
+  const id = viewNode.value.id
   setTimeout(() => {
     dragged.value = { type: 'node', id }
     ctx.select(id)
@@ -349,7 +458,13 @@ function end(): void {
     :class="[
       `t-${node.type}`,
       `in-${axis}`,
-      { selected, empty, root: isRoot, [`drop-${hint}`]: hint, dragging: dragged?.type === 'node' && dragged.id === node.id },
+      {
+        selected,
+        empty,
+        root: isRoot,
+        [`drop-${hint}`]: hint,
+        dragging: dragged?.type === 'node' && dragged.id === node.id,
+      },
     ]"
     :style="style"
     :draggable="!isRoot"
@@ -364,7 +479,9 @@ function end(): void {
       <NodeView v-for="c in node.children" :key="c.id" :node="c" :axis="childAxis" />
       <span v-if="empty" class="placeholder">Drop components here</span>
     </template>
-    <span v-else-if="node.type === 'text' && node.props.marquee === 'true'" class="marquee">{{ text }}</span>
+    <span v-else-if="node.type === 'text' && node.props.marquee === 'true'" class="marquee">{{
+      text
+    }}</span>
     <template v-else-if="node.type === 'text'">{{ text }}</template>
     <MdiIcon
       v-else-if="node.type === 'icon'"
@@ -377,38 +494,76 @@ function end(): void {
       <span v-if="node.props.text">{{ node.props.text }}</span>
     </template>
     <div v-else-if="node.type === 'slider'" class="track">
-      <i :style="{ width: `${sliderFill}%`, background: pastel(node.props.color, node.bind?.entityId.split('.')[0]).color }" />
+      <i
+        :style="{
+          width: `${sliderFill}%`,
+          background: pastel(node.props.color, node.bind?.entityId.split('.')[0]).color,
+        }"
+      />
       <span v-if="!node.bind" class="hint">Bind an entity</span>
     </div>
     <div v-else-if="node.type === 'image'" class="picture">
-      <MdiIcon :name="node.bind?.entityId.startsWith('camera.') ? 'cctv' : 'image-outline'" :size="36" />
-      <span>{{ node.bind ? (entity?.name ?? node.bind.entityId) : 'Bind a camera or person' }}</span>
+      <MdiIcon
+        :name="node.bind?.entityId.startsWith('camera.') ? 'cctv' : 'image-outline'"
+        :size="36"
+      />
+      <span>{{
+        node.bind ? (entity?.name ?? node.bind.entityId) : 'Bind a camera or person'
+      }}</span>
     </div>
     <div v-else-if="node.type === 'tile' && card" class="card">
       <div class="head">{{ card.name }}</div>
       <i class="line" :style="{ background: card.accent }" />
       <div class="body">
-        <MdiIcon :name="card.icon" :size="30" :style="{ color: card.accent ?? colorOf('ink_dim') }" />
+        <MdiIcon
+          :name="card.icon"
+          :size="30"
+          :style="{ color: card.accent ?? colorOf('ink_dim') }"
+        />
         <span class="grow" />
         <span class="state">{{ card.state }}</span>
       </div>
     </div>
     <template v-else-if="node.type === 'clock'">
-      <span v-if="node.props.show !== 'date'" class="time" :style="{ fontSize: `${Number(node.props.fontSize ?? 44)}px` }">{{ clockTime }}</span>
+      <span
+        v-if="node.props.show !== 'date'"
+        class="time"
+        :style="{ fontSize: `${Number(node.props.fontSize ?? 44)}px` }"
+        >{{ clockTime }}</span
+      >
       <span
         v-if="node.props.show === 'date' || node.props.show === 'both'"
-        :style="node.props.show === 'date' ? { fontSize: `${Number(node.props.fontSize ?? 44)}px` } : { fontSize: `${Math.max(Number(node.props.fontSize ?? 44) * 0.33, 14)}px`, color: colorOf('ink_soft') }"
-      >{{ clockDate }}</span>
+        :style="
+          node.props.show === 'date'
+            ? { fontSize: `${Number(node.props.fontSize ?? 44)}px` }
+            : {
+                fontSize: `${Math.max(Number(node.props.fontSize ?? 44) * 0.33, 14)}px`,
+                color: colorOf('ink_soft'),
+              }
+        "
+        >{{ clockDate }}</span
+      >
     </template>
     <template v-else-if="node.type === 'badge'">
       <MdiIcon v-if="node.props.icon || node.bind" :name="icon" :size="18" />
-      <span>{{ node.bind && !node.props.text ? (entity ? stateOf(entity) || entity.state : `‹${node.bind.entityId}›`) : node.props.text }}</span>
+      <span>{{
+        node.bind && !node.props.text
+          ? entity
+            ? stateOf(entity) || entity.state
+            : `‹${node.bind.entityId}›`
+          : node.props.text
+      }}</span>
     </template>
     <span
       v-else-if="node.type === 'avatar'"
       class="avatar"
-      :style="{ width: `${Number(node.props.size ?? 56)}px`, height: `${Number(node.props.size ?? 56)}px`, fontSize: `${Number(node.props.size ?? 56) * 0.38}px` }"
-    >{{ initials }}</span>
+      :style="{
+        width: `${Number(node.props.size ?? 56)}px`,
+        height: `${Number(node.props.size ?? 56)}px`,
+        fontSize: `${Number(node.props.size ?? 56) * 0.38}px`,
+      }"
+      >{{ initials }}</span
+    >
     <div v-else-if="node.type === 'progress'" class="track">
       <i :style="{ width: `${progress}%`, background: accent }" />
     </div>
@@ -424,7 +579,13 @@ function end(): void {
       </svg>
       <span v-else class="hint">Bind a sensor</span>
     </div>
-    <span v-else-if="node.type === 'switch'" class="switch" :class="{ on }" :style="on ? { background: accent } : undefined"><i /></span>
+    <span
+      v-else-if="node.type === 'switch'"
+      class="switch"
+      :class="{ on }"
+      :style="on ? { background: accent } : undefined"
+      ><i
+    /></span>
     <template v-else-if="node.type === 'stepper'">
       <span class="round"><MdiIcon name="minus" :size="22" /></span>
       <span class="value">{{ stepperValue }}</span>
@@ -432,26 +593,47 @@ function end(): void {
     </template>
     <template v-else-if="node.type === 'choices'">
       <template v-if="node.bind">
-        <span v-for="w in choiceWords" :key="w" class="choice" :class="{ on: w === chosenWord }">{{ w }}</span>
+        <span v-for="w in choiceWords" :key="w" class="choice" :class="{ on: w === chosenWord }">{{
+          w
+        }}</span>
       </template>
       <span v-else class="hint">Bind a select, thermostat or light</span>
     </template>
-    <div v-else-if="node.type === 'gauge'" class="gauge" :style="{ width: `${gauge.size}px`, height: `${gauge.size}px` }">
+    <div
+      v-else-if="node.type === 'gauge'"
+      class="gauge"
+      :style="{ width: `${gauge.size}px`, height: `${gauge.size}px` }"
+    >
       <svg :viewBox="`0 0 ${gauge.size} ${gauge.size}`">
-        <g :transform="`rotate(135 ${gauge.size / 2} ${gauge.size / 2})`" fill="none" :stroke-width="gauge.stroke" stroke-linecap="round">
-          <circle :cx="gauge.size / 2" :cy="gauge.size / 2" :r="gauge.r" :stroke="colorOf('track')" :stroke-dasharray="`${gauge.arc} 9999`" />
+        <g
+          :transform="`rotate(135 ${gauge.size / 2} ${gauge.size / 2})`"
+          fill="none"
+          :stroke-width="gauge.stroke"
+          stroke-linecap="round"
+        >
+          <circle
+            :cx="gauge.size / 2"
+            :cy="gauge.size / 2"
+            :r="gauge.radius"
+            :stroke="colorOf('track')"
+            :stroke-dasharray="`${gauge.arc} 9999`"
+          />
           <circle
             v-if="node.bind && gauge.fill > 0"
             :cx="gauge.size / 2"
             :cy="gauge.size / 2"
-            :r="gauge.r"
+            :r="gauge.radius"
             :stroke="colorOf(node.props.color) ?? accent"
             :stroke-dasharray="`${gauge.fill} 9999`"
           />
         </g>
       </svg>
-      <span class="value" :style="{ fontSize: `${Math.max(gauge.size * 0.16, 12)}px` }">{{ node.bind ? gauge.value : '' }}</span>
-      <span v-if="gauge.caption" class="caption" :style="{ fontSize: `${gauge.size * 0.085}px` }">{{ gauge.caption }}</span>
+      <span class="value" :style="{ fontSize: `${Math.max(gauge.size * 0.16, 12)}px` }">{{
+        node.bind ? gauge.value : ''
+      }}</span>
+      <span v-if="gauge.caption" class="caption" :style="{ fontSize: `${gauge.size * 0.085}px` }">{{
+        gauge.caption
+      }}</span>
     </div>
     <svg
       v-else-if="node.type === 'analog'"
@@ -461,7 +643,17 @@ function end(): void {
       stroke-linecap="round"
     >
       <circle cx="50" cy="50" r="50" :fill="colorOf(node.props.color ?? 'card')" />
-      <line v-for="i in 12" :key="i" x1="50" :y1="(i - 1) % 3 === 0 ? 13 : 9" x2="50" y2="5" :stroke="colorOf('ink_dim')" stroke-width="2" :transform="`rotate(${(i - 1) * 30} 50 50)`" />
+      <line
+        v-for="i in 12"
+        :key="i"
+        x1="50"
+        :y1="(i - 1) % 3 === 0 ? 13 : 9"
+        x2="50"
+        y2="5"
+        :stroke="colorOf('ink_dim')"
+        stroke-width="2"
+        :transform="`rotate(${(i - 1) * 30} 50 50)`"
+      />
       <text
         v-for="h in clockNumbers"
         :key="h"
@@ -471,10 +663,37 @@ function end(): void {
         font-size="10"
         text-anchor="middle"
         dominant-baseline="central"
-      >{{ h }}</text>
-      <line x1="50" y1="50" x2="50" y2="25" :stroke="colorOf('ink')" stroke-width="5" :transform="`rotate(${hands.hour} 50 50)`" />
-      <line x1="50" y1="50" x2="50" y2="12.5" :stroke="colorOf('ink')" stroke-width="3.5" :transform="`rotate(${hands.minute} 50 50)`" />
-      <line v-if="node.props.seconds === 'true'" x1="50" y1="50" x2="50" y2="9" :stroke="colorOf('accent')" stroke-width="1.2" :transform="`rotate(${hands.second} 50 50)`" />
+      >
+        {{ h }}
+      </text>
+      <line
+        x1="50"
+        y1="50"
+        x2="50"
+        y2="25"
+        :stroke="colorOf('ink')"
+        stroke-width="5"
+        :transform="`rotate(${hands.hour} 50 50)`"
+      />
+      <line
+        x1="50"
+        y1="50"
+        x2="50"
+        y2="12.5"
+        :stroke="colorOf('ink')"
+        stroke-width="3.5"
+        :transform="`rotate(${hands.minute} 50 50)`"
+      />
+      <line
+        v-if="node.props.seconds === 'true'"
+        x1="50"
+        y1="50"
+        x2="50"
+        y2="9"
+        :stroke="colorOf('accent')"
+        stroke-width="1.2"
+        :transform="`rotate(${hands.second} 50 50)`"
+      />
       <circle cx="50" cy="50" r="4" :fill="colorOf('ink')" />
     </svg>
     <MdiIcon
@@ -489,24 +708,52 @@ function end(): void {
           :key="k"
           class="key"
           :class="{ round: node.size.width === 'wrap' }"
-          :style="{ height: `${Number(node.props.size ?? 48)}px`, minWidth: `${Number(node.props.size ?? 48)}px` }"
-        ><MdiIcon :name="k" :size="Number(node.props.size ?? 48) * 0.45" /></span>
+          :style="{
+            height: `${Number(node.props.size ?? 48)}px`,
+            minWidth: `${Number(node.props.size ?? 48)}px`,
+          }"
+          ><MdiIcon :name="k" :size="Number(node.props.size ?? 48) * 0.45"
+        /></span>
       </template>
-      <span v-else class="key-stub" :style="{ width: `${Number(node.props.size ?? 48) * 3 + 20}px`, height: `${Number(node.props.size ?? 48)}px` }">Bind a player, cover, vacuum, lock or alarm</span>
+      <span
+        v-else
+        class="key-stub"
+        :style="{
+          width: `${Number(node.props.size ?? 48) * 3 + 20}px`,
+          height: `${Number(node.props.size ?? 48)}px`,
+        }"
+        >Bind a player, cover, vacuum, lock or alarm</span
+      >
     </template>
     <template v-else-if="node.type === 'swatches'">
       <i
         v-for="c in swatchColours"
         :key="c"
         class="dot"
-        :style="{ background: c, width: `${Number(node.props.size ?? 40)}px`, height: `${Number(node.props.size ?? 40)}px` }"
+        :style="{
+          background: c,
+          width: `${Number(node.props.size ?? 40)}px`,
+          height: `${Number(node.props.size ?? 40)}px`,
+        }"
       />
     </template>
     <template v-else-if="node.type === 'keypad'">
       <div class="display">{{ node.bind ? '• • •' : '' }}</div>
-      <div class="pad" :style="{ gridTemplateColumns: `repeat(3, ${Number(node.props.size ?? 56) * 1.5}px)` }">
-        <span v-for="k in PAD" :key="k" class="key" :style="{ height: `${Number(node.props.size ?? 56)}px` }">
-          <MdiIcon v-if="k === 'clear' || k === 'back'" :name="k === 'clear' ? 'close' : 'backspace-outline'" :size="24" />
+      <div
+        class="pad"
+        :style="{ gridTemplateColumns: `repeat(3, ${Number(node.props.size ?? 56) * 1.5}px)` }"
+      >
+        <span
+          v-for="k in PAD"
+          :key="k"
+          class="key"
+          :style="{ height: `${Number(node.props.size ?? 56)}px` }"
+        >
+          <MdiIcon
+            v-if="k === 'clear' || k === 'back'"
+            :name="k === 'clear' ? 'close' : 'backspace-outline'"
+            :size="24"
+          />
           <template v-else>{{ k }}</template>
         </span>
       </div>

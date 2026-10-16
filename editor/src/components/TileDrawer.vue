@@ -13,41 +13,50 @@ import MdiIcon from './MdiIcon.vue'
 const props = defineProps<{ tile: Tile; page: Page; screen: Screen }>()
 const emit = defineEmits<{ close: []; remove: [] }>()
 
-const entity = computed(() => (props.tile.entityId ? entityById.value.get(props.tile.entityId) : undefined))
+const entity = computed(() =>
+  props.tile.entityId ? entityById.value.get(props.tile.entityId) : undefined,
+)
 const spec = computed(() => specOf(props.tile))
 const domain = computed(() => domainOf(props.tile))
-const others = computed(() => props.page.tiles.filter((t) => t.id !== props.tile.id))
+const others = computed(() => props.page.tiles.filter(tile => tile.id !== props.tile.id))
 /** Drawn as a page of its own, without a card (Tiles.kt `edgeToEdge`). */
-const edgeToEdge = computed(() => kindOf(props.tile) === 'home' || (!!props.tile.full && ['weather', 'climate'].includes(kindOf(props.tile))))
+const edgeToEdge = computed(
+  () =>
+    kindOf(props.tile) === 'home' ||
+    (!!props.tile.full && ['weather', 'climate'].includes(kindOf(props.tile))),
+)
 
 /** An entity may be shown another way: a sensor as a graph, a player as its favourite music. */
 const SHOW_AS: Record<string, { kind: string; label: string }[]> = {
   sensor: [{ kind: 'history', label: 'History graph' }],
   media_player: [{ kind: 'favourite', label: 'Favourite music' }],
 }
-const showAs = computed(() => (domain.value ? SHOW_AS[domain.value] ?? [] : []))
+const showAs = computed(() => (domain.value ? (SHOW_AS[domain.value] ?? []) : []))
 
 const sizes = computed(() => sizesOf(props.tile))
-const isSize = (s: { w: number; h: number; full: boolean }) =>
-  s.full ? !!props.tile.full : !props.tile.full && props.tile.w === s.w && props.tile.h === s.h
+const isSize = (size: { w: number; h: number; full: boolean }) =>
+  size.full
+    ? !!props.tile.full
+    : !props.tile.full && props.tile.w === size.w && props.tile.h === size.h
 
-function setSize(s: { w: number; h: number; full: boolean }): void {
-  const t = props.tile
-  if (s.full) {
+function setSize(size: { w: number; h: number; full: boolean }): void {
+  const tile = props.tile
+  if (size.full) {
     if (others.value.length) return toast('A full-page tile needs a page of its own')
-    Object.assign(t, { full: true, col: 0, row: 0, w: 1, h: 1 })
+    Object.assign(tile, { full: true, col: 0, row: 0, w: 1, h: 1 })
     return
   }
-  const spot = fitsAt(others.value, props.screen.grid, t.col, t.row, s.w, s.h)
-    ? { col: t.col, row: t.row }
-    : firstFree(others.value, props.screen.grid, s.w, s.h)
-  if (!spot) return toast(`No room for ${s.w} × ${s.h} on this page`)
-  Object.assign(t, { full: undefined, w: s.w, h: s.h, ...spot })
+  const spot = fitsAt(others.value, props.screen.grid, tile.col, tile.row, size.w, size.h)
+    ? { col: tile.col, row: tile.row }
+    : firstFree(others.value, props.screen.grid, size.w, size.h)
+  if (!spot) return toast(`No room for ${size.w} × ${size.h} on this page`)
+  Object.assign(tile, { full: undefined, w: size.w, h: size.h, ...spot })
 }
 
 function setKind(kind: string | undefined): void {
   props.tile.kind = kind
-  if (!sizes.value.some(isSize)) setSize(sizes.value.find((s) => !s.full) ?? sizes.value[0])
+  if (!sizes.value.some(isSize))
+    setSize(sizes.value.find(sizeOption => !sizeOption.full) ?? sizes.value[0])
 }
 
 // Tap and hold.
@@ -59,19 +68,25 @@ const TAPS: { type: TapType; label: string }[] = [
   { type: 'page', label: 'Go to a page' },
   { type: 'none', label: 'Nothing' },
 ]
-const defaultTap = computed(() => TAPS.find((t) => t.type === spec.value?.tap)?.label.toLowerCase() ?? 'card')
-const taps = computed(() => TAPS.filter((t) => t.type !== 'toggle' || spec.value?.toggle))
+const defaultTap = computed(
+  () => TAPS.find(tap => tap.type === spec.value?.tap)?.label.toLowerCase() ?? 'card',
+)
+const taps = computed(() => TAPS.filter(tap => tap.type !== 'toggle' || spec.value?.toggle))
 
 function setTap(which: 'tap' | 'hold', type: TapType): void {
-  const a: TapAction = { type }
-  if (type === 'action') a.service = props.tile[which].service ?? defaultService()
-  if (type === 'page') a.page = props.tile[which].page ?? props.screen.pages.find((p) => p.id !== props.page.id)?.id
-  props.tile[which] = a
+  const action: TapAction = { type }
+  if (type === 'action') action.service = props.tile[which].service ?? defaultService()
+  if (type === 'page')
+    action.page =
+      props.tile[which].page ?? props.screen.pages.find(page => page.id !== props.page.id)?.id
+  props.tile[which] = action
 }
 
 function defaultService(): string {
-  const d = domain.value
-  return d ? `${d}.${d === 'scene' || d === 'script' ? 'turn_on' : 'toggle'}` : ''
+  const domainName = domain.value
+  return domainName
+    ? `${domainName}.${domainName === 'scene' || domainName === 'script' ? 'turn_on' : 'toggle'}`
+    : ''
 }
 
 // Service data as JSON text, applied when it parses.
@@ -85,16 +100,16 @@ watch(
   },
   { immediate: true },
 )
-watch(dataText, (text) => {
+watch(dataText, text => {
   if (!text.trim()) {
     delete props.tile.tap.data
     dataError.value = ''
     return
   }
   try {
-    const v = JSON.parse(text)
-    if (typeof v !== 'object' || v === null || Array.isArray(v)) throw new Error()
-    props.tile.tap.data = v
+    const parsed = JSON.parse(text)
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) throw new Error()
+    props.tile.tap.data = parsed
     dataError.value = ''
   } catch {
     dataError.value = 'Not a JSON object'
@@ -117,14 +132,14 @@ const OPTION_LABELS: Record<string, string> = {
 }
 
 function duplicate(): void {
-  const t = props.tile
-  const spot = firstFree(props.page.tiles, props.screen.grid, t.w, t.h)
-  if (t.full || !spot) return toast('No room for a copy on this page')
-  props.page.tiles.push({ ...JSON.parse(JSON.stringify(t)), id: newTileId(), ...spot })
+  const tile = props.tile
+  const spot = firstFree(props.page.tiles, props.screen.grid, tile.w, tile.h)
+  if (tile.full || !spot) return toast('No room for a copy on this page')
+  props.page.tiles.push({ ...JSON.parse(JSON.stringify(tile)), id: newTileId(), ...spot })
 }
 
-const entities = computed(() => state.entities.filter((e) => e.domain === domain.value))
-const pageTitle = (id: string) => props.screen.pages.find((p) => p.id === id)?.title
+const entities = computed(() => state.entities.filter(entity => entity.domain === domain.value))
+const pageTitle = (id: string) => props.screen.pages.find(page => page.id === id)?.title
 </script>
 
 <template>
@@ -132,20 +147,27 @@ const pageTitle = (id: string) => props.screen.pages.find((p) => p.id === id)?.t
     <div class="row">
       <MdiIcon :name="iconOf(tile, entity)" :size="26" />
       <h2 class="grow">{{ nameOf(tile, entity, pageTitle) }}</h2>
-      <button class="icon" title="Close" @click="emit('close')"><MdiIcon name="close" :size="18" /></button>
+      <button class="icon" title="Close" @click="emit('close')">
+        <MdiIcon name="close" :size="18" />
+      </button>
     </div>
     <p class="muted id">{{ tile.entityId ?? spec?.name ?? tile.kind }}</p>
 
     <label v-if="tile.entityId && entities.length > 1" class="field">
       Entity
       <select v-model="tile.entityId">
-        <option v-for="e in entities" :key="e.entityId" :value="e.entityId">{{ e.name }} ({{ e.entityId }})</option>
+        <option v-for="e in entities" :key="e.entityId" :value="e.entityId">
+          {{ e.name }} ({{ e.entityId }})
+        </option>
       </select>
     </label>
 
     <label v-if="showAs.length" class="field">
       Show as
-      <select :value="tile.kind ?? ''" @change="setKind(($event.target as HTMLSelectElement).value || undefined)">
+      <select
+        :value="tile.kind ?? ''"
+        @change="setKind(($event.target as HTMLSelectElement).value || undefined)"
+      >
         <option value="">{{ specOf({ entityId: tile.entityId })?.name ?? 'Tile' }}</option>
         <option v-for="k in showAs" :key="k.kind" :value="k.kind">{{ k.label }}</option>
       </select>
@@ -154,7 +176,9 @@ const pageTitle = (id: string) => props.screen.pages.find((p) => p.id === id)?.t
     <label v-if="tile.kind === 'nav'" class="field">
       Page
       <select v-model="tile.options.page">
-        <option v-for="p in screen.pages.filter((p) => p.id !== page.id)" :key="p.id" :value="p.id">{{ p.title }}</option>
+        <option v-for="p in screen.pages.filter(p => p.id !== page.id)" :key="p.id" :value="p.id">
+          {{ p.title }}
+        </option>
       </select>
     </label>
 
@@ -174,29 +198,51 @@ const pageTitle = (id: string) => props.screen.pages.find((p) => p.id === id)?.t
 
     <div class="field">
       <span class="label">Colour</span>
-      <ColorSwatches v-model="tile.color" :keys="[...PASTEL_KEYS]" :clear-color="pastel(undefined, domain).color" />
+      <ColorSwatches
+        v-model="tile.color"
+        :keys="[...PASTEL_KEYS]"
+        :clear-color="pastel(undefined, domain).color"
+      />
     </div>
 
     <div v-if="!edgeToEdge" class="field">
       <span class="label">Border colour</span>
-      <ColorSwatches v-model="tile.borderColor" :keys="INK_SWATCHES" clear-title="The theme's card edge" />
+      <ColorSwatches
+        v-model="tile.borderColor"
+        :keys="INK_SWATCHES"
+        clear-title="The theme's card edge"
+      />
     </div>
 
     <div class="field">
       <span class="label">Size</span>
       <div class="row wrap">
-        <button v-for="s in sizes" :key="s.label" :class="{ primary: isSize(s) }" @click="setSize(s)">{{ s.label }}</button>
+        <button
+          v-for="s in sizes"
+          :key="s.label"
+          :class="{ primary: isSize(s) }"
+          @click="setSize(s)"
+        >
+          {{ s.label }}
+        </button>
       </div>
     </div>
 
     <label class="field">
       Tap
-      <select :value="tile.tap.type" @change="setTap('tap', ($event.target as HTMLSelectElement).value as TapType)">
-        <option v-for="t in taps" :key="t.type" :value="t.type">{{ t.type === 'default' ? `Default (${defaultTap})` : t.label }}</option>
+      <select
+        :value="tile.tap.type"
+        @change="setTap('tap', ($event.target as HTMLSelectElement).value as TapType)"
+      >
+        <option v-for="t in taps" :key="t.type" :value="t.type">
+          {{ t.type === 'default' ? `Default (${defaultTap})` : t.label }}
+        </option>
       </select>
     </label>
     <template v-if="tile.tap.type === 'action'">
-      <label class="field">Action<input v-model="tile.tap.service" placeholder="light.turn_on" /></label>
+      <label class="field"
+        >Action<input v-model="tile.tap.service" placeholder="light.turn_on"
+      /></label>
       <label class="field">
         Data (JSON)
         <textarea v-model="dataText" rows="3" placeholder='{"brightness_pct": 50}' />
@@ -212,7 +258,10 @@ const pageTitle = (id: string) => props.screen.pages.find((p) => p.id === id)?.t
 
     <label class="field">
       Long press
-      <select :value="tile.hold.type" @change="setTap('hold', ($event.target as HTMLSelectElement).value as TapType)">
+      <select
+        :value="tile.hold.type"
+        @change="setTap('hold', ($event.target as HTMLSelectElement).value as TapType)"
+      >
         <option value="card">Open its card</option>
         <option value="page">Go to a page</option>
         <option value="none">Nothing</option>
@@ -228,7 +277,11 @@ const pageTitle = (id: string) => props.screen.pages.find((p) => p.id === id)?.t
     <div v-if="spec?.options.length" class="field">
       <span class="label">Options</span>
       <label v-for="o in spec.options" :key="o" class="check">
-        <input type="checkbox" :checked="option(o)" @change="setOption(o, ($event.target as HTMLInputElement).checked)" />
+        <input
+          type="checkbox"
+          :checked="option(o)"
+          @change="setOption(o, ($event.target as HTMLInputElement).checked)"
+        />
         {{ OPTION_LABELS[o] ?? o }}
       </label>
     </div>

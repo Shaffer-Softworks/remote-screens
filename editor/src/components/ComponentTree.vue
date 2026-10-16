@@ -19,78 +19,80 @@ interface Row {
 
 const rows = computed<Row[]>(() => {
   const out: Row[] = []
-  const visit = (n: Node, level: number) => {
-    out.push({ node: n, level })
-    if (!collapsed.value.has(n.id)) for (const c of n.children) visit(c, level + 1)
+  const visit = (node: Node, level: number) => {
+    out.push({ node, level })
+    if (!collapsed.value.has(node.id)) for (const child of node.children) visit(child, level + 1)
   }
   if (ctx.root.value) visit(ctx.root.value, 0)
   return out
 })
 
-function label(n: Node): string {
-  if (n.props.label) return n.props.label
-  if (n.type === 'tile' && n.tile) {
-    const e = n.tile.entityId ? entityById.value.get(n.tile.entityId) : undefined
-    return n.tile.name ?? e?.name ?? n.tile.entityId ?? n.tile.kind ?? 'Tile'
+function label(node: Node): string {
+  if (node.props.label) return node.props.label
+  if (node.type === 'tile' && node.tile) {
+    const entity = node.tile.entityId ? entityById.value.get(node.tile.entityId) : undefined
+    return node.tile.name ?? entity?.name ?? node.tile.entityId ?? node.tile.kind ?? 'Tile'
   }
-  if ((n.type === 'text' || n.type === 'button') && n.props.text) return `${componentOf(n.type)?.label}: ${n.props.text}`
-  if (n.bind) return `${componentOf(n.type)?.label}: ${entityById.value.get(n.bind.entityId)?.name ?? n.bind.entityId}`
-  return componentOf(n.type)?.label ?? n.type
+  if ((node.type === 'text' || node.type === 'button') && node.props.text)
+    return `${componentOf(node.type)?.label}: ${node.props.text}`
+  if (node.bind)
+    return `${componentOf(node.type)?.label}: ${entityById.value.get(node.bind.entityId)?.name ?? node.bind.entityId}`
+  return componentOf(node.type)?.label ?? node.type
 }
 
-function icon(n: Node): string {
-  if (n.type === 'tile') return 'view-grid-outline'
-  return componentOf(n.type)?.icon ?? 'shape-outline'
+function icon(node: Node): string {
+  if (node.type === 'tile') return 'view-grid-outline'
+  return componentOf(node.type)?.icon ?? 'shape-outline'
 }
 
 function toggle(id: string): void {
-  const s = new Set(collapsed.value)
-  if (s.has(id)) s.delete(id)
-  else s.add(id)
-  collapsed.value = s
+  const next = new Set(collapsed.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  collapsed.value = next
 }
 
 // Renaming sets `props.label`, which only the editor reads.
 const renaming = ref<string | null>(null)
 const draft = ref('')
-async function rename(n: Node): Promise<void> {
-  renaming.value = n.id
-  draft.value = n.props.label ?? ''
+async function rename(node: Node): Promise<void> {
+  renaming.value = node.id
+  draft.value = node.props.label ?? ''
   await nextTick()
   ;(document.querySelector('.tree input.rename') as HTMLInputElement | null)?.select()
 }
-function commit(n: Node): void {
-  if (draft.value.trim()) n.props.label = draft.value.trim()
-  else delete n.props.label
+function commit(node: Node): void {
+  if (draft.value.trim()) node.props.label = draft.value.trim()
+  else delete node.props.label
   renaming.value = null
 }
 
-function where(e: DragEvent, n: Node, isRoot: boolean): Where {
+function where(e: DragEvent, node: Node, isRoot: boolean): Where {
   if (isRoot) return 'inside'
-  const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
-  const f = (e.clientY - r.top) / r.height
-  if (isContainer(n)) return f < 0.25 ? 'before' : f > 0.75 ? 'after' : 'inside'
-  return f < 0.5 ? 'before' : 'after'
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  const fraction = (e.clientY - rect.top) / rect.height
+  if (isContainer(node)) return fraction < 0.25 ? 'before' : fraction > 0.75 ? 'after' : 'inside'
+  return fraction < 0.5 ? 'before' : 'after'
 }
 
-function over(e: DragEvent, n: Node, isRoot: boolean): void {
+function over(e: DragEvent, node: Node, isRoot: boolean): void {
   if (!dragged.value) return
-  const w = where(e, n, isRoot)
-  if (!ctx.canDrop(n.id, w)) return
+  const whereAt = where(e, node, isRoot)
+  if (!ctx.canDrop(node.id, whereAt)) return
   e.preventDefault()
-  ctx.hint.value = { targetId: n.id, where: w }
+  ctx.hint.value = { targetId: node.id, where: whereAt }
 }
 
-function drop(n: Node): void {
-  const h = ctx.hint.value
-  if (h?.targetId === n.id) ctx.drop(n.id, h.where)
+function drop(node: Node): void {
+  const dropHint = ctx.hint.value
+  if (dropHint?.targetId === node.id) ctx.drop(node.id, dropHint.where)
 }
 
-function start(e: DragEvent, n: Node): void {
-  e.dataTransfer?.setData('text/plain', n.id)
+function start(e: DragEvent, node: Node): void {
+  e.dataTransfer?.setData('text/plain', node.id)
   setTimeout(() => {
-    dragged.value = { type: 'node', id: n.id }
-    ctx.select(n.id)
+    dragged.value = { type: 'node', id: node.id }
+    ctx.select(node.id)
   })
 }
 </script>
@@ -100,52 +102,55 @@ function start(e: DragEvent, n: Node): void {
     <h3>Component tree</h3>
     <div class="rows" role="tree">
       <div
-        v-for="r in rows"
-        :key="r.node.id"
+        v-for="row in rows"
+        :key="row.node.id"
         class="row"
         role="treeitem"
-        :aria-selected="ctx.selectedId.value === r.node.id"
+        :aria-selected="ctx.selectedId.value === row.node.id"
         :class="{
-          selected: ctx.selectedId.value === r.node.id,
-          hidden: r.node.hidden,
-          [`drop-${ctx.hint.value?.where}`]: ctx.hint.value?.targetId === r.node.id,
+          selected: ctx.selectedId.value === row.node.id,
+          hidden: row.node.hidden,
+          [`drop-${ctx.hint.value?.where}`]: ctx.hint.value?.targetId === row.node.id,
         }"
-        :style="{ paddingLeft: `${4 + r.level * 14}px` }"
-        :draggable="r.level > 0"
-        @click="ctx.select(r.node.id)"
-        @dblclick="rename(r.node)"
-        @dragstart="start($event, r.node)"
+        :style="{ paddingLeft: `${4 + row.level * 14}px` }"
+        :draggable="row.level > 0"
+        @click="ctx.select(row.node.id)"
+        @dblclick="rename(row.node)"
+        @dragstart="start($event, row.node)"
         @dragend="dragged = null"
-        @dragover="over($event, r.node, r.level === 0)"
-        @drop.prevent="drop(r.node)"
+        @dragover="over($event, row.node, row.level === 0)"
+        @drop.prevent="drop(row.node)"
       >
         <button
-          v-if="r.node.children.length"
+          v-if="row.node.children.length"
           class="twisty"
-          :title="collapsed.has(r.node.id) ? 'Expand' : 'Collapse'"
-          @click.stop="toggle(r.node.id)"
+          :title="collapsed.has(row.node.id) ? 'Expand' : 'Collapse'"
+          @click.stop="toggle(row.node.id)"
         >
-          <MdiIcon :name="collapsed.has(r.node.id) ? 'chevron-right' : 'chevron-down'" :size="16" />
+          <MdiIcon
+            :name="collapsed.has(row.node.id) ? 'chevron-right' : 'chevron-down'"
+            :size="16"
+          />
         </button>
         <span v-else class="twisty" />
-        <MdiIcon :name="icon(r.node)" :size="16" />
+        <MdiIcon :name="icon(row.node)" :size="16" />
         <input
-          v-if="renaming === r.node.id"
+          v-if="renaming === row.node.id"
           v-model="draft"
           class="rename grow"
-          @keydown.enter="commit(r.node)"
+          @keydown.enter="commit(row.node)"
           @keydown.esc="renaming = null"
-          @blur="commit(r.node)"
+          @blur="commit(row.node)"
           @click.stop
         />
-        <span v-else class="grow name">{{ r.level === 0 ? 'Page' : label(r.node) }}</span>
+        <span v-else class="grow name">{{ row.level === 0 ? 'Page' : label(row.node) }}</span>
         <button
-          v-if="r.level > 0"
+          v-if="row.level > 0"
           class="eye"
-          :title="r.node.hidden ? 'Show' : 'Hide'"
-          @click.stop="r.node.hidden = r.node.hidden ? undefined : true"
+          :title="row.node.hidden ? 'Show' : 'Hide'"
+          @click.stop="row.node.hidden = row.node.hidden ? undefined : true"
         >
-          <MdiIcon :name="r.node.hidden ? 'eye-off-outline' : 'eye-outline'" :size="15" />
+          <MdiIcon :name="row.node.hidden ? 'eye-off-outline' : 'eye-outline'" :size="15" />
         </button>
       </div>
     </div>

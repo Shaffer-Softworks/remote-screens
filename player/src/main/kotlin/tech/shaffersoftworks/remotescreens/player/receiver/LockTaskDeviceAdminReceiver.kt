@@ -17,8 +17,8 @@ class LockTaskDeviceAdminReceiver : DeviceAdminReceiver() {
     @Inject
     lateinit var kioskManager: KioskManager
 
-    override fun onLockTaskModeEntering(context: Context, intent: Intent, pkg: String) {
-        super.onLockTaskModeEntering(context, intent, pkg)
+    override fun onLockTaskModeEntering(context: Context, intent: Intent, packageName: String) {
+        super.onLockTaskModeEntering(context, intent, packageName)
         Timber.i("onLockTaskModeEntering")
     }
 

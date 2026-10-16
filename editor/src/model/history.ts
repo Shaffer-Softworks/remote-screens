@@ -17,11 +17,11 @@ export function history<T>(limit = 100): History<T> {
 
   return {
     record(value) {
-      const s = JSON.stringify(value)
-      if (s === current) return
+      const snapshot = JSON.stringify(value)
+      if (snapshot === current) return
       if (current !== undefined) past.push(current)
       if (past.length > limit) past = past.slice(past.length - limit)
-      current = s
+      current = snapshot
       future = []
     },
     undo() {

@@ -46,8 +46,8 @@ class UpdateRepository @Inject constructor(
             try {
                 val response = httpClient.get("http://$server$path?token=$token")
                 if (!response.status.isSuccess()) return@withContext false
-                response.bodyAsChannel().toInputStream().use { input ->
-                    apkFile.outputStream().use { output -> input.copyTo(output) }
+                response.bodyAsChannel().toInputStream().use { apkInputStream ->
+                    apkFile.outputStream().use { apkOutputStream -> apkInputStream.copyTo(apkOutputStream) }
                 }
                 commitInstallSession(apkFile, silent)
                 true
@@ -74,10 +74,10 @@ class UpdateRepository @Inject constructor(
             }
         }
         val sessionId = packageInstaller.createSession(sessionParams)
-        packageInstaller.openSession(sessionId).use { session ->
-            session.openWrite(INSTALL_SESSION_NAME, 0, apkFile.length()).use { output ->
-                apkFile.inputStream().use { input -> input.copyTo(output) }
-                session.fsync(output)
+        packageInstaller.openSession(sessionId).use { installSession ->
+            installSession.openWrite(INSTALL_SESSION_NAME, 0, apkFile.length()).use { apkOutputStream ->
+                apkFile.inputStream().use { apkInputStream -> apkInputStream.copyTo(apkOutputStream) }
+                installSession.fsync(apkOutputStream)
             }
             val statusIntent = PendingIntent.getBroadcast(
                 context,
@@ -85,7 +85,7 @@ class UpdateRepository @Inject constructor(
                 Intent(context, InstallReceiver::class.java),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
             )
-            session.commit(statusIntent.intentSender)
+            installSession.commit(statusIntent.intentSender)
         }
     }
 }
