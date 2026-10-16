@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.11
+
+- Top bar can show Wi-Fi signal and battery level on the tablet; turn each on per screen in the editor.
+
 ## 0.1.10
 
 - Release pipeline check: rebuild the player APK and add-on images so enrolled tablets can verify silent updates.
