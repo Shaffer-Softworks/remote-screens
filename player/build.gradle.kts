@@ -35,7 +35,12 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
             // Tablets only take an update signed with the key they were installed with, so releases need the same
             // key every time. Without PLAYER_KEYSTORE the debug key keeps `assembleRelease` working locally.
             signingConfig = signingConfigs.getByName(if (keystore != null) "release" else "debug")
