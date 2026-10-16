@@ -10,7 +10,11 @@ import tech.shaffersoftworks.remotescreens.player.MainActivity
 import tech.shaffersoftworks.remotescreens.player.R
 import timber.log.Timber
 
-/** Hears how an update install went. Android first asks the user to confirm it, with a screen we must open. */
+/**
+ * Hears how an update install went. On Android 12+ same-signature self-updates usually succeed without a prompt;
+ * older builds (or when the platform still asks) send [PackageInstaller.STATUS_PENDING_USER_ACTION] and we open
+ * the confirm screen.
+ */
 class InstallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         when (val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)) {

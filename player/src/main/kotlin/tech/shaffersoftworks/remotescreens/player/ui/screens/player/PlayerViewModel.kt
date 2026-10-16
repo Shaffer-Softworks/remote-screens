@@ -351,6 +351,11 @@ class PlayerViewModel @Inject constructor(
 
     private suspend fun onUpdateAvailable(update: ServerMessage.UpdateAvailable) {
         if (connectionRepository.server.value == null || preferencesRepository.token.first() == null) return
+        // Enrolled kiosks install on their own; other tablets still get the confirm dialog.
+        if (kioskManager.isDeviceOwner()) {
+            viewModelScope.launch { installUpdate(update, silent = true) }
+            return
+        }
         _viewState.update { it.copy(availableUpdate = update) }
     }
 
@@ -729,26 +734,29 @@ class PlayerViewModel @Inject constructor(
     fun onInstallUpdateConfirmed() {
         val update = _viewState.value.availableUpdate ?: return
         onUpdateDismissed()
-        viewModelScope.launch {
-            val server = connectionRepository.server.value ?: return@launch
-            val token = preferencesRepository.token.first() ?: return@launch
-            if (!deviceRepository.canInstallPackages()) {
-                _events.send(PlayerEvent.ShowMessageResource(R.string.update_permission))
-                _events.send(PlayerEvent.OpenInstallPermissionSettings)
-                return@launch
-            }
-            // The device owner installs without asking; screen pinning would hide Android's confirmation.
-            if (kioskManager.lockTaskState() == KioskState.PINNED) _events.send(PlayerEvent.StopScreenPinning)
-            val installed = updateRepository.install(server, update.path, token)
-            if (!installed) {
-                _events.send(PlayerEvent.ShowMessageResource(R.string.update_failed))
-                _events.send(PlayerEvent.ReapplyKiosk)
-            }
-        }
+        viewModelScope.launch { installUpdate(update, silent = kioskManager.isDeviceOwner()) }
     }
 
     fun onUpdateDismissed() {
         _viewState.update { it.copy(availableUpdate = null) }
+    }
+
+    private suspend fun installUpdate(update: ServerMessage.UpdateAvailable, silent: Boolean) {
+        val server = connectionRepository.server.value ?: return
+        val token = preferencesRepository.token.first() ?: return
+        // Device owner may install packages without REQUEST_INSTALL_PACKAGES; others still need it.
+        if (!silent && !deviceRepository.canInstallPackages()) {
+            _events.send(PlayerEvent.ShowMessageResource(R.string.update_permission))
+            _events.send(PlayerEvent.OpenInstallPermissionSettings)
+            return
+        }
+        // Screen pinning would hide a confirm sheet on older Android; stop it before committing.
+        if (kioskManager.lockTaskState() == KioskState.PINNED) _events.send(PlayerEvent.StopScreenPinning)
+        val installed = updateRepository.install(server, update.path, token, silent = silent)
+        if (!installed) {
+            _events.send(PlayerEvent.ShowMessageResource(R.string.update_failed))
+            _events.send(PlayerEvent.ReapplyKiosk)
+        }
     }
 
     // endregion

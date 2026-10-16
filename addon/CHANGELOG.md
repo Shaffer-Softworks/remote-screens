@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.9
+
+- Colour picks can set opacity: custom and theme colours use an alpha slider and store `#AARRGGBB` when not
+  fully opaque (opaque stays `#RRGGBB`).
+- Kiosk tablets (device owner) install player app updates on their own, without a confirm dialog; on Android 12+
+  the system confirm is skipped for same-signature self-updates.
+- Fix free-form text and image taps that stopped working after the live-camera overlay work, and keep the video
+  overlay from stealing touches meant for the document.
+
 ## 0.1.8
 
 - Faster live camera start: begin Home Assistant's HLS stream while the card or alert builds, reuse a warm
