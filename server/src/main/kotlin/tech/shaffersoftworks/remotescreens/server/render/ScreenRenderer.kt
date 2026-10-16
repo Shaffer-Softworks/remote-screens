@@ -26,6 +26,7 @@ import tech.shaffersoftworks.remotescreens.shared.GridSpec
 import tech.shaffersoftworks.remotescreens.shared.Page
 import tech.shaffersoftworks.remotescreens.shared.Reflow
 import tech.shaffersoftworks.remotescreens.shared.Screen
+import tech.shaffersoftworks.remotescreens.shared.TopBar
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 
 /** The device a document is built for. */
@@ -195,20 +196,46 @@ object ScreenRenderer {
                     c.label(page.title, Type.TITLE * k, ink, Weight.MEDIUM)
                 }
             }
-            if (bar.temperatureEntity != null) {
-                c.icon("thermometer", 26f * k, c.role(Role.BLUE))
-                Spacer(Modifier.width(c.u.px(4f * k)))
-                c.label(c.text(Vars.TEMP), headerSp, ink)
-                Spacer(Modifier.width(c.u.px(15f * k)))
-            }
-            if (bar.people) {
-                c.icon("home-account", 26f * k, c.role(Role.ACCENT_SOFT))
-                Spacer(Modifier.width(c.u.px(4f * k)))
-                c.label(c.text(Vars.PEOPLE), headerSp, ink)
-                Spacer(Modifier.width(c.u.px(15f * k)))
-            }
+            c.topBarTrailing(bar, headerSp, k, ink)
             Spacer(Modifier.width(c.u.px(5f)))
         }
+    }
+
+    /** Outdoor temperature, people at home, Wi‑Fi and battery on the right of the header. */
+    private fun DocContext.topBarTrailing(bar: TopBar, headerSp: Float, k: Float, ink: RcColor) {
+        if (bar.temperatureEntity != null) {
+            topBarStat("thermometer", Vars.TEMP, headerSp, k, ink, role(Role.BLUE))
+        }
+        if (bar.people) topBarStat("home-account", Vars.PEOPLE, headerSp, k, ink)
+        if (bar.wifi) topBarStat("wifi", Vars.WIFI, headerSp, k, ink)
+        if (bar.battery) topBarBattery(headerSp, k, ink)
+    }
+
+    /** An icon and a value on the right of the header, with the usual gap after it. */
+    private fun DocContext.topBarStat(
+        icon: String,
+        value: String,
+        headerSp: Float,
+        k: Float,
+        ink: RcColor,
+        iconColor: RcColor = role(Role.ACCENT_SOFT),
+    ) {
+        this.icon(icon, 26f * k, iconColor)
+        scope.Spacer(Modifier.width(u.px(4f * k)))
+        label(text(value), headerSp, ink)
+        scope.Spacer(Modifier.width(u.px(15f * k)))
+    }
+
+    /** Battery level with the idle / charging icons swapped by visibility. */
+    private fun DocContext.topBarBattery(headerSp: Float, k: Float, ink: RcColor) {
+        val tint = role(Role.ACCENT_SOFT)
+        scope.Box(Modifier.size(u.px(26f * k), u.px(26f * k))) {
+            icon("battery", 26f * k, tint, int(Vars.BATTERY_IDLE))
+            icon("battery-charging", 26f * k, tint, int(Vars.BATTERY_CHARGING))
+        }
+        scope.Spacer(Modifier.width(u.px(4f * k)))
+        label(text(Vars.BATTERY), headerSp, ink)
+        scope.Spacer(Modifier.width(u.px(15f * k)))
     }
 
     /**

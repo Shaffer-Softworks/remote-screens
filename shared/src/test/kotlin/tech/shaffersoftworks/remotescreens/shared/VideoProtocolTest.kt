@@ -24,4 +24,22 @@ class VideoProtocolTest {
         assertEquals(expired, Protocol.decodePlayer(Protocol.encode(expired)))
         assertEquals(stalled, Protocol.decodePlayer(Protocol.encode(stalled)))
     }
+
+    @Test
+    fun deviceStateKeepsBatteryWifiAndCharging() {
+        val state = PlayerMessage.DeviceState(
+            awake = true,
+            page = 1,
+            battery = 87,
+            charging = true,
+            wifi = 3,
+            kiosk = "locked",
+        )
+
+        assertEquals(state, Protocol.decodePlayer(Protocol.encode(state)))
+        assertEquals(
+            PlayerMessage.DeviceState(awake = false, page = 0),
+            Protocol.decodePlayer(Protocol.encode(PlayerMessage.DeviceState(awake = false, page = 0))),
+        )
+    }
 }

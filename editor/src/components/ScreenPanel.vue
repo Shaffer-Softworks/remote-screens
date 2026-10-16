@@ -83,6 +83,22 @@ function pin(e: Event): string | null {
         </label>
       </template>
       <label class="check"><input v-model="screen.topBar.people" type="checkbox" /> People at home</label>
+      <label class="check">
+        <input
+          :checked="!!screen.topBar.wifi"
+          type="checkbox"
+          @change="screen.topBar.wifi = ($event.target as HTMLInputElement).checked"
+        />
+        Wi‑Fi signal
+      </label>
+      <label class="check">
+        <input
+          :checked="!!screen.topBar.battery"
+          type="checkbox"
+          @change="screen.topBar.battery = ($event.target as HTMLInputElement).checked"
+        />
+        Battery
+      </label>
       <label class="field">
         Temperature
         <select

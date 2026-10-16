@@ -202,6 +202,8 @@ const highlight = computed(() => {
         </div>
         <span v-if="screen.topBar.temperatureEntity" class="stat"><MdiIcon name="thermometer" :size="26 * top.k" class="blue" />14°</span>
         <span v-if="screen.topBar.people" class="stat"><MdiIcon name="home-account" :size="26 * top.k" class="teal" />{{ people.filter((p) => p.state === 'home').length }}</span>
+        <span v-if="screen.topBar.wifi" class="stat"><MdiIcon name="wifi" :size="26 * top.k" class="teal" />3</span>
+        <span v-if="screen.topBar.battery" class="stat"><MdiIcon name="battery" :size="26 * top.k" class="teal" />87%</span>
       </div>
 
       <div
