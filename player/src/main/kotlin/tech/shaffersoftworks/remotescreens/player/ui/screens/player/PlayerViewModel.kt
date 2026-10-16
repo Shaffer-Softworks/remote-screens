@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,6 +10,8 @@ import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionRepo
 import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionStatus
 import tech.shaffersoftworks.remotescreens.player.data.device.DeviceRepository
 import tech.shaffersoftworks.remotescreens.player.data.device.DisplayInfo
+import tech.shaffersoftworks.remotescreens.player.data.device.FaceWakeMonitor
+import tech.shaffersoftworks.remotescreens.player.data.device.ProximityWakeMonitor
 import tech.shaffersoftworks.remotescreens.player.data.device.ScreenPowerRepository
 import tech.shaffersoftworks.remotescreens.player.data.discovery.DiscoveryRepository
 import tech.shaffersoftworks.remotescreens.player.data.image.ImageDecoder
@@ -59,7 +62,7 @@ private val PLAYER_CAPABILITIES =
  * Runs a wall screen: finds and talks to the add-on, keeps the documents it sends, and does what a wall screen does
  * by itself (dim after a while without a touch, follow a night schedule, go back to the home page).
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
@@ -69,6 +72,8 @@ class PlayerViewModel @Inject constructor(
     private val updateRepository: UpdateRepository,
     private val deviceRepository: DeviceRepository,
     private val screenPowerRepository: ScreenPowerRepository,
+    private val proximityWakeMonitor: ProximityWakeMonitor,
+    private val faceWakeMonitor: FaceWakeMonitor,
     private val kioskManager: KioskManager,
     private val imageDecoder: ImageDecoder,
 ) : ViewModel() {
@@ -142,6 +147,8 @@ class PlayerViewModel @Inject constructor(
     }
 
     override fun onCleared() {
+        proximityWakeMonitor.stop()
+        faceWakeMonitor.stop()
         connectionRepository.disconnect()
     }
 
@@ -499,16 +506,47 @@ class PlayerViewModel @Inject constructor(
         Timber.d("Awake: %b", isAwake)
         _viewState.update { it.copy(isAwake = isAwake) }
         updateScreenPower()
+        updateWakeMonitors()
         sendDeviceState()
     }
 
     private fun updateScreenPower() {
         val state = _viewState.value
-        if (!state.isAwake && state.screenSettings.standbyScreenOff) {
+        // Face wake needs the panel on (blackout); lockNow often stops the camera.
+        if (!state.isAwake && state.screenSettings.standbyScreenOff && !isFaceWakeActive()) {
             screenPowerRepository.turnScreenOff()
         } else {
             screenPowerRepository.turnScreenOn()
         }
+    }
+
+    /** Each opt-in source runs on its own; both may listen while asleep. */
+    private fun updateWakeMonitors() {
+        proximityWakeMonitor.stop()
+        faceWakeMonitor.stop()
+        val state = _viewState.value
+        if (state.isAwake) return
+        val settings = state.screenSettings
+        if (settings.wakeOnProximity && proximityWakeMonitor.isUsable()) {
+            proximityWakeMonitor.start { onUserInteraction() }
+        }
+        if (settings.wakeOnFace && faceWakeMonitor.isUsable()) {
+            faceWakeMonitor.start { onUserInteraction() }
+        }
+    }
+
+    /** Face path would run: setting on and a usable front camera (independent of proximity). */
+    private fun isFaceWakeActive(): Boolean {
+        val settings = _viewState.value.screenSettings
+        return settings.wakeOnFace && faceWakeMonitor.isUsable()
+    }
+
+    fun onCameraPermissionResult(granted: Boolean) {
+        if (!granted) {
+            _events.trySend(PlayerEvent.ShowMessageResource(R.string.camera_permission_denied))
+        }
+        updateScreenPower()
+        updateWakeMonitors()
     }
 
     /** The window is shown again. After standby turned the screen off, that means the power button was pressed. */
@@ -540,7 +578,17 @@ class PlayerViewModel @Inject constructor(
             settings.standbyMinutes != previousSettings.standbyMinutes ||
                 settings.backToHomeSeconds != previousSettings.backToHomeSeconds -> restartClocks()
         }
-        if (settings.standbyScreenOff != previousSettings.standbyScreenOff) updateScreenPower()
+        val wakeSourcesChanged =
+            settings.standbyScreenOff != previousSettings.standbyScreenOff ||
+                settings.wakeOnFace != previousSettings.wakeOnFace ||
+                settings.wakeOnProximity != previousSettings.wakeOnProximity
+        if (wakeSourcesChanged) {
+            updateScreenPower()
+            updateWakeMonitors()
+        }
+        if (settings.wakeOnFace && !previousSettings.wakeOnFace && !faceWakeMonitor.hasCameraPermission()) {
+            viewModelScope.launch { _events.send(PlayerEvent.RequestCameraPermission) }
+        }
         if (settings.kiosk != _viewState.value.isKioskEnabled) {
             viewModelScope.launch { preferencesRepository.setKioskEnabled(settings.kiosk) }
         }
@@ -643,6 +691,10 @@ class PlayerViewModel @Inject constructor(
                     canOfferUnrestrictedBattery = !isKioskLocked &&
                         currentState.screenSettings.standbyScreenOff &&
                         !deviceRepository.isIgnoringBatteryOptimizations(),
+                    canOfferCameraPermission = !isKioskLocked &&
+                        currentState.screenSettings.wakeOnFace &&
+                        !faceWakeMonitor.hasCameraPermission(),
+                    wakeOnFaceUnavailableNote = wakeOnFaceUnavailableNote(currentState.screenSettings.wakeOnFace),
                     kioskAction = kioskAction,
                     canRemoveDeviceOwner = !isKioskLocked && kioskManager.isDeviceOwner(),
                 ),
@@ -707,6 +759,19 @@ class PlayerViewModel @Inject constructor(
     fun onAllowUnrestrictedBatteryRequested() {
         onSettingsDismissed()
         viewModelScope.launch { _events.send(PlayerEvent.RequestUnrestrictedBattery) }
+    }
+
+    fun onAllowCameraPermissionRequested() {
+        onSettingsDismissed()
+        viewModelScope.launch { _events.send(PlayerEvent.RequestCameraPermission) }
+    }
+
+    @StringRes
+    private fun wakeOnFaceUnavailableNote(wakeOnFace: Boolean): Int? = when {
+        !wakeOnFace -> null
+        faceWakeMonitor.isLowRamDevice() -> R.string.face_wake_low_ram
+        !faceWakeMonitor.hasFrontCamera() -> R.string.face_wake_no_camera
+        else -> null
     }
 
     fun onAllowSelfStartRequested() {

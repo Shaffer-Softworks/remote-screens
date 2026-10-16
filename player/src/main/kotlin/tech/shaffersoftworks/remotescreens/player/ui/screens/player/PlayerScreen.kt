@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.admin.DevicePolicyManager
@@ -10,6 +11,8 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -134,6 +137,8 @@ private fun PlayerDialogs(viewState: PlayerViewModel.ViewState, viewModel: Playe
                 canOfferSelfStart = settingsDialog.canOfferSelfStart,
                 canOfferScreenOff = settingsDialog.canOfferScreenOff,
                 canOfferUnrestrictedBattery = settingsDialog.canOfferUnrestrictedBattery,
+                canOfferCameraPermission = settingsDialog.canOfferCameraPermission,
+                wakeOnFaceUnavailableNote = settingsDialog.wakeOnFaceUnavailableNote,
                 kioskAction = settingsDialog.kioskAction,
                 canRemoveDeviceOwner = settingsDialog.canRemoveDeviceOwner,
                 onBrightnessPreview = viewModel::onSettingsBrightnessPreview,
@@ -144,6 +149,7 @@ private fun PlayerDialogs(viewState: PlayerViewModel.ViewState, viewModel: Playe
                 onAllowSelfStart = viewModel::onAllowSelfStartRequested,
                 onAllowScreenOff = viewModel::onAllowScreenOffRequested,
                 onAllowUnrestrictedBattery = viewModel::onAllowUnrestrictedBatteryRequested,
+                onAllowCameraPermission = viewModel::onAllowCameraPermissionRequested,
                 onUnlockKiosk = viewModel::onUnlockKioskRequested,
                 onLockKioskAgain = viewModel::onLockKioskAgainRequested,
                 onRemoveDeviceOwner = viewModel::onRemoveDeviceOwnerRequested,
@@ -187,9 +193,18 @@ private fun PlayerEvents(viewModel: PlayerViewModel) {
     val context = LocalContext.current
     val activity = LocalActivity.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    LaunchedEffect(viewModel, lifecycleOwner) {
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted -> viewModel.onCameraPermissionResult(granted) }
+    LaunchedEffect(viewModel, lifecycleOwner, cameraPermissionLauncher) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            viewModel.events.collect { event -> handleEvent(context, activity, event) }
+            viewModel.events.collect { event ->
+                when (event) {
+                    PlayerEvent.RequestCameraPermission ->
+                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                    else -> handleEvent(context, activity, event)
+                }
+            }
         }
     }
 }
@@ -209,6 +224,7 @@ private fun handleEvent(context: Context, activity: Activity?, event: PlayerEven
         )
         PlayerEvent.OpenScreenOffAdminSettings -> context.startActivity(screenOffAdminIntent(context))
         PlayerEvent.RequestUnrestrictedBattery -> context.startActivity(unrestrictedBatteryIntent(context))
+        PlayerEvent.RequestCameraPermission -> Unit
         // Pinning comes back when the activity resumes after the confirmation.
         PlayerEvent.StopScreenPinning -> activity?.stopLockTask()
         PlayerEvent.ReapplyKiosk -> activity?.let { foregroundActivity ->

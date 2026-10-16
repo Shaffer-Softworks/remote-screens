@@ -33,6 +33,35 @@ address of your Home Assistant host with port 8100.
   asks to activate Remote Screens as a device admin). A screen that is off does not wake on a touch: press the power
   button, or call `remote_screens.wake` from Home Assistant.
 
+## Waking from standby
+
+Besides a touch (when the panel is only dimmed) or the power button, a screen can wake from:
+
+1. **Home Assistant** — call `remote_screens.wake` (or fire `remote_screens_wake`). This is the reliable way to wake
+   when someone enters the room: use a PIR, mmWave, ultrasonic, or occupancy `binary_sensor` in an automation.
+2. **Proximity** (optional) — tick **Wake on proximity** for the screen. Uses the tablet's proximity sensor when it
+   has one. On many tablets that is only a few centimetres, so it is not a substitute for a room sensor. Ignored if
+   there is no sensor. Can keep **Turn the screen off in standby**.
+3. **Face** (optional) — tick **Wake on face**. Uses the front camera and on-device face detection while the screen is
+   asleep. The tablet asks for camera permission; Android shows its privacy indicator while the camera runs. Needs a
+   front camera and is skipped on low-RAM (Android Go) tablets. When face wake is active, standby keeps a black screen
+   instead of turning the panel fully off (so the camera can keep running). Proximity and face can both be on at once;
+   each wakes the screen on its own.
+
+Example: wake screens when a hallway motion sensor trips.
+
+```yaml
+automation:
+  - alias: Wake screens on motion
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.hallway_motion
+        to: "on"
+    actions:
+      - action: remote_screens.wake
+      # Or pick devices under screens, or fire event: remote_screens_wake
+```
+
 ## Kiosk lock
 
 With **Kiosk lock** on, a screen's tablet stays on Remote Screens: Home, Recents, the notifications and the power
