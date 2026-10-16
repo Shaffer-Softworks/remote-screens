@@ -43,6 +43,8 @@ fun ScreenSettingsDialog(
     canOfferSelfStart: Boolean,
     canOfferScreenOff: Boolean,
     canOfferUnrestrictedBattery: Boolean,
+    canOfferCameraPermission: Boolean = false,
+    wakeOnFaceUnavailableNote: Int? = null,
     kioskAction: KioskAction?,
     canRemoveDeviceOwner: Boolean,
     onBrightnessPreview: (Int) -> Unit,
@@ -53,6 +55,7 @@ fun ScreenSettingsDialog(
     onAllowSelfStart: () -> Unit,
     onAllowScreenOff: () -> Unit,
     onAllowUnrestrictedBattery: () -> Unit,
+    onAllowCameraPermission: () -> Unit = {},
     onUnlockKiosk: () -> Unit,
     onLockKioskAgain: () -> Unit,
     onRemoveDeviceOwner: () -> Unit,
@@ -118,6 +121,17 @@ fun ScreenSettingsDialog(
                         Text(stringResource(R.string.allow_unrestricted_battery))
                     }
                 }
+                if (canOfferCameraPermission) {
+                    TextButton(onClick = onAllowCameraPermission) {
+                        Text(stringResource(R.string.allow_camera_for_face_wake))
+                    }
+                }
+                wakeOnFaceUnavailableNote?.let { noteRes ->
+                    Text(
+                        text = stringResource(noteRes),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
                 when (kioskAction) {
                     KioskAction.UNLOCK -> TextButton(onClick = onUnlockKiosk) {
                         Text(stringResource(R.string.kiosk_unlock))
@@ -169,6 +183,7 @@ private fun ScreenSettingsDialogPreview() {
             canOfferSelfStart = true,
             canOfferScreenOff = true,
             canOfferUnrestrictedBattery = true,
+            canOfferCameraPermission = true,
             kioskAction = KioskAction.UNLOCK,
             canRemoveDeviceOwner = false,
             onBrightnessPreview = {},
@@ -179,6 +194,7 @@ private fun ScreenSettingsDialogPreview() {
             onAllowSelfStart = {},
             onAllowScreenOff = {},
             onAllowUnrestrictedBattery = {},
+            onAllowCameraPermission = {},
             onUnlockKiosk = {},
             onLockKioskAgain = {},
             onRemoveDeviceOwner = {},

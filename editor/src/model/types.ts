@@ -135,6 +135,8 @@ export interface ScreenSettings {
   standbyMinutes: number
   standbyBrightness: number
   standbyScreenOff?: boolean
+  wakeOnProximity?: boolean
+  wakeOnFace?: boolean
   nightStart?: string
   nightEnd?: string
   nightBrightness: number

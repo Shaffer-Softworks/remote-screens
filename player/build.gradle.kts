@@ -83,6 +83,12 @@ dependencies {
     implementation(libs.media3.exoplayer.hls)
     implementation(libs.media3.ui)
 
+    // Front-camera face wake
+    implementation(libs.camera.core)
+    implementation(libs.camera.camera2)
+    implementation(libs.camera.lifecycle)
+    implementation(libs.mlkit.face.detection)
+
     // AndroidX
     implementation(libs.androidx.core)
     implementation(libs.androidx.activity.compose)

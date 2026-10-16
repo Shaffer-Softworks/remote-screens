@@ -282,6 +282,23 @@ function pin(e: Event): string | null {
       The tablet asks once to let Remote Screens lock it (Settings on the tablet). A touch can't
       wake a screen that is off: use the power button or the Wake action in Home Assistant.
     </p>
+    <label class="check"
+      ><input v-model="screen.settings.wakeOnProximity" type="checkbox" /> Wake on proximity</label
+    >
+    <p class="note muted">
+      Uses the tablet's proximity sensor when it has one (often only a few centimetres). Ignored if
+      there is no sensor. For someone walking into the room, use a motion or occupancy sensor in
+      Home Assistant with the Wake action.
+    </p>
+    <label class="check"
+      ><input v-model="screen.settings.wakeOnFace" type="checkbox" /> Wake on face</label
+    >
+    <p class="note muted">
+      Uses the front camera and on-device face detection while the screen is in standby. The tablet
+      asks for camera permission; Android shows its privacy indicator while the camera runs. Needs a
+      front camera and is skipped on low-RAM tablets. When this is on and in use, standby keeps a
+      black screen instead of turning the panel fully off. Can be used together with proximity.
+    </p>
 
     <h3>Night</h3>
     <label class="check"><input v-model="night" type="checkbox" /> Night mode</label>

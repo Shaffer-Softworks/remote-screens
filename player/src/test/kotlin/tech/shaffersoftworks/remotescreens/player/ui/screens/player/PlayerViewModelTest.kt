@@ -6,6 +6,8 @@ import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionStat
 import tech.shaffersoftworks.remotescreens.player.data.device.BatteryStatus
 import tech.shaffersoftworks.remotescreens.player.data.device.DeviceRepository
 import tech.shaffersoftworks.remotescreens.player.data.device.DisplayInfo
+import tech.shaffersoftworks.remotescreens.player.data.device.FaceWakeMonitor
+import tech.shaffersoftworks.remotescreens.player.data.device.ProximityWakeMonitor
 import tech.shaffersoftworks.remotescreens.player.data.device.ScreenPowerRepository
 import tech.shaffersoftworks.remotescreens.player.data.discovery.DiscoveryRepository
 import tech.shaffersoftworks.remotescreens.player.data.image.ImageDecoder
@@ -35,6 +37,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
@@ -77,6 +80,15 @@ class PlayerViewModelTest {
         on { discoverServers() } doReturn emptyFlow()
     }
     private val screenPowerRepository: ScreenPowerRepository = mock()
+    private val proximityWakeMonitor: ProximityWakeMonitor = mock {
+        on { isUsable() } doReturn false
+    }
+    private val faceWakeMonitor: FaceWakeMonitor = mock {
+        on { isUsable() } doReturn false
+        on { hasCameraPermission() } doReturn false
+        on { hasFrontCamera() } doReturn true
+        on { isLowRamDevice() } doReturn false
+    }
 
     private lateinit var viewModel: PlayerViewModel
 
@@ -91,6 +103,8 @@ class PlayerViewModelTest {
             updateRepository = mock<UpdateRepository>(),
             deviceRepository = deviceRepository,
             screenPowerRepository = screenPowerRepository,
+            proximityWakeMonitor = proximityWakeMonitor,
+            faceWakeMonitor = faceWakeMonitor,
             kioskManager = kioskManager,
             imageDecoder = mock<ImageDecoder>(),
         )
@@ -299,6 +313,58 @@ class PlayerViewModelTest {
         receive(ServerMessage.Wake(awake = false))
 
         verify(screenPowerRepository, never()).turnScreenOff()
+    }
+
+    @Test
+    fun `face wake skips turning the screen off so the camera can run`() {
+        whenever(faceWakeMonitor.isUsable()).thenReturn(true)
+        receive(ServerMessage.Settings(ScreenSettings(standbyScreenOff = true, wakeOnFace = true)))
+
+        receive(ServerMessage.Wake(awake = false))
+
+        verify(screenPowerRepository, never()).turnScreenOff()
+        verify(faceWakeMonitor).start(any())
+    }
+
+    @Test
+    fun `proximity and face wake can both run when both are enabled`() {
+        whenever(proximityWakeMonitor.isUsable()).thenReturn(true)
+        whenever(faceWakeMonitor.isUsable()).thenReturn(true)
+        receive(
+            ServerMessage.Settings(
+                ScreenSettings(standbyScreenOff = true, wakeOnProximity = true, wakeOnFace = true),
+            ),
+        )
+
+        receive(ServerMessage.Wake(awake = false))
+
+        // Face needs the panel on (blackout), even when proximity is also listening.
+        verify(screenPowerRepository, never()).turnScreenOff()
+        verify(proximityWakeMonitor).start(any())
+        verify(faceWakeMonitor).start(any())
+    }
+
+    @Test
+    fun `face wake without a usable camera still turns the screen off`() {
+        whenever(faceWakeMonitor.isUsable()).thenReturn(false)
+        receive(ServerMessage.Settings(ScreenSettings(standbyScreenOff = true, wakeOnFace = true)))
+
+        receive(ServerMessage.Wake(awake = false))
+
+        verify(screenPowerRepository).turnScreenOff()
+        verify(faceWakeMonitor, never()).start(any())
+    }
+
+    @Test
+    fun `waking stops wake monitors`() {
+        whenever(faceWakeMonitor.isUsable()).thenReturn(true)
+        receive(ServerMessage.Settings(ScreenSettings(wakeOnFace = true)))
+        receive(ServerMessage.Wake(awake = false))
+
+        viewModel.onUserInteraction()
+
+        verify(faceWakeMonitor, atLeastOnce()).stop()
+        verify(proximityWakeMonitor, atLeastOnce()).stop()
     }
 
     @Test

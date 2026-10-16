@@ -273,6 +273,10 @@ data class ScreenSettings(
     val standbyBrightness: Int = 0,
     /** Standby turns the screen off instead of dimming it, once the tablet allows the app to lock it. */
     val standbyScreenOff: Boolean = false,
+    /** Wake from standby when the tablet's proximity sensor reports something near (a few cm on many devices). */
+    val wakeOnProximity: Boolean = false,
+    /** Wake from standby when the front camera sees a face (ignored without a usable front camera). */
+    val wakeOnFace: Boolean = false,
     /** "HH:MM", both or neither. */
     val nightStart: String? = null,
     val nightEnd: String? = null,
