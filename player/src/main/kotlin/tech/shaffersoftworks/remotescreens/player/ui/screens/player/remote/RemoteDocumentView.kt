@@ -112,8 +112,8 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
     private fun startVideo(slot: Slot, video: SlotVideo) {
         (liveVideoView.parent as? ViewGroup)?.removeView(liveVideoView)
         val params = LayoutParams(0, 0).apply { gravity = Gravity.TOP or Gravity.START }
+        // Insert above that slot only — never bringToFront, or the overlay sits over alerts and steals taps.
         addView(liveVideoView, indexOfChild(players.getValue(slot)) + 1, params)
-        liveVideoView.bringToFront()
         liveVideoView.visibility = View.INVISIBLE
         videoSlot = slot
         liveVideoView.play(video)
@@ -150,7 +150,6 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
             params.height = bounds.height()
             liveVideoView.layoutParams = params
         }
-        liveVideoView.bringToFront()
         liveVideoView.visibility = View.VISIBLE
     }
 

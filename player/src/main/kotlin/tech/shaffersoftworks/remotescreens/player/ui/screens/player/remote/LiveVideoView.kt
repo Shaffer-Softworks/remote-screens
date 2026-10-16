@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Outline
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.TextureView
 import android.view.View
 import android.view.ViewOutlineProvider
@@ -88,8 +89,15 @@ class LiveVideoView(context: Context) : FrameLayout(context) {
         clipChildren = true
         isClickable = false
         isFocusable = false
+        textureView.isClickable = false
+        textureView.isFocusable = false
+        aspectRatioFrame.isClickable = false
+        aspectRatioFrame.isFocusable = false
         alpha = 0f
     }
+
+    /** Always fall through so the document under the overlay still gets taps (close, keys, text). */
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean = false
 
     fun play(video: SlotVideo) {
         stop()
