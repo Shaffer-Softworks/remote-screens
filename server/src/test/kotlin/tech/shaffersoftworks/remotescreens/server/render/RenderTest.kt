@@ -189,6 +189,26 @@ class RenderTest {
     }
 
     @Test
+    fun theTopBarDeclaresWifiAndBatteryWhenEnabled() {
+        val off = ScreenRenderer.render(DemoLayout.screen(), tablet, input())
+        val offNames = parse(off.bytes).getNamedVariables(NamedVariable.STRING_TYPE).toSet()
+        assertFalse("USER:sys.wifi" in offNames)
+        assertFalse("USER:sys.battery" in offNames)
+
+        val on = ScreenRenderer.render(
+            DemoLayout.screen().let { it.copy(topBar = it.topBar.copy(wifi = true, battery = true)) },
+            tablet,
+            input(),
+        )
+        val strings = parse(on.bytes).getNamedVariables(NamedVariable.STRING_TYPE).toSet()
+        val ints = parse(on.bytes).getNamedVariables(NamedVariable.INT_TYPE).toSet()
+        assertContains(strings, "USER:sys.wifi")
+        assertContains(strings, "USER:sys.battery")
+        assertContains(ints, "USER:sys.battery_charging")
+        assertContains(ints, "USER:sys.battery_idle")
+    }
+
+    @Test
     fun anAlertBuilds() {
         val doc = AlertRenderer.render(Alert("Doorbell", "Someone is at the door", camera = "camera.front_door", buttons = listOf(AlertButton("Open"))), tablet, input())
         assertEquals(1, doc.ctx.pictures.size)

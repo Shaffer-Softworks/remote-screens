@@ -36,6 +36,9 @@ class ScreenValidatorTest {
         assertEquals("spread", s.navBar.layout)
         assertEquals("pink", s.navBar.active)
         assertEquals(NavBar(), ScreenValidator.validate(Screen("s", "Wall")).navBar)
+        val defaults = ScreenValidator.validate(Screen("s", "Wall")).topBar
+        assertEquals(false, defaults.wifi)
+        assertEquals(false, defaults.battery)
     }
 
     @Test

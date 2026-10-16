@@ -24,6 +24,12 @@ object Vars {
     const val TEMP = "sys.temp"
     const val PEOPLE = "sys.people"
     const val CONNECTED = "sys.connected"
+    /** Tablet battery as a percent string, e.g. "87%". */
+    const val BATTERY = "sys.battery"
+    const val BATTERY_CHARGING = "sys.battery_charging"
+    const val BATTERY_IDLE = "sys.battery_idle"
+    /** Tablet Wi‑Fi signal level 0–4 as text, or empty when unknown. */
+    const val WIFI = "sys.wifi"
 }
 
 /** Binds the values every tile and card of an entity reads. Once per entity per document. */

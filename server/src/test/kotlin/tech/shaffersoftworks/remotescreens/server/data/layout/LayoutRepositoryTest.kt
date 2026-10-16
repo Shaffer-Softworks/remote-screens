@@ -60,6 +60,8 @@ class LayoutRepositoryTest {
         assertEquals("sensor.outdoor", s.topBar.temperatureEntity)
         assertEquals(null, s.topBar.height)
         assertTrue(s.topBar.date)
+        assertEquals(false, s.topBar.wifi)
+        assertEquals(false, s.topBar.battery)
         assertEquals(NavBar(), s.navBar)
         assertEquals("nl", data.preferences.language)
         assertEquals(1280, data.players.first().widthDp)
