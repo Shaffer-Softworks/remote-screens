@@ -42,4 +42,7 @@ sealed interface PlayerEvent {
 
     /** Screen pinning would hide the screen where Android asks to confirm an update. */
     data object StopScreenPinning : PlayerEvent
+
+    /** Put screen pinning back after an update was cancelled or failed to download. */
+    data object ReapplyKiosk : PlayerEvent
 }

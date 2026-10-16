@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Outline
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.TextureView
 import android.view.View
 import android.view.ViewOutlineProvider
@@ -88,14 +89,25 @@ class LiveVideoView(context: Context) : FrameLayout(context) {
         clipChildren = true
         isClickable = false
         isFocusable = false
+        textureView.isClickable = false
+        textureView.isFocusable = false
+        aspectRatioFrame.isClickable = false
+        aspectRatioFrame.isFocusable = false
         alpha = 0f
     }
+
+    /** Always fall through so the document under the overlay still gets taps (close, keys, text). */
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean = false
 
     fun play(video: SlotVideo) {
         stop()
         this.video = video
-        // Fill the image's box; Fit left letterboxing that showed the snapshot beside the stream.
-        aspectRatioFrame.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+        // Crop fills the image's box; Fit shows the whole frame (black letterboxing hides the snapshot behind).
+        aspectRatioFrame.resizeMode = if (video.crop) {
+            AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+        } else {
+            AspectRatioFrameLayout.RESIZE_MODE_FIT
+        }
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setDefaultRequestProperties(mapOf("Authorization" to "Bearer ${video.token}"))
             .setConnectTimeoutMs(CONNECT_TIMEOUT_MS)

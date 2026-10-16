@@ -65,6 +65,13 @@ All creation calls go through `server/.../render/Rc.kt` and the tile renderers; 
 - The metadata is a static text `tile|verb|arg` (`ActionRef` in `shared`). A slider is a row of steps, each its
   own action with its value, rather than a drag with a dynamic value.
 - `addIdActionListener` can only be added after a document is set, so the player adds it on every new document.
+- **`Image` drops `onClick`.** Putting the click on the `Image` itself writes no click modifier in alpha21. Free-form
+  camera (and other) images wrap the bitmap in a `Box` that carries the tap, so a tap still opens the card.
+- **`Text` clicks go on a `Box` too.** A click modifier can sit on `Text`/`CoreText` in the document and still miss
+  taps on device; free-form text wraps the label in a `Box` that carries the tap, same as images.
+- **Live video must not take touches.** The HLS overlay sits above the camera image in the player; it returns false
+  from `dispatchTouchEvent` and is not brought to the front of the whole stack, so card/alert/text taps still reach
+  the document.
 
 ## Pages
 

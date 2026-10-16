@@ -44,6 +44,10 @@ class ConnectionRepository @Inject constructor(
     private val _server = MutableStateFlow<String?>(null)
     val server: StateFlow<String?> = _server.asStateFlow()
 
+    /** Failed connect attempts since the last successful session; resets on CONNECTED. */
+    private val _consecutiveFailures = MutableStateFlow(0)
+    val consecutiveFailures: StateFlow<Int> = _consecutiveFailures.asStateFlow()
+
     /** Every message from the add-on, in order. Collecting suspends the socket, so nothing is dropped. */
     private val _messages = MutableSharedFlow<ServerMessage>(extraBufferCapacity = MESSAGE_BUFFER_CAPACITY)
     val messages: SharedFlow<ServerMessage> = _messages.asSharedFlow()
@@ -57,6 +61,7 @@ class ConnectionRepository @Inject constructor(
     fun connect(server: String, hello: suspend () -> PlayerMessage.Hello) {
         _server.value = server
         helloProvider = hello
+        _consecutiveFailures.value = 0
         connectionJob?.cancel()
         connectionJob = ioScope.launch { runConnectionLoop(server, hello) }
     }
@@ -72,6 +77,7 @@ class ConnectionRepository @Inject constructor(
         connectionJob?.cancel()
         connectionJob = null
         helloProvider = null
+        _consecutiveFailures.value = 0
         _status.value = ConnectionStatus.IDLE
     }
 
@@ -90,6 +96,7 @@ class ConnectionRepository @Inject constructor(
                     session = this
                     send(Frame.Text(Protocol.encode(hello())))
                     _status.value = ConnectionStatus.CONNECTED
+                    _consecutiveFailures.value = 0
                     backoffMs = INITIAL_BACKOFF_MS
                     for (frame in incoming) {
                         val message = (frame as? Frame.Text)?.let { Protocol.decodeServer(it.readText()) }
@@ -103,7 +110,9 @@ class ConnectionRepository @Inject constructor(
             } finally {
                 session = null
             }
+            if (!currentCoroutineContext().isActive) break
             _status.value = ConnectionStatus.DISCONNECTED
+            _consecutiveFailures.value += 1
             delay(backoffMs)
             backoffMs = min(backoffMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS)
         }

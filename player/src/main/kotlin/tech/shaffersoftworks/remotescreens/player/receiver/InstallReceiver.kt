@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.widget.Toast
 import androidx.core.content.IntentCompat
+import tech.shaffersoftworks.remotescreens.player.MainActivity
 import tech.shaffersoftworks.remotescreens.player.R
 import timber.log.Timber
 
@@ -17,7 +18,12 @@ class InstallReceiver : BroadcastReceiver() {
                 val confirmIntent = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_INTENT, Intent::class.java)
                 confirmIntent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)?.let(context::startActivity)
             }
-            PackageInstaller.STATUS_SUCCESS -> Unit
+            PackageInstaller.STATUS_SUCCESS -> {
+                // BootReceiver also hears MY_PACKAGE_REPLACED; relaunch here too so a kiosk does not sit dark.
+                context.startActivity(
+                    Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+            }
             else -> {
                 val statusMessage = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
                 Timber.w("Update not installed (%d): %s", status, statusMessage)

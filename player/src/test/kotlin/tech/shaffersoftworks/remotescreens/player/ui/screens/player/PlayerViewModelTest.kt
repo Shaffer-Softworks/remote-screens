@@ -42,11 +42,13 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyBlocking
+import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlayerViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private val connectionStatus = MutableStateFlow(ConnectionStatus.IDLE)
+    private val consecutiveFailures = MutableStateFlow(0)
     private val serverMessages = MutableSharedFlow<ServerMessage>(extraBufferCapacity = 16)
     private val connectedServer = MutableStateFlow<String?>("10.0.0.5:8100")
 
@@ -54,6 +56,7 @@ class PlayerViewModelTest {
         on { status } doReturn connectionStatus
         on { messages } doReturn serverMessages
         on { server } doReturn connectedServer
+        on { consecutiveFailures } doReturn consecutiveFailures
     }
     private val isKioskEnabled = MutableStateFlow(false)
     private val isKioskSuppressed = MutableStateFlow(false)
@@ -128,6 +131,38 @@ class PlayerViewModelTest {
         viewModel.onDisplayMeasured(DisplayInfo(widthDp = 480, heightDp = 800))
 
         verify(connectionRepository).reconnect()
+    }
+
+    @Test
+    fun `the same size again does not reconnect`() {
+        viewModel.onDisplayMeasured(DisplayInfo(widthDp = 800, heightDp = 480))
+        viewModel.onDisplayMeasured(DisplayInfo(widthDp = 800, heightDp = 480))
+
+        verify(connectionRepository, never()).reconnect()
+    }
+
+    @Test
+    fun `an empty measure is ignored`() {
+        viewModel.onDisplayMeasured(DisplayInfo(widthDp = 0, heightDp = 0))
+        runCurrent()
+
+        verify(connectionRepository, never()).connect(any(), any())
+    }
+
+    @Test
+    fun `repeated connection failures look for the add-on again`() {
+        val discovery = MutableSharedFlow<String>(extraBufferCapacity = 1)
+        whenever(discoveryRepository.discoverServers()).thenReturn(discovery)
+        viewModel.onDisplayMeasured(DisplayInfo(widthDp = 800, heightDp = 480))
+        runCurrent()
+
+        consecutiveFailures.value = 5
+        runCurrent()
+        discovery.tryEmit("10.0.0.9:8100")
+        runCurrent()
+
+        verify(connectionRepository).connect(eq("10.0.0.9:8100"), any())
+        verifyBlocking(preferencesRepository) { setServer("10.0.0.9:8100") }
     }
 
     @Test

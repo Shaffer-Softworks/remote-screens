@@ -50,6 +50,8 @@ private const val NIGHT_CHECK_INTERVAL_MS = 60_000L
 private const val MIN_IDENTIFY_SECONDS = 1
 private const val MAX_IDENTIFY_SECONDS = 60
 private const val PAIRING_CODE_GROUP_SIZE = 3
+/** After this many failed reconnects, look for the add-on over mDNS again (stale saved IP). */
+private const val REDISCOVER_AFTER_FAILURES = 5
 private val PLAYER_CAPABILITIES =
     listOf("predictions", "bitmaps", "alerts", "cards", "settings", "deflate", Protocol.CAPABILITY_VIDEO)
 
@@ -132,6 +134,7 @@ class PlayerViewModel @Inject constructor(
 
     init {
         observeConnectionStatus()
+        observeConnectionFailures()
         observeServerMessages()
         observeNightSchedule()
         observeKiosk()
@@ -146,6 +149,7 @@ class PlayerViewModel @Inject constructor(
 
     /** The window was measured. The first time starts the connection; a new size asks for new documents. */
     fun onDisplayMeasured(measuredDisplay: DisplayInfo) {
+        if (measuredDisplay.widthDp <= 0 || measuredDisplay.heightDp <= 0) return
         val previousDisplay = displayInfo
         displayInfo = measuredDisplay
         when {
@@ -169,6 +173,31 @@ class PlayerViewModel @Inject constructor(
             val server = discoveryRepository.discoverServers().first()
             preferencesRepository.setServer(server)
             connect(server)
+        }
+    }
+
+    /**
+     * Kept reconnecting to a saved address that never answers — often a changed HA IP. Ask mDNS again without
+     * dropping the saved server until a different one is found.
+     */
+    private fun observeConnectionFailures() {
+        viewModelScope.launch {
+            connectionRepository.consecutiveFailures.collect { failures ->
+                if (failures > 0 && failures % REDISCOVER_AFTER_FAILURES == 0) tryRediscover()
+            }
+        }
+    }
+
+    private fun tryRediscover() {
+        if (discoveryJob?.isActive == true) return
+        discoveryJob = viewModelScope.launch {
+            Timber.i("Connection keeps failing; looking for the add-on again")
+            val found = discoveryRepository.discoverServers().first()
+            val saved = preferencesRepository.server.first()
+            if (found != saved) {
+                preferencesRepository.setServer(found)
+                connect(found)
+            }
         }
     }
 
@@ -710,7 +739,11 @@ class PlayerViewModel @Inject constructor(
             }
             // The device owner installs without asking; screen pinning would hide Android's confirmation.
             if (kioskManager.lockTaskState() == KioskState.PINNED) _events.send(PlayerEvent.StopScreenPinning)
-            updateRepository.install(server, update.path, token)
+            val installed = updateRepository.install(server, update.path, token)
+            if (!installed) {
+                _events.send(PlayerEvent.ShowMessageResource(R.string.update_failed))
+                _events.send(PlayerEvent.ReapplyKiosk)
+            }
         }
     }
 
