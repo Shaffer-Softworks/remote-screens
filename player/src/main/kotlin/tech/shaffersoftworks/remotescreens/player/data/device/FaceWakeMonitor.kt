@@ -1,6 +1,7 @@
 package tech.shaffersoftworks.remotescreens.player.data.device
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.content.Context
 import android.content.pm.PackageManager
@@ -142,6 +143,8 @@ class FaceWakeMonitor @Inject constructor(
         }
     }
 
+    // ImageProxy.image is @ExperimentalGetImage; Kotlin @OptIn is not enough for Android lint.
+    @SuppressLint("UnsafeOptInUsageError")
     private fun analyze(imageProxy: ImageProxy) {
         val now = android.os.SystemClock.elapsedRealtime()
         val previous = lastAnalyzedAtMs.get()
