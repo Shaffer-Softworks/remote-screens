@@ -743,8 +743,9 @@ class PlayerViewModel @Inject constructor(
     }
 
     private suspend fun installUpdate(update: ServerMessage.UpdateAvailable, silent: Boolean) {
-        val server = connectionRepository.server.value ?: return
-        val token = preferencesRepository.token.first() ?: return
+        val server = connectionRepository.server.value
+        val token = preferencesRepository.token.first()
+        if (server == null || token == null) return
         // Device owner may install packages without REQUEST_INSTALL_PACKAGES; others still need it.
         if (!silent && !deviceRepository.canInstallPackages()) {
             _events.send(PlayerEvent.ShowMessageResource(R.string.update_permission))

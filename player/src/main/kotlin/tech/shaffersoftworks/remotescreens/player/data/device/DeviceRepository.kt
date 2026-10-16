@@ -52,13 +52,10 @@ class DeviceRepository @Inject constructor(
 
     /** Wi‑Fi signal as 0–4 bars, or null when Wi‑Fi is off / not associated. */
     fun wifiLevel(): Int? {
-        if (!wifiManager.isWifiEnabled) return null
         @Suppress("DEPRECATION")
-        val info = wifiManager.connectionInfo ?: return null
+        val info = wifiManager.takeIf { it.isWifiEnabled }?.connectionInfo?.takeIf { it.networkId != -1 }
         @Suppress("DEPRECATION")
-        if (info.networkId == -1) return null
-        @Suppress("DEPRECATION")
-        return WifiManager.calculateSignalLevel(info.rssi, WIFI_LEVELS)
+        return info?.let { WifiManager.calculateSignalLevel(it.rssi, WIFI_LEVELS) }
     }
 
     fun isHomeApp(): Boolean {
