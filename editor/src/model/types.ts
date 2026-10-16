@@ -175,6 +175,10 @@ export interface TopBar {
   date?: boolean
   temperatureEntity?: string
   people: boolean
+  /** The tablet's Wi‑Fi signal; absent is off. */
+  wifi?: boolean
+  /** The tablet's battery level; absent is off. */
+  battery?: boolean
   /** dp; absent is the default. */
   height?: number
   /** The clock block's share of the width in percent; absent is the default. */

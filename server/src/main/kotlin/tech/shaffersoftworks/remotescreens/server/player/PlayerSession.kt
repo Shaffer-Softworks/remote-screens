@@ -76,6 +76,11 @@ class PlayerSession(
         private set
     var battery: Int? = null
         private set
+    var charging: Boolean? = null
+        private set
+    /** Wi‑Fi signal level 0–4, or null when unknown. */
+    var wifi: Int? = null
+        private set
     var kiosk: String? = null
         private set
 
@@ -217,7 +222,7 @@ class PlayerSession(
         val vars = doc.vars(states)
         shown.sentVars = vars
         shownDocuments[slot] = shown
-        val allVars = vars.values + context.screenClock.clockVars() + connectedVar()
+        val allVars = vars.values + context.screenClock.clockVars() + connectedVar() + deviceVars()
         val bytes = if (supportsDeflate) Rc.compress(doc.bytes) else doc.bytes
         send(
             ServerMessage.Document(
@@ -260,6 +265,18 @@ class PlayerSession(
     }
 
     private fun connectedVar(): VarValue = VarValue.int(Vars.CONNECTED, if (homeAssistant.isConnected.value) 1 else 0)
+
+    /** Tablet battery and Wi‑Fi for the top bar; updated whenever the player sends [PlayerMessage.DeviceState]. */
+    private fun deviceVars(): List<VarValue> {
+        val i18n = context.languageRepository.current()
+        val isCharging = charging == true
+        return listOf(
+            VarValue.string(Vars.BATTERY, battery?.let { i18n.percent(it) } ?: ""),
+            VarValue.int(Vars.BATTERY_CHARGING, if (isCharging) Vars.VISIBLE else Vars.GONE),
+            VarValue.int(Vars.BATTERY_IDLE, if (isCharging) Vars.GONE else Vars.VISIBLE),
+            VarValue.string(Vars.WIFI, wifi?.toString() ?: ""),
+        )
+    }
 
     private fun foresee(ref: ActionRef, entity: EntityState): EntityState? =
         context.actionRouter.foresee(ref, context.actionRouter.target(ref, screen()), entity)
@@ -385,7 +402,10 @@ class PlayerSession(
                 isAwake = message.awake
                 page = message.page
                 battery = message.battery
+                charging = message.charging
+                wifi = message.wifi
                 kiosk = message.kiosk
+                sendVars(deviceVars())
             }
             is PlayerMessage.SettingsChanged ->
                 screenId?.let { id -> context.screenService.updateSettings(id) { message.settings } }

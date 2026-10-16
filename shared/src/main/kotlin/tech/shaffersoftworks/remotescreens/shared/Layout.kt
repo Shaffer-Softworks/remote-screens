@@ -313,6 +313,10 @@ data class TopBar(
     val date: Boolean = true,
     val temperatureEntity: String? = null,
     val people: Boolean = true,
+    /** The tablet's Wi‑Fi signal level in the header. */
+    val wifi: Boolean = false,
+    /** The tablet's battery level in the header. */
+    val battery: Boolean = false,
     /** dp, or null for the default. Text and icons scale with it. */
     val height: Int? = null,
     /** The dark clock block's share of the screen width in percent, or null for the default. */

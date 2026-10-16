@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.wifi.WifiManager
 import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
@@ -13,6 +14,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val PERCENT = 100
+private const val WIFI_LEVELS = 5
 
 data class BatteryStatus(val levelPercent: Int?, val isCharging: Boolean?)
 
@@ -21,6 +23,8 @@ data class BatteryStatus(val levelPercent: Int?, val isCharging: Boolean?)
 class DeviceRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
+    private val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+
     val deviceName: String = "${Build.MANUFACTURER} ${Build.MODEL}".trim()
 
     val model: String = Build.MODEL
@@ -44,6 +48,17 @@ class DeviceRepository @Inject constructor(
         val levelPercent = if (level >= 0 && scale > 0) level * PERCENT / scale else null
         val isCharging = batteryIntent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0
         return BatteryStatus(levelPercent, isCharging)
+    }
+
+    /** Wi‑Fi signal as 0–4 bars, or null when Wi‑Fi is off / not associated. */
+    fun wifiLevel(): Int? {
+        if (!wifiManager.isWifiEnabled) return null
+        @Suppress("DEPRECATION")
+        val info = wifiManager.connectionInfo ?: return null
+        @Suppress("DEPRECATION")
+        if (info.networkId == -1) return null
+        @Suppress("DEPRECATION")
+        return WifiManager.calculateSignalLevel(info.rssi, WIFI_LEVELS)
     }
 
     fun isHomeApp(): Boolean {

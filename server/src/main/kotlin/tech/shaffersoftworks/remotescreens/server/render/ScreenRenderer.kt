@@ -207,6 +207,21 @@ object ScreenRenderer {
                 c.label(c.text(Vars.PEOPLE), headerSp, ink)
                 Spacer(Modifier.width(c.u.px(15f * k)))
             }
+            if (bar.wifi) {
+                c.icon("wifi", 26f * k, c.role(Role.ACCENT_SOFT))
+                Spacer(Modifier.width(c.u.px(4f * k)))
+                c.label(c.text(Vars.WIFI), headerSp, ink)
+                Spacer(Modifier.width(c.u.px(15f * k)))
+            }
+            if (bar.battery) {
+                Box(Modifier.size(c.u.px(26f * k), c.u.px(26f * k))) {
+                    c.icon("battery", 26f * k, c.role(Role.ACCENT_SOFT), c.int(Vars.BATTERY_IDLE))
+                    c.icon("battery-charging", 26f * k, c.role(Role.ACCENT_SOFT), c.int(Vars.BATTERY_CHARGING))
+                }
+                Spacer(Modifier.width(c.u.px(4f * k)))
+                c.label(c.text(Vars.BATTERY), headerSp, ink)
+                Spacer(Modifier.width(c.u.px(15f * k)))
+            }
             Spacer(Modifier.width(c.u.px(5f)))
         }
     }

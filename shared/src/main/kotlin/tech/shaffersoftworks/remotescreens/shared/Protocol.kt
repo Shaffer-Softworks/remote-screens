@@ -129,6 +129,8 @@ sealed interface PlayerMessage {
         val page: Int,
         val battery: Int? = null,
         val charging: Boolean? = null,
+        /** Wi‑Fi signal level 0–4, or null when not connected / unknown. */
+        val wifi: Int? = null,
         /** `off`, `pinned` (screen pinning) or `locked` (lock task as the device owner); null from older players. */
         val kiosk: String? = null,
     ) : PlayerMessage

@@ -252,6 +252,7 @@ class PlayerViewModel @Inject constructor(
                 page = currentState.remoteScreen.page,
                 battery = batteryStatus.levelPercent,
                 charging = batteryStatus.isCharging,
+                wifi = deviceRepository.wifiLevel(),
                 kiosk = kioskManager.lockTaskState().name.lowercase(),
             ),
         )
