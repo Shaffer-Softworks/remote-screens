@@ -92,10 +92,15 @@ same.
 Every tile follows its entity live. A tap does the obvious thing for its type (toggle a light, open a cover's
 card); a long press opens the card with everything else (brightness and colour, modes, the media library,
 history). The editor lets you change the tap and the long press to: toggle, open the card, run a service, go to a
-page, or nothing.
+page, open a URL on the tablet, fire a Home Assistant event, or nothing.
 
 Tiles that are not an entity: clock, bedside clock, page navigation, history graph, energy flow, map, and a
-favourite (a playlist on a player).
+favourite (a playlist on a player). Entities whose domain has no dedicated tile still appear in the library as a
+generic on/off tile (`homeassistant.toggle`).
+
+Besides the grid, a page can be **free-form**: a tree of layout and control components (columns, dials, tabs,
+markdown, QR codes, and the rest in the component palette). The demo screen includes a Compose page that shows
+several of them.
 
 A page can be hidden: it has no page dot and is only reached from a navigation tile, with a Back key.
 

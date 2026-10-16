@@ -59,10 +59,14 @@ export function newTile(
   col: number,
   row: number,
 ): Tile {
+  const domain = source.entityId?.split('.')[0]
+  const kind =
+    source.kind ??
+    (source.entityId && (!(domain! in CATALOGUE) || domain === 'generic') ? 'generic' : undefined)
   const tile: Tile = {
     id: newTileId(),
     entityId: source.entityId,
-    kind: source.kind,
+    kind,
     col,
     row,
     w: 1,

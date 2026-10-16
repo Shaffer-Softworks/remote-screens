@@ -38,6 +38,8 @@ data class RemoteScreenState(
     val bitmaps: Map<String, Bitmap> = emptyMap(),
     /** Live video the add-on started for a shown document; it goes with the document. */
     val videos: Map<Slot, SlotVideo> = emptyMap(),
+    /** Named integers the player sets itself (free-form tabs), kept across document rebuilds. */
+    val localInts: Map<String, Int> = emptyMap(),
     val page: Int = 0,
     val homePage: Int = 0,
     val pageCount: Int = 1,
@@ -121,10 +123,13 @@ data class RemoteScreenState(
 
     fun withPage(index: Int): RemoteScreenState = copy(page = index.coerceIn(0, pageCount - 1))
 
+    fun withLocalInt(name: String, value: Int): RemoteScreenState = copy(localInts = localInts + (name to value))
+
     /** The main document cannot be closed, only replaced or cleared. */
     fun closed(slot: Slot): RemoteScreenState =
         if (slot == Slot.MAIN) this else copy(documents = documents - slot, videos = videos - slot)
 
     /** Hides every document and forgets the values, as when the screen must be paired again. */
-    fun cleared(): RemoteScreenState = copy(documents = emptyMap(), values = emptyMap(), videos = emptyMap())
+    fun cleared(): RemoteScreenState =
+        copy(documents = emptyMap(), values = emptyMap(), videos = emptyMap(), localInts = emptyMap())
 }

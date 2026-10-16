@@ -203,7 +203,7 @@ const tileEntity = computed(() =>
   tile.value?.entityId ? entityById.value.get(tile.value.entityId) : undefined,
 )
 const KINDS = ['home', 'clock', 'bedside', 'nav', 'energy', 'map']
-const tileEntities = computed(() => state.entities.filter(e => e.domain in CATALOGUE))
+const tileEntities = computed(() => state.entities)
 
 // Tap and hold. A tile's live on its card; any other component's are its own, and absent means the default.
 const TAPS: { type: TapType; label: string }[] = [
@@ -212,6 +212,8 @@ const TAPS: { type: TapType; label: string }[] = [
   { type: 'card', label: 'Open its card' },
   { type: 'action', label: 'Run an action' },
   { type: 'page', label: 'Go to a page' },
+  { type: 'url', label: 'Open a URL' },
+  { type: 'event', label: 'Fire an event' },
   { type: 'none', label: 'Nothing' },
 ]
 const tapHost = computed<{ tap?: TapAction; hold?: TapAction }>(
@@ -245,6 +247,8 @@ function setTap(which: 'tap' | 'hold', type: TapType | ''): void {
         : '')
   }
   if (type === 'page') action.page = old?.page ?? props.screen.pages[0]?.id
+  if (type === 'url') action.url = old?.url ?? 'https://'
+  if (type === 'event') action.event = old?.event ?? 'remote_screens_custom'
   host[which] = action
 }
 
@@ -885,6 +889,46 @@ const typeIcon = computed(() =>
           @input="setProp('caption', ($event.target as HTMLInputElement).value || 'Caption')"
         />
       </template>
+      <template v-if="currentNode.type === 'dial' || currentNode.type === 'qr'">
+        <label class="field">
+          Size
+          <input
+            type="number"
+            min="48"
+            max="400"
+            :value="currentProps.size ?? '160'"
+            @input="setProp('size', ($event.target as HTMLInputElement).value)"
+          />
+        </label>
+      </template>
+      <template v-if="currentNode.type === 'qr' || currentNode.type === 'countdown'">
+        <label v-if="!currentNode.bind" class="field">
+          Text
+          <input
+            :value="currentProps.text ?? ''"
+            @input="setProp('text', ($event.target as HTMLInputElement).value)"
+          />
+        </label>
+      </template>
+      <template v-if="currentNode.type === 'markdown'">
+        <label class="field">
+          Text
+          <textarea
+            rows="4"
+            :value="currentProps.text ?? ''"
+            @input="setProp('text', ($event.target as HTMLTextAreaElement).value)"
+          />
+        </label>
+      </template>
+      <template v-if="currentNode.type === 'tabs'">
+        <label class="field">
+          Labels (comma-separated)
+          <input
+            :value="currentProps.labels ?? ''"
+            @input="setProp('labels', ($event.target as HTMLInputElement).value)"
+          />
+        </label>
+      </template>
       <template v-if="currentNode.type === 'iconbutton'">
         <div class="field">
           <span class="label">Icon</span>
@@ -1087,6 +1131,14 @@ const typeIcon = computed(() =>
           <option v-for="pg in screen.pages" :key="pg.id" :value="pg.id">{{ pg.title }}</option>
         </select>
       </label>
+      <label v-if="tapHost.tap?.type === 'url'" class="field">
+        URL
+        <input v-model="tapHost.tap.url" type="url" placeholder="https://" />
+      </label>
+      <label v-if="tapHost.tap?.type === 'event'" class="field">
+        Event
+        <input v-model="tapHost.tap.event" type="text" placeholder="my_event" />
+      </label>
       <label class="field">
         Long press
         <select
@@ -1096,6 +1148,8 @@ const typeIcon = computed(() =>
           <option value="">Default ({{ tile ? 'open its card' : 'nothing' }})</option>
           <option value="card">Open its card</option>
           <option value="page">Go to a page</option>
+          <option value="url">Open a URL</option>
+          <option value="event">Fire an event</option>
           <option value="none">Nothing</option>
         </select>
       </label>
@@ -1104,6 +1158,14 @@ const typeIcon = computed(() =>
         <select v-model="tapHost.hold.page">
           <option v-for="pg in screen.pages" :key="pg.id" :value="pg.id">{{ pg.title }}</option>
         </select>
+      </label>
+      <label v-if="tapHost.hold?.type === 'url'" class="field">
+        URL
+        <input v-model="tapHost.hold.url" type="url" placeholder="https://" />
+      </label>
+      <label v-if="tapHost.hold?.type === 'event'" class="field">
+        Event
+        <input v-model="tapHost.hold.event" type="text" placeholder="my_event" />
       </label>
     </details>
   </div>

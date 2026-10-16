@@ -29,6 +29,15 @@ The editor, opened through ingress, with the made-up demo home:
 
 `tools/capture_screenshots.mjs` retakes them from a running demo server.
 
+Concept mockups for the newer tiles, detail cards and free-form components, drawn to match the RPI dark theme and demo entities (not live captures):
+
+| | |
+| --- | --- |
+| ![Extras page with new domain tiles](docs/screenshots/mockup-domain-tiles.jpg) | ![Humidifier, fan, climate and timer detail cards](docs/screenshots/mockup-detail-cards.jpg) |
+| New domain tiles (calendar, todo, timer, …) | Detail cards (humidifier, fan, dual climate, timer) |
+| ![Free-form Compose page with dial, countdown, QR and tabs](docs/screenshots/mockup-freeform-compose.jpg) | |
+| Free-form dial, countdown, QR, tabs and markdown | |
+
 ## What is in this repository
 
 | Path | What |

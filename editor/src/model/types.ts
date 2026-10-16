@@ -5,13 +5,15 @@ export interface GridSize {
   rows: number
 }
 
-export type TapType = 'default' | 'toggle' | 'card' | 'action' | 'page' | 'none'
+export type TapType = 'default' | 'toggle' | 'card' | 'action' | 'page' | 'url' | 'event' | 'none'
 
 export interface TapAction {
   type: TapType
   service?: string
   data?: Record<string, unknown>
   page?: string
+  url?: string
+  event?: string
 }
 
 export interface Tile {
@@ -69,8 +71,13 @@ export type NodeType =
   | 'keys'
   | 'swatches'
   | 'keypad'
+  | 'dial'
+  | 'countdown'
+  | 'qr'
+  | 'markdown'
+  | 'tabs'
 
-export const CONTAINERS: readonly NodeType[] = ['column', 'row', 'box', 'flow']
+export const CONTAINERS: readonly NodeType[] = ['column', 'row', 'box', 'flow', 'tabs']
 
 /** `wrap`, `fill`, `dp:N` or `weight:N`, as in Compose. */
 export type SizeSpec = string

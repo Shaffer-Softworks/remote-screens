@@ -62,5 +62,20 @@
   "ui.adjust_temperature": "Ustaw temperaturę",
   "ui.current_temp": "Obecna temp.",
   "ui.current_humidity": "Obecna wilgotność",
-  "ui.fan": "Wentylator"
+  "ui.fan": "Wentylator",
+  "ui.oscillate": "Oscylacja",
+  "ui.direction": "Kierunek",
+  "ui.forward": "Do przodu",
+  "ui.reverse": "Do tyłu",
+  "ui.target_humidity": "Docelowa wilgotność",
+  "ui.swing": "Swing",
+  "ui.low": "Niski",
+  "ui.high": "Wysoki",
+  "ui.no_todos": "Brak otwartych zadań",
+  "ui.cancel": "Anuluj",
+  "ui.finish": "Zakończ",
+  "ui.reset": "Resetuj",
+  "ui.tone": "Ton",
+  "ui.empty_text": "(puste)",
+  "ui.datetime_hint": "Zmień ten helper w Home Assistant"
 }

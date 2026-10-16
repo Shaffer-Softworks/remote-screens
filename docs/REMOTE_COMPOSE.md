@@ -63,7 +63,8 @@ All creation calls go through `server/.../render/Rc.kt` and the tile renderers; 
 
 - `Modifier.onClick { hostAction(id, metadataText) }` reaches the player's `addIdActionListener { id, metadata -> }`.
 - The metadata is a static text `tile|verb|arg` (`ActionRef` in `shared`). A slider is a row of steps, each its
-  own action with its value, rather than a drag with a dynamic value.
+  own action with its value, rather than a drag with a dynamic value. Free-form dials use the same stepped taps;
+  continuous drag value reporting is still unavailable in alpha21.
 - `addIdActionListener` can only be added after a document is set, so the player adds it on every new document.
 - **`Image` drops `onClick`.** Putting the click on the `Image` itself writes no click modifier in alpha21. Free-form
   camera (and other) images wrap the bitmap in a `Box` that carries the tap, so a tap still opens the card.

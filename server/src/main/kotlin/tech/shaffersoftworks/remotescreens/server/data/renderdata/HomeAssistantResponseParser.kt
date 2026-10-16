@@ -3,6 +3,7 @@ package tech.shaffersoftworks.remotescreens.server.data.renderdata
 import tech.shaffersoftworks.remotescreens.server.render.BrowseItem
 import tech.shaffersoftworks.remotescreens.server.render.EnergyPrefs
 import tech.shaffersoftworks.remotescreens.server.render.Forecast
+import tech.shaffersoftworks.remotescreens.server.render.TodoItem
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -43,6 +44,21 @@ internal object HomeAssistantResponseParser {
     fun library(result: Any?): List<BrowseItem> =
         ((result as? JsonObject)?.get("children") as? JsonArray).orEmpty()
             .mapNotNull { (it as? JsonObject)?.let(::browseItem) }
+
+    /** Incomplete items from `todo.get_items` for [entityId]. */
+    fun todos(result: Any?, entityId: String): List<TodoItem> {
+        val response = (result as? JsonObject)?.let { it["response"] as? JsonObject ?: it }
+        val items = (response?.get(entityId) as? JsonObject)?.get("items") as? JsonArray
+        return items.orEmpty().mapNotNull { (it as? JsonObject)?.let(::todoItem) }
+    }
+
+    private fun todoItem(item: JsonObject): TodoItem? {
+        val status = item.text("status")
+        if (status != null && status != "needs_action") return null
+        val summary = item.text("summary") ?: return null
+        val uid = item.text("uid") ?: summary
+        return TodoItem(uid = uid, summary = summary)
+    }
 
     private fun forecast(forecast: JsonObject): Forecast? {
         val time = forecast.text("datetime")

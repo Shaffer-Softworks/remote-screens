@@ -407,6 +407,17 @@ class PlayerViewModel @Inject constructor(
             "back" -> showPage(actionRef.arg.toIntOrNull() ?: remoteScreen.homePage)
             "close" -> closeSlot(slot)
             "settings" -> openSettings()
+            "set" -> {
+                val parts = actionRef.arg.split('|', limit = 2)
+                if (parts.size == 2) {
+                    parts[1].toIntOrNull()?.let { value ->
+                        updateRemoteScreen { it.withLocalInt(parts[0], value) }
+                    }
+                }
+            }
+            "url" -> actionRef.arg.takeIf { it.isNotBlank() }?.let { url ->
+                viewModelScope.launch { _events.send(PlayerEvent.OpenUrl(url)) }
+            }
         }
     }
 

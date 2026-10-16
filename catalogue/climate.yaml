@@ -8,10 +8,17 @@ controls: [stepper, modes]
 sizes: [1x1, 2x1, 1x2, 2x2, full]
 actions:
   temperature: {service: climate.set_temperature, data: {temperature: $arg}, relative: temperature}
+  temperature_high: {service: climate.set_temperature, data: {target_temp_high: $arg}, relative: target_temp_high}
+  temperature_low: {service: climate.set_temperature, data: {target_temp_low: $arg}, relative: target_temp_low}
   mode: {service: climate.set_hvac_mode, data: {hvac_mode: $arg}}
   preset: {service: climate.set_preset_mode, data: {preset_mode: $arg}}
   fan: {service: climate.set_fan_mode, data: {fan_mode: $arg}}
+  swing: {service: climate.set_swing_mode, data: {swing_mode: $arg}}
 predict:
   temperature: {attributes: {temperature: $arg}}
+  temperature_high: {attributes: {target_temp_high: $arg}}
+  temperature_low: {attributes: {target_temp_low: $arg}}
   mode: {state: $arg}
   fan: {attributes: {fan_mode: $arg}}
+  preset: {attributes: {preset_mode: $arg}}
+  swing: {attributes: {swing_mode: $arg}}

@@ -5,6 +5,7 @@ import tech.shaffersoftworks.remotescreens.server.render.BrowseItem
 import tech.shaffersoftworks.remotescreens.server.render.EnergyPrefs
 import tech.shaffersoftworks.remotescreens.server.render.Forecast
 import tech.shaffersoftworks.remotescreens.server.render.RenderData
+import tech.shaffersoftworks.remotescreens.server.render.TodoItem
 import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.Tile
 import kotlinx.serialization.json.JsonObject
@@ -41,6 +42,7 @@ class RenderDataRepository(private val homeAssistant: HomeAssistant) {
     private val forecasts = ConcurrentHashMap<String, Cached<List<Forecast>>>()
     private val histories = ConcurrentHashMap<String, Cached<List<HistoryPoint>>>()
     private val libraries = ConcurrentHashMap<String, Cached<List<BrowseItem>>>()
+    private val todos = ConcurrentHashMap<String, Cached<List<TodoItem>>>()
 
     @Volatile
     private var energyPreferences: Cached<EnergyPrefs?>? = null
@@ -70,6 +72,7 @@ class RenderDataRepository(private val homeAssistant: HomeAssistant) {
         kind == "history" || entityId.startsWith("sensor.") || entityId.startsWith("binary_sensor.") ->
             RenderData(history = mapOf(entityId to history(entityId, DEFAULT_HISTORY_HOURS)))
         entityId.startsWith("media_player.") -> RenderData(browse = mapOf(entityId to browse(entityId)))
+        entityId.startsWith("todo.") -> RenderData(todos = mapOf(entityId to todoItems(entityId)))
         else -> RenderData()
     }
 
@@ -109,10 +112,17 @@ class RenderDataRepository(private val homeAssistant: HomeAssistant) {
         HomeAssistantResponseParser.library(homeAssistant.command("media_player/browse_media", request))
     }
 
+    suspend fun todoItems(entityId: String): List<TodoItem> = cached(todos, entityId, BROWSE_TTL_MS) {
+        val request = buildJsonObject { put("entity_id", entityId) }
+        val result = homeAssistant.callService("todo", "get_items", request, returnResponse = true)
+        HomeAssistantResponseParser.todos(result, entityId)
+    }
+
     fun clear() {
         forecasts.clear()
         histories.clear()
         libraries.clear()
+        todos.clear()
         energyPreferences = null
     }
 

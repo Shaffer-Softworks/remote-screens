@@ -158,13 +158,10 @@ private fun DocContext.bindNextEvent(tileId: String, calendars: List<String>) {
     for (calendarId in calendars) bind(calendarId) { emptyList() }
     val zone = runCatching { ZoneId.of(homeAssistantConfig.timeZone) }.getOrDefault(ZoneId.of("UTC"))
     bind(null) { states ->
-        val now = ZonedDateTime.now(zone)
-        val next = calendars.mapNotNull { id -> states[id]?.let { calendarEvent(it, zone) } }
-            .filter { it.end == null || !it.end.isBefore(now) }
-            .minByOrNull { it.start }
+        val next = nextCalendarEvent(calendars, states, zone)
         val day = when {
             next == null -> "—"
-            next.start.toLocalDate() == LocalDate.now(zone) -> i18n.t("ui.today")
+            isToday(next, zone) -> i18n.t("ui.today")
             else -> i18n.fullWeekday(next.start)
         }
         val time = when {
@@ -178,28 +175,5 @@ private fun DocContext.bindNextEvent(tileId: String, calendars: List<String>) {
             VarValue.string(Vars.tile(tileId, "ev.title"), next?.title ?: i18n.t("ui.no_events")),
             VarValue.string(Vars.tile(tileId, "ev.meta"), listOfNotNull(next?.calendar, next?.location).filter { it.isNotBlank() }.joinToString(" · ")),
         )
-    }
-}
-
-private data class CalendarEvent(
-    val title: String,
-    val start: ZonedDateTime,
-    val end: ZonedDateTime?,
-    val allDay: Boolean,
-    val calendar: String,
-    val location: String?,
-)
-
-private val HA_LOCAL = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-
-private fun calendarEvent(entityState: EntityState, zone: ZoneId): CalendarEvent? {
-    fun time(key: String) =
-        entityState.attr(key)?.let { s -> runCatching { LocalDateTime.parse(s, HA_LOCAL).atZone(zone) }.getOrNull() }
-    val title = entityState.attr("message")
-    val start = time("start_time")
-    return if (title == null || start == null) {
-        null
-    } else {
-        CalendarEvent(title, start, time("end_time"), entityState.attr("all_day") == "true", entityState.name, entityState.attr("location"))
     }
 }

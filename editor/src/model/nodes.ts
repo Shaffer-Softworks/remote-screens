@@ -106,6 +106,11 @@ export const COMPONENTS: ComponentSpec[] = [
     group: 'Controls',
   },
   { id: 'keypad', type: 'keypad', label: 'Keypad', icon: 'dialpad', group: 'Controls' },
+  { id: 'dial', type: 'dial', label: 'Dial', icon: 'circle-slice-8', group: 'Controls' },
+  { id: 'countdown', type: 'countdown', label: 'Countdown', icon: 'timer-outline', group: 'Display' },
+  { id: 'qr', type: 'qr', label: 'QR code', icon: 'qrcode', group: 'Display' },
+  { id: 'markdown', type: 'markdown', label: 'Markdown', icon: 'language-markdown-outline', group: 'Basic' },
+  { id: 'tabs', type: 'tabs', label: 'Tabs', icon: 'tab', group: 'Layouts' },
 ]
 
 export function componentOf(type: NodeType): ComponentSpec | undefined {
@@ -163,6 +168,11 @@ const DEFAULT_PROPS: Partial<Record<NodeType, Record<string, string>>> = {
   gauge: { size: '140' },
   analog: { size: '160' },
   iconbutton: { size: '64' },
+  dial: { size: '160' },
+  countdown: { text: '0:00', fontSize: '44' },
+  qr: { text: 'https://www.home-assistant.io', size: '160' },
+  markdown: { text: '**Hello**\nA short note' },
+  tabs: { labels: 'One,Two', gap: '8' },
 }
 
 /** A new component of [type]; a `tile` needs the card it shows. */

@@ -162,6 +162,21 @@ private object Metrics {
     const val SWATCH_MAX_DP = 160f
     const val KEYPAD_MIN_DP = 32f
     const val KEYPAD_MAX_DP = 160f
+    const val DIAL_DEFAULT_DP = 160f
+    const val DIAL_MIN_DP = 80f
+    const val DIAL_MAX_DP = 400f
+    const val DIAL_STROKE_RATIO = 0.1f
+    const val DIAL_VALUE_SIZE_RATIO = 0.18f
+    const val COUNTDOWN_NATURAL_W = 160f
+    const val COUNTDOWN_NATURAL_H = 48f
+    const val QR_DEFAULT_DP = 160f
+    const val QR_MIN_DP = 64f
+    const val QR_MAX_DP = 400f
+    const val MARKDOWN_NATURAL_W = 280f
+    const val MARKDOWN_LINE_H = 22f
+    const val TABS_STRIP_H = 44f
+    const val TABS_NATURAL_W = 320f
+    const val TABS_NATURAL_H = 200f
     const val STEP_BRIGHTNESS = 10.0
     const val STEP_PERCENTAGE = 10.0
     const val STEP_POSITION = 10.0
@@ -234,13 +249,21 @@ private fun Node.natural(): Dims = when (type) {
     "keypad" -> (props["size"]?.toFloatOrNull() ?: Metrics.KEYPAD_DEFAULT_DP).let {
         Dims(it * Metrics.KEYPAD_KEY_WIDTH_RATIO * Metrics.KEYPAD_COLS + Metrics.KEYPAD_WIDTH_PAD_DP, Metrics.KEYPAD_DEFAULT_DP + Metrics.KEYPAD_ROWS * (it + Metrics.KEYPAD_ROW_GAP_DP))
     }
+    "dial" -> (props["size"]?.toFloatOrNull() ?: Metrics.DIAL_DEFAULT_DP).let { Dims(it, it + Metrics.STEPPER_KEY_DP + Metrics.KEYS_GAP_DP) }
+    "countdown" -> Dims(Metrics.COUNTDOWN_NATURAL_W, Metrics.COUNTDOWN_NATURAL_H)
+    "qr" -> (props["size"]?.toFloatOrNull() ?: Metrics.QR_DEFAULT_DP).let { Dims(it, it) }
+    "markdown" -> Dims(
+        Metrics.MARKDOWN_NATURAL_W,
+        Metrics.MARKDOWN_LINE_H * MarkdownLines.parse(props["text"].orEmpty()).size.coerceAtLeast(1),
+    )
+    "tabs" -> Dims(Metrics.TABS_NATURAL_W, Metrics.TABS_NATURAL_H)
     else -> Dims(0f, 0f)
 }
 
 /** About the size [node]'s content takes: a leaf's natural size, a container's children laid end to end, plus padding. */
 internal fun content(node: Node): Dims {
     fun side(spec: String, natural: Float) = (Spec.of(spec) as? Spec.Dp)?.value ?: natural
-    if (node.type !in setOf("column", "row", "box", "flow")) {
+    if (node.type !in setOf("column", "row", "box", "flow", "tabs")) {
         val nat = node.natural()
         val lines = if (node.type == "text") (node.props["lines"]?.toFloatOrNull() ?: 1f).coerceAtLeast(1f) else 1f
         return Dims(side(node.size.width, nat.w), side(node.size.height, nat.h * lines))
@@ -250,6 +273,10 @@ internal fun content(node: Node): Dims {
     val inner = when (node.type) {
         "row" -> Dims(children.sumOf { it.w.toDouble() }.toFloat() + gap, children.maxOfOrNull { it.h } ?: 0f)
         "column" -> Dims(children.maxOfOrNull { it.w } ?: 0f, children.sumOf { it.h.toDouble() }.toFloat() + gap)
+        "tabs" -> Dims(
+            children.maxOfOrNull { it.w } ?: Metrics.TABS_NATURAL_W,
+            (children.maxOfOrNull { it.h } ?: 0f) + Metrics.TABS_STRIP_H + gap,
+        )
         else -> Dims(children.maxOfOrNull { it.w } ?: 0f, children.maxOfOrNull { it.h } ?: 0f)
     }
     return Dims(side(node.size.width, inner.w + node.style.padX), side(node.size.height, inner.h + node.style.padY))
@@ -318,7 +345,7 @@ private fun DocContext.sized(node: Node, axis: Axis): Modifier {
 }
 
 /** Components whose keys inside take the taps, so the component as a whole takes none. */
-private val OWN_TAPS = setOf("tile", "slider", "stepper", "choices", "keys", "swatches", "keypad")
+private val OWN_TAPS = setOf("tile", "slider", "stepper", "choices", "keys", "swatches", "keypad", "dial", "tabs")
 
 /**
  * The size, the rounded background and outline, the taps, then the padding: the order `key` builds its own modifier
@@ -382,6 +409,7 @@ private fun DocContext.node(node: Node, self: Dims, axis: Axis, pages: Pages) {
     if (node.hidden) return
     when (node.type) {
         "column", "row", "box", "flow" -> container(node, self, axis, pages)
+        "tabs" -> tabsNode(node, self, axis, pages)
         "text" -> textNode(node, axis, pages)
         "icon" -> iconNode(node, axis, pages)
         "button" -> buttonNode(node, axis, pages)
@@ -404,6 +432,10 @@ private fun DocContext.node(node: Node, self: Dims, axis: Axis, pages: Pages) {
         "keys" -> keysNode(node, axis, pages)
         "swatches" -> swatchesNode(node, axis, pages)
         "keypad" -> keypadNode(node, axis, pages)
+        "dial" -> dialNode(node, axis, pages)
+        "countdown" -> countdownNode(node, axis, pages)
+        "qr" -> qrNode(node, axis, pages)
+        "markdown" -> markdownNode(node, axis, pages)
     }
 }
 
@@ -880,11 +912,12 @@ private fun DocContext.switchNode(node: Node, axis: Axis, pages: Pages) {
 /** What a stepper's keys send for an entity, and by how much a tap moves it. */
 private fun DocContext.stepOf(node: Node, entityState: EntityState?, domain: String?): Pair<String, Double>? {
     val pair = when (domain) {
-        "climate" -> "temperature" to (entityState?.number("target_temp_step") ?: if (homeAssistantConfig.temperatureUnit.contains("F")) Metrics.STEP_TEMP_F else Metrics.STEP_TEMP_C)
+        "climate", "water_heater" -> "temperature" to (entityState?.number("target_temp_step") ?: if (homeAssistantConfig.temperatureUnit.contains("F")) Metrics.STEP_TEMP_F else Metrics.STEP_TEMP_C)
+        "humidifier" -> "humidity" to (entityState?.number("humidity_step") ?: Metrics.STEP_PERCENTAGE)
         "number", "input_number" -> "value" to (entityState?.number("step") ?: 1.0)
         "light" -> "brightness" to Metrics.STEP_BRIGHTNESS
         "fan" -> "percentage" to Metrics.STEP_PERCENTAGE
-        "cover" -> "position" to Metrics.STEP_POSITION
+        "cover", "valve" -> "position" to Metrics.STEP_POSITION
         "media_player" -> "volume" to Metrics.STEP_VOLUME
         else -> return null
     }
@@ -1165,6 +1198,144 @@ private fun DocContext.keypadNode(node: Node, axis: Axis, pages: Pages) {
                     }
                     val icon = when (digit) { "clear" -> "close"; "back" -> "backspace-outline"; else -> null }
                     doc.key(ref, text = if (icon == null) digit else null, icon = icon, heightDp = sizeDp, widthDp = keyW)
+                }
+            }
+        }
+    }
+}
+
+/** A circular level ring with the bound value in the middle and minus/plus keys under it. */
+private fun DocContext.dialNode(node: Node, axis: Axis, pages: Pages) {
+    val id = node.bind?.entityId
+    val domain = id?.substringBefore('.')
+    val sizeDp = node.props["size"]?.toFloatOrNull()?.coerceIn(Metrics.DIAL_MIN_DP, Metrics.DIAL_MAX_DP) ?: Metrics.DIAL_DEFAULT_DP
+    val px = units.px(sizeDp)
+    val stroke = px * Metrics.DIAL_STROKE_RATIO
+    val inset = stroke / 2f
+    val fill = node.props["color"]?.let { paint(it) } ?: fixed(Pastel.forDomain(domain).argb)
+    val how = id?.let { stepOf(node, states[it], domain) }
+    if (id != null) {
+        bindEntity(id)
+        bindLevel(node, id)
+    }
+    val step = how?.second?.let { if (it % 1.0 == 0.0) it.toInt().toString() else "%.1f".format(Locale.ROOT, it) }
+    val down = how?.let { ActionRef(node.id, it.first, "-$step") }
+    val up = how?.let { ActionRef(node.id, it.first, "+$step") }
+    val isPredictable = how != null && domain?.let { Catalogue.of(it) }?.predict?.containsKey(how.first) == true
+    if (id != null && isPredictable) {
+        down?.let { predict(it, id) }
+        up?.let { predict(it, id) }
+    }
+    scope.Column(styled(node, axis, pages), horizontal = RcHorizontalPositioning.Center) {
+        val doc = this@dialNode
+        Box(Modifier.size(px, px), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
+            Canvas(Modifier.size(px, px)) {
+                paint { color(doc.role(Role.TRACK)); style(RcPaintStyle.Stroke); strokeWidth(stroke); strokeCap(RcStrokeCap.Round) }
+                drawArc(inset, inset, px - inset, px - inset, Metrics.GAUGE_ARC_START_DEG, Metrics.GAUGE_ARC_SWEEP_DEG)
+                if (id != null) {
+                    paint { color(fill); style(RcPaintStyle.Stroke); strokeWidth(stroke); strokeCap(RcStrokeCap.Round) }
+                    drawArc(inset.rf, inset.rf, (px - inset).rf, (px - inset).rf, Metrics.GAUGE_ARC_START_DEG.rf, doc.float(nodeLevel(node.id)) * Metrics.GAUGE_ARC_SWEEP_DEG)
+                }
+            }
+            if (id != null) {
+                doc.label(doc.text(Vars.entity(id, Vars.KEY_VALUE)), maxOf(sizeDp * Metrics.DIAL_VALUE_SIZE_RATIO, Type.CAPTION), doc.role(Role.INK), Weight.MEDIUM, align = RcTextAlign.Center)
+            } else {
+                doc.label("–", maxOf(sizeDp * Metrics.DIAL_VALUE_SIZE_RATIO, Type.CAPTION), doc.role(Role.INK_DIM), Weight.MEDIUM, align = RcTextAlign.Center)
+            }
+        }
+        doc.gap(Metrics.KEYS_GAP_DP)
+        Row(vertical = RcVerticalPositioning.Center) {
+            fun key(ref: ActionRef?, icon: String) {
+                if (ref != null) doc.key(ref, icon = icon, heightDp = Metrics.STEPPER_KEY_DP, widthDp = Metrics.STEPPER_KEY_DP, round = true)
+                else Box(Modifier.size(doc.units.px(Metrics.STEPPER_KEY_DP), doc.units.px(Metrics.STEPPER_KEY_DP)).clip(doc.rounded(Metrics.STEPPER_KEY_CORNER_DP)).background(doc.role(Role.KEY)))
+            }
+            key(down, "minus")
+            Spacer(Modifier.width(doc.units.px(Metrics.KEYS_GAP_TOTAL_DP)))
+            key(up, "plus")
+        }
+    }
+}
+
+/** A timer's remaining time, or static text from props. */
+private fun DocContext.countdownNode(node: Node, axis: Axis, pages: Pages) {
+    val id = node.bind?.entityId
+    if (id != null) bindEntity(id)
+    val ink = node.props["color"]?.let { paint(it) } ?: role(Role.INK)
+    val sp = node.props["fontSize"]?.toFloatOrNull() ?: Type.DISPLAY
+    scope.Box(styled(node, axis, pages), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
+        val doc = this@countdownNode
+        when {
+            id != null -> doc.label(doc.text(Vars.entity(id, Vars.KEY_VALUE)), sp, ink, Weight.LIGHT, align = RcTextAlign.Center)
+            else -> doc.label(node.props["text"] ?: "0:00", sp, ink, Weight.LIGHT, align = RcTextAlign.Center)
+        }
+    }
+}
+
+/** A QR code of static text, or of a bound entity's state (`qr:@entity.id`). */
+private fun DocContext.qrNode(node: Node, axis: Axis, pages: Pages) {
+    val sizeDp = node.props["size"]?.toFloatOrNull()?.coerceIn(Metrics.QR_MIN_DP, Metrics.QR_MAX_DP) ?: Metrics.QR_DEFAULT_DP
+    val px = units.px(sizeDp).toInt()
+    val id = node.bind?.entityId
+    val text = when {
+        id != null -> {
+            structural(id) { it?.state.orEmpty() }
+            "@$id"
+        }
+        else -> node.props["text"].orEmpty()
+    }
+    val slot = "qr.${node.id}"
+    picture(PictureSlot(slot, "qr:$text", px, px, 0, crop = false))
+    scope.Box(styled(node, axis, pages), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
+        Image(this@qrNode.image(slot, px, px), Modifier.size(units.px(sizeDp), units.px(sizeDp)), contentScale = RcContentScale.Fit)
+    }
+}
+
+/** Constrained markdown: one Text line per source line, with whole-line bold or italic. */
+private fun DocContext.markdownNode(node: Node, axis: Axis, pages: Pages) {
+    val lines = MarkdownLines.parse(node.props["text"].orEmpty())
+    val ink = node.props["color"]?.let { paint(it) } ?: role(Role.INK)
+    val sp = node.props["fontSize"]?.toFloatOrNull() ?: Type.BODY
+    scope.Column(styled(node, axis, pages)) {
+        val doc = this@markdownNode
+        for (line in lines) {
+            val weight = when {
+                line.bold -> Weight.BOLD
+                line.italic -> Weight.NORMAL
+                else -> Weight.NORMAL
+            }
+            doc.label(line.text.ifEmpty { " " }, sp, ink, weight)
+        }
+    }
+}
+
+/** Tab strip plus a StateLayout of children; the player keeps the selected index in `n.<id>.tab`. */
+private fun DocContext.tabsNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
+    val children = node.children.filter { !it.hidden }
+    val labels = node.props["labels"]?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }
+        ?: children.mapIndexed { index, child -> child.props["label"] ?: child.props["text"] ?: "Tab ${index + 1}" }
+    val tabVar = "n.${node.id}.tab"
+    val selected = int(tabVar, 0)
+    val gap = node.props["gap"]?.toFloatOrNull()?.coerceAtLeast(0f) ?: Metrics.KEYS_GAP_DP
+    val bodyH = (self.h - node.style.padY - Metrics.TABS_STRIP_H - gap).coerceAtLeast(1f)
+    val bodyW = (self.w - node.style.padX).coerceAtLeast(1f)
+    scope.Column(styled(node, axis, pages, measured(node, axis, self))) {
+        val doc = this@tabsNode
+        Row(Modifier.fillMaxWidth(), horizontal = RcRowHorizontalPositioning.Start, vertical = RcVerticalPositioning.Center) {
+            labels.take(children.size.coerceAtLeast(labels.size)).forEachIndexed { index, label ->
+                if (index > 0) Spacer(Modifier.width(doc.units.px(Metrics.KEYS_GAP_DP)))
+                doc.key(
+                    ActionRef("_", "set", "$tabVar|$index"),
+                    text = label,
+                    heightDp = Metrics.TABS_STRIP_H,
+                    modifier = Modifier.horizontalWeight(1f),
+                )
+            }
+        }
+        Spacer(Modifier.height(doc.units.px(gap)))
+        StateLayout(selected, Modifier.size(doc.units.px(bodyW), doc.units.px(bodyH))) {
+            for (child in children) {
+                Box(Modifier.fillMaxSize()) {
+                    doc.node(child, Dims(bodyW, bodyH), Axis.BOX, pages)
                 }
             }
         }

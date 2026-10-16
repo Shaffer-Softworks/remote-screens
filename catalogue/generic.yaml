@@ -1,0 +1,17 @@
+# Fallback for Home Assistant domains without their own tile. The editor sets kind=generic on those entities.
+domain: generic
+name: Entity
+icon: help-circle-outline
+toggle: true
+on_states: [on, open, opening, home, locked, playing, active, heat, cool, auto]
+tap: toggle
+card: toggle
+sizes: [1x1, 2x1]
+actions:
+  toggle: {service: homeassistant.toggle}
+  turn_on: {service: homeassistant.turn_on}
+  turn_off: {service: homeassistant.turn_off}
+predict:
+  toggle: {state: "!"}
+  turn_on: {state: "on"}
+  turn_off: {state: "off"}

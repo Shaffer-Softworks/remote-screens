@@ -1,0 +1,10 @@
+domain: input_datetime
+name: Date/time helper
+icon: calendar-clock
+tap: card
+card: input_datetime
+sizes: [1x1, 2x1]
+actions:
+  set: {service: input_datetime.set_datetime, data: {datetime: $arg}}
+predict:
+  set: {state: $arg}

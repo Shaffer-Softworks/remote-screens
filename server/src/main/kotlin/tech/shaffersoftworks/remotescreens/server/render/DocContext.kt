@@ -198,6 +198,13 @@ data class RenderData(
     val history: Map<String, List<Pair<Long, Double>>> = emptyMap(),
     val energy: EnergyPrefs? = null,
     val browse: Map<String, List<BrowseItem>> = emptyMap(),
+    val todos: Map<String, List<TodoItem>> = emptyMap(),
+)
+
+/** One incomplete to-do item, as `todo.get_items` returns it. */
+data class TodoItem(
+    val uid: String,
+    val summary: String,
 )
 
 data class Forecast(

@@ -14,457 +14,934 @@ export interface TypeSpec {
 }
 
 export const CATALOGUE: Record<string, TypeSpec> = {
-  alarm_control_panel: {
-    name: 'Alarm',
-    icon: 'shield-off',
-    iconOn: 'shield-lock',
-    toggle: false,
-    tap: 'card',
-    card: 'alarm',
-    controls: [],
-    sizes: ['1x1', '2x1', '2x2'],
-    options: [],
-    verbs: ['disarm', 'arm_away', 'arm_home', 'arm_night', 'arm_vacation'],
-    needsEntity: true,
-  },
-  automation: {
-    name: 'Automation',
-    icon: 'robot-off',
-    iconOn: 'robot',
-    toggle: true,
-    tap: 'toggle',
-    card: 'toggle',
-    controls: [],
-    sizes: ['1x1', '2x1'],
-    options: [],
-    verbs: ['toggle', 'trigger'],
-    needsEntity: true,
-  },
-  binary_sensor: {
-    name: 'Binary sensor',
-    icon: 'checkbox-blank-circle-outline',
-    iconOn: 'checkbox-marked-circle',
-    toggle: false,
-    tap: 'card',
-    card: 'history',
-    controls: [],
-    sizes: ['1x1', '2x1'],
-    options: [],
-    verbs: [],
-    needsEntity: true,
-  },
-  button: {
-    name: 'Button',
-    icon: 'gesture-tap-button',
-    iconOn: null,
-    toggle: false,
-    tap: 'action',
-    card: 'none',
-    controls: [],
-    sizes: ['1x1', '2x1'],
-    options: [],
-    verbs: ['activate'],
-    needsEntity: true,
-  },
-  camera: {
-    name: 'Camera',
-    icon: 'cctv',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'camera',
-    controls: [],
-    sizes: ['1x1', '2x1', '2x2', 'full'],
-    options: ['live'],
-    verbs: [],
-    needsEntity: true,
-  },
-  climate: {
-    name: 'Climate',
-    icon: 'thermostat',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'climate',
-    controls: ['stepper', 'modes'],
-    sizes: ['1x1', '2x1', '1x2', '2x2', 'full'],
-    options: [],
-    verbs: ['temperature', 'mode', 'preset', 'fan'],
-    needsEntity: true,
-  },
-  cover: {
-    name: 'Cover',
-    icon: 'window-shutter',
-    iconOn: 'window-shutter-open',
-    toggle: true,
-    tap: 'toggle',
-    card: 'cover',
-    controls: ['position'],
-    sizes: ['1x1', '2x1', '1x2', '2x2', 'full'],
-    options: [],
-    verbs: ['toggle', 'open', 'close', 'stop', 'position', 'tilt'],
-    needsEntity: true,
-  },
-  device_tracker: {
-    name: 'Device tracker',
-    icon: 'map-marker',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'map',
-    controls: [],
-    sizes: ['1x1', '2x1', '2x2'],
-    options: [],
-    verbs: [],
-    needsEntity: true,
-  },
-  fan: {
-    name: 'Fan',
-    icon: 'fan-off',
-    iconOn: 'fan',
-    toggle: true,
-    tap: 'toggle',
-    card: 'fan',
-    controls: ['percentage'],
-    sizes: ['1x1', '2x1', '1x2', '2x2', 'full'],
-    options: [],
-    verbs: ['toggle', 'percentage'],
-    needsEntity: true,
-  },
-  humidifier: {
-    name: 'Humidifier',
-    icon: 'air-humidifier-off',
-    iconOn: 'air-humidifier',
-    toggle: true,
-    tap: 'toggle',
-    card: 'toggle',
-    controls: [],
-    sizes: ['1x1', '2x1'],
-    options: [],
-    verbs: ['toggle', 'humidity'],
-    needsEntity: true,
-  },
-  input_boolean: {
-    name: 'Toggle helper',
-    icon: 'toggle-switch-outline',
-    iconOn: 'toggle-switch',
-    toggle: true,
-    tap: 'toggle',
-    card: 'toggle',
-    controls: [],
-    sizes: ['1x1', '2x1', '1x2', '2x2', 'full'],
-    options: [],
-    verbs: ['toggle'],
-    needsEntity: true,
-  },
-  input_button: {
-    name: 'Button helper',
-    icon: 'gesture-tap-button',
-    iconOn: null,
-    toggle: false,
-    tap: 'action',
-    card: 'none',
-    controls: [],
-    sizes: ['1x1', '2x1'],
-    options: [],
-    verbs: ['activate'],
-    needsEntity: true,
-  },
-  input_number: {
-    name: 'Number helper',
-    icon: 'ray-vertex',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'number',
-    controls: ['slider'],
-    sizes: ['1x1', '2x1', '1x2'],
-    options: [],
-    verbs: ['value'],
-    needsEntity: true,
-  },
-  input_select: {
-    name: 'Select helper',
-    icon: 'format-list-bulleted',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'select',
-    controls: [],
-    sizes: ['1x1', '2x1'],
-    options: [],
-    verbs: ['option'],
-    needsEntity: true,
-  },
-  light: {
-    name: 'Light',
-    icon: 'lightbulb',
-    iconOn: 'lightbulb-on',
-    toggle: true,
-    tap: 'toggle',
-    card: 'light',
-    controls: ['brightness'],
-    sizes: ['1x1', '2x1', '1x2', '2x2', 'full'],
-    options: [],
-    verbs: ['toggle', 'on', 'off', 'brightness', 'hue', 'kelvin', 'effect'],
-    needsEntity: true,
-  },
-  lock: {
-    name: 'Lock',
-    icon: 'lock-open-variant',
-    iconOn: 'lock',
-    toggle: true,
-    tap: 'toggle',
-    card: 'lock',
-    controls: [],
-    sizes: ['1x1', '2x1', '1x2', '2x2'],
-    options: [],
-    verbs: ['lock', 'unlock', 'open', 'toggle'],
-    needsEntity: true,
-  },
-  media_player: {
-    name: 'Media player',
-    icon: 'speaker',
-    iconOn: 'speaker-play',
-    toggle: false,
-    tap: 'card',
-    card: 'media',
-    controls: ['transport', 'volume'],
-    sizes: ['1x1', '2x1', '1x2', '2x2', 'full'],
-    options: [],
-    verbs: [
-      'play_pause',
-      'next',
-      'previous',
-      'volume',
-      'mute',
-      'shuffle',
-      'repeat',
-      'source',
-      'play_media',
-      'turn_off',
+  "alarm_control_panel": {
+    "name": "Alarm",
+    "icon": "shield-off",
+    "iconOn": "shield-lock",
+    "toggle": false,
+    "tap": "card",
+    "card": "alarm",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
     ],
-    needsEntity: true,
+    "options": [],
+    "verbs": [
+      "disarm",
+      "arm_away",
+      "arm_home",
+      "arm_night",
+      "arm_vacation"
+    ],
+    "needsEntity": true
   },
-  number: {
-    name: 'Number',
-    icon: 'ray-vertex',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'number',
-    controls: ['slider'],
-    sizes: ['1x1', '2x1', '1x2'],
-    options: [],
-    verbs: ['value'],
-    needsEntity: true,
+  "automation": {
+    "name": "Automation",
+    "icon": "robot-off",
+    "iconOn": "robot",
+    "toggle": true,
+    "tap": "toggle",
+    "card": "toggle",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1"
+    ],
+    "options": [],
+    "verbs": [
+      "toggle",
+      "trigger"
+    ],
+    "needsEntity": true
   },
-  person: {
-    name: 'Person',
-    icon: 'account',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'map',
-    controls: [],
-    sizes: ['1x1', '2x1', '2x2'],
-    options: ['map'],
-    verbs: [],
-    needsEntity: true,
+  "binary_sensor": {
+    "name": "Binary sensor",
+    "icon": "checkbox-blank-circle-outline",
+    "iconOn": "checkbox-marked-circle",
+    "toggle": false,
+    "tap": "card",
+    "card": "history",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": true
   },
-  scene: {
-    name: 'Scene',
-    icon: 'palette',
-    iconOn: null,
-    toggle: false,
-    tap: 'action',
-    card: 'none',
-    controls: [],
-    sizes: ['1x1', '2x1', '1x2', '2x2', 'full'],
-    options: [],
-    verbs: ['activate'],
-    needsEntity: true,
+  "button": {
+    "name": "Button",
+    "icon": "gesture-tap-button",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "action",
+    "card": "none",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1"
+    ],
+    "options": [],
+    "verbs": [
+      "activate"
+    ],
+    "needsEntity": true
   },
-  script: {
-    name: 'Script',
-    icon: 'script-text',
-    iconOn: 'script-text-play',
-    toggle: false,
-    tap: 'action',
-    card: 'none',
-    controls: [],
-    sizes: ['1x1', '2x1', '1x2', '2x2', 'full'],
-    options: [],
-    verbs: ['activate', 'toggle'],
-    needsEntity: true,
+  "calendar": {
+    "name": "Calendar",
+    "icon": "calendar",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "calendar",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2",
+      "full"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": true
   },
-  select: {
-    name: 'Select',
-    icon: 'format-list-bulleted',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'select',
-    controls: [],
-    sizes: ['1x1', '2x1'],
-    options: [],
-    verbs: ['option'],
-    needsEntity: true,
+  "camera": {
+    "name": "Camera",
+    "icon": "cctv",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "camera",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2",
+      "full"
+    ],
+    "options": [
+      "live"
+    ],
+    "verbs": [],
+    "needsEntity": true
   },
-  sensor: {
-    name: 'Sensor',
-    icon: 'eye',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'history',
-    controls: [],
-    sizes: ['1x1', '2x1', '1x2', '2x2'],
-    options: ['graph'],
-    verbs: [],
-    needsEntity: true,
+  "climate": {
+    "name": "Climate",
+    "icon": "thermostat",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "climate",
+    "controls": [
+      "stepper",
+      "modes"
+    ],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "1x2",
+      "2x2",
+      "full"
+    ],
+    "options": [],
+    "verbs": [
+      "temperature",
+      "temperature_high",
+      "temperature_low",
+      "mode",
+      "preset",
+      "fan",
+      "swing"
+    ],
+    "needsEntity": true
   },
-  switch: {
-    name: 'Switch',
-    icon: 'toggle-switch-variant-off',
-    iconOn: 'toggle-switch-variant',
-    toggle: true,
-    tap: 'toggle',
-    card: 'toggle',
-    controls: [],
-    sizes: ['1x1', '2x1', '1x2', '2x2', 'full'],
-    options: [],
-    verbs: ['toggle', 'on', 'off'],
-    needsEntity: true,
+  "counter": {
+    "name": "Counter",
+    "icon": "counter",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "counter",
+    "controls": [
+      "stepper"
+    ],
+    "sizes": [
+      "1x1",
+      "2x1"
+    ],
+    "options": [],
+    "verbs": [
+      "increment",
+      "decrement",
+      "reset"
+    ],
+    "needsEntity": true
   },
-  vacuum: {
-    name: 'Vacuum',
-    icon: 'robot-vacuum',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'vacuum',
-    controls: [],
-    sizes: ['1x1', '2x1', '2x2'],
-    options: [],
-    verbs: ['start', 'pause', 'stop', 'dock', 'locate', 'fan_speed'],
-    needsEntity: true,
+  "cover": {
+    "name": "Cover",
+    "icon": "window-shutter",
+    "iconOn": "window-shutter-open",
+    "toggle": true,
+    "tap": "toggle",
+    "card": "cover",
+    "controls": [
+      "position"
+    ],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "1x2",
+      "2x2",
+      "full"
+    ],
+    "options": [],
+    "verbs": [
+      "toggle",
+      "open",
+      "close",
+      "stop",
+      "position",
+      "tilt"
+    ],
+    "needsEntity": true
   },
-  weather: {
-    name: 'Weather',
-    icon: 'weather-partly-cloudy',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'weather',
-    controls: [],
-    sizes: ['1x1', '2x1', '1x2', '2x2', 'full'],
-    options: [],
-    verbs: [],
-    needsEntity: true,
+  "device_tracker": {
+    "name": "Device tracker",
+    "icon": "map-marker",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "map",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": true
   },
-  clock: {
-    name: 'Clock',
-    icon: 'clock-outline',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'none',
-    controls: [],
-    sizes: ['1x1', '2x1', '2x2', 'full'],
-    options: [],
-    verbs: [],
-    needsEntity: false,
+  "fan": {
+    "name": "Fan",
+    "icon": "fan-off",
+    "iconOn": "fan",
+    "toggle": true,
+    "tap": "toggle",
+    "card": "fan",
+    "controls": [
+      "percentage"
+    ],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "1x2",
+      "2x2",
+      "full"
+    ],
+    "options": [],
+    "verbs": [
+      "toggle",
+      "percentage",
+      "oscillate",
+      "direction",
+      "preset"
+    ],
+    "needsEntity": true
   },
-  bedside: {
-    name: 'Bedside clock',
-    icon: 'bed-clock',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'none',
-    controls: [],
-    sizes: ['full'],
-    options: [],
-    verbs: [],
-    needsEntity: false,
+  "generic": {
+    "name": "Entity",
+    "icon": "help-circle-outline",
+    "iconOn": null,
+    "toggle": true,
+    "tap": "toggle",
+    "card": "toggle",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1"
+    ],
+    "options": [],
+    "verbs": [
+      "toggle",
+      "turn_on",
+      "turn_off"
+    ],
+    "needsEntity": true
   },
-  nav: {
-    name: 'Go to page',
-    icon: 'arrow-right-circle',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'none',
-    controls: [],
-    sizes: ['1x1', '2x1'],
-    options: [],
-    verbs: [],
-    needsEntity: false,
+  "humidifier": {
+    "name": "Humidifier",
+    "icon": "air-humidifier-off",
+    "iconOn": "air-humidifier",
+    "toggle": true,
+    "tap": "toggle",
+    "card": "humidifier",
+    "controls": [
+      "humidity"
+    ],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [
+      "toggle",
+      "humidity",
+      "mode"
+    ],
+    "needsEntity": true
   },
-  history: {
-    name: 'History graph',
-    icon: 'chart-line',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'history',
-    controls: [],
-    sizes: ['2x1', '2x2', 'full'],
-    options: [],
-    verbs: [],
-    needsEntity: true,
+  "input_boolean": {
+    "name": "Toggle helper",
+    "icon": "toggle-switch-outline",
+    "iconOn": "toggle-switch",
+    "toggle": true,
+    "tap": "toggle",
+    "card": "toggle",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "1x2",
+      "2x2",
+      "full"
+    ],
+    "options": [],
+    "verbs": [
+      "toggle"
+    ],
+    "needsEntity": true
   },
-  energy: {
-    name: 'Energy now',
-    icon: 'lightning-bolt',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'energy',
-    controls: [],
-    sizes: ['2x2', 'full'],
-    options: [],
-    verbs: [],
-    needsEntity: false,
+  "input_button": {
+    "name": "Button helper",
+    "icon": "gesture-tap-button",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "action",
+    "card": "none",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1"
+    ],
+    "options": [],
+    "verbs": [
+      "activate"
+    ],
+    "needsEntity": true
   },
-  map: {
-    name: 'Map',
-    icon: 'map',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'map',
-    controls: [],
-    sizes: ['2x2', 'full'],
-    options: [],
-    verbs: [],
-    needsEntity: false,
+  "input_datetime": {
+    "name": "Date/time helper",
+    "icon": "calendar-clock",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "input_datetime",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1"
+    ],
+    "options": [],
+    "verbs": [
+      "set"
+    ],
+    "needsEntity": true
   },
-  favourite: {
-    name: 'Favourite music',
-    icon: 'playlist-music',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'none',
-    controls: [],
-    sizes: ['1x1', '2x1', '2x2'],
-    options: [],
-    verbs: [],
-    needsEntity: true,
+  "input_number": {
+    "name": "Number helper",
+    "icon": "ray-vertex",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "number",
+    "controls": [
+      "slider"
+    ],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "1x2"
+    ],
+    "options": [],
+    "verbs": [
+      "value"
+    ],
+    "needsEntity": true
   },
-  home: {
-    name: 'Home panel',
-    icon: 'home-variant',
-    iconOn: null,
-    toggle: false,
-    tap: 'card',
-    card: 'none',
-    controls: [],
-    sizes: ['full'],
-    options: [],
-    verbs: [],
-    needsEntity: false,
+  "input_select": {
+    "name": "Select helper",
+    "icon": "format-list-bulleted",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "select",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1"
+    ],
+    "options": [],
+    "verbs": [
+      "option"
+    ],
+    "needsEntity": true
   },
+  "input_text": {
+    "name": "Text helper",
+    "icon": "form-textbox",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "input_text",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [
+      "clear"
+    ],
+    "needsEntity": true
+  },
+  "lawn_mower": {
+    "name": "Lawn mower",
+    "icon": "robot-mower",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "lawn_mower",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [
+      "start",
+      "pause",
+      "dock"
+    ],
+    "needsEntity": true
+  },
+  "light": {
+    "name": "Light",
+    "icon": "lightbulb",
+    "iconOn": "lightbulb-on",
+    "toggle": true,
+    "tap": "toggle",
+    "card": "light",
+    "controls": [
+      "brightness"
+    ],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "1x2",
+      "2x2",
+      "full"
+    ],
+    "options": [],
+    "verbs": [
+      "toggle",
+      "on",
+      "off",
+      "brightness",
+      "hue",
+      "kelvin",
+      "effect"
+    ],
+    "needsEntity": true
+  },
+  "lock": {
+    "name": "Lock",
+    "icon": "lock-open-variant",
+    "iconOn": "lock",
+    "toggle": true,
+    "tap": "toggle",
+    "card": "lock",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "1x2",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [
+      "lock",
+      "unlock",
+      "open",
+      "toggle"
+    ],
+    "needsEntity": true
+  },
+  "media_player": {
+    "name": "Media player",
+    "icon": "speaker",
+    "iconOn": "speaker-play",
+    "toggle": false,
+    "tap": "card",
+    "card": "media",
+    "controls": [
+      "transport",
+      "volume"
+    ],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "1x2",
+      "2x2",
+      "full"
+    ],
+    "options": [],
+    "verbs": [
+      "play_pause",
+      "next",
+      "previous",
+      "volume",
+      "mute",
+      "shuffle",
+      "repeat",
+      "source",
+      "play_media",
+      "turn_off"
+    ],
+    "needsEntity": true
+  },
+  "number": {
+    "name": "Number",
+    "icon": "ray-vertex",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "number",
+    "controls": [
+      "slider"
+    ],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "1x2"
+    ],
+    "options": [],
+    "verbs": [
+      "value"
+    ],
+    "needsEntity": true
+  },
+  "person": {
+    "name": "Person",
+    "icon": "account",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "map",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [
+      "map"
+    ],
+    "verbs": [],
+    "needsEntity": true
+  },
+  "scene": {
+    "name": "Scene",
+    "icon": "palette",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "action",
+    "card": "none",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "1x2",
+      "2x2",
+      "full"
+    ],
+    "options": [],
+    "verbs": [
+      "activate"
+    ],
+    "needsEntity": true
+  },
+  "script": {
+    "name": "Script",
+    "icon": "script-text",
+    "iconOn": "script-text-play",
+    "toggle": false,
+    "tap": "action",
+    "card": "none",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "1x2",
+      "2x2",
+      "full"
+    ],
+    "options": [],
+    "verbs": [
+      "activate",
+      "toggle"
+    ],
+    "needsEntity": true
+  },
+  "select": {
+    "name": "Select",
+    "icon": "format-list-bulleted",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "select",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1"
+    ],
+    "options": [],
+    "verbs": [
+      "option"
+    ],
+    "needsEntity": true
+  },
+  "sensor": {
+    "name": "Sensor",
+    "icon": "eye",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "history",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "1x2",
+      "2x2"
+    ],
+    "options": [
+      "graph"
+    ],
+    "verbs": [],
+    "needsEntity": true
+  },
+  "siren": {
+    "name": "Siren",
+    "icon": "bullhorn-outline",
+    "iconOn": "bullhorn",
+    "toggle": true,
+    "tap": "toggle",
+    "card": "siren",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1"
+    ],
+    "options": [],
+    "verbs": [
+      "toggle",
+      "on",
+      "off",
+      "tone"
+    ],
+    "needsEntity": true
+  },
+  "switch": {
+    "name": "Switch",
+    "icon": "toggle-switch-variant-off",
+    "iconOn": "toggle-switch-variant",
+    "toggle": true,
+    "tap": "toggle",
+    "card": "toggle",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "1x2",
+      "2x2",
+      "full"
+    ],
+    "options": [],
+    "verbs": [
+      "toggle",
+      "on",
+      "off"
+    ],
+    "needsEntity": true
+  },
+  "timer": {
+    "name": "Timer",
+    "icon": "timer-outline",
+    "iconOn": "timer",
+    "toggle": true,
+    "tap": "card",
+    "card": "timer",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [
+      "start",
+      "pause",
+      "cancel",
+      "finish"
+    ],
+    "needsEntity": true
+  },
+  "todo": {
+    "name": "To-do",
+    "icon": "checkbox-marked-outline",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "todo",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [
+      "complete"
+    ],
+    "needsEntity": true
+  },
+  "vacuum": {
+    "name": "Vacuum",
+    "icon": "robot-vacuum",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "vacuum",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [
+      "start",
+      "pause",
+      "stop",
+      "dock",
+      "locate",
+      "fan_speed"
+    ],
+    "needsEntity": true
+  },
+  "valve": {
+    "name": "Valve",
+    "icon": "pipe-valve",
+    "iconOn": "pipe-valve",
+    "toggle": true,
+    "tap": "toggle",
+    "card": "valve",
+    "controls": [
+      "position"
+    ],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [
+      "toggle",
+      "open",
+      "close",
+      "stop",
+      "position"
+    ],
+    "needsEntity": true
+  },
+  "water_heater": {
+    "name": "Water heater",
+    "icon": "water-boiler",
+    "iconOn": "water-boiler",
+    "toggle": true,
+    "tap": "card",
+    "card": "water_heater",
+    "controls": [
+      "stepper"
+    ],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [
+      "temperature",
+      "operation",
+      "away_on",
+      "away_off"
+    ],
+    "needsEntity": true
+  },
+  "weather": {
+    "name": "Weather",
+    "icon": "weather-partly-cloudy",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "weather",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "1x2",
+      "2x2",
+      "full"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": true
+  },
+  "clock": {
+    "name": "Clock",
+    "icon": "clock-outline",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "none",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2",
+      "full"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": false
+  },
+  "bedside": {
+    "name": "Bedside clock",
+    "icon": "bed-clock",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "none",
+    "controls": [],
+    "sizes": [
+      "full"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": false
+  },
+  "nav": {
+    "name": "Go to page",
+    "icon": "arrow-right-circle",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "none",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": false
+  },
+  "history": {
+    "name": "History graph",
+    "icon": "chart-line",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "history",
+    "controls": [],
+    "sizes": [
+      "2x1",
+      "2x2",
+      "full"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": true
+  },
+  "energy": {
+    "name": "Energy now",
+    "icon": "lightning-bolt",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "energy",
+    "controls": [],
+    "sizes": [
+      "2x2",
+      "full"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": false
+  },
+  "map": {
+    "name": "Map",
+    "icon": "map",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "map",
+    "controls": [],
+    "sizes": [
+      "2x2",
+      "full"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": false
+  },
+  "favourite": {
+    "name": "Favourite music",
+    "icon": "playlist-music",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "none",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": true
+  },
+  "home": {
+    "name": "Home panel",
+    "icon": "home-variant",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "none",
+    "controls": [],
+    "sizes": [
+      "full"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": false
+  }
 }
