@@ -120,8 +120,8 @@ and the workarounds the code relies on.
 1. Merge a PR that sets `addon/VERSION` and `addon/config.yaml` to the new version (and updates
    `addon/CHANGELOG.md`). Direct pushes to `main` are blocked by branch protection.
 2. Run [the release workflow](.github/workflows/addon.yml) from **Actions → Release → Run workflow** and
-   enter that version (e.g. `0.1.12`). It creates tag `v<version>` on the current `main` tip; the tag push
-   then builds the signed player app, packages the add-on, pushes
+   enter that version (e.g. `0.1.12`). It creates tag `v<version>` on the current `main` tip, then builds
+   the signed player app, packages the add-on, pushes
    `ghcr.io/<owner>/remote-screens-{amd64,aarch64}`, and attaches the APK to the GitHub release.
 
 You can skip step 2 and push tag `v<version>` yourself once those files already match.
