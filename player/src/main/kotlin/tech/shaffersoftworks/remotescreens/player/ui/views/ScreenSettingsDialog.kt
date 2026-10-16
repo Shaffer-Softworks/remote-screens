@@ -92,7 +92,7 @@ fun ScreenSettingsDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(stringResource(R.string.dark_mode))
-                    Switch(checked = isDarkMode, onCheckedChange = { isDarkMode = it })
+                    Switch(checked = isDarkMode, onCheckedChange = { enabled -> isDarkMode = enabled })
                 }
                 Text(stringResource(R.string.standby, standbyLabel(standbyMinutes)))
                 Slider(

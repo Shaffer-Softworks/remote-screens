@@ -1,5 +1,17 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { PASTELS, activeThemeId, alphaOf, colorOf, cssColor, packHex, pastel, rgbOf, setThemes, themeById, themeVars } from './palette'
+import {
+  PASTELS,
+  activeThemeId,
+  alphaOf,
+  colorOf,
+  cssColor,
+  packHex,
+  pastel,
+  rgbOf,
+  setThemes,
+  themeById,
+  themeVars,
+} from './palette'
 import type { ResolvedTheme } from './types'
 
 function theme(id: string, page: string, teal: string): ResolvedTheme {
@@ -65,9 +77,9 @@ describe('theme palette', () => {
   })
 
   it('keeps the pastel list in step with the active theme', () => {
-    expect(PASTELS.find((p) => p.key === 'teal')?.color).toBe('#14E1BA')
+    expect(PASTELS.find(pastel => pastel.key === 'teal')?.color).toBe('#14E1BA')
     activeThemeId.value = 'light'
-    expect(PASTELS.find((p) => p.key === 'teal')?.color).toBe('#0F9E84')
+    expect(PASTELS.find(pastel => pastel.key === 'teal')?.color).toBe('#0F9E84')
   })
 
   it('turns the add-on alpha order into CSS and names CSS variables', () => {

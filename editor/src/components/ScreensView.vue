@@ -13,8 +13,8 @@ const emit = defineEmits<{ edit: [screen: Screen]; themes: [] }>()
 const RELEASES = 'https://github.com/sickkick/remote-screens/releases/latest'
 
 const screens = computed(() => state.layout?.screens ?? [])
-const waiting = computed(() => state.players.filter((p) => !p.screenId))
-const adopted = computed(() => state.players.filter((p) => p.screenId))
+const waiting = computed(() => state.players.filter(player => !player.screenId))
+const adopted = computed(() => state.players.filter(player => player.screenId))
 
 const creating = ref(false)
 const enrolling = ref(false)
@@ -28,60 +28,75 @@ const customDpi = ref(0)
 
 const sizeChoices = computed(() => [
   ...waiting.value
-    .filter((p) => p.widthDp > 0)
-    .map((p) => ({ label: `Like ${p.name} (${p.widthDp} × ${p.heightDp})`, w: p.widthDp, h: p.heightDp })),
-  ...PRESETS.map((p) => ({ label: `${p.label} (${p.w} × ${p.h})`, w: p.w, h: p.h })),
+    .filter(player => player.widthDp > 0)
+    .map(player => ({
+      label: `Like ${player.name} (${player.widthDp} × ${player.heightDp})`,
+      w: player.widthDp,
+      h: player.heightDp,
+    })),
+  ...PRESETS.map(preset => ({
+    label: `${preset.label} (${preset.w} × ${preset.h})`,
+    w: preset.w,
+    h: preset.h,
+  })),
   { label: 'Custom size…', w: 0, h: 0 },
 ])
 const custom = computed(() => Number(newSize.value) === sizeChoices.value.length - 1)
 
 async function create(): Promise<void> {
   const choice = sizeChoices.value[Number(newSize.value)] ?? sizeChoices.value[0]
-  const dp = (v: number) => (customDpi.value ? toDp(v, customDpi.value) : v)
-  const size = custom.value ? { w: clampDp(dp(customW.value), 1280), h: clampDp(dp(customH.value), 800) } : choice
-  const s = await attempt(() => api.createScreen(newName.value.trim() || 'Screen', { widthDp: size.w, heightDp: size.h }))
-  if (!s) return
+  const toDesignDp = (value: number) => (customDpi.value ? toDp(value, customDpi.value) : value)
+  const size = custom.value
+    ? {
+        w: clampDp(toDesignDp(customW.value), 1280),
+        h: clampDp(toDesignDp(customH.value), 800),
+      }
+    : choice
+  const created = await attempt(() =>
+    api.createScreen(newName.value.trim() || 'Screen', { widthDp: size.w, heightDp: size.h }),
+  )
+  if (!created) return
   creating.value = false
   newName.value = ''
   await refreshLayout()
-  emit('edit', s)
+  emit('edit', created)
 }
 
-async function remove(s: Screen): Promise<void> {
-  if (!confirm(`Delete ${s.name}? Its tablets go back to waiting.`)) return
-  await attempt(() => api.deleteScreen(s.id))
+async function remove(screen: Screen): Promise<void> {
+  if (!confirm(`Delete ${screen.name}? Its tablets go back to waiting.`)) return
+  await attempt(() => api.deleteScreen(screen.id))
   await refreshLayout()
 }
 
 const assign = ref<Record<string, string>>({})
 
-async function adopt(p: PlayerStatus): Promise<void> {
-  const screenId = assign.value[p.deviceId] || screens.value[0]?.id
+async function adopt(player: PlayerStatus): Promise<void> {
+  const screenId = assign.value[player.deviceId] || screens.value[0]?.id
   if (!screenId) return toast('Make a screen first')
-  await move(p, screenId)
+  await move(player, screenId)
 }
 
-async function move(p: PlayerStatus, screenId: string): Promise<void> {
-  await attempt(() => api.adopt(p.deviceId, screenId))
+async function move(player: PlayerStatus, screenId: string): Promise<void> {
+  await attempt(() => api.adopt(player.deviceId, screenId))
   state.players = (await attempt(api.players)) ?? state.players
 }
 
-async function rename(p: PlayerStatus): Promise<void> {
+async function rename(player: PlayerStatus): Promise<void> {
   menu.value = null
-  const name = prompt('Name of this tablet', p.name)?.trim()
-  if (!name || name === p.name) return
-  await attempt(() => api.renamePlayer(p.deviceId, name))
+  const name = prompt('Name of this tablet', player.name)?.trim()
+  if (!name || name === player.name) return
+  await attempt(() => api.renamePlayer(player.deviceId, name))
   state.players = (await attempt(api.players)) ?? state.players
 }
 
-function identify(p: PlayerStatus): void {
-  attempt(() => api.identify(p.deviceId))
+function identify(player: PlayerStatus): void {
+  attempt(() => api.identify(player.deviceId))
 }
 
-async function forget(p: PlayerStatus): Promise<void> {
+async function forget(player: PlayerStatus): Promise<void> {
   menu.value = null
-  if (!confirm(`Unpair ${p.name}? It has to be paired again before it shows anything.`)) return
-  await attempt(() => api.forgetPlayer(p.deviceId))
+  if (!confirm(`Unpair ${player.name}? It has to be paired again before it shows anything.`)) return
+  await attempt(() => api.forgetPlayer(player.deviceId))
   state.players = (await attempt(api.players)) ?? state.players
 }
 
@@ -91,12 +106,12 @@ const closeMenu = () => (menu.value = null)
 onMounted(() => window.addEventListener('click', closeMenu))
 onBeforeUnmount(() => window.removeEventListener('click', closeMenu))
 
-function tileCount(s: Screen): number {
-  return s.pages.reduce((n, p) => n + p.tiles.length, 0)
+function tileCount(screen: Screen): number {
+  return screen.pages.reduce((count, page) => count + page.tiles.length, 0)
 }
 
 function screenName(id?: string): string {
-  return screens.value.find((s) => s.id === id)?.name ?? '—'
+  return screens.value.find(screen => screen.id === id)?.name ?? '—'
 }
 
 function ago(at: number): string {
@@ -109,36 +124,36 @@ function ago(at: number): string {
   return days === 1 ? 'yesterday' : `${days} days ago`
 }
 
-function status(p: PlayerStatus): string {
-  if (p.online) return p.awake ? 'Online' : 'Standby'
-  return p.lastSeen ? `Offline · ${ago(p.lastSeen)}` : 'Never connected'
+function status(player: PlayerStatus): string {
+  if (player.online) return player.awake ? 'Online' : 'Standby'
+  return player.lastSeen ? `Offline · ${ago(player.lastSeen)}` : 'Never connected'
 }
 
-function suggested(p: PlayerStatus): string {
-  const g = suggest(p.widthDp, p.heightDp)
-  return `${g.cols} × ${g.rows}`
+function suggested(player: PlayerStatus): string {
+  const gridSize = suggest(player.widthDp, player.heightDp)
+  return `${gridSize.cols} × ${gridSize.rows}`
 }
 
 /** The shape the preview is drawn in: the screen's design size, else its first tablet's. */
-function aspect(s: Screen): string {
-  if (s.designSize) return `${s.designSize.widthDp} / ${s.designSize.heightDp}`
-  const p = playersOf(s.id).find((p) => p.widthDp > 0)
-  return p ? `${p.widthDp} / ${p.heightDp}` : '16 / 10'
+function aspect(screen: Screen): string {
+  if (screen.designSize) return `${screen.designSize.widthDp} / ${screen.designSize.heightDp}`
+  const player = playersOf(screen.id).find(candidate => candidate.widthDp > 0)
+  return player ? `${player.widthDp} / ${player.heightDp}` : '16 / 10'
 }
 
-function preview(s: Screen) {
-  const page = s.pages.find((p) => p.id === s.homePage) ?? s.pages[0]
+function preview(screen: Screen) {
+  const page = screen.pages.find(candidate => candidate.id === screen.homePage) ?? screen.pages[0]
   if (!page || page.root) return { free: page?.root !== undefined, tiles: [] }
-  const { cols, rows } = s.grid
+  const { cols, rows } = screen.grid
   return {
     free: false,
-    tiles: reflow(page.tiles, s.grid).map((t) => ({
-      id: t.tile.id,
+    tiles: reflow(page.tiles, screen.grid).map(placed => ({
+      id: placed.tile.id,
       style: {
-        left: `${(t.col / cols) * 100}%`,
-        top: `${(t.row / rows) * 100}%`,
-        width: `${(t.w / cols) * 100}%`,
-        height: `${(t.h / rows) * 100}%`,
+        left: `${(placed.col / cols) * 100}%`,
+        top: `${(placed.row / rows) * 100}%`,
+        width: `${(placed.w / cols) * 100}%`,
+        height: `${(placed.h / rows) * 100}%`,
       },
     })),
   }
@@ -150,25 +165,34 @@ function preview(s: Screen) {
     <header class="row">
       <MdiIcon name="tablet-dashboard" :size="28" />
       <h1 class="grow">Remote Screens</h1>
-      <button title="Colours the screens wear" @click="emit('themes')"><MdiIcon name="palette-outline" :size="16" /> Themes</button>
+      <button title="Colours the screens wear" @click="emit('themes')">
+        <MdiIcon name="palette-outline" :size="16" /> Themes
+      </button>
       <span v-if="state.info?.demo" class="badge">Demo</span>
       <span class="pill">
         <span class="dot" :class="{ on: state.info?.connected }" />
-        {{ state.info?.connected ? 'Connected to' : 'Not connected to' }} {{ state.info?.locationName || 'Home Assistant' }}
+        {{ state.info?.connected ? 'Connected to' : 'Not connected to' }}
+        {{ state.info?.locationName || 'Home Assistant' }}
       </span>
     </header>
 
     <section v-if="waiting.length" class="card pairing">
       <div class="row">
         <MdiIcon name="tablet" :size="22" />
-        <h2 class="grow">{{ waiting.length === 1 ? 'A tablet wants' : `${waiting.length} tablets want` }} to pair</h2>
+        <h2 class="grow">
+          {{ waiting.length === 1 ? 'A tablet wants' : `${waiting.length} tablets want` }} to pair
+        </h2>
       </div>
-      <p class="muted">Check the code matches the one on the tablet, then pick the screen it should show.</p>
+      <p class="muted">
+        Check the code matches the one on the tablet, then pick the screen it should show.
+      </p>
       <div v-for="p in waiting" :key="p.deviceId" class="row player">
         <span class="code">{{ p.pairingCode ?? '—' }}</span>
         <span class="grow">
           {{ p.name }}
-          <span class="muted"> · {{ p.widthDp }} × {{ p.heightDp }} dp, suits a {{ suggested(p) }} grid</span>
+          <span class="muted">
+            · {{ p.widthDp }} × {{ p.heightDp }} dp, suits a {{ suggested(p) }} grid</span
+          >
         </span>
         <select v-model="assign[p.deviceId]" :disabled="screens.length === 0">
           <option value="" disabled>Show screen…</option>
@@ -189,16 +213,24 @@ function preview(s: Screen) {
       </div>
 
       <div v-if="creating" class="card create">
-        <label class="field grow">Name<input v-model="newName" placeholder="Kitchen" @keyup.enter="create" /></label>
+        <label class="field grow"
+          >Name<input v-model="newName" placeholder="Kitchen" @keyup.enter="create"
+        /></label>
         <label class="field grow">
           Sized for
           <select v-model="newSize">
-            <option v-for="(c, i) in sizeChoices" :key="c.label" :value="String(i)">{{ c.label }}</option>
+            <option v-for="(c, i) in sizeChoices" :key="c.label" :value="String(i)">
+              {{ c.label }}
+            </option>
           </select>
         </label>
         <template v-if="custom">
-          <label class="field">Width<input v-model.number="customW" type="number" min="1" step="10" /></label>
-          <label class="field">Height<input v-model.number="customH" type="number" min="1" step="10" /></label>
+          <label class="field"
+            >Width<input v-model.number="customW" type="number" min="1" step="10"
+          /></label>
+          <label class="field"
+            >Height<input v-model.number="customH" type="number" min="1" step="10"
+          /></label>
           <label class="field">
             In
             <select v-model.number="customDpi">
@@ -213,7 +245,9 @@ function preview(s: Screen) {
         </div>
       </div>
 
-      <p v-if="screens.length === 0 && !creating" class="card muted empty">No screens yet. Make one, then pair a tablet with it.</p>
+      <p v-if="screens.length === 0 && !creating" class="card muted empty">
+        No screens yet. Make one, then pair a tablet with it.
+      </p>
 
       <div class="screens">
         <article v-for="s in screens" :key="s.id" class="card screen" @click="emit('edit', s)">
@@ -222,19 +256,25 @@ function preview(s: Screen) {
               <div class="cells">
                 <span v-for="t in preview(s).tiles" :key="t.id" class="tile" :style="t.style" />
               </div>
-              <span v-if="preview(s).free" class="empty-thumb"><MdiIcon name="vector-square" :size="28" /></span>
-              <span v-else-if="preview(s).tiles.length === 0" class="empty-thumb">Empty — click to add tiles</span>
+              <span v-if="preview(s).free" class="empty-thumb"
+                ><MdiIcon name="vector-square" :size="28"
+              /></span>
+              <span v-else-if="preview(s).tiles.length === 0" class="empty-thumb"
+                >Empty — click to add tiles</span
+              >
               <span class="nav" />
             </div>
           </div>
 
           <div class="row">
             <h2 class="grow">{{ s.name }}</h2>
-            <button class="icon quiet" title="Delete screen" @click.stop="remove(s)"><MdiIcon name="delete-outline" :size="18" /></button>
+            <button class="icon quiet" title="Delete screen" @click.stop="remove(s)">
+              <MdiIcon name="delete-outline" :size="18" />
+            </button>
           </div>
           <p class="muted">
-            {{ s.pages.length }} {{ s.pages.length === 1 ? 'page' : 'pages' }} · {{ s.grid.cols }} × {{ s.grid.rows }} grid ·
-            {{ tileCount(s) }} {{ tileCount(s) === 1 ? 'tile' : 'tiles' }}
+            {{ s.pages.length }} {{ s.pages.length === 1 ? 'page' : 'pages' }} · {{ s.grid.cols }} ×
+            {{ s.grid.rows }} grid · {{ tileCount(s) }} {{ tileCount(s) === 1 ? 'tile' : 'tiles' }}
           </p>
 
           <div class="row tablets">
@@ -271,28 +311,59 @@ function preview(s: Screen) {
             <MdiIcon name="tablet" :size="20" class="muted" />
             <span>
               {{ p.name }}
-              <template v-if="p.widthDp > 0"><br /><span class="muted small">{{ p.widthDp }} × {{ p.heightDp }} dp</span></template>
+              <template v-if="p.widthDp > 0"
+                ><br /><span class="muted small"
+                  >{{ p.widthDp }} × {{ p.heightDp }} dp</span
+                ></template
+              >
             </span>
           </span>
           <span class="status" :class="{ online: p.online }">
             <span class="dot small" :class="{ on: p.online }" /> {{ status(p) }}
             <template v-if="p.battery != null"> · {{ p.battery }}%</template>
-            <span v-if="p.online && p.kiosk === 'locked'" title="Kiosk locked"><MdiIcon name="lock" :size="14" /></span>
-            <span v-else-if="p.online && p.kiosk === 'pinned'" title="Kiosk pinned (screen pinning)"><MdiIcon name="pin" :size="14" /></span>
+            <span v-if="p.online && p.kiosk === 'locked'" title="Kiosk locked"
+              ><MdiIcon name="lock" :size="14"
+            /></span>
+            <span v-else-if="p.online && p.kiosk === 'pinned'" title="Kiosk pinned (screen pinning)"
+              ><MdiIcon name="pin" :size="14"
+            /></span>
           </span>
-          <select class="shows" :value="p.screenId" :title="`Screen shown on ${p.name}`" @change="move(p, ($event.target as HTMLSelectElement).value)">
+          <select
+            class="shows"
+            :value="p.screenId"
+            :title="`Screen shown on ${p.name}`"
+            @change="move(p, ($event.target as HTMLSelectElement).value)"
+          >
             <option v-for="s in screens" :key="s.id" :value="s.id">{{ s.name }}</option>
-            <option v-if="!screens.some((s) => s.id === p.screenId)" :value="p.screenId">{{ screenName(p.screenId) }}</option>
+            <option v-if="!screens.some(s => s.id === p.screenId)" :value="p.screenId">
+              {{ screenName(p.screenId) }}
+            </option>
           </select>
           <span class="actions row">
-            <button class="quiet" :disabled="!p.online" title="Flash this tablet's name on its display" @click="identify(p)">Identify</button>
+            <button
+              class="quiet"
+              :disabled="!p.online"
+              title="Flash this tablet's name on its display"
+              @click="identify(p)"
+            >
+              Identify
+            </button>
             <span class="menu">
-              <button class="icon quiet" :class="{ open: menu === p.deviceId }" title="More" @click.stop="menu = menu === p.deviceId ? null : p.deviceId">
+              <button
+                class="icon quiet"
+                :class="{ open: menu === p.deviceId }"
+                title="More"
+                @click.stop="menu = menu === p.deviceId ? null : p.deviceId"
+              >
                 <MdiIcon name="dots-vertical" :size="18" />
               </button>
               <div v-if="menu === p.deviceId" class="card popup" @click.stop>
-                <button class="item" @click="rename(p)"><MdiIcon name="pencil-outline" :size="16" /> Rename</button>
-                <button class="item danger" @click="forget(p)"><MdiIcon name="link-off" :size="16" /> Unpair</button>
+                <button class="item" @click="rename(p)">
+                  <MdiIcon name="pencil-outline" :size="16" /> Rename
+                </button>
+                <button class="item danger" @click="forget(p)">
+                  <MdiIcon name="link-off" :size="16" /> Unpair
+                </button>
               </div>
             </span>
           </span>
@@ -301,18 +372,22 @@ function preview(s: Screen) {
         <div class="row add" :class="{ alone: adopted.length === 0 }">
           <MdiIcon name="plus-circle-outline" :size="20" class="muted" />
           <span class="grow muted">
-            <strong>Add a tablet:</strong> install the player app on a tablet on the same network. It finds the add-on by itself
-            and a pairing code appears here.
+            <strong>Add a tablet:</strong> install the player app on a tablet on the same network.
+            It finds the add-on by itself and a pairing code appears here.
           </span>
-          <a v-if="state.info?.playerApp" href="api/player.apk" class="link">Download app ({{ state.info.playerApp }})</a>
-          <a v-else :href="RELEASES" target="_blank" rel="noopener" class="link">Get the app on GitHub</a>
+          <a v-if="state.info?.playerApp" href="api/player.apk" class="link"
+            >Download app ({{ state.info.playerApp }})</a
+          >
+          <a v-else :href="RELEASES" target="_blank" rel="noopener" class="link"
+            >Get the app on GitHub</a
+          >
         </div>
 
         <div v-if="state.info?.playerApp" class="row add">
           <MdiIcon name="lock-outline" :size="20" class="muted" />
           <span class="grow muted">
-            <strong>Kiosk tablet:</strong> enroll a factory-reset tablet with a QR code, so Kiosk lock keeps everyone on the
-            screen.
+            <strong>Kiosk tablet:</strong> enroll a factory-reset tablet with a QR code, so Kiosk
+            lock keeps everyone on the screen.
           </span>
           <button class="link-button" @click="enrolling = !enrolling">Enroll a tablet</button>
         </div>

@@ -208,8 +208,8 @@ private fun handleEvent(context: Context, activity: Activity?, event: PlayerEven
         PlayerEvent.RequestUnrestrictedBattery -> context.startActivity(unrestrictedBatteryIntent(context))
         // Pinning comes back when the activity resumes after the confirmation.
         PlayerEvent.StopScreenPinning -> activity?.stopLockTask()
-        PlayerEvent.ReapplyKiosk -> activity?.let { current ->
-            runCatching { current.startLockTask() }
+        PlayerEvent.ReapplyKiosk -> activity?.let { foregroundActivity ->
+            runCatching { foregroundActivity.startLockTask() }
         }
     }
 }

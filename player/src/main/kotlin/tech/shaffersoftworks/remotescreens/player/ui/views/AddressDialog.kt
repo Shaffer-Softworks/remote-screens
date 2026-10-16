@@ -40,7 +40,7 @@ fun AddressDialog(
                 Text(stringResource(R.string.address_body))
                 OutlinedTextField(
                     value = address,
-                    onValueChange = { address = it },
+                    onValueChange = { value -> address = value },
                     placeholder = { Text(stringResource(R.string.address_hint)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),

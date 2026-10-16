@@ -1,0 +1,41 @@
+---
+description: Kotlin naming — avoid cryptic locals; prefer intent-revealing names
+globs: "**/*.kt,**/*.kts"
+alwaysApply: false
+---
+
+# Kotlin: variable and parameter names
+
+Apply when writing or editing Kotlin (server, player, shared).
+
+## Prefer full words over abbreviations
+
+- **Do not** use opaque two-letter or “telegram” names: `pe`, `ce`, `np`, `st`, `cfg`, `pid`, `msg` (unless the domain universally uses them in one line).
+- **Do** spell out meaning: `entityState`, `docContext`, `homeAssistantConfig`, `typeSpec`, `nowPlaying`.
+- **`id`**: only when it is unambiguous. If multiple ids exist in scope, use **`entityId`**, **`tileId`**, **`playerId`**, etc.
+
+## Single-letter names
+
+- **Avoid** `a`, `b`, `m`, `n`, `s`, `t` for non-math/non-coordinate data.
+- **OK** in very small scopes: loop index `i`, geometry `x`/`y`/`w`/`h`, `e` in `catch (e: Exception)` when unused or only logged once.
+- **`it`**: fine in one-line lambdas. In multi-line blocks, **name the receiver**.
+
+## Booleans and collections
+
+- Booleans: **`is`**, **`has`**, **`should`**, **`can`** prefixes.
+- Prefer **`items`** / **`rows`** over **`list`** when the element type matters.
+
+## When touching existing code
+
+- If a change touches a function with poor names, **rename locals in that function** as part of the same edit.
+- Do not rename serialized JSON / on-the-wire string values unless the task requires a protocol migration.
+- Internal Kotlin APIs (`DocContext.units`, `Vars.entity`, …) may be renamed; keep wire strings identical.
+
+## Quick before/after
+
+| Avoid | Prefer |
+|-------|--------|
+| `val e = states[id]` | `val entityState = states[entityId]` |
+| `val m = Modifier…` | `val modifier = Modifier…` |
+| `val n = node` | `val node = …` |
+| `val k = scale` | `val scale = …` |

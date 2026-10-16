@@ -1,7 +1,16 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { dragged } from '../model/drag'
-import { NARROW, TOP_BAR, fitsAt, navBar, navBarHeight, reflow, spec, topBarHeight } from '../model/grid'
+import {
+  NARROW,
+  TOP_BAR,
+  fitsAt,
+  navBar,
+  navBarHeight,
+  reflow,
+  spec,
+  topBarHeight,
+} from '../model/grid'
 import { colorOf, pastel } from '../model/palette'
 import { iconOf, nameOf, stateOf } from '../model/tiles'
 import type { Page, Screen, Tile } from '../model/types'
@@ -26,38 +35,68 @@ const box = ref<HTMLElement>()
 const room = ref({ w: 800, h: 500 })
 let observer: ResizeObserver | undefined
 onMounted(() => {
-  observer = new ResizeObserver(([e]) => (room.value = { w: e.contentRect.width, h: e.contentRect.height }))
+  observer = new ResizeObserver(
+    ([e]) => (room.value = { w: e.contentRect.width, h: e.contentRect.height }),
+  )
   observer.observe(box.value!)
 })
 onBeforeUnmount(() => observer?.disconnect())
 
-const g = computed(() =>
-  spec(props.screen.grid, props.device.w, props.device.h, topBarHeight(props.screen.topBar), navBarHeight(props.screen.navBar, props.device.w)),
+const gridLayout = computed(() =>
+  spec(
+    props.screen.grid,
+    props.device.w,
+    props.device.h,
+    topBarHeight(props.screen.topBar),
+    navBarHeight(props.screen.navBar, props.device.w),
+  ),
 )
 // The frame is 10px around the device and its margin 10px more.
-const scale = computed(() => Math.max(0.1, Math.min((room.value.w - 24) / props.device.w, (room.value.h - 24) / props.device.h)))
+const scale = computed(() =>
+  Math.max(
+    0.1,
+    Math.min((room.value.w - 24) / props.device.w, (room.value.h - 24) / props.device.h),
+  ),
+)
 const placed = computed(() => reflow(props.page.tiles, props.screen.grid))
-const visiblePages = computed(() => props.screen.pages.filter((p) => !p.hidden))
+const visiblePages = computed(() => props.screen.pages.filter(page => !page.hidden))
 const cells = computed(() => {
   const out: { col: number; row: number }[] = []
-  for (let row = 0; row < g.value.rows; row++) for (let col = 0; col < g.value.cols; col++) out.push({ col, row })
+  for (let row = 0; row < gridLayout.value.rows; row++)
+    for (let col = 0; col < gridLayout.value.cols; col++) out.push({ col, row })
   return out
 })
 
 function rect(col: number, row: number, w: number, h: number) {
-  return { left: `${g.value.x(col)}px`, top: `${g.value.y(row)}px`, width: `${g.value.w(w)}px`, height: `${g.value.h(h)}px` }
+  return {
+    left: `${gridLayout.value.x(col)}px`,
+    top: `${gridLayout.value.y(row)}px`,
+    width: `${gridLayout.value.w(w)}px`,
+    height: `${gridLayout.value.h(h)}px`,
+  }
 }
 
 // As the add-on draws them (server/.../render/Tiles.kt and ScreenRenderer.kt).
 const CARD_EDGE = 2
 const NO_HEADER = ['clock', 'bedside', 'energy', 'person', 'device_tracker']
 const ALWAYS_LIT = ['scene', 'script', 'button', 'input_button', 'nav', 'favourite']
-const ON_STATES = ['on', 'open', 'unlocked', 'playing', 'home', 'cleaning', 'heat', 'cool', 'heat_cool', 'auto']
+const ON_STATES = [
+  'on',
+  'open',
+  'unlocked',
+  'playing',
+  'home',
+  'cleaning',
+  'heat',
+  'cool',
+  'heat_cool',
+  'auto',
+]
 
-const isHomePanel = (t: Tile) => kindOf(t) === 'home'
-const isWeatherPanel = (t: Tile) => kindOf(t) === 'weather' && t.full === true
+const isHomePanel = (tile: Tile) => kindOf(tile) === 'home'
+const isWeatherPanel = (tile: Tile) => kindOf(tile) === 'weather' && tile.full === true
 const WEATHER_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-const isThermostatPanel = (t: Tile) => kindOf(t) === 'climate' && t.full === true
+const isThermostatPanel = (tile: Tile) => kindOf(tile) === 'climate' && tile.full === true
 const THERMOSTAT_MODES = [
   { label: 'Auto', icon: 'thermostat-auto' },
   { label: 'Heat', icon: 'fire', on: true },
@@ -66,35 +105,58 @@ const THERMOSTAT_MODES = [
 ]
 const DIAL_TICKS = Array.from({ length: 100 }, (_, i) => i * 3.6)
 
-function place(p: { tile: Tile; col: number; row: number; w: number; h: number }) {
-  if (isHomePanel(p.tile) || isWeatherPanel(p.tile) || isThermostatPanel(p.tile)) {
-    return { left: '0px', top: `${g.value.topBar}px`, width: `${props.device.w}px`, height: `${props.device.h - g.value.topBar - g.value.navBar}px` }
+function place(placement: { tile: Tile; col: number; row: number; w: number; h: number }) {
+  if (
+    isHomePanel(placement.tile) ||
+    isWeatherPanel(placement.tile) ||
+    isThermostatPanel(placement.tile)
+  ) {
+    return {
+      left: '0px',
+      top: `${gridLayout.value.topBar}px`,
+      width: `${props.device.w}px`,
+      height: `${props.device.h - gridLayout.value.topBar - gridLayout.value.navBar}px`,
+    }
   }
-  const edge = p.tile.borderColor ? { borderColor: colorOf(p.tile.borderColor) } : {}
-  return { ...rect(p.col, p.row, p.w, p.h), ...edge }
+  const edge = placement.tile.borderColor
+    ? { borderColor: colorOf(placement.tile.borderColor) }
+    : {}
+  return { ...rect(placement.col, placement.row, placement.w, placement.h), ...edge }
 }
 
-function hasHeader(p: { tile: Tile; w: number; h: number }): boolean {
-  const kind = kindOf(p.tile)
-  const asMap = kind === 'map' || (['person', 'device_tracker'].includes(kind) && p.tile.options.map === 'true')
-  return (asMap || !NO_HEADER.includes(kind)) && g.value.w(p.w) - 2 * CARD_EDGE >= 96 && g.value.h(p.h) - 2 * CARD_EDGE >= 96
+function hasHeader(placement: { tile: Tile; w: number; h: number }): boolean {
+  const kind = kindOf(placement.tile)
+  const asMap =
+    kind === 'map' ||
+    (['person', 'device_tracker'].includes(kind) && placement.tile.options.map === 'true')
+  return (
+    (asMap || !NO_HEADER.includes(kind)) &&
+    gridLayout.value.w(placement.w) - 2 * CARD_EDGE >= 96 &&
+    gridLayout.value.h(placement.h) - 2 * CARD_EDGE >= 96
+  )
 }
 
-function accent(t: Tile): string | null {
-  const s = entityById.value.get(t.entityId ?? '')?.state
-  const on = ALWAYS_LIT.includes(kindOf(t)) || (s !== undefined && ON_STATES.includes(s))
-  return on ? pastel(t.color, domainOf(t) ?? kindOf(t)).color : null
+function accent(tile: Tile): string | null {
+  const entityState = entityById.value.get(tile.entityId ?? '')?.state
+  const on =
+    ALWAYS_LIT.includes(kindOf(tile)) ||
+    (entityState !== undefined && ON_STATES.includes(entityState))
+  return on ? pastel(tile.color, domainOf(tile) ?? kindOf(tile)).color : null
 }
 
-const pageTitle = (id: string) => props.screen.pages.find((p) => p.id === id)?.title
-const navIcon = (p: Page) => p.icon ?? (p.id === props.screen.homePage ? 'home' : 'view-dashboard')
+const pageTitle = (id: string) => props.screen.pages.find(page => page.id === id)?.title
+const navIcon = (page: Page) =>
+  page.icon ?? (page.id === props.screen.homePage ? 'home' : 'view-dashboard')
 // The bars as ScreenRenderer.kt draws them: text and icons scale with each bar's height against its default.
 const top = computed(() => {
   const bar = props.screen.topBar
-  const k = Math.min(Math.max(g.value.topBar / TOP_BAR, 0.7), 2)
+  const k = Math.min(Math.max(gridLayout.value.topBar / TOP_BAR, 0.7), 2)
   return {
     k,
-    clockW: bar.clockWidth !== undefined ? (props.device.w * bar.clockWidth) / 100 : Math.min(350, props.device.w * 0.42),
+    clockW:
+      bar.clockWidth !== undefined
+        ? (props.device.w * bar.clockWidth) / 100
+        : Math.min(350, props.device.w * 0.42),
     date: bar.date !== false && props.device.w >= NARROW,
     background: colorOf(bar.background),
     clockBackground: colorOf(bar.clockBackground),
@@ -102,7 +164,7 @@ const top = computed(() => {
 })
 const nav = computed(() => {
   const bar = props.screen.navBar ?? {}
-  const barH = g.value.navBar - 2
+  const barH = gridLayout.value.navBar - 2
   const count = visiblePages.value.length + 1
   const layout = bar.layout ?? 'spread'
   const k = barH / (navBar(props.device.w) - 2)
@@ -110,57 +172,99 @@ const nav = computed(() => {
   return {
     labels,
     buttonW: layout === 'fill' ? props.device.w / count : Math.min(barH, props.device.w / count),
-    justify: layout === 'center' ? 'center' : layout === 'fill' ? 'flex-start' : count > 2 ? 'space-between' : 'space-evenly',
+    justify:
+      layout === 'center'
+        ? 'center'
+        : layout === 'fill'
+          ? 'flex-start'
+          : count > 2
+            ? 'space-between'
+            : 'space-evenly',
     iconSize: labels === 'icons' ? Math.min(48, barH * 0.55) : Math.min(40, barH * 0.4),
-    fontSize: labels === 'text' ? Math.min(Math.max(14 * k, 10), 24) : Math.min(Math.max(10 * k, 9), 16),
+    fontSize:
+      labels === 'text' ? Math.min(Math.max(14 * k, 10), 24) : Math.min(Math.max(10 * k, 9), 16),
     gap: 5 * Math.min(k, 1.5),
     background: colorOf(bar.background),
     line: colorOf(bar.line),
     active: colorOf(bar.active),
   }
 })
-const people = computed(() => state.entities.filter((e) => e.domain === 'person'))
-const weather = computed(() => state.entities.find((e) => e.domain === 'weather'))
+const people = computed(() => state.entities.filter(entity => entity.domain === 'person'))
+const weather = computed(() => state.entities.find(entity => entity.domain === 'weather'))
 
 // Dropping: the hovered cell is where the dragged tile's grabbed cell lands.
 const hover = ref<{ col: number; row: number; ok: boolean } | null>(null)
 
 function target(col: number, row: number) {
-  const d = dragged.value
-  if (!d || (d.type !== 'tile' && d.type !== 'new')) return null
-  const c = d.type === 'tile' ? col - d.grabCol : col
-  const r = d.type === 'tile' ? row - d.grabRow : row
-  const others = props.page.tiles.filter((t) => d.type !== 'tile' || t.id !== d.id)
-  return { col: c, row: r, ok: fitsAt(others, props.screen.grid, c, r, d.w, d.h) || (d.type === 'new' && fitsAt(others, props.screen.grid, col, row, 1, 1)) }
+  const drag = dragged.value
+  if (!drag || (drag.type !== 'tile' && drag.type !== 'new')) return null
+  const targetCol = drag.type === 'tile' ? col - drag.grabCol : col
+  const targetRow = drag.type === 'tile' ? row - drag.grabRow : row
+  const others = props.page.tiles.filter(tile => drag.type !== 'tile' || tile.id !== drag.id)
+  return {
+    col: targetCol,
+    row: targetRow,
+    ok:
+      fitsAt(others, props.screen.grid, targetCol, targetRow, drag.w, drag.h) ||
+      (drag.type === 'new' && fitsAt(others, props.screen.grid, col, row, 1, 1)),
+  }
 }
 
-function over(e: DragEvent, col: number, row: number): void {
-  const t = target(col, row)
-  if (!t) return
-  hover.value = t
-  if (t.ok) e.preventDefault()
+function over(event: DragEvent, col: number, row: number): void {
+  const landing = target(col, row)
+  if (!landing) return
+  hover.value = landing
+  if (landing.ok) event.preventDefault()
 }
 
 function drop(col: number, row: number): void {
-  const d = dragged.value
-  const t = target(col, row)
+  const drag = dragged.value
+  const landing = target(col, row)
   hover.value = null
   dragged.value = null
-  if (!d || !t?.ok) return
-  if (d.type === 'tile') emit('move', d.id, t.col, t.row)
-  else if (d.type === 'new') emit('add', { entityId: d.entityId, kind: d.kind }, fitsAt(props.page.tiles, props.screen.grid, t.col, t.row, d.w, d.h) ? t : { col, row })
+  if (!drag || !landing?.ok) return
+  if (drag.type === 'tile') emit('move', drag.id, landing.col, landing.row)
+  else if (drag.type === 'new')
+    emit(
+      'add',
+      { entityId: drag.entityId, kind: drag.kind },
+      fitsAt(props.page.tiles, props.screen.grid, landing.col, landing.row, drag.w, drag.h)
+        ? landing
+        : { col, row },
+    )
 }
 
-function start(e: DragEvent, p: { tile: Tile; col: number; row: number; w: number; h: number }): void {
-  const el = e.currentTarget as HTMLElement
-  const r = el.getBoundingClientRect()
-  const grabCol = Math.min(p.w - 1, Math.floor(((e.clientX - r.left) / r.width) * p.w))
-  const grabRow = Math.min(p.h - 1, Math.floor(((e.clientY - r.top) / r.height) * p.h))
-  e.dataTransfer?.setData('text/plain', p.tile.id)
+function clearDrag(): void {
+  dragged.value = null
+  hover.value = null
+}
+
+function start(
+  event: DragEvent,
+  placement: { tile: Tile; col: number; row: number; w: number; h: number },
+): void {
+  const el = event.currentTarget as HTMLElement
+  const bounds = el.getBoundingClientRect()
+  const grabCol = Math.min(
+    placement.w - 1,
+    Math.floor(((event.clientX - bounds.left) / bounds.width) * placement.w),
+  )
+  const grabRow = Math.min(
+    placement.h - 1,
+    Math.floor(((event.clientY - bounds.top) / bounds.height) * placement.h),
+  )
+  event.dataTransfer?.setData('text/plain', placement.tile.id)
   // Chrome cancels a drag whose source changes during dragstart (here: pointer-events: none).
   setTimeout(() => {
-    dragged.value = { type: 'tile', id: p.tile.id, w: p.w, h: p.h, grabCol, grabRow }
-    emit('select', p.tile.id)
+    dragged.value = {
+      type: 'tile',
+      id: placement.tile.id,
+      w: placement.w,
+      h: placement.h,
+      grabCol,
+      grabRow,
+    }
+    emit('select', placement.tile.id)
   })
 }
 
@@ -168,10 +272,13 @@ function start(e: DragEvent, p: { tile: Tile; col: number; row: number; w: numbe
 const free = computed(() => props.page.root !== undefined)
 
 const highlight = computed(() => {
-  const h = hover.value
-  const d = dragged.value
-  if (!h || !d || (d.type !== 'tile' && d.type !== 'new')) return null
-  return { ...rect(Math.max(0, h.col), Math.max(0, h.row), d.w, d.h), ok: h.ok }
+  const landing = hover.value
+  const drag = dragged.value
+  if (!landing || !drag || (drag.type !== 'tile' && drag.type !== 'new')) return null
+  return {
+    ...rect(Math.max(0, landing.col), Math.max(0, landing.row), drag.w, drag.h),
+    ok: landing.ok,
+  }
 })
 </script>
 
@@ -187,69 +294,102 @@ const highlight = computed(() => {
       <div
         v-if="screen.topBar.show"
         class="topbar"
-        :style="{ height: `${g.topBar}px`, fontSize: `${20 * top.k}px`, gap: `${15 * top.k}px`, background: top.background }"
+        :style="{
+          height: `${gridLayout.topBar}px`,
+          fontSize: `${20 * top.k}px`,
+          gap: `${15 * top.k}px`,
+          background: top.background,
+        }"
       >
-        <div v-if="screen.topBar.clock" class="when" :style="{ width: `${top.clockW}px`, background: top.clockBackground }">
+        <div
+          v-if="screen.topBar.clock"
+          class="when"
+          :style="{ width: `${top.clockW}px`, background: top.clockBackground }"
+        >
           <strong>12:34</strong><span v-if="top.date">24 MAY 2026</span>
         </div>
         <div class="grow middle" :style="{ fontSize: `${16 * top.k}px` }">
           <template v-if="page.hidden">
-            <span class="back" :style="{ width: `${Math.min(34 * top.k, g.topBar - 6)}px`, height: `${Math.min(34 * top.k, g.topBar - 6)}px` }">
+            <span
+              class="back"
+              :style="{
+                width: `${Math.min(34 * top.k, gridLayout.topBar - 6)}px`,
+                height: `${Math.min(34 * top.k, gridLayout.topBar - 6)}px`,
+              }"
+            >
               <MdiIcon name="arrow-left" :size="20 * top.k" />
             </span>
             <span>{{ page.title }}</span>
           </template>
         </div>
-        <span v-if="screen.topBar.temperatureEntity" class="stat"><MdiIcon name="thermometer" :size="26 * top.k" class="blue" />14°</span>
-        <span v-if="screen.topBar.people" class="stat"><MdiIcon name="home-account" :size="26 * top.k" class="teal" />{{ people.filter((p) => p.state === 'home').length }}</span>
-        <span v-if="screen.topBar.wifi" class="stat"><MdiIcon name="wifi" :size="26 * top.k" class="teal" />3</span>
-        <span v-if="screen.topBar.battery" class="stat"><MdiIcon name="battery" :size="26 * top.k" class="teal" />87%</span>
+        <span v-if="screen.topBar.temperatureEntity" class="stat"
+          ><MdiIcon name="thermometer" :size="26 * top.k" class="blue" />14°</span
+        >
+        <span v-if="screen.topBar.people" class="stat"
+          ><MdiIcon name="home-account" :size="26 * top.k" class="teal" />{{
+            people.filter(person => person.state === 'home').length
+          }}</span
+        >
+        <span v-if="screen.topBar.wifi" class="stat"
+          ><MdiIcon name="wifi" :size="26 * top.k" class="teal" />3</span
+        >
+        <span v-if="screen.topBar.battery" class="stat"
+          ><MdiIcon name="battery" :size="26 * top.k" class="teal" />87%</span
+        >
       </div>
 
       <div
         v-if="free"
         class="free"
-        :style="{ top: `${g.topBar}px`, width: `${device.w}px`, height: `${device.h - g.topBar - g.navBar}px` }"
+        :style="{
+          top: `${gridLayout.topBar}px`,
+          width: `${device.w}px`,
+          height: `${device.h - gridLayout.topBar - gridLayout.navBar}px`,
+        }"
       >
         <slot />
       </div>
 
       <div
-        v-for="c in free ? [] : cells"
-        :key="`${c.col}:${c.row}`"
+        v-for="cell in free ? [] : cells"
+        :key="`${cell.col}:${cell.row}`"
         class="cell"
-        :style="rect(c.col, c.row, 1, 1)"
-        @dragover="over($event, c.col, c.row)"
-        @drop.prevent="drop(c.col, c.row)"
+        :style="rect(cell.col, cell.row, 1, 1)"
+        @dragover="over($event, cell.col, cell.row)"
+        @drop.prevent="drop(cell.col, cell.row)"
         @click="emit('select', null)"
       />
 
       <div v-if="highlight" class="landing" :class="{ bad: !highlight.ok }" :style="highlight" />
 
       <div
-        v-for="p in free ? [] : placed"
-        :key="p.tile.id"
+        v-for="placement in free ? [] : placed"
+        :key="placement.tile.id"
         class="tile"
         :class="{
-          panel: isHomePanel(p.tile),
-          'weather-panel': isWeatherPanel(p.tile) || isThermostatPanel(p.tile),
-          'thermostat-panel': isThermostatPanel(p.tile),
-          selected: p.tile.id === selectedId,
-          moved: moved.has(p.tile.id),
-          dragging: dragged?.type === 'tile' && dragged.id === p.tile.id,
+          panel: isHomePanel(placement.tile),
+          'weather-panel': isWeatherPanel(placement.tile) || isThermostatPanel(placement.tile),
+          'thermostat-panel': isThermostatPanel(placement.tile),
+          selected: placement.tile.id === selectedId,
+          moved: moved.has(placement.tile.id),
+          dragging: dragged?.type === 'tile' && dragged.id === placement.tile.id,
         }"
-        :style="place(p)"
+        :style="place(placement)"
         draggable="true"
-        @dragstart="start($event, p)"
-        @dragend="dragged = null; hover = null"
-        @click.stop="emit('select', p.tile.id)"
+        @dragstart="start($event, placement)"
+        @dragend="clearDrag"
+        @click.stop="emit('select', placement.tile.id)"
       >
-        <template v-if="isHomePanel(p.tile)">
+        <template v-if="isHomePanel(placement.tile)">
           <div class="home-top">
             <div class="home-weather">
               <i class="bar" />
               <span class="caption">TEMPERATURE OUTSIDE NOW</span>
-              <span class="temp"><MdiIcon name="weather-partly-cloudy" :size="110" />{{ weather ? '14°' : '–' }}</span>
+              <span class="temp"
+                ><MdiIcon name="weather-partly-cloudy" :size="110" />{{
+                  weather ? '14°' : '–'
+                }}</span
+              >
             </div>
             <div class="home-event">
               <i class="bar thin" />
@@ -269,7 +409,7 @@ const highlight = computed(() => {
             </span>
           </div>
         </template>
-        <template v-else-if="isThermostatPanel(p.tile)">
+        <template v-else-if="isThermostatPanel(placement.tile)">
           <div class="th-top">
             <div class="th-head"><i class="bar th-bar" /><span>ADJUST THE TEMPERATURE</span></div>
             <div class="th-fan">Fan<span class="on">Auto</span><span>On</span></div>
@@ -279,27 +419,54 @@ const highlight = computed(() => {
             <span class="th-key"><MdiIcon name="minus" :size="32" /></span>
             <svg class="th-dial" viewBox="-200 -200 400 400" width="380" height="380">
               <circle r="180" class="dial-glow" stroke-width="14" />
-              <line v-for="a in DIAL_TICKS" :key="a" x1="0" y1="191" x2="0" y2="205" class="dial-tick" :transform="`rotate(${a})`" />
-              <path d="M 0 180 A 180 180 0 1 1 113 -140" fill="none" class="dial-arc" stroke-width="14" stroke-linecap="round" />
+              <line
+                v-for="a in DIAL_TICKS"
+                :key="a"
+                x1="0"
+                y1="191"
+                x2="0"
+                y2="205"
+                class="dial-tick"
+                :transform="`rotate(${a})`"
+              />
+              <path
+                d="M 0 180 A 180 180 0 1 1 113 -140"
+                fill="none"
+                class="dial-arc"
+                stroke-width="14"
+                stroke-linecap="round"
+              />
               <circle cx="113" cy="-140" r="12" class="dial-knob" stroke-width="3" />
               <text y="-30" text-anchor="middle" class="dial-ink" font-size="20">Heating</text>
-              <text y="30" text-anchor="middle" class="dial-ink" font-size="48" font-weight="300">21°</text>
+              <text y="30" text-anchor="middle" class="dial-ink" font-size="48" font-weight="300">
+                21°
+              </text>
             </svg>
             <span class="th-key"><MdiIcon name="plus" :size="32" /></span>
             <span class="th-reading"><span>CURRENT HUMIDITY</span><strong>45%</strong></span>
           </div>
           <div class="th-modes">
-            <span v-for="m in THERMOSTAT_MODES" :key="m.label" :class="{ on: m.on }"><MdiIcon :name="m.icon" :size="22" />{{ m.label }}</span>
+            <span v-for="m in THERMOSTAT_MODES" :key="m.label" :class="{ on: m.on }"
+              ><MdiIcon :name="m.icon" :size="22" />{{ m.label }}</span
+            >
           </div>
         </template>
-        <template v-else-if="isWeatherPanel(p.tile)">
-          <span class="wx-name">{{ nameOf(p.tile, entityById.get(p.tile.entityId ?? ''), pageTitle) }}</span>
+        <template v-else-if="isWeatherPanel(placement.tile)">
+          <span class="wx-name">{{
+            nameOf(placement.tile, entityById.get(placement.tile.entityId ?? ''), pageTitle)
+          }}</span>
           <span class="wx-now"><MdiIcon name="weather-partly-cloudy" :size="110" />14°</span>
           <span class="wx-condition">Partly cloudy</span>
-          <span class="wx-details"><span>Wind 12 km/h</span><span>Humidity 71%</span><span>Pressure 1013 hPa</span></span>
+          <span class="wx-details"
+            ><span>Wind 12 km/h</span><span>Humidity 71%</span><span>Pressure 1013 hPa</span></span
+          >
           <div class="wx-days">
-            <span v-for="d in WEATHER_DAYS.slice(0, Math.min(7, Math.floor((device.w - 20) / 120)))" :key="d" class="wx-day">
-              <span>{{ d }}</span>
+            <span
+              v-for="day in WEATHER_DAYS.slice(0, Math.min(7, Math.floor((device.w - 20) / 120)))"
+              :key="day"
+              class="wx-day"
+            >
+              <span>{{ day }}</span>
               <MdiIcon name="weather-partly-cloudy" :size="60" />
               <span class="soft">Partly cloudy</span>
               <span><strong>19°</strong><small class="soft"> / 10°</small></span>
@@ -307,42 +474,77 @@ const highlight = computed(() => {
           </div>
         </template>
         <template v-else>
-          <template v-if="hasHeader(p)">
-            <div class="head" :class="{ tall: g.h(p.h) - 2 * CARD_EDGE >= 200 }">{{ nameOf(p.tile, entityById.get(p.tile.entityId ?? ''), pageTitle) }}</div>
-            <i class="line" :style="{ background: accent(p.tile) ?? undefined }" />
+          <template v-if="hasHeader(placement)">
+            <div class="head" :class="{ tall: gridLayout.h(placement.h) - 2 * CARD_EDGE >= 200 }">
+              {{ nameOf(placement.tile, entityById.get(placement.tile.entityId ?? ''), pageTitle) }}
+            </div>
+            <i class="line" :style="{ background: accent(placement.tile) ?? undefined }" />
           </template>
           <div class="body">
-            <span v-if="p.tile.kind === 'clock' || p.tile.kind === 'bedside'" class="clock">12:34</span>
+            <span
+              v-if="placement.tile.kind === 'clock' || placement.tile.kind === 'bedside'"
+              class="clock"
+              >12:34</span
+            >
             <template v-else>
               <MdiIcon
-                :name="iconOf(p.tile, entityById.get(p.tile.entityId ?? ''))"
-                :size="g.large ? 40 : 30"
-                :style="{ color: accent(p.tile) ?? undefined }"
+                :name="iconOf(placement.tile, entityById.get(placement.tile.entityId ?? ''))"
+                :size="gridLayout.large ? 40 : 30"
+                :style="{ color: accent(placement.tile) ?? undefined }"
                 class="icon"
               />
               <span class="grow" />
-              <strong v-if="!hasHeader(p)">{{ nameOf(p.tile, entityById.get(p.tile.entityId ?? ''), pageTitle) }}</strong>
-              <span class="state" :class="{ big: hasHeader(p) }">{{ stateOf(entityById.get(p.tile.entityId ?? '')) }}</span>
+              <strong v-if="!hasHeader(placement)">{{
+                nameOf(placement.tile, entityById.get(placement.tile.entityId ?? ''), pageTitle)
+              }}</strong>
+              <span class="state" :class="{ big: hasHeader(placement) }">{{
+                stateOf(entityById.get(placement.tile.entityId ?? ''))
+              }}</span>
             </template>
           </div>
         </template>
-        <span v-if="moved.has(p.tile.id)" class="flag" title="Moved or shrunk to fit this grid"><MdiIcon name="alert" :size="18" /></span>
+        <span
+          v-if="moved.has(placement.tile.id)"
+          class="flag"
+          title="Moved or shrunk to fit this grid"
+          ><MdiIcon name="alert" :size="18"
+        /></span>
       </div>
 
-      <p v-if="!free && page.tiles.length === 0" class="empty">Drag entities here, or click one in the list.</p>
+      <p v-if="!free && page.tiles.length === 0" class="empty">
+        Drag entities here, or click one in the list.
+      </p>
 
       <div
         class="nav"
         :class="`labels-${nav.labels}`"
-        :style="{ top: `${device.h - g.navBar}px`, height: `${g.navBar}px`, background: nav.background, borderTopColor: nav.line }"
+        :style="{
+          top: `${device.h - gridLayout.navBar}px`,
+          height: `${gridLayout.navBar}px`,
+          background: nav.background,
+          borderTopColor: nav.line,
+        }"
       >
         <div class="buttons" :style="{ justifyContent: nav.justify }">
           <span
-            v-for="b in [...visiblePages.map((p) => ({ id: p.id, icon: navIcon(p), title: p.title, on: p.id === page.id })), { id: '_settings', icon: 'cog', title: 'Settings', on: false }]"
+            v-for="b in [
+              ...visiblePages.map(navPage => ({
+                id: navPage.id,
+                icon: navIcon(navPage),
+                title: navPage.title,
+                on: navPage.id === page.id,
+              })),
+              { id: '_settings', icon: 'cog', title: 'Settings', on: false },
+            ]"
             :key="b.id"
             class="button"
             :class="{ on: b.on }"
-            :style="{ width: `${nav.buttonW}px`, fontSize: `${nav.fontSize}px`, gap: `${nav.gap}px`, background: b.on ? nav.active : undefined }"
+            :style="{
+              width: `${nav.buttonW}px`,
+              fontSize: `${nav.fontSize}px`,
+              gap: `${nav.gap}px`,
+              background: b.on ? nav.active : undefined,
+            }"
           >
             <MdiIcon v-if="nav.labels !== 'text'" :name="b.icon" :size="nav.iconSize" />
             <span v-if="nav.labels !== 'icons'">{{ b.title.toUpperCase() }}</span>
@@ -370,7 +572,9 @@ const highlight = computed(() => {
   background: var(--rc-page);
   color: var(--rc-ink);
   border-radius: 18px;
-  box-shadow: 0 0 0 10px #1d1d1f, var(--shadow);
+  box-shadow:
+    0 0 0 10px #1d1d1f,
+    var(--shadow);
   margin: 10px;
   overflow: hidden;
   font-family: Roboto, system-ui, sans-serif;

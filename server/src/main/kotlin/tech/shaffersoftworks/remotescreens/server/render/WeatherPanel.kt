@@ -20,12 +20,31 @@ import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.ZoneId
 import kotlin.math.roundToInt
 
+
+private const val TEMP_WEIGHT = 100f
+private const val CONDITION_ICON_DP = 110f
+private const val STRIP_PAD_DP = 10f
+private const val MIN_LABEL_SP = 12f
+private const val LOW_TEMP_SP = 13f
+private const val CONDITION_SP = 14f
+private const val WEEKDAY_SP = 16f
+private const val HIGH_TEMP_SP = 18f
+private const val DETAIL_GAP_BASE_DP = 20f
+private const val TEMP_ICON_GAP_DP = 24f
+private const val CONDITION_LABEL_SP = 26f
+private const val TITLE_SP = 36f
+private const val DETAILS_GAP_DP = 40f
+private const val DETAIL_COL_GAP_DP = 50f
+private const val FORECAST_ICON_DP = 60f
+private const val TEMP_ROW_GAP_DP = 4f
+private const val FORECAST_GAP_DP = 6f
+
 /** The size the RPI weather page was drawn for; the page scales from it. */
 private const val BASE_W = 1280f
 private const val BASE_H = 650f
 
 /** Small labels stop shrinking here so they stay readable on 7" panels. */
-private fun small(base: Float, k: Float) = maxOf(base * k, 12f)
+private fun small(base: Float, layoutScale: Float) = maxOf(base * layoutScale, MIN_LABEL_SP)
 
 /** The current conditions under the temperature, in the order the RPI page writes them. */
 private val DETAILS = listOf("wind_speed", "humidity", "pressure")
@@ -36,53 +55,53 @@ private val DETAILS = listOf("wind_speed", "humidity", "pressure")
  */
 fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
     val id = tile.entityId ?: return
-    val e = states[id]
+    val entityState = states[id]
     structural(id) { s -> (listOf(s?.state ?: "") + DETAILS.filter { s?.number(it) != null }).joinToString() }
     refreshEvery(1800)
-    val details = DETAILS.filter { e?.number(it) != null }
+    val details = DETAILS.filter { entityState?.number(it) != null }
     bindWeatherDetails(tile.id, id, details)
 
-    val k = minOf(box.w / BASE_W, box.h / BASE_H).coerceIn(0.4f, 1.5f)
+    val layoutScale = minOf(box.w / BASE_W, box.h / BASE_H).coerceIn(0.4f, 1.5f)
     val ink = role(Role.INK)
     val soft = role(Role.INK_SOFT)
-    val zone = runCatching { ZoneId.of(ha.timeZone) }.getOrDefault(ZoneId.of("UTC"))
-    val dayW = 120f * k
-    val days = data.forecasts[id].orEmpty().take(((box.w - 20f) / dayW).toInt().coerceIn(0, 7))
+    val zone = runCatching { ZoneId.of(homeAssistantConfig.timeZone) }.getOrDefault(ZoneId.of("UTC"))
+    val dayW = 120f * layoutScale
+    val days = data.forecasts[id].orEmpty().take(((box.w - DETAIL_GAP_BASE_DP) / dayW).toInt().coerceIn(0, 7))
 
     scope.Column(Modifier.fillMaxSize().background(role(Role.PAGE)), horizontal = RcHorizontalPositioning.Center) {
-        val c = this@weatherPanel
-        Spacer(Modifier.height(c.u.px(16f * k)))
-        c.label(c.text(Vars.e(id, "name")), 36f * k, c.role(Role.WEATHER_TITLE), align = RcTextAlign.Center)
+        val doc = this@weatherPanel
+        Spacer(Modifier.height(doc.units.px(WEEKDAY_SP * layoutScale)))
+        doc.label(doc.text(Vars.entity(id, Vars.KEY_NAME)), TITLE_SP * layoutScale, doc.role(Role.WEATHER_TITLE), align = RcTextAlign.Center)
         Spacer(Modifier.verticalWeight(1f))
         Row(vertical = RcVerticalPositioning.Center) {
-            c.icon(Present.weatherIcon(e?.state ?: ""), 110f * k, ink)
-            Spacer(Modifier.width(c.u.px(24f * k)))
-            c.label(c.text(Vars.e(id, "value")), 110f * k, ink, 100f)
+            doc.icon(Present.weatherIcon(entityState?.state ?: ""), CONDITION_ICON_DP * layoutScale, ink)
+            Spacer(Modifier.width(doc.units.px(TEMP_ICON_GAP_DP * layoutScale)))
+            doc.label(doc.text(Vars.entity(id, Vars.KEY_VALUE)), CONDITION_ICON_DP * layoutScale, ink, TEMP_WEIGHT)
         }
-        c.label(c.i18n.state("weather", e?.state ?: "unknown"), small(26f, k), ink, align = RcTextAlign.Center)
+        doc.label(doc.i18n.state("weather", entityState?.state ?: "unknown"), small(CONDITION_LABEL_SP, layoutScale), ink, align = RcTextAlign.Center)
         if (details.isNotEmpty()) {
-            Spacer(Modifier.height(c.u.px(40f * k)))
+            Spacer(Modifier.height(doc.units.px(DETAILS_GAP_DP * layoutScale)))
             Row(vertical = RcVerticalPositioning.Center) {
                 details.forEachIndexed { i, key ->
-                    if (i > 0) Spacer(Modifier.width(c.u.px(50f * k)))
-                    c.label(c.text(Vars.t(tile.id, key)), small(20f, k), ink)
+                    if (i > 0) Spacer(Modifier.width(doc.units.px(DETAIL_COL_GAP_DP * layoutScale)))
+                    doc.label(doc.text(Vars.tile(tile.id, key)), small(DETAIL_GAP_BASE_DP, layoutScale), ink)
                 }
             }
         }
         Spacer(Modifier.verticalWeight(1f))
         if (days.isNotEmpty()) {
-            Row(Modifier.fillMaxWidth().background(c.role(Role.STRIP)).padding(c.u.px(10f)), horizontal = RcRowHorizontalPositioning.SpaceEvenly) {
+            Row(Modifier.fillMaxWidth().background(doc.role(Role.STRIP)).padding(doc.units.px(STRIP_PAD_DP)), horizontal = RcRowHorizontalPositioning.SpaceEvenly) {
                 for (d in days) {
-                    Column(Modifier.width(c.u.px(dayW)).padding(0f, c.u.px(10f * k), 0f, c.u.px(10f * k)), horizontal = RcHorizontalPositioning.Center) {
-                        c.label(c.i18n.fullWeekday(d.time.withZoneSameInstant(zone)), small(16f, k), ink, align = RcTextAlign.Center)
-                        Spacer(Modifier.height(c.u.px(10f * k)))
-                        c.icon(Present.weatherIcon(d.condition), 60f * k, ink)
-                        Spacer(Modifier.height(c.u.px(6f * k)))
-                        c.label(c.i18n.state("weather", d.condition), small(14f, k), soft, align = RcTextAlign.Center)
-                        Spacer(Modifier.height(c.u.px(4f * k)))
+                    Column(Modifier.width(doc.units.px(dayW)).padding(0f, doc.units.px(STRIP_PAD_DP * layoutScale), 0f, doc.units.px(STRIP_PAD_DP * layoutScale)), horizontal = RcHorizontalPositioning.Center) {
+                        doc.label(doc.i18n.fullWeekday(d.time.withZoneSameInstant(zone)), small(WEEKDAY_SP, layoutScale), ink, align = RcTextAlign.Center)
+                        Spacer(Modifier.height(doc.units.px(STRIP_PAD_DP * layoutScale)))
+                        doc.icon(Present.weatherIcon(d.condition), FORECAST_ICON_DP * layoutScale, ink)
+                        Spacer(Modifier.height(doc.units.px(FORECAST_GAP_DP * layoutScale)))
+                        doc.label(doc.i18n.state("weather", d.condition), small(CONDITION_SP, layoutScale), soft, align = RcTextAlign.Center)
+                        Spacer(Modifier.height(doc.units.px(TEMP_ROW_GAP_DP * layoutScale)))
                         Row(vertical = RcVerticalPositioning.Bottom) {
-                            c.label(d.high?.let { "${it.roundToInt()}°" } ?: "–", small(18f, k), ink, Weight.MEDIUM)
-                            c.label(d.low?.let { " / ${it.roundToInt()}°" } ?: "", small(13f, k), soft)
+                            doc.label(d.high?.let { "${it.roundToInt()}°" } ?: "–", small(HIGH_TEMP_SP, layoutScale), ink, Weight.MEDIUM)
+                            doc.label(d.low?.let { " / ${it.roundToInt()}°" } ?: "", small(LOW_TEMP_SP, layoutScale), soft)
                         }
                     }
                 }
@@ -93,22 +112,22 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
 
 /** "Wind 12 km/h", "Humidity 71%" and "Pressure 1013 hPa", in the units the weather entity reports. */
 private fun DocContext.bindWeatherDetails(tileId: String, entityId: String, details: List<String>) {
-    fun measure(e: EntityState, key: String, unitKey: String, fallback: String): String? {
-        val v = e.number(key) ?: return null
-        val unit = e.attr(unitKey) ?: fallback
+    fun measure(entityState: EntityState, key: String, unitKey: String, fallback: String): String? {
+        val v = entityState.number(key) ?: return null
+        val unit = entityState.attr(unitKey) ?: fallback
         return "${i18n.number(v, if (unit == "inHg") 2 else 0)} $unit"
     }
     bind(entityId) { states ->
-        val e = states[entityId]
+        val entityState = states[entityId]
         details.map { key ->
-            val word = e?.let {
+            val word = entityState?.let {
                 when (key) {
                     "wind_speed" -> measure(it, key, "wind_speed_unit", "km/h")?.let { v -> i18n.t("ui.wind", "value" to v) }
                     "humidity" -> it.number(key)?.let { v -> i18n.t("ui.humidity", "value" to i18n.percent(v.roundToInt())) }
                     else -> measure(it, key, "pressure_unit", "hPa")?.let { v -> i18n.t("ui.pressure", "value" to v) }
                 }
             }
-            VarValue.string(Vars.t(tileId, key), word ?: "")
+            VarValue.string(Vars.tile(tileId, key), word ?: "")
         }
     }
 }

@@ -18,305 +18,156 @@
     <ID>CyclomaticComplexMethod:Tiles.kt:fun DocContext.tile</ID>
     <ID>CyclomaticComplexMethod:Tiles.kt:fun tapRef: ActionRef?</ID>
     <ID>CyclomaticComplexMethod:Tiles.kt:private fun DocContext.entityTile</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$0.55f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$0xFF</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$10</ID>
     <ID>MagicNumber:CardRenderer.kt:CardRenderer$100</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$10f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$120f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$128</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$12f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$132f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$140f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$14f</ID>
     <ID>MagicNumber:CardRenderer.kt:CardRenderer$16</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$16f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$1800</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$18f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$20</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$20f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$24</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$28f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$300</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$360f</ID>
     <ID>MagicNumber:CardRenderer.kt:CardRenderer$4</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$40f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$46f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$48f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$52f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$60f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$64f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$6f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$7</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$72f</ID>
     <ID>MagicNumber:CardRenderer.kt:CardRenderer$8</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$80f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$8f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.012f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.02f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.035f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.04f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.05f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.06f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.085f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.16f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.1f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.33f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.45f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.5f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.6f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.75f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.82f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.9f</ID>
-    <ID>MagicNumber:FreeForm.kt:1.4f</ID>
-    <ID>MagicNumber:FreeForm.kt:1.5f</ID>
-    <ID>MagicNumber:FreeForm.kt:10</ID>
-    <ID>MagicNumber:FreeForm.kt:100.0</ID>
-    <ID>MagicNumber:FreeForm.kt:10f</ID>
-    <ID>MagicNumber:FreeForm.kt:12</ID>
-    <ID>MagicNumber:FreeForm.kt:120f</ID>
-    <ID>MagicNumber:FreeForm.kt:12f</ID>
-    <ID>MagicNumber:FreeForm.kt:135f</ID>
-    <ID>MagicNumber:FreeForm.kt:140f</ID>
-    <ID>MagicNumber:FreeForm.kt:15f</ID>
-    <ID>MagicNumber:FreeForm.kt:160f</ID>
-    <ID>MagicNumber:FreeForm.kt:16f</ID>
-    <ID>MagicNumber:FreeForm.kt:18f</ID>
-    <ID>MagicNumber:FreeForm.kt:2.6f</ID>
-    <ID>MagicNumber:FreeForm.kt:200f</ID>
-    <ID>MagicNumber:FreeForm.kt:20f</ID>
-    <ID>MagicNumber:FreeForm.kt:22f</ID>
-    <ID>MagicNumber:FreeForm.kt:240f</ID>
-    <ID>MagicNumber:FreeForm.kt:24f</ID>
-    <ID>MagicNumber:FreeForm.kt:270f</ID>
-    <ID>MagicNumber:FreeForm.kt:280f</ID>
-    <ID>MagicNumber:FreeForm.kt:28f</ID>
-    <ID>MagicNumber:FreeForm.kt:3</ID>
-    <ID>MagicNumber:FreeForm.kt:3.2f</ID>
-    <ID>MagicNumber:FreeForm.kt:300</ID>
-    <ID>MagicNumber:FreeForm.kt:30f</ID>
-    <ID>MagicNumber:FreeForm.kt:320f</ID>
-    <ID>MagicNumber:FreeForm.kt:32f</ID>
-    <ID>MagicNumber:FreeForm.kt:4</ID>
-    <ID>MagicNumber:FreeForm.kt:40f</ID>
-    <ID>MagicNumber:FreeForm.kt:44f</ID>
-    <ID>MagicNumber:FreeForm.kt:48f</ID>
-    <ID>MagicNumber:FreeForm.kt:52f</ID>
-    <ID>MagicNumber:FreeForm.kt:56f</ID>
-    <ID>MagicNumber:FreeForm.kt:6</ID>
-    <ID>MagicNumber:FreeForm.kt:64f</ID>
-    <ID>MagicNumber:FreeForm.kt:6f</ID>
-    <ID>MagicNumber:FreeForm.kt:8</ID>
-    <ID>MagicNumber:FreeForm.kt:8f</ID>
-    <ID>MagicNumber:Home.kt:0.08f</ID>
-    <ID>MagicNumber:Home.kt:0.42f</ID>
-    <ID>MagicNumber:Home.kt:0.5f</ID>
-    <ID>MagicNumber:Home.kt:100f</ID>
-    <ID>MagicNumber:Home.kt:10f</ID>
-    <ID>MagicNumber:Home.kt:110f</ID>
-    <ID>MagicNumber:Home.kt:12f</ID>
-    <ID>MagicNumber:Home.kt:150f</ID>
-    <ID>MagicNumber:Home.kt:16f</ID>
-    <ID>MagicNumber:Home.kt:18f</ID>
-    <ID>MagicNumber:Home.kt:20f</ID>
-    <ID>MagicNumber:Home.kt:22f</ID>
-    <ID>MagicNumber:Home.kt:28f</ID>
-    <ID>MagicNumber:Home.kt:30f</ID>
-    <ID>MagicNumber:Home.kt:32f</ID>
-    <ID>MagicNumber:Home.kt:48f</ID>
-    <ID>MagicNumber:Home.kt:50f</ID>
-    <ID>MagicNumber:Home.kt:6f</ID>
-    <ID>MagicNumber:Home.kt:72f</ID>
-    <ID>MagicNumber:Home.kt:8f</ID>
     <ID>MagicNumber:ScreenRenderer.kt:RenderedDoc$1000L</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$0.42f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$0.4f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$0.7f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$10f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$15f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$26f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$350f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$40f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$4f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$5f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$8f</ID>
-    <ID>MagicNumber:Themes.kt:Themes$0xFF</ID>
-    <ID>MagicNumber:Themes.kt:Themes$0xFF000000</ID>
-    <ID>MagicNumber:Themes.kt:Themes$0xFFFFFF</ID>
-    <ID>MagicNumber:Themes.kt:Themes$0xFFFFFFFF</ID>
-    <ID>MagicNumber:Themes.kt:Themes$7</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:0.3f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:0.55f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:100f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:10f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:12f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:15f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:16f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:18f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:20f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:22f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:24f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:25f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:28f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:360f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:3f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:40f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:50f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:7.5f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:70f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:8f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:90f</ID>
-    <ID>MagicNumber:Tiles.kt:0.24f</ID>
-    <ID>MagicNumber:Tiles.kt:0.35f</ID>
-    <ID>MagicNumber:Tiles.kt:0.45f</ID>
-    <ID>MagicNumber:Tiles.kt:0.4f</ID>
-    <ID>MagicNumber:Tiles.kt:0.8f</ID>
-    <ID>MagicNumber:Tiles.kt:10</ID>
-    <ID>MagicNumber:Tiles.kt:100.0</ID>
-    <ID>MagicNumber:Tiles.kt:10f</ID>
-    <ID>MagicNumber:Tiles.kt:120f</ID>
-    <ID>MagicNumber:Tiles.kt:12f</ID>
-    <ID>MagicNumber:Tiles.kt:140f</ID>
-    <ID>MagicNumber:Tiles.kt:14f</ID>
-    <ID>MagicNumber:Tiles.kt:150f</ID>
-    <ID>MagicNumber:Tiles.kt:16f</ID>
-    <ID>MagicNumber:Tiles.kt:1800</ID>
-    <ID>MagicNumber:Tiles.kt:18f</ID>
-    <ID>MagicNumber:Tiles.kt:200f</ID>
-    <ID>MagicNumber:Tiles.kt:20f</ID>
-    <ID>MagicNumber:Tiles.kt:22f</ID>
-    <ID>MagicNumber:Tiles.kt:24f</ID>
-    <ID>MagicNumber:Tiles.kt:260f</ID>
-    <ID>MagicNumber:Tiles.kt:26f</ID>
-    <ID>MagicNumber:Tiles.kt:28f</ID>
     <ID>MagicNumber:Tiles.kt:300</ID>
-    <ID>MagicNumber:Tiles.kt:30f</ID>
-    <ID>MagicNumber:Tiles.kt:32f</ID>
-    <ID>MagicNumber:Tiles.kt:34f</ID>
-    <ID>MagicNumber:Tiles.kt:36f</ID>
-    <ID>MagicNumber:Tiles.kt:3f</ID>
     <ID>MagicNumber:Tiles.kt:4</ID>
-    <ID>MagicNumber:Tiles.kt:40f</ID>
-    <ID>MagicNumber:Tiles.kt:44f</ID>
-    <ID>MagicNumber:Tiles.kt:4f</ID>
-    <ID>MagicNumber:Tiles.kt:52f</ID>
-    <ID>MagicNumber:Tiles.kt:56f</ID>
-    <ID>MagicNumber:Tiles.kt:6f</ID>
-    <ID>MagicNumber:Tiles.kt:70f</ID>
-    <ID>MagicNumber:Tiles.kt:76f</ID>
-    <ID>MagicNumber:Tiles.kt:8f</ID>
-    <ID>MagicNumber:Tiles.kt:90f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:100f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:10f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:110f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:12f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:13f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:14f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:16f</ID>
     <ID>MagicNumber:WeatherPanel.kt:1800</ID>
-    <ID>MagicNumber:WeatherPanel.kt:18f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:20f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:24f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:26f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:36f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:40f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:4f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:50f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:60f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:6f</ID>
     <ID>MatchingDeclarationName:Tiles.kt:TileBox</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$"back" -&gt; c.key(ref(entityId, "code_back"), icon = "backspace-outline", heightDp = 60f, widthDp = keyW)</ID>
+    <ID>MaxLineLength:Alerts.kt:AlertRenderer$val badge = Modifier.size(units.px(BADGE_DP), units.px(BADGE_DP)).clip(rounded(BADGE_DP / 2f)).background(role(tone))</ID>
+    <ID>MaxLineLength:Alerts.kt:AlertRenderer$val scrim = docContext.tap(Modifier.fillMaxSize().background(docContext.role(Role.SCRIM)), ActionRef("alert", "dismiss"))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$"back" -&gt; doc.key(ref(entityId, "code_back"), icon = "backspace-outline", heightDp = MEDIA_CTRL_DP, widthDp = keyW)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$"clear" -&gt; doc.key(ref(entityId, "code_clear"), icon = "close", heightDp = MEDIA_CTRL_DP, widthDp = keyW)</ID>
     <ID>MaxLineLength:CardRenderer.kt:CardRenderer$Box</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$Box(c.tap(Modifier.size(c.u.px(46f), c.u.px(46f)).clip(c.rounded((46f) / 2f)).background(c.fixed(argb or 0xFF000000.toInt())), r))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$Box(doc.tap(Modifier.size(doc.units.px(SWATCH_DP), doc.units.px(SWATCH_DP)).clip(doc.rounded((SWATCH_DP) / 2f)).background(doc.fixed(argb or OPAQUE_ARGB.toInt())), r))</ID>
     <ID>MaxLineLength:CardRenderer.kt:CardRenderer$Column</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$Image(c.image("art.card.$entityId", px, px), Modifier.size(c.u.px(art), c.u.px(art)).clip(c.rounded(20f)), contentScale = RcContentScale.Crop)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$VarValue.string(Vars.e(entityId, "artist"), listOfNotNull(s?.attr("media_artist"), s?.attr("media_album_name")).joinToString(" · "))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$bind(entityId) { s -&gt; listOf(VarValue.float(Vars.e(entityId, "tilt"), ((s[entityId]?.number("current_tilt_position") ?: 0.0) / 100).toFloat())) }</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.key(ref(entityId, "close"), text = c.i18n.t("ui.close_cover"), icon = "arrow-down", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.key(ref(entityId, "dock"), text = c.i18n.t("ui.dock"), icon = "home-import-outline", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.key(ref(entityId, "open"), text = c.i18n.t("ui.open"), icon = "arrow-up", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.key(ref(entityId, "pause"), text = c.i18n.t("ui.pause"), icon = "pause", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.key(ref(entityId, "start"), text = c.i18n.t("ui.start"), icon = "play", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.key(ref(entityId, "stop"), text = c.i18n.t("ui.stop"), icon = "stop", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.key(ref(entityId, verb, value), text = word, bg = c.color(Vars.o(entityId, verb, i, "bg")), ink = c.color(Vars.o(entityId, verb, i, "ink")), heightDp = 42f)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(c.i18n.t("ui.max", "value" to "${c.i18n.number(max.second, 1)} $unit"), Type.BODY, c.role(Role.DANGER), Weight.MEDIUM, modifier = Modifier.horizontalWeight(1f))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(c.i18n.t("ui.min", "value" to "${c.i18n.number(min.second, 1)} $unit"), Type.BODY, c.role(Role.ACCENT), Weight.MEDIUM)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(c.i18n.weekday(d.time.withZoneSameInstant(zone)), Type.TITLE, ink, Weight.MEDIUM, modifier = Modifier.width(c.u.px(60f)))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(c.text(Vars.e(entityId, "state")), Type.DISPLAY, c.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(c.text(Vars.e(entityId, "title")), Type.HEADLINE, c.role(Role.INK), Weight.SEMI_BOLD, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(c.text(Vars.e(entityId, "value")), Type.DISPLAY, c.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(d.high?.let { "${it.roundToInt()}°" } ?: "", Type.BODY, ink, Weight.SEMI_BOLD, modifier = Modifier.width(c.u.px(40f)))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(d.low?.let { "${it.roundToInt()}°" } ?: "", Type.BODY, soft, modifier = Modifier.width(c.u.px(40f)))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(d.rain?.let { "$it%" } ?: "", Type.BODY, c.role(Role.ACCENT), modifier = Modifier.width(c.u.px(48f)))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$ctx.bindTileColors(TILE, entityId, Pastel.forDomain(e?.domain), alwaysOn = card in setOf("camera", "map", "energy", "history"))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$e?.number("wind_speed")?.let { c.i18n.t("ui.wind", "value" to "${it.roundToInt()} ${e.attr("wind_speed_unit") ?: "km/h"}") }</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$Image(doc.image("art.card.$entityId", px, px), Modifier.size(doc.units.px(art), doc.units.px(art)).clip(doc.rounded(PANEL_PAD_DP)), contentScale = RcContentScale.Crop)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$VarValue.int(Vars.entity(entityId, "notplaying"), if (s?.state == "playing") Vars.GONE else Vars.VISIBLE)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$VarValue.string(Vars.entity(entityId, "artist"), listOfNotNull(s?.attr("media_artist"), s?.attr("media_album_name")).joinToString(" · "))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$bg = color(Vars.option(entityId, "option", i, Vars.KEY_BG))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$bind(entityId) { s -&gt; listOf(VarValue.float(Vars.entity(entityId, "tilt"), ((s[entityId]?.number("current_tilt_position") ?: 0.0) / 100).toFloat())) }</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.icon("pause", CLOSE_KEY_DP, doc.role(Role.KEY_ON_INK), doc.int(Vars.entity(entityId, "playing")))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.icon("play", CLOSE_KEY_DP, doc.role(Role.KEY_ON_INK), doc.int(Vars.entity(entityId, "notplaying")))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.key(ActionRef("_", "close"), icon = "close", heightDp = CLOSE_KEY_DP, widthDp = CLOSE_KEY_DP, round = true)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.key(ref(entityId, "close"), text = doc.i18n.t("ui.close_cover"), icon = "arrow-down", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.key(ref(entityId, "dock"), text = doc.i18n.t("ui.dock"), icon = "home-import-outline", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.key(ref(entityId, "next"), icon = "skip-next", heightDp = MEDIA_CTRL_DP, widthDp = MEDIA_CTRL_DP, round = true)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.key(ref(entityId, "open"), text = doc.i18n.t("ui.open"), icon = "arrow-up", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.key(ref(entityId, "pause"), text = doc.i18n.t("ui.pause"), icon = "pause", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.key(ref(entityId, "previous"), icon = "skip-previous", heightDp = MEDIA_CTRL_DP, widthDp = MEDIA_CTRL_DP, round = true)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.key(ref(entityId, "start"), text = doc.i18n.t("ui.start"), icon = "play", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.key(ref(entityId, "stop"), text = doc.i18n.t("ui.stop"), icon = "stop", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.key(ref(entityId, "temperature", "+$step"), icon = "plus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.key(ref(entityId, "temperature", "-$step"), icon = "minus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.key(ref(entityId, "value", "+$step"), icon = "plus", heightDp = TOGGLE_ICON_DP, widthDp = TOGGLE_ICON_DP, round = true)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.key(ref(entityId, "value", "-$step"), icon = "minus", heightDp = TOGGLE_ICON_DP, widthDp = TOGGLE_ICON_DP, round = true)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.key(ref(entityId, verb, value), text = word, bg = doc.color(Vars.option(entityId, verb, i, Vars.KEY_BG)), ink = doc.color(Vars.option(entityId, verb, i, Vars.KEY_INK)), heightDp = 42f)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.label(d.high?.let { "${it.roundToInt()}°" } ?: "", Type.BODY, ink, Weight.SEMI_BOLD, modifier = Modifier.width(doc.units.px(CLOSE_KEY_DP)))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.label(d.low?.let { "${it.roundToInt()}°" } ?: "", Type.BODY, soft, modifier = Modifier.width(doc.units.px(CLOSE_KEY_DP)))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.label(d.rain?.let { "$it%" } ?: "", Type.BODY, doc.role(Role.ACCENT), modifier = Modifier.width(doc.units.px(FLOW_KEY_H_DP)))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.label(doc.i18n.t("ui.max", "value" to "${doc.i18n.number(max.second, 1)} $unit"), Type.BODY, doc.role(Role.DANGER), Weight.MEDIUM, modifier = Modifier.horizontalWeight(1f))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.label(doc.i18n.t("ui.min", "value" to "${doc.i18n.number(min.second, 1)} $unit"), Type.BODY, doc.role(Role.ACCENT), Weight.MEDIUM)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.label(doc.i18n.weekday(d.time.withZoneSameInstant(zone)), Type.TITLE, ink, Weight.MEDIUM, modifier = Modifier.width(doc.units.px(MEDIA_CTRL_DP)))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.label(doc.text(Vars.entity(entityId, "artist")), Type.BODY, doc.role(Role.INK_SOFT), align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.label(doc.text(Vars.entity(entityId, "title")), Type.HEADLINE, doc.role(Role.INK), Weight.SEMI_BOLD, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.label(doc.text(Vars.entity(entityId, Vars.KEY_STATE)), Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.label(doc.text(Vars.entity(entityId, Vars.KEY_VALUE)), Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$doc.toggleIcon(entityId, spec?.icon ?: "power", spec?.iconOn, TOGGLE_ICON_DP, doc.color(Vars.tile(TILE, Vars.KEY_BG_INK)))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$docContext.bindTileColors(TILE, entityId, Pastel.forDomain(entityState?.domain), alwaysOn = card in setOf("camera", "map", "energy", "history"))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$else -&gt; doc.key(ref(entityId, "code_digit", digit), text = digit, heightDp = MEDIA_CTRL_DP, widthDp = keyW)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$entityState?.number("humidity")?.let { doc.i18n.t("ui.humidity", "value" to doc.i18n.percent(it.roundToInt())) }</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$entityState?.number("wind_speed")?.let { doc.i18n.t("ui.wind", "value" to "${it.roundToInt()} ${entityState.attr("wind_speed_unit") ?: "km/h"}") }</ID>
     <ID>MaxLineLength:CardRenderer.kt:CardRenderer$flowKeys(entityId, "preset", presets.map { it to it.replace('_', ' ').replaceFirstChar(Char::uppercase) }) { it.attr("preset_mode") }</ID>
     <ID>MaxLineLength:CardRenderer.kt:CardRenderer$for</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$key(ref(entityId, "locate"), text = i18n.t("ui.locate"), icon = "map-marker", heightDp = 48f, modifier = Modifier.fillMaxWidth())</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$key(ref(entityId, "open"), text = i18n.t("ui.open_door"), icon = "door-open", heightDp = 52f, modifier = Modifier.fillMaxWidth())</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$key(ref(entityId, "play_media", "${item.contentType}|${item.contentId}"), text = item.title, icon = "play-circle-outline", heightDp = 48f, modifier = Modifier.fillMaxWidth())</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$key(ref(entityId, "locate"), text = i18n.t("ui.locate"), icon = "map-marker", heightDp = FLOW_KEY_H_DP, modifier = Modifier.fillMaxWidth())</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$key(ref(entityId, "open"), text = i18n.t("ui.open_door"), icon = "door-open", heightDp = LEVEL_BAR_H_DP, modifier = Modifier.fillMaxWidth())</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$key(ref(entityId, "play_media", "${item.contentType}|${item.contentId}"), text = item.title, icon = "play-circle-outline", heightDp = FLOW_KEY_H_DP, modifier = Modifier.fillMaxWidth())</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$levelBar</ID>
     <ID>MaxLineLength:CardRenderer.kt:CardRenderer$private</ID>
     <ID>MaxLineLength:CardRenderer.kt:CardRenderer$scope</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$scope.Image(image("cam.card.$entityId", pw, ph), Modifier.size(u.px(w), u.px(h)).clip(rounded(16f)), contentScale = RcContentScale.Fit)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$scope.Image(image("map.card", pw, ph), Modifier.size(u.px(w), u.px(h)).clip(rounded(16f)), contentScale = RcContentScale.Crop)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$structural(entityId) { listOf("hvac_modes", "preset_modes", "fan_modes").joinToString("|") { k -&gt; it?.list(k)?.joinToString() ?: "" } }</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$this@keypad.label(this@keypad.text(Vars.t("e:$entityId", "code")), Type.DISPLAY, this@keypad.role(Role.INK), Weight.MEDIUM, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$this@lockCard.label(this@lockCard.text(Vars.t("e:$entityId", "confirm")), Type.TITLE, this@lockCard.role(Role.WARN), Weight.SEMI_BOLD, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$scope.Image(image("map.card", pw, ph), Modifier.size(units.px(w), units.px(h)).clip(rounded(CARD_GAP_DP)), contentScale = RcContentScale.Crop)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$structural(entityId) { listOf("hvac_modes", "preset_modes", "fan_modes").joinToString("|") { key -&gt; it?.list(key)?.joinToString() ?: "" } }</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$swatches(HUES.map { h -&gt; Color.HSBtoRGB(h / HUE_DEGREES, HUE_SATURATION, 1f) to ref(entityId, "hue", h.toString()) })</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$this@keypad.label(this@keypad.text(Vars.tile("e:$entityId", "code")), Type.DISPLAY, this@keypad.role(Role.INK), Weight.MEDIUM, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$this@lockCard.label(this@lockCard.text(Vars.tile("e:$entityId", Vars.KEY_CONFIRM)), Type.TITLE, this@lockCard.role(Role.WARN), Weight.SEMI_BOLD, align = RcTextAlign.Center)</ID>
     <ID>MaxLineLength:CardRenderer.kt:CardRenderer$val</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$val barW = doc.units.px((width - MEDIA_CTRL_DP - WEATHER_ICON_ROW_DP - PANEL_CORNER_DP - FLOW_KEY_H_DP - CLOSE_KEY_DP - CLOSE_KEY_DP - SECTION_GAP_DP).coerceAtLeast(CLOSE_KEY_DP))</ID>
+    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$val step = entityState?.number("target_temp_step") ?: if (homeAssistantConfig.temperatureUnit.contains("F")) 1.0 else 0.5</ID>
     <ID>MaxLineLength:CardRenderer.kt:CardRenderer$val who = if (entityId.startsWith("person.") || entityId.startsWith("device_tracker.")) listOf(entityId) else states.keys.filter { it.startsWith("person.") }</ID>
-    <ID>MaxLineLength:FreeForm.kt:"climate" -&gt; "temperature" to (e?.number("target_temp_step") ?: if (ha.temperatureUnit.contains("F")) 1.0 else 0.5)</ID>
-    <ID>MaxLineLength:FreeForm.kt:"climate" -&gt; ChoiceSet("mode", "hvac_modes", e?.list("hvac_modes").orEmpty(), { i18n.state("climate", it) }, { it.state }, MODE_ICONS)</ID>
-    <ID>MaxLineLength:FreeForm.kt:"divider" -&gt; scope.Box(styled(n, axis, pages, dividerSize(n, axis)).background(paint(n.props["color"] ?: "divider") ?: role(Role.DIVIDER)))</ID>
-    <ID>MaxLineLength:FreeForm.kt:"swatches" -&gt; (props["size"]?.toFloatOrNull() ?: 40f).let { s -&gt; (if (props["show"] == "white") 6 else 8).let { k -&gt; Dims(s * k + 10f * (k - 1), s) } }</ID>
+    <ID>MaxLineLength:FreeForm.kt:"climate" -&gt; "temperature" to (entityState?.number("target_temp_step") ?: if (homeAssistantConfig.temperatureUnit.contains("F")) Metrics.STEP_TEMP_F else Metrics.STEP_TEMP_C)</ID>
+    <ID>MaxLineLength:FreeForm.kt:"climate" -&gt; ChoiceSet("mode", "hvac_modes", entityState?.list("hvac_modes").orEmpty(), { i18n.state("climate", it) }, { it.state }, MODE_ICONS)</ID>
+    <ID>MaxLineLength:FreeForm.kt:"divider" -&gt; scope.Box(styled(node, axis, pages, dividerSize(node, axis)).background(paint(node.props["color"] ?: "divider") ?: role(Role.DIVIDER)))</ID>
+    <ID>MaxLineLength:FreeForm.kt:"keys" -&gt; (props["size"]?.toFloatOrNull() ?: Metrics.KEYS_DEFAULT_DP).let { Dims(it * Metrics.KEYS_COLS + Metrics.KEYS_GAP_TOTAL_DP, it) }</ID>
+    <ID>MaxLineLength:FreeForm.kt:"light" -&gt; ChoiceSet("effect", "effect_list", entityState?.list("effect_list").orEmpty(), { it }, { it.attr("effect") })</ID>
+    <ID>MaxLineLength:FreeForm.kt:"select", "input_select" -&gt; ChoiceSet("option", "options", entityState?.list("options").orEmpty(), { it }, { it.state })</ID>
+    <ID>MaxLineLength:FreeForm.kt:"text" -&gt; Dims(Metrics.TEXT_NATURAL_W, (props["fontSize"]?.toFloatOrNull() ?: Type.TITLE) * Metrics.TEXT_LINE_HEIGHT)</ID>
     <ID>MaxLineLength:FreeForm.kt:"vacuum" -&gt; listOf("start" to "play", "pause" to "pause", "dock" to "home-import-outline", "locate" to "map-marker-outline")</ID>
-    <ID>MaxLineLength:FreeForm.kt:("arm_home" to "shield-home").takeIf { f and 1 != 0 }</ID>
-    <ID>MaxLineLength:FreeForm.kt:Axis.BOX -&gt; scope.Box(Modifier.fillMaxSize(), horizontal = horizontal(h), vertical = vertical(v)) { ctx.node(c, self, Axis.BOX, pages) }</ID>
-    <ID>MaxLineLength:FreeForm.kt:Axis.COLUMN -&gt; scope.Column(m, horizontal = horizontal(alignment), vertical = columnArrangement(arrangement)) { children() }</ID>
-    <ID>MaxLineLength:FreeForm.kt:Axis.ROW -&gt; scope.Row(m, horizontal = rowArrangement(arrangement), vertical = vertical(alignment)) { children() }</ID>
+    <ID>MaxLineLength:FreeForm.kt:/** About the size [node]'s content takes: a leaf's natural size, a container's children laid end to end, plus padding. */</ID>
+    <ID>MaxLineLength:FreeForm.kt:ActionRef(node.id, verb, if (value % 1.0 == 0.0) value.toInt().toString() else "%.1f".format(Locale.ROOT, value))</ID>
+    <ID>MaxLineLength:FreeForm.kt:Axis.BOX -&gt; scope.Box(Modifier.fillMaxSize(), horizontal = horizontal(horizAlign), vertical = vertical(vertAlign)) { doc.node(child, self, Axis.BOX, pages) }</ID>
+    <ID>MaxLineLength:FreeForm.kt:Axis.COLUMN -&gt; scope.Column(modifier, horizontal = horizontal(alignment), vertical = columnArrangement(arrangement)) { drawChildren() }</ID>
+    <ID>MaxLineLength:FreeForm.kt:Axis.ROW -&gt; scope.Row(modifier, horizontal = rowArrangement(arrangement), vertical = vertical(alignment)) { drawChildren() }</ID>
     <ID>MaxLineLength:FreeForm.kt:Box</ID>
-    <ID>MaxLineLength:FreeForm.kt:Box(c.tap(Modifier.size(c.u.px(sizeDp), c.u.px(sizeDp)).clip(c.rounded(sizeDp / 2f)).background(c.fixed(argb or 0xFF000000.toInt())), if (n.bind != null) ref else null))</ID>
+    <ID>MaxLineLength:FreeForm.kt:Box(Modifier.padding(0f, 0f, units.px(gap), units.px(gap))) { doc.node(child, sizes[i], Axis.BOX, pages) }</ID>
+    <ID>MaxLineLength:FreeForm.kt:Box(Modifier.size(doc.units.px(Metrics.SWITCH_KNOB_DP), doc.units.px(Metrics.SWITCH_KNOB_DP)).clip(doc.rounded(Metrics.SWITCH_KNOB_CORNER_DP)).background(doc.role(Role.INK)))</ID>
+    <ID>MaxLineLength:FreeForm.kt:Box(doc.tap(Modifier.size(doc.units.px(sizeDp), doc.units.px(sizeDp)).clip(doc.rounded(sizeDp / 2f)).background(doc.fixed(argb or Metrics.OPAQUE_ARGB)), if (node.bind != null) ref else null))</ID>
     <ID>MaxLineLength:FreeForm.kt:ChoiceSet$private</ID>
+    <ID>MaxLineLength:FreeForm.kt:Dims(it * Metrics.KEYPAD_KEY_WIDTH_RATIO * Metrics.KEYPAD_COLS + Metrics.KEYPAD_WIDTH_PAD_DP, Metrics.KEYPAD_DEFAULT_DP + Metrics.KEYPAD_ROWS * (it + Metrics.KEYPAD_ROW_GAP_DP))</ID>
+    <ID>MaxLineLength:FreeForm.kt:Dims(maxOf(Metrics.CLOCK_MIN_W, sp * Metrics.CLOCK_WIDTH_PER_SP), sp * Metrics.TEXT_LINE_HEIGHT + if (props["show"] == "both") Metrics.CLOCK_DATE_EXTRA_H else 0f)</ID>
     <ID>MaxLineLength:FreeForm.kt:Row</ID>
-    <ID>MaxLineLength:FreeForm.kt:Spec.Companion$s.startsWith("weight:") -&gt; s.removePrefix("weight:").toFloatOrNull()?.takeIf { it &gt; 0f }?.let { Weight(it) } ?: Wrap</ID>
-    <ID>MaxLineLength:FreeForm.kt:appear(n.props["animate"])?.let { (enter, exit) -&gt; m = m.animationSpec(enterAnimation = enter, exitAnimation = exit) }</ID>
-    <ID>MaxLineLength:FreeForm.kt:c</ID>
-    <ID>MaxLineLength:FreeForm.kt:c.graph(c.data.history[id].orEmpty(), (self.w - 2 * pad).coerceAtLeast(1f), (self.h - 2 * pad).coerceAtLeast(1f), line, c.role(Role.INK_SOFT))</ID>
-    <ID>MaxLineLength:FreeForm.kt:c.key(ref, icon = icon, heightDp = sizeDp, widthDp = if (stretch) null else sizeDp, round = !stretch, modifier = if (stretch) Modifier.horizontalWeight(1f) else Modifier)</ID>
-    <ID>MaxLineLength:FreeForm.kt:drawArc(inset.rf, inset.rf, (px - inset).rf, (px - inset).rf, 135f.rf, c.float(nodeLevel(n.id)) * 270f)</ID>
-    <ID>MaxLineLength:FreeForm.kt:drawLine(mid + (sin(a) * mid * inner).toFloat(), mid - (cos(a) * mid * inner).toFloat(), mid + (sin(a) * mid * 0.9f).toFloat(), mid - (cos(a) * mid * 0.9f).toFloat())</ID>
-    <ID>MaxLineLength:FreeForm.kt:drawTextAnchored(c.literal(h.toString()), mid + (sin(a) * mid * 0.6f).toFloat(), mid - (cos(a) * mid * 0.6f).toFloat(), 0f, 0f)</ID>
+    <ID>MaxLineLength:FreeForm.kt:Spec.Companion$spec.startsWith("weight:") -&gt; spec.removePrefix("weight:").toFloatOrNull()?.takeIf { it &gt; 0f }?.let { Weight(it) } ?: Wrap</ID>
+    <ID>MaxLineLength:FreeForm.kt:appear(node.props["animate"])?.let { (enter, exit) -&gt; modifier = modifier.animationSpec(enterAnimation = enter, exitAnimation = exit) }</ID>
+    <ID>MaxLineLength:FreeForm.kt:base = base.clip(rounded(if (node.style.corner &gt; 0f) node.style.corner else Metrics.BUTTON_NATURAL_H / Metrics.BUTTON_CORNER_DIVISOR))</ID>
+    <ID>MaxLineLength:FreeForm.kt:doc</ID>
+    <ID>MaxLineLength:FreeForm.kt:doc.initials(node.props["text"]?.takeIf { it.isNotBlank() } ?: "?", sizeDp, doc.role(Role.KEY), doc.role(Role.INK))</ID>
+    <ID>MaxLineLength:FreeForm.kt:doc.key(ref, icon = icon, heightDp = sizeDp, widthDp = if (stretch) null else sizeDp, round = !stretch, modifier = if (stretch) Modifier.horizontalWeight(1f) else Modifier)</ID>
+    <ID>MaxLineLength:FreeForm.kt:doc.key(ref, text = if (icon == null) digit else null, icon = icon, heightDp = sizeDp, widthDp = keyW)</ID>
+    <ID>MaxLineLength:FreeForm.kt:drawArc(inset.rf, inset.rf, (px - inset).rf, (px - inset).rf, Metrics.GAUGE_ARC_START_DEG.rf, doc.float(nodeLevel(node.id)) * Metrics.GAUGE_ARC_SWEEP_DEG)</ID>
     <ID>MaxLineLength:FreeForm.kt:else</ID>
     <ID>MaxLineLength:FreeForm.kt:for</ID>
+    <ID>MaxLineLength:FreeForm.kt:hand(minutes() * Metrics.ANALOG_HOUR_DEG_PER_MIN, Metrics.ANALOG_HOUR_HAND_LEN, px * Metrics.ANALOG_HOUR_HAND_WIDTH, ink)</ID>
+    <ID>MaxLineLength:FreeForm.kt:hand(seconds() * Metrics.ANALOG_MINUTE_DEG_PER_SEC, Metrics.ANALOG_MINUTE_HAND_LEN, px * Metrics.ANALOG_MINUTE_HAND_WIDTH, ink)</ID>
     <ID>MaxLineLength:FreeForm.kt:if</ID>
-    <ID>MaxLineLength:FreeForm.kt:if (domain == "lock") c.label(c.text(Vars.t(n.id, "confirm")), Type.CAPTION, c.role(Role.WARN), Weight.SEMI_BOLD)</ID>
-    <ID>MaxLineLength:FreeForm.kt:if (i &gt; 0 &amp;&amp; gap &gt; 0f) scope.Spacer(if (mine == Axis.ROW) Modifier.width(u.px(gap)) else Modifier.height(u.px(gap)))</ID>
-    <ID>MaxLineLength:FreeForm.kt:if (id != null &amp;&amp; on != null) c.toggleIcon(id, name, on, sizeDp * 0.45f, ink) else c.icon(name, sizeDp * 0.45f, ink)</ID>
-    <ID>MaxLineLength:FreeForm.kt:if (id != null) c.label(c.text(Vars.e(id, "value")), maxOf(sizeDp * 0.16f, Type.CAPTION), c.role(Role.INK), Weight.MEDIUM, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:FreeForm.kt:if (id != null) c.label(c.text(codeVar), Type.VALUE, c.role(Role.INK), Weight.MEDIUM, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:FreeForm.kt:if (n.props["scroll"] == "true") m = if (mine == Axis.ROW) m.horizontalScroll() else if (mine == Axis.COLUMN) m.verticalScroll() else m</ID>
-    <ID>MaxLineLength:FreeForm.kt:if (show == "both") c.label(c.text(Vars.DATE), maxOf(sp * 0.33f, Type.BODY), c.role(Role.INK_SOFT), align = a, lines = 2)</ID>
-    <ID>MaxLineLength:FreeForm.kt:m = m.border(u.px(n.style.border), u.px(n.style.corner), ink, if (n.style.corner &gt; 0f) RcBorderShape.RoundedRectangle else RcBorderShape.Rectangle)</ID>
-    <ID>MaxLineLength:FreeForm.kt:main(c.size.height, { Modifier.verticalWeight(it) }, Modifier.verticalWeight(1f), { Modifier.height(u.px(it)) }).fillMaxWidth()</ID>
-    <ID>MaxLineLength:FreeForm.kt:main(c.size.width, { Modifier.horizontalWeight(it) }, Modifier.horizontalWeight(1f), { Modifier.width(u.px(it)) }).fillMaxHeight()</ID>
+    <ID>MaxLineLength:FreeForm.kt:if (!node.style.padded) it.padding(units.px(Metrics.BADGE_PAD_H_DP), 0f, units.px(Metrics.BADGE_PAD_H_DP), 0f) else it</ID>
+    <ID>MaxLineLength:FreeForm.kt:if (!node.style.padded) it.padding(units.px(Metrics.BUTTON_PAD_H_DP), 0f, units.px(Metrics.BUTTON_PAD_H_DP), 0f) else it</ID>
+    <ID>MaxLineLength:FreeForm.kt:if (domain == "lock") doc.label(doc.text(Vars.tile(node.id, Vars.KEY_CONFIRM)), Type.CAPTION, doc.role(Role.WARN), Weight.SEMI_BOLD)</ID>
+    <ID>MaxLineLength:FreeForm.kt:if (i &gt; 0 &amp;&amp; gap &gt; 0f) scope.Spacer(if (mine == Axis.ROW) Modifier.width(units.px(gap)) else Modifier.height(units.px(gap)))</ID>
+    <ID>MaxLineLength:FreeForm.kt:if (icon != null) doc.icon(icon, if (word == null) Metrics.BUTTON_ICON_ONLY_DP else Metrics.BUTTON_ICON_WITH_TEXT_DP, ink)</ID>
+    <ID>MaxLineLength:FreeForm.kt:if (id != null &amp;&amp; on != null) doc.toggleIcon(id, name, on, sizeDp * Metrics.ICON_BUTTON_ICON_RATIO, ink) else doc.icon(name, sizeDp * Metrics.ICON_BUTTON_ICON_RATIO, ink)</ID>
+    <ID>MaxLineLength:FreeForm.kt:if (id != null) doc.label(doc.text(Vars.entity(id, Vars.KEY_VALUE)), maxOf(sizeDp * Metrics.GAUGE_VALUE_SIZE_RATIO, Type.CAPTION), doc.role(Role.INK), Weight.MEDIUM, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:FreeForm.kt:if (id != null) doc.label(doc.text(codeVar), Type.VALUE, doc.role(Role.INK), Weight.MEDIUM, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:FreeForm.kt:if (marquee) it.marquee(Int.MAX_VALUE, 0, Metrics.MARQUEE_GAP_PX, Metrics.MARQUEE_SPACE_PX, 0f, Metrics.MARQUEE_SPEED_DP) else it</ID>
+    <ID>MaxLineLength:FreeForm.kt:if (node.props["scroll"] == "true") modifier = if (mine == Axis.ROW) modifier.horizontalScroll() else if (mine == Axis.COLUMN) modifier.verticalScroll() else modifier</ID>
+    <ID>MaxLineLength:FreeForm.kt:if (place == null) doc.node(child, sizes[i], mine, pages) else doc.placed(child, place, sizes[i], mine, pages)</ID>
+    <ID>MaxLineLength:FreeForm.kt:if (seconds) hand(continuousSeconds() * Metrics.ANALOG_SECOND_DEG, Metrics.ANALOG_SECOND_HAND_LEN, px * Metrics.ANALOG_SECOND_HAND_WIDTH, accent)</ID>
+    <ID>MaxLineLength:FreeForm.kt:if (show == "both") doc.label(doc.text(Vars.DATE), maxOf(sp * Metrics.CLOCK_DATE_SCALE, Type.BODY), doc.role(Role.INK_SOFT), align = textAlign, lines = 2)</ID>
+    <ID>MaxLineLength:FreeForm.kt:if (style.padded) modifier = modifier.padding(units.px(style.start), units.px(style.top), units.px(style.end), units.px(style.bottom))</ID>
+    <ID>MaxLineLength:FreeForm.kt:main(child.size.height, { Modifier.verticalWeight(it) }, Modifier.verticalWeight(1f), { Modifier.height(units.px(it)) }).fillMaxWidth()</ID>
+    <ID>MaxLineLength:FreeForm.kt:main(child.size.width, { Modifier.horizontalWeight(it) }, Modifier.horizontalWeight(1f), { Modifier.width(units.px(it)) }).fillMaxHeight()</ID>
+    <ID>MaxLineLength:FreeForm.kt:modifier = modifier.border(units.px(node.style.border), units.px(node.style.corner), ink, if (node.style.corner &gt; 0f) RcBorderShape.RoundedRectangle else RcBorderShape.Rectangle)</ID>
+    <ID>MaxLineLength:FreeForm.kt:one(Spec.of(node.size.height), avail.h, if (axis == Axis.COLUMN) share.h else avail.h, nat.h, axis == Axis.COLUMN)</ID>
     <ID>MaxLineLength:FreeForm.kt:paint { color(colour); style(RcPaintStyle.Stroke); strokeWidth(width); strokeCap(RcStrokeCap.Round) }</ID>
-    <ID>MaxLineLength:FreeForm.kt:picture(PictureSlot(slot, if (camera) "/api/camera_proxy/$id" else "attr:$id:entity_picture", w, h, if (camera) 10 else 0, crop = !fit))</ID>
+    <ID>MaxLineLength:FreeForm.kt:paint { color(dim); style(RcPaintStyle.Stroke); strokeWidth(px * Metrics.ANALOG_TICK_STROKE_RATIO); strokeCap(RcStrokeCap.Round) }</ID>
+    <ID>MaxLineLength:FreeForm.kt:paint { color(doc.role(Role.INK_SOFT)); style(RcPaintStyle.Fill); textSize(px * Metrics.GAUGE_CAPTION_SIZE_RATIO) }</ID>
+    <ID>MaxLineLength:FreeForm.kt:picture(PictureSlot(slot, if (camera) "/api/camera_proxy/$id" else "attr:$id:entity_picture", w, h, if (camera) Metrics.CAMERA_REFRESH_SEC else 0, crop = !fit))</ID>
     <ID>MaxLineLength:FreeForm.kt:scope</ID>
-    <ID>MaxLineLength:FreeForm.kt:this@choicesNode.choiceRow(n.id, "c", shown.map { it to set.word(it) }, { ActionRef(n.id, set.verb, it) }, h, set.icons)</ID>
+    <ID>MaxLineLength:FreeForm.kt:scope.Box(modifier.size(units.px(sizeDp * Metrics.KEYS_COLS + Metrics.KEYS_GAP_TOTAL_DP), units.px(sizeDp)).clip(rounded(Metrics.KEYS_EMPTY_CORNER_DP)).background(role(Role.TRACK)))</ID>
+    <ID>MaxLineLength:FreeForm.kt:this@choicesNode.choiceRow(node.id, "c", shown.map { it to set.word(it) }, { ActionRef(node.id, set.verb, it) }, h, set.icons)</ID>
     <ID>MaxLineLength:FreeForm.kt:this@freeForm.node(root, this@freeForm.resolve(root, Dims(wDp, hDp), Axis.BOX, Dims(wDp, hDp)), Axis.BOX, pages)</ID>
     <ID>MaxLineLength:FreeForm.kt:val</ID>
-    <ID>MaxLineLength:FreeForm.kt:val (min, max) = if (domain in setOf("number", "input_number")) (e?.number("min") ?: 0.0) to (e?.number("max") ?: 100.0) else 0.0 to 100.0</ID>
-    <ID>MaxLineLength:FreeForm.kt:val (v, h) = (alignment ?: "top-start").split('-').let { if (it.size == 2) it[0] to it[1] else it[0] to it[0] }</ID>
-    <ID>MaxLineLength:FreeForm.kt:val caption = n.props["caption"]?.takeIf { it.isNotBlank() }?.let { if (it == "@name") id?.let { e -&gt; text(Vars.e(e, "name")) } else literal(it) }</ID>
-    <ID>MaxLineLength:FreeForm.kt:val fixed = kids.filter { weightOf(it) == 0f }.sumOf { main(resolve(it, inner, axis, Dims(0f, 0f))).toDouble() }.toFloat()</ID>
-    <ID>MaxLineLength:FreeForm.kt:val hours = when (n.props["numbers"]) { "all" -&gt; 1..12; "quarters" -&gt; listOf(3, 6, 9, 12); else -&gt; emptyList() }</ID>
-    <ID>MaxLineLength:FreeForm.kt:val icon = n.props["icon"]?.takeIf { it.isNotEmpty() } ?: id?.let { states[it]?.attr("icon") } ?: domain?.let { Catalogue.of(it)?.icon }</ID>
-    <ID>MaxLineLength:FreeForm.kt:val m = sized(n, axis).let { if (n.size.width == "wrap" &amp;&amp; n.size.height == "wrap") it.size(u.px(self.w), u.px(self.h)) else it }</ID>
-    <ID>MaxLineLength:FreeForm.kt:val m = styled(n, axis, pages, base).let { if (n.style.padding == 0f) it.padding(u.px(12f), 0f, u.px(12f), 0f) else it }</ID>
-    <ID>MaxLineLength:FreeForm.kt:val name = n.props["icon"]?.takeIf { it.isNotEmpty() } ?: id?.let { states[it]?.attr("icon") } ?: domain?.let { Catalogue.of(it)?.icon } ?: "gesture-tap"</ID>
-    <ID>MaxLineLength:FreeForm.kt:val named = if (t.effectiveKind() == "nav" &amp;&amp; t.name == null) t.copy(name = t.options["page"]?.let(pages.title)) else t</ID>
-    <ID>MaxLineLength:FreeForm.kt:val self = if (pinH || pinW) content(n).let { Dims(if (pinW) minOf(it.w, given.w) else given.w, if (pinH) minOf(it.h, given.h) else given.h) } else given</ID>
+    <ID>MaxLineLength:FreeForm.kt:val fixed = children.filter { weightOf(it) == 0f }.sumOf { main(resolve(it, inner, axis, Dims(0f, 0f))).toDouble() }.toFloat()</ID>
+    <ID>MaxLineLength:FreeForm.kt:val icon = node.props["icon"]?.takeIf { it.isNotEmpty() } ?: id?.let { states[it]?.attr("icon") } ?: domain?.let { Catalogue.of(it)?.icon }</ID>
+    <ID>MaxLineLength:FreeForm.kt:val inner = if (i % Metrics.ANALOG_QUARTER_STEP == 0) Metrics.ANALOG_TICK_INNER_MAJOR else Metrics.ANALOG_TICK_INNER_MINOR</ID>
+    <ID>MaxLineLength:FreeForm.kt:val middle = if (node.size.width == "wrap") Modifier.width(doc.units.px(Metrics.STEPPER_MIDDLE_W)) else Modifier.horizontalWeight(1f)</ID>
+    <ID>MaxLineLength:FreeForm.kt:val modifier = sized(node, axis).let { if (node.size.width == "wrap" &amp;&amp; node.size.height == "wrap") it.size(units.px(self.w), units.px(self.h)) else it }</ID>
+    <ID>MaxLineLength:FreeForm.kt:val name = node.props["icon"]?.takeIf { it.isNotEmpty() } ?: id?.let { states[it]?.attr("icon") } ?: domain?.let { Catalogue.of(it)?.icon } ?: "gesture-tap"</ID>
+    <ID>MaxLineLength:FreeForm.kt:val named = if (tile.effectiveKind() == "nav" &amp;&amp; tile.name == null) tile.copy(name = tile.options["page"]?.let(pages.title)) else tile</ID>
+    <ID>MaxLineLength:FreeForm.kt:val self = if (pinH || pinW) content(node).let { Dims(if (pinW) minOf(it.w, given.w) else given.w, if (pinH) minOf(it.h, given.h) else given.h) } else given</ID>
+    <ID>MaxLineLength:FreeForm.kt:val shown = set.choices.take(node.props["max"]?.toIntOrNull()?.coerceIn(Metrics.CHOICES_MIN, Metrics.CHOICES_MAX) ?: Metrics.CHOICES_DEFAULT_MAX)</ID>
+    <ID>MaxLineLength:FreeForm.kt:val sizeDp = node.props["size"]?.toFloatOrNull()?.coerceIn(Metrics.ANALOG_MIN_DP, Metrics.ANALOG_MAX_DP) ?: Metrics.ANALOG_DEFAULT_DP</ID>
+    <ID>MaxLineLength:FreeForm.kt:val sizeDp = node.props["size"]?.toFloatOrNull()?.coerceIn(Metrics.AVATAR_MIN_DP, Metrics.AVATAR_MAX_DP) ?: Metrics.AVATAR_DEFAULT_DP</ID>
+    <ID>MaxLineLength:FreeForm.kt:val sizeDp = node.props["size"]?.toFloatOrNull()?.coerceIn(Metrics.GAUGE_MIN_DP, Metrics.GAUGE_MAX_DP) ?: Metrics.GAUGE_DEFAULT_DP</ID>
+    <ID>MaxLineLength:FreeForm.kt:val sizeDp = node.props["size"]?.toFloatOrNull()?.coerceIn(Metrics.ICON_BUTTON_MIN_DP, Metrics.ICON_BUTTON_MAX_DP) ?: Metrics.ICON_BUTTON_DEFAULT_DP</ID>
+    <ID>MaxLineLength:FreeForm.kt:val sizeDp = node.props["size"]?.toFloatOrNull()?.coerceIn(Metrics.KEYPAD_MIN_DP, Metrics.KEYPAD_MAX_DP) ?: Metrics.KEYPAD_DEFAULT_DP</ID>
+    <ID>MaxLineLength:FreeForm.kt:val sizeDp = node.props["size"]?.toFloatOrNull()?.coerceIn(Metrics.KEYS_MIN_DP, Metrics.KEYS_MAX_DP) ?: Metrics.KEYS_DEFAULT_DP</ID>
+    <ID>MaxLineLength:FreeForm.kt:val sizeDp = node.props["size"]?.toFloatOrNull()?.coerceIn(Metrics.SWATCH_MIN_DP, Metrics.SWATCH_MAX_DP) ?: Metrics.SWATCH_DEFAULT_DP</ID>
+    <ID>MaxLineLength:FreeForm.kt:val steps = node.props["steps"]?.toIntOrNull()?.coerceIn(Metrics.SLIDER_MIN_STEPS, Metrics.SLIDER_MAX_STEPS) ?: Metrics.SLIDER_DEFAULT_STEPS</ID>
     <ID>MaxLineLength:FreeForm.kt:val verb = when (domain) { "light" -&gt; "brightness"; "fan" -&gt; "percentage"; "cover" -&gt; "position"; "media_player" -&gt; "volume"; else -&gt; "value" }</ID>
+    <ID>MaxLineLength:FreeForm.kt:val weightOf = { node: Node -&gt; when (val sizeSpec = mainSpec(node)) { is Spec.Weight -&gt; sizeSpec.value; Spec.Fill -&gt; 1f; else -&gt; 0f } }</ID>
     <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$"root"</ID>
     <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$.</ID>
     <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$Node</ID>
@@ -334,7 +185,8 @@
     <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$assertEquals(1, right.count { it == BoxLayout.END to BoxLayout.TOP } - plain.count { it == BoxLayout.END to BoxLayout.TOP })</ID>
     <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$assertEquals(14, ops(parse(ScreenRenderer.render(screen(dials), tablet, input()).bytes).operations).count { it is DrawTextAnchored })</ID>
     <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$assertEquals(Vars.GONE.toString(), off["e.light.table_lamp.on"]?.value, "the text bound with showWhen=on is hidden")</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$assertTrue(doc.ctx.predicted.keys.any { it.startsWith("heat|temperature|+") }, "predicted: ${doc.ctx.predicted.keys}")</ID>
+    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$assertTrue(doc.docContext.pictures.any { it.name == "img.cam" &amp;&amp; it.source == "/api/camera_proxy/camera.front_door" })</ID>
+    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$assertTrue(doc.docContext.predicted.keys.any { it.startsWith("heat|temperature|+") }, "predicted: ${doc.docContext.predicted.keys}")</ID>
     <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$fun</ID>
     <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$if (withIcon) Node("$id.head", "row", children = listOf(Node("$id.i", "icon"), Node("$id.t", "text", props = mapOf("fontSize" to "16")))) else Node("$id.t", "text", props = mapOf("fontSize" to "16"))</ID>
     <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$p.copy(tiles = emptyList(), root = Node("root.${p.id}", "row", size = NodeSize("fill", "fill"), children = cards))</ID>
@@ -344,15 +196,28 @@
     <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$val at20 = doc.vars(states + ("sensor.kitchen_temperature" to states.getValue("sensor.kitchen_temperature").with("20")))</ID>
     <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$val at99 = doc.vars(states + ("sensor.kitchen_temperature" to states.getValue("sensor.kitchen_temperature").with("99")))</ID>
     <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$val clash = Node("a", "column", children = listOf(Node("x", "tile", tile = Tile("dup", kind = "clock")), Node("dup", "text", bind = NodeBinding("light.kitchen"))))</ID>
+    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$val doc = ScreenRenderer.render(screen, tablet, input().let { RenderInput(it.states, it.i18n, it.homeAssistantConfig, data) })</ID>
     <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$val half = doc.vars(states + ("light.living_room" to lamp.with("on", mapOf("brightness" to kotlinx.serialization.json.JsonPrimitive(128)))))</ID>
     <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$val row = Node("row", "row", size = NodeSize("fill", "wrap"), props = mapOf("gap" to "12"), children = listOf(card("a", true), card("b", false)))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$val slides = all.filterIsInstance&lt;Component&gt;().map { it.mAnimationSpec }.filter { it.enterAnimation == AnimationSpec.ANIMATION.SLIDE_TOP }</ID>
+    <ID>MaxLineLength:Home.kt:Box(Modifier.size(doc.units.px(ACCENT_BAR_WIDTH_DP * layoutScale), doc.units.px(ACCENT_BAR_HEIGHT_DP * layoutScale)).background(doc.role(Role.ACCENT_DARK)))</ID>
+    <ID>MaxLineLength:Home.kt:Box(Modifier.size(doc.units.px(ACCENT_BAR_WIDTH_DP * layoutScale), doc.units.px(STRIP_ACCENT_H_DP * layoutScale)).background(doc.role(Role.ACCENT_DARK)))</ID>
+    <ID>MaxLineLength:Home.kt:CalendarEvent(title, start, time("end_time"), entityState.attr("all_day") == "true", entityState.name, entityState.attr("location"))</ID>
     <ID>MaxLineLength:Home.kt:Row</ID>
-    <ID>MaxLineLength:Home.kt:VarValue.string(Vars.t(tileId, "ev.meta"), listOfNotNull(next?.calendar, next?.location).filter { it.isNotBlank() }.joinToString(" · "))</ID>
+    <ID>MaxLineLength:Home.kt:VarValue.string(Vars.tile(tileId, "ev.meta"), listOfNotNull(next?.calendar, next?.location).filter { it.isNotBlank() }.joinToString(" · "))</ID>
+    <ID>MaxLineLength:Home.kt:doc.label(doc.i18n.t("ui.next_event").uppercase(doc.i18n.locale), small(SECTION_CAPTION_SP, layoutScale), doc.role(Role.INK), Weight.MEDIUM)</ID>
+    <ID>MaxLineLength:Home.kt:doc.label(doc.i18n.t("ui.outside_now").uppercase(doc.i18n.locale), small(SECTION_GAP_DP, layoutScale), doc.role(Role.INK))</ID>
+    <ID>MaxLineLength:Home.kt:doc.label(doc.text(Vars.tile(tileId, "ev.day")), EVENT_DAY_SP * layoutScale, doc.role(Role.ACCENT_DARK), Weight.LIGHT)</ID>
+    <ID>MaxLineLength:Home.kt:doc.label(doc.text(Vars.tile(tileId, "ev.title")), small(EVENT_TITLE_SP, layoutScale), doc.role(Role.INK), lines = 2)</ID>
+    <ID>MaxLineLength:Home.kt:doc.label(doc.text(Vars.tile(tileId, "temp")), ACCENT_BAR_WIDTH_DP * layoutScale, doc.role(Role.INK), TEMP_WEIGHT)</ID>
     <ID>MaxLineLength:Home.kt:fun</ID>
     <ID>MaxLineLength:Home.kt:scope</ID>
     <ID>MaxLineLength:NestingProbeTest.kt:NestingProbeTest$assertEquals(emptyList(), names(bytes), "if this fails, alpha20's loss is fixed and DocContext.build may go back to one pass")</ID>
     <ID>MaxLineLength:NestingProbeTest.kt:NestingProbeTest$val</ID>
+    <ID>MaxLineLength:PlayerSession.kt:PlayerSession$if (changed.isNotEmpty()) send(ServerMessage.Vars(changed, shown.renderedDoc.predictions(states, ::foresee)))</ID>
+    <ID>MaxLineLength:Present.kt:Present$"climate" -&gt; entityState.number("temperature")?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + "°" } ?: word</ID>
+    <ID>MaxLineLength:Present.kt:Present$"sensor", "number", "input_number" -&gt; entityState.numericState()?.let { numberOnly(entityState, it, i18n) } ?: entityState.state</ID>
+    <ID>MaxLineLength:Present.kt:Present$fun</ID>
+    <ID>MaxLineLength:Present.kt:Present$private</ID>
     <ID>MaxLineLength:RenderTest.kt:RenderTest$assertContains(parse(doc.bytes).getNamedVariables(NamedVariable.STRING_TYPE).toList(), "USER:e.light.living_room.name")</ID>
     <ID>MaxLineLength:RenderTest.kt:RenderTest$assertEquals(page.tiles.map { it.id }.sorted(), placed.map { it.tile.id }.sorted(), "tiles dropped from ${page.id}")</ID>
     <ID>MaxLineLength:RenderTest.kt:RenderTest$assertFalse(doc.stale(states + ("light.table_lamp" to lamp.with("on"))), "a state change is a value, not a rebuild")</ID>
@@ -363,18 +228,20 @@
     <ID>MaxLineLength:RenderTest.kt:RenderTest$val doc = AlertRenderer.render(Alert("Doorbell", "Someone is at the door", camera = "camera.front_door", buttons = listOf(AlertButton("Open"))), tablet, input())</ID>
     <ID>MaxLineLength:RenderTest.kt:RenderTest$val doc = ScreenRenderer.render(screen, tablet, input(runBlocking { RenderDataRepository(ha).forScreen(screen) }))</ID>
     <ID>MaxLineLength:RenderTest.kt:RenderTest$val ids = ha.states.value.keys.filter { Catalogue.of(it.substringBefore('.'))?.card?.let { c -&gt; c != "none" } == true }</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:RenderedDoc$for (b in ctx.bindings) for (v in runCatching { b.compute(states) }.getOrDefault(emptyList())) if (ctx.declares(v.name)) out[v.name] = v</ID>
+    <ID>MaxLineLength:ScreenRenderer.kt:RenderedDoc$for (b in docContext.bindings) for (v in runCatching { b.compute(states) }.getOrDefault(emptyList())) if (docContext.declares(v.name)) out[v.name] = v</ID>
     <ID>MaxLineLength:ScreenRenderer.kt:RenderedDoc$fun</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$Modifier.width(c.u.px(minOf(350f, spec.widthDp * 0.42f))).fillMaxHeight().background(c.role(Role.HEADER_DARK))</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$c.key(ActionRef("_", "back", home.toString()), icon = "arrow-left", heightDp = 34f, widthDp = 34f, round = true)</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$c.label(title.uppercase(c.i18n.locale), 10f, c.role(Role.INK), align = RcTextAlign.Center, modifier = Modifier.width(c.u.px(wDp - 4f)))</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$c.navButton(p.title, p.icon ?: if (i == home) "home" else "view-dashboard", buttonW, barH, i == current, ActionRef("_", "page", i.toString()))</ID>
+    <ID>MaxLineLength:ScreenRenderer.kt:RenderedDoc$val entities: Set&lt;String&gt; = (docContext.bindings.mapNotNull { it.entityId } + docContext.structure.map { it.first }).toSet()</ID>
+    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$Spacer(Modifier.height(doc.units.px(NAV_ICON_LABEL_GAP_DP * style.layoutScale.coerceAtMost(NAV_GAP_MAX_SCALE))))</ID>
+    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$at</ID>
+    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$doc.navButton(p.title, icon, buttonW, barH, i == current, ActionRef("_", "page", i.toString()), style)</ID>
+    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$entityState.domain == "weather" -&gt; entityState.number("temperature")?.let { i18n.number(it, 0) + "°" } ?: ""</ID>
     <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$freeForm(root, 0f, spec.topBar, spec.widthDp, contentH, pageIndex) { id -&gt; screen.pages.firstOrNull { it.id == id }?.title }</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$horizontal = if (count &gt; 2) RcRowHorizontalPositioning.SpaceBetween else RcRowHorizontalPositioning.SpaceEvenly</ID>
     <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$scope</ID>
     <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$this@page</ID>
     <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$val</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$val named = if (t.effectiveKind() == "nav" &amp;&amp; t.name == null) t.copy(name = screen.pages.firstOrNull { it.id == t.options["page"] }?.title) else t</ID>
+    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$val clockW = bar.clockWidth?.let { spec.widthDp * it / 100f } ?: minOf(CLOCK_MAX_WIDTH_DP, spec.widthDp * CLOCK_WIDTH_SHARE)</ID>
+    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$val named = if (tile.effectiveKind() == "nav" &amp;&amp; tile.name == null) tile.copy(name = screen.pages.firstOrNull { it.id == tile.options["page"] }?.title) else tile</ID>
+    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer.NavStyle$/** How navigation buttons look: icon, word or both, [layoutScale] against the default bar, the current page's fill. */</ID>
     <ID>MaxLineLength:Themes.kt:Themes$Pastel.PURPLE to 0xFF8E6CC9</ID>
     <ID>MaxLineLength:Themes.kt:Themes$Pastel.PURPLE to 0xFFB39DDB</ID>
     <ID>MaxLineLength:Themes.kt:Themes$Pastel.PURPLE to 0xFFC599FF</ID>
@@ -408,76 +275,105 @@
     <ID>MaxLineLength:ThemesTest.kt:ThemesTest$val offenders = dir.listFiles()!!.filter { it.name != "Themes.kt" &amp;&amp; it.name.endsWith(".kt") &amp;&amp; hex.containsMatchIn(it.readText()) }</ID>
     <ID>MaxLineLength:ThemesTest.kt:ThemesTest$val ok = ThemeValidator.validate(Theme("mine", " ", roles = mapOf("CARD" to "#abcdef", "nope" to "#000000")), emptyList())</ID>
     <ID>MaxLineLength:ThermostatPanel.kt:Box</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:Box(Modifier.size(doc.units.px(ACCENT_BAR_WIDTH_DP * layoutScale), doc.units.px(ACCENT_BAR_HEIGHT_DP * layoutScale)).background(accent))</ID>
     <ID>MaxLineLength:ThermostatPanel.kt:Column</ID>
     <ID>MaxLineLength:ThermostatPanel.kt:Row</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:VarValue.string(Vars.t(tileId, "action"), action?.let { actionWord(it) } ?: i18n.state("climate", e?.state ?: "off"))</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:VarValue.string(Vars.t(tileId, "current"), e?.number("current_temperature")?.let { i18n.number(it, unit) + "°" } ?: "–")</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:VarValue.string(Vars.t(tileId, "humidity"), e?.number("current_humidity")?.let { i18n.percent(it.toInt()) } ?: "–")</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:c.key(ActionRef(tile.id, "temperature", "+$step"), icon = "plus", heightDp = 64f * k, widthDp = 64f * k, round = true)</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:c.key(ActionRef(tile.id, "temperature", "-$step"), icon = "minus", heightDp = 64f * k, widthDp = 64f * k, round = true)</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:VarValue.color(Vars.option(tileId, "seg", i, Vars.KEY_BG), (if (entityState?.state == mode) Role.ACCENT_DARK else Role.PAGE).argb)</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:VarValue.string(Vars.tile(tileId, "action"), action?.let { actionWord(it) } ?: i18n.state("climate", entityState?.state ?: "off"))</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:VarValue.string(Vars.tile(tileId, "current"), entityState?.number("current_temperature")?.let { i18n.number(it, unit) + "°" } ?: "–")</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:VarValue.string(Vars.tile(tileId, "humidity"), entityState?.number("current_humidity")?.let { i18n.percent(it.toInt()) } ?: "–")</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:doc.key(ActionRef(tile.id, "temperature", "+$step"), icon = "plus", heightDp = 64f * layoutScale, widthDp = 64f * layoutScale, round = true)</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:doc.key(ActionRef(tile.id, "temperature", "-$step"), icon = "minus", heightDp = 64f * layoutScale, widthDp = 64f * layoutScale, round = true)</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:doc.label(caption.uppercase(doc.i18n.locale), small(READING_CAPTION_SP, layoutScale), doc.role(Role.ACCENT_DARK), align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:doc.label(doc.fanWord(mode), small(FAN_LABEL_SP, layoutScale), doc.color(Vars.option(tileId, "fan", i, Vars.KEY_INK)), Weight.MEDIUM)</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:doc.label(doc.i18n.t("ui.adjust_temperature").uppercase(doc.i18n.locale), small(ADJUST_CAPTION_SP, layoutScale), ink)</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:doc.label(doc.text(Vars.entity(entityId, Vars.KEY_VALUE)), diameterDp / TARGET_SIZE_DIV, ink, Weight.LIGHT, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:doc.label(doc.text(Vars.tile(tileId, "action")), diameterDp / ACTION_SIZE_DIV, ink, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:doc.label(doc.text(varName), READING_VALUE_SP * layoutScale, doc.role(Role.INK), Weight.LIGHT, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:doc.reading(doc.i18n.t("ui.current_temp"), Vars.tile(tile.id, "current"), layoutScale, Modifier.horizontalWeight(1f))</ID>
     <ID>MaxLineLength:ThermostatPanel.kt:horizontal = androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning.Center</ID>
     <ID>MaxLineLength:ThermostatPanel.kt:i18n.t("state.$action").takeUnless { it == "state.$action" } ?: action.replace('_', ' ').replaceFirstChar { it.titlecase(i18n.locale) }</ID>
     <ID>MaxLineLength:ThermostatPanel.kt:i18n.t("state.$mode").takeUnless { it == "state.$mode" } ?: mode.replace('_', ' ').replaceFirstChar { it.titlecase(i18n.locale) }</ID>
     <ID>MaxLineLength:ThermostatPanel.kt:if</ID>
     <ID>MaxLineLength:ThermostatPanel.kt:listOf(s?.list("hvac_modes")?.joinToString() ?: "", s?.list("fan_modes")?.joinToString() ?: "", (s?.number("current_humidity") != null).toString()).joinToString("|")</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:paint { color(tint); alpha(1f); strokeWidth(stroke); strokeCap(RcStrokeCap.Round); style(RcPaintStyle.Stroke) }</ID>
     <ID>MaxLineLength:ThermostatPanel.kt:scope</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:val modes = e?.list("hvac_modes").orEmpty().sortedBy { MODE_ORDER.indexOf(it).let { i -&gt; if (i &lt; 0) MODE_ORDER.size else i } }.take(5)</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:val sweep = target?.let { (((it - lo) / (hi - lo).coerceAtLeast(1.0)).coerceIn(0.0, 1.0) * 360.0).toFloat() } ?: 0f</ID>
-    <ID>MaxLineLength:Tiles.kt:"person", "device_tracker" -&gt; if (asMap) ctx.mapTile(tile, body, named) else ctx.personTile(tile, body, e)</ID>
-    <ID>MaxLineLength:Tiles.kt:"sensor" -&gt; if (tile.options["graph"] == "true" &amp;&amp; body.h &gt;= 120f) ctx.historyTile(tile, body, named) else ctx.entityTile(tile, body, spec, e, named)</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:val modes = entityState?.list("hvac_modes").orEmpty().sortedBy { MODE_ORDER.indexOf(it).let { i -&gt; if (i &lt; 0) MODE_ORDER.size else i } }.take(5)</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:val step = entityState?.number("target_temp_step") ?: if (homeAssistantConfig.temperatureUnit.contains("F")) 1.0 else 0.5</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:val sweep = target?.let { (((it - minValue) / (maxValue - minValue).coerceAtLeast(1.0)).coerceIn(0.0, 1.0) * 360.0).toFloat() } ?: 0f</ID>
+    <ID>MaxLineLength:Tiles.kt:"person", "device_tracker" -&gt; if (asMap) docContext.mapTile(tile, body, named) else docContext.personTile(tile, body, entityState)</ID>
+    <ID>MaxLineLength:Tiles.kt:"sensor" -&gt; if (tile.options["graph"] == "true" &amp;&amp; body.h &gt;= SHORT_HEIGHT_DP) docContext.historyTile(tile, body, named) else docContext.entityTile(tile, body, spec, entityState, named)</ID>
     <ID>MaxLineLength:Tiles.kt:(listOfNotNull(tile.entityId) + tile.options["people"].orEmpty().split(',').map { it.trim() }.filter { it.isNotEmpty() })</ID>
     <ID>MaxLineLength:Tiles.kt:/** Solar, the grid and the battery around the house, with the power of each, as Home Assistant's energy settings name them. */</ID>
     <ID>MaxLineLength:Tiles.kt:/** Whether the tile is a page of its own (the home panel, a full weather or climate tile), drawn without a card from edge to edge. */</ID>
-    <ID>MaxLineLength:Tiles.kt:ActionRef(tile.id, verb, if (v % 1.0 == 0.0) v.toInt().toString() else "%.1f".format(java.util.Locale.ROOT, v))</ID>
     <ID>MaxLineLength:Tiles.kt:Box</ID>
-    <ID>MaxLineLength:Tiles.kt:Box(Modifier.fillMaxWidth().height(ctx.u.px(HEADER_LINE)).background(ctx.color(Vars.t(tile.id, "line"))))</ID>
-    <ID>MaxLineLength:Tiles.kt:Image(c.image("cam.$id.${tile.id}", w, h), Modifier.fillMaxSize(), contentScale = if (tile.options["fit"] == "whole") RcContentScale.Fit else RcContentScale.Crop)</ID>
-    <ID>MaxLineLength:Tiles.kt:Image(c.image("fav.${tile.id}", w, h), Modifier.fillMaxSize(), contentScale = RcContentScale.Crop, alpha = 0.45f)</ID>
+    <ID>MaxLineLength:Tiles.kt:Box(Modifier.fillMaxWidth().height(docContext.units.px(HEADER_LINE)).background(docContext.color(Vars.tile(tile.id, Vars.KEY_LINE))))</ID>
+    <ID>MaxLineLength:Tiles.kt:Image(doc.image("art.$entityId", w, h), Modifier.fillMaxSize(), contentScale = RcContentScale.Crop, alpha = PERSON_PHOTO_W_SHARE)</ID>
+    <ID>MaxLineLength:Tiles.kt:Image(doc.image("cam.$entityId.${tile.id}", w, h), Modifier.fillMaxSize(), contentScale = if (tile.options["fit"] == "whole") RcContentScale.Fit else RcContentScale.Crop)</ID>
+    <ID>MaxLineLength:Tiles.kt:Image(doc.image("fav.${tile.id}", w, h), Modifier.fillMaxSize(), contentScale = RcContentScale.Crop, alpha = NAV_ICON_SHARE)</ID>
     <ID>MaxLineLength:Tiles.kt:Row</ID>
     <ID>MaxLineLength:Tiles.kt:TileBox$data</ID>
-    <ID>MaxLineLength:Tiles.kt:c</ID>
-    <ID>MaxLineLength:Tiles.kt:c.choiceRow(tile.id, "mode", modes.take(4).map { it to c.i18n.state("climate", it) }, { ActionRef(tile.id, "mode", it) }, 40f, MODE_ICONS)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.graph(points, box.w - 28f, (box.h - if (named) 90f else 70f).coerceAtLeast(30f), c.color(Vars.t(tile.id, "icon")), ink2)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.key(ActionRef(tile.id, "next"), icon = "skip-next", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.key(ActionRef(tile.id, "previous"), icon = "skip-previous", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.key(ActionRef(tile.id, "temperature", "+$step"), icon = "plus", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.key(ActionRef(tile.id, "temperature", "+$step"), icon = "plus", heightDp = 48f, widthDp = 48f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.key(ActionRef(tile.id, "temperature", "-$step"), icon = "minus", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.key(ActionRef(tile.id, "temperature", "-$step"), icon = "minus", heightDp = 48f, widthDp = 48f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.label(c.i18n.t(if (key == "battery") "ui.battery_source" else if (key == "home") "ui.house" else "ui.$key"), Type.CAPTION, ink2, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.label(c.i18n.weekday(d.time.withZoneSameInstant(zone)), Type.CAPTION, ink2, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.label(c.text(Vars.e(id, "title")), if (big) Type.TITLE + 2f else Type.BODY, ink, Weight.SEMI_BOLD, lines = if (big) 2 else 1)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.label(c.text(Vars.e(id, "value")), Type.VALUE + 4f, ink, Weight.MEDIUM, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.label(c.text(Vars.t(tile.id, "where")), Type.BODY, c.role(Role.ACCENT_SOFT), Weight.SEMI_BOLD, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.label(listOfNotNull(d.high?.let { "${it.roundToInt()}°" }, d.low?.let { "${it.roundToInt()}°" }).joinToString(" "), Type.CAPTION, ink, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.label(tile.name ?: c.i18n.t("ui.people_home", "count" to who.count { c.states[it]?.state == "home" }), Type.CAPTION + 1f, c.role(Role.INK), Weight.SEMI_BOLD)</ID>
-    <ID>MaxLineLength:Tiles.kt:VarValue.int(Vars.e(id, "notplaying"), if (s?.state == "playing") Vars.GONE else Vars.VISIBLE)</ID>
-    <ID>MaxLineLength:Tiles.kt:VarValue.int(Vars.e(id, "playing"), if (s?.state == "playing") Vars.VISIBLE else Vars.GONE)</ID>
-    <ID>MaxLineLength:Tiles.kt:VarValue.string(Vars.e(id, "artist"), listOfNotNull(s?.attr("media_artist"), s?.attr("media_album_name")).joinToString(" · ").ifEmpty { i18n.state("media_player", s?.state ?: "off") })</ID>
+    <ID>MaxLineLength:Tiles.kt:VarValue.string(Vars.entity(entityId, "artist"), listOfNotNull(s?.attr("media_artist"), s?.attr("media_album_name")).joinToString(" · ").ifEmpty { i18n.state("media_player", s?.state ?: "off") })</ID>
+    <ID>MaxLineLength:Tiles.kt:doc</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.choiceRow(tile.id, "mode", modes.take(CLIMATE_MODES_TAKE).map { it to doc.i18n.state("climate", it) }, { ActionRef(tile.id, "mode", it) }, COL_ICON_TALL_DP, MODE_ICONS)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.graph(points, box.w - LEVEL_BAR_HEIGHT_DP, (box.h - if (named) GRAPH_NAMED_RESERVE_DP else PERSON_TALL_MAX_DP).coerceAtLeast(COL_ICON_SHORT_DP), doc.color(Vars.tile(tile.id, Vars.KEY_ICON)), ink2)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.icon("pause", LEVEL_BAR_HEIGHT_DP, doc.color(Vars.tile(tile.id, Vars.KEY_BG)), doc.int(Vars.entity(entityId, "playing")))</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.icon("play", LEVEL_BAR_HEIGHT_DP, doc.color(Vars.tile(tile.id, Vars.KEY_BG)), doc.int(Vars.entity(entityId, "notplaying")))</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.icon(Present.weatherIcon(entityState?.state ?: ""), if (box.h &gt;= TALL_HEIGHT_DP) WEATHER_ICON_TALL_DP else HEADER_SHORT_DP, ink)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.key(ActionRef(tile.id, "next"), icon = "skip-next", heightDp = HEADER_TALL_DP, widthDp = HEADER_TALL_DP, round = true, bg = doc.color(Vars.tile(tile.id, Vars.KEY_FILL)), ink = ink)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.key(ActionRef(tile.id, "previous"), icon = "skip-previous", heightDp = HEADER_TALL_DP, widthDp = HEADER_TALL_DP, round = true, bg = doc.color(Vars.tile(tile.id, Vars.KEY_FILL)), ink = ink)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.key(ActionRef(tile.id, "temperature", "+$step"), icon = "plus", heightDp = CLIMATE_KEY_LG_DP, widthDp = CLIMATE_KEY_LG_DP, round = true, bg = doc.color(Vars.tile(tile.id, Vars.KEY_FILL)), ink = ink)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.key(ActionRef(tile.id, "temperature", "+$step"), icon = "plus", heightDp = HEADER_TALL_DP, widthDp = HEADER_TALL_DP, round = true, bg = doc.color(Vars.tile(tile.id, Vars.KEY_FILL)), ink = ink)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.key(ActionRef(tile.id, "temperature", "-$step"), icon = "minus", heightDp = CLIMATE_KEY_LG_DP, widthDp = CLIMATE_KEY_LG_DP, round = true, bg = doc.color(Vars.tile(tile.id, Vars.KEY_FILL)), ink = ink)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.key(ActionRef(tile.id, "temperature", "-$step"), icon = "minus", heightDp = HEADER_TALL_DP, widthDp = HEADER_TALL_DP, round = true, bg = doc.color(Vars.tile(tile.id, Vars.KEY_FILL)), ink = ink)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.label(doc.i18n.t(if (key == "battery") "ui.battery_source" else if (key == "home") "ui.house" else "ui.$key"), Type.CAPTION, ink2, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.label(doc.i18n.weekday(d.time.withZoneSameInstant(zone)), Type.CAPTION, ink2, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.label(doc.text(Vars.TIME), minOf(box.w * BEDSIDE_TIME_W, box.h * BEDSIDE_TIME_H), ink, HEADER_TALL_MIN_DP, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.label(doc.text(Vars.entity(entityId, "title")), if (big) Type.TITLE + MEDIA_TITLE_BUMP else Type.BODY, ink, Weight.SEMI_BOLD, lines = if (big) 2 else 1)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.label(doc.text(Vars.entity(entityId, Vars.KEY_NAME)), Type.BODY, doc.role(Role.INK), Weight.SEMI_BOLD)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.label(doc.text(Vars.entity(entityId, Vars.KEY_NAME)), Type.TITLE, ink, Weight.MEDIUM, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.label(doc.text(Vars.entity(entityId, Vars.KEY_STATE)), if (named) Type.CAPTION + 1f else Type.BODY, ink2)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.label(doc.text(Vars.entity(entityId, Vars.KEY_VALUE)), Type.VALUE + CLIMATE_VALUE_BUMP, ink, Weight.MEDIUM, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.label(doc.text(Vars.tile(tile.id, "where")), Type.BODY, doc.role(Role.ACCENT_SOFT), Weight.SEMI_BOLD)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.label(doc.text(Vars.tile(tile.id, "where")), Type.BODY, doc.role(Role.ACCENT_SOFT), Weight.SEMI_BOLD, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.label(listOfNotNull(d.high?.let { "${it.roundToInt()}°" }, d.low?.let { "${it.roundToInt()}°" }).joinToString(" "), Type.CAPTION, ink, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.label(tile.name ?: doc.i18n.t("ui.people_home", "count" to who.count { doc.states[it]?.state == "home" }), Type.CAPTION + 1f, doc.role(Role.INK), Weight.SEMI_BOLD)</ID>
+    <ID>MaxLineLength:Tiles.kt:doc.photo(entityState, entityId, "pic.$entityId", minOf(NAV_ICON_MAX_DP, box.h - PAD_XXL_DP, box.w * PERSON_PHOTO_W_SHARE).coerceAtLeast(LEVEL_BAR_HEIGHT_DP))</ID>
+    <ID>MaxLineLength:Tiles.kt:drawLine(doc.units.px(p.first), doc.units.px(p.second), doc.units.px(home.first), doc.units.px(home.second))</ID>
+    <ID>MaxLineLength:Tiles.kt:entityId != null &amp;&amp; entityState != null &amp;&amp; spec != null &amp;&amp; spec.toggle &amp;&amp; (spec.domain != "cover" &amp;&amp; spec.domain != "lock")</ID>
     <ID>MaxLineLength:Tiles.kt:fun</ID>
     <ID>MaxLineLength:Tiles.kt:fun px</ID>
-    <ID>MaxLineLength:Tiles.kt:if (bigValue &amp;&amp; state != null) c.label(state, if (box.h &gt;= 150f) Type.VALUE else Type.HEADLINE, ink, Weight.MEDIUM)</ID>
-    <ID>MaxLineLength:Tiles.kt:if (entity.isNotEmpty()) c.label(c.text(Vars.e(entity, "state")), if (compact) Type.CAPTION - 1f else Type.CAPTION, c.role(Role.KEY_ON_INK), Weight.SEMI_BOLD, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:Tiles.kt:if (name != null) c.label(name, Type.BODY + if (box.h &gt;= 150f) 2f else 0f, ink, Weight.SEMI_BOLD, lines = if (state == null || bigValue) 2 else 1)</ID>
-    <ID>MaxLineLength:Tiles.kt:if (name != null) this@entityTile.label(name, Type.DISPLAY * 0.8f, ink, Weight.SEMI_BOLD, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:Tiles.kt:if (named) c.label(tile.name ?: tile.options["title"] ?: "", Type.BODY + 1f, ink, Weight.SEMI_BOLD, lines = 2)</ID>
+    <ID>MaxLineLength:Tiles.kt:if (bigValue &amp;&amp; state != null) doc.label(state, if (box.h &gt;= TALL_HEIGHT_DP) Type.VALUE else Type.HEADLINE, ink, Weight.MEDIUM)</ID>
+    <ID>MaxLineLength:Tiles.kt:if (entity.isNotEmpty()) doc.label(doc.text(Vars.entity(entity, Vars.KEY_STATE)), if (compact) Type.CAPTION - 1f else Type.CAPTION, doc.role(Role.KEY_ON_INK), Weight.SEMI_BOLD, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:Tiles.kt:if (name != null) doc.label(name, Type.BODY + if (box.h &gt;= TALL_HEIGHT_DP) 2f else 0f, ink, Weight.SEMI_BOLD, lines = if (state == null || bigValue) 2 else 1)</ID>
+    <ID>MaxLineLength:Tiles.kt:if (name != null) this@entityTile.label(name, Type.DISPLAY * FULL_NAME_SCALE, ink, Weight.SEMI_BOLD, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:Tiles.kt:if (named) doc.label(tile.name ?: tile.options["title"] ?: "", Type.BODY + 1f, ink, Weight.SEMI_BOLD, lines = 2)</ID>
     <ID>MaxLineLength:Tiles.kt:if (state != null) this@entityTile.label(state, if (bigValue) Type.HEADLINE else Type.BODY, ink2, if (bigValue) Weight.MEDIUM else Weight.NORMAL)</ID>
-    <ID>MaxLineLength:Tiles.kt:picture(PictureSlot("cam.$id.${tile.id}", "/api/camera_proxy/$id", w, h, every, crop = tile.options["fit"] != "whole"))</ID>
+    <ID>MaxLineLength:Tiles.kt:paint { color(doc.role(Role.DIVIDER)); strokeWidth(doc.units.px(ENERGY_LINE_DP)); style(RcPaintStyle.Stroke) }</ID>
+    <ID>MaxLineLength:Tiles.kt:picture(PictureSlot("cam.$entityId.${tile.id}", "/api/camera_proxy/$entityId", w, h, every, crop = tile.options["fit"] != "whole"))</ID>
     <ID>MaxLineLength:Tiles.kt:private</ID>
     <ID>MaxLineLength:Tiles.kt:scope</ID>
-    <ID>MaxLineLength:Tiles.kt:scope.Image(image(slot, px, px), Modifier.size(u.px(sizeDp), u.px(sizeDp)).clip(rounded(sizeDp / 2f)), contentScale = RcContentScale.Crop)</ID>
-    <ID>MaxLineLength:Tiles.kt:this@navTile.icon(tile.icon ?: "arrow-right-circle", if (named) 32f else minOf(56f, box.h * 0.45f), color(Vars.t(tile.id, "icon")))</ID>
+    <ID>MaxLineLength:Tiles.kt:scope.Image(image(slot, px, px), Modifier.size(units.px(sizeDp), units.px(sizeDp)).clip(rounded(sizeDp / 2f)), contentScale = RcContentScale.Crop)</ID>
+    <ID>MaxLineLength:Tiles.kt:this@navTile.icon(tile.icon ?: "arrow-right-circle", if (named) NAV_ICON_NAMED_DP else minOf(NAV_ICON_MAX_DP, box.h * NAV_ICON_SHARE), color(Vars.tile(tile.id, Vars.KEY_ICON)))</ID>
     <ID>MaxLineLength:Tiles.kt:tile.effectiveKind() == "nav" -&gt; tile.options["page"]?.let(pageIndex)?.let { ActionRef("_", "page", it.toString()) }</ID>
-    <ID>MaxLineLength:Tiles.kt:val (min, max) = if (tile.domain in setOf("number", "input_number")) (e?.number("min") ?: 0.0) to (e?.number("max") ?: 100.0) else 0.0 to 100.0</ID>
-    <ID>MaxLineLength:Tiles.kt:val m = Modifier.size(u.px(box.w), u.px(box.h)).clip(rounded(10f)).background(role(Role.CARD_EDGE)).padding(u.px(CARD_EDGE))</ID>
-    <ID>MaxLineLength:Tiles.kt:val spots = mapOf("solar" to (cx to r + 16f), "grid" to (r + 14f to cy), "battery" to (wDp - r - 14f to cy), "home" to (cx to hDp - r - 26f))</ID>
+    <ID>MaxLineLength:Tiles.kt:val modifier = Modifier.size(units.px(box.w), units.px(box.h)).clip(rounded(CARD_CORNER_DP)).background(edgeOf(tile)).padding(units.px(CARD_EDGE))</ID>
+    <ID>MaxLineLength:Tiles.kt:val photo = minOf(PERSON_TALL_MAX_DP, box.h * NAV_ICON_SHARE, box.w * BEDSIDE_TIME_H).coerceAtLeast(NAV_ICON_NAMED_DP)</ID>
+    <ID>MaxLineLength:Tiles.kt:val spots = mapOf("solar" to (cx to r + PAD_XL_DP), "grid" to (r + PAD_LG_DP to cy), "battery" to (wDp - r - PAD_LG_DP to cy), "home" to (cx to hDp - r - FORECAST_ICON_DP))</ID>
+    <ID>MaxLineLength:Tiles.kt:val step = entityState?.number("target_temp_step") ?: if (homeAssistantConfig.temperatureUnit.contains("F")) 1.0 else 0.5</ID>
     <ID>MaxLineLength:Tiles.kt:val tint = when (key) { "solar" -&gt; Pastel.YELLOW; "grid" -&gt; Pastel.BLUE; "battery" -&gt; Pastel.GREEN; else -&gt; Pastel.GREY }</ID>
-    <ID>MaxLineLength:Tiles.kt:val verb = when (tile.domain) { "light" -&gt; "brightness"; "fan" -&gt; "percentage"; "cover" -&gt; "position"; "media_player" -&gt; "volume"; else -&gt; "value" }</ID>
+    <ID>MaxLineLength:Vars.kt:VarValue.color(Vars.option(scopeId, group, index, Vars.KEY_BG), (if (on) Role.KEY_ON else Role.KEY).argb)</ID>
+    <ID>MaxLineLength:Vars.kt:VarValue.color(Vars.option(scopeId, group, index, Vars.KEY_INK), (if (on) Role.KEY_ON_INK else Role.INK).argb)</ID>
+    <ID>MaxLineLength:Vars.kt:VarValue.color(Vars.tile(tileId, Vars.KEY_INK2), if (!isAvailable) Role.INK_FAINT.argb else Role.INK_SOFT.argb)</ID>
     <ID>MaxLineLength:WeatherPanel.kt:"humidity" -&gt; it.number(key)?.let { v -&gt; i18n.t("ui.humidity", "value" to i18n.percent(v.roundToInt())) }</ID>
     <ID>MaxLineLength:WeatherPanel.kt:"wind_speed" -&gt; measure(it, key, "wind_speed_unit", "km/h")?.let { v -&gt; i18n.t("ui.wind", "value" to v) }</ID>
     <ID>MaxLineLength:WeatherPanel.kt:Column</ID>
     <ID>MaxLineLength:WeatherPanel.kt:Row</ID>
-    <ID>MaxLineLength:WeatherPanel.kt:c.label(c.i18n.fullWeekday(d.time.withZoneSameInstant(zone)), small(16f, k), ink, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:WeatherPanel.kt:doc.label(d.high?.let { "${it.roundToInt()}°" } ?: "–", small(HIGH_TEMP_SP, layoutScale), ink, Weight.MEDIUM)</ID>
+    <ID>MaxLineLength:WeatherPanel.kt:doc.label(d.low?.let { " / ${it.roundToInt()}°" } ?: "", small(LOW_TEMP_SP, layoutScale), soft)</ID>
+    <ID>MaxLineLength:WeatherPanel.kt:doc.label(doc.i18n.fullWeekday(d.time.withZoneSameInstant(zone)), small(WEEKDAY_SP, layoutScale), ink, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:WeatherPanel.kt:doc.label(doc.i18n.state("weather", d.condition), small(CONDITION_SP, layoutScale), soft, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:WeatherPanel.kt:doc.label(doc.i18n.state("weather", entityState?.state ?: "unknown"), small(CONDITION_LABEL_SP, layoutScale), ink, align = RcTextAlign.Center)</ID>
+    <ID>MaxLineLength:WeatherPanel.kt:doc.label(doc.text(Vars.entity(id, Vars.KEY_NAME)), TITLE_SP * layoutScale, doc.role(Role.WEATHER_TITLE), align = RcTextAlign.Center)</ID>
     <ID>TooManyFunctions:CardRenderer.kt:CardRenderer</ID>
     <ID>TooManyFunctions:FreeForm.kt:tech.shaffersoftworks.remotescreens.server.render.FreeForm.kt</ID>
     <ID>TooManyFunctions:Tiles.kt:tech.shaffersoftworks.remotescreens.server.render.Tiles.kt</ID>

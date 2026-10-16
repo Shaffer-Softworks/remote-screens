@@ -292,8 +292,8 @@ export interface Info {
 }
 
 export function domainOf(tile: Pick<Tile, 'entityId'>): string | undefined {
-  const d = tile.entityId?.split('.')[0]
-  return d || undefined
+  const domain = tile.entityId?.split('.')[0]
+  return domain || undefined
 }
 
 export function kindOf(tile: Pick<Tile, 'entityId' | 'kind'>): string {

@@ -1,0 +1,25 @@
+---
+description: Editor Vue/TS naming — prefer intent-revealing names (same spirit as Kotlin naming rule)
+globs: "editor/**/*.{ts,vue,js}"
+alwaysApply: false
+---
+
+# Editor: variable and parameter names
+
+Apply when writing or editing Vue / TypeScript under `editor/`.
+
+## Prefer full words over abbreviations
+
+- Avoid telegram names (`el`, `cfg`, `msg`, ambiguous `id`).
+- Spell out: `entityId`, `screenId`, `tileIndex`, `paletteRole`.
+- In multi-line callbacks, name parameters (`tile =>`, `node =>`), not bare `it`-style opacity.
+
+## Leave alone
+
+- Vue `props` and JSON keys that match the server/layout API.
+- Serialized field names (`w`, `h`, theme id `rpi`) unless a protocol migration is explicit.
+
+## Lint
+
+- Prefer fixing issues so `npm run lint` stays green.
+- Use Prettier via `npm run format`; do not fight `eslint-config-prettier`.

@@ -46,61 +46,69 @@ export interface DesignContext {
 
 export const DESIGN: InjectionKey<DesignContext> = Symbol('design')
 
-export function useDesigner(page: ComputedRef<Page>, toast: (message: string) => void): DesignContext {
+export function useDesigner(
+  page: ComputedRef<Page>,
+  toast: (message: string) => void,
+): DesignContext {
   const root = computed(() => page.value.root)
   const selectedId = ref<string | null>(null)
-  const selected = computed(() => (root.value && selectedId.value ? find(root.value, selectedId.value) : undefined))
+  const selected = computed(() =>
+    root.value && selectedId.value ? find(root.value, selectedId.value) : undefined,
+  )
   const hint = ref<{ targetId: string; where: Where } | null>(null)
-  watch(dragged, (d) => {
-    if (!d) hint.value = null
+  watch(dragged, drag => {
+    if (!drag) hint.value = null
   })
 
-  function fresh(d: Dragged): Node | undefined {
-    if (d.type === 'component') return newComponent(d.component)
-    if (d.type === 'new') return d.entityId ? nodeForEntity(d.entityId) : newNode('tile', newTile({ kind: d.kind }, 0, 0))
+  function fresh(drag: Dragged): Node | undefined {
+    if (drag.type === 'component') return newComponent(drag.component)
+    if (drag.type === 'new')
+      return drag.entityId
+        ? nodeForEntity(drag.entityId)
+        : newNode('tile', newTile({ kind: drag.kind }, 0, 0))
     return undefined
   }
 
   function canDrop(targetId: string, where: Where): boolean {
-    const r = root.value
-    const d = dragged.value
-    if (!r || !d || d.type === 'tile') return false
-    const spot = dropSpot(r, targetId, where)
+    const rootNode = root.value
+    const drag = dragged.value
+    if (!rootNode || !drag || drag.type === 'tile') return false
+    const spot = dropSpot(rootNode, targetId, where)
     if (!spot) return false
-    if (d.type !== 'node') return true
-    const moving = find(r, d.id)
-    return !!moving && d.id !== targetId && !find(moving, spot.parentId)
+    if (drag.type !== 'node') return true
+    const moving = find(rootNode, drag.id)
+    return !!moving && drag.id !== targetId && !find(moving, spot.parentId)
   }
 
   function drop(targetId: string, where: Where): void {
-    const r = root.value
-    const d = dragged.value
+    const rootNode = root.value
+    const drag = dragged.value
     hint.value = null
     dragged.value = null
-    if (!r || !d) return
-    const spot = dropSpot(r, targetId, where)
+    if (!rootNode || !drag) return
+    const spot = dropSpot(rootNode, targetId, where)
     if (!spot) return
-    if (d.type === 'node') {
-      if (!moveTo(r, d.id, spot)) toast('It cannot go there')
-      selectedId.value = d.id
+    if (drag.type === 'node') {
+      if (!moveTo(rootNode, drag.id, spot)) toast('It cannot go there')
+      selectedId.value = drag.id
       return
     }
-    const n = fresh(d)
-    if (!n) return
-    if (!insert(r, spot.parentId, n, spot.index)) return toast('No room for it there')
-    selectedId.value = n.id
+    const node = fresh(drag)
+    if (!node) return
+    if (!insert(rootNode, spot.parentId, node, spot.index)) return toast('No room for it there')
+    selectedId.value = node.id
   }
 
   function add(node: Node): void {
-    const r = root.value
-    if (!r) return
-    const s = selected.value
+    const rootNode = root.value
+    if (!rootNode) return
+    const selectedNode = selected.value
     let ok: boolean
-    if (s && isContainer(s)) ok = insert(r, s.id, node)
-    else if (s && parentOf(r, s.id)) {
-      const p = parentOf(r, s.id)!
-      ok = insert(r, p.parent.id, node, p.index + 1)
-    } else ok = insert(r, r.id, node)
+    if (selectedNode && isContainer(selectedNode)) ok = insert(rootNode, selectedNode.id, node)
+    else if (selectedNode && parentOf(rootNode, selectedNode.id)) {
+      const parent = parentOf(rootNode, selectedNode.id)!
+      ok = insert(rootNode, parent.parent.id, node, parent.index + 1)
+    } else ok = insert(rootNode, rootNode.id, node)
     if (!ok) return toast('No room for it there')
     selectedId.value = node.id
   }
@@ -110,65 +118,78 @@ export function useDesigner(page: ComputedRef<Page>, toast: (message: string) =>
     selectedId,
     selected,
     hint,
-    select: (id) => (selectedId.value = id),
+    select: id => (selectedId.value = id),
     canDrop,
     drop,
     add,
-    addComponent: (id) => {
-      const n = newComponent(id)
-      if (n) add(n)
+    addComponent: id => {
+      const node = newComponent(id)
+      if (node) add(node)
     },
-    addEntity: (source) => add(source.entityId ? nodeForEntity(source.entityId) : newNode('tile', newTile({ kind: source.kind }, 0, 0))),
+    addEntity: source =>
+      add(
+        source.entityId
+          ? nodeForEntity(source.entityId)
+          : newNode('tile', newTile({ kind: source.kind }, 0, 0)),
+      ),
     removeSelected() {
-      const r = root.value
-      const s = selectedId.value
-      if (!r || !s) return
-      if (s === r.id) return toast('The page itself cannot be removed')
-      const p = parentOf(r, s)
-      remove(r, s)
-      selectedId.value = p ? (p.parent.children[p.index] ?? p.parent.children[p.index - 1] ?? p.parent).id : null
+      const rootNode = root.value
+      const id = selectedId.value
+      if (!rootNode || !id) return
+      if (id === rootNode.id) return toast('The page itself cannot be removed')
+      const parent = parentOf(rootNode, id)
+      remove(rootNode, id)
+      selectedId.value = parent
+        ? (
+            parent.parent.children[parent.index] ??
+            parent.parent.children[parent.index - 1] ??
+            parent.parent
+          ).id
+        : null
     },
     duplicateSelected() {
-      const r = root.value
-      const s = selectedId.value
-      if (!r || !s) return
-      const copy = duplicate(r, s)
+      const rootNode = root.value
+      const id = selectedId.value
+      if (!rootNode || !id) return
+      const copy = duplicate(rootNode, id)
       if (copy) selectedId.value = copy.id
-      else toast(s === r.id ? 'The page itself cannot be copied' : 'No room for a copy')
+      else toast(id === rootNode.id ? 'The page itself cannot be copied' : 'No room for a copy')
     },
     wrapSelected(type) {
-      const r = root.value
-      const s = selectedId.value
-      if (!r || !s) return
-      const box = wrap(r, s, type)
+      const rootNode = root.value
+      const id = selectedId.value
+      if (!rootNode || !id) return
+      const box = wrap(rootNode, id, type)
       if (box) selectedId.value = box.id
       else toast('The page itself cannot be wrapped')
     },
     step(direction) {
-      const r = root.value
-      const s = selectedId.value
-      if (!r) return
-      if (!s) {
-        selectedId.value = r.id
+      const rootNode = root.value
+      const id = selectedId.value
+      if (!rootNode) return
+      if (!id) {
+        selectedId.value = rootNode.id
         return
       }
-      const n = find(r, s)
+      const node = find(rootNode, id)
       const next =
-        direction === 'parent' ? parentOf(r, s)?.parent
-        : direction === 'child' ? n?.children[0]
-        : sibling(r, s, direction === 'prev' ? -1 : 1)
+        direction === 'parent'
+          ? parentOf(rootNode, id)?.parent
+          : direction === 'child'
+            ? node?.children[0]
+            : sibling(rootNode, id, direction === 'prev' ? -1 : 1)
       if (next) selectedId.value = next.id
     },
     shift(by) {
-      const r = root.value
-      const s = selectedId.value
-      if (!r || !s) return
-      const p = parentOf(r, s)
-      if (!p) return
-      const j = p.index + by
-      if (j < 0 || j >= p.parent.children.length) return
-      const list = p.parent.children
-      ;[list[p.index], list[j]] = [list[j], list[p.index]]
+      const rootNode = root.value
+      const id = selectedId.value
+      if (!rootNode || !id) return
+      const parent = parentOf(rootNode, id)
+      if (!parent) return
+      const nextIndex = parent.index + by
+      if (nextIndex < 0 || nextIndex >= parent.parent.children.length) return
+      const list = parent.parent.children
+      ;[list[parent.index], list[nextIndex]] = [list[nextIndex], list[parent.index]]
     },
   }
 }

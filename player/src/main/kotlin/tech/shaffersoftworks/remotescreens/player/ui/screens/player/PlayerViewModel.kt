@@ -192,11 +192,11 @@ class PlayerViewModel @Inject constructor(
         if (discoveryJob?.isActive == true) return
         discoveryJob = viewModelScope.launch {
             Timber.i("Connection keeps failing; looking for the add-on again")
-            val found = discoveryRepository.discoverServers().first()
-            val saved = preferencesRepository.server.first()
-            if (found != saved) {
-                preferencesRepository.setServer(found)
-                connect(found)
+            val discoveredServer = discoveryRepository.discoverServers().first()
+            val savedServer = preferencesRepository.server.first()
+            if (discoveredServer != savedServer) {
+                preferencesRepository.setServer(discoveredServer)
+                connect(discoveredServer)
             }
         }
     }

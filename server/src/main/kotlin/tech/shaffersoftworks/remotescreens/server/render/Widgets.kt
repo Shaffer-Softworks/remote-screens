@@ -57,18 +57,18 @@ private const val KEY_ICON_ONLY_RATIO = 0.5f
 private const val KEY_ICON_GAP_DP = 8f
 private const val INITIALS_TEXT_RATIO = 0.38f
 
-fun DocContext.rounded(dp: Float) = u.px(dp).let { RoundedRectShape(it, it, it, it) }
+fun DocContext.rounded(dp: Float) = units.px(dp).let { RoundedRectShape(it, it, it, it) }
 
 /**
  * Places [content] at ([xDp], [yDp]) of the parent. `Modifier.offset` only moves the drawing; the player finds what
  * was tapped from the layout, so a placed tap target must be moved by padding instead.
  */
 fun DocContext.at(xDp: Float, yDp: Float, content: () -> Unit) {
-    scope.Box(Modifier.fillMaxSize().padding(u.px(xDp), u.px(yDp), 0f, 0f)) { content() }
+    scope.Box(Modifier.fillMaxSize().padding(units.px(xDp), units.px(yDp), 0f, 0f)) { content() }
 }
 
-fun DocContext.tap(m: Modifier, ref: ActionRef?, hold: ActionRef? = null): Modifier {
-    var out = m
+fun DocContext.tap(modifier: Modifier, ref: ActionRef?, hold: ActionRef? = null): Modifier {
+    var out = modifier
     if (ref != null) {
         val meta = meta(ref)
         out = out.onClick { hostAction(TAP, meta) }
@@ -81,15 +81,15 @@ fun DocContext.tap(m: Modifier, ref: ActionRef?, hold: ActionRef? = null): Modif
 }
 
 fun DocContext.icon(name: String?, sizeDp: Float, color: RcColor, visible: RcInteger? = null) {
-    val px = u.px(sizeDp)
-    val p = path(name)
-    var m = Modifier.size(px, px)
-    if (visible != null) m = m.visibility(visible)
-    scope.Canvas(m) {
+    val px = units.px(sizeDp)
+    val iconPath = path(name)
+    var modifier = Modifier.size(px, px)
+    if (visible != null) modifier = modifier.visibility(visible)
+    scope.Canvas(modifier) {
         save {
             scale(px / ICON_VIEWPORT, px / ICON_VIEWPORT)
             paint { color(color); style(RcPaintStyle.Fill) }
-            drawPath(p)
+            drawPath(iconPath)
         }
     }
 }
@@ -100,9 +100,9 @@ fun DocContext.toggleIcon(entityId: String, off: String, on: String?, sizeDp: Fl
         icon(off, sizeDp, color)
         return
     }
-    scope.Box(Modifier.size(u.px(sizeDp), u.px(sizeDp))) {
-        this@toggleIcon.icon(off, sizeDp, color, int(Vars.e(entityId, "off")))
-        this@toggleIcon.icon(on, sizeDp, color, int(Vars.e(entityId, "on")))
+    scope.Box(Modifier.size(units.px(sizeDp), units.px(sizeDp))) {
+        this@toggleIcon.icon(off, sizeDp, color, int(Vars.entity(entityId, Vars.KEY_OFF)))
+        this@toggleIcon.icon(on, sizeDp, color, int(Vars.entity(entityId, Vars.KEY_ON)))
     }
 }
 
@@ -119,7 +119,7 @@ fun DocContext.label(
         text,
         modifier,
         color = color,
-        fontSize = u.sp(sp).rsp,
+        fontSize = units.sp(sp).rsp,
         fontWeight = weight,
         textAlign = align,
         overflow = RcTextOverflow.Ellipsis,
@@ -140,7 +140,7 @@ fun DocContext.label(
         text,
         modifier,
         color = color,
-        fontSize = u.sp(sp).rsp,
+        fontSize = units.sp(sp).rsp,
         fontWeight = weight,
         textAlign = align,
         overflow = RcTextOverflow.Ellipsis,
@@ -160,14 +160,14 @@ fun DocContext.key(
     modifier: Modifier = Modifier,
     round: Boolean = false,
 ) {
-    var m = modifier.height(u.px(heightDp))
-    m = if (widthDp != null) m.width(u.px(widthDp)) else m
-    m = m.clip(rounded(if (round) heightDp / 2f else heightDp / KEY_CORNER_DIVISOR)).background(bg)
-    m = tap(m, ref)
-    val padded = m.padding(u.px(KEY_PADDING_DP), 0f, u.px(KEY_PADDING_DP), 0f)
+    var box = modifier.height(units.px(heightDp))
+    box = if (widthDp != null) box.width(units.px(widthDp)) else box
+    box = box.clip(rounded(if (round) heightDp / 2f else heightDp / KEY_CORNER_DIVISOR)).background(bg)
+    box = tap(box, ref)
+    val padded = box.padding(units.px(KEY_PADDING_DP), 0f, units.px(KEY_PADDING_DP), 0f)
     scope.Row(padded, horizontal = RcRowHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
         if (icon != null) this@key.icon(icon, if (text == null) heightDp * KEY_ICON_ONLY_RATIO else KEY_ICON_DP, ink)
-        if (icon != null && text != null) Spacer(Modifier.width(this@key.u.px(KEY_ICON_GAP_DP)))
+        if (icon != null && text != null) Spacer(Modifier.width(this@key.units.px(KEY_ICON_GAP_DP)))
         if (text != null) this@key.label(text, Type.BODY, ink, weight = Weight.MEDIUM)
     }
 }
@@ -175,7 +175,7 @@ fun DocContext.key(
 /** A circle with a word in it, standing in for a person's photo. */
 fun DocContext.initials(name: String, sizeDp: Float, bg: RcColor, ink: RcColor) {
     val letters = name.split(' ').filter { it.isNotBlank() }.take(2).joinToString("") { it.take(1).uppercase() }
-    val circle = Modifier.size(u.px(sizeDp), u.px(sizeDp)).clip(rounded(sizeDp / 2f)).background(bg)
+    val circle = Modifier.size(units.px(sizeDp), units.px(sizeDp)).clip(rounded(sizeDp / 2f)).background(bg)
     scope.Box(circle, horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
         this@initials.label(letters, sizeDp * INITIALS_TEXT_RATIO, ink, weight = Weight.SEMI_BOLD)
     }

@@ -36,8 +36,10 @@ data class Theme(
     fun validated(): Theme = copy(
         name = name.trim().take(MAX_NAME).ifEmpty { id },
         base = base.take(MAX_ID),
-        roles = roles.filter { (k, v) -> k.length <= MAX_ID && HEX.matches(v) }.mapValues { it.value.uppercase() },
-        pastels = pastels.filter { (k, v) -> k.length <= MAX_ID && HEX.matches(v) }.mapValues { it.value.uppercase() },
+        roles = roles.filter { (key, value) -> key.length <= MAX_ID && HEX.matches(value) }
+            .mapValues { it.value.uppercase() },
+        pastels = pastels.filter { (key, value) -> key.length <= MAX_ID && HEX.matches(value) }
+            .mapValues { it.value.uppercase() },
     )
 
     companion object {
@@ -144,7 +146,7 @@ data class Node(
 ) {
     fun walk(): Sequence<Node> = sequence {
         yield(this@Node)
-        for (c in children) yieldAll(c.walk())
+        for (child in children) yieldAll(child.walk())
     }
 
     fun depth(): Int = 1 + (children.maxOfOrNull { it.depth() } ?: 0)

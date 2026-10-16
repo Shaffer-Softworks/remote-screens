@@ -105,7 +105,7 @@ class FreeFormTest {
         val doc = ScreenRenderer.render(screen(everyType), tablet, input())
         val core = parse(doc.bytes)
         assertContains(core.getNamedVariables(NamedVariable.INT_TYPE).toList(), "USER:page")
-        assertTrue(doc.ctx.pictures.any { it.name == "img.cam" && it.source == "/api/camera_proxy/camera.front_door" })
+        assertTrue(doc.docContext.pictures.any { it.name == "img.cam" && it.source == "/api/camera_proxy/camera.front_door" })
     }
 
     private fun ops(list: List<Operation>): List<Operation> = list.flatMap { op -> listOf(op) + if (op is Container) ops(op.list) else emptyList() }
@@ -201,7 +201,7 @@ class FreeFormTest {
         val ids = page.allTiles().map { it.id }.toSet()
         assertTrue(setOf("temp", "bulb", "go", "t1", "level", "cam").all { it in ids }, "tappable: $ids")
         val doc = ScreenRenderer.render(screen(everyType), tablet, input())
-        assertTrue("bulb|toggle|" in doc.ctx.predicted, "a bound light icon toggles, and the toggle is foreseen")
+        assertTrue("bulb|toggle|" in doc.docContext.predicted, "a bound light icon toggles, and the toggle is foreseen")
     }
 
     @Test
@@ -209,7 +209,7 @@ class FreeFormTest {
         val page = screen(everyType).pages.first()
         assertEquals(TapType.TOGGLE, page.allTiles().first { it.id == "sw" }.tap.type)
         val doc = ScreenRenderer.render(screen(everyType), tablet, input())
-        assertTrue("sw|toggle|" in doc.ctx.predicted)
+        assertTrue("sw|toggle|" in doc.docContext.predicted)
         val states = ha.states.value
         val on = doc.vars(states + ("switch.coffee_machine" to states.getValue("switch.coffee_machine").with("on")))
         assertEquals(Vars.VISIBLE.toString(), on["e.switch.coffee_machine.on"]?.value)
@@ -219,8 +219,8 @@ class FreeFormTest {
     @Test
     fun aStepperStepsTheThermostatThroughTheRouter() {
         val doc = ScreenRenderer.render(screen(everyType), tablet, input())
-        assertTrue(doc.ctx.predicted.keys.any { it.startsWith("heat|temperature|+") }, "predicted: ${doc.ctx.predicted.keys}")
-        assertTrue(doc.ctx.predicted.keys.any { it.startsWith("heat|temperature|-") })
+        assertTrue(doc.docContext.predicted.keys.any { it.startsWith("heat|temperature|+") }, "predicted: ${doc.docContext.predicted.keys}")
+        assertTrue(doc.docContext.predicted.keys.any { it.startsWith("heat|temperature|-") })
         val tile = screen(everyType).pages.first().allTiles().first { it.id == "heat" }
         assertEquals("climate", tile.effectiveKind())
     }
@@ -301,7 +301,7 @@ class FreeFormTest {
         }
         val screen = ScreenValidator.validate(demo.copy(pages = pages))
         val data = runBlocking { RenderDataRepository(ha).forScreen(screen) }
-        val doc = ScreenRenderer.render(screen, tablet, input().let { RenderInput(it.states, it.i18n, it.ha, data) })
+        val doc = ScreenRenderer.render(screen, tablet, input().let { RenderInput(it.states, it.i18n, it.homeAssistantConfig, data) })
         val vars = doc.vars(ha.states.value)
         assertEquals("Ceiling light", vars["e.light.living_room.name"]?.value)
         val declared = parse(doc.bytes).let { core ->

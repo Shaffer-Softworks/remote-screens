@@ -5,18 +5,21 @@ import ColorInput from './ColorInput.vue'
 
 // A row of theme colours (role or pastel keys) to pick one from; the first button clears the choice and the last
 // picks any colour, stored as `#RRGGBB` or `#AARRGGBB`.
-const props = withDefaults(defineProps<{ keys: string[]; clear?: string; clearTitle?: string; clearColor?: string }>(), {
-  clear: 'A',
-  clearTitle: 'Default',
-  clearColor: undefined,
-})
+const props = withDefaults(
+  defineProps<{ keys: string[]; clear?: string; clearTitle?: string; clearColor?: string }>(),
+  {
+    clear: 'A',
+    clearTitle: 'Default',
+    clearColor: undefined,
+  },
+)
 const model = defineModel<string | undefined>()
 
 /** The custom picker's hex: the model when it is hex, else the resolved colour at full opacity to start a pick from. */
 const custom = computed({
   get: () => (isHex(model.value) ? model.value! : packHex(rgbOf(model.value))),
-  set: (v: string) => {
-    model.value = v
+  set: (hex: string) => {
+    model.value = hex
   },
 })
 </script>

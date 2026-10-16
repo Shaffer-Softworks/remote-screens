@@ -141,6 +141,8 @@ class KioskManager @Inject constructor(
     fun removeDeviceOwner() {
         if (!isDeviceOwner()) return
         setKioskPolicies(enable = false)
+        // Still the only API that drops device owner without a factory wipe; deprecated as "test-only".
+        @Suppress("DEPRECATION")
         runCatching { devicePolicyManager.clearDeviceOwnerApp(context.packageName) }
             .onSuccess { Timber.i("Device owner removed") }
             .onFailure { exception -> Timber.e(exception, "clearDeviceOwnerApp failed") }

@@ -12,7 +12,7 @@ let applied = ''
 
 watch(
   () => JSON.stringify(props.page.root ?? null, null, 2),
-  (json) => {
+  json => {
     if (json === applied) return
     applied = json
     text.value = json
@@ -41,10 +41,10 @@ function edit(value: string): void {
 }
 
 function indent(e: KeyboardEvent): void {
-  const t = e.target as HTMLTextAreaElement
-  const { selectionStart: s, selectionEnd: end } = t
-  t.setRangeText('  ', s, end, 'end')
-  edit(t.value)
+  const textarea = e.target as HTMLTextAreaElement
+  const { selectionStart: start, selectionEnd: end } = textarea
+  textarea.setRangeText('  ', start, end, 'end')
+  edit(textarea.value)
 }
 </script>
 
@@ -57,7 +57,9 @@ function indent(e: KeyboardEvent): void {
       @input="edit(($event.target as HTMLTextAreaElement).value)"
       @keydown.tab.prevent="indent"
     />
-    <p class="status" :class="{ bad: error }">{{ error || 'Applied. Edits here and on the canvas stay in step.' }}</p>
+    <p class="status" :class="{ bad: error }">
+      {{ error || 'Applied. Edits here and on the canvas stay in step.' }}
+    </p>
   </div>
 </template>
 
