@@ -198,6 +198,9 @@ private fun handleEvent(context: Context, activity: Activity?, event: PlayerEven
     when (event) {
         is PlayerEvent.ShowMessage -> Toast.makeText(context, event.text, Toast.LENGTH_LONG).show()
         is PlayerEvent.ShowMessageResource -> Toast.makeText(context, event.messageRes, Toast.LENGTH_LONG).show()
+        is PlayerEvent.OpenUrl -> runCatching {
+            context.startActivity(Intent(Intent.ACTION_VIEW, event.url.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
         PlayerEvent.OpenInstallPermissionSettings -> context.startActivity(
             Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, "package:${context.packageName}".toUri()),
         )

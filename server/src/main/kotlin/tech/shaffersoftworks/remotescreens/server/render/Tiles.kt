@@ -49,6 +49,8 @@ fun tapRef(tile: Tile, action: TapAction, spec: TypeSpec?, pageIndex: (String) -
         TapType.CARD -> card()
         TapType.ACTION -> ActionRef(tile.id, "run")
         TapType.PAGE -> action.page?.let(pageIndex)?.let { ActionRef("_", "page", it.toString()) }
+        TapType.URL -> action.url?.takeIf { it.isNotBlank() }?.let { ActionRef("_", "url", it) }
+        TapType.EVENT -> action.event?.takeIf { it.isNotBlank() }?.let { ActionRef(tile.id, "event", it) }
         TapType.DEFAULT -> when {
             hold -> card()
             tile.effectiveKind() == "nav" -> tile.options["page"]?.let(pageIndex)?.let { ActionRef("_", "page", it.toString()) }
@@ -182,6 +184,7 @@ private fun DocContext.edgeOf(tile: Tile) = tile.borderColor?.let { paint(it) } 
  * A tile is an RPI card: a black edge, a grey body and, where there is room, a darker header strip with its name.
  * The strip's bottom line takes the tile's accent while the entity is on.
  */
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
     val kind = tile.effectiveKind()
     val spec = Catalogue.of(kind)
@@ -239,6 +242,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
                     "map" -> docContext.mapTile(tile, body, named)
                     "person", "device_tracker" -> if (asMap) docContext.mapTile(tile, body, named) else docContext.personTile(tile, body, entityState)
                     "favourite" -> docContext.favouriteTile(tile, body, named)
+                    "calendar" -> docContext.calendarTile(tile, body, entityState, named)
                     "sensor" -> if (tile.options["graph"] == "true" && body.h >= SHORT_HEIGHT_DP) docContext.historyTile(tile, body, named) else docContext.entityTile(tile, body, spec, entityState, named)
                     else -> docContext.entityTile(tile, body, spec, entityState, named)
                 }
@@ -290,11 +294,12 @@ private fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, ent
     val hasLevel = entityId != null && box.w >= TALL_HEIGHT_DP && entityState != null && when (tile.domain) {
         "light" -> entityState.list("supported_color_modes").any { it != "onoff" }
         "fan" -> entityState.supports(FAN_PERCENTAGE_FLAG)
-        "cover" -> entityState.supports(COVER_POSITION_FLAG)
+        "cover", "valve" -> entityState.supports(COVER_POSITION_FLAG) || entityState.number("current_position") != null
+        "humidifier", "water_heater" -> true
         "number", "input_number", "media_player" -> true
         else -> false
     } && (box.h >= TALL_HEIGHT_DP || (wide && !short))
-    val bigValue = tile.domain in setOf("sensor", "number", "input_number")
+    val bigValue = tile.domain in setOf("sensor", "number", "input_number", "counter", "todo", "timer")
 
     if (box.full) {
         scope.Column(Modifier.fillMaxSize().padding(units.px(PAD_XXL_DP)), horizontal = RcHorizontalPositioning.Center, vertical = RcColumnVerticalPositioning.Center) {
@@ -440,6 +445,44 @@ private fun DocContext.personTile(tile: Tile, box: TileBox, entityState: EntityS
         doc.gap(PAD_SM_DP)
         doc.label(doc.text(Vars.entity(entityId, Vars.KEY_NAME)), Type.TITLE, ink, Weight.MEDIUM, align = RcTextAlign.Center)
         doc.label(doc.text(Vars.tile(tile.id, "where")), Type.BODY, doc.role(Role.ACCENT_SOFT), Weight.SEMI_BOLD, align = RcTextAlign.Center)
+    }
+}
+
+/** Next event from a calendar entity: day/time, title, and optional location. */
+private fun DocContext.calendarTile(tile: Tile, box: TileBox, @Suppress("UNUSED_PARAMETER") entityState: EntityState?, named: Boolean) {
+    val entityId = tile.entityId ?: return
+    val ink = color(Vars.tile(tile.id, Vars.KEY_INK))
+    val ink2 = color(Vars.tile(tile.id, Vars.KEY_INK2))
+    val zone = runCatching { ZoneId.of(homeAssistantConfig.timeZone) }.getOrDefault(ZoneId.of("UTC"))
+    bind(entityId) { states ->
+        val event = states[entityId]?.let { calendarEvent(it, zone) }
+        val day = when {
+            event == null -> "—"
+            isToday(event, zone) -> i18n.t("ui.today")
+            else -> i18n.fullWeekday(event.start)
+        }
+        val time = when {
+            event == null -> "—"
+            event.allDay -> i18n.t("ui.all_day")
+            else -> i18n.time(event.start)
+        }
+        listOf(
+            VarValue.string(Vars.tile(tile.id, "ev.day"), day),
+            VarValue.string(Vars.tile(tile.id, "ev.time"), time),
+            VarValue.string(Vars.tile(tile.id, "ev.title"), event?.title ?: i18n.t("ui.no_events")),
+            VarValue.string(Vars.tile(tile.id, "ev.meta"), event?.location.orEmpty()),
+        )
+    }
+    scope.Column(Modifier.fillMaxSize().padding(units.px(PAD_LG_DP))) {
+        val doc = this@calendarTile
+        doc.label(doc.text(Vars.tile(tile.id, "ev.day")), Type.CAPTION + 1f, ink2)
+        doc.label(
+            doc.text(Vars.tile(tile.id, "ev.time")),
+            if (box.h >= TALL_HEIGHT_DP) Type.HEADLINE else Type.TITLE, ink, Weight.MEDIUM,
+        )
+        Spacer(Modifier.verticalWeight(1f))
+        doc.label(doc.text(Vars.tile(tile.id, "ev.title")), Type.BODY + 1f, ink, Weight.SEMI_BOLD, lines = 2)
+        if (named) doc.label(doc.text(Vars.entity(entityId, Vars.KEY_NAME)), Type.CAPTION, ink2)
     }
 }
 

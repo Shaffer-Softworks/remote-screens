@@ -82,7 +82,7 @@ class FreeFormTest {
             Node("chips", "flow", size = NodeSize("fill", "wrap"), props = mapOf("gap" to "8"), style = NodeStyle(border = 2f, borderColor = "accent", corner = 12f), children = listOf(
                 Node("ring", "gauge", bind = NodeBinding("light.living_room"), props = mapOf("size" to "120", "caption" to "@name")),
                 Node("face", "analog", props = mapOf("seconds" to "true", "numbers" to "all")),
-                Node("dial", "gauge", props = mapOf("caption" to "Humidity")),
+                Node("dialGauge", "gauge", props = mapOf("caption" to "Humidity")),
                 Node("lamp", "iconbutton", bind = NodeBinding("light.table_lamp"), props = mapOf("iconOn" to "lightbulb-on")),
                 Node("onlyOn", "text", bind = NodeBinding("light.table_lamp"), props = mapOf("showWhen" to "on", "animate" to "up")),
             )),
@@ -90,11 +90,25 @@ class FreeFormTest {
                 Node("ticker", "text", size = NodeSize("dp:120", "wrap"), props = mapOf("text" to "A long line that glides along", "marquee" to "true")),
                 Node("remote", "keys", size = NodeSize("fill", "wrap"), bind = NodeBinding("media_player.living_room")),
                 Node("door", "keys", bind = NodeBinding("lock.front_door")),
-                Node("hues", "swatches", size = NodeSize("fill", "wrap"), bind = NodeBinding("light.kitchen")),
-                Node("whites", "swatches", bind = NodeBinding("light.kitchen"), props = mapOf("show" to "white")),
+                Node("hues", "swatches", size = NodeSize("fill", "wrap"), bind = NodeBinding("light.living_room")),
+                Node("whites", "swatches", bind = NodeBinding("light.living_room"), props = mapOf("show" to "white")),
                 Node("pad", "keypad", bind = NodeBinding("alarm_control_panel.house")),
                 Node("arm", "keys", bind = NodeBinding("alarm_control_panel.house")),
+                Node("heatDial", "dial", bind = NodeBinding("climate.living_room"), props = mapOf("size" to "120")),
+                Node("left", "countdown", bind = NodeBinding("timer.kitchen")),
+                Node("code", "qr", props = mapOf("text" to "https://example.com", "size" to "96")),
+                Node("note", "markdown", props = mapOf("text" to "**Bold**\nPlain")),
             )),
+            Node(
+                "tabs",
+                "tabs",
+                size = NodeSize("fill", "dp:160"),
+                props = mapOf("labels" to "A,B", "gap" to "8"),
+                children = listOf(
+                    Node("tabA", "text", props = mapOf("text" to "First")),
+                    Node("tabB", "text", props = mapOf("text" to "Second")),
+                ),
+            ),
         ),
     )
 

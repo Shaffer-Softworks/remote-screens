@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.12
+
+- Deeper cards for humidifier (humidity target), fan (oscillate, direction, presets), and climate (swing modes,
+  dual setpoints).
+- New tile domains: calendar, todo, timer, counter, water heater, valve, siren, lawn mower, input_text,
+  input_datetime, plus a generic fallback for other entities.
+- Free-form components: dial, countdown, tabs, QR code, and constrained markdown; demo screen adds a Compose page.
+- Tap actions can open a URL on the tablet or fire a Home Assistant event.
+
 ## 0.1.11
 
 - Top bar can show Wi-Fi signal and battery level on the tablet; turn each on per screen in the editor.

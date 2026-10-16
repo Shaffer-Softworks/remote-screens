@@ -1,0 +1,10 @@
+domain: todo
+name: To-do
+icon: checkbox-marked-outline
+tap: card
+card: todo
+sizes: [1x1, 2x1, 2x2]
+actions:
+  complete: {service: todo.update_item, data: {item: $arg, status: completed}}
+predict:
+  complete: {}

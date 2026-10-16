@@ -62,5 +62,20 @@
   "ui.adjust_temperature": "Temperatuur instellen",
   "ui.current_temp": "Huidige temp",
   "ui.current_humidity": "Huidige vochtigheid",
-  "ui.fan": "Ventilator"
+  "ui.fan": "Ventilator",
+  "ui.oscillate": "Oscilleren",
+  "ui.direction": "Richting",
+  "ui.forward": "Vooruit",
+  "ui.reverse": "Achteruit",
+  "ui.target_humidity": "Doelvochtigheid",
+  "ui.swing": "Zwaaien",
+  "ui.low": "Laag",
+  "ui.high": "Hoog",
+  "ui.no_todos": "Geen open taken",
+  "ui.cancel": "Annuleren",
+  "ui.finish": "Afronden",
+  "ui.reset": "Resetten",
+  "ui.tone": "Toon",
+  "ui.empty_text": "(leeg)",
+  "ui.datetime_hint": "Wijzig deze helper in Home Assistant"
 }

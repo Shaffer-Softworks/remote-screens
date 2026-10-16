@@ -1,0 +1,15 @@
+domain: counter
+name: Counter
+icon: counter
+tap: card
+card: counter
+controls: [stepper]
+sizes: [1x1, 2x1]
+actions:
+  increment: {service: counter.increment}
+  decrement: {service: counter.decrement}
+  reset: {service: counter.reset}
+predict:
+  increment: {}
+  decrement: {}
+  reset: {state: "0"}

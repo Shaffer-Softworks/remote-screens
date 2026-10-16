@@ -106,11 +106,12 @@ data class Page(
 
 /** The component types of a free-form page. Containers hold [Node.children]; the rest are leaves. */
 object NodeTypes {
-    val CONTAINERS = setOf("column", "row", "box", "flow")
+    val CONTAINERS = setOf("column", "row", "box", "flow", "tabs")
     val LEAVES = setOf(
         "text", "icon", "button", "spacer", "divider", "slider", "image", "tile",
         "clock", "badge", "avatar", "progress", "graph", "switch", "stepper", "choices",
         "gauge", "analog", "iconbutton", "keys", "swatches", "keypad",
+        "dial", "countdown", "qr", "markdown",
     )
     val ALL = CONTAINERS + LEAVES
 }
@@ -122,7 +123,8 @@ object NodeTypes {
  * `clock` (show: time, date or both; fontSize, color, align), `badge` (text, icon, color), `avatar` (text, size),
  * `progress` (min, max, color), `graph` (hours, color), `switch` (color), `stepper` (step), `choices` (max),
  * `gauge` (min, max, color, size, caption: words or `@name`), `analog` (size, seconds, numbers: all or quarters),
- * `iconbutton` (icon, iconOn, size, color), `keys` (size), `swatches` (show: colour or white), `keypad` (size).
+ * `iconbutton` (icon, iconOn, size, color), `keys` (size), `swatches` (show: colour or white), `keypad` (size),
+ * `dial` (size, step), `countdown` (text), `qr` (text, size), `markdown` (text), `tabs` (labels: comma-separated).
  * Columns and rows take `scroll`; a `flow` wraps its children onto new lines. Text takes `marquee`. A bound
  * component takes `showWhen` (on or off) and `animate` (fade, left, right, up, down or none) for how it comes and goes.
  * Any component takes `place`, its own alignment in its parent: start, center or end across a column, top, center or
@@ -244,6 +246,8 @@ enum class TapType {
     @SerialName("card") CARD,
     @SerialName("action") ACTION,
     @SerialName("page") PAGE,
+    @SerialName("url") URL,
+    @SerialName("event") EVENT,
     @SerialName("none") NONE,
 }
 
@@ -255,6 +259,10 @@ data class TapAction(
     val data: JsonObject? = null,
     /** Page id for [TapType.PAGE]. */
     val page: String? = null,
+    /** Absolute URL for [TapType.URL]. */
+    val url: String? = null,
+    /** Home Assistant event type for [TapType.EVENT]. */
+    val event: String? = null,
 )
 
 @Serializable

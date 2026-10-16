@@ -35,6 +35,7 @@ data class AddressDialogState(val initialAddress: String)
 sealed interface PlayerEvent {
     data class ShowMessage(val text: String) : PlayerEvent
     data class ShowMessageResource(@StringRes val messageRes: Int) : PlayerEvent
+    data class OpenUrl(val url: String) : PlayerEvent
     data object OpenInstallPermissionSettings : PlayerEvent
     data object OpenOverlayPermissionSettings : PlayerEvent
     data object OpenScreenOffAdminSettings : PlayerEvent

@@ -16,9 +16,6 @@ const onPage = computed(() => new Set(props.page.tiles.map(tile => tile.entityId
 /** Tiles that are no entity. History and favourite music are an entity shown another way (see the tile drawer). */
 const KINDS = ['home', 'clock', 'bedside', 'nav', 'energy', 'map']
 
-/** Entity types with a tile; the rest are left out. */
-const supported = (e: EntityInfo) => e.domain in CATALOGUE
-
 const groups = computed(() => {
   const needle = query.value.trim().toLowerCase()
   const match = (entity: EntityInfo) =>
@@ -26,7 +23,7 @@ const groups = computed(() => {
   const areaName = new Map(state.areas.map(area => [area.id, area.name]))
   const by = new Map<string, EntityInfo[]>()
   for (const entity of state.entities) {
-    if (!supported(entity) || !match(entity)) continue
+    if (!match(entity)) continue
     const key = (entity.area && areaName.get(entity.area)) || 'No area'
     by.set(key, [...(by.get(key) ?? []), entity])
   }

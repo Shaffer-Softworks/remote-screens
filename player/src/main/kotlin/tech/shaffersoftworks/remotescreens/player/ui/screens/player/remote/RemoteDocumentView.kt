@@ -87,6 +87,11 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
             players.getValue(Slot.MAIN).setUserLocalInt(PAGE_VARIABLE, state.page)
             appliedPage = state.page
         }
+        if (Slot.MAIN in loadedDocuments) {
+            for ((name, value) in state.localInts) {
+                players.getValue(Slot.MAIN).setUserLocalInt(name, value)
+            }
+        }
         for (slot in Slot.entries) {
             val isShown = slot in state.documents
             players.getValue(slot).visibility = when {

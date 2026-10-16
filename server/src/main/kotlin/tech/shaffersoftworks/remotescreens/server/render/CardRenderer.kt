@@ -58,8 +58,17 @@ private const val PANEL_MAX_WIDTH_DP = 620f
 private const val LEVEL_STEPS = 10
 private const val LEVEL_DEFAULT_MAX = 100.0
 private const val FAN_PERCENTAGE_FLAG = 1
+private const val FAN_OSCILLATE_FLAG = 2
+private const val FAN_DIRECTION_FLAG = 4
+private const val CLIMATE_TEMP_RANGE_FLAG = 2
 private const val COVER_POSITION_FLAG = 4
 private const val COVER_TILT_FLAG = 128
+private const val DEFAULT_HUMIDITY_MIN = 0.0
+private const val DEFAULT_HUMIDITY_MAX = 100.0
+private const val DEFAULT_HUMIDITY_STEP = 5.0
+private const val DEFAULT_CLIMATE_LIKE_MIN = 40.0
+private const val DEFAULT_CLIMATE_LIKE_MAX = 60.0
+private const val TODO_CARD_TAKE = 12
 private const val WEATHER_REFRESH_S = 1800
 private const val HISTORY_REFRESH_S = 300
 /** Opaque alpha in the high byte; not a theme colour (kept out of Themes.kt hex inventory). */
@@ -82,6 +91,7 @@ private const val FORECAST_DAYS = 7
  * The card a long press opens: the whole of one entity, on a panel over the page. A card is its own document in the
  * overlay slot; its taps name the entity as `e:<entity_id>`, so they work whichever tile opened it.
  */
+@Suppress("LargeClass")
 object CardRenderer {
     fun render(entityId: String, kind: String?, device: Device, input: RenderInput): RenderedDoc {
         val entityState = input.states[entityId]
@@ -107,6 +117,7 @@ object CardRenderer {
                         when (card) {
                             "light" -> docContext.lightCard(entityId, entityState, body)
                             "fan" -> docContext.fanCard(entityId, entityState, body)
+                            "humidifier" -> docContext.humidifierCard(entityId, entityState, body)
                             "cover" -> docContext.coverCard(entityId, entityState, body)
                             "lock" -> docContext.lockCard(entityId, entityState)
                             "climate" -> docContext.climateCard(entityId, entityState)
@@ -118,6 +129,16 @@ object CardRenderer {
                             "select" -> docContext.selectCard(entityId, entityState)
                             "number" -> docContext.numberCard(entityId, entityState, body)
                             "vacuum" -> docContext.vacuumCard(entityId, entityState)
+                            "lawn_mower" -> docContext.lawnMowerCard(entityId)
+                            "calendar" -> docContext.calendarCard(entityId, entityState)
+                            "todo" -> docContext.todoCard(entityId)
+                            "timer" -> docContext.timerCard(entityId, entityState)
+                            "counter" -> docContext.counterCard(entityId, entityState)
+                            "water_heater" -> docContext.waterHeaterCard(entityId, entityState, body)
+                            "valve" -> docContext.valveCard(entityId, entityState, body)
+                            "siren" -> docContext.sirenCard(entityId, entityState)
+                            "input_text" -> docContext.inputTextCard(entityId, entityState)
+                            "input_datetime" -> docContext.inputDatetimeCard(entityId, entityState)
                             "map" -> docContext.mapCard(entityId, body, panelH - CAMERA_RESERVE_DP)
                             "energy" -> docContext.energyFlow(body, panelH - CAMERA_RESERVE_DP, compact = false)
                             else -> docContext.toggleCard(entityId, entityState)
@@ -234,6 +255,73 @@ object CardRenderer {
             section(i18n.t("ui.speed"))
             bar(entityId, "percentage", w)
         }
+        structural(entityId) {
+            listOf(
+                it?.attr("oscillating"),
+                it?.attr("direction"),
+                it?.list("preset_modes")?.joinToString(),
+            ).joinToString("|")
+        }
+        if (entityState?.supports(FAN_OSCILLATE_FLAG) == true || entityState?.attr("oscillating") != null) {
+            section(i18n.t("ui.oscillate"))
+            flowKeys(
+                entityId,
+                "oscillate",
+                listOf("true" to i18n.t("state.on"), "false" to i18n.t("state.off")),
+            ) { it.attr("oscillating")?.lowercase() }
+        }
+        if (entityState?.supports(FAN_DIRECTION_FLAG) == true || entityState?.attr("direction") != null) {
+            section(i18n.t("ui.direction"))
+            flowKeys(
+                entityId,
+                "direction",
+                listOf("forward" to i18n.t("ui.forward"), "reverse" to i18n.t("ui.reverse")),
+            ) { it.attr("direction") }
+        }
+        val presets = entityState?.list("preset_modes").orEmpty()
+        if (presets.isNotEmpty()) {
+            section(i18n.t("ui.preset"))
+            flowKeys(entityId, "preset", presets.map { it to it.replace('_', ' ').replaceFirstChar(Char::uppercase) }) {
+                it.attr("preset_mode")
+            }
+        }
+    }
+
+    private fun DocContext.humidifierCard(entityId: String, entityState: EntityState?, w: Float) {
+        val min = entityState?.number("min_humidity") ?: DEFAULT_HUMIDITY_MIN
+        val max = entityState?.number("max_humidity") ?: DEFAULT_HUMIDITY_MAX
+        val step = entityState?.number("humidity_step") ?: DEFAULT_HUMIDITY_STEP
+        bigToggle(entityId, entityState)
+        predict(ref(entityId, "humidity", "+$step"), entityId)
+        predict(ref(entityId, "humidity", "-$step"), entityId)
+        section(i18n.t("ui.target_humidity"))
+        scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+            val doc = this@humidifierCard
+            doc.key(
+                ref(entityId, "humidity", "-$step"),
+                icon = "minus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true,
+            )
+            Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
+                doc.label(
+                    doc.text(Vars.entity(entityId, Vars.KEY_VALUE)),
+                    Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center,
+                )
+            }
+            doc.key(
+                ref(entityId, "humidity", "+$step"),
+                icon = "plus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true,
+            )
+        }
+        gap(CARD_GAP_DP)
+        bar(entityId, "humidity", w, min, max)
+        val modes = entityState?.list("available_modes").orEmpty()
+        if (modes.isNotEmpty()) {
+            structural(entityId) { it?.list("available_modes")?.joinToString() ?: "" }
+            section(i18n.t("ui.mode"))
+            flowKeys(entityId, "mode", modes.map { it to it.replace('_', ' ').replaceFirstChar(Char::uppercase) }) {
+                it.attr("mode")
+            }
+        }
     }
 
     private fun DocContext.coverCard(entityId: String, entityState: EntityState?, w: Float) {
@@ -272,20 +360,31 @@ object CardRenderer {
 
     private fun DocContext.climateCard(entityId: String, entityState: EntityState?) {
         val step = entityState?.number("target_temp_step") ?: if (homeAssistantConfig.temperatureUnit.contains("F")) 1.0 else 0.5
-        predict(ref(entityId, "temperature", "+$step"), entityId)
-        predict(ref(entityId, "temperature", "-$step"), entityId)
+        val dualSetpoint = entityState?.supports(CLIMATE_TEMP_RANGE_FLAG) == true ||
+            entityState?.state == "heat_cool" ||
+            (entityState?.number("target_temp_high") != null && entityState.number("target_temp_low") != null)
         gap(PANEL_CORNER_DP)
-        scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
-            val doc = this@climateCard
-            doc.key(ref(entityId, "temperature", "-$step"), icon = "minus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true)
-            Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
-                doc.label(doc.i18n.t("ui.target"), Type.BODY, doc.role(Role.INK_SOFT), align = RcTextAlign.Center)
-                doc.label(doc.text(Vars.entity(entityId, Vars.KEY_VALUE)), Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)
+        if (dualSetpoint) {
+            climateDualSetpoint(entityId, entityState, step)
+        } else {
+            predict(ref(entityId, "temperature", "+$step"), entityId)
+            predict(ref(entityId, "temperature", "-$step"), entityId)
+            scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+                val doc = this@climateCard
+                doc.key(ref(entityId, "temperature", "-$step"), icon = "minus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true)
+                Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
+                    doc.label(doc.i18n.t("ui.target"), Type.BODY, doc.role(Role.INK_SOFT), align = RcTextAlign.Center)
+                    doc.label(doc.text(Vars.entity(entityId, Vars.KEY_VALUE)), Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)
+                }
+                doc.key(ref(entityId, "temperature", "+$step"), icon = "plus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true)
             }
-            doc.key(ref(entityId, "temperature", "+$step"), icon = "plus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true)
         }
         val modes = entityState?.list("hvac_modes").orEmpty()
-        structural(entityId) { listOf("hvac_modes", "preset_modes", "fan_modes").joinToString("|") { key -> it?.list(key)?.joinToString() ?: "" } }
+        structural(entityId) {
+            listOf("hvac_modes", "preset_modes", "fan_modes", "swing_modes").joinToString("|") { key ->
+                it?.list(key)?.joinToString() ?: ""
+            } + "|${it?.number("target_temp_high")}|${it?.number("target_temp_low")}"
+        }
         if (modes.isNotEmpty()) {
             section(i18n.t("ui.mode"))
             flowKeys(entityId, "mode", modes.map { it to i18n.state("climate", it) }) { it.state }
@@ -299,6 +398,70 @@ object CardRenderer {
         if (fans.isNotEmpty()) {
             section(i18n.t("ui.speed"))
             flowKeys(entityId, "fan", fans.map { it to it.replaceFirstChar(Char::uppercase) }) { it.attr("fan_mode") }
+        }
+        val swings = entityState?.list("swing_modes").orEmpty()
+        if (swings.isNotEmpty()) {
+            section(i18n.t("ui.swing"))
+            flowKeys(entityId, "swing", swings.map { it to it.replace('_', ' ').replaceFirstChar(Char::uppercase) }) {
+                it.attr("swing_mode")
+            }
+        }
+    }
+
+    private fun DocContext.climateDualSetpoint(
+        entityId: String,
+        @Suppress("UNUSED_PARAMETER") entityState: EntityState?,
+        step: Double,
+    ) {
+        bind(entityId) { states ->
+            val climate = states[entityId]
+            fun tempLabel(attr: String) =
+                climate?.number(attr)?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + "°" } ?: "–"
+            listOf(
+                VarValue.string(Vars.entity(entityId, "temp_low"), tempLabel("target_temp_low")),
+                VarValue.string(Vars.entity(entityId, "temp_high"), tempLabel("target_temp_high")),
+            )
+        }
+        predict(ref(entityId, "temperature_low", "+$step"), entityId)
+        predict(ref(entityId, "temperature_low", "-$step"), entityId)
+        predict(ref(entityId, "temperature_high", "+$step"), entityId)
+        predict(ref(entityId, "temperature_high", "-$step"), entityId)
+        scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+            val doc = this@climateDualSetpoint
+            doc.key(
+                ref(entityId, "temperature_low", "-$step"),
+                icon = "minus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true,
+            )
+            Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
+                doc.label(doc.i18n.t("ui.low"), Type.BODY, doc.role(Role.INK_SOFT), align = RcTextAlign.Center)
+                doc.label(
+                    doc.text(Vars.entity(entityId, "temp_low")),
+                    Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center,
+                )
+            }
+            doc.key(
+                ref(entityId, "temperature_low", "+$step"),
+                icon = "plus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true,
+            )
+        }
+        gap(PANEL_CORNER_DP)
+        scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+            val doc = this@climateDualSetpoint
+            doc.key(
+                ref(entityId, "temperature_high", "-$step"),
+                icon = "minus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true,
+            )
+            Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
+                doc.label(doc.i18n.t("ui.high"), Type.BODY, doc.role(Role.INK_SOFT), align = RcTextAlign.Center)
+                doc.label(
+                    doc.text(Vars.entity(entityId, "temp_high")),
+                    Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center,
+                )
+            }
+            doc.key(
+                ref(entityId, "temperature_high", "+$step"),
+                icon = "plus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true,
+            )
         }
     }
 
@@ -547,6 +710,215 @@ object CardRenderer {
         picture(PictureSlot("map.card", "map:${mapStyle()}:${who.joinToString(",")}", pw, ph, 0))
         scope.Image(image("map.card", pw, ph), Modifier.size(units.px(w), units.px(h)).clip(rounded(CARD_GAP_DP)), contentScale = RcContentScale.Crop)
         label(i18n.t("ui.map_credit"), Type.CAPTION, role(Role.INK_SOFT))
+    }
+
+    private fun DocContext.calendarCard(@Suppress("UNUSED_PARAMETER") entityId: String, entityState: EntityState?) {
+        val zone = runCatching { ZoneId.of(homeAssistantConfig.timeZone) }.getOrDefault(ZoneId.of("UTC"))
+        val event = entityState?.let { calendarEvent(it, zone) }
+        gap(PANEL_CORNER_DP)
+        label(event?.title ?: i18n.t("ui.no_events"), Type.DISPLAY, role(Role.INK), Weight.SEMI_BOLD)
+        gap(FLOW_PAD_DP)
+        val whenText = when {
+            event == null -> "—"
+            event.allDay && isToday(event, zone) -> i18n.t("ui.today") + " · " + i18n.t("ui.all_day")
+            event.allDay -> i18n.fullWeekday(event.start) + " · " + i18n.t("ui.all_day")
+            isToday(event, zone) -> i18n.t("ui.today") + " · " + i18n.time(event.start)
+            else -> i18n.fullWeekday(event.start) + " · " + i18n.time(event.start)
+        }
+        label(whenText, Type.HEADLINE, role(Role.INK_SOFT))
+        event?.location?.takeIf { it.isNotBlank() }?.let {
+            gap(FLOW_PAD_DP)
+            label(it, Type.BODY, role(Role.INK_SOFT))
+        }
+    }
+
+    private fun DocContext.todoCard(entityId: String) {
+        val items = data.todos[entityId].orEmpty()
+        gap(FLOW_PAD_DP)
+        if (items.isEmpty()) {
+            label(i18n.t("ui.no_todos"), Type.HEADLINE, role(Role.INK_SOFT))
+            return
+        }
+        items.take(TODO_CARD_TAKE).forEach { item ->
+            key(
+                ref(entityId, "complete", item.uid),
+                text = item.summary,
+                icon = "checkbox-blank-outline",
+                heightDp = FLOW_KEY_H_DP,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            gap(FLOW_PAD_DP)
+        }
+    }
+
+    private fun DocContext.timerCard(entityId: String, entityState: EntityState?) {
+        gap(PANEL_CORNER_DP)
+        label(
+            text(Vars.entity(entityId, Vars.KEY_VALUE)),
+            Type.DISPLAY, role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center,
+        )
+        gap(CARD_GAP_DP)
+        scope.Row(Modifier.fillMaxWidth()) {
+            val doc = this@timerCard
+            doc.key(
+                ref(entityId, "start"),
+                text = doc.i18n.t("ui.start"), icon = "play", heightDp = 56f,
+                modifier = Modifier.horizontalWeight(1f),
+            )
+            Spacer(Modifier.width(doc.units.px(PANEL_CORNER_DP)))
+            doc.key(
+                ref(entityId, "pause"),
+                text = doc.i18n.t("ui.pause"), icon = "pause", heightDp = 56f,
+                modifier = Modifier.horizontalWeight(1f),
+            )
+            Spacer(Modifier.width(doc.units.px(PANEL_CORNER_DP)))
+            doc.key(
+                ref(entityId, "cancel"),
+                text = doc.i18n.t("ui.cancel"), icon = "close", heightDp = 56f,
+                modifier = Modifier.horizontalWeight(1f),
+            )
+        }
+        if (entityState?.state == "active" || entityState?.state == "paused") {
+            gap(PANEL_CORNER_DP)
+            key(
+                ref(entityId, "finish"),
+                text = i18n.t("ui.finish"), icon = "check", heightDp = FLOW_KEY_H_DP,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+
+    private fun DocContext.counterCard(entityId: String, @Suppress("UNUSED_PARAMETER") entityState: EntityState?) {
+        gap(PANEL_CORNER_DP)
+        scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+            val doc = this@counterCard
+            doc.key(
+                ref(entityId, "decrement"),
+                icon = "minus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true,
+            )
+            Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
+                doc.label(
+                    doc.text(Vars.entity(entityId, Vars.KEY_VALUE)),
+                    Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center,
+                )
+            }
+            doc.key(
+                ref(entityId, "increment"),
+                icon = "plus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true,
+            )
+        }
+        gap(CARD_GAP_DP)
+        key(
+            ref(entityId, "reset"),
+            text = i18n.t("ui.reset"), icon = "refresh", heightDp = FLOW_KEY_H_DP,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+
+    private fun DocContext.waterHeaterCard(entityId: String, entityState: EntityState?, w: Float) {
+        val min = entityState?.number("min_temp") ?: DEFAULT_CLIMATE_LIKE_MIN
+        val max = entityState?.number("max_temp") ?: DEFAULT_CLIMATE_LIKE_MAX
+        val step = entityState?.number("target_temp_step") ?: 1.0
+        predict(ref(entityId, "temperature", "+$step"), entityId)
+        predict(ref(entityId, "temperature", "-$step"), entityId)
+        gap(PANEL_CORNER_DP)
+        scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+            val doc = this@waterHeaterCard
+            doc.key(ref(entityId, "temperature", "-$step"), icon = "minus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true)
+            Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
+                doc.label(doc.i18n.t("ui.target"), Type.BODY, doc.role(Role.INK_SOFT), align = RcTextAlign.Center)
+                doc.label(doc.text(Vars.entity(entityId, Vars.KEY_VALUE)), Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)
+            }
+            doc.key(ref(entityId, "temperature", "+$step"), icon = "plus", heightDp = STEPPER_KEY_DP, widthDp = STEPPER_KEY_DP, round = true)
+        }
+        gap(CARD_GAP_DP)
+        bar(entityId, "temperature", w, min, max)
+        val modes = entityState?.list("operation_list").orEmpty()
+        if (modes.isNotEmpty()) {
+            structural(entityId) { it?.list("operation_list")?.joinToString() ?: "" }
+            section(i18n.t("ui.mode"))
+            flowKeys(
+                entityId,
+                "operation",
+                modes.map { it to it.replace('_', ' ').replaceFirstChar(Char::uppercase) },
+            ) {
+                it.state
+            }
+        }
+    }
+
+    private fun DocContext.valveCard(entityId: String, entityState: EntityState?, w: Float) {
+        gap(FLOW_PAD_DP)
+        scope.Row(Modifier.fillMaxWidth()) {
+            val doc = this@valveCard
+            doc.key(
+                ref(entityId, "open"),
+                text = doc.i18n.t("ui.open"), icon = "valve-open", heightDp = 56f,
+                modifier = Modifier.horizontalWeight(1f),
+            )
+            Spacer(Modifier.width(doc.units.px(PANEL_CORNER_DP)))
+            doc.key(
+                ref(entityId, "stop"),
+                text = doc.i18n.t("ui.stop"), icon = "stop", heightDp = 56f,
+                modifier = Modifier.horizontalWeight(1f),
+            )
+            Spacer(Modifier.width(doc.units.px(PANEL_CORNER_DP)))
+            doc.key(
+                ref(entityId, "close"),
+                text = doc.i18n.t("ui.close_cover"), icon = "valve-closed", heightDp = 56f,
+                modifier = Modifier.horizontalWeight(1f),
+            )
+        }
+        if (entityState?.number("current_position") != null) {
+            section(i18n.t("ui.position"))
+            bar(entityId, "position", w)
+        }
+    }
+
+    private fun DocContext.sirenCard(entityId: String, entityState: EntityState?) {
+        bigToggle(entityId, entityState)
+        val tones = entityState?.list("available_tones").orEmpty()
+        if (tones.isNotEmpty()) {
+            structural(entityId) { it?.list("available_tones")?.joinToString() ?: "" }
+            section(i18n.t("ui.tone"))
+            flowKeys(entityId, "tone", tones.take(SOURCES_TAKE).map { it to it }) { it.attr("tone") }
+        }
+    }
+
+    private fun DocContext.lawnMowerCard(entityId: String) {
+        gap(FLOW_PAD_DP)
+        scope.Row(Modifier.fillMaxWidth()) {
+            val doc = this@lawnMowerCard
+            doc.key(ref(entityId, "start"), text = doc.i18n.t("ui.start"), icon = "play", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))
+            Spacer(Modifier.width(doc.units.px(PANEL_CORNER_DP)))
+            doc.key(ref(entityId, "pause"), text = doc.i18n.t("ui.pause"), icon = "pause", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))
+            Spacer(Modifier.width(doc.units.px(PANEL_CORNER_DP)))
+            doc.key(ref(entityId, "dock"), text = doc.i18n.t("ui.dock"), icon = "home-import-outline", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))
+        }
+    }
+
+    private fun DocContext.inputTextCard(entityId: String, entityState: EntityState?) {
+        gap(PANEL_CORNER_DP)
+        label(
+            entityState?.state?.ifBlank { i18n.t("ui.empty_text") } ?: "—",
+            Type.HEADLINE, role(Role.INK), Weight.MEDIUM,
+        )
+        gap(CARD_GAP_DP)
+        key(
+            ref(entityId, "clear"),
+            text = i18n.t("ui.clear"), icon = "close", heightDp = FLOW_KEY_H_DP,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+
+    private fun DocContext.inputDatetimeCard(
+        @Suppress("UNUSED_PARAMETER") entityId: String,
+        entityState: EntityState?,
+    ) {
+        gap(PANEL_CORNER_DP)
+        label(entityState?.state ?: "—", Type.DISPLAY, role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)
+        gap(FLOW_PAD_DP)
+        label(i18n.t("ui.datetime_hint"), Type.BODY, role(Role.INK_SOFT), align = RcTextAlign.Center)
     }
 
     val HUES = listOf(0, 30, 50, 120, 180, 220, 270, 320)

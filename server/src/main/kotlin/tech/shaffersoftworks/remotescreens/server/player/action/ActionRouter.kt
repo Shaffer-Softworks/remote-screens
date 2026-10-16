@@ -13,7 +13,9 @@ import tech.shaffersoftworks.remotescreens.shared.TypeSpec
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
 
 private const val MAX_CODE_LENGTH = 12
@@ -51,6 +53,7 @@ class ActionRouter(private val homeAssistant: HomeAssistant, private val i18n: (
                 "card" -> TapOutcome.Card(target.entityId, if (ref.arg == "history") "history" else target.kind)
                 "run" -> runTileAction(target)
                 "favourite" -> playFavourite(target)
+                "event" -> fireEvent(ref.arg, target)
                 "code_digit", "code_back", "code_clear" -> typeCode(verb, ref.arg, target, memory)
                 else -> callService(verb, ref, target, entity, memory, nowMs)
             }
@@ -170,6 +173,24 @@ class ActionRouter(private val homeAssistant: HomeAssistant, private val i18n: (
             "media_content_type" to JsonPrimitive(options["content_type"] ?: "music"),
         )
         homeAssistant.callService("media_player", "play_media", JsonObject(data))
+        return TapOutcome.Done
+    }
+
+    private suspend fun fireEvent(eventType: String, target: TapTarget): TapOutcome {
+        if (eventType.isBlank()) return TapOutcome.Ignored
+        homeAssistant.command(
+            "fire_event",
+            buildJsonObject {
+                put("event_type", eventType)
+                put(
+                    "event_data",
+                    buildJsonObject {
+                        target.entityId?.let { put("entity_id", it) }
+                        put("source", "remote_screens")
+                    },
+                )
+            },
+        )
         return TapOutcome.Done
     }
 

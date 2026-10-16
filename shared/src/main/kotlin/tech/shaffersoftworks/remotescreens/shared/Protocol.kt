@@ -81,7 +81,7 @@ data class ActionRef(val tile: String, val verb: String, val arg: String = "") {
     val local: Boolean get() = tile == "_" && verb in LOCAL_VERBS
 
     companion object {
-        val LOCAL_VERBS = setOf("page", "next", "prev", "back", "close", "noop", "settings")
+        val LOCAL_VERBS = setOf("page", "next", "prev", "back", "close", "noop", "settings", "set", "url")
 
         fun decode(encoded: String?): ActionRef? {
             val parts = encoded?.split('|', limit = 3) ?: return null

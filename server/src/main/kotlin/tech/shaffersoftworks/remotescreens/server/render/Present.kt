@@ -109,6 +109,19 @@ object Present {
         "light" -> if (on) (entityState.number("brightness")?.toFloat() ?: MAX_BRIGHTNESS) / MAX_BRIGHTNESS else 0f
         "cover" -> entityState.number("current_position")?.toFloat()?.div(PERCENT)
         "fan" -> if (on) (entityState.number("percentage")?.toFloat() ?: PERCENT) / PERCENT else 0f
+        "humidifier" -> {
+            val humidity = entityState.number("humidity") ?: return null
+            val min = entityState.number("min_humidity") ?: 0.0
+            val max = entityState.number("max_humidity") ?: DEFAULT_NUMBER_MAX
+            if (max > min) ((humidity - min) / (max - min)).toFloat() else humidity.toFloat() / PERCENT
+        }
+        "valve" -> entityState.number("current_position")?.toFloat()?.div(PERCENT)
+        "water_heater" -> {
+            val temperature = entityState.number("temperature") ?: return null
+            val min = entityState.number("min_temp") ?: 0.0
+            val max = entityState.number("max_temp") ?: DEFAULT_NUMBER_MAX
+            if (max > min) ((temperature - min) / (max - min)).toFloat() else null
+        }
         "media_player" -> entityState.number("volume_level")?.toFloat()
         "number", "input_number" -> {
             val v = entityState.numericState()
@@ -133,6 +146,7 @@ object Present {
                 ?.let { i18n.percent(it.roundToInt()) }
                 ?: word
             "fan" -> entityState.number("percentage")?.takeIf { on }?.let { i18n.percent(it.roundToInt()) } ?: word
+            "humidifier" -> entityState.number("humidity")?.takeIf { on }?.let { i18n.percent(it.roundToInt()) } ?: word
             "climate" -> entityState.number("current_temperature")
                 ?.let { "${i18n.number(it, 1)} ${entityState.attr("temperature_unit") ?: "°"} · $word" }
                 ?: word
@@ -143,15 +157,30 @@ object Present {
             "weather" -> entityState.number("temperature")?.let { "${i18n.number(it, 0)}° · $word" } ?: word
             "scene", "button", "input_button" -> ""
             "script" -> if (on) word else ""
-            "vacuum" -> entityState.number("battery_level")?.let { "$word · ${i18n.percent(it.roundToInt())}" } ?: word
-            "input_select", "select" -> entityState.state
+            "vacuum", "lawn_mower" ->
+                entityState.number("battery_level")?.let { "$word · ${i18n.percent(it.roundToInt())}" } ?: word
+            "input_select", "select", "input_text", "input_datetime" -> entityState.state
+            "calendar" -> entityState.attr("message") ?: word
+            "todo", "counter" -> entityState.state
+            "timer" -> entityState.attr("remaining") ?: word
+            "water_heater" -> entityState.number("temperature")?.let { "${i18n.number(it, 0)}° · $word" } ?: word
+            "valve" -> entityState.number("current_position")
+                ?.takeIf { entityState.state == "open" }
+                ?.let { i18n.percent(it.roundToInt()) }
+                ?: word
             else -> word
         }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun valueOf(entityState: EntityState, i18n: I18n, stateText: String, word: String): String = when (entityState.domain) {
-        "sensor", "number", "input_number" -> entityState.numericState()?.let { numberOnly(entityState, it, i18n) } ?: entityState.state
-        "climate" -> entityState.number("temperature")?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + "°" } ?: word
+        "sensor", "number", "input_number", "counter", "todo" ->
+            entityState.numericState()?.let { numberOnly(entityState, it, i18n) } ?: entityState.state
+        "humidifier" -> entityState.number("humidity")?.let { i18n.percent(it.roundToInt()) } ?: word
+        "climate", "water_heater" ->
+            entityState.number("temperature")?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + "°" } ?: word
         "weather" -> entityState.number("temperature")?.let { i18n.number(it, 0) + "°" } ?: word
+        "timer" -> entityState.attr("remaining") ?: word
+        "calendar" -> entityState.attr("message") ?: word
         else -> stateText
     }
 

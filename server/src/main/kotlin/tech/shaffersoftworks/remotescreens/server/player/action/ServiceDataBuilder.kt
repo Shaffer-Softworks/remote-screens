@@ -13,6 +13,8 @@ import kotlin.math.roundToInt
 
 private const val DEFAULT_CLIMATE_MIN_TEMPERATURE = 5.0
 private const val DEFAULT_CLIMATE_MAX_TEMPERATURE = 35.0
+private const val DEFAULT_HUMIDITY_MIN = 0.0
+private const val DEFAULT_HUMIDITY_MAX = 100.0
 private const val DEFAULT_MIN_VALUE = 0.0
 private const val DEFAULT_MAX_VALUE = 100.0
 private const val MAX_WHOLE_NUMBER = 1e9
@@ -57,14 +59,21 @@ object ServiceDataBuilder {
 
     /** `$arg`, `$arg*2.55` or `$arg/100`, as a number where the argument is one. */
     fun argValue(expression: String, arg: String): JsonPrimitive {
-        val (_, operator, factor) = parseExpression(expression)
-        val number = arg.toDoubleOrNull() ?: return JsonPrimitive(arg)
-        val value = when (operator) {
-            '*' -> number * factor
-            '/' -> number / factor
-            else -> number
+        if (expression == ARG_PLACEHOLDER && (arg == "true" || arg == "false")) {
+            return JsonPrimitive(arg == "true")
         }
-        return if (operator == '*') JsonPrimitive(value.roundToInt()) else JsonPrimitive(wholeOrDecimal(value))
+        val (_, operator, factor) = parseExpression(expression)
+        val number = arg.toDoubleOrNull()
+        return if (number == null) {
+            JsonPrimitive(arg)
+        } else {
+            val value = when (operator) {
+                '*' -> number * factor
+                '/' -> number / factor
+                else -> number
+            }
+            if (operator == '*') JsonPrimitive(value.roundToInt()) else JsonPrimitive(wholeOrDecimal(value))
+        }
     }
 
     fun isArgExpression(text: String): Boolean = text.startsWith(ARG_PLACEHOLDER)
@@ -101,9 +110,12 @@ object ServiceDataBuilder {
     }
 
     private fun limits(entity: EntityState, relativeTo: String): ClosedFloatingPointRange<Double> = when {
-        entity.domain == "climate" ->
+        entity.domain == "climate" || entity.domain == "water_heater" ->
             (entity.number("min_temp") ?: DEFAULT_CLIMATE_MIN_TEMPERATURE)..
                 (entity.number("max_temp") ?: DEFAULT_CLIMATE_MAX_TEMPERATURE)
+        entity.domain == "humidifier" && relativeTo == "humidity" ->
+            (entity.number("min_humidity") ?: DEFAULT_HUMIDITY_MIN)..
+                (entity.number("max_humidity") ?: DEFAULT_HUMIDITY_MAX)
         relativeTo.startsWith("state") ->
             (entity.number("min") ?: DEFAULT_MIN_VALUE)..(entity.number("max") ?: DEFAULT_MAX_VALUE)
         else -> DEFAULT_MIN_VALUE..DEFAULT_MAX_VALUE
