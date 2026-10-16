@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.10
+
+- Release pipeline check: rebuild the player APK and add-on images so enrolled tablets can verify silent updates.
+
 ## 0.1.9
 
 - Colour picks can set opacity: custom and theme colours use an alpha slider and store `#AARRGGBB` when not
