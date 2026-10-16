@@ -8,6 +8,7 @@ import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcInteger
 import androidx.compose.remote.creation.dsl.RcPaintStyle
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
+import androidx.compose.remote.creation.dsl.RcStrokeCap
 import androidx.compose.remote.creation.dsl.RcText
 import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcTextOverflow
@@ -56,6 +57,11 @@ private const val KEY_ICON_DP = 20f
 private const val KEY_ICON_ONLY_RATIO = 0.5f
 private const val KEY_ICON_GAP_DP = 8f
 private const val INITIALS_TEXT_RATIO = 0.38f
+private const val SPINNER_STROKE_RATIO = 0.1f
+private const val SPINNER_INSET_RATIO = 0.1f
+private const val SPINNER_SWEEP_DEG = 270f
+/** One turn per second: continuousSeconds runs 0–60 over a minute. */
+private const val SPINNER_DEG_PER_SEC = 360f
 
 fun DocContext.rounded(dp: Float) = units.px(dp).let { RoundedRectShape(it, it, it, it) }
 
@@ -103,6 +109,31 @@ fun DocContext.toggleIcon(entityId: String, off: String, on: String?, sizeDp: Fl
     scope.Box(Modifier.size(units.px(sizeDp), units.px(sizeDp))) {
         this@toggleIcon.icon(off, sizeDp, color, int(Vars.entity(entityId, Vars.KEY_OFF)))
         this@toggleIcon.icon(on, sizeDp, color, int(Vars.entity(entityId, Vars.KEY_ON)))
+    }
+}
+
+/**
+ * An indeterminate ring the player turns with its clock (same continuousSeconds as an analog second hand), for
+ * waiting on live video and the like.
+ */
+fun DocContext.spinner(sizeDp: Float, color: RcColor, visible: RcInteger? = null) {
+    val px = units.px(sizeDp)
+    val mid = px / 2f
+    val inset = px * SPINNER_INSET_RATIO
+    val stroke = px * SPINNER_STROKE_RATIO
+    var modifier = Modifier.size(px, px)
+    if (visible != null) modifier = modifier.visibility(visible)
+    scope.Canvas(modifier) {
+        save {
+            rotate(continuousSeconds() * SPINNER_DEG_PER_SEC, mid.rf, mid.rf)
+            paint {
+                color(color)
+                style(RcPaintStyle.Stroke)
+                strokeWidth(stroke)
+                strokeCap(RcStrokeCap.Round)
+            }
+            drawArc(inset, inset, px - inset, px - inset, 0f, SPINNER_SWEEP_DEG)
+        }
     }
 }
 

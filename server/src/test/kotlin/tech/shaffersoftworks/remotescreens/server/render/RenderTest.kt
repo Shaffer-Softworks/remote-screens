@@ -220,16 +220,19 @@ class RenderTest {
 
         val video = doc.docContext.videos.single()
         assertEquals(LiveVideo("camera.front_door", LiveVideo.FIRST_COMPONENT_ID, crop = true), video)
-        assertImageFound(doc, video.componentId)
+        assertVideoTargetFound(doc, video.componentId)
     }
 
     @Test
-    fun aCameraCardsVideoPlaysOverItsImageFittedLikeIt() {
+    fun aCameraCardsVideoPlaysOverItsSpinnerFittedLikeIt() {
         val doc = CardRenderer.render("camera.front_door", null, tablet, input())
 
+        assertEquals(1, doc.docContext.pictures.size)
+        assertTrue(doc.docContext.declares(Vars.entity("camera.front_door", Vars.KEY_CAM_WAITING)))
+        assertTrue(doc.docContext.declares(Vars.entity("camera.front_door", Vars.KEY_CAM_STILL)))
         val video = doc.docContext.videos.single()
         assertEquals(LiveVideo("camera.front_door", LiveVideo.FIRST_COMPONENT_ID, crop = false), video)
-        assertImageFound(doc, video.componentId)
+        assertVideoTargetFound(doc, video.componentId)
     }
 
     @Test
@@ -237,8 +240,8 @@ class RenderTest {
         assertTrue(AlertRenderer.render(Alert("Washer done"), tablet, input()).docContext.videos.isEmpty())
     }
 
-    /** The player finds the image by its id once it has read the document, as it must to lay the video over it. */
-    private fun assertImageFound(doc: RenderedDoc, componentId: Int) {
+    /** The player finds the target by its id once it has read the document, as it must to lay the video over it. */
+    private fun assertVideoTargetFound(doc: RenderedDoc, componentId: Int) {
         val component = assertNotNull(parse(doc.bytes).getComponent(componentId), "component $componentId")
         assertEquals(componentId, component.componentId)
     }

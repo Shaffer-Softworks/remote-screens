@@ -30,6 +30,9 @@ object Vars {
     const val KEY_LEVEL = "level"
     const val KEY_LEVEL_REST = "level_rest"
     const val KEY_CONFIRM = "confirm"
+    /** Camera card: spinner while HLS starts; still when the stream never comes. */
+    const val KEY_CAM_WAITING = "cam_waiting"
+    const val KEY_CAM_STILL = "cam_still"
 
     fun entity(entityId: String, key: String) = "e.$entityId.$key"
     fun tile(tileId: String, key: String) = "t.$tileId.$key"

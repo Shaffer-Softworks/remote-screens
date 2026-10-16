@@ -241,14 +241,23 @@ class PlayerSession(
         for (video in renderedDoc.docContext.videos) sendVideo(shown, video)
     }
 
-    /** Starts [video]'s stream and tells the player where it is; without a stream, the image's picture stays. */
+    /**
+     * Starts [video]'s stream and tells the player where it is. A camera card without a stream falls back to its
+     * still; an alert keeps its still under the overlay as before.
+     */
     private fun sendVideo(shown: ShownDocument, video: LiveVideo) {
-        if (!supportsVideo) return
         context.scope.launch {
-            val path = context.cameraStreamService.hlsPath(video.entityId) ?: return@launch
-            if (shownDocuments[shown.slot] === shown) {
-                send(ServerMessage.Video(shown.slot, shown.revision, video.componentId, path, video.crop))
+            if (!supportsVideo) {
+                showCameraStillFallback(shown, video)
+                return@launch
             }
+            val path = context.cameraStreamService.hlsPath(video.entityId)
+            if (shownDocuments[shown.slot] !== shown) return@launch
+            if (path == null) {
+                showCameraStillFallback(shown, video)
+                return@launch
+            }
+            send(ServerMessage.Video(shown.slot, shown.revision, video.componentId, path, video.crop))
         }
     }
 
@@ -260,8 +269,28 @@ class PlayerSession(
             shown.videoRestarts[video.componentId] = restarts + 1
             sendVideo(shown, video)
         } else {
-            logger.info("Video of {} keeps stopping (HTTP {}); its picture stays", video.entityId, message.httpCode)
+            logger.info(
+                "Video of {} keeps stopping (HTTP {}); falling back to still",
+                video.entityId,
+                message.httpCode,
+            )
+            context.scope.launch { showCameraStillFallback(shown, video) }
         }
+    }
+
+    /** Hides the camera card's spinner and shows its still; no-op for alerts (they never declare these vars). */
+    private suspend fun showCameraStillFallback(shown: ShownDocument, video: LiveVideo) {
+        val waiting = Vars.entity(video.entityId, Vars.KEY_CAM_WAITING)
+        if (!shown.renderedDoc.docContext.declares(waiting)) return
+        if (shownDocuments[shown.slot] !== shown) return
+        send(
+            ServerMessage.Vars(
+                listOf(
+                    VarValue.int(waiting, Vars.GONE),
+                    VarValue.int(Vars.entity(video.entityId, Vars.KEY_CAM_STILL), Vars.VISIBLE),
+                ),
+            ),
+        )
     }
 
     private fun connectedVar(): VarValue = VarValue.int(Vars.CONNECTED, if (homeAssistant.isConnected.value) 1 else 0)
