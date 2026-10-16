@@ -14,8 +14,9 @@ permissions:
   contents: read
 
 # Branch protection on main blocks unsigned bot commits and direct pushes, so
-# workflow_dispatch only creates the tag when version files already match.
-# The tag push runs the package / image / GitHub release jobs.
+# workflow_dispatch only creates the tag when version files already match, then
+# builds in the same run (GITHUB_TOKEN tag pushes do not start a second run).
+# A manual push of an existing v* tag still builds via the push path alone.
 jobs:
   tag:
     name: Create release tag
@@ -42,17 +43,28 @@ jobs:
             echo "Merge a PR that bumps those files (and the changelog), then re-run this workflow."
             exit 1
           fi
-          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null \
-            || git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
-            echo "Tag $tag already exists"; exit 1
+          head=$(git rev-parse HEAD)
+          git fetch origin "refs/tags/$tag:refs/tags/$tag" 2>/dev/null || true
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            existing=$(git rev-parse "refs/tags/$tag^{}")
+            if [ "$existing" = "$head" ]; then
+              echo "Tag $tag already points at $(git rev-parse --short HEAD); continuing with the release build."
+              exit 0
+            fi
+            echo "Tag $tag already exists at a different commit"; exit 1
           fi
           git tag "$tag"
           git push origin "$tag"
-          echo "Created $tag on $(git rev-parse --short HEAD). The tag push starts the release build."
+          echo "Created $tag on $(git rev-parse --short HEAD); continuing with the release build."
 
   package:
     name: Player app and add-on files
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [tag]
+    if: |
+      always() && !cancelled() && (
+        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+        (github.event_name == 'workflow_dispatch' && needs.tag.result == 'success')
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -63,10 +75,16 @@ jobs:
       - uses: actions/checkout@v7
       - name: Version
         id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
           set -eu
           version=$(cat addon/VERSION)
-          tag="${GITHUB_REF_NAME}"
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            tag="v${INPUT_VERSION#v}"
+          else
+            tag="${GITHUB_REF_NAME}"
+          fi
           grep -q "^version: \"$version\"$" addon/config.yaml \
             || { echo "addon/config.yaml is not $version"; exit 1; }
           if [ "$tag" != "v$version" ]; then
