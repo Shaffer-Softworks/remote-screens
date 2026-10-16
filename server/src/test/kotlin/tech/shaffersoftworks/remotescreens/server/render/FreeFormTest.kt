@@ -5,7 +5,6 @@ import androidx.compose.remote.core.Operation
 import androidx.compose.remote.core.RemoteComposeBuffer
 import androidx.compose.remote.core.operations.DrawTextAnchored
 import androidx.compose.remote.core.operations.NamedVariable
-import androidx.compose.remote.core.operations.layout.Component
 import androidx.compose.remote.core.operations.layout.Container
 import androidx.compose.remote.core.operations.layout.animation.AnimationSpec
 import androidx.compose.remote.core.operations.layout.managers.BoxLayout
