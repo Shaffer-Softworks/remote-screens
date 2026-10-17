@@ -1,7 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.routes.model
 
 import tech.shaffersoftworks.remotescreens.server.player.PlayerStatus
-import tech.shaffersoftworks.remotescreens.shared.GridSize
 import tech.shaffersoftworks.remotescreens.shared.ScreenSettings
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -31,14 +30,6 @@ data class EntityResponse(
 
 @Serializable
 data class AreaResponse(val id: String, val name: String)
-
-@Serializable
-data class CreateScreenRequest(
-    val name: String,
-    val grid: GridSize? = null,
-    val widthDp: Int? = null,
-    val heightDp: Int? = null,
-)
 
 @Serializable
 data class AdoptPlayerRequest(val screenId: String, val name: String? = null, val code: String? = null)

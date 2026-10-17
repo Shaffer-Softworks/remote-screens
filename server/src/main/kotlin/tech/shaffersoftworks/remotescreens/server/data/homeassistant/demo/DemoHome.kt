@@ -62,9 +62,9 @@ class DemoHome : HomeAssistant {
 
     override suspend fun callService(domain: String, service: String, data: JsonObject, returnResponse: Boolean): JsonElement? {
         calls += Triple(domain, service, data)
-        val ids = when (val e = data["entity_id"]) {
-            is JsonPrimitive -> listOf(e.content)
-            is JsonArray -> e.map { it.jsonPrimitive.content }
+        val ids = when (val entityIdValue = data["entity_id"]) {
+            is JsonPrimitive -> listOf(entityIdValue.content)
+            is JsonArray -> entityIdValue.map { it.jsonPrimitive.content }
             else -> emptyList()
         }
         return when {

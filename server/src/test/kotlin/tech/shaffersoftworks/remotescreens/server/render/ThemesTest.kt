@@ -72,7 +72,10 @@ class ThemesTest {
         val dir = File("src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render")
         // An opaque mask such as `argb or 0xFF000000.toInt()` is arithmetic, not a colour.
         val hex = Regex("0x[0-9A-Fa-f]{8}(?!\\.toInt\\(\\))")
-        val offenders = dir.listFiles()!!.filter { it.name != "Themes.kt" && it.name.endsWith(".kt") && hex.containsMatchIn(it.readText()) }
+        val hexInventory = setOf("BuiltinThemes.kt", "Themes.kt")
+        val offenders = dir.listFiles()!!.filter {
+            it.name !in hexInventory && it.name.endsWith(".kt") && hex.containsMatchIn(it.readText())
+        }
         assertEquals(emptyList(), offenders.map { it.name })
     }
 }

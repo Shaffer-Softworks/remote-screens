@@ -1,9 +1,5 @@
 package tech.shaffersoftworks.remotescreens.server.data.renderdata
 
-import tech.shaffersoftworks.remotescreens.server.render.BrowseItem
-import tech.shaffersoftworks.remotescreens.server.render.EnergyPrefs
-import tech.shaffersoftworks.remotescreens.server.render.Forecast
-import tech.shaffersoftworks.remotescreens.server.render.TodoItem
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive

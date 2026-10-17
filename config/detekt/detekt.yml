@@ -3,6 +3,10 @@ naming:
     ignoreAnnotated: ['Composable']
   TopLevelPropertyNaming:
     constantPattern: '[A-Z][_A-Z0-9]*'
+  # Feature folders under render/ (cards/, tiles/, freeform/) keep package
+  # tech.shaffersoftworks.remotescreens.server.render for shared internal APIs.
+  InvalidPackageDeclaration:
+    active: false
 
 complexity:
   LongParameterList:

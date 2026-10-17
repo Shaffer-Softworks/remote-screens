@@ -12,8 +12,9 @@ private const val ALPHA_SHIFT = 24
 private const val HEX_RADIX = 16
 
 /**
- * The built-in themes and the custom ones laid over them. The only file that holds hex colours (see `ThemeTest`).
+ * The built-in themes and the custom ones laid over them. The only file that holds hex colours (see [ThemesTest]).
  */
+@Suppress("MatchingDeclarationName")
 object Themes {
     const val DEFAULT = "rpi"
 

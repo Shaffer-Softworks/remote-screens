@@ -1,11 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.data.renderdata
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
-import tech.shaffersoftworks.remotescreens.server.render.BrowseItem
-import tech.shaffersoftworks.remotescreens.server.render.EnergyPrefs
-import tech.shaffersoftworks.remotescreens.server.render.Forecast
-import tech.shaffersoftworks.remotescreens.server.render.RenderData
-import tech.shaffersoftworks.remotescreens.server.render.TodoItem
 import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.Tile
 import kotlinx.serialization.json.JsonObject

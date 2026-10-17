@@ -2,6 +2,7 @@
 
 package tech.shaffersoftworks.remotescreens.server.render
 
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcContentScale
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
