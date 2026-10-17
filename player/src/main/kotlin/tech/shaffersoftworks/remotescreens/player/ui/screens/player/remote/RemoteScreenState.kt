@@ -7,12 +7,13 @@ import tech.shaffersoftworks.remotescreens.shared.VarValue
 
 /**
  * A document shown in a slot. Compared by identity, so the renderer loads each one into its player exactly once.
- * [predictions] maps an action's metadata to the values it will change.
+ * [predictions] maps an action's metadata to the values it will change, and may be updated in place when vars
+ * arrive so the document object stays the same and the player is not reloaded.
  */
 class SlotDocument(
     val revision: Int,
     val bytes: ByteArray,
-    val predictions: Map<String, List<VarValue>>,
+    val predictions: MutableMap<String, List<VarValue>>,
 )
 
 /**
@@ -45,6 +46,8 @@ data class RemoteScreenState(
     val pageCount: Int = 1,
     /** The pages a swipe moves through, in order. */
     val swipePages: List<Int> = listOf(0),
+    /** Home Assistant's time zone for analog clocks; null keeps the tablet's zone. */
+    val timeZone: String? = null,
 ) {
     val hasMainDocument: Boolean get() = Slot.MAIN in documents
 
@@ -76,7 +79,7 @@ data class RemoteScreenState(
     val previousSwipePage: Int? get() = swipePages.lastOrNull { it < page }
 
     fun withDocument(message: ServerMessage.Document, bytes: ByteArray): RemoteScreenState {
-        val document = SlotDocument(message.rev, bytes, message.predictions)
+        val document = SlotDocument(message.rev, bytes, message.predictions.toMutableMap())
         val updated = copy(
             documents = documents + (message.slot to document),
             values = values + message.vars.associateBy(VarValue::name),
@@ -95,15 +98,14 @@ data class RemoteScreenState(
     }
 
     fun withVars(message: ServerMessage.Vars): RemoteScreenState {
-        val updatedDocuments = if (message.predictions.isEmpty()) {
-            documents
-        } else {
-            documents.mapValues { (_, document) ->
-                SlotDocument(document.revision, document.bytes, document.predictions + message.predictions)
-            }
+        if (message.predictions.isNotEmpty()) {
+            for (document in documents.values) document.predictions.putAll(message.predictions)
         }
-        return copy(documents = updatedDocuments, values = values + message.vars.associateBy(VarValue::name))
+        return copy(values = values + message.vars.associateBy(VarValue::name))
     }
+
+    fun withTimeZone(timeZone: String?): RemoteScreenState =
+        if (timeZone == null || timeZone == this.timeZone) this else copy(timeZone = timeZone)
 
     /** What a tap will change, applied before Home Assistant answers. Null when the tap predicts nothing. */
     fun withPrediction(slot: Slot, metadata: String): RemoteScreenState? {

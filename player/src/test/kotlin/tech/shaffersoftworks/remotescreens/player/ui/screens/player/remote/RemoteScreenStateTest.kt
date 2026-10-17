@@ -107,18 +107,26 @@ class RemoteScreenStateTest {
     }
 
     @Test
-    fun `vars add predictions to every shown document`() {
-        val state = RemoteScreenState()
-            .withDocument(mainDocument(), documentBytes)
-            .withVars(
-                ServerMessage.Vars(
-                    vars = listOf(VarValue.int("count", 2)),
-                    predictions = mapOf("fan|toggle|" to listOf(VarValue.string("fan", "on"))),
-                ),
-            )
+    fun `time zone is kept when documents are cleared`() {
+        val state = RemoteScreenState().withTimeZone("America/New_York").cleared()
+
+        assertEquals("America/New_York", state.timeZone)
+    }
+
+    @Test
+    fun `vars add predictions to every shown document without replacing them`() {
+        val withDocument = RemoteScreenState().withDocument(mainDocument(), documentBytes)
+        val loadedDocument = withDocument.documents.getValue(Slot.MAIN)
+        val state = withDocument.withVars(
+            ServerMessage.Vars(
+                vars = listOf(VarValue.int("count", 2)),
+                predictions = mapOf("fan|toggle|" to listOf(VarValue.string("fan", "on"))),
+            ),
+        )
 
         assertEquals(VarValue.int("count", 2), state.values["count"])
         assertTrue("fan|toggle|" in state.documents.getValue(Slot.MAIN).predictions)
+        assertSame(loadedDocument, state.documents.getValue(Slot.MAIN))
     }
 
     @Test
