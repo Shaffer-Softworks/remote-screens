@@ -82,7 +82,7 @@ private const val TICK_GAP_SHARE = 15f / 500f
 private const val DIAL_GRADIENT_COLOR_MASK = 0b11
 private const val OPAQUE_ALPHA = 0xFF
 private const val ALPHA_SHIFT = 24
-private const val RGB_MASK = 0x00FFFFFF
+private const val RGB_MASK = 0xFFFFFF
 
 /** The size the RPI thermostat page was drawn for; the page scales from it. */
 private const val BASE_W = 1280f
