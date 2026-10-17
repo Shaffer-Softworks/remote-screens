@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.14
+
+- See the [v0.1.14](https://github.com/Shaffer-Softworks/remote-screens/releases/tag/v0.1.14) release notes; replace this line with curated notes before merging.
+
 ## 0.1.13
 
 - Free-form components: timer keys, to-do lists, events, media bar, forecast, presence, and LED.
