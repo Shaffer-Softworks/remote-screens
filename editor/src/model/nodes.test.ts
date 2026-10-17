@@ -131,21 +131,39 @@ describe('the component tree', () => {
   })
 })
 
+function addOnNodeTypes(): Set<string> {
+  const kotlin = readFileSync(
+    fileURLToPath(
+      new URL(
+        '../../../shared/src/main/kotlin/tech/shaffersoftworks/remotescreens/shared/Layout.kt',
+        import.meta.url,
+      ),
+    ),
+    'utf8',
+  )
+  const block = kotlin.slice(kotlin.indexOf('object NodeTypes'), kotlin.indexOf('val ALL'))
+  return new Set([...block.matchAll(/"([a-z]+)"/g)].map(match => match[1]))
+}
+
 describe('the palette', () => {
   it('offers every component type the add-on draws, and no other', () => {
-    const kotlin = readFileSync(
-      fileURLToPath(
-        new URL(
-          '../../../shared/src/main/kotlin/tech/shaffersoftworks/remotescreens/shared/Layout.kt',
-          import.meta.url,
-        ),
-      ),
-      'utf8',
-    )
-    const block = kotlin.slice(kotlin.indexOf('object NodeTypes'), kotlin.indexOf('val ALL'))
-    const addOn = new Set([...block.matchAll(/"([a-z]+)"/g)].map(match => match[1]))
+    const addOn = addOnNodeTypes()
     addOn.delete('tile')
     expect(new Set(COMPONENTS.map(spec => spec.type))).toEqual(addOn)
+  })
+
+  it('draws every add-on component type in the canvas preview', () => {
+    const preview = readFileSync(
+      fileURLToPath(new URL('../components/NodeView.vue', import.meta.url)),
+      'utf8',
+    )
+    const drawn = new Set<string>()
+    for (const match of preview.matchAll(/node\.type === '([a-z]+)'/g)) drawn.add(match[1])
+    for (const match of preview.matchAll(/case '([a-z]+)':/g)) drawn.add(match[1])
+    // Containers (except tabs) are drawn via isContainer; spacer/divider are styled only.
+    for (const type of ['column', 'row', 'box', 'flow', 'spacer', 'divider']) drawn.add(type)
+    const missing = [...addOnNodeTypes()].filter(type => !drawn.has(type)).sort()
+    expect(missing).toEqual([])
   })
 
   it('takes each side its own padding, else the padding all round', () => {
