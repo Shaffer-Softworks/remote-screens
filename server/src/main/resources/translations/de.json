@@ -63,6 +63,7 @@
   "ui.current_temp": "Aktuelle Temp.",
   "ui.current_humidity": "Aktuelle Luftfeuchte",
   "ui.fan": "Lüfter",
+  "ui.fan_mode": "Lüftermodus",
   "ui.oscillate": "Oszillieren",
   "ui.direction": "Richtung",
   "ui.forward": "Vorwärts",

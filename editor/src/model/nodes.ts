@@ -124,6 +124,7 @@ export const COMPONENTS: ComponentSpec[] = [
   { id: 'forecast', type: 'forecast', label: 'Forecast', icon: 'weather-partly-cloudy', group: 'Display' },
   { id: 'presence', type: 'presence', label: 'Presence', icon: 'account-group-outline', group: 'Display' },
   { id: 'led', type: 'led', label: 'LED', icon: 'circle', group: 'Display' },
+  { id: 'thermostat', type: 'thermostat', label: 'Thermostat', icon: 'thermostat', group: 'Controls' },
 ]
 
 export function componentOf(type: NodeType): ComponentSpec | undefined {
@@ -208,6 +209,7 @@ export function newNode(type: NodeType, tile?: Tile): Node {
     node.size = { width: 'fill', height: 'wrap' }
   if (type === 'graph') node.size = { width: 'fill', height: 'dp:120' }
   if (type === 'image') node.size = { width: 'dp:200', height: 'dp:120' }
+  if (type === 'thermostat') node.size = { width: 'fill', height: 'fill' }
   if (type === 'tile') {
     node.tile = tile ?? newTile({ kind: 'clock' }, 0, 0)
     node.size = { width: 'dp:200', height: 'dp:160' }

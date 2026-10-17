@@ -47,6 +47,7 @@ const BINDABLE = [
   'forecast',
   'presence',
   'led',
+  'thermostat',
 ]
 /** Components whose own keys take the taps. */
 const OWN_TAPS = [
@@ -62,6 +63,7 @@ const OWN_TAPS = [
   'events',
   'mediabar',
   'presence',
+  'thermostat',
 ]
 const COLOURED = [
   'text',
@@ -107,6 +109,8 @@ const BIND_NOTES: Record<string, string> = {
   presence:
     'People chips with photo and HOME/AWAY. Optional people list; otherwise every person entity.',
   led: 'A small on/off light for any entity that turns on and off.',
+  thermostat:
+    'The RPI thermostat page for a climate entity: dial, readings, Heat/Cool modes and Fan mode.',
 }
 const SHOW_WHEN = [
   { value: '', label: 'Always' },

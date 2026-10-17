@@ -63,6 +63,7 @@
   "ui.current_temp": "Temp. atual",
   "ui.current_humidity": "Humidade atual",
   "ui.fan": "Ventoinha",
+  "ui.fan_mode": "Modo da ventoinha",
   "ui.oscillate": "Oscilar",
   "ui.direction": "Direção",
   "ui.forward": "Frente",

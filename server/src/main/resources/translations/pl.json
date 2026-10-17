@@ -63,6 +63,7 @@
   "ui.current_temp": "Obecna temp.",
   "ui.current_humidity": "Obecna wilgotność",
   "ui.fan": "Wentylator",
+  "ui.fan_mode": "Tryb wentylatora",
   "ui.oscillate": "Oscylacja",
   "ui.direction": "Kierunek",
   "ui.forward": "Do przodu",

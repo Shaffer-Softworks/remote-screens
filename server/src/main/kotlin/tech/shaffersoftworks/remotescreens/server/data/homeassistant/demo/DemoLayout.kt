@@ -119,6 +119,12 @@ object DemoLayout {
                                 Node("dot", "led", bind = NodeBinding("light.living_room"), props = mapOf("size" to "18")),
                             ),
                         ),
+                        Node(
+                            "climate",
+                            "thermostat",
+                            size = NodeSize("fill", "dp:420"),
+                            bind = NodeBinding("climate.living_room"),
+                        ),
                     ),
                 ),
             ),

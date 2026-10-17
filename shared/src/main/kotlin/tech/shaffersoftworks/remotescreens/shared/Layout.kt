@@ -113,6 +113,7 @@ object NodeTypes {
         "gauge", "analog", "iconbutton", "keys", "swatches", "keypad",
         "dial", "countdown", "qr", "markdown",
         "timerkeys", "todolist", "events", "mediabar", "forecast", "presence", "led",
+        "thermostat",
     )
     val ALL = CONTAINERS + LEAVES
 }
@@ -127,7 +128,8 @@ object NodeTypes {
  * `iconbutton` (icon, iconOn, size, color), `keys` (size), `swatches` (show: colour or white), `keypad` (size),
  * `dial` (size, step), `countdown` (text), `qr` (text, size), `markdown` (text), `tabs` (labels: comma-separated),
  * `timerkeys` (timer Start/Pause/Cancel), `todolist` (max), `events` (calendars, max), `mediabar` (media strip),
- * `forecast` (days), `presence` (people), `led` (size, colour while on).
+ * `forecast` (days), `presence` (people), `led` (size, colour while on),
+ * `thermostat` (the RPI climate page: dial, readings, Heat/Cool modes and Fan mode).
  * Columns and rows take `scroll`; a `flow` wraps its children onto new lines. Text takes `marquee`. A bound
  * component takes `showWhen` (on or off) and `animate` (fade, left, right, up, down or none) for how it comes and goes.
  * Any component takes `place`, its own alignment in its parent: start, center or end across a column, top, center or

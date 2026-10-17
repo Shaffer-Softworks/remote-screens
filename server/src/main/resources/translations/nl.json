@@ -63,6 +63,7 @@
   "ui.current_temp": "Huidige temp",
   "ui.current_humidity": "Huidige vochtigheid",
   "ui.fan": "Ventilator",
+  "ui.fan_mode": "Ventilatormodus",
   "ui.oscillate": "Oscilleren",
   "ui.direction": "Richting",
   "ui.forward": "Vooruit",

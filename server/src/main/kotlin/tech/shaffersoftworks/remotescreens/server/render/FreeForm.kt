@@ -262,7 +262,7 @@ private fun Node.natural(): Dims = when (type) {
     }
     "countdown" -> Dims(Metrics.COUNTDOWN_NATURAL_W, Metrics.COUNTDOWN_NATURAL_H)
     "qr" -> (props["size"]?.toFloatOrNull() ?: Metrics.QR_DEFAULT_DP).let { Dims(it, it) }
-    "timerkeys", "todolist", "events", "mediabar", "forecast", "presence", "led" ->
+    "timerkeys", "todolist", "events", "mediabar", "forecast", "presence", "led", "thermostat" ->
         blockNatural(this) ?: Dims(Metrics.TEXT_NATURAL_W, Metrics.TEXT_NATURAL_W)
     "markdown" -> Dims(
         Metrics.MARKDOWN_NATURAL_W,
@@ -360,7 +360,7 @@ internal fun DocContext.sized(node: Node, axis: Axis): Modifier {
 /** Components whose keys inside take the taps, so the component as a whole takes none. */
 private val OWN_TAPS = setOf(
     "tile", "slider", "stepper", "choices", "keys", "swatches", "keypad", "dial", "tabs",
-    "timerkeys", "todolist", "events", "mediabar", "presence",
+    "timerkeys", "todolist", "events", "mediabar", "presence", "thermostat",
 )
 
 /**
@@ -452,7 +452,7 @@ private fun DocContext.node(node: Node, self: Dims, axis: Axis, pages: Pages) {
         "countdown" -> countdownNode(node, axis, pages)
         "qr" -> qrNode(node, axis, pages)
         "markdown" -> markdownNode(node, axis, pages)
-        "timerkeys", "todolist", "events", "mediabar", "forecast", "presence", "led" ->
+        "timerkeys", "todolist", "events", "mediabar", "forecast", "presence", "led", "thermostat" ->
             blockNode(node, self, axis, pages)
     }
 }
