@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.13
+
+- Free-form components: timer keys, to-do lists, events, media bar, forecast, presence, and LED.
+- Attributes panel supports more bindable types and settings for the new components.
+
 ## 0.1.12
 
 - Deeper cards for humidifier (humidity target), fan (oscillate, direction, presets), and climate (swing modes,
