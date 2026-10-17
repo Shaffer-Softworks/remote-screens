@@ -9,11 +9,17 @@ import android.graphics.Rect
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.remote.core.CalendarSystemClock
+import androidx.compose.remote.core.RemoteClock
 import androidx.compose.remote.core.RemoteContext
+import androidx.compose.remote.player.core.RemoteDocument
 import androidx.compose.remote.player.view.RemoteComposePlayer
 import tech.shaffersoftworks.remotescreens.shared.Slot
 import tech.shaffersoftworks.remotescreens.shared.VarType
 import tech.shaffersoftworks.remotescreens.shared.VarValue
+import java.io.ByteArrayInputStream
+import java.time.ZoneId
+import java.util.TimeZone
 import kotlin.math.roundToInt
 
 /** The user variable each main document reads to know which page to draw. */
@@ -33,6 +39,7 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
     private val liveVideoView = LiveVideoView(context)
     private var videoSlot: Slot? = null
     private var lastState: RemoteScreenState? = null
+    private var appliedTimeZone: String? = null
 
     /** A tap in a document: its slot, the revision of the document, and the tap's metadata. */
     var onAction: (slot: Slot, revision: Int, metadata: String) -> Unit = { _, _, _ -> }
@@ -204,11 +211,17 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
     }.getOrNull()
 
     private fun loadNewDocuments(state: RemoteScreenState): Set<Slot> {
+        if (state.timeZone != appliedTimeZone) {
+            loadedDocuments.clear()
+            appliedTimeZone = state.timeZone
+        }
         val newlyLoaded = mutableSetOf<Slot>()
         for ((slot, document) in state.documents) {
             if (loadedDocuments[slot] === document) continue
             val player = players.getValue(slot)
-            player.setDocument(document.bytes)
+            // Load with Home Assistant's zone so analog hands match the digital TIME/DATE vars.
+            // Each document needs its own clock: CalendarSystemClock's calendar is not thread-safe.
+            player.setDocument(RemoteDocument(ByteArrayInputStream(document.bytes), clockFor(state.timeZone)))
             // Action listeners belong to the loaded document, so each new document needs its own.
             player.addIdActionListener { _, metadata ->
                 if (metadata != null) onAction(slot, document.revision, metadata)
@@ -219,6 +232,13 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
             newlyLoaded += slot
         }
         return newlyLoaded
+    }
+
+    private fun clockFor(timeZone: String?): RemoteClock {
+        if (timeZone.isNullOrEmpty()) return RemoteClock.SYSTEM
+        return runCatching {
+            CalendarSystemClock(TimeZone.getTimeZone(ZoneId.of(timeZone)))
+        }.getOrDefault(RemoteClock.SYSTEM)
     }
 
     private fun applyChangedValues(values: Map<String, VarValue>, excludeSlots: Set<Slot>) {

@@ -144,7 +144,14 @@ class PlayerSession(
             val code = pairingCode ?: newPairingCode()
             pairingCode = code
             shownDocuments.clear()
-            send(ServerMessage.Welcome(pairingCode = code, serverVersion = context.serverVersion, features = FEATURES))
+            send(
+                ServerMessage.Welcome(
+                    pairingCode = code,
+                    serverVersion = context.serverVersion,
+                    features = FEATURES,
+                    timeZone = timeZoneId(),
+                ),
+            )
             return
         }
         pairingCode = null
@@ -155,6 +162,7 @@ class PlayerSession(
                 screenName = screen.name,
                 serverVersion = context.serverVersion,
                 features = FEATURES,
+                timeZone = timeZoneId(),
             ),
         )
         begin(screen)
@@ -171,10 +179,13 @@ class PlayerSession(
                 token = token,
                 serverVersion = context.serverVersion,
                 features = FEATURES,
+                timeZone = timeZoneId(),
             ),
         )
         begin(screen)
     }
+
+    private fun timeZoneId(): String = context.screenClock.zone().id
 
     /** Picks the screen's theme for now, day or dark; true when it is another than before. */
     private fun applyTheme(settings: ScreenSettings): Boolean {

@@ -166,6 +166,8 @@ sealed interface ServerMessage {
         val pairingCode: String? = null,
         val features: List<String> = emptyList(),
         val serverVersion: String = "",
+        /** Home Assistant's time zone id, so analog clocks match the digital time the add-on sends. */
+        val timeZone: String? = null,
     ) : ServerMessage
 
     /** A whole Remote Compose document, base64. [predictions] maps an action's metadata to what it will change. */
