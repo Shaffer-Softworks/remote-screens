@@ -54,7 +54,7 @@ fun KioskPinDialog(onConfirm: (pin: String) -> Unit, onDismiss: () -> Unit) {
     )
 }
 
-@Preview
+@Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun KioskPinDialogPreview() {
     RemoteScreensTheme {

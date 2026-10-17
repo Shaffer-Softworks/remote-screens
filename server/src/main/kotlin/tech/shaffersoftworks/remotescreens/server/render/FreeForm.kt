@@ -8,6 +8,7 @@ import androidx.compose.remote.creation.dsl.animationSpec
 import androidx.compose.remote.creation.dsl.RcBorderShape
 import androidx.compose.remote.creation.dsl.RcColor
 import androidx.compose.remote.creation.dsl.RcFloat
+import androidx.compose.remote.creation.dsl.RcInteger
 import androidx.compose.remote.creation.dsl.RcStrokeCap
 import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning
 import androidx.compose.remote.creation.dsl.RcContentScale
@@ -174,9 +175,16 @@ private object Metrics {
     const val QR_MAX_DP = 400f
     const val MARKDOWN_NATURAL_W = 280f
     const val MARKDOWN_LINE_H = 22f
-    const val TABS_STRIP_H = 44f
+    const val TABS_STRIP_H = 36f
+    const val TABS_UNDERLINE_H = 3f
+    const val TABS_UNDERLINE_GAP_DP = 4f
+    const val TABS_CHAR_W_DP = 9f
+    const val TABS_UNDERLINE_MIN_W = 28f
+    const val TABS_PIPE_GAP_DP = 12f
     const val TABS_NATURAL_W = 320f
     const val TABS_NATURAL_H = 200f
+    const val QR_CORNER_DP = 12f
+    const val QR_PAD_DP = 8f
     const val STEP_BRIGHTNESS = 10.0
     const val STEP_PERCENTAGE = 10.0
     const val STEP_POSITION = 10.0
@@ -197,7 +205,7 @@ private object Metrics {
 }
 
 /** The axis of the container a component sits in; a weight only counts along it. */
-private enum class Axis { ROW, COLUMN, BOX }
+internal enum class Axis { ROW, COLUMN, BOX }
 
 /** A component's size in dp, as near as the server can tell before the player measures it. */
 internal data class Dims(val w: Float, val h: Float)
@@ -254,6 +262,8 @@ private fun Node.natural(): Dims = when (type) {
     }
     "countdown" -> Dims(Metrics.COUNTDOWN_NATURAL_W, Metrics.COUNTDOWN_NATURAL_H)
     "qr" -> (props["size"]?.toFloatOrNull() ?: Metrics.QR_DEFAULT_DP).let { Dims(it, it) }
+    "timerkeys", "todolist", "events", "mediabar", "forecast", "presence", "led" ->
+        blockNatural(this) ?: Dims(Metrics.TEXT_NATURAL_W, Metrics.TEXT_NATURAL_W)
     "markdown" -> Dims(
         Metrics.MARKDOWN_NATURAL_W,
         Metrics.MARKDOWN_LINE_H * MarkdownLines.parse(props["text"].orEmpty()).size.coerceAtLeast(1),
@@ -309,7 +319,7 @@ fun DocContext.freeForm(
 }
 
 /** The screen's pages: the index a page tap goes to, and the title a navigation card shows when it names none. */
-private class Pages(val index: (String) -> Int?, val title: (String) -> String?)
+internal class Pages(val index: (String) -> Int?, val title: (String) -> String?)
 
 /** The size of [node] within its parent's inner space [avail]; [share] is what a weight of it comes to. */
 private fun DocContext.resolve(node: Node, avail: Dims, axis: Axis, share: Dims): Dims {
@@ -330,7 +340,7 @@ private fun DocContext.resolve(node: Node, avail: Dims, axis: Axis, share: Dims)
  * The modifier for [node]'s size: weights along the parent's axis, fills and dp otherwise. A fill along a row or a
  * column is a weight of 1, so components that fill share the room, as in the editor, rather than the first taking all.
  */
-private fun DocContext.sized(node: Node, axis: Axis): Modifier {
+internal fun DocContext.sized(node: Node, axis: Axis): Modifier {
     var modifier: Modifier = Modifier
     modifier = when (val sizeSpec = Spec.of(node.size.width)) {
         Spec.Fill -> if (axis == Axis.ROW) modifier.horizontalWeight(1f) else modifier.fillMaxWidth()
@@ -348,13 +358,16 @@ private fun DocContext.sized(node: Node, axis: Axis): Modifier {
 }
 
 /** Components whose keys inside take the taps, so the component as a whole takes none. */
-private val OWN_TAPS = setOf("tile", "slider", "stepper", "choices", "keys", "swatches", "keypad", "dial", "tabs")
+private val OWN_TAPS = setOf(
+    "tile", "slider", "stepper", "choices", "keys", "swatches", "keypad", "dial", "tabs",
+    "timerkeys", "todolist", "events", "mediabar", "presence",
+)
 
 /**
  * The size, the rounded background and outline, the taps, then the padding: the order `key` builds its own modifier
  * in. A bound component with `showWhen` is drawn only while its entity is on (or off).
  */
-private fun DocContext.styled(node: Node, axis: Axis, pages: Pages, base: Modifier = sized(node, axis)): Modifier {
+internal fun DocContext.styled(node: Node, axis: Axis, pages: Pages, base: Modifier = sized(node, axis)): Modifier {
     var modifier = base
     val id = node.bind?.entityId
     val showWhen = node.props["showWhen"]
@@ -439,11 +452,13 @@ private fun DocContext.node(node: Node, self: Dims, axis: Axis, pages: Pages) {
         "countdown" -> countdownNode(node, axis, pages)
         "qr" -> qrNode(node, axis, pages)
         "markdown" -> markdownNode(node, axis, pages)
+        "timerkeys", "todolist", "events", "mediabar", "forecast", "presence", "led" ->
+            blockNode(node, self, axis, pages)
     }
 }
 
 /** [sized], with a wrapped side set to what the server worked out, for components that draw to a known size. */
-private fun DocContext.measured(node: Node, axis: Axis, self: Dims): Modifier {
+internal fun DocContext.measured(node: Node, axis: Axis, self: Dims): Modifier {
     var modifier = sized(node, axis)
     if (node.size.width == "wrap") modifier = modifier.width(units.px(self.w))
     if (node.size.height == "wrap") modifier = modifier.height(units.px(self.h))
@@ -1308,7 +1323,8 @@ private fun DocContext.countdownNode(node: Node, axis: Axis, pages: Pages) {
 private fun DocContext.qrNode(node: Node, axis: Axis, pages: Pages) {
     val sizeDp = node.props["size"]?.toFloatOrNull()?.coerceIn(Metrics.QR_MIN_DP, Metrics.QR_MAX_DP)
         ?: Metrics.QR_DEFAULT_DP
-    val px = units.px(sizeDp).toInt()
+    val inner = (sizeDp - Metrics.QR_PAD_DP * 2f).coerceAtLeast(Metrics.QR_MIN_DP)
+    val px = units.px(inner).toInt()
     val id = node.bind?.entityId
     val text = when {
         id != null -> {
@@ -1319,10 +1335,15 @@ private fun DocContext.qrNode(node: Node, axis: Axis, pages: Pages) {
     }
     val slot = "qr.${node.id}"
     picture(PictureSlot(slot, "qr:$text", px, px, 0, crop = false))
-    scope.Box(styled(node, axis, pages), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
+    // Mockup: white rounded plate around the code.
+    val plate = styled(node, axis, pages)
+        .clip(rounded(Metrics.QR_CORNER_DP))
+        .background(role(Role.INK))
+        .padding(units.px(Metrics.QR_PAD_DP))
+    scope.Box(plate, horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
         Image(
             this@qrNode.image(slot, px, px),
-            Modifier.size(units.px(sizeDp), units.px(sizeDp)),
+            Modifier.size(units.px(inner), units.px(inner)),
             contentScale = RcContentScale.Fit,
         )
     }
@@ -1351,24 +1372,16 @@ private fun DocContext.tabsNode(node: Node, self: Dims, axis: Axis, pages: Pages
     val children = node.children.filter { !it.hidden }
     val labels = node.props["labels"]?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }
         ?: children.mapIndexed { index, child -> child.props["label"] ?: child.props["text"] ?: "Tab ${index + 1}" }
+    val shown = labels.take(minOf(labels.size, children.size).coerceAtLeast(0))
     val tabVar = "n.${node.id}.tab"
     val selected = int(tabVar, 0)
     val gap = node.props["gap"]?.toFloatOrNull()?.coerceAtLeast(0f) ?: Metrics.KEYS_GAP_DP
-    val bodyH = (self.h - node.style.padY - Metrics.TABS_STRIP_H - gap).coerceAtLeast(1f)
+    val stripH = Metrics.TABS_STRIP_H
+    val bodyH = (self.h - node.style.padY - stripH - gap).coerceAtLeast(1f)
     val bodyW = (self.w - node.style.padX).coerceAtLeast(1f)
     scope.Column(styled(node, axis, pages, measured(node, axis, self))) {
         val doc = this@tabsNode
-        Row(Modifier.fillMaxWidth(), horizontal = RcRowHorizontalPositioning.Start, vertical = RcVerticalPositioning.Center) {
-            labels.take(children.size.coerceAtLeast(labels.size)).forEachIndexed { index, label ->
-                if (index > 0) Spacer(Modifier.width(doc.units.px(Metrics.KEYS_GAP_DP)))
-                doc.key(
-                    ActionRef("_", "set", "$tabVar|$index"),
-                    text = label,
-                    heightDp = Metrics.TABS_STRIP_H,
-                    modifier = Modifier.horizontalWeight(1f),
-                )
-            }
-        }
+        doc.tabStrip(shown, tabVar, selected, stripH)
         Spacer(Modifier.height(doc.units.px(gap)))
         StateLayout(selected, Modifier.size(doc.units.px(bodyW), doc.units.px(bodyH))) {
             for (child in children) {
@@ -1377,5 +1390,51 @@ private fun DocContext.tabsNode(node: Node, self: Dims, axis: Axis, pages: Pages
                 }
             }
         }
+    }
+}
+
+/** Mockup strip: "Note | Light" with a teal underline on the active label. */
+private fun DocContext.tabStrip(
+    shown: List<String>,
+    tabVar: String,
+    selected: RcInteger,
+    stripH: Float,
+) {
+    scope.StateLayout(selected, Modifier.fillMaxWidth().height(units.px(stripH))) {
+        for (sel in shown.indices) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontal = RcRowHorizontalPositioning.Start,
+                vertical = RcVerticalPositioning.Center,
+            ) {
+                val doc = this@tabStrip
+                shown.forEachIndexed { index, label ->
+                    if (index > 0) {
+                        Spacer(Modifier.width(doc.units.px(Metrics.TABS_PIPE_GAP_DP)))
+                        doc.label("|", Type.BODY, doc.role(Role.INK_DIM))
+                        Spacer(Modifier.width(doc.units.px(Metrics.TABS_PIPE_GAP_DP)))
+                    }
+                    doc.tabLabel(label, index == sel, ActionRef("_", "set", "$tabVar|$index"))
+                }
+            }
+        }
+    }
+}
+
+private fun DocContext.tabLabel(label: String, active: Boolean, ref: ActionRef) {
+    val underlineW = maxOf(label.length * Metrics.TABS_CHAR_W_DP, Metrics.TABS_UNDERLINE_MIN_W)
+    scope.Column(tap(Modifier, ref), horizontal = RcHorizontalPositioning.Center) {
+        val doc = this@tabLabel
+        doc.label(
+            label,
+            Type.BODY,
+            if (active) doc.role(Role.INK) else doc.role(Role.INK_DIM),
+            if (active) Weight.SEMI_BOLD else Weight.NORMAL,
+        )
+        Spacer(Modifier.height(doc.units.px(Metrics.TABS_UNDERLINE_GAP_DP)))
+        Box(
+            Modifier.size(doc.units.px(underlineW), doc.units.px(Metrics.TABS_UNDERLINE_H))
+                .background(if (active) doc.role(Role.ACCENT) else doc.role(Role.PAGE)),
+        )
     }
 }

@@ -112,6 +112,7 @@ object NodeTypes {
         "clock", "badge", "avatar", "progress", "graph", "switch", "stepper", "choices",
         "gauge", "analog", "iconbutton", "keys", "swatches", "keypad",
         "dial", "countdown", "qr", "markdown",
+        "timerkeys", "todolist", "events", "mediabar", "forecast", "presence", "led",
     )
     val ALL = CONTAINERS + LEAVES
 }
@@ -124,7 +125,9 @@ object NodeTypes {
  * `progress` (min, max, color), `graph` (hours, color), `switch` (color), `stepper` (step), `choices` (max),
  * `gauge` (min, max, color, size, caption: words or `@name`), `analog` (size, seconds, numbers: all or quarters),
  * `iconbutton` (icon, iconOn, size, color), `keys` (size), `swatches` (show: colour or white), `keypad` (size),
- * `dial` (size, step), `countdown` (text), `qr` (text, size), `markdown` (text), `tabs` (labels: comma-separated).
+ * `dial` (size, step), `countdown` (text), `qr` (text, size), `markdown` (text), `tabs` (labels: comma-separated),
+ * `timerkeys` (timer Start/Pause/Cancel), `todolist` (max), `events` (calendars, max), `mediabar` (media strip),
+ * `forecast` (days), `presence` (people), `led` (size, colour while on).
  * Columns and rows take `scroll`; a `flow` wraps its children onto new lines. Text takes `marquee`. A bound
  * component takes `showWhen` (on or off) and `animate` (fade, left, right, up, down or none) for how it comes and goes.
  * Any component takes `place`, its own alignment in its parent: start, center or end across a column, top, center or

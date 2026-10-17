@@ -76,6 +76,13 @@ export type NodeType =
   | 'qr'
   | 'markdown'
   | 'tabs'
+  | 'timerkeys'
+  | 'todolist'
+  | 'events'
+  | 'mediabar'
+  | 'forecast'
+  | 'presence'
+  | 'led'
 
 export const CONTAINERS: readonly NodeType[] = ['column', 'row', 'box', 'flow', 'tabs']
 

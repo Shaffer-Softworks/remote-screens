@@ -46,6 +46,8 @@ class DemoHome : HomeAssistant {
     override val config: StateFlow<HomeAssistantConfig> = MutableStateFlow(HomeAssistantConfig(locationName = "Demo home"))
 
     val calls = mutableListOf<Triple<String, String, JsonObject>>()
+    /** Uids marked complete via `todo.update_item`, so `get_items` drops them. */
+    private val completedTodos = mutableSetOf<String>()
 
     fun set(entityId: String, state: String, attrs: Map<String, JsonElement> = emptyMap()) {
         _states.update { all ->
@@ -76,7 +78,7 @@ class DemoHome : HomeAssistant {
     }
 
     // One branch per Home Assistant service the demo answers, as a lookup table would be.
-    @Suppress("CyclomaticComplexMethod", "LongMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "ReturnCount")
     private fun apply(id: String, domain: String, service: String, data: JsonObject) {
         val current = _states.value[id] ?: return
         fun num(key: String) = (data[key] as? JsonPrimitive)?.doubleOrNull
@@ -171,7 +173,14 @@ class DemoHome : HomeAssistant {
             "set_operation_mode" -> str("operation_mode")?.let { set(id, it) }
             "set_value" -> str("value")?.let { set(id, it) }
             "set_datetime" -> str("datetime")?.let { set(id, it) }
-            "update_item" -> Unit
+            "update_item" -> {
+                val uid = str("item") ?: return
+                if (str("status") == "completed") {
+                    completedTodos += uid
+                    val open = (current.numericState()?.toInt() ?: 2) - 1
+                    set(id, open.coerceAtLeast(0).toString())
+                }
+            }
         }
     }
 
@@ -180,16 +189,15 @@ class DemoHome : HomeAssistant {
             for (id in ids) {
                 put(id, buildJsonObject {
                     put("items", buildJsonArray {
-                        add(buildJsonObject {
-                            put("uid", "milk")
-                            put("summary", "Buy milk")
-                            put("status", "needs_action")
-                        })
-                        add(buildJsonObject {
-                            put("uid", "bins")
-                            put("summary", "Take out bins")
-                            put("status", "needs_action")
-                        })
+                        listOf("milk" to "Buy milk", "bins" to "Take out bins")
+                            .filter { (uid, _) -> uid !in completedTodos }
+                            .forEach { (uid, summary) ->
+                                add(buildJsonObject {
+                                    put("uid", uid)
+                                    put("summary", summary)
+                                    put("status", "needs_action")
+                                })
+                            }
                     })
                 })
             }

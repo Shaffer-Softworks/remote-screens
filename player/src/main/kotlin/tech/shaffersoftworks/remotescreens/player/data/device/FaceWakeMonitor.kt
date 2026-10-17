@@ -42,20 +42,30 @@ class FaceWakeMonitor @Inject constructor(
 ) {
     private val mainExecutor = ContextCompat.getMainExecutor(context)
     private val analysisExecutor = Executors.newSingleThreadExecutor()
-    private val detector: FaceDetector = FaceDetection.getClient(
-        FaceDetectorOptions.Builder()
-            .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
-            .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
-            .setContourMode(FaceDetectorOptions.CONTOUR_MODE_NONE)
-            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
-            .build(),
-    )
+    /** Created on first [start]; never constructed at inject time so a bad ML Kit init cannot crash resume. */
+    private var detector: FaceDetector? = null
 
     private var cameraProvider: ProcessCameraProvider? = null
     private var lifecycleOwner: ControlledLifecycleOwner? = null
     private var onFace: (() -> Unit)? = null
     private val isRunning = AtomicBoolean(false)
     private val lastAnalyzedAtMs = AtomicLong(0L)
+
+    private fun detectorOrNull(): FaceDetector? {
+        detector?.let { return it }
+        return runCatching {
+            FaceDetection.getClient(
+                FaceDetectorOptions.Builder()
+                    .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
+                    .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
+                    .setContourMode(FaceDetectorOptions.CONTOUR_MODE_NONE)
+                    .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
+                    .build(),
+            )
+        }.onFailure { error -> Timber.w(error, "Face wake: FaceDetection.getClient failed") }
+            .getOrNull()
+            ?.also { detector = it }
+    }
 
     fun hasCameraPermission(): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
@@ -71,7 +81,8 @@ class FaceWakeMonitor @Inject constructor(
     fun isUsable(): Boolean = hasCameraPermission() && hasFrontCamera() && !isLowRamDevice()
 
     fun start(onFace: () -> Unit) {
-        if (!isUsable()) {
+        val canStart = isUsable() && detectorOrNull() != null
+        if (!canStart) {
             Timber.d("Face wake not usable")
             return
         }
@@ -153,13 +164,14 @@ class FaceWakeMonitor @Inject constructor(
             return
         }
         lastAnalyzedAtMs.set(now)
+        val faceDetector = detector
         val mediaImage = imageProxy.image
-        if (mediaImage == null) {
+        if (faceDetector == null || mediaImage == null) {
             imageProxy.close()
             return
         }
         val input = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-        detector.process(input)
+        faceDetector.process(input)
             .addOnSuccessListener { faces ->
                 if (faces.isNotEmpty()) {
                     mainExecutor.execute { onFace?.invoke() }

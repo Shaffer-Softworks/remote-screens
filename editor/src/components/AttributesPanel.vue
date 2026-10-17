@@ -37,9 +37,32 @@ const BINDABLE = [
   'keys',
   'swatches',
   'keypad',
+  'dial',
+  'countdown',
+  'qr',
+  'timerkeys',
+  'todolist',
+  'events',
+  'mediabar',
+  'forecast',
+  'presence',
+  'led',
 ]
 /** Components whose own keys take the taps. */
-const OWN_TAPS = ['slider', 'stepper', 'choices', 'keys', 'swatches', 'keypad']
+const OWN_TAPS = [
+  'slider',
+  'stepper',
+  'choices',
+  'keys',
+  'swatches',
+  'keypad',
+  'dial',
+  'timerkeys',
+  'todolist',
+  'events',
+  'mediabar',
+  'presence',
+]
 const COLOURED = [
   'text',
   'icon',
@@ -51,6 +74,10 @@ const COLOURED = [
   'graph',
   'gauge',
   'analog',
+  'dial',
+  'countdown',
+  'forecast',
+  'led',
 ]
 const BIND_NOTES: Record<string, string> = {
   slider: 'A slider sets a light, fan, cover, player or number.',
@@ -68,6 +95,18 @@ const BIND_NOTES: Record<string, string> = {
   keys: "A player's previous, play and next; a cover's open, stop and close; a vacuum's, a lock's, an alarm's or a light's keys.",
   swatches: 'Sets a light to the colour or white tapped.',
   keypad: "Types an alarm's or a lock's code, sent with its next arm, disarm or unlock.",
+  dial: "A dial steps a thermostat's target, humidity, brightness, fan, cover, volume or number, with +/− under the ring.",
+  countdown: "Shows a timer's remaining time (or its duration while idle).",
+  qr: "Encodes the entity's state as a QR code. Without an entity, uses the Text field.",
+  timerkeys: 'Start, pause and cancel for a timer entity.',
+  todolist: 'Lists open to-dos; a tap marks one complete.',
+  events:
+    'Upcoming events from the bound calendar, or every calendar when none is set. Optional calendars list overrides.',
+  mediabar: 'Album art, title and transport keys for a media player.',
+  forecast: 'Daily forecast chips for a weather entity.',
+  presence:
+    'People chips with photo and HOME/AWAY. Optional people list; otherwise every person entity.',
+  led: 'A small on/off light for any entity that turns on and off.',
 }
 const SHOW_WHEN = [
   { value: '', label: 'Always' },
@@ -791,7 +830,7 @@ const typeIcon = computed(() =>
           @update:model-value="setProp('color', $event)"
         />
       </div>
-      <label v-if="currentNode.type === 'stepper'" class="field">
+      <label v-if="currentNode.type === 'stepper' || currentNode.type === 'dial'" class="field">
         Step
         <input
           type="number"
@@ -901,6 +940,18 @@ const typeIcon = computed(() =>
           />
         </label>
       </template>
+      <template v-if="currentNode.type === 'countdown'">
+        <label class="field">
+          Font size
+          <input
+            type="number"
+            min="12"
+            max="120"
+            :value="currentProps.fontSize ?? '44'"
+            @input="setProp('fontSize', ($event.target as HTMLInputElement).value)"
+          />
+        </label>
+      </template>
       <template v-if="currentNode.type === 'qr' || currentNode.type === 'countdown'">
         <label v-if="!currentNode.bind" class="field">
           Text
@@ -926,6 +977,72 @@ const typeIcon = computed(() =>
           <input
             :value="currentProps.labels ?? ''"
             @input="setProp('labels', ($event.target as HTMLInputElement).value)"
+          />
+        </label>
+      </template>
+      <template v-if="currentNode.type === 'todolist'">
+        <label class="field">
+          Most shown
+          <input
+            type="number"
+            min="1"
+            max="20"
+            :value="currentProps.max ?? '8'"
+            @input="setProp('max', ($event.target as HTMLInputElement).value)"
+          />
+        </label>
+      </template>
+      <template v-if="currentNode.type === 'events'">
+        <label class="field">
+          Most shown
+          <input
+            type="number"
+            min="1"
+            max="8"
+            :value="currentProps.max ?? '3'"
+            @input="setProp('max', ($event.target as HTMLInputElement).value)"
+          />
+        </label>
+        <label class="field">
+          Calendars (comma-separated entity ids)
+          <input
+            :value="currentProps.calendars ?? ''"
+            placeholder="all calendars"
+            @input="setProp('calendars', ($event.target as HTMLInputElement).value)"
+          />
+        </label>
+      </template>
+      <template v-if="currentNode.type === 'forecast'">
+        <label class="field">
+          Days
+          <input
+            type="number"
+            min="1"
+            max="7"
+            :value="currentProps.days ?? '5'"
+            @input="setProp('days', ($event.target as HTMLInputElement).value)"
+          />
+        </label>
+      </template>
+      <template v-if="currentNode.type === 'presence'">
+        <label class="field">
+          People (comma-separated entity ids)
+          <input
+            :value="currentProps.people ?? ''"
+            placeholder="all people"
+            @input="setProp('people', ($event.target as HTMLInputElement).value)"
+          />
+        </label>
+      </template>
+      <template v-if="currentNode.type === 'led'">
+        <label class="field">
+          Size
+          <input
+            type="number"
+            min="8"
+            max="64"
+            :value="currentProps.size ?? '16'"
+            @input="setProp('size', ($event.target as HTMLInputElement).value)"
           />
         </label>
       </template>

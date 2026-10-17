@@ -53,7 +53,7 @@ fun AddressDialog(
     )
 }
 
-@Preview
+@Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun AddressDialogPreview() {
     RemoteScreensTheme { AddressDialog(initialAddress = "", onConfirm = {}, onDismiss = {}) }

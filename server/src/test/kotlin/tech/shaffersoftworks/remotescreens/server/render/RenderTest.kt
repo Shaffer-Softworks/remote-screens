@@ -82,7 +82,8 @@ class RenderTest {
         val states = ha.states.value
         val off = doc.vars(states)
         val on = doc.vars(states + ("light.table_lamp" to states.getValue("light.table_lamp").with("on")))
-        assertEquals(Role.CARD_HEADER.argb, off["t.t2.line"]?.asColor())
+        // Mockup domain tiles keep a soft teal header line while off; accent when on.
+        assertEquals(Role.ACCENT_SOFT.argb, off["t.t2.line"]?.asColor())
         assertEquals(Pastel.YELLOW.argb, on["t.t2.line"]?.asColor())
         assertEquals(Pastel.YELLOW.argb, on["t.t2.icon"]?.asColor())
     }
@@ -93,7 +94,7 @@ class RenderTest {
         val states = ha.states.value
         val off = doc.vars(states)
         val on = doc.vars(states + ("light.table_lamp" to states.getValue("light.table_lamp").with("on")))
-        assertEquals(Themes.LIGHT[Role.CARD_HEADER], off["t.t2.line"]?.asColor())
+        assertEquals(Themes.LIGHT[Role.ACCENT_SOFT], off["t.t2.line"]?.asColor())
         assertEquals(Themes.LIGHT[Pastel.YELLOW], on["t.t2.line"]?.asColor())
         val page = Themes.LIGHT[Role.PAGE]
         val bytes = byteArrayOf((page ushr 24).toByte(), (page ushr 16).toByte(), (page ushr 8).toByte(), page.toByte())

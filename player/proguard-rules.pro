@@ -15,3 +15,12 @@
     *;
 }
 -keep class androidx.compose.remote.** { *; }
+
+# ML Kit (face wake): ComponentRegistrars are loaded by reflection. firebase-components:16.1.0
+# (pulled by face-detection) only keeps the class, not <init>(), and AGP 9 R8 full mode strips
+# no-arg constructors — FaceDetection.getClient() then NPEs on a null zzc.
+# https://github.com/googlesamples/mlkit/issues/888
+-keep class * implements com.google.firebase.components.ComponentRegistrar {
+    void <init>();
+}
+-keep,allowshrinking interface com.google.firebase.components.ComponentRegistrar

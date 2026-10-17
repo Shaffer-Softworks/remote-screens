@@ -98,6 +98,13 @@ class FreeFormTest {
                 Node("left", "countdown", bind = NodeBinding("timer.kitchen")),
                 Node("code", "qr", props = mapOf("text" to "https://example.com", "size" to "96")),
                 Node("note", "markdown", props = mapOf("text" to "**Bold**\nPlain")),
+                Node("timerKeys", "timerkeys", bind = NodeBinding("timer.kitchen")),
+                Node("todos", "todolist", bind = NodeBinding("todo.shopping"), props = mapOf("max" to "4")),
+                Node("ev", "events", bind = NodeBinding("calendar.family"), props = mapOf("max" to "2")),
+                Node("now", "mediabar", bind = NodeBinding("media_player.living_room")),
+                Node("days", "forecast", bind = NodeBinding("weather.home"), props = mapOf("days" to "3")),
+                Node("people", "presence", props = mapOf("people" to "person.sam,person.alex")),
+                Node("dot", "led", bind = NodeBinding("light.living_room"), props = mapOf("size" to "20")),
             )),
             Node(
                 "tabs",

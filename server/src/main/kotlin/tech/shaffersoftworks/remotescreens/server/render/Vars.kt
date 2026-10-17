@@ -103,7 +103,8 @@ fun DocContext.bindTileColors(tileId: String, entityId: String?, accent: Int, al
         listOf(
             VarValue.color(Vars.tile(tileId, Vars.KEY_BG), if (lit) accent else Role.KEY.argb),
             VarValue.color(Vars.tile(tileId, Vars.KEY_BG_INK), if (lit) Role.KEY_ON_INK.argb else Role.INK.argb),
-            VarValue.color(Vars.tile(tileId, Vars.KEY_LINE), if (lit) accent else Role.CARD_HEADER.argb),
+            // Mockup domain tiles: teal accent line under every header (brighter while on).
+            VarValue.color(Vars.tile(tileId, Vars.KEY_LINE), if (lit) accent else Role.ACCENT_SOFT.argb),
             VarValue.color(Vars.tile(tileId, Vars.KEY_INK), if (!isAvailable) Role.INK_FAINT.argb else Role.INK.argb),
             VarValue.color(Vars.tile(tileId, Vars.KEY_INK2), if (!isAvailable) Role.INK_FAINT.argb else Role.INK_SOFT.argb),
             VarValue.color(Vars.tile(tileId, Vars.KEY_ICON), iconColor),
