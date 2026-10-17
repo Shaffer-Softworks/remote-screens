@@ -1,16 +1,17 @@
 <script setup lang="ts">
 // One component of a free-form page drawn with HTML, as near to the add-on's Remote Compose output as a browser
 // gets (server/.../render/FreeForm.kt): rows and columns are flexboxes, a box stacks its children in one cell.
-import { computed, inject, ref, type CSSProperties } from 'vue'
+import QRCode from 'qrcode'
+import { computed, inject, ref, watchEffect, type CSSProperties } from 'vue'
 import { CATALOGUE } from '../generated/catalogue'
 import { DESIGN } from '../model/design'
 import { dragged } from '../model/drag'
 import { isContainer, paddingOf, type Where } from '../model/nodes'
 import { colorOf, pastel } from '../model/palette'
 import { iconOf, nameOf, stateOf } from '../model/tiles'
-import type { Node } from '../model/types'
+import type { EntityInfo, Node } from '../model/types'
 import { domainOf } from '../model/types'
-import { entityById } from '../store'
+import { entityById, state } from '../store'
 import MdiIcon from './MdiIcon.vue'
 
 defineOptions({ name: 'NodeView' })
@@ -203,6 +204,37 @@ const style = computed<CSSProperties>(() => {
       if (viewNode.value.size.width === 'wrap') css.width = '320px'
       if (viewNode.value.size.height === 'wrap') css.height = '44px'
       break
+    case 'gauge': {
+      const gaugeSize = `${Number(nodeProps.size ?? 140)}px`
+      if (viewNode.value.size.width === 'wrap' && viewNode.value.size.height === 'wrap')
+        Object.assign(css, { width: gaugeSize, height: gaugeSize })
+      break
+    }
+    case 'analog': {
+      const analogSize = `${Number(nodeProps.size ?? 160)}px`
+      if (viewNode.value.size.width === 'wrap' && viewNode.value.size.height === 'wrap')
+        Object.assign(css, { width: analogSize, height: analogSize })
+      break
+    }
+    case 'keys': {
+      const key = Number(nodeProps.size ?? 48)
+      if (viewNode.value.size.width === 'wrap') css.width = `${key * 3 + 20}px`
+      if (viewNode.value.size.height === 'wrap') css.height = `${key}px`
+      break
+    }
+    case 'swatches': {
+      const swatch = Number(nodeProps.size ?? 40)
+      const count = nodeProps.show === 'white' ? 6 : 8
+      if (viewNode.value.size.width === 'wrap') css.width = `${swatch * count + 10 * (count - 1)}px`
+      if (viewNode.value.size.height === 'wrap') css.height = `${swatch}px`
+      break
+    }
+    case 'keypad': {
+      const key = Number(nodeProps.size ?? 56)
+      if (viewNode.value.size.width === 'wrap') css.width = `${key * 1.5 * 3 + 24}px`
+      if (viewNode.value.size.height === 'wrap') css.height = `${56 + 3 * (key + 10)}px`
+      break
+    }
     case 'iconbutton': {
       const px = `${Number(nodeProps.size ?? 64)}px`
       if (viewNode.value.size.width === 'wrap' && viewNode.value.size.height === 'wrap')
@@ -215,6 +247,72 @@ const style = computed<CSSProperties>(() => {
             : colorOf('key')
           : (colorOf(nodeProps.color) ?? colorOf('key'))
       css.color = viewNode.value.bind && on.value ? colorOf('key_on_ink') : colorOf('ink')
+      break
+    }
+    case 'dial': {
+      const dial = Number(nodeProps.size ?? 160)
+      if (viewNode.value.size.width === 'wrap') css.width = `${dial}px`
+      if (viewNode.value.size.height === 'wrap') css.height = `${dial + 54}px`
+      break
+    }
+    case 'countdown':
+      css.color = colorOf(nodeProps.color) ?? colorOf('ink')
+      css.fontSize = `${Number(nodeProps.fontSize ?? 44)}px`
+      css.fontWeight = 300
+      break
+    case 'qr': {
+      const qr = Number(nodeProps.size ?? 160)
+      if (viewNode.value.size.width === 'wrap') css.width = `${qr}px`
+      if (viewNode.value.size.height === 'wrap') css.height = `${qr}px`
+      if (!bg) css.background = colorOf('ink')
+      if (!viewNode.value.style.corner) css.borderRadius = '12px'
+      break
+    }
+    case 'markdown':
+      css.color = colorOf(nodeProps.color) ?? colorOf('ink')
+      css.fontSize = `${Number(nodeProps.fontSize ?? 16)}px`
+      break
+    case 'tabs':
+      if (viewNode.value.size.width === 'wrap') css.width = '320px'
+      if (viewNode.value.size.height === 'wrap') css.height = '160px'
+      break
+    case 'timerkeys':
+      if (viewNode.value.size.width === 'wrap') css.width = '320px'
+      if (viewNode.value.size.height === 'wrap') css.height = '56px'
+      break
+    case 'todolist': {
+      const rows = Number(nodeProps.max ?? 8)
+      if (viewNode.value.size.width === 'wrap') css.width = '280px'
+      if (viewNode.value.size.height === 'wrap') css.height = `${Math.max(rows, 1) * 50}px`
+      break
+    }
+    case 'events': {
+      const rows = Number(nodeProps.max ?? 3)
+      if (viewNode.value.size.width === 'wrap') css.width = '280px'
+      if (viewNode.value.size.height === 'wrap') css.height = `${Math.max(rows, 1) * 64}px`
+      break
+    }
+    case 'mediabar':
+      if (viewNode.value.size.width === 'wrap') css.width = '360px'
+      if (viewNode.value.size.height === 'wrap') css.height = '72px'
+      break
+    case 'forecast': {
+      const days = Number(nodeProps.days ?? 5)
+      if (viewNode.value.size.width === 'wrap') css.width = `${days * 56}px`
+      if (viewNode.value.size.height === 'wrap') css.height = '72px'
+      css.color = colorOf(nodeProps.color) ?? colorOf('ink')
+      break
+    }
+    case 'presence':
+      if (viewNode.value.size.width === 'wrap') css.width = '320px'
+      if (viewNode.value.size.height === 'wrap') css.height = '72px'
+      break
+    case 'led': {
+      const led = `${Number(nodeProps.size ?? 16)}px`
+      if (viewNode.value.size.width === 'wrap' && viewNode.value.size.height === 'wrap')
+        Object.assign(css, { width: led, height: led })
+      if (!viewNode.value.style.corner) css.borderRadius = '50%'
+      if (!bg) css.background = on.value ? (colorOf(nodeProps.color) ?? accent.value) : colorOf('ink_dim')
       break
     }
   }
@@ -404,6 +502,126 @@ const childAxis = computed(() =>
     : 'box',
 )
 
+/** Entity ids from a comma-separated prop, else the bound entity, else every entity of [domain]. */
+function listedEntities(prop: string, domain: string): EntityInfo[] {
+  const fromProp = viewNode.value.props[prop]
+    ?.split(',')
+    .map(id => id.trim())
+    .filter(Boolean)
+  if (fromProp?.length)
+    return fromProp.map(
+      entityId =>
+        entityById.value.get(entityId) ?? {
+          entityId,
+          name: entityId.split('.')[1] ?? entityId,
+          state: 'unknown',
+          domain,
+        },
+    )
+  const bound = viewNode.value.bind?.entityId
+  if (bound?.startsWith(`${domain}.`)) {
+    const entity = entityById.value.get(bound)
+    return entity
+      ? [entity]
+      : [{ entityId: bound, name: bound.split('.')[1] ?? bound, state: 'unknown', domain }]
+  }
+  return state.entities.filter(entity => entity.domain === domain)
+}
+
+const presencePeople = computed(() => listedEntities('people', 'person'))
+const eventCalendars = computed(() => listedEntities('calendars', 'calendar'))
+
+const countdownText = computed(() => {
+  if (!viewNode.value.bind) return viewNode.value.props.text ?? '0:00'
+  const ent = entity.value
+  if (!ent) return `‹${viewNode.value.bind.entityId}›`
+  return ent.unit ? `${ent.state} ${ent.unit}` : stateOf(ent) || ent.state
+})
+
+const qrPayload = computed(() => {
+  if (viewNode.value.bind)
+    return entity.value?.state || viewNode.value.bind.entityId
+  return viewNode.value.props.text || 'https://www.home-assistant.io'
+})
+const qrDataUrl = ref('')
+watchEffect(() => {
+  const payload = qrPayload.value
+  const size = Math.max(64, Number(viewNode.value.props.size ?? 160) - 16)
+  void QRCode.toDataURL(payload, { errorCorrectionLevel: 'M', margin: 1, width: size }).then(
+    url => (qrDataUrl.value = url),
+    () => (qrDataUrl.value = ''),
+  )
+})
+
+const markdownLines = computed(() =>
+  (viewNode.value.props.text ?? '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .split('\n')
+    .map(raw => {
+      if (raw.startsWith('**') && raw.endsWith('**') && raw.length >= 4)
+        return { text: raw.slice(2, -2), bold: true, italic: false }
+      if (raw.startsWith('*') && raw.endsWith('*') && raw.length >= 2 && !raw.startsWith('**'))
+        return { text: raw.slice(1, -1), bold: false, italic: true }
+      return { text: raw, bold: false, italic: false }
+    }),
+)
+
+const tabLabels = computed(() => {
+  const fromProp = viewNode.value.props.labels
+    ?.split(',')
+    .map(label => label.trim())
+    .filter(Boolean)
+  const children = viewNode.value.children.filter(child => !child.hidden)
+  if (fromProp?.length) return fromProp.slice(0, Math.max(children.length, fromProp.length))
+  return children.map(
+    (child, index) => child.props.label ?? child.props.text ?? `Tab ${index + 1}`,
+  )
+})
+const tabIndex = ref(0)
+const tabChild = computed(() => {
+  const children = viewNode.value.children.filter(child => !child.hidden)
+  if (!children.length) return undefined
+  return children[Math.min(tabIndex.value, children.length - 1)]
+})
+
+const FORECAST_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const forecastDays = computed(() => {
+  const count = Number(viewNode.value.props.days ?? 5)
+  return FORECAST_DAYS.slice(0, Math.max(1, Math.min(7, count))).map((day, index) => ({
+    day,
+    high: 19 - index,
+    low: 10 - Math.floor(index / 2),
+  }))
+})
+
+const todoItems = computed(() => {
+  const max = Number(viewNode.value.props.max ?? 8)
+  if (!viewNode.value.bind) return []
+  return Array.from({ length: Math.min(max, 3) }, (_, index) => `To-do ${index + 1}`)
+})
+
+const eventItems = computed(() => {
+  const max = Number(viewNode.value.props.max ?? 3)
+  if (!eventCalendars.value.length) return []
+  return eventCalendars.value.slice(0, max).map(calendar => ({
+    title: calendar.name,
+    when: calendar.state === 'unknown' ? 'No upcoming events' : stateOf(calendar) || calendar.state,
+  }))
+})
+
+const mediaTitle = computed(() => {
+  if (!viewNode.value.bind) return '—'
+  return entity.value?.name ?? viewNode.value.bind.entityId
+})
+const mediaArtist = computed(() => (entity.value ? stateOf(entity.value) || entity.value.state : ''))
+
+function whereWord(person: EntityInfo): string {
+  if (person.state === 'home') return 'HOME'
+  if (person.state === 'not_home') return 'AWAY'
+  return person.state.replace(/_/g, ' ').toUpperCase() || 'AWAY'
+}
+
 function where(event: DragEvent): Where {
   if (props.isRoot) return 'inside'
   const bounds = el.value!.getBoundingClientRect()
@@ -475,7 +693,23 @@ function end(): void {
     @dragover="over"
     @drop="drop"
   >
-    <template v-if="isContainer(node)">
+    <template v-if="node.type === 'tabs'">
+      <div class="tab-strip">
+        <button
+          v-for="(label, index) in tabLabels"
+          :key="`${label}-${index}`"
+          type="button"
+          class="tab"
+          :class="{ on: index === Math.min(tabIndex, Math.max(tabLabels.length - 1, 0)) }"
+          @click.stop="tabIndex = index"
+        >
+          {{ label }}
+        </button>
+      </div>
+      <NodeView v-if="tabChild" :node="tabChild" axis="box" />
+      <span v-else class="placeholder">Drop a panel into each tab</span>
+    </template>
+    <template v-else-if="isContainer(node)">
       <NodeView v-for="c in node.children" :key="c.id" :node="c" :axis="childAxis" />
       <span v-if="empty" class="placeholder">Drop components here</span>
     </template>
@@ -758,6 +992,110 @@ function end(): void {
         </span>
       </div>
     </template>
+    <div v-else-if="node.type === 'dial'" class="dial" :style="{ width: `${gauge.size}px` }">
+      <div class="gauge" :style="{ width: `${gauge.size}px`, height: `${gauge.size}px` }">
+        <svg :viewBox="`0 0 ${gauge.size} ${gauge.size}`">
+          <g
+            :transform="`rotate(135 ${gauge.size / 2} ${gauge.size / 2})`"
+            fill="none"
+            :stroke-width="gauge.stroke"
+            stroke-linecap="round"
+          >
+            <circle
+              :cx="gauge.size / 2"
+              :cy="gauge.size / 2"
+              :r="gauge.radius"
+              :stroke="colorOf('track')"
+              :stroke-dasharray="`${gauge.arc} 9999`"
+            />
+            <circle
+              v-if="node.bind && gauge.fill > 0"
+              :cx="gauge.size / 2"
+              :cy="gauge.size / 2"
+              :r="gauge.radius"
+              :stroke="colorOf(node.props.color) ?? accent"
+              :stroke-dasharray="`${gauge.fill} 9999`"
+            />
+          </g>
+        </svg>
+        <span class="value" :style="{ fontSize: `${Math.max(gauge.size * 0.16, 12)}px` }">{{
+          node.bind ? gauge.value || '–' : '–'
+        }}</span>
+      </div>
+      <div class="dial-keys">
+        <span class="round"><MdiIcon name="minus" :size="22" /></span>
+        <span class="round"><MdiIcon name="plus" :size="22" /></span>
+      </div>
+    </div>
+    <span v-else-if="node.type === 'countdown'">{{ countdownText }}</span>
+    <img
+      v-else-if="node.type === 'qr'"
+      class="qr"
+      :src="qrDataUrl"
+      :alt="qrPayload"
+      :width="Math.max(48, Number(node.props.size ?? 160) - 16)"
+      :height="Math.max(48, Number(node.props.size ?? 160) - 16)"
+    />
+    <div v-else-if="node.type === 'markdown'" class="markdown">
+      <span
+        v-for="(line, index) in markdownLines"
+        :key="index"
+        :style="{ fontWeight: line.bold ? 700 : 400, fontStyle: line.italic ? 'italic' : 'normal' }"
+        >{{ line.text || ' ' }}</span
+      >
+    </div>
+    <template v-else-if="node.type === 'timerkeys'">
+      <span class="key grow"><MdiIcon name="play" :size="20" />Start</span>
+      <span class="key grow"><MdiIcon name="pause" :size="20" />Pause</span>
+      <span class="key grow"><MdiIcon name="close" :size="20" />Cancel</span>
+    </template>
+    <template v-else-if="node.type === 'todolist'">
+      <template v-if="todoItems.length">
+        <span v-for="item in todoItems" :key="item" class="todo"
+          ><MdiIcon name="checkbox-blank-outline" :size="18" />{{ item }}</span
+        >
+      </template>
+      <span v-else class="hint">Bind a to-do list</span>
+    </template>
+    <template v-else-if="node.type === 'events'">
+      <template v-if="eventItems.length">
+        <div v-for="item in eventItems" :key="item.title" class="event">
+          <strong>{{ item.title }}</strong>
+          <span>{{ item.when }}</span>
+        </div>
+      </template>
+      <span v-else class="hint">Bind a calendar</span>
+    </template>
+    <template v-else-if="node.type === 'mediabar'">
+      <span class="art"><MdiIcon name="music" :size="28" /></span>
+      <span class="meta">
+        <strong>{{ mediaTitle }}</strong>
+        <span>{{ mediaArtist }}</span>
+      </span>
+      <span class="round"><MdiIcon name="skip-previous" :size="20" /></span>
+      <span class="round on"><MdiIcon name="play" :size="20" /></span>
+      <span class="round"><MdiIcon name="skip-next" :size="20" /></span>
+    </template>
+    <template v-else-if="node.type === 'forecast'">
+      <span v-for="day in forecastDays" :key="day.day" class="day">
+        <span>{{ day.day }}</span>
+        <MdiIcon name="weather-partly-cloudy" :size="28" />
+        <span>{{ day.high }}° / {{ day.low }}°</span>
+      </span>
+    </template>
+    <template v-else-if="node.type === 'presence'">
+      <template v-if="presencePeople.length">
+        <span v-for="person in presencePeople" :key="person.entityId" class="person">
+          <span class="photo">{{ (person.name || '?').slice(0, 1).toUpperCase() }}</span>
+          <span class="who">
+            <strong>{{ person.name }}</strong>
+            <span class="where">{{ whereWord(person) }}</span>
+          </span>
+        </span>
+      </template>
+      <span v-else class="hint">No people</span>
+    </template>
+    <span v-else-if="node.type === 'led'" class="led" />
   </div>
 </template>
 
@@ -1199,5 +1537,259 @@ function end(): void {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.t-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.tab-strip {
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.tab {
+  padding: 0 0 4px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--rc-ink-dim);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.tab.on {
+  color: var(--rc-ink);
+  font-weight: 600;
+  border-bottom-color: var(--rc-accent);
+}
+
+.t-dial,
+.t-countdown,
+.t-qr {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dial {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.dial-keys {
+  display: flex;
+  gap: 20px;
+}
+
+.dial-keys .round,
+.t-mediabar .round {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--rc-key);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.t-mediabar .round.on {
+  background: var(--rc-key-on);
+  color: var(--rc-key-on-ink);
+}
+
+.t-countdown {
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.qr {
+  display: block;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.t-markdown {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.markdown span {
+  display: block;
+  white-space: pre-wrap;
+}
+
+.t-timerkeys {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.t-timerkeys .key.grow {
+  flex: 1;
+  gap: 6px;
+  height: 52px;
+  font-size: 14px;
+}
+
+.t-todolist,
+.t-events {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.todo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--rc-key);
+  font-size: 14px;
+}
+
+.event {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.event strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.event span {
+  font-size: 12px;
+  color: var(--rc-ink-soft);
+}
+
+.t-mediabar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.art {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  background: var(--rc-track);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  color: var(--rc-ink-dim);
+}
+
+.meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.meta strong,
+.meta span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta span {
+  font-size: 12px;
+  color: var(--rc-ink-soft);
+}
+
+.t-forecast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.day {
+  width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.t-presence {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px;
+}
+
+.photo {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--rc-key);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  flex: none;
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.who strong {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.who .where {
+  font-size: 12px;
+  color: var(--rc-accent-soft, var(--rc-accent));
+}
+
+.t-led {
+  flex: none;
+}
+
+.t-todolist .hint,
+.t-events .hint,
+.t-presence .hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: rgb(255 255 255 / 50%);
 }
 </style>

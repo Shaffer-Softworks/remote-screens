@@ -10,12 +10,10 @@ import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
-import androidx.compose.remote.creation.dsl.clip
 import androidx.compose.remote.creation.dsl.fillMaxHeight
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.horizontalWeight
-import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
@@ -42,10 +40,6 @@ private const val STAT_ICON_DP = 26f
 private const val NAV_BOTH_ICON_MAX_DP = 40f
 private const val STAT_ICON_GAP_DP = 4f
 private const val NAV_ICON_LABEL_GAP_DP = 5f
-private const val NAV_PILL_PAD_H_DP = 6f
-private const val NAV_PILL_PAD_V_DP = 4f
-private const val NAV_TOP_BAR_H_DP = 3f
-private const val NAV_TOP_BAR_W_SHARE = 0.55f
 private const val CLOCK_PAD_EXTRA_DP = 8f
 
 /** The device a document is built for. */
@@ -296,10 +290,7 @@ object ScreenRenderer {
         else -> RcRowHorizontalPositioning.SpaceEvenly
     }
 
-    /**
-     * How navigation buttons look: icon, word or both, [layoutScale] against the default bar, and the active
-     * teal (pill + top bar, as the mockups draw it).
-     */
+    /** How navigation buttons look: icon, word or both, [layoutScale] against the default bar, the current page's fill. */
     private class NavStyle(val labels: String, val layoutScale: Float, val on: RcColor)
 
     private fun DocContext.navButton(
@@ -311,56 +302,24 @@ object ScreenRenderer {
         ref: ActionRef,
         style: NavStyle,
     ) {
-        val pillBg = if (on) style.on else role(Role.NAV)
-        // Domain mockup: dark ink on the teal pill; free-form mockup: idle icons stay page ink.
-        val ink = if (on) role(Role.KEY_ON_INK) else role(Role.INK)
-        val iconInk = if (on) role(Role.KEY_ON_INK) else role(Role.INK)
-        val innerH = (hDp - NAV_PILL_PAD_V_DP * 2f - NAV_TOP_BAR_H_DP).coerceAtLeast(1f)
-        val innerW = (wDp - NAV_PILL_PAD_H_DP * 2f).coerceAtLeast(1f)
-        val corner = innerH / 2f
-        scope.Column(
-            Modifier.size(units.px(wDp), units.px(hDp)),
-            horizontal = RcHorizontalPositioning.Center,
-            vertical = RcColumnVerticalPositioning.Center,
-        ) {
+        var modifier = Modifier.size(units.px(wDp), units.px(hDp))
+        if (on) modifier = modifier.background(style.on)
+        scope.Column(tap(modifier, ref), horizontal = RcHorizontalPositioning.Center, vertical = RcColumnVerticalPositioning.Center) {
             val doc = this@navButton
-            // Free-form mockup: teal bar above the active item.
-            Box(
-                Modifier.size(
-                    doc.units.px(if (on) wDp * NAV_TOP_BAR_W_SHARE else 0f),
-                    doc.units.px(NAV_TOP_BAR_H_DP),
-                ).background(style.on),
-            )
-            Column(
-                doc.tap(
-                    Modifier.size(doc.units.px(innerW), doc.units.px(innerH))
-                        .clip(doc.rounded(corner))
-                        .background(pillBg),
-                    ref,
-                ),
-                horizontal = RcHorizontalPositioning.Center,
-                vertical = RcColumnVerticalPositioning.Center,
-            ) {
-                val word = title.uppercase(doc.i18n.locale)
-                val wordW = Modifier.width(doc.units.px(innerW - STAT_ICON_GAP_DP))
-                when (style.labels) {
-                    "icons" -> doc.icon(icon, minOf(NAV_ICON_ONLY_MAX, hDp * NAV_ICON_ONLY_SHARE), iconInk)
-                    "text" -> {
-                        val sp = (NAV_WORD_ONLY_SP * style.layoutScale)
-                            .coerceIn(NAV_WORD_ONLY_MIN_SP, NAV_WORD_ONLY_MAX_SP)
-                        doc.label(
-                            word, sp, ink, Weight.MEDIUM, lines = 2,
-                            align = RcTextAlign.Center, modifier = wordW,
-                        )
-                    }
-                    else -> {
-                        doc.icon(icon, minOf(NAV_BOTH_ICON_MAX_DP, hDp * NAV_BOTH_ICON_SHARE), iconInk)
-                        val gapScale = style.layoutScale.coerceAtMost(NAV_GAP_MAX_SCALE)
-                        Spacer(Modifier.height(doc.units.px(NAV_ICON_LABEL_GAP_DP * gapScale)))
-                        val sp = (NAV_LABEL_BASE_SP * style.layoutScale)
-                            .coerceIn(NAV_LABEL_MIN_SP, NAV_LABEL_MAX_SP)
-                        doc.label(word, sp, ink, align = RcTextAlign.Center, modifier = wordW)
-                    }
+            val word = title.uppercase(doc.i18n.locale)
+            val wordW = Modifier.width(doc.units.px(wDp - STAT_ICON_GAP_DP))
+            val ink = doc.role(Role.INK)
+            when (style.labels) {
+                "icons" -> doc.icon(icon, minOf(NAV_ICON_ONLY_MAX, hDp * NAV_ICON_ONLY_SHARE), ink)
+                "text" -> {
+                    val sp = (NAV_WORD_ONLY_SP * style.layoutScale).coerceIn(NAV_WORD_ONLY_MIN_SP, NAV_WORD_ONLY_MAX_SP)
+                    doc.label(word, sp, ink, Weight.MEDIUM, lines = 2, align = RcTextAlign.Center, modifier = wordW)
+                }
+                else -> {
+                    doc.icon(icon, minOf(NAV_BOTH_ICON_MAX_DP, hDp * NAV_BOTH_ICON_SHARE), ink)
+                    Spacer(Modifier.height(doc.units.px(NAV_ICON_LABEL_GAP_DP * style.layoutScale.coerceAtMost(NAV_GAP_MAX_SCALE))))
+                    val sp = (NAV_LABEL_BASE_SP * style.layoutScale).coerceIn(NAV_LABEL_MIN_SP, NAV_LABEL_MAX_SP)
+                    doc.label(word, sp, ink, align = RcTextAlign.Center, modifier = wordW)
                 }
             }
         }

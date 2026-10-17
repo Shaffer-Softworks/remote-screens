@@ -543,14 +543,11 @@ const highlight = computed(() => {
               width: `${nav.buttonW}px`,
               fontSize: `${nav.fontSize}px`,
               gap: `${nav.gap}px`,
-              '--nav-on': nav.active,
+              background: b.on ? nav.active : undefined,
             }"
           >
-            <span class="top-bar" aria-hidden="true" />
-            <span class="pill">
-              <MdiIcon v-if="nav.labels !== 'text'" :name="b.icon" :size="nav.iconSize" />
-              <span v-if="nav.labels !== 'icons'">{{ b.title.toUpperCase() }}</span>
-            </span>
+            <MdiIcon v-if="nav.labels !== 'text'" :name="b.icon" :size="nav.iconSize" />
+            <span v-if="nav.labels !== 'icons'">{{ b.title.toUpperCase() }}</span>
           </span>
         </div>
       </div>
@@ -1099,35 +1096,9 @@ const highlight = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   overflow: hidden;
   white-space: nowrap;
-  color: var(--rc-ink);
-}
-
-.nav .button .top-bar {
-  flex: none;
-  width: 55%;
-  height: 3px;
-  background: transparent;
-}
-
-.nav .button .pill {
-  flex: 1;
-  min-height: 0;
-  width: calc(100% - 12px);
-  margin: 0 6px 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: inherit;
-  border-radius: 999px;
-  color: var(--rc-ink);
-}
-
-.nav .button .pill span {
-  color: inherit;
 }
 
 .nav.labels-text .button {
@@ -1136,16 +1107,7 @@ const highlight = computed(() => {
   text-align: center;
 }
 
-.nav .button.on .top-bar {
-  background: var(--nav-on, var(--rc-nav-on));
-}
-
-.nav .button.on .pill {
-  background: var(--nav-on, var(--rc-nav-on));
-  color: var(--rc-key-on-ink, #2f2e2e);
-}
-
-.nav .button.on .pill span {
-  color: inherit;
+.nav .button.on {
+  background: var(--rc-nav-on);
 }
 </style>
