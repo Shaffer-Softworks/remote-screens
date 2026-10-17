@@ -206,6 +206,8 @@ jobs:
     name: Version sync PR
     needs: [package, release]
     if: needs.release.result == 'success'
+    # Publish already succeeded; a blocked sync PR should not fail the release run.
+    continue-on-error: true
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -283,6 +285,13 @@ jobs:
             exit 0
           fi
 
-          gh pr create --base main --head "$branch" \
+          if gh pr create --base main --head "$branch" \
             --title "chore(release): sync $VERSION on main" \
-            --body "$body"
+            --body "$body"; then
+            exit 0
+          fi
+
+          echo "::warning::Could not open the version sync PR (often: repo setting 'Allow GitHub Actions to create and approve pull requests' is off)."
+          echo "Branch pushed: $branch"
+          echo "Open manually: https://github.com/${GITHUB_REPOSITORY}/compare/main...${branch}?expand=1"
+          exit 1
