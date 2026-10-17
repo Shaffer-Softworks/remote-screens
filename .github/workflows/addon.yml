@@ -6,17 +6,17 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version (e.g. 0.1.12, no v prefix). addon/VERSION and config.yaml must already match."
+        description: "Release version (e.g. 0.1.14, no v prefix). Files on main need not match yet."
         required: true
         type: string
 
 permissions:
   contents: read
 
-# Branch protection on main blocks unsigned bot commits and direct pushes, so
-# workflow_dispatch only creates the tag when version files already match, then
-# builds in the same run (GITHUB_TOKEN tag pushes do not start a second run).
-# A manual push of an existing v* tag still builds via the push path alone.
+# Branch protection blocks bot commits on main, so workflow_dispatch tags and builds from the
+# version input (stamping VERSION/config only in the runner), then opens a PR to sync those
+# files on main. GITHUB_TOKEN tag pushes do not start a second run; a manual v* tag push still
+# builds via the push path alone.
 jobs:
   tag:
     name: Create release tag
@@ -28,21 +28,15 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Tag when version files match
+      - name: Create tag
         env:
           INPUT_VERSION: ${{ inputs.version }}
         run: |
           set -eu
           version="${INPUT_VERSION#v}"
           echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.-].+)?$' \
-            || { echo "Invalid version: $INPUT_VERSION (expected e.g. 0.1.12)"; exit 1; }
+            || { echo "Invalid version: $INPUT_VERSION (expected e.g. 0.1.14)"; exit 1; }
           tag="v$version"
-          current=$(cat addon/VERSION)
-          if [ "$current" != "$version" ] || ! grep -q "^version: \"$version\"$" addon/config.yaml; then
-            echo "addon/VERSION is '$current' and config.yaml must both be '$version' before tagging."
-            echo "Merge a PR that bumps those files (and the changelog), then re-run this workflow."
-            exit 1
-          fi
           head=$(git rev-parse HEAD)
           git fetch origin "refs/tags/$tag:refs/tags/$tag" 2>/dev/null || true
           if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
@@ -79,17 +73,21 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
         run: |
           set -eu
-          version=$(cat addon/VERSION)
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
-            tag="v${INPUT_VERSION#v}"
+            version="${INPUT_VERSION#v}"
+            tag="v$version"
           else
             tag="${GITHUB_REF_NAME}"
+            version="${tag#v}"
           fi
+          echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.-].+)?$' \
+            || { echo "Invalid version: $version"; exit 1; }
+          # Stamp for this build only; main is updated via the version-sync PR after release.
+          printf '%s\n' "$version" > addon/VERSION
+          sed -i "s/^version: \".*\"$/version: \"$version\"/" addon/config.yaml
           grep -q "^version: \"$version\"$" addon/config.yaml \
-            || { echo "addon/config.yaml is not $version"; exit 1; }
-          if [ "$tag" != "v$version" ]; then
-            echo "Tag $tag does not match addon/VERSION $version"; exit 1
-          fi
+            || { echo "Failed to stamp addon/config.yaml to $version"; exit 1; }
+          echo "Stamped addon/VERSION and config.yaml to $version for this build."
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-java@v6
@@ -191,7 +189,93 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.package.outputs.tag }}
+          VERSION: ${{ needs.package.outputs.version }}
         run: |
-          notes=$(awk '/^## /{n++} n==1 && !/^## /' addon/CHANGELOG.md)
-          gh release create "$TAG" remote-screens.apk --title "$TAG" --notes "$notes" \
-            || gh release upload "$TAG" remote-screens.apk --clobber
+          set -eu
+          if grep -q "^## ${VERSION}$" addon/CHANGELOG.md; then
+            notes=$(awk '/^## /{n++} n==1 && !/^## /' addon/CHANGELOG.md)
+            gh release create "$TAG" remote-screens.apk --title "$TAG" --notes "$notes" \
+              || gh release upload "$TAG" remote-screens.apk --clobber
+          else
+            gh release create "$TAG" remote-screens.apk --title "$TAG" --generate-notes \
+              || gh release upload "$TAG" remote-screens.apk --clobber
+          fi
+
+  version-pr:
+    name: Version sync PR
+    needs: [package, release]
+    if: needs.release.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Open PR to sync version files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.package.outputs.version }}
+          TAG: ${{ needs.package.outputs.tag }}
+        run: |
+          set -eu
+          current=$(cat addon/VERSION)
+          if [ "$current" = "$VERSION" ] && grep -q "^version: \"$VERSION\"$" addon/config.yaml; then
+            echo "main already has $VERSION; no sync PR needed."
+            exit 0
+          fi
+
+          branch="chore/sync-version-$VERSION"
+          git checkout -B "$branch" origin/main
+
+          printf '%s\n' "$VERSION" > addon/VERSION
+          sed -i "s/^version: \".*\"$/version: \"$VERSION\"/" addon/config.yaml
+          if ! grep -q "^## ${VERSION}$" addon/CHANGELOG.md; then
+            {
+              echo "# Changelog"
+              echo
+              echo "## $VERSION"
+              echo
+              echo "- See the [$TAG](https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG) release notes; replace this line with curated notes before merging."
+              echo
+              # Drop the leading "# Changelog" heading from the existing file.
+              tail -n +2 addon/CHANGELOG.md | sed -e '1{/^$/d;}'
+            } > addon/CHANGELOG.md.new
+            mv addon/CHANGELOG.md.new addon/CHANGELOG.md
+          fi
+
+          if git diff --quiet; then
+            echo "No file changes after stamp; nothing to open."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add addon/VERSION addon/config.yaml addon/CHANGELOG.md
+          git commit -m "chore(release): sync $VERSION on main"
+          git push -u origin "HEAD:$branch" --force-with-lease
+
+          body=$(printf '%s\n' \
+            "## Summary" \
+            "- Sets \`addon/VERSION\` and \`addon/config.yaml\` to **${VERSION}** so main matches tag \`${TAG}\`." \
+            "- Adds a changelog stub if one was missing (edit before merge if you want curated notes)." \
+            "" \
+            "Opened automatically after the Release workflow finished building \`${TAG}\`." \
+            "" \
+            "## Test plan" \
+            "- [ ] Confirm version files match \`${VERSION}\`" \
+            "- [ ] Replace the changelog stub with real notes if needed" \
+            "- [ ] Merge so Supervisor / the repo stay in sync with the published add-on")
+
+          if gh pr view "$branch" --json number --jq .number >/dev/null 2>&1; then
+            echo "PR for $branch already exists; branch updated."
+            gh pr edit "$branch" --body "$body"
+            gh pr view "$branch" --json url --jq .url
+            exit 0
+          fi
+
+          gh pr create --base main --head "$branch" \
+            --title "chore(release): sync $VERSION on main" \
+            --body "$body"

@@ -117,14 +117,19 @@ and the workarounds the code relies on.
 
 ### Releases
 
-1. Merge a PR that sets `addon/VERSION` and `addon/config.yaml` to the new version (and updates
-   `addon/CHANGELOG.md`). Direct pushes to `main` are blocked by branch protection.
-2. Run [the release workflow](.github/workflows/addon.yml) from **Actions → Release → Run workflow** and
-   enter that version (e.g. `0.1.12`). It creates tag `v<version>` on the current `main` tip, then builds
-   the signed player app, packages the add-on, pushes
+1. Run [the release workflow](.github/workflows/addon.yml) from **Actions → Release → Run workflow** on
+   `main` and enter the new version (e.g. `0.1.14`). You do not need to bump version files first.
+2. The workflow tags `v<version>` on the current `main` tip, builds the signed player app (stamping that
+   version into the build), packages the add-on, pushes
    `ghcr.io/<owner>/remote-screens-{amd64,aarch64}`, and attaches the APK to the GitHub release.
+3. When `main` still has an older `addon/VERSION` / `config.yaml`, it opens a sync PR so those files (and a
+   changelog stub, if missing) match the tag. Merge that PR so the repo stays aligned with the published
+   add-on. Optionally edit the changelog in that PR for curated notes next time.
 
-You can skip step 2 and push tag `v<version>` yourself once those files already match.
+You can still push tag `v<version>` yourself; the same build runs, and a sync PR is opened if needed.
+
+For curated GitHub release notes, add a `## <version>` section to `addon/CHANGELOG.md` on `main` before
+step 1; otherwise the release uses GitHub’s generated notes.
 
 Tablets only accept an update signed with the key the app was first installed with, so every release must use
 the same key. The workflow reads it from these repository secrets:
