@@ -9,9 +9,11 @@ import androidx.compose.remote.creation.dsl.RcInteger
 import androidx.compose.remote.creation.dsl.RcPath
 import androidx.compose.remote.creation.dsl.RcScope
 import androidx.compose.remote.creation.dsl.RcText
-import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistantConfig
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
+import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.awt.image.BufferedImage
@@ -178,55 +180,3 @@ data class LiveVideo(val entityId: String, val componentId: Int, val crop: Boole
         const val FIRST_COMPONENT_ID = 0x5C_0000
     }
 }
-
-/** A picture the add-on fetches and sends as a `bitmap` message. */
-data class PictureSlot(
-    val name: String,
-    /** A path Home Assistant serves (`/api/camera_proxy/camera.x`), or `map:<tile>` for a drawn map. */
-    val source: String,
-    val widthPx: Int,
-    val heightPx: Int,
-    /** 0 sends it once, and again when [source] changes. */
-    val refreshSeconds: Int,
-    val crop: Boolean = true,
-    val round: Boolean = false,
-)
-
-/** Data a renderer draws into the document, fetched before it starts. */
-data class RenderData(
-    val forecasts: Map<String, List<Forecast>> = emptyMap(),
-    val history: Map<String, List<Pair<Long, Double>>> = emptyMap(),
-    val energy: EnergyPrefs? = null,
-    val browse: Map<String, List<BrowseItem>> = emptyMap(),
-    val todos: Map<String, List<TodoItem>> = emptyMap(),
-)
-
-/** One incomplete to-do item, as `todo.get_items` returns it. */
-data class TodoItem(
-    val uid: String,
-    val summary: String,
-)
-
-data class Forecast(
-    val time: java.time.ZonedDateTime,
-    val condition: String,
-    val high: Double?,
-    val low: Double?,
-    val rain: Int?,
-)
-
-data class EnergyPrefs(
-    val solar: String?,
-    val grid: String?,
-    val battery: String?,
-    val devices: List<Pair<String, String>>,
-)
-
-data class BrowseItem(
-    val title: String,
-    val contentId: String,
-    val contentType: String,
-    val canPlay: Boolean,
-    val canExpand: Boolean,
-    val thumbnail: String?,
-)

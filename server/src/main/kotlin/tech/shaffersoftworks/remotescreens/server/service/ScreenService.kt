@@ -1,7 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.service
 
 import tech.shaffersoftworks.remotescreens.server.data.layout.LayoutRepository
-import tech.shaffersoftworks.remotescreens.server.routes.model.CreateScreenRequest
 import tech.shaffersoftworks.remotescreens.server.service.validation.ScreenValidator
 import tech.shaffersoftworks.remotescreens.shared.DeviceSize
 import tech.shaffersoftworks.remotescreens.shared.Grid

@@ -197,9 +197,9 @@ object Present {
 
     fun numberWithUnit(entityState: EntityState, i18n: I18n): String? {
         val v = entityState.numericState() ?: return null
-        val n = numberOnly(entityState, v, i18n)
+        val numberText = numberOnly(entityState, v, i18n)
         val (_, unit) = scale(v, entityState.attr("unit_of_measurement").orEmpty())
-        return if (unit.isEmpty()) n else if (unit == "%") "$n %" else "$n $unit"
+        return if (unit.isEmpty()) numberText else if (unit == "%") "$numberText %" else "$numberText $unit"
     }
 
     /** 5200 W reads as 5.2 kW, as Home Assistant's energy views do. */
