@@ -34,7 +34,8 @@ jobs:
         run: |
           set -eu
           version="${INPUT_VERSION#v}"
-          echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.-].+)?$' \
+          # Digits and [A-Za-z0-9.-] only — no '/' (breaks sed/paths) or other shell metacharacters.
+          echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.+-][0-9A-Za-z.-]+)*$' \
             || { echo "Invalid version: $INPUT_VERSION (expected e.g. 0.1.14)"; exit 1; }
           tag="v$version"
           head=$(git rev-parse HEAD)
@@ -80,11 +81,11 @@ jobs:
             tag="${GITHUB_REF_NAME}"
             version="${tag#v}"
           fi
-          echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.-].+)?$' \
+          echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.+-][0-9A-Za-z.-]+)*$' \
             || { echo "Invalid version: $version"; exit 1; }
           # Stamp for this build only; main is updated via the version-sync PR after release.
           printf '%s\n' "$version" > addon/VERSION
-          sed -i "s/^version: \".*\"$/version: \"$version\"/" addon/config.yaml
+          sed -i "s|^version: \".*\"$|version: \"$version\"|" addon/config.yaml
           grep -q "^version: \"$version\"$" addon/config.yaml \
             || { echo "Failed to stamp addon/config.yaml to $version"; exit 1; }
           echo "Stamped addon/VERSION and config.yaml to $version for this build."
@@ -231,8 +232,13 @@ jobs:
           git checkout -B "$branch" origin/main
 
           printf '%s\n' "$VERSION" > addon/VERSION
-          sed -i "s/^version: \".*\"$/version: \"$VERSION\"/" addon/config.yaml
-          if ! grep -q "^## ${VERSION}$" addon/CHANGELOG.md; then
+          sed -i "s|^version: \".*\"$|version: \"$VERSION\"|" addon/config.yaml
+          if [ ! -f addon/CHANGELOG.md ] || ! grep -q "^## ${VERSION}$" addon/CHANGELOG.md; then
+            rest=""
+            if [ -f addon/CHANGELOG.md ]; then
+              # Drop the leading "# Changelog" heading from the existing file.
+              rest=$(tail -n +2 addon/CHANGELOG.md | sed -e '1{/^$/d;}')
+            fi
             {
               echo "# Changelog"
               echo
@@ -240,8 +246,9 @@ jobs:
               echo
               echo "- See the [$TAG](https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG) release notes; replace this line with curated notes before merging."
               echo
-              # Drop the leading "# Changelog" heading from the existing file.
-              tail -n +2 addon/CHANGELOG.md | sed -e '1{/^$/d;}'
+              if [ -n "$rest" ]; then
+                printf '%s\n' "$rest"
+              fi
             } > addon/CHANGELOG.md.new
             mv addon/CHANGELOG.md.new addon/CHANGELOG.md
           fi
