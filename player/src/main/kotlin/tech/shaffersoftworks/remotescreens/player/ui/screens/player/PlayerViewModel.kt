@@ -309,10 +309,18 @@ class PlayerViewModel @Inject constructor(
             if (welcome.token == null && preferencesRepository.token.first() != null) preferencesRepository.forget()
             val groupedCode = pairingCode.chunked(PAIRING_CODE_GROUP_SIZE).joinToString(" ")
             _viewState.update {
-                it.copy(remoteScreen = it.remoteScreen.cleared(), infoPanel = InfoPanelState.Pairing(groupedCode))
+                it.copy(
+                    remoteScreen = it.remoteScreen.cleared().withTimeZone(welcome.timeZone),
+                    infoPanel = InfoPanelState.Pairing(groupedCode),
+                )
             }
-        } else if (_viewState.value.remoteScreen.hasMainDocument) {
-            _viewState.update { it.copy(infoPanel = null) }
+        } else {
+            _viewState.update {
+                it.copy(
+                    remoteScreen = it.remoteScreen.withTimeZone(welcome.timeZone),
+                    infoPanel = if (it.remoteScreen.hasMainDocument) null else it.infoPanel,
+                )
+            }
         }
         sendDeviceState()
     }
