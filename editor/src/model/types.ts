@@ -83,6 +83,7 @@ export type NodeType =
   | 'forecast'
   | 'presence'
   | 'led'
+  | 'thermostat'
 
 export const CONTAINERS: readonly NodeType[] = ['column', 'row', 'box', 'flow', 'tabs']
 

@@ -203,6 +203,11 @@ const style = computed<CSSProperties>(() => {
       if (viewNode.value.size.width === 'wrap') css.width = '320px'
       if (viewNode.value.size.height === 'wrap') css.height = '44px'
       break
+    case 'thermostat':
+      if (viewNode.value.size.width === 'wrap') css.width = '100%'
+      if (viewNode.value.size.height === 'wrap') css.height = '320px'
+      if (!bg) css.background = colorOf('page')
+      break
     case 'iconbutton': {
       const px = `${Number(nodeProps.size ?? 64)}px`
       if (viewNode.value.size.width === 'wrap' && viewNode.value.size.height === 'wrap')
@@ -327,6 +332,34 @@ const stepperValue = computed(() => {
   if (!e) return `‹${viewNode.value.bind.entityId}›`
   if (e.domain === 'climate') return 'Target'
   return e.unit ? `${e.state} ${e.unit}` : stateOf(e) || e.state
+})
+
+/** Stand-in readings for the RPI thermostat preview (GridMockup / ThermostatPanel). */
+const THERMOSTAT_MODES = [
+  { label: 'Heat/Cool', icon: 'sun-snowflake-variant' },
+  { label: 'Heat', icon: 'fire' },
+  { label: 'Cool', icon: 'snowflake' },
+  { label: 'Off', icon: 'power' },
+]
+const THERMOSTAT_TICKS = Array.from({ length: 20 }, (_, i) => i * 18)
+const thermostatPreview = computed(() => {
+  const e = entity.value
+  const state = e?.state?.toLowerCase() ?? 'heat_cool'
+  const modeOn = Math.max(
+    0,
+    THERMOSTAT_MODES.findIndex(m => {
+      const word = m.label.toLowerCase().replace('/', '_')
+      return word === state || (state === 'auto' && word === 'heat_cool')
+    }),
+  )
+  return {
+    current: '21°',
+    humidity: '45%',
+    low: '18°',
+    high: '24°',
+    action: state === 'cool' || state === 'heat_cool' ? 'Cooling' : state === 'off' ? 'Off' : 'Heating',
+    modeOn,
+  }
 })
 
 /** The add-on lists the entity's own options; the editor does not know them, so it shows stand-ins. */
@@ -758,6 +791,91 @@ function end(): void {
         </span>
       </div>
     </template>
+    <div v-else-if="node.type === 'thermostat'" class="thermostat">
+      <div class="th-top">
+        <div class="th-head"><i class="th-bar" /><span>ADJUST THE TEMPERATURE</span></div>
+      </div>
+      <div class="th-middle">
+        <span class="th-reading"
+          ><span>CURRENT TEMP</span><strong>{{ thermostatPreview.current }}</strong></span
+        >
+        <span class="th-keys">
+          <span class="th-key"><MdiIcon name="plus" :size="18" /></span>
+          <span class="th-key"><MdiIcon name="minus" :size="18" /></span>
+        </span>
+        <svg class="th-dial" viewBox="-200 -200 400 400">
+          <defs>
+            <radialGradient :id="`th-glow-${node.id}`" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="var(--rc-blue)" stop-opacity="0.45" />
+              <stop offset="100%" stop-color="var(--rc-ink)" stop-opacity="0.15" />
+            </radialGradient>
+          </defs>
+          <circle
+            r="180"
+            :fill="`url(#th-glow-${node.id})`"
+            class="dial-ring"
+            stroke-width="14"
+          />
+          <line
+            v-for="a in THERMOSTAT_TICKS"
+            :key="a"
+            x1="0"
+            y1="191"
+            x2="0"
+            y2="205"
+            class="dial-tick"
+            :transform="`rotate(${a})`"
+          />
+          <path
+            d="M 0 180 A 180 180 0 0 1 25 -178"
+            fill="none"
+            class="dial-arc heat"
+            stroke-width="14"
+            stroke-linecap="round"
+          />
+          <path
+            d="M 0 -180 A 180 180 0 0 1 -175 -45"
+            fill="none"
+            class="dial-arc cool"
+            stroke-width="14"
+            stroke-linecap="round"
+          />
+          <circle cx="25" cy="-178" r="14" class="dial-knob heat" stroke-width="4" />
+          <circle cx="-175" cy="-45" r="14" class="dial-knob cool" stroke-width="4" />
+          <text y="-40" text-anchor="middle" class="dial-ink" font-size="18">
+            {{ thermostatPreview.action }}
+          </text>
+          <text x="-34" y="28" text-anchor="middle" class="dial-heat" font-size="32" font-weight="300">
+            {{ thermostatPreview.low }}
+          </text>
+          <text x="34" y="28" text-anchor="middle" class="dial-cool" font-size="32" font-weight="300">
+            {{ thermostatPreview.high }}
+          </text>
+        </svg>
+        <span class="th-keys">
+          <span class="th-key"><MdiIcon name="plus" :size="18" /></span>
+          <span class="th-key"><MdiIcon name="minus" :size="18" /></span>
+        </span>
+        <span class="th-reading"
+          ><span>CURRENT HUMIDITY</span><strong>{{ thermostatPreview.humidity }}</strong></span
+        >
+      </div>
+      <div class="th-controls">
+        <div class="th-modes">
+          <span
+            v-for="(m, i) in THERMOSTAT_MODES"
+            :key="m.label"
+            :class="{ on: i === Math.max(thermostatPreview.modeOn, 0) }"
+            ><MdiIcon :name="m.icon" :size="16" />{{ m.label }}</span
+          >
+        </div>
+        <div class="th-fan">
+          <MdiIcon name="fan" :size="20" />
+          <span><small>Fan mode</small><strong>Auto</strong></span>
+        </div>
+      </div>
+      <span v-if="!node.bind" class="hint">Bind a climate entity</span>
+    </div>
   </div>
 </template>
 
@@ -922,7 +1040,8 @@ function end(): void {
 }
 
 .graph .hint,
-.t-choices .hint {
+.t-choices .hint,
+.t-thermostat .hint {
   position: absolute;
   inset: 0;
   display: flex;
@@ -930,6 +1049,187 @@ function end(): void {
   justify-content: center;
   font-size: 11px;
   color: rgb(255 255 255 / 50%);
+}
+
+.thermostat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
+  color: var(--rc-ink);
+  overflow: hidden;
+}
+
+.th-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+.th-head {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0 0 12px;
+  font-size: 11px;
+}
+
+.th-bar {
+  display: block;
+  width: 72px;
+  height: 6px;
+  margin-bottom: 6px;
+  background: var(--rc-accent-dark);
+}
+
+.th-middle {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+}
+
+.th-reading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--rc-accent-dark);
+  font-size: 12px;
+}
+
+.th-reading strong {
+  color: var(--rc-ink);
+  font-size: 28px;
+  font-weight: 300;
+}
+
+.th-dial {
+  width: min(38%, 180px);
+  height: auto;
+  flex-shrink: 0;
+}
+
+.dial-ring {
+  stroke: var(--rc-ink);
+}
+
+.dial-tick {
+  stroke: color-mix(in srgb, var(--rc-blue) 30%, transparent);
+}
+
+.dial-arc.heat {
+  stroke: var(--rc-warn);
+}
+
+.dial-arc.cool {
+  stroke: var(--rc-blue);
+}
+
+.dial-knob.heat {
+  fill: var(--rc-warn);
+  stroke: var(--rc-ink);
+}
+
+.dial-knob.cool {
+  fill: var(--rc-blue);
+  stroke: var(--rc-ink);
+}
+
+.dial-ink {
+  fill: var(--rc-ink);
+}
+
+.dial-heat {
+  fill: var(--rc-warn);
+}
+
+.dial-cool {
+  fill: var(--rc-blue);
+}
+
+.th-keys {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 8px;
+  flex-shrink: 0;
+}
+
+.th-key {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--rc-key);
+}
+
+.th-controls {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 12px;
+  flex-shrink: 0;
+}
+
+.th-modes {
+  display: flex;
+  border: 2px solid var(--rc-accent-dark);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--rc-page);
+}
+
+.th-modes span {
+  min-width: 64px;
+  height: 32px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--rc-page);
+  font-size: 11px;
+  box-shadow: inset -1px 0 0 var(--rc-accent-dark);
+}
+
+.th-modes span:last-child {
+  box-shadow: none;
+}
+
+.th-modes span.on {
+  background: var(--rc-accent-dark);
+}
+
+.th-fan {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 8px;
+  border: 2px solid var(--rc-accent-dark);
+  border-radius: 8px;
+  background: var(--rc-page);
+}
+
+.th-fan span {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.th-fan small {
+  font-size: 9px;
+}
+
+.th-fan strong {
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .t-switch {

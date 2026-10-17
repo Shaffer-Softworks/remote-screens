@@ -98,8 +98,8 @@ const isWeatherPanel = (tile: Tile) => kindOf(tile) === 'weather' && tile.full =
 const WEATHER_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const isThermostatPanel = (tile: Tile) => kindOf(tile) === 'climate' && tile.full === true
 const THERMOSTAT_MODES = [
-  { label: 'Auto', icon: 'thermostat-auto' },
-  { label: 'Heat', icon: 'fire', on: true },
+  { label: 'Heat/Cool', icon: 'sun-snowflake-variant', on: true },
+  { label: 'Heat', icon: 'fire' },
   { label: 'Cool', icon: 'snowflake' },
   { label: 'Off', icon: 'power' },
 ]
@@ -412,13 +412,21 @@ const highlight = computed(() => {
         <template v-else-if="isThermostatPanel(placement.tile)">
           <div class="th-top">
             <div class="th-head"><i class="bar th-bar" /><span>ADJUST THE TEMPERATURE</span></div>
-            <div class="th-fan">Fan<span class="on">Auto</span><span>On</span></div>
           </div>
           <div class="th-middle">
-            <span class="th-reading"><span>CURRENT TEMP</span><strong>20.5°</strong></span>
-            <span class="th-key"><MdiIcon name="minus" :size="32" /></span>
+            <span class="th-reading"><span>CURRENT TEMP</span><strong>21°</strong></span>
+            <span class="th-keys">
+              <span class="th-key"><MdiIcon name="plus" :size="28" /></span>
+              <span class="th-key"><MdiIcon name="minus" :size="28" /></span>
+            </span>
             <svg class="th-dial" viewBox="-200 -200 400 400" width="380" height="380">
-              <circle r="180" class="dial-glow" stroke-width="14" />
+              <defs>
+                <radialGradient id="th-glow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="var(--rc-blue)" stop-opacity="0.45" />
+                  <stop offset="100%" stop-color="var(--rc-ink)" stop-opacity="0.15" />
+                </radialGradient>
+              </defs>
+              <circle r="180" fill="url(#th-glow)" class="dial-ring" stroke-width="14" />
               <line
                 v-for="a in DIAL_TICKS"
                 :key="a"
@@ -430,25 +438,45 @@ const highlight = computed(() => {
                 :transform="`rotate(${a})`"
               />
               <path
-                d="M 0 180 A 180 180 0 1 1 113 -140"
+                d="M 0 180 A 180 180 0 0 1 25 -178"
                 fill="none"
-                class="dial-arc"
+                class="dial-arc heat"
                 stroke-width="14"
                 stroke-linecap="round"
               />
-              <circle cx="113" cy="-140" r="12" class="dial-knob" stroke-width="3" />
-              <text y="-30" text-anchor="middle" class="dial-ink" font-size="20">Heating</text>
-              <text y="30" text-anchor="middle" class="dial-ink" font-size="48" font-weight="300">
-                21°
+              <path
+                d="M 0 -180 A 180 180 0 0 1 -175 -45"
+                fill="none"
+                class="dial-arc cool"
+                stroke-width="14"
+                stroke-linecap="round"
+              />
+              <circle cx="25" cy="-178" r="14" class="dial-knob heat" stroke-width="4" />
+              <circle cx="-175" cy="-45" r="14" class="dial-knob cool" stroke-width="4" />
+              <text y="-40" text-anchor="middle" class="dial-ink" font-size="20">Cooling</text>
+              <text x="-36" y="28" text-anchor="middle" class="dial-heat" font-size="34" font-weight="300">
+                18°
+              </text>
+              <text x="36" y="28" text-anchor="middle" class="dial-cool" font-size="34" font-weight="300">
+                24°
               </text>
             </svg>
-            <span class="th-key"><MdiIcon name="plus" :size="32" /></span>
+            <span class="th-keys">
+              <span class="th-key"><MdiIcon name="plus" :size="28" /></span>
+              <span class="th-key"><MdiIcon name="minus" :size="28" /></span>
+            </span>
             <span class="th-reading"><span>CURRENT HUMIDITY</span><strong>45%</strong></span>
           </div>
-          <div class="th-modes">
-            <span v-for="m in THERMOSTAT_MODES" :key="m.label" :class="{ on: m.on }"
-              ><MdiIcon :name="m.icon" :size="22" />{{ m.label }}</span
-            >
+          <div class="th-controls">
+            <div class="th-modes">
+              <span v-for="m in THERMOSTAT_MODES" :key="m.label" :class="{ on: m.on }"
+                ><MdiIcon :name="m.icon" :size="22" />{{ m.label }}</span
+              >
+            </div>
+            <div class="th-fan">
+              <MdiIcon name="fan" :size="28" />
+              <span><small>Fan mode</small><strong>Auto</strong></span>
+            </div>
           </div>
         </template>
         <template v-else-if="isWeatherPanel(placement.tile)">
@@ -801,33 +829,13 @@ const highlight = computed(() => {
   align-items: flex-start;
 }
 
-.th-fan {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 28px 20px 0 0;
-  font-size: 25px;
-}
-
-.th-fan span {
-  display: grid;
-  place-items: center;
-  width: 90px;
-  height: 50px;
-  border-radius: 8px;
-  background: var(--rc-key);
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.th-fan span.on {
-  background: var(--rc-ink);
-  color: var(--rc-ink-dark);
-}
-
 .th-bar {
-  width: 100px;
+  width: 120px;
   margin-bottom: 10px;
+}
+
+.dial-ring {
+  stroke: var(--rc-ink);
 }
 
 .th-middle {
@@ -853,21 +861,25 @@ const highlight = computed(() => {
   font-weight: 300;
 }
 
-.dial-glow {
-  fill: color-mix(in srgb, var(--rc-warn) 30%, transparent);
-  stroke: var(--rc-ink);
-}
-
 .dial-tick {
-  stroke: color-mix(in srgb, var(--rc-warn) 30%, transparent);
+  stroke: color-mix(in srgb, var(--rc-blue) 30%, transparent);
 }
 
-.dial-arc {
+.dial-arc.heat {
   stroke: var(--rc-warn);
 }
 
-.dial-knob {
+.dial-arc.cool {
+  stroke: var(--rc-blue);
+}
+
+.dial-knob.heat {
   fill: var(--rc-warn);
+  stroke: var(--rc-ink);
+}
+
+.dial-knob.cool {
+  fill: var(--rc-blue);
   stroke: var(--rc-ink);
 }
 
@@ -875,40 +887,91 @@ const highlight = computed(() => {
   fill: var(--rc-ink);
 }
 
+.dial-heat {
+  fill: var(--rc-warn);
+}
+
+.dial-cool {
+  fill: var(--rc-blue);
+}
+
+.th-keys {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 24px;
+}
+
 .th-key {
   display: grid;
   place-items: center;
-  width: 64px;
-  height: 64px;
-  margin: 0 24px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   background: var(--rc-key);
 }
 
-.th-modes {
+.th-controls {
   align-self: center;
   display: flex;
-  gap: 1px;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 20px;
-  padding: 1px;
-  border-radius: 25px;
+}
+
+.th-modes {
+  display: flex;
+  border: 2px solid var(--rc-accent-dark);
+  border-radius: 10px;
   overflow: hidden;
-  background: var(--rc-ink-dim);
+  background: var(--rc-page);
 }
 
 .th-modes span {
-  width: 200px;
+  min-width: 140px;
   height: 48px;
+  padding: 0 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   background: var(--rc-page);
-  font-size: 20px;
+  font-size: 16px;
+  box-shadow: inset -1px 0 0 var(--rc-accent-dark);
+}
+
+.th-modes span:last-child {
+  box-shadow: none;
 }
 
 .th-modes span.on {
   background: var(--rc-accent-dark);
+}
+
+.th-fan {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 14px;
+  border: 2px solid var(--rc-accent-dark);
+  border-radius: 10px;
+  background: var(--rc-page);
+}
+
+.th-fan span {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.th-fan small {
+  font-size: 12px;
+}
+
+.th-fan strong {
+  font-size: 16px;
+  font-weight: 500;
 }
 
 .wx-day .soft {

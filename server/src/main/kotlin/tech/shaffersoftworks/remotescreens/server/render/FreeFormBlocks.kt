@@ -17,6 +17,7 @@ import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Node
+import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.ZoneId
 import kotlin.math.roundToInt
@@ -61,9 +62,13 @@ private object BlockMetrics {
     const val LED_MIN_DP = 8f
     const val LED_MAX_DP = 64f
     const val LED_CORNER_DIVISOR = 2f
+    /** The size the RPI thermostat page was drawn for (ThermostatPanel BASE_W / BASE_H). */
+    const val THERMOSTAT_NATURAL_W = 1280f
+    const val THERMOSTAT_NATURAL_H = 650f
 }
 
 /** Natural size of a composite free-form block, for layout measurement. */
+@Suppress("CyclomaticComplexMethod")
 internal fun blockNatural(node: Node): Dims? = when (node.type) {
     "timerkeys" -> Dims(BlockMetrics.TIMER_NATURAL_W, BlockMetrics.TIMER_NATURAL_H)
     "todolist" -> {
@@ -84,6 +89,7 @@ internal fun blockNatural(node: Node): Dims? = when (node.type) {
     }
     "presence" -> Dims(BlockMetrics.PRESENCE_NATURAL_W, BlockMetrics.PRESENCE_NATURAL_H)
     "led" -> (node.props["size"]?.toFloatOrNull() ?: BlockMetrics.LED_DEFAULT_DP).let { Dims(it, it) }
+    "thermostat" -> Dims(BlockMetrics.THERMOSTAT_NATURAL_W, BlockMetrics.THERMOSTAT_NATURAL_H)
     else -> null
 }
 
@@ -96,6 +102,7 @@ internal fun DocContext.blockNode(node: Node, self: Dims, axis: Axis, pages: Pag
         "forecast" -> forecastNode(node, self, axis, pages)
         "presence" -> presenceNode(node, self, axis, pages)
         "led" -> ledNode(node, axis, pages)
+        "thermostat" -> thermostatNode(node, self, axis, pages)
     }
 }
 
@@ -350,6 +357,33 @@ private fun DocContext.presenceNode(node: Node, self: Dims, axis: Axis, pages: P
                 }
             }
         }
+    }
+}
+
+/**
+ * The RPI thermostat page as a free-form leaf: current temp and humidity, the dial with +/−, Heat/Cool modes and
+ * Fan mode — the same drawing as a full climate tile ([thermostatPanel]).
+ */
+private fun DocContext.thermostatNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
+    val entityId = node.bind?.entityId
+    val contentW = (self.w - node.style.padX).coerceAtLeast(0f)
+    val contentH = (self.h - node.style.padY).coerceAtLeast(0f)
+    val modifier = styled(node, axis, pages, measured(node, axis, self))
+    if (entityId == null) {
+        scope.Box(
+            modifier.background(role(Role.PAGE)),
+            horizontal = RcHorizontalPositioning.Center,
+            vertical = RcVerticalPositioning.Center,
+        ) {
+            this@thermostatNode.label("—", Type.BODY, this@thermostatNode.role(Role.INK_DIM))
+        }
+        return
+    }
+    scope.Box(modifier) {
+        this@thermostatNode.thermostatPanel(
+            Tile(id = node.id, entityId = entityId, full = true),
+            TileBox(0f, 0f, contentW, contentH, 1, 1, full = true),
+        )
     }
 }
 

@@ -131,17 +131,19 @@ class RenderTest {
         val doc = ScreenRenderer.render(DemoLayout.screen(), tablet, input())
         val states = ha.states.value
         val vars = doc.vars(states)
-        assertEquals("20.5°", vars["t.c1.current"]?.value)
+        assertEquals("21.0°", vars["t.c1.current"]?.value)
         assertEquals("45%", vars["t.c1.humidity"]?.value)
-        assertEquals("Heating", vars["t.c1.action"]?.value)
-        assertEquals(Role.WARN.argb, vars["t.c1.dial"]?.asColor())
-        assertEquals(Role.ACCENT_DARK.argb, vars["o.c1.seg.1.bg"]?.asColor(), "Heat is lit (Auto, Heat, Cool, Off)")
-        val cooling = doc.vars(states + ("climate.living_room" to states.getValue("climate.living_room").with("cool")))
-        assertEquals(Role.ACCENT_DARK.argb, cooling["o.c1.seg.2.bg"]?.asColor())
-        assertTrue("c1|temperature|+0.5" in doc.docContext.predicted)
-        assertEquals(Role.INK.argb, vars["o.c1.fan.0.bg"]?.asColor(), "the fan's Auto is lit")
-        assertEquals(Role.KEY.argb, vars["o.c1.fan.1.bg"]?.asColor())
+        assertEquals("Cooling", vars["t.c1.action"]?.value)
+        assertEquals(Role.BLUE.argb, vars["t.c1.dial"]?.asColor())
+        assertEquals("18°", vars["t.c1.low"]?.value)
+        assertEquals("24°", vars["t.c1.high"]?.value)
+        assertEquals(Role.ACCENT_DARK.argb, vars["o.c1.seg.0.bg"]?.asColor(), "Heat/Cool is lit")
+        val heatOnly = doc.vars(states + ("climate.living_room" to states.getValue("climate.living_room").with("heat")))
+        assertEquals(Role.ACCENT_DARK.argb, heatOnly["o.c1.seg.1.bg"]?.asColor())
+        assertTrue("c1|temperature_low|+0.5" in doc.docContext.predicted)
+        assertTrue("c1|temperature_high|-0.5" in doc.docContext.predicted)
         assertTrue("c1|fan|on" in doc.docContext.predicted)
+        assertEquals("Auto", vars["t.c1.fan"]?.value)
     }
 
     @Test

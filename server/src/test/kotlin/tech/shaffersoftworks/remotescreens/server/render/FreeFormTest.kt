@@ -105,6 +105,12 @@ class FreeFormTest {
                 Node("days", "forecast", bind = NodeBinding("weather.home"), props = mapOf("days" to "3")),
                 Node("people", "presence", props = mapOf("people" to "person.sam,person.alex")),
                 Node("dot", "led", bind = NodeBinding("light.living_room"), props = mapOf("size" to "20")),
+                Node(
+                    "climatePanel",
+                    "thermostat",
+                    size = NodeSize("fill", "dp:320"),
+                    bind = NodeBinding("climate.living_room"),
+                ),
             )),
             Node(
                 "tabs",
@@ -244,6 +250,26 @@ class FreeFormTest {
         assertTrue(doc.docContext.predicted.keys.any { it.startsWith("heat|temperature|-") })
         val tile = screen(everyType).pages.first().allTiles().first { it.id == "heat" }
         assertEquals("climate", tile.effectiveKind())
+    }
+
+    @Test
+    fun aThermostatComponentStepsAndSetsModesThroughTheRouter() {
+        val doc = ScreenRenderer.render(screen(everyType), tablet, input())
+        assertTrue(
+            doc.docContext.predicted.keys.any { it.startsWith("climatePanel|temperature_low|+") },
+            "predicted: ${doc.docContext.predicted.keys}",
+        )
+        assertTrue(doc.docContext.predicted.keys.any { it.startsWith("climatePanel|temperature_high|-") })
+        assertTrue(doc.docContext.predicted.keys.any { it.startsWith("climatePanel|mode|") })
+        val tile = screen(everyType).pages.first().allTiles().first { it.id == "climatePanel" }
+        assertEquals("climate", tile.effectiveKind())
+        val states = ha.states.value
+        val vars = doc.vars(states)
+        assertTrue(vars.containsKey("t.climatePanel.current"))
+        assertTrue(vars.containsKey("t.climatePanel.dial"))
+        assertTrue(vars.containsKey("t.climatePanel.sweepLow"))
+        assertTrue(vars.containsKey("t.climatePanel.low"))
+        assertTrue(vars.containsKey("t.climatePanel.high"))
     }
 
     @Test

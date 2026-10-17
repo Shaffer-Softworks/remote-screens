@@ -118,6 +118,7 @@
   "ui.current_temp": "Current temp",
   "ui.current_humidity": "Current humidity",
   "ui.fan": "Fan",
+  "ui.fan_mode": "Fan mode",
   "ui.no_todos": "No open to-dos",
   "ui.cancel": "Cancel",
   "ui.finish": "Finish",
