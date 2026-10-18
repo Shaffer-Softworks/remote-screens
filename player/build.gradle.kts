@@ -70,6 +70,10 @@ kotlin {
     jvmToolchain(21)
 }
 
+detekt {
+    baseline.set(file("detekt-baseline.xml"))
+}
+
 dependencies {
     implementation(project(":shared"))
 

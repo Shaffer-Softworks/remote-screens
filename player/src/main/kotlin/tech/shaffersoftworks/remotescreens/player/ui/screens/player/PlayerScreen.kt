@@ -129,7 +129,10 @@ private fun RemoteScreen(
 private fun PlayerDialogs(viewState: PlayerViewModel.ViewState, viewModel: PlayerViewModel) {
     viewState.settingsDialog?.let { settingsDialog ->
         if (settingsDialog.isForgetConfirmationVisible) {
-            ForgetScreenDialog(onConfirm = viewModel::onForgetConfirmed, onDismiss = viewModel::onForgetCancelled)
+            ForgetScreenDialog(
+                onConfirm = viewModel::onForgetConfirmed,
+                onDismiss = viewModel::onForgetCancelled,
+            )
         } else {
             ScreenSettingsDialog(
                 settings = viewState.screenSettings,
@@ -157,7 +160,10 @@ private fun PlayerDialogs(viewState: PlayerViewModel.ViewState, viewModel: Playe
         }
     }
     if (viewState.isKioskPinDialogVisible) {
-        KioskPinDialog(onConfirm = viewModel::onKioskPinEntered, onDismiss = viewModel::onKioskPinDismissed)
+        KioskPinDialog(
+            onConfirm = viewModel::onKioskPinEntered,
+            onDismiss = viewModel::onKioskPinDismissed,
+        )
     }
     viewState.addressDialog?.let { addressDialog ->
         AddressDialog(
@@ -179,7 +185,9 @@ private fun PlayerDialogs(viewState: PlayerViewModel.ViewState, viewModel: Playe
 @Composable
 private fun PlayerWindowEffects(viewState: PlayerViewModel.ViewState) {
     val activity = LocalActivity.current ?: return
-    LaunchedEffect(viewState.brightnessPercent) { activity.setWindowBrightness(viewState.brightnessPercent) }
+    LaunchedEffect(
+        viewState.brightnessPercent,
+    ) { activity.setWindowBrightness(viewState.brightnessPercent) }
     LaunchedEffect(viewState.screenSettings.orientation) {
         activity.applyScreenOrientation(viewState.screenSettings.orientation)
     }
@@ -212,18 +220,37 @@ private fun PlayerEvents(viewModel: PlayerViewModel) {
 private fun handleEvent(context: Context, activity: Activity?, event: PlayerEvent) {
     when (event) {
         is PlayerEvent.ShowMessage -> Toast.makeText(context, event.text, Toast.LENGTH_LONG).show()
-        is PlayerEvent.ShowMessageResource -> Toast.makeText(context, event.messageRes, Toast.LENGTH_LONG).show()
+        is PlayerEvent.ShowMessageResource -> Toast.makeText(
+            context,
+            event.messageRes,
+            Toast.LENGTH_LONG,
+        ).show()
         is PlayerEvent.OpenUrl -> runCatching {
-            context.startActivity(Intent(Intent.ACTION_VIEW, event.url.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            context.startActivity(
+                Intent(
+                    Intent.ACTION_VIEW,
+                    event.url.toUri(),
+                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
         }
         PlayerEvent.OpenInstallPermissionSettings -> context.startActivity(
-            Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, "package:${context.packageName}".toUri()),
+            Intent(
+                Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                "package:${context.packageName}".toUri(),
+            ),
         )
         PlayerEvent.OpenOverlayPermissionSettings -> context.startActivity(
-            Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()),
+            Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                "package:${context.packageName}".toUri(),
+            ),
         )
-        PlayerEvent.OpenScreenOffAdminSettings -> context.startActivity(screenOffAdminIntent(context))
-        PlayerEvent.RequestUnrestrictedBattery -> context.startActivity(unrestrictedBatteryIntent(context))
+        PlayerEvent.OpenScreenOffAdminSettings -> context.startActivity(
+            screenOffAdminIntent(context),
+        )
+        PlayerEvent.RequestUnrestrictedBattery -> context.startActivity(
+            unrestrictedBatteryIntent(context),
+        )
         PlayerEvent.RequestCameraPermission -> Unit
         // Pinning comes back when the activity resumes after the confirmation.
         PlayerEvent.StopScreenPinning -> activity?.stopLockTask()
@@ -236,11 +263,17 @@ private fun handleEvent(context: Context, activity: Activity?, event: PlayerEven
 /** Google Play only allows asking directly when Doze breaks the app; the add-on's sideloaded build qualifies. */
 @SuppressLint("BatteryLife")
 internal fun unrestrictedBatteryIntent(context: Context): Intent =
-    Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, "package:${context.packageName}".toUri())
+    Intent(
+        Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+        "package:${context.packageName}".toUri(),
+    )
 
 private fun screenOffAdminIntent(context: Context): Intent {
     val adminComponent = ComponentName(context, ScreenOffAdminReceiver::class.java)
     return Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
         .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
-        .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, context.getString(R.string.screen_off_explanation))
+        .putExtra(
+            DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+            context.getString(R.string.screen_off_explanation),
+        )
 }

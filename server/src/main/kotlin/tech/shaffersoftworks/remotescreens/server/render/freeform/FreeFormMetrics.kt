@@ -181,8 +181,14 @@ internal sealed interface Spec {
     companion object {
         fun of(spec: String): Spec = when {
             spec == "fill" -> Fill
-            spec.startsWith("dp:") -> spec.removePrefix("dp:").toFloatOrNull()?.let { Dp(it) } ?: Wrap
-            spec.startsWith("weight:") -> spec.removePrefix("weight:").toFloatOrNull()?.takeIf { it > 0f }?.let { Weight(it) } ?: Wrap
+            spec.startsWith(
+                "dp:",
+            ) -> spec.removePrefix("dp:").toFloatOrNull()?.let { Dp(it) } ?: Wrap
+            spec.startsWith(
+                "weight:",
+            ) -> spec.removePrefix(
+                "weight:",
+            ).toFloatOrNull()?.takeIf { it > 0f }?.let { Weight(it) } ?: Wrap
             else -> Wrap
         }
     }
@@ -190,7 +196,10 @@ internal sealed interface Spec {
 
 /** What a wrapped leaf takes when nothing else says, so a weight or a card has something to share out. */
 internal fun Node.natural(): Dims = when (type) {
-    "text" -> Dims(Metrics.TEXT_NATURAL_W, (props["fontSize"]?.toFloatOrNull() ?: Type.TITLE) * Metrics.TEXT_LINE_HEIGHT)
+    "text" -> Dims(
+        Metrics.TEXT_NATURAL_W,
+        (props["fontSize"]?.toFloatOrNull() ?: Type.TITLE) * Metrics.TEXT_LINE_HEIGHT,
+    )
     "icon" -> (props["size"]?.toFloatOrNull() ?: Metrics.ICON_DEFAULT_DP).let { Dims(it, it) }
     "button" -> Dims(Metrics.BUTTON_NATURAL_W, Metrics.BUTTON_NATURAL_H)
     "spacer" -> Dims(Metrics.SPACER_DEFAULT_DP, Metrics.SPACER_DEFAULT_DP)
@@ -198,7 +207,10 @@ internal fun Node.natural(): Dims = when (type) {
     "slider" -> Dims(Metrics.SLIDER_NATURAL_W, Metrics.SLIDER_NATURAL_H)
     "image", "tile" -> Dims(Metrics.IMAGE_NATURAL_W, Metrics.IMAGE_NATURAL_H)
     "clock" -> (props["fontSize"]?.toFloatOrNull() ?: Type.DISPLAY).let { sp ->
-        Dims(maxOf(Metrics.CLOCK_MIN_W, sp * Metrics.CLOCK_WIDTH_PER_SP), sp * Metrics.TEXT_LINE_HEIGHT + if (props["show"] == "both") Metrics.CLOCK_DATE_EXTRA_H else 0f)
+        Dims(
+            maxOf(Metrics.CLOCK_MIN_W, sp * Metrics.CLOCK_WIDTH_PER_SP),
+            sp * Metrics.TEXT_LINE_HEIGHT + if (props["show"] == "both") Metrics.CLOCK_DATE_EXTRA_H else 0f,
+        )
     }
     "badge" -> Dims(Metrics.BADGE_NATURAL_W, Metrics.BADGE_NATURAL_H)
     "avatar" -> (props["size"]?.toFloatOrNull() ?: Metrics.AVATAR_DEFAULT_DP).let { Dims(it, it) }
@@ -209,14 +221,23 @@ internal fun Node.natural(): Dims = when (type) {
     "choices" -> Dims(Metrics.CHOICES_NATURAL_W, Metrics.CHOICES_NATURAL_H)
     "gauge" -> (props["size"]?.toFloatOrNull() ?: Metrics.GAUGE_DEFAULT_DP).let { Dims(it, it) }
     "analog" -> (props["size"]?.toFloatOrNull() ?: Metrics.ANALOG_DEFAULT_DP).let { Dims(it, it) }
-    "iconbutton" -> (props["size"]?.toFloatOrNull() ?: Metrics.ICON_BUTTON_DEFAULT_DP).let { Dims(it, it) }
-    "keys" -> (props["size"]?.toFloatOrNull() ?: Metrics.KEYS_DEFAULT_DP).let { Dims(it * Metrics.KEYS_COLS + Metrics.KEYS_GAP_TOTAL_DP, it) }
+    "iconbutton" -> (props["size"]?.toFloatOrNull() ?: Metrics.ICON_BUTTON_DEFAULT_DP).let { Dims(
+        it,
+        it,
+    ) }
+    "keys" -> (props["size"]?.toFloatOrNull() ?: Metrics.KEYS_DEFAULT_DP).let { Dims(
+        it * Metrics.KEYS_COLS + Metrics.KEYS_GAP_TOTAL_DP,
+        it,
+    ) }
     "swatches" -> (props["size"]?.toFloatOrNull() ?: Metrics.SWATCH_DEFAULT_DP).let { sizeSpec ->
         val count = if (props["show"] == "white") Metrics.SWATCH_WHITE_COUNT else Metrics.SWATCH_HUE_COUNT
         Dims(sizeSpec * count + Metrics.SWATCH_GAP_DP * (count - 1), sizeSpec)
     }
     "keypad" -> (props["size"]?.toFloatOrNull() ?: Metrics.KEYPAD_DEFAULT_DP).let {
-        Dims(it * Metrics.KEYPAD_KEY_WIDTH_RATIO * Metrics.KEYPAD_COLS + Metrics.KEYPAD_WIDTH_PAD_DP, Metrics.KEYPAD_DEFAULT_DP + Metrics.KEYPAD_ROWS * (it + Metrics.KEYPAD_ROW_GAP_DP))
+        Dims(
+            it * Metrics.KEYPAD_KEY_WIDTH_RATIO * Metrics.KEYPAD_COLS + Metrics.KEYPAD_WIDTH_PAD_DP,
+            Metrics.KEYPAD_DEFAULT_DP + Metrics.KEYPAD_ROWS * (it + Metrics.KEYPAD_ROW_GAP_DP),
+        )
     }
     "dial" -> (props["size"]?.toFloatOrNull() ?: Metrics.DIAL_DEFAULT_DP).let {
         Dims(it, it + Metrics.STEPPER_KEY_DP + Metrics.KEYS_GAP_DP)
@@ -227,7 +248,9 @@ internal fun Node.natural(): Dims = when (type) {
         blockNatural(this) ?: Dims(Metrics.TEXT_NATURAL_W, Metrics.TEXT_NATURAL_W)
     "markdown" -> Dims(
         Metrics.MARKDOWN_NATURAL_W,
-        Metrics.MARKDOWN_LINE_H * MarkdownLines.parse(props["text"].orEmpty()).size.coerceAtLeast(1),
+        Metrics.MARKDOWN_LINE_H * MarkdownLines.parse(
+            props["text"].orEmpty(),
+        ).size.coerceAtLeast(1),
     )
     "tabs" -> Dims(Metrics.TABS_NATURAL_W, Metrics.TABS_NATURAL_H)
     else -> Dims(0f, 0f)
@@ -239,26 +262,36 @@ internal fun content(node: Node): Dims {
     fun side(spec: String, natural: Float) = (Spec.of(spec) as? Spec.Dp)?.value ?: natural
     if (node.type !in setOf("column", "row", "box", "flow", "tabs")) {
         val nat = node.natural()
-        val lines = if (node.type == "text") (node.props["lines"]?.toFloatOrNull() ?: 1f).coerceAtLeast(1f) else 1f
+        val lines = if (node.type == "text") {
+            (node.props["lines"]?.toFloatOrNull() ?: 1f).coerceAtLeast(
+                1f,
+            )
+        } else {
+            1f
+        }
         return Dims(side(node.size.width, nat.w), side(node.size.height, nat.h * lines))
     }
     val children = node.children.filter { !it.hidden }.map(::content)
     val gap = (node.props["gap"]?.toFloatOrNull() ?: 0f) * (children.size - 1).coerceAtLeast(0)
     val inner = when (node.type) {
-        "row" -> Dims(children.sumOf { it.w.toDouble() }.toFloat() + gap, children.maxOfOrNull { it.h } ?: 0f)
-        "column" -> Dims(children.maxOfOrNull { it.w } ?: 0f, children.sumOf { it.h.toDouble() }.toFloat() + gap)
+        "row" -> Dims(
+            children.sumOf { it.w.toDouble() }.toFloat() + gap,
+            children.maxOfOrNull { it.h } ?: 0f,
+        )
+        "column" -> Dims(
+            children.maxOfOrNull { it.w } ?: 0f,
+            children.sumOf { it.h.toDouble() }.toFloat() + gap,
+        )
         "tabs" -> Dims(
             children.maxOfOrNull { it.w } ?: Metrics.TABS_NATURAL_W,
             (children.maxOfOrNull { it.h } ?: 0f) + Metrics.TABS_STRIP_H + gap,
         )
         else -> Dims(children.maxOfOrNull { it.w } ?: 0f, children.maxOfOrNull { it.h } ?: 0f)
     }
-    return Dims(side(node.size.width, inner.w + node.style.padX), side(node.size.height, inner.h + node.style.padY))
+    return Dims(
+        side(node.size.width, inner.w + node.style.padX),
+        side(node.size.height, inner.h + node.style.padY),
+    )
 }
 
 internal fun fills(spec: String) = spec == "fill" || spec.startsWith("weight:")
-
-/**
- * A free-form page: [root] laid out in the content area at ([xDp], [yDp]), [wDp] by [hDp]. Containers become the
- * player's rows, columns and boxes; leaves reuse the widgets the tiles draw with.
- */

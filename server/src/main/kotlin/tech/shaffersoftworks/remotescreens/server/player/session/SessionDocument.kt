@@ -36,7 +36,11 @@ internal class SessionDocument(
     )
 
     suspend fun renderScreen(screen: Screen): RenderedDoc =
-        ScreenRenderer.render(screen, host.device, renderInput(context.renderDataRepository.forScreen(screen)))
+        ScreenRenderer.render(
+            screen,
+            host.device,
+            renderInput(context.renderDataRepository.forScreen(screen)),
+        )
 
     suspend fun showMain(screen: Screen) {
         val rebuild: suspend () -> RenderedDoc? = { host.screen()?.let { renderScreen(it) } }
@@ -51,7 +55,11 @@ internal class SessionDocument(
         timeoutSeconds: Int = 0,
     ) {
         val states = homeAssistant.states.value
-        val shown = ShownDocument(slot, renderedDoc, rebuild).also { it.revision = ++host.lastRevision }
+        val shown = ShownDocument(
+            slot,
+            renderedDoc,
+            rebuild,
+        ).also { it.revision = ++host.lastRevision }
         val vars = renderedDoc.vars(states)
         shown.sentVars = vars
         shownDocuments[slot] = shown
@@ -86,7 +94,12 @@ internal class SessionDocument(
             val changed = vars.values.filter { shown.sentVars[it.name] != it }
             shown.sentVars = vars
             if (changed.isNotEmpty()) {
-                host.send(ServerMessage.Vars(changed, shown.renderedDoc.predictions(states, host::foresee)))
+                host.send(
+                    ServerMessage.Vars(
+                        changed,
+                        shown.renderedDoc.predictions(states, host::foresee),
+                    ),
+                )
             }
             media.sendPictures(shown, states, isForced = false)
             for (map in shown.renderedDoc.docContext.maps) media.sendMap(shown, map, states)
@@ -108,7 +121,12 @@ internal class SessionDocument(
         for (shown in shownDocuments.values) {
             val vars = shown.renderedDoc.vars(states)
             shown.sentVars = vars
-            host.send(ServerMessage.Vars(vars.values.toList(), shown.renderedDoc.predictions(states, host::foresee)))
+            host.send(
+                ServerMessage.Vars(
+                    vars.values.toList(),
+                    shown.renderedDoc.predictions(states, host::foresee),
+                ),
+            )
         }
     }
 
@@ -117,7 +135,12 @@ internal class SessionDocument(
         media.warmCameraStream(entityId = entityId, kind = kind)
         val build: suspend () -> RenderedDoc? = {
             val renderData = context.renderDataRepository.forCard(entityId, kind)
-            CardRenderer.render(entityId ?: "card.$kind", kind, host.device, renderInput(renderData))
+            CardRenderer.render(
+                entityId ?: "card.$kind",
+                kind,
+                host.device,
+                renderInput(renderData),
+            )
         }
         val renderedDoc = buildMutex.withLock { build() } ?: return
         show(Slot.OVERLAY, renderedDoc, build)
@@ -127,7 +150,11 @@ internal class SessionDocument(
         host.currentAlert = alert
         media.warmCameraStream(camera = alert.camera)
         val build: suspend () -> RenderedDoc? = {
-            host.currentAlert?.let { AlertRenderer.render(it, host.device, renderInput(RenderData())) }
+            host.currentAlert?.let { AlertRenderer.render(
+                it,
+                host.device,
+                renderInput(RenderData()),
+            ) }
         }
         val renderedDoc = buildMutex.withLock { build() } ?: return
         host.send(ServerMessage.Wake(true))

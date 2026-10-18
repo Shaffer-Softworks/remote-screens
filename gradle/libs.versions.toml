@@ -88,6 +88,7 @@ osm-android = { module = "org.osmdroid:osmdroid-android", version.ref = "osm" }
 osm-compose = { module = "tech.utsmankece:osm-android-compose", version.ref = "osmCompose" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
+detekt-rules-ktlint-wrapper = { module = "dev.detekt:detekt-rules-ktlint-wrapper", version.ref = "detekt" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

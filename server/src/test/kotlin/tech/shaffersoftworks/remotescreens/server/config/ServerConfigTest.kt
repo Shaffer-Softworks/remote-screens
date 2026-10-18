@@ -24,12 +24,21 @@ class ServerConfigTest {
     @Test
     fun mapTilesComeFromTheAddonOptions() {
         val dir = Files.createTempDirectory("config").toFile()
-        File(dir, "options.json").writeText("""{"map_tiles": "https://t.example/{z}/{x}/{y}.png"}""")
+        File(
+            dir,
+            "options.json",
+        ).writeText("""{"map_tiles": "https://t.example/{z}/{x}/{y}.png"}""")
         val env = mapOf("REMOTE_SCREENS_DEMO" to "1", "REMOTE_SCREENS_DATA" to dir.path)
         val override = env + ("REMOTE_SCREENS_MAP_TILES" to "https://e.example/{z}/{x}/{y}")
 
-        assertEquals("https://t.example/{z}/{x}/{y}.png", ServerConfig.fromEnvironment(env).mapTileUrl)
-        assertEquals("https://e.example/{z}/{x}/{y}", ServerConfig.fromEnvironment(override).mapTileUrl)
+        assertEquals(
+            "https://t.example/{z}/{x}/{y}.png",
+            ServerConfig.fromEnvironment(env).mapTileUrl,
+        )
+        assertEquals(
+            "https://e.example/{z}/{x}/{y}",
+            ServerConfig.fromEnvironment(override).mapTileUrl,
+        )
     }
 
     @Test

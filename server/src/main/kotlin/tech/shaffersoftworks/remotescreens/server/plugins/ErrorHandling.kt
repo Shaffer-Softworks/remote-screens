@@ -20,13 +20,22 @@ fun Application.configureErrorHandling() {
     val logger = LoggerFactory.getLogger("tech.shaffersoftworks.remotescreens.server.ErrorHandling")
     install(StatusPages) {
         exception<BadRequestException> { call, cause ->
-            call.respond(HttpStatusCode.BadRequest, ErrorResponse(cause.message ?: BAD_REQUEST_MESSAGE))
+            call.respond(
+                HttpStatusCode.BadRequest,
+                ErrorResponse(cause.message ?: BAD_REQUEST_MESSAGE),
+            )
         }
         exception<ContentTransformationException> { call, cause ->
-            call.respond(HttpStatusCode.BadRequest, ErrorResponse(cause.message ?: BAD_REQUEST_MESSAGE))
+            call.respond(
+                HttpStatusCode.BadRequest,
+                ErrorResponse(cause.message ?: BAD_REQUEST_MESSAGE),
+            )
         }
         exception<SerializationException> { call, cause ->
-            call.respond(HttpStatusCode.BadRequest, ErrorResponse(cause.message ?: BAD_REQUEST_MESSAGE))
+            call.respond(
+                HttpStatusCode.BadRequest,
+                ErrorResponse(cause.message ?: BAD_REQUEST_MESSAGE),
+            )
         }
         exception<Throwable> { call, cause ->
             if (isAbandoned(cause)) {
@@ -34,7 +43,10 @@ fun Application.configureErrorHandling() {
                 return@exception
             }
             logger.error("Request failed", cause)
-            call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Error"))
+            call.respond(
+                HttpStatusCode.InternalServerError,
+                ErrorResponse(cause.message ?: "Error"),
+            )
         }
     }
 }

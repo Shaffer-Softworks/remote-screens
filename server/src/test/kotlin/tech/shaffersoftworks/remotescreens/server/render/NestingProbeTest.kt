@@ -25,13 +25,29 @@ class NestingProbeTest {
         val bytes = Rc.document(100, 100, "nested") {
             Box(Modifier.size(50f, 50f)) { Text(remoteNamedText("USER:inner", "x")) }
         }
-        assertEquals(emptyList(), names(bytes), "if this fails, alpha20's loss is fixed and DocContext.build may go back to one pass")
+        assertEquals(
+            emptyList(),
+            names(bytes),
+            "if this fails, alpha20's loss is fixed and DocContext.build may go back to one pass",
+        )
     }
 
     @Test
     fun buildDeclaresItAtTheTop() {
         val i18n = I18n("en", emptyMap(), emptyMap(), true)
-        val (bytes, _) = DocContext.build(100, 100, "nested", { DocContext(Units(1f), Themes.RPI, i18n, emptyMap(), HomeAssistantConfig(), RenderData()) }) { docContext ->
+        val (bytes, _) = DocContext.build(
+            100,
+            100,
+            "nested",
+            { DocContext(
+                Units(1f),
+                Themes.RPI,
+                i18n,
+                emptyMap(),
+                HomeAssistantConfig(),
+                RenderData(),
+            ) },
+        ) { docContext ->
             Box(Modifier.size(50f, 50f)) { Text(docContext.text("inner")) }
         }
         assertEquals(listOf("USER:inner"), names(bytes))

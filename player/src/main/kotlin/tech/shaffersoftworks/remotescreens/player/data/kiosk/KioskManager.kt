@@ -150,12 +150,18 @@ class KioskManager @Inject constructor(
 
     private fun setKioskPolicies(enable: Boolean) {
         try {
-            KIOSK_USER_RESTRICTIONS.forEach { restriction -> setUserRestriction(restriction, enable) }
+            KIOSK_USER_RESTRICTIONS.forEach { restriction -> setUserRestriction(
+                restriction,
+                enable,
+            ) }
             devicePolicyManager.setStatusBarDisabled(adminComponent, enable)
             devicePolicyManager.setKeyguardDisabled(adminComponent, enable)
             setAsHomeApp(enable)
             if (enable) {
-                devicePolicyManager.setLockTaskPackages(adminComponent, arrayOf(context.packageName))
+                devicePolicyManager.setLockTaskPackages(
+                    adminComponent,
+                    arrayOf(context.packageName),
+                )
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     devicePolicyManager.setLockTaskFeatures(
                         adminComponent,
@@ -190,7 +196,10 @@ class KioskManager @Inject constructor(
                 ComponentName(context, MainActivity::class.java),
             )
         } else {
-            devicePolicyManager.clearPackagePersistentPreferredActivities(adminComponent, context.packageName)
+            devicePolicyManager.clearPackagePersistentPreferredActivities(
+                adminComponent,
+                context.packageName,
+            )
         }
     }
 
@@ -198,7 +207,10 @@ class KioskManager @Inject constructor(
         /** The admin extra the add-on's enrollment code puts its `host:port` in. */
         private const val EXTRA_SERVER = "server"
 
-        fun mainActivityIntent(context: Context): Intent = Intent(context, MainActivity::class.java).addFlags(
+        fun mainActivityIntent(context: Context): Intent = Intent(
+            context,
+            MainActivity::class.java,
+        ).addFlags(
             Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP,
         )
     }

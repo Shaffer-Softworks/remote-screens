@@ -61,7 +61,9 @@ fun ScreenSettingsDialog(
     onRemoveDeviceOwner: () -> Unit,
 ) {
     var brightnessPercent by remember(settings) {
-        mutableFloatStateOf(settings.brightness.coerceIn(MIN_BRIGHTNESS_PERCENT, MAX_BRIGHTNESS_PERCENT).toFloat())
+        mutableFloatStateOf(
+            settings.brightness.coerceIn(MIN_BRIGHTNESS_PERCENT, MAX_BRIGHTNESS_PERCENT).toFloat(),
+        )
     }
     var isDarkMode by remember(settings) { mutableStateOf(settings.darkMode) }
     var standbyChoiceIndex by remember(settings) {
@@ -95,7 +97,10 @@ fun ScreenSettingsDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(stringResource(R.string.dark_mode))
-                    Switch(checked = isDarkMode, onCheckedChange = { enabled -> isDarkMode = enabled })
+                    Switch(
+                        checked = isDarkMode,
+                        onCheckedChange = { enabled -> isDarkMode = enabled },
+                    )
                 }
                 Text(stringResource(R.string.standby, standbyLabel(standbyMinutes)))
                 Slider(
@@ -108,13 +113,19 @@ fun ScreenSettingsDialog(
                     text = stringResource(R.string.server, server ?: "—"),
                     style = MaterialTheme.typography.bodySmall,
                 )
-                TextButton(onClick = onChangeServer) { Text(stringResource(R.string.change_server)) }
+                TextButton(
+                    onClick = onChangeServer,
+                ) { Text(stringResource(R.string.change_server)) }
                 TextButton(onClick = onForget) { Text(stringResource(R.string.forget)) }
                 if (canOfferSelfStart) {
-                    TextButton(onClick = onAllowSelfStart) { Text(stringResource(R.string.allow_self_start)) }
+                    TextButton(
+                        onClick = onAllowSelfStart,
+                    ) { Text(stringResource(R.string.allow_self_start)) }
                 }
                 if (canOfferScreenOff) {
-                    TextButton(onClick = onAllowScreenOff) { Text(stringResource(R.string.allow_screen_off)) }
+                    TextButton(
+                        onClick = onAllowScreenOff,
+                    ) { Text(stringResource(R.string.allow_screen_off)) }
                 }
                 if (canOfferUnrestrictedBattery) {
                     TextButton(onClick = onAllowUnrestrictedBattery) {
@@ -149,7 +160,9 @@ fun ScreenSettingsDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(brightnessPercent.roundToInt(), isDarkMode, standbyMinutes) }) {
+            TextButton(
+                onClick = { onConfirm(brightnessPercent.roundToInt(), isDarkMode, standbyMinutes) },
+            ) {
                 Text(stringResource(R.string.ok))
             }
         },
@@ -161,15 +174,25 @@ fun ScreenSettingsDialog(
 
 @Composable
 private fun standbyLabel(standbyMinutes: Int): String =
-    if (standbyMinutes == 0) stringResource(R.string.never) else stringResource(R.string.minutes, standbyMinutes)
+    if (standbyMinutes == 0) {
+        stringResource(
+            R.string.never,
+        )
+    } else {
+        stringResource(R.string.minutes, standbyMinutes)
+    }
 
 @Composable
 fun ForgetScreenDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         text = { Text(stringResource(R.string.forget_body)) },
-        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.forget)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+        confirmButton = { TextButton(
+            onClick = onConfirm,
+        ) { Text(stringResource(R.string.forget)) } },
+        dismissButton = { TextButton(
+            onClick = onDismiss,
+        ) { Text(stringResource(R.string.cancel)) } },
     )
 }
 

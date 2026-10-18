@@ -99,7 +99,11 @@ class CameraStreamService(
         onBody: suspend (contentType: String?, body: ByteReadChannel) -> Unit,
     ): Int? {
         forgetIdle()
-        if (tokens.computeIfPresent(token) { _, _ -> now() } == null || !STREAM_FILE.matches(file)) return null
+        if (tokens.computeIfPresent(
+                token,
+            ) { _, _ -> now() } == null || !STREAM_FILE.matches(file)) {
+            return null
+        }
         val suffix = if (query.isEmpty()) "" else "?$query"
         return homeAssistant.stream("/api/hls/$token/$file$suffix", onBody)
     }

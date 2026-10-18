@@ -25,7 +25,10 @@ class ScreenPowerRepository @Inject constructor(
     private val powerManager = context.getSystemService(PowerManager::class.java)
 
     val adminComponent = ComponentName(context, ScreenOffAdminReceiver::class.java)
-    private val deviceOwnerComponent = ComponentName(context, LockTaskDeviceAdminReceiver::class.java)
+    private val deviceOwnerComponent = ComponentName(
+        context,
+        LockTaskDeviceAdminReceiver::class.java,
+    )
 
     /** While the screen is off the CPU must keep running, or the add-on could not wake it again. */
     private val keepConnectedLock: PowerManager.WakeLock =
@@ -37,7 +40,9 @@ class ScreenPowerRepository @Inject constructor(
 
     /** The device owner admin holds the same lock policy, so an enrolled kiosk can turn the screen off too. */
     fun canTurnScreenOff(): Boolean =
-        devicePolicyManager.isAdminActive(adminComponent) || devicePolicyManager.isAdminActive(deviceOwnerComponent)
+        devicePolicyManager.isAdminActive(
+            adminComponent,
+        ) || devicePolicyManager.isAdminActive(deviceOwnerComponent)
 
     fun turnScreenOff() {
         if (isScreenOff || !canTurnScreenOff()) return

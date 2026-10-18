@@ -63,7 +63,9 @@ data class ServerConfig(
                 playerPort = env.intOrNull("REMOTE_SCREENS_PLAYER_PORT") ?: Protocol.PORT,
                 hostname = env["HOSTNAME"] ?: "localhost",
                 version = implementationVersion(),
-                mapTileUrl = mapTileUrlOrDefault(env["REMOTE_SCREENS_MAP_TILES"] ?: addonOptions["map_tiles"]),
+                mapTileUrl = mapTileUrlOrDefault(
+                    env["REMOTE_SCREENS_MAP_TILES"] ?: addonOptions["map_tiles"],
+                ),
             )
         }
 
@@ -81,7 +83,10 @@ data class ServerConfig(
         private fun homeAssistantUrls(env: Map<String, String>, isSupervisor: Boolean): Pair<String, String> {
             if (isSupervisor) return SUPERVISOR_WEBSOCKET_URL to SUPERVISOR_REST_URL
             val homeAssistantUrl = (env["HA_URL"] ?: DEFAULT_HOME_ASSISTANT_URL).trimEnd('/')
-            return homeAssistantUrl.replaceFirst("http", "ws") + "/api/websocket" to "$homeAssistantUrl/api"
+            return homeAssistantUrl.replaceFirst(
+                "http",
+                "ws",
+            ) + "/api/websocket" to "$homeAssistantUrl/api"
         }
 
         private fun resolveDataDir(env: Map<String, String>, isSupervisor: Boolean): File {

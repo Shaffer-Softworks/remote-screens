@@ -49,7 +49,9 @@ class ConnectionRepository @Inject constructor(
     val consecutiveFailures: StateFlow<Int> = _consecutiveFailures.asStateFlow()
 
     /** Every message from the add-on, in order. Collecting suspends the socket, so nothing is dropped. */
-    private val _messages = MutableSharedFlow<ServerMessage>(extraBufferCapacity = MESSAGE_BUFFER_CAPACITY)
+    private val _messages = MutableSharedFlow<ServerMessage>(
+        extraBufferCapacity = MESSAGE_BUFFER_CAPACITY,
+    )
     val messages: SharedFlow<ServerMessage> = _messages.asSharedFlow()
 
     @Volatile

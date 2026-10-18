@@ -23,7 +23,9 @@ data class BatteryStatus(val levelPercent: Int?, val isCharging: Boolean?)
 class DeviceRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
-    private val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+    private val wifiManager = context.applicationContext.getSystemService(
+        Context.WIFI_SERVICE,
+    ) as WifiManager
 
     val deviceName: String = "${Build.MANUFACTURER} ${Build.MODEL}".trim()
 
@@ -41,7 +43,10 @@ class DeviceRepository @Inject constructor(
         }
 
     fun batteryStatus(): BatteryStatus {
-        val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val batteryIntent = context.registerReceiver(
+            null,
+            IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+        )
             ?: return BatteryStatus(levelPercent = null, isCharging = null)
         val level = batteryIntent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
         val scale = batteryIntent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
@@ -61,7 +66,10 @@ class DeviceRepository @Inject constructor(
 
     fun isHomeApp(): Boolean {
         val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
-        val homeActivity = context.packageManager.resolveActivity(homeIntent, PackageManager.MATCH_DEFAULT_ONLY)
+        val homeActivity = context.packageManager.resolveActivity(
+            homeIntent,
+            PackageManager.MATCH_DEFAULT_ONLY,
+        )
         return homeActivity?.activityInfo?.packageName == context.packageName
     }
 
@@ -77,5 +85,7 @@ class DeviceRepository @Inject constructor(
 
     /** Doze cuts the network and ignores wake locks on an unplugged tablet, so standby could not be woken. */
     fun isIgnoringBatteryOptimizations(): Boolean =
-        context.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(context.packageName)
+        context.getSystemService(
+            PowerManager::class.java,
+        ).isIgnoringBatteryOptimizations(context.packageName)
 }

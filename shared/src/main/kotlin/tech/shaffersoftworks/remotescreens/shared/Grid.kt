@@ -53,7 +53,12 @@ object Grid {
 
     /** The grid a device of this size gets when it is adopted. */
     fun suggest(widthDp: Float, heightDp: Float): GridSize {
-        val (availableWidth, availableHeight) = available(widthDp, heightDp, TOP_BAR, navBar(widthDp))
+        val (availableWidth, availableHeight) = available(
+            widthDp,
+            heightDp,
+            TOP_BAR,
+            navBar(widthDp),
+        )
         return GridSize(fit(availableWidth), fit(availableHeight))
     }
 

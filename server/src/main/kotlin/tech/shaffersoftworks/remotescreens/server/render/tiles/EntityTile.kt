@@ -32,29 +32,67 @@ internal fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, en
     val hasLevel = entityId != null && box.w >= C.TALL_HEIGHT_DP && entityState != null && when (tile.domain) {
         "light" -> entityState.list("supported_color_modes").any { it != "onoff" }
         "fan" -> entityState.supports(C.FAN_PERCENTAGE_FLAG)
-        "cover", "valve" -> entityState.supports(C.COVER_POSITION_FLAG) || entityState.number("current_position") != null
+        "cover", "valve" -> entityState.supports(
+            C.COVER_POSITION_FLAG,
+        ) || entityState.number("current_position") != null
         "humidifier", "water_heater" -> true
         "number", "input_number", "media_player" -> true
         else -> false
     } && (box.h >= C.TALL_HEIGHT_DP || (wide && !short))
-    val bigValue = tile.domain in setOf("sensor", "number", "input_number", "counter", "todo", "timer")
+    val bigValue = tile.domain in setOf(
+        "sensor",
+        "number",
+        "input_number",
+        "counter",
+        "todo",
+        "timer",
+    )
 
     if (box.full) {
-        scope.Column(Modifier.fillMaxSize().padding(units.px(C.PAD_XXL_DP)), horizontal = RcHorizontalPositioning.Center, vertical = RcColumnVerticalPositioning.Center) {
+        scope.Column(
+            Modifier.fillMaxSize().padding(units.px(C.PAD_XXL_DP)),
+            horizontal = RcHorizontalPositioning.Center,
+            vertical = RcColumnVerticalPositioning.Center,
+        ) {
             this@entityTile.tileIcon(tile, spec, entityState, C.SHORT_HEIGHT_DP)
             this@entityTile.gap(C.PAD_XL_DP)
-            if (name != null) this@entityTile.label(name, Type.DISPLAY * C.FULL_NAME_SCALE, ink, Weight.SEMI_BOLD, align = RcTextAlign.Center)
-            if (state != null) this@entityTile.label(state, Type.HEADLINE, ink2, align = RcTextAlign.Center)
+            if (name != null) {
+                this@entityTile.label(
+                    name,
+                    Type.DISPLAY * C.FULL_NAME_SCALE,
+                    ink,
+                    Weight.SEMI_BOLD,
+                    align = RcTextAlign.Center,
+                )
+            }
+            if (state != null) {
+                this@entityTile.label(
+                    state,
+                    Type.HEADLINE,
+                    ink2,
+                    align = RcTextAlign.Center,
+                )
+            }
         }
         return
     }
     if (wide && !hasLevel) {
-        scope.Row(Modifier.fillMaxSize().padding(units.px(pad)), vertical = RcVerticalPositioning.Center) {
+        scope.Row(
+            Modifier.fillMaxSize().padding(units.px(pad)),
+            vertical = RcVerticalPositioning.Center,
+        ) {
             this@entityTile.tileIcon(tile, spec, entityState, C.HEADER_SHORT_DP)
             Spacer(Modifier.width(this@entityTile.units.px(C.PAD_LG_DP)))
             Column(Modifier.horizontalWeight(1f)) {
                 if (name != null) this@entityTile.label(name, Type.TITLE, ink, Weight.SEMI_BOLD)
-                if (state != null) this@entityTile.label(state, if (bigValue) Type.HEADLINE else Type.BODY, ink2, if (bigValue) Weight.MEDIUM else Weight.NORMAL)
+                if (state != null) {
+                    this@entityTile.label(
+                        state,
+                        if (bigValue) Type.HEADLINE else Type.BODY,
+                        ink2,
+                        if (bigValue) Weight.MEDIUM else Weight.NORMAL,
+                    )
+                }
             }
         }
         return
@@ -62,15 +100,41 @@ internal fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, en
     scope.Column(Modifier.fillMaxSize().padding(units.px(pad))) {
         val doc = this@entityTile
         Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Top) {
-            doc.tileIcon(tile, spec, entityState, if (box.h >= C.TALL_HEIGHT_DP) C.COL_ICON_TALL_DP else C.COL_ICON_SHORT_DP)
+            doc.tileIcon(
+                tile,
+                spec,
+                entityState,
+                if (box.h >= C.TALL_HEIGHT_DP) C.COL_ICON_TALL_DP else C.COL_ICON_SHORT_DP,
+            )
             Spacer(Modifier.horizontalWeight(1f))
             if (tile.domain == "lock") doc.lockConfirmBadge(tile)
         }
         Spacer(Modifier.verticalWeight(1f))
-        if (bigValue && state != null) doc.label(state, if (box.h >= C.TALL_HEIGHT_DP) Type.VALUE else Type.HEADLINE, ink, Weight.MEDIUM)
-        if (name != null) doc.label(name, Type.BODY + if (box.h >= C.TALL_HEIGHT_DP) 2f else 0f, ink, Weight.SEMI_BOLD, lines = if (state == null || bigValue) 2 else 1)
-        if (state != null && !bigValue) doc.label(state, if (named) Type.CAPTION + 1f else Type.TITLE, ink2)
-        if (hasLevel) doc.entityTileLevelBar(tile, entityId!!, entityState!!, box.w - 2 * pad)
+        if (bigValue && state != null) {
+            doc.label(
+                state,
+                if (box.h >= C.TALL_HEIGHT_DP) Type.VALUE else Type.HEADLINE,
+                ink,
+                Weight.MEDIUM,
+            )
+        }
+        if (name != null) {
+            doc.label(
+                name,
+                Type.BODY + if (box.h >= C.TALL_HEIGHT_DP) 2f else 0f,
+                ink,
+                Weight.SEMI_BOLD,
+                lines = if (state == null || bigValue) 2 else 1,
+            )
+        }
+        if (state != null && !bigValue) {
+            doc.label(
+                state,
+                if (named) Type.CAPTION + 1f else Type.TITLE,
+                ink2,
+            )
+        }
+        if (hasLevel) doc.entityTileLevelBar(tile, entityId, entityState, box.w - 2 * pad)
     }
 }
 
@@ -105,7 +169,14 @@ internal fun DocContext.entityTileLevelBar(tile: Tile, entityId: String, entityS
         ActionRef(
             tile.id,
             verb,
-            if (value % 1.0 == 0.0) value.toInt().toString() else "%.1f".format(java.util.Locale.ROOT, value),
+            if (value % 1.0 == 0.0) {
+                value.toInt().toString()
+            } else {
+                "%.1f".format(
+                    java.util.Locale.ROOT,
+                    value,
+                )
+            },
         )
     }
 }

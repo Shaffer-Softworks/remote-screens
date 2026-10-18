@@ -26,7 +26,10 @@ import kotlin.test.fail
  * `./gradlew :shared:test -PupdateFixtures` writes the answers for the inputs in the file; review the diff.
  */
 class GridParityTest {
-    private val file = File(System.getProperty("fixtures.dir") ?: "../tests/fixtures", "grid_parity.json")
+    private val file = File(
+        System.getProperty("fixtures.dir") ?: "../tests/fixtures",
+        "grid_parity.json",
+    )
     private val json = Json { prettyPrint = true; prettyPrintIndent = "  " }
 
     @Test
@@ -46,7 +49,10 @@ class GridParityTest {
         for (section in listOf("suggest", "spec", "reflow")) {
             val cases = fixture.getValue(section).jsonArray
             assertTrue(cases.isNotEmpty(), "$section has cases")
-            for (case in cases) assertTrue("expect" in case.jsonObject, "$section case without an answer: $case")
+            for (case in cases) assertTrue(
+                "expect" in case.jsonObject,
+                "$section case without an answer: $case",
+            )
         }
     }
 
@@ -66,9 +72,17 @@ class GridParityTest {
                 val topBarValue = case.getValue("topBar").jsonPrimitive
                 val topBarHeight = topBarValue.booleanOrNull?.let { if (it) Grid.TOP_BAR else 0f }
                     ?: topBarValue.float
-                val navBarHeight = case["navBar"]?.jsonPrimitive?.float ?: Grid.navBar(case.floatAt("width"))
+                val navBarHeight = case["navBar"]?.jsonPrimitive?.float ?: Grid.navBar(
+                    case.floatAt("width"),
+                )
                 val grid = GridSize(case.intAt("cols"), case.intAt("rows"))
-                val spec = Grid.spec(grid, case.floatAt("width"), case.floatAt("height"), topBarHeight, navBarHeight)
+                val spec = Grid.spec(
+                    grid,
+                    case.floatAt("width"),
+                    case.floatAt("height"),
+                    topBarHeight,
+                    navBarHeight,
+                )
                 add(inputs(case) + ("expect" to buildJsonObject {
                     put("cols", spec.cols)
                     put("rows", spec.rows)
@@ -111,7 +125,9 @@ class GridParityTest {
     }
 
     private fun inputs(case: JsonObject) = JsonObject(case - "expect")
-    private operator fun JsonObject.plus(pair: Pair<String, JsonElement>) = JsonObject(this.toMap() + pair)
+    private operator fun JsonObject.plus(pair: Pair<String, JsonElement>) = JsonObject(
+        this.toMap() + pair,
+    )
     private fun floats(values: List<Float>) = JsonArray(values.map { JsonPrimitive(it) })
     private fun JsonObject.floatAt(key: String) = getValue(key).jsonPrimitive.float
     private fun JsonObject.intAt(key: String) = getValue(key).jsonPrimitive.int
@@ -122,11 +138,19 @@ class GridParityTest {
         when {
             actual is JsonObject && expected is JsonObject -> {
                 assertEquals(expected.keys, actual.keys, "keys at $path")
-                for (key in expected.keys) compare(actual.getValue(key), expected.getValue(key), "$path.$key")
+                for (key in expected.keys) compare(
+                    actual.getValue(key),
+                    expected.getValue(key),
+                    "$path.$key",
+                )
             }
             actual is JsonArray && expected is JsonArray -> {
                 assertEquals(expected.size, actual.size, "length at $path")
-                for (index in expected.indices) compare(actual[index], expected[index], "$path[$index]")
+                for (index in expected.indices) compare(
+                    actual[index],
+                    expected[index],
+                    "$path[$index]",
+                )
             }
             actual is JsonPrimitive && expected is JsonPrimitive -> {
                 val actualNumber = actual.content.toDoubleOrNull()

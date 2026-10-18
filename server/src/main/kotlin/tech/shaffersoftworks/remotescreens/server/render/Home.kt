@@ -58,7 +58,9 @@ private fun small(base: Float, layoutScale: Float) = maxOf(base * layoutScale, M
  * all calendars and all people when left out.
  */
 fun DocContext.homeTile(tile: Tile, box: TileBox) {
-    fun listed(key: String, domain: String) = tile.options[key]?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }
+    fun listed(key: String, domain: String) = tile.options[key]?.split(
+        ',',
+    )?.map { it.trim() }?.filter { it.isNotEmpty() }
         ?: states.keys.filter { it.startsWith("$domain.") }.sorted()
     val weather = tile.entityId ?: states.keys.sorted().firstOrNull { it.startsWith("weather.") }
     val calendars = listed("calendars", "calendar")
@@ -86,32 +88,100 @@ private fun DocContext.homeWeather(tileId: String, weather: String?, wDp: Float,
     val entityState = weather?.let { states[it] }
     if (weather != null) structural(weather) { it?.state ?: "" }
     val ref = weather?.let { ActionRef("e:$it", "card") }
-    scope.Column(tap(Modifier.width(units.px(wDp)).fillMaxHeight().padding(units.px(WEATHER_SIDE_PAD_DP * layoutScale), units.px(SECTION_TOP_PAD_DP * layoutScale), 0f, 0f), ref)) {
+    scope.Column(
+        tap(
+            Modifier.width(
+                units.px(wDp),
+            ).fillMaxHeight().padding(
+                units.px(WEATHER_SIDE_PAD_DP * layoutScale),
+                units.px(SECTION_TOP_PAD_DP * layoutScale),
+                0f,
+                0f,
+            ),
+            ref,
+        ),
+    ) {
         val doc = this@homeWeather
-        Box(Modifier.size(doc.units.px(ACCENT_BAR_WIDTH_DP * layoutScale), doc.units.px(ACCENT_BAR_HEIGHT_DP * layoutScale)).background(doc.role(Role.ACCENT_DARK)))
+        Box(
+            Modifier.size(
+                doc.units.px(ACCENT_BAR_WIDTH_DP * layoutScale),
+                doc.units.px(ACCENT_BAR_HEIGHT_DP * layoutScale),
+            ).background(doc.role(Role.ACCENT_DARK)),
+        )
         Spacer(Modifier.height(doc.units.px(SECTION_GAP_DP * layoutScale)))
-        doc.label(doc.i18n.t("ui.outside_now").uppercase(doc.i18n.locale), small(SECTION_GAP_DP, layoutScale), doc.role(Role.INK))
+        doc.label(
+            doc.i18n.t("ui.outside_now").uppercase(doc.i18n.locale),
+            small(SECTION_GAP_DP, layoutScale),
+            doc.role(Role.INK),
+        )
         Row(vertical = RcVerticalPositioning.Center) {
-            doc.icon(Present.weatherIcon(entityState?.state ?: ""), WEATHER_ICON_DP * layoutScale, doc.role(Role.INK))
+            doc.icon(
+                Present.weatherIcon(entityState?.state ?: ""),
+                WEATHER_ICON_DP * layoutScale,
+                doc.role(Role.INK),
+            )
             Spacer(Modifier.width(doc.units.px(SECTION_GAP_DP * layoutScale)))
-            doc.label(doc.text(Vars.tile(tileId, "temp")), ACCENT_BAR_WIDTH_DP * layoutScale, doc.role(Role.INK), TEMP_WEIGHT)
+            doc.label(
+                doc.text(Vars.tile(tileId, "temp")),
+                ACCENT_BAR_WIDTH_DP * layoutScale,
+                doc.role(Role.INK),
+                TEMP_WEIGHT,
+            )
         }
     }
 }
 
 private fun DocContext.homeEvent(tileId: String, wDp: Float, layoutScale: Float) {
-    scope.Column(Modifier.width(units.px(wDp)).fillMaxHeight().padding(units.px(EVENT_SIDE_PAD_DP * layoutScale), units.px(SECTION_TOP_PAD_DP * layoutScale), units.px(EVENT_DAY_SP * layoutScale), units.px(EVENT_META_SP * layoutScale))) {
+    scope.Column(
+        Modifier.width(
+            units.px(wDp),
+        ).fillMaxHeight().padding(
+            units.px(EVENT_SIDE_PAD_DP * layoutScale),
+            units.px(SECTION_TOP_PAD_DP * layoutScale),
+            units.px(EVENT_DAY_SP * layoutScale),
+            units.px(EVENT_META_SP * layoutScale),
+        ),
+    ) {
         val doc = this@homeEvent
-        Box(Modifier.size(doc.units.px(ACCENT_BAR_WIDTH_DP * layoutScale), doc.units.px(STRIP_ACCENT_H_DP * layoutScale)).background(doc.role(Role.ACCENT_DARK)))
+        Box(
+            Modifier.size(
+                doc.units.px(ACCENT_BAR_WIDTH_DP * layoutScale),
+                doc.units.px(STRIP_ACCENT_H_DP * layoutScale),
+            ).background(doc.role(Role.ACCENT_DARK)),
+        )
         Spacer(Modifier.height(doc.units.px(EVENT_META_SP * layoutScale)))
-        doc.label(doc.i18n.t("ui.next_event").uppercase(doc.i18n.locale), small(SECTION_CAPTION_SP, layoutScale), doc.role(Role.INK), Weight.MEDIUM)
+        doc.label(
+            doc.i18n.t("ui.next_event").uppercase(doc.i18n.locale),
+            small(SECTION_CAPTION_SP, layoutScale),
+            doc.role(Role.INK),
+            Weight.MEDIUM,
+        )
         Spacer(Modifier.height(doc.units.px(EVENT_TIME_GAP_DP * layoutScale)))
-        doc.label(doc.text(Vars.tile(tileId, "ev.day")), EVENT_DAY_SP * layoutScale, doc.role(Role.ACCENT_DARK), Weight.LIGHT)
-        doc.label(doc.text(Vars.tile(tileId, "ev.time")), EVENT_TIME_SP * layoutScale, doc.role(Role.INK), TEMP_WEIGHT)
+        doc.label(
+            doc.text(Vars.tile(tileId, "ev.day")),
+            EVENT_DAY_SP * layoutScale,
+            doc.role(Role.ACCENT_DARK),
+            Weight.LIGHT,
+        )
+        doc.label(
+            doc.text(Vars.tile(tileId, "ev.time")),
+            EVENT_TIME_SP * layoutScale,
+            doc.role(Role.INK),
+            TEMP_WEIGHT,
+        )
         Spacer(Modifier.height(doc.units.px(MIN_LABEL_SP * layoutScale)))
-        doc.label(doc.text(Vars.tile(tileId, "ev.title")), small(EVENT_TITLE_SP, layoutScale), doc.role(Role.INK), lines = 2)
+        doc.label(
+            doc.text(Vars.tile(tileId, "ev.title")),
+            small(EVENT_TITLE_SP, layoutScale),
+            doc.role(Role.INK),
+            lines = 2,
+        )
         Spacer(Modifier.height(doc.units.px(META_GAP_DP * layoutScale)))
-        doc.label(doc.text(Vars.tile(tileId, "ev.meta")), small(EVENT_META_SP, layoutScale), doc.role(Role.INK_SOFT))
+        doc.label(
+            doc.text(Vars.tile(tileId, "ev.meta")),
+            small(EVENT_META_SP, layoutScale),
+            doc.role(Role.INK_SOFT),
+        )
     }
 }
 
@@ -119,18 +189,33 @@ private fun DocContext.homePeople(tileId: String, people: List<String>, wDp: Flo
     val photo = (hDp * 0.58f).coerceAtLeast(EVENT_TIME_GAP_DP)
     scope.Row(
         Modifier.size(units.px(wDp), units.px(hDp)).background(role(Role.HOME_STRIP)),
-        horizontal = RcRowHorizontalPositioning.SpaceEvenly, vertical = RcVerticalPositioning.Center,
+        horizontal = RcRowHorizontalPositioning.SpaceEvenly,
+        vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@homePeople
         for (id in people) {
             doc.bindEntity(id)
             doc.bindWhere(Vars.tile(tileId, "where.$id"), id)
-            Row(doc.tap(Modifier.padding(doc.units.px(STRIP_ACCENT_H_DP)), ActionRef("e:$id", "card")), vertical = RcVerticalPositioning.Center) {
+            Row(
+                doc.tap(
+                    Modifier.padding(doc.units.px(STRIP_ACCENT_H_DP)),
+                    ActionRef("e:$id", "card"),
+                ),
+                vertical = RcVerticalPositioning.Center,
+            ) {
                 doc.photo(doc.states[id], id, "home.$id", photo)
                 Spacer(Modifier.width(doc.units.px(SECTION_GAP_DP)))
                 Column(vertical = RcColumnVerticalPositioning.Center) {
-                    doc.label(doc.text(Vars.entity(id, Vars.KEY_NAME)), Type.TITLE, doc.role(Role.INK_DARK))
-                    doc.label(doc.text(Vars.tile(tileId, "where.$id")), Type.TITLE, doc.role(Role.ACCENT_SOFT))
+                    doc.label(
+                        doc.text(Vars.entity(id, Vars.KEY_NAME)),
+                        Type.TITLE,
+                        doc.role(Role.INK_DARK),
+                    )
+                    doc.label(
+                        doc.text(Vars.tile(tileId, "where.$id")),
+                        Type.TITLE,
+                        doc.role(Role.ACCENT_SOFT),
+                    )
                 }
             }
         }
@@ -146,7 +231,12 @@ private fun DocContext.bindHomeWeather(tileId: String, weather: String?) {
             entityState.domain == "weather" -> entityState.number("temperature")
             else -> entityState.numericState()
         }
-        listOf(VarValue.string(Vars.tile(tileId, "temp"), temperature?.let { i18n.number(it, 0) + "°" } ?: "–"))
+        listOf(
+            VarValue.string(
+                Vars.tile(tileId, "temp"),
+                temperature?.let { i18n.number(it, 0) + "°" } ?: "–",
+            ),
+        )
     }
 }
 
@@ -156,7 +246,9 @@ private fun DocContext.bindHomeWeather(tileId: String, weather: String?) {
  */
 private fun DocContext.bindNextEvent(tileId: String, calendars: List<String>) {
     for (calendarId in calendars) bind(calendarId) { emptyList() }
-    val zone = runCatching { ZoneId.of(homeAssistantConfig.timeZone) }.getOrDefault(ZoneId.of("UTC"))
+    val zone = runCatching { ZoneId.of(
+        homeAssistantConfig.timeZone,
+    ) }.getOrDefault(ZoneId.of("UTC"))
     bind(null) { states ->
         val next = nextCalendarEvent(calendars, states, zone)
         val day = when {
@@ -173,7 +265,13 @@ private fun DocContext.bindNextEvent(tileId: String, calendars: List<String>) {
             VarValue.string(Vars.tile(tileId, "ev.day"), day),
             VarValue.string(Vars.tile(tileId, "ev.time"), time),
             VarValue.string(Vars.tile(tileId, "ev.title"), next?.title ?: i18n.t("ui.no_events")),
-            VarValue.string(Vars.tile(tileId, "ev.meta"), listOfNotNull(next?.calendar, next?.location).filter { it.isNotBlank() }.joinToString(" · ")),
+            VarValue.string(
+                Vars.tile(tileId, "ev.meta"),
+                listOfNotNull(
+                    next?.calendar,
+                    next?.location,
+                ).filter { it.isNotBlank() }.joinToString(" · "),
+            ),
         )
     }
 }

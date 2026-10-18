@@ -48,20 +48,31 @@ fun Route.playerRoutes(
         }
     }
     get("${CameraStreamService.PLAYER_PATH}/{token}/{file...}") {
-        val playerToken = call.request.headers[HttpHeaders.Authorization]?.removePrefix("Bearer ")?.trim()
+        val playerToken = call.request.headers[HttpHeaders.Authorization]?.removePrefix(
+            "Bearer ",
+        )?.trim()
         if (!playerHub.isTrustedToken(playerToken)) {
             call.respond(HttpStatusCode.Unauthorized)
             return@get
         }
         val token = call.parameters.getOrFail("token")
         val file = call.parameters.getAll("file").orEmpty().joinToString("/")
-        val status = cameraStreamService.relay(token, file, call.request.queryString()) { contentType, body ->
+        val status = cameraStreamService.relay(
+            token,
+            file,
+            call.request.queryString(),
+        ) { contentType, body ->
             call.response.header(HttpHeaders.CacheControl, "no-cache")
-            call.respondBytesWriter(contentType?.let(ContentType::parse), HttpStatusCode.OK) { body.copyTo(this) }
+            call.respondBytesWriter(
+                contentType?.let(ContentType::parse),
+                HttpStatusCode.OK,
+            ) { body.copyTo(this) }
         }
         when {
             status == null -> call.respond(HttpStatusCode.NotFound)
-            !HttpStatusCode.fromValue(status).isSuccess() -> call.respond(HttpStatusCode.fromValue(status))
+            !HttpStatusCode.fromValue(
+                status,
+            ).isSuccess() -> call.respond(HttpStatusCode.fromValue(status))
         }
     }
 }

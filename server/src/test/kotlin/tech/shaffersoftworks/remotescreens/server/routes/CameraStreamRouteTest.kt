@@ -42,11 +42,20 @@ class CameraStreamRouteTest {
         version = "test",
     )
     private val dependencies =
-        ServerDependencies(config, HttpClient(), CoroutineScope(SupervisorJob() + Dispatchers.Default))
+        ServerDependencies(
+            config,
+            HttpClient(),
+            CoroutineScope(SupervisorJob() + Dispatchers.Default),
+        )
     private val cameraStreamService = CameraStreamService(StreamingHome())
 
     init {
-        val tablet = PlayerRecord("tablet", "Hallway", screenId = "home", tokenHash = PlayerTokens.hash(PLAYER_TOKEN))
+        val tablet = PlayerRecord(
+            "tablet",
+            "Hallway",
+            screenId = "home",
+            tokenHash = PlayerTokens.hash(PLAYER_TOKEN),
+        )
         dependencies.layoutRepository.update { layout -> layout.copy(players = listOf(tablet)) }
     }
 
@@ -84,7 +93,9 @@ class CameraStreamRouteTest {
 
     @Test
     fun anUnknownStreamIsNotFound() = withRoutes { client ->
-        val response = client.get("${CameraStreamService.PLAYER_PATH}/unknown/master_playlist.m3u8") {
+        val response = client.get(
+            "${CameraStreamService.PLAYER_PATH}/unknown/master_playlist.m3u8",
+        ) {
             bearerAuth(PLAYER_TOKEN)
         }
 

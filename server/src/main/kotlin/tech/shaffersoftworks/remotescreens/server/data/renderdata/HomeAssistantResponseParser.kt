@@ -24,7 +24,10 @@ internal object HomeAssistantResponseParser {
     fun history(result: Any?, entityId: String): List<HistoryPoint> {
         val rows = (result as? JsonObject)?.get(entityId) as? JsonArray
         val isBinary = entityId.startsWith("binary_sensor.")
-        return rows.orEmpty().mapNotNull { (it as? JsonObject)?.let { row -> historyPoint(row, isBinary) } }
+        return rows.orEmpty().mapNotNull { (it as? JsonObject)?.let { row -> historyPoint(
+            row,
+            isBinary,
+        ) } }
     }
 
     fun energy(preferences: JsonObject): EnergyPrefs {
@@ -32,7 +35,9 @@ internal object HomeAssistantResponseParser {
         fun rateOf(type: String) = sources.firstOrNull { it.text("type") == type }?.powerSensor()
         val devices = (preferences["device_consumption"] as? JsonArray).orEmpty()
             .mapNotNull { it as? JsonObject }
-            .mapNotNull { device -> device.powerSensor()?.let { sensor -> (device.text("name") ?: sensor) to sensor } }
+            .mapNotNull { device -> device.powerSensor()?.let { sensor -> (device.text(
+                "name",
+            ) ?: sensor) to sensor } }
         return EnergyPrefs(rateOf("solar"), rateOf("grid"), rateOf("battery"), devices)
     }
 

@@ -31,7 +31,10 @@ fun Route.integrationRoutes(screenService: ScreenService, playerHub: PlayerHub) 
         call.respond(screens)
     }
     post("/screens/{id}/settings") {
-        val isPatched = screenService.patchSettings(call.parameters.getOrFail("id"), call.receive<JsonObject>())
+        val isPatched = screenService.patchSettings(
+            call.parameters.getOrFail("id"),
+            call.receive<JsonObject>(),
+        )
         call.respond(if (isPatched) HttpStatusCode.NoContent else HttpStatusCode.NotFound)
     }
     post("/alert") {

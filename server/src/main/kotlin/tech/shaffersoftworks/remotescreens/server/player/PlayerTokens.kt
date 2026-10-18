@@ -20,11 +20,15 @@ class PlayerTokens(private val random: SecureRandom = SecureRandom()) {
     }
 
     fun newToken(): String =
-        Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(TOKEN_BYTES).also(random::nextBytes))
+        Base64.getUrlEncoder().withoutPadding().encodeToString(
+            ByteArray(TOKEN_BYTES).also(random::nextBytes),
+        )
 
     companion object {
         /** Only the hash of a token is stored, so a copy of the layout does not let anyone pose as a player. */
         fun hash(token: String): String =
-            MessageDigest.getInstance("SHA-256").digest(token.toByteArray()).joinToString("") { "%02x".format(it) }
+            MessageDigest.getInstance(
+                "SHA-256",
+            ).digest(token.toByteArray()).joinToString("") { "%02x".format(it) }
     }
 }

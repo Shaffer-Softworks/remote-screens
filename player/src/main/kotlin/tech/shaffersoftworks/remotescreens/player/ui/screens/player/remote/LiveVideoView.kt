@@ -56,7 +56,9 @@ class LiveVideoView(context: Context) : FrameLayout(context) {
     private val listener = object : Player.Listener {
         override fun onVideoSizeChanged(videoSize: VideoSize) {
             if (videoSize.height > 0) {
-                aspectRatioFrame.setAspectRatio(videoSize.width * videoSize.pixelWidthHeightRatio / videoSize.height)
+                aspectRatioFrame.setAspectRatio(
+                    videoSize.width * videoSize.pixelWidthHeightRatio / videoSize.height,
+                )
             }
         }
 
@@ -77,8 +79,14 @@ class LiveVideoView(context: Context) : FrameLayout(context) {
 
     init {
         // A TextureView, unlike a SurfaceView, is clipped by the rounded outline.
-        aspectRatioFrame.addView(textureView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-        addView(aspectRatioFrame, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, Gravity.CENTER))
+        aspectRatioFrame.addView(
+            textureView,
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT),
+        )
+        addView(
+            aspectRatioFrame,
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, Gravity.CENTER),
+        )
         val cornerPx = CORNER_DP * resources.displayMetrics.density
         outlineProvider = object : ViewOutlineProvider() {
             override fun getOutline(view: View, outline: Outline) {
@@ -129,7 +137,9 @@ class LiveVideoView(context: Context) : FrameLayout(context) {
             )
             .build()
         player = ExoPlayer.Builder(context)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(httpDataSourceFactory).setLiveMaxSpeed(LIVE_MAX_SPEED))
+            .setMediaSourceFactory(
+                DefaultMediaSourceFactory(httpDataSourceFactory).setLiveMaxSpeed(LIVE_MAX_SPEED),
+            )
             .setLoadControl(loadControl)
             .build()
             .apply {

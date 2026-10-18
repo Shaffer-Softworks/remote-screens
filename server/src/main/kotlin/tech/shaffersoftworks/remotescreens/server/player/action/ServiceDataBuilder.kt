@@ -72,7 +72,13 @@ object ServiceDataBuilder {
                 '/' -> number / factor
                 else -> number
             }
-            if (operator == '*') JsonPrimitive(value.roundToInt()) else JsonPrimitive(wholeOrDecimal(value))
+            if (operator == '*') {
+                JsonPrimitive(
+                    value.roundToInt(),
+                )
+            } else {
+                JsonPrimitive(wholeOrDecimal(value))
+            }
         }
     }
 
@@ -131,7 +137,11 @@ object ServiceDataBuilder {
         is Map<*, *> -> JsonObject(
             template.entries
                 .filter { (_, value) -> value != null }
-                .associate { (key, value) -> key.toString() to fill(checkNotNull(value), arg, code) },
+                .associate { (key, value) -> key.toString() to fill(
+                    checkNotNull(value),
+                    arg,
+                    code,
+                ) },
         )
         is Boolean -> JsonPrimitive(template)
         is Number -> JsonPrimitive(template)

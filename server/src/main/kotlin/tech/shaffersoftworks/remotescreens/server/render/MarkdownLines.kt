@@ -15,7 +15,9 @@ object MarkdownLines {
             when {
                 raw.startsWith("**") && raw.endsWith("**") && raw.length >= BOLD_MARKER_LENGTH ->
                     Line(raw.removeSurrounding("**"), bold = true, italic = false)
-                raw.startsWith("*") && raw.endsWith("*") && raw.length >= 2 && !raw.startsWith("**") ->
+                raw.startsWith(
+                    "*",
+                ) && raw.endsWith("*") && raw.length >= 2 && !raw.startsWith("**") ->
                     Line(raw.removeSurrounding("*"), bold = false, italic = true)
                 else -> Line(raw, bold = false, italic = false)
             }

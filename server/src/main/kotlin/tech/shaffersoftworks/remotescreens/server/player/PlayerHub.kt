@@ -66,7 +66,10 @@ class PlayerHub(
         }
         scope.launch { runClock() }
         scope.launch { runTicks() }
-        scope.launch { homeAssistant.events.collect { event -> onHomeAssistantEvent(event.type, event.data) } }
+        scope.launch { homeAssistant.events.collect { event -> onHomeAssistantEvent(
+            event.type,
+            event.data,
+        ) } }
     }
 
     /** Serves one player's WebSocket until it closes. The first message must be its [PlayerMessage.Hello]. */
@@ -74,11 +77,18 @@ class PlayerHub(
         val hello = receiveHello(socket) ?: return
         val session = PlayerSession(socket, hello, sessionContext, ::newPairingCode)
         sessions.put(hello.deviceId, session)?.close()
-        logger.info("Player {} ({}) connected from {}", hello.deviceName, hello.deviceId, remoteAddress)
+        logger.info(
+            "Player {} ({}) connected from {}",
+            hello.deviceName,
+            hello.deviceId,
+            remoteAddress,
+        )
         try {
             session.welcome()
             for (frame in socket.incoming) {
-                (frame as? Frame.Text)?.let { Protocol.decodePlayer(it.readText()) }?.let { session.receive(it) }
+                (frame as? Frame.Text)?.let { Protocol.decodePlayer(
+                    it.readText(),
+                ) }?.let { session.receive(it) }
             }
         } finally {
             sessions.remove(hello.deviceId, session)
@@ -160,7 +170,15 @@ class PlayerHub(
 
     fun rename(deviceId: String, name: String) {
         layoutRepository.update { layout ->
-            layout.copy(players = layout.players.map { if (it.deviceId == deviceId) it.copy(name = name) else it })
+            layout.copy(
+                players = layout.players.map { if (it.deviceId == deviceId) {
+                    it.copy(
+                        name = name,
+                    )
+                } else {
+                    it
+                } },
+            )
         }
     }
 
@@ -211,10 +229,16 @@ class PlayerHub(
             else -> emptyList()
         }
         when (type) {
-            "remote_screens_alert" -> runCatching { Protocol.json.decodeFromJsonElement(Alert.serializer(), data) }
+            "remote_screens_alert" -> runCatching { Protocol.json.decodeFromJsonElement(
+                Alert.serializer(),
+                data,
+            ) }
                 .onSuccess { showAlert(it) }
                 .onFailure { logger.warn("Bad alert event: {}", it.message) }
-            "remote_screens_open_page" -> (data["page"] as? JsonPrimitive)?.content?.let { openPage(targets(), it) }
+            "remote_screens_open_page" -> (data["page"] as? JsonPrimitive)?.content?.let { openPage(
+                targets(),
+                it,
+            ) }
             "remote_screens_wake" -> wake(targets())
             "remote_screens_close" -> closeOverlays(targets())
         }
@@ -242,7 +266,9 @@ class PlayerHub(
             delay(TICK_INTERVAL_MS)
             val states = homeAssistant.states.value
             for (session in sessions.values) {
-                runCatching { session.tick(states) }.onFailure { logger.debug("Tick failed: {}", it.message) }
+                runCatching { session.tick(
+                    states,
+                ) }.onFailure { logger.debug("Tick failed: {}", it.message) }
             }
         }
     }

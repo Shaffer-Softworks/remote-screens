@@ -80,7 +80,10 @@ internal fun blockNatural(node: Node): Dims? = when (node.type) {
     "events" -> {
         val max = node.props["max"]?.toIntOrNull()?.coerceIn(1, BlockMetrics.EVENT_MAX)
             ?: BlockMetrics.EVENT_DEFAULT_MAX
-        Dims(BlockMetrics.EVENT_NATURAL_W, max * (BlockMetrics.EVENT_ROW_H_DP + BlockMetrics.EVENT_GAP_DP))
+        Dims(
+            BlockMetrics.EVENT_NATURAL_W,
+            max * (BlockMetrics.EVENT_ROW_H_DP + BlockMetrics.EVENT_GAP_DP),
+        )
     }
     "mediabar" -> Dims(BlockMetrics.MEDIA_NATURAL_W, BlockMetrics.MEDIA_H_DP)
     "forecast" -> {
@@ -89,7 +92,10 @@ internal fun blockNatural(node: Node): Dims? = when (node.type) {
         Dims(days * BlockMetrics.FORECAST_DAY_W_DP, BlockMetrics.FORECAST_NATURAL_H)
     }
     "presence" -> Dims(BlockMetrics.PRESENCE_NATURAL_W, BlockMetrics.PRESENCE_NATURAL_H)
-    "led" -> (node.props["size"]?.toFloatOrNull() ?: BlockMetrics.LED_DEFAULT_DP).let { Dims(it, it) }
+    "led" -> (node.props["size"]?.toFloatOrNull() ?: BlockMetrics.LED_DEFAULT_DP).let { Dims(
+        it,
+        it,
+    ) }
     "thermostat" -> Dims(BlockMetrics.THERMOSTAT_NATURAL_W, BlockMetrics.THERMOSTAT_NATURAL_H)
     else -> null
 }
@@ -117,7 +123,13 @@ private fun DocContext.timerKeysNode(node: Node, axis: Axis, pages: Pages) {
         fun key(verb: String, word: String, icon: String) {
             val ref = id?.let { ActionRef(node.id, verb) }
             if (ref != null) {
-                doc.key(ref, text = word, icon = icon, heightDp = keyH, modifier = Modifier.horizontalWeight(1f))
+                doc.key(
+                    ref,
+                    text = word,
+                    icon = icon,
+                    heightDp = keyH,
+                    modifier = Modifier.horizontalWeight(1f),
+                )
             } else {
                 Box(
                     Modifier.horizontalWeight(1f).size(doc.units.px(keyH), doc.units.px(keyH))
@@ -173,7 +185,9 @@ private fun DocContext.eventsNode(node: Node, self: Dims, axis: Axis, pages: Pag
     val max = node.props["max"]?.toIntOrNull()?.coerceIn(1, BlockMetrics.EVENT_MAX)
         ?: BlockMetrics.EVENT_DEFAULT_MAX
     val calendars = listedEntities(node, "calendars", "calendar")
-    val zone = runCatching { ZoneId.of(homeAssistantConfig.timeZone) }.getOrDefault(ZoneId.of("UTC"))
+    val zone = runCatching { ZoneId.of(
+        homeAssistantConfig.timeZone,
+    ) }.getOrDefault(ZoneId.of("UTC"))
     for (calendarId in calendars) {
         bindEntity(calendarId)
         structural(calendarId) { s ->
@@ -181,7 +195,10 @@ private fun DocContext.eventsNode(node: Node, self: Dims, axis: Axis, pages: Pag
         }
     }
     val events = calendars.mapNotNull { calendarId ->
-        states[calendarId]?.let { entityState -> calendarEvent(entityState, zone)?.let { calendarId to it } }
+        states[calendarId]?.let { entityState -> calendarEvent(
+            entityState,
+            zone,
+        )?.let { calendarId to it } }
     }.sortedBy { it.second.start }.take(max)
     scope.Column(styled(node, axis, pages, measured(node, axis, self))) {
         val doc = this@eventsNode
@@ -193,12 +210,23 @@ private fun DocContext.eventsNode(node: Node, self: Dims, axis: Axis, pages: Pag
                 val whenText = when {
                     event.allDay && isToday(event, zone) ->
                         doc.i18n.t("ui.today") + " · " + doc.i18n.t("ui.all_day")
-                    event.allDay -> doc.i18n.fullWeekday(event.start) + " · " + doc.i18n.t("ui.all_day")
-                    isToday(event, zone) -> doc.i18n.t("ui.today") + " · " + doc.i18n.time(event.start)
+                    event.allDay -> doc.i18n.fullWeekday(
+                        event.start,
+                    ) + " · " + doc.i18n.t("ui.all_day")
+                    isToday(
+                        event,
+                        zone,
+                    ) -> doc.i18n.t("ui.today") + " · " + doc.i18n.time(event.start)
                     else -> doc.i18n.fullWeekday(event.start) + " · " + doc.i18n.time(event.start)
                 }
                 Column(doc.tap(Modifier.fillMaxWidth(), ActionRef("e:$calendarId", "card"))) {
-                    doc.label(event.title, Type.BODY, doc.role(Role.INK), Weight.SEMI_BOLD, lines = 1)
+                    doc.label(
+                        event.title,
+                        Type.BODY,
+                        doc.role(Role.INK),
+                        Weight.SEMI_BOLD,
+                        lines = 1,
+                    )
                     doc.label(whenText, Type.CAPTION, doc.role(Role.INK_SOFT))
                 }
             }
@@ -231,10 +259,27 @@ private fun DocContext.mediaBarNode(node: Node, self: Dims, axis: Axis, pages: P
         )
         Spacer(Modifier.width(doc.units.px(BlockMetrics.PRESENCE_GAP_DP)))
         Column(Modifier.horizontalWeight(1f)) {
-            doc.label(doc.text(Vars.entity(id, "title")), Type.BODY, doc.role(Role.INK), Weight.SEMI_BOLD, lines = 1)
-            doc.label(doc.text(Vars.entity(id, "artist")), Type.CAPTION, doc.role(Role.INK_SOFT), lines = 1)
+            doc.label(
+                doc.text(Vars.entity(id, "title")),
+                Type.BODY,
+                doc.role(Role.INK),
+                Weight.SEMI_BOLD,
+                lines = 1,
+            )
+            doc.label(
+                doc.text(Vars.entity(id, "artist")),
+                Type.CAPTION,
+                doc.role(Role.INK_SOFT),
+                lines = 1,
+            )
         }
-        doc.key(ActionRef(node.id, "previous"), icon = "skip-previous", heightDp = key, widthDp = key, round = true)
+        doc.key(
+            ActionRef(node.id, "previous"),
+            icon = "skip-previous",
+            heightDp = key,
+            widthDp = key,
+            round = true,
+        )
         Box(
             doc.tap(
                 Modifier.size(doc.units.px(key), doc.units.px(key))
@@ -245,10 +290,26 @@ private fun DocContext.mediaBarNode(node: Node, self: Dims, axis: Axis, pages: P
             vertical = RcVerticalPositioning.Center,
         ) {
             val iconDp = key * BlockMetrics.MEDIA_KEY_ICON_SHARE
-            doc.icon("pause", iconDp, doc.role(Role.KEY_ON_INK), doc.int(Vars.entity(id, "playing")))
-            doc.icon("play", iconDp, doc.role(Role.KEY_ON_INK), doc.int(Vars.entity(id, "notplaying")))
+            doc.icon(
+                "pause",
+                iconDp,
+                doc.role(Role.KEY_ON_INK),
+                doc.int(Vars.entity(id, "playing")),
+            )
+            doc.icon(
+                "play",
+                iconDp,
+                doc.role(Role.KEY_ON_INK),
+                doc.int(Vars.entity(id, "notplaying")),
+            )
         }
-        doc.key(ActionRef(node.id, "next"), icon = "skip-next", heightDp = key, widthDp = key, round = true)
+        doc.key(
+            ActionRef(node.id, "next"),
+            icon = "skip-next",
+            heightDp = key,
+            widthDp = key,
+            round = true,
+        )
     }
 }
 
@@ -285,7 +346,9 @@ private fun DocContext.forecastNode(node: Node, self: Dims, axis: Axis, pages: P
         refreshEvery(BlockMetrics.FORECAST_REFRESH_S)
     }
     val forecast = id?.let { data.forecasts[it].orEmpty().take(days) }.orEmpty()
-    val zone = runCatching { ZoneId.of(homeAssistantConfig.timeZone) }.getOrDefault(ZoneId.of("UTC"))
+    val zone = runCatching { ZoneId.of(
+        homeAssistantConfig.timeZone,
+    ) }.getOrDefault(ZoneId.of("UTC"))
     val ink = node.props["color"]?.let { paint(it) } ?: role(Role.INK)
     val soft = role(Role.INK_SOFT)
     scope.Row(
@@ -304,7 +367,9 @@ private fun DocContext.forecastNode(node: Node, self: Dims, axis: Axis, pages: P
                 ) {
                     doc.label(
                         doc.i18n.weekday(day.time.withZoneSameInstant(zone)),
-                        Type.CAPTION, soft, align = RcTextAlign.Center,
+                        Type.CAPTION,
+                        soft,
+                        align = RcTextAlign.Center,
                     )
                     doc.icon(Present.weatherIcon(day.condition), BlockMetrics.FORECAST_ICON_DP, ink)
                     doc.label(
@@ -312,7 +377,9 @@ private fun DocContext.forecastNode(node: Node, self: Dims, axis: Axis, pages: P
                             day.high?.let { "${it.roundToInt()}°" },
                             day.low?.let { "${it.roundToInt()}°" },
                         ).joinToString(" "),
-                        Type.CAPTION, ink, align = RcTextAlign.Center,
+                        Type.CAPTION,
+                        ink,
+                        align = RcTextAlign.Center,
                     )
                 }
             }
@@ -343,16 +410,25 @@ private fun DocContext.presenceNode(node: Node, self: Dims, axis: Axis, pages: P
                     ),
                     vertical = RcVerticalPositioning.Center,
                 ) {
-                    doc.photo(doc.states[personId], personId, "presence.${node.id}.$personId", photo)
+                    doc.photo(
+                        doc.states[personId],
+                        personId,
+                        "presence.${node.id}.$personId",
+                        photo,
+                    )
                     Spacer(Modifier.width(doc.units.px(BlockMetrics.PRESENCE_GAP_DP)))
                     Column {
                         doc.label(
                             doc.text(Vars.entity(personId, Vars.KEY_NAME)),
-                            Type.BODY, doc.role(Role.INK), Weight.SEMI_BOLD, lines = 1,
+                            Type.BODY,
+                            doc.role(Role.INK),
+                            Weight.SEMI_BOLD,
+                            lines = 1,
                         )
                         doc.label(
                             doc.text(Vars.tile(node.id, "where.$personId")),
-                            Type.CAPTION, doc.role(Role.ACCENT_SOFT),
+                            Type.CAPTION,
+                            doc.role(Role.ACCENT_SOFT),
                         )
                     }
                 }
@@ -400,7 +476,10 @@ private fun DocContext.ledNode(node: Node, axis: Axis, pages: Pages) {
         bind(id) { states ->
             val on = Present.view(states[id], i18n).on
             listOf(
-                VarValue.color(Vars.tile(node.id, Vars.KEY_BG), if (on) onColor else Role.INK_DIM.argb),
+                VarValue.color(
+                    Vars.tile(node.id, Vars.KEY_BG),
+                    if (on) onColor else Role.INK_DIM.argb,
+                ),
             )
         }
     }

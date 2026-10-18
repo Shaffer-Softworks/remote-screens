@@ -11,11 +11,15 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class ScreenValidatorTest {
+    private val json = Json { ignoreUnknownKeys = true }
+
     @Test
     fun aCustomSizeIsKeptWithinTheLimits() {
         val s = ScreenValidator.validate(Screen("s", "Wall", designSize = DeviceSize(50, 99999)))
         assertEquals(DeviceSize(DeviceSize.MIN, DeviceSize.MAX), s.designSize)
-        val validated = ScreenValidator.validate(Screen("s", "Wall", designSize = DeviceSize(1100, 700)))
+        val validated = ScreenValidator.validate(
+            Screen("s", "Wall", designSize = DeviceSize(1100, 700)),
+        )
         assertEquals(DeviceSize(1100, 700), validated.designSize)
     }
 
@@ -23,7 +27,8 @@ class ScreenValidatorTest {
     fun barSettingsAreKeptInRange() {
         val s = ScreenValidator.validate(
             Screen(
-                "s", "Wall",
+                "s",
+                "Wall",
                 topBar = TopBar(height = 999, clockWidth = 1, background = "x".repeat(99)),
                 navBar = NavBar(height = 2, labels = "huge", layout = "diagonal", active = "pink"),
             ),
@@ -51,8 +56,8 @@ class ScreenValidatorTest {
 
     @Test
     fun aScreenSavedBeforeCustomSizesHasNone() {
-        val json = """{"schemaVersion":2,"screens":[{"id":"s","name":"Old"}]}"""
-        val data = Json { ignoreUnknownKeys = true }.decodeFromString(LayoutData.serializer(), json)
+        val payload = """{"schemaVersion":2,"screens":[{"id":"s","name":"Old"}]}"""
+        val data = json.decodeFromString(LayoutData.serializer(), payload)
         assertNull(data.screens.single().designSize)
     }
 }

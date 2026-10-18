@@ -26,7 +26,10 @@ class EnrollmentServiceTest {
         val dir = Files.createTempDirectory("apk").toFile()
         File(dir, PlayerApkRepository.APK_FILE_NAME).writeText("apk")
         val checksum = signatureChecksum?.let { """, "signatureChecksum": "$it"""" }.orEmpty()
-        File(dir, "version.json").writeText("""{"versionCode": 100, "versionName": "0.1.0"$checksum}""")
+        File(
+            dir,
+            "version.json",
+        ).writeText("""{"versionCode": 100, "versionName": "0.1.0"$checksum}""")
         return dir
     }
 
@@ -59,17 +62,23 @@ class EnrollmentServiceTest {
             "c2lnbmF0dXJl",
             provisioning["${EXTRA}PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM"]?.jsonPrimitive?.content,
         )
-        assertTrue(provisioning["${EXTRA}PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED"]!!.jsonPrimitive.boolean)
+        assertTrue(
+            provisioning["${EXTRA}PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED"]!!.jsonPrimitive.boolean,
+        )
         assertEquals(
             "192.168.1.10:8100",
-            provisioning["${EXTRA}PROVISIONING_ADMIN_EXTRAS_BUNDLE"]?.jsonObject?.get("server")?.jsonPrimitive?.content,
+            provisioning["${EXTRA}PROVISIONING_ADMIN_EXTRAS_BUNDLE"]?.jsonObject?.get(
+                "server",
+            )?.jsonPrimitive?.content,
         )
         assertNull(provisioning["${EXTRA}PROVISIONING_WIFI_SSID"])
     }
 
     @Test
     fun withoutASignatureTheApkItselfIsChecked() {
-        val enrollment = service(apkDir = apkDir(signatureChecksum = null)).createEnrollment(EnrollmentRequest())
+        val enrollment = service(
+            apkDir = apkDir(signatureChecksum = null),
+        ).createEnrollment(EnrollmentRequest())
         val provisioning = provisioningOf(enrollment.provisioning)
 
         assertNull(provisioning["${EXTRA}PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM"])
@@ -82,17 +91,31 @@ class EnrollmentServiceTest {
 
     @Test
     fun wifiGoesIntoTheCode() {
-        val request = EnrollmentRequest(wifiSsid = "Home", wifiPassword = "secret", wifiSecurity = "wpa")
+        val request = EnrollmentRequest(
+            wifiSsid = "Home",
+            wifiPassword = "secret",
+            wifiSecurity = "wpa",
+        )
         val provisioning = provisioningOf(service().createEnrollment(request).provisioning)
 
         assertEquals("Home", provisioning["${EXTRA}PROVISIONING_WIFI_SSID"]?.jsonPrimitive?.content)
-        assertEquals("secret", provisioning["${EXTRA}PROVISIONING_WIFI_PASSWORD"]?.jsonPrimitive?.content)
-        assertEquals("WPA", provisioning["${EXTRA}PROVISIONING_WIFI_SECURITY_TYPE"]?.jsonPrimitive?.content)
+        assertEquals(
+            "secret",
+            provisioning["${EXTRA}PROVISIONING_WIFI_PASSWORD"]?.jsonPrimitive?.content,
+        )
+        assertEquals(
+            "WPA",
+            provisioning["${EXTRA}PROVISIONING_WIFI_SECURITY_TYPE"]?.jsonPrimitive?.content,
+        )
     }
 
     @Test
     fun anOpenNetworkHasNoPassword() {
-        val request = EnrollmentRequest(wifiSsid = "Guest", wifiPassword = "ignored", wifiSecurity = "NONE")
+        val request = EnrollmentRequest(
+            wifiSsid = "Guest",
+            wifiPassword = "ignored",
+            wifiSecurity = "NONE",
+        )
         val provisioning = provisioningOf(service().createEnrollment(request).provisioning)
 
         assertNull(provisioning["${EXTRA}PROVISIONING_WIFI_PASSWORD"])
@@ -100,7 +123,9 @@ class EnrollmentServiceTest {
 
     @Test
     fun aHostTypedInWinsOverTheOneFound() {
-        val enrollment = service().createEnrollment(EnrollmentRequest(host = " homeassistant.local "))
+        val enrollment = service().createEnrollment(
+            EnrollmentRequest(host = " homeassistant.local "),
+        )
 
         assertTrue(enrollment.downloadUrl.startsWith("http://homeassistant.local:8100/"))
     }
@@ -111,7 +136,10 @@ class EnrollmentServiceTest {
         val token = tokenOf(enrollmentService.createEnrollment(EnrollmentRequest()).downloadUrl)
 
         assertTrue(enrollmentService.isValidToken(token))
-        assertTrue(enrollmentService.isValidToken(token), "several tablets can enroll from one code")
+        assertTrue(
+            enrollmentService.isValidToken(token),
+            "several tablets can enroll from one code",
+        )
 
         currentTime += ONE_HOUR_MS
         assertFalse(enrollmentService.isValidToken(token))
@@ -128,7 +156,9 @@ class EnrollmentServiceTest {
 
     @Test
     fun noCodeWithoutAnAppOrAnAddress() {
-        assertFailsWith<EnrollmentUnavailableException> { service(apkDir = null).createEnrollment(EnrollmentRequest()) }
+        assertFailsWith<EnrollmentUnavailableException> { service(
+            apkDir = null,
+        ).createEnrollment(EnrollmentRequest()) }
         assertFailsWith<EnrollmentUnavailableException> {
             service(defaultHost = null).createEnrollment(EnrollmentRequest())
         }

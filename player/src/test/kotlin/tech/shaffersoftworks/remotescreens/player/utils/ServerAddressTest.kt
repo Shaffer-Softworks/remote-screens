@@ -12,7 +12,10 @@ class ServerAddressTest {
 
     @Test
     fun `keeps a given port and strips scheme and slash`() {
-        assertEquals("homeassistant.local:9000", normalizeServerAddress("  http://homeassistant.local:9000/ "))
+        assertEquals(
+            "homeassistant.local:9000",
+            normalizeServerAddress("  http://homeassistant.local:9000/ "),
+        )
         assertEquals("10.0.0.5:8100", normalizeServerAddress("ws://10.0.0.5:8100"))
     }
 

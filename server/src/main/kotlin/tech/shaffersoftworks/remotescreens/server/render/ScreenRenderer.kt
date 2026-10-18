@@ -62,7 +62,9 @@ class RenderedDoc(
 
     fun vars(states: Map<String, EntityState>): Map<String, VarValue> {
         val out = LinkedHashMap<String, VarValue>()
-        for (b in docContext.bindings) for (v in runCatching { b.compute(states) }.getOrDefault(emptyList())) if (docContext.declares(v.name)) out[v.name] = v
+        for (b in docContext.bindings) for (v in runCatching { b.compute(
+            states,
+        ) }.getOrDefault(emptyList())) if (docContext.declares(v.name)) out[v.name] = v
         return out
     }
 
@@ -95,7 +97,14 @@ class RenderInput(
     val data: RenderData,
     val palette: Palette = Themes.RPI,
 ) {
-    fun context(device: Device) = DocContext(Units(device.density), palette, i18n, states, homeAssistantConfig, data)
+    fun context(device: Device) = DocContext(
+        Units(device.density),
+        palette,
+        i18n,
+        states,
+        homeAssistantConfig,
+        data,
+    )
 }
 
 object ScreenRenderer {
@@ -111,7 +120,12 @@ object ScreenRenderer {
         val navBar = Grid.navBarHeight(screen.navBar, widthDp)
         val spec = Grid.spec(screen.grid, widthDp, device.heightDp.toFloat(), topBar, navBar)
 
-        val (bytes, docContext) = DocContext.build(device.widthPx, device.heightPx, screen.name, { input.context(device) }) { docContext ->
+        val (bytes, docContext) = DocContext.build(
+            device.widthPx,
+            device.heightPx,
+            screen.name,
+            { input.context(device) },
+        ) { docContext ->
             docContext.bindSystem(screen)
             val page = docContext.int(Vars.PAGE, home)
             Box(Modifier.fillMaxSize().background(docContext.role(Role.PAGE))) {
@@ -141,17 +155,35 @@ object ScreenRenderer {
         val contentH = spec.heightDp - spec.topBar - spec.navBar
         val root = page.root
         if (root != null) {
-            freeForm(root, 0f, spec.topBar, spec.widthDp, contentH, pageIndex) { id -> screen.pages.firstOrNull { it.id == id }?.title }
+            freeForm(
+                root,
+                0f,
+                spec.topBar,
+                spec.widthDp,
+                contentH,
+                pageIndex,
+            ) { id -> screen.pages.firstOrNull { it.id == id }?.title }
             navBar(screen, spec, visible, index, home)
             return
         }
         val placed = Reflow.place(page.tiles.filter { tileUsable(it) }, screen.grid)
         if (placed.isEmpty()) {
             at(0f, spec.topBar) {
-                scope.Box(Modifier.size(units.px(spec.widthDp), units.px(contentH)),
-                    horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-                    this@page.label(this@page.i18n.t("ui.empty_page"), Type.TITLE, this@page.role(Role.INK_SOFT), align = RcTextAlign.Center, lines = 3,
-                        modifier = Modifier.width(this@page.units.px(spec.widthDp * TOP_BAR_MIN_SCALE)))
+                scope.Box(
+                    Modifier.size(units.px(spec.widthDp), units.px(contentH)),
+                    horizontal = RcHorizontalPositioning.Center,
+                    vertical = RcVerticalPositioning.Center,
+                ) {
+                    this@page.label(
+                        this@page.i18n.t("ui.empty_page"),
+                        Type.TITLE,
+                        this@page.role(Role.INK_SOFT),
+                        align = RcTextAlign.Center,
+                        lines = 3,
+                        modifier = Modifier.width(
+                            this@page.units.px(spec.widthDp * TOP_BAR_MIN_SCALE),
+                        ),
+                    )
                 }
             }
         }
@@ -163,7 +195,13 @@ object ScreenRenderer {
             } else {
                 TileBox(spec.x(p.col), spec.y(p.row), spec.w(p.w), spec.h(p.h), p.w, p.h, full)
             }
-            val named = if (tile.effectiveKind() == "nav" && tile.name == null) tile.copy(name = screen.pages.firstOrNull { it.id == tile.options["page"] }?.title) else tile
+            val named = if (tile.effectiveKind() == "nav" && tile.name == null) {
+                tile.copy(
+                    name = screen.pages.firstOrNull { it.id == tile.options["page"] }?.title,
+                )
+            } else {
+                tile
+            }
             tile(named, box, pageIndex)
         }
         navBar(screen, spec, visible, index, home)
@@ -183,7 +221,10 @@ object ScreenRenderer {
         val ink = role(Role.INK)
         val layoutScale = (spec.topBar / Grid.TOP_BAR).coerceIn(TOP_BAR_MIN_SCALE, 2f)
         val headerSp = HEADER_SP * layoutScale
-        val clockW = bar.clockWidth?.let { spec.widthDp * it / 100f } ?: minOf(CLOCK_MAX_WIDTH_DP, spec.widthDp * CLOCK_WIDTH_SHARE)
+        val clockW = bar.clockWidth?.let { spec.widthDp * it / 100f } ?: minOf(
+            CLOCK_MAX_WIDTH_DP,
+            spec.widthDp * CLOCK_WIDTH_SHARE,
+        )
         val background = bar.background?.let { paint(it) } ?: role(Role.HEADER)
         val clockBackground = bar.clockBackground?.let { paint(it) } ?: role(Role.HEADER_DARK)
         scope.Row(
@@ -193,11 +234,20 @@ object ScreenRenderer {
             val doc = this@topBar
             if (bar.clock) {
                 Row(
-                    Modifier.width(doc.units.px(clockW)).fillMaxHeight().background(clockBackground),
-                    horizontal = RcRowHorizontalPositioning.SpaceEvenly, vertical = RcVerticalPositioning.Center,
+                    Modifier.width(
+                        doc.units.px(clockW),
+                    ).fillMaxHeight().background(clockBackground),
+                    horizontal = RcRowHorizontalPositioning.SpaceEvenly,
+                    vertical = RcVerticalPositioning.Center,
                 ) {
                     doc.label(doc.text(Vars.TIME), headerSp, ink, Weight.BOLD)
-                    if (bar.date && spec.widthDp >= Grid.NARROW) doc.label(doc.text(Vars.DAY), headerSp, ink)
+                    if (bar.date && spec.widthDp >= Grid.NARROW) {
+                        doc.label(
+                            doc.text(Vars.DAY),
+                            headerSp,
+                            ink,
+                        )
+                    }
                 }
             }
             Spacer(Modifier.width(doc.units.px(spec.padding + CLOCK_PAD_EXTRA_DP)))
@@ -205,7 +255,13 @@ object ScreenRenderer {
                 if (back) {
                     val keyDp = minOf(34f * layoutScale, spec.topBar - 6f)
                     val backRef = ActionRef("_", "back", home.toString())
-                    doc.key(backRef, icon = "arrow-left", heightDp = keyDp, widthDp = keyDp, round = true)
+                    doc.key(
+                        backRef,
+                        icon = "arrow-left",
+                        heightDp = keyDp,
+                        widthDp = keyDp,
+                        round = true,
+                    )
                     Spacer(Modifier.width(doc.units.px(NAV_LABEL_BASE_SP * layoutScale)))
                     doc.label(page.title, Type.TITLE * layoutScale, ink, Weight.MEDIUM)
                 }
@@ -243,7 +299,12 @@ object ScreenRenderer {
     /** Battery level with the idle / charging icons swapped by visibility. */
     private fun DocContext.topBarBattery(headerSp: Float, layoutScale: Float, ink: RcColor) {
         val tint = role(Role.ACCENT_SOFT)
-        scope.Box(Modifier.size(units.px(STAT_ICON_DP * layoutScale), units.px(STAT_ICON_DP * layoutScale))) {
+        scope.Box(
+            Modifier.size(
+                units.px(STAT_ICON_DP * layoutScale),
+                units.px(STAT_ICON_DP * layoutScale),
+            ),
+        ) {
             icon("battery", STAT_ICON_DP * layoutScale, tint, int(Vars.BATTERY_IDLE))
             icon("battery-charging", STAT_ICON_DP * layoutScale, tint, int(Vars.BATTERY_CHARGING))
         }
@@ -260,25 +321,63 @@ object ScreenRenderer {
         val bar = screen.navBar
         val barH = spec.navBar - NAV_LINE
         val count = visible.size + 1
-        val buttonW = if (bar.layout == "fill") spec.widthDp / count else minOf(barH, spec.widthDp / count)
+        val buttonW = if (bar.layout == "fill") {
+            spec.widthDp / count
+        } else {
+            minOf(
+                barH,
+                spec.widthDp / count,
+            )
+        }
         val layoutScale = barH / (Grid.navBar(spec.widthDp) - NAV_LINE)
-        val style = NavStyle(bar.labels, layoutScale, bar.active?.let { paint(it) } ?: role(Role.NAV_ON))
+        val style = NavStyle(
+            bar.labels,
+            layoutScale,
+            bar.active?.let { paint(it) } ?: role(Role.NAV_ON),
+        )
         val lineColor = bar.line?.let { paint(it) } ?: role(Role.NAV_LINE)
         val background = bar.background?.let { paint(it) } ?: role(Role.NAV)
-        at(0f, spec.heightDp - spec.navBar) { scope.Column(Modifier.size(units.px(spec.widthDp), units.px(spec.navBar))) {
+        at(
+            0f,
+            spec.heightDp - spec.navBar,
+        ) { scope.Column(Modifier.size(units.px(spec.widthDp), units.px(spec.navBar))) {
             val doc = this@navBar
-            Box(Modifier.size(doc.units.px(spec.widthDp), doc.units.px(NAV_LINE)).background(lineColor))
+            Box(
+                Modifier.size(
+                    doc.units.px(spec.widthDp),
+                    doc.units.px(NAV_LINE),
+                ).background(lineColor),
+            )
             Row(
-                Modifier.size(doc.units.px(spec.widthDp), doc.units.px(barH)).background(background),
+                Modifier.size(
+                    doc.units.px(spec.widthDp),
+                    doc.units.px(barH),
+                ).background(background),
                 horizontal = navArrangement(bar.layout, count),
                 vertical = RcVerticalPositioning.Center,
             ) {
                 for (i in visible) {
                     val p = screen.pages[i]
                     val icon = p.icon ?: if (i == home) "home" else "view-dashboard"
-                    doc.navButton(p.title, icon, buttonW, barH, i == current, ActionRef("_", "page", i.toString()), style)
+                    doc.navButton(
+                        p.title,
+                        icon,
+                        buttonW,
+                        barH,
+                        i == current,
+                        ActionRef("_", "page", i.toString()),
+                        style,
+                    )
                 }
-                doc.navButton(doc.i18n.t("ui.settings"), "cog", buttonW, barH, false, ActionRef("_", "settings"), style)
+                doc.navButton(
+                    doc.i18n.t("ui.settings"),
+                    "cog",
+                    buttonW,
+                    barH,
+                    false,
+                    ActionRef("_", "settings"),
+                    style,
+                )
             }
         } }
     }
@@ -305,7 +404,11 @@ object ScreenRenderer {
     ) {
         var modifier = Modifier.size(units.px(wDp), units.px(hDp))
         if (on) modifier = modifier.background(style.on)
-        scope.Column(tap(modifier, ref), horizontal = RcHorizontalPositioning.Center, vertical = RcColumnVerticalPositioning.Center) {
+        scope.Column(
+            tap(modifier, ref),
+            horizontal = RcHorizontalPositioning.Center,
+            vertical = RcColumnVerticalPositioning.Center,
+        ) {
             val doc = this@navButton
             val word = title.uppercase(doc.i18n.locale)
             val wordW = Modifier.width(doc.units.px(wDp - STAT_ICON_GAP_DP))
@@ -313,13 +416,35 @@ object ScreenRenderer {
             when (style.labels) {
                 "icons" -> doc.icon(icon, minOf(NAV_ICON_ONLY_MAX, hDp * NAV_ICON_ONLY_SHARE), ink)
                 "text" -> {
-                    val sp = (NAV_WORD_ONLY_SP * style.layoutScale).coerceIn(NAV_WORD_ONLY_MIN_SP, NAV_WORD_ONLY_MAX_SP)
-                    doc.label(word, sp, ink, Weight.MEDIUM, lines = 2, align = RcTextAlign.Center, modifier = wordW)
+                    val sp = (NAV_WORD_ONLY_SP * style.layoutScale).coerceIn(
+                        NAV_WORD_ONLY_MIN_SP,
+                        NAV_WORD_ONLY_MAX_SP,
+                    )
+                    doc.label(
+                        word,
+                        sp,
+                        ink,
+                        Weight.MEDIUM,
+                        lines = 2,
+                        align = RcTextAlign.Center,
+                        modifier = wordW,
+                    )
                 }
                 else -> {
                     doc.icon(icon, minOf(NAV_BOTH_ICON_MAX_DP, hDp * NAV_BOTH_ICON_SHARE), ink)
-                    Spacer(Modifier.height(doc.units.px(NAV_ICON_LABEL_GAP_DP * style.layoutScale.coerceAtMost(NAV_GAP_MAX_SCALE))))
-                    val sp = (NAV_LABEL_BASE_SP * style.layoutScale).coerceIn(NAV_LABEL_MIN_SP, NAV_LABEL_MAX_SP)
+                    Spacer(
+                        Modifier.height(
+                            doc.units.px(
+                                NAV_ICON_LABEL_GAP_DP * style.layoutScale.coerceAtMost(
+                                    NAV_GAP_MAX_SCALE,
+                                ),
+                            ),
+                        ),
+                    )
+                    val sp = (NAV_LABEL_BASE_SP * style.layoutScale).coerceIn(
+                        NAV_LABEL_MIN_SP,
+                        NAV_LABEL_MAX_SP,
+                    )
                     doc.label(word, sp, ink, align = RcTextAlign.Center, modifier = wordW)
                 }
             }
@@ -344,8 +469,13 @@ object ScreenRenderer {
             val entityState = tempEntity?.let { states[it] }
             val text = when {
                 entityState == null -> ""
-                entityState.domain == "weather" -> entityState.number("temperature")?.let { i18n.number(it, 0) + "°" } ?: ""
-                else -> entityState.numericState()?.let { i18n.number(it, 0) + "°" } ?: entityState.state
+                entityState.domain == "weather" -> entityState.number(
+                    "temperature",
+                )?.let { i18n.number(it, 0) + "°" } ?: ""
+                else -> entityState.numericState()?.let { i18n.number(
+                    it,
+                    0,
+                ) + "°" } ?: entityState.state
             }
             listOf(VarValue.string(Vars.TEMP, text))
         }

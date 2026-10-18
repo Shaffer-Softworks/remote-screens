@@ -40,7 +40,10 @@ class RcSpikeTest {
 
         val doc = CoreDocument()
         doc.initFromBuffer(RemoteComposeBuffer.fromInputStream(ByteArrayInputStream(bytes)))
-        assertContains(doc.getNamedVariables(NamedVariable.STRING_TYPE).toList(), "USER:e.light.kitchen.label")
+        assertContains(
+            doc.getNamedVariables(NamedVariable.STRING_TYPE).toList(),
+            "USER:e.light.kitchen.label",
+        )
         assertContains(doc.getNamedVariables(NamedVariable.INT_TYPE).toList(), "USER:page")
         assertContains(doc.getNamedVariables(NamedVariable.COLOR_TYPE).toList(), "USER:t.1.bg")
     }

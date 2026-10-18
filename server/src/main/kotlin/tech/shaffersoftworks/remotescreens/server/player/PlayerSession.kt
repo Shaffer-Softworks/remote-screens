@@ -172,7 +172,9 @@ class PlayerSession(
                 sendVars(deviceVars())
             }
             is PlayerMessage.SettingsChanged ->
-                screenId?.let { id -> context.screenService.updateSettings(id) { message.settings } }
+                screenId?.let { id -> context.screenService.updateSettings(
+                    id,
+                ) { message.settings } }
             is PlayerMessage.Action -> handleAction(message)
             is PlayerMessage.VideoFailed -> media.restartVideo(message)
             is PlayerMessage.Hello -> Unit
@@ -206,7 +208,9 @@ class PlayerSession(
                     send(ServerMessage.Vars(listOf(VarValue.string(outcome.varName, ""))))
                 }
             }
-            is TapOutcome.Code -> send(ServerMessage.Vars(listOf(VarValue.string(outcome.varName, outcome.shown))))
+            is TapOutcome.Code -> send(
+                ServerMessage.Vars(listOf(VarValue.string(outcome.varName, outcome.shown))),
+            )
             is TapOutcome.Failed -> {
                 send(ServerMessage.Toast(outcome.message))
                 documents.resync()
@@ -229,13 +233,19 @@ class PlayerSession(
         shownDocuments.remove(Slot.ALERT)
         send(ServerMessage.Close(Slot.ALERT))
         if (ref.verb == "button") {
-            alert.buttons.getOrNull(ref.arg.toIntOrNull() ?: -1)?.let { button -> pressAlertButton(alert, button) }
+            alert.buttons.getOrNull(
+                ref.arg.toIntOrNull() ?: -1,
+            )?.let { button -> pressAlertButton(alert, button) }
         }
     }
 
     private suspend fun pressAlertButton(alert: Alert, button: AlertButton) {
         button.service?.split('.', limit = 2)?.takeIf { it.size == 2 }?.let { (domain, service) ->
-            runCatching { homeAssistant.callService(domain, service, button.data ?: JsonObject(emptyMap())) }
+            runCatching { homeAssistant.callService(
+                domain,
+                service,
+                button.data ?: JsonObject(emptyMap()),
+            ) }
                 .onFailure { send(ServerMessage.Toast(it.message ?: "Failed")) }
         }
         runCatching {

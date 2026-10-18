@@ -5,6 +5,10 @@ plugins {
     `java-library`
 }
 
+detekt {
+    baseline.set(file("detekt-baseline.xml"))
+}
+
 kotlin {
     jvmToolchain(21)
     compilerOptions {

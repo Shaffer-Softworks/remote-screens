@@ -193,11 +193,23 @@ fun DocContext.key(
 ) {
     var box = modifier.height(units.px(heightDp))
     box = if (widthDp != null) box.width(units.px(widthDp)) else box
-    box = box.clip(rounded(if (round) heightDp / 2f else heightDp / KEY_CORNER_DIVISOR)).background(bg)
+    box = box.clip(
+        rounded(if (round) heightDp / 2f else heightDp / KEY_CORNER_DIVISOR),
+    ).background(bg)
     box = tap(box, ref)
     val padded = box.padding(units.px(KEY_PADDING_DP), 0f, units.px(KEY_PADDING_DP), 0f)
-    scope.Row(padded, horizontal = RcRowHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-        if (icon != null) this@key.icon(icon, if (text == null) heightDp * KEY_ICON_ONLY_RATIO else KEY_ICON_DP, ink)
+    scope.Row(
+        padded,
+        horizontal = RcRowHorizontalPositioning.Center,
+        vertical = RcVerticalPositioning.Center,
+    ) {
+        if (icon != null) {
+            this@key.icon(
+                icon,
+                if (text == null) heightDp * KEY_ICON_ONLY_RATIO else KEY_ICON_DP,
+                ink,
+            )
+        }
         if (icon != null && text != null) Spacer(Modifier.width(this@key.units.px(KEY_ICON_GAP_DP)))
         if (text != null) this@key.label(text, Type.BODY, ink, weight = Weight.MEDIUM)
     }
@@ -205,9 +217,18 @@ fun DocContext.key(
 
 /** A circle with a word in it, standing in for a person's photo. */
 fun DocContext.initials(name: String, sizeDp: Float, bg: RcColor, ink: RcColor) {
-    val letters = name.split(' ').filter { it.isNotBlank() }.take(2).joinToString("") { it.take(1).uppercase() }
-    val circle = Modifier.size(units.px(sizeDp), units.px(sizeDp)).clip(rounded(sizeDp / 2f)).background(bg)
-    scope.Box(circle, horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
+    val letters = name.split(
+        ' ',
+    ).filter { it.isNotBlank() }.take(2).joinToString("") { it.take(1).uppercase() }
+    val circle = Modifier.size(
+        units.px(sizeDp),
+        units.px(sizeDp),
+    ).clip(rounded(sizeDp / 2f)).background(bg)
+    scope.Box(
+        circle,
+        horizontal = RcHorizontalPositioning.Center,
+        vertical = RcVerticalPositioning.Center,
+    ) {
         this@initials.label(letters, sizeDp * INITIALS_TEXT_RATIO, ink, weight = Weight.SEMI_BOLD)
     }
 }

@@ -83,7 +83,11 @@ internal object CardChrome {
     const val FORECAST_DAYS = 7
 }
 
-internal fun ref(entityId: String, verb: String, arg: String = "") = ActionRef("e:$entityId", verb, arg)
+internal fun ref(entityId: String, verb: String, arg: String = "") = ActionRef(
+    "e:$entityId",
+    verb,
+    arg,
+)
 
 internal fun DocContext.header(entityId: String, card: String) {
     val ink = role(Role.INK)
@@ -91,22 +95,44 @@ internal fun DocContext.header(entityId: String, card: String) {
     // Mockup: circular close on the left, title centred (balanced by a matching spacer).
     scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@header
-        doc.key(ActionRef("_", "close"), icon = "close", heightDp = CardChrome.CLOSE_KEY_DP, widthDp = CardChrome.CLOSE_KEY_DP, round = true)
+        doc.key(
+            ActionRef("_", "close"),
+            icon = "close",
+            heightDp = CardChrome.CLOSE_KEY_DP,
+            widthDp = CardChrome.CLOSE_KEY_DP,
+            round = true,
+        )
         Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
             if (card == "energy") {
-                doc.label(doc.i18n.t("ui.house"), Type.HEADLINE, ink, Weight.SEMI_BOLD, align = RcTextAlign.Center)
+                doc.label(
+                    doc.i18n.t("ui.house"),
+                    Type.HEADLINE,
+                    ink,
+                    Weight.SEMI_BOLD,
+                    align = RcTextAlign.Center,
+                )
             } else {
                 doc.label(
                     doc.text(Vars.entity(entityId, Vars.KEY_NAME)),
-                    Type.HEADLINE, ink, Weight.SEMI_BOLD, align = RcTextAlign.Center,
+                    Type.HEADLINE,
+                    ink,
+                    Weight.SEMI_BOLD,
+                    align = RcTextAlign.Center,
                 )
                 doc.label(
                     doc.text(Vars.entity(entityId, Vars.KEY_STATE)),
-                    Type.BODY, soft, align = RcTextAlign.Center,
+                    Type.BODY,
+                    soft,
+                    align = RcTextAlign.Center,
                 )
             }
         }
-        Spacer(Modifier.size(doc.units.px(CardChrome.CLOSE_KEY_DP), doc.units.px(CardChrome.CLOSE_KEY_DP)))
+        Spacer(
+            Modifier.size(
+                doc.units.px(CardChrome.CLOSE_KEY_DP),
+                doc.units.px(CardChrome.CLOSE_KEY_DP),
+            ),
+        )
     }
 }
 
@@ -116,9 +142,26 @@ internal fun DocContext.bigToggle(entityId: String, entityState: EntityState?, v
     predict(r, entityId)
     scope.Box(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
         val doc = this@bigToggle
-        Box(doc.tap(Modifier.size(doc.units.px(CardChrome.TOGGLE_DP), doc.units.px(CardChrome.TOGGLE_DP)).clip(doc.rounded((CardChrome.TOGGLE_DP) / 2f)).background(doc.color(Vars.tile(CardRenderer.TILE, Vars.KEY_BG))), r),
-            horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-            doc.toggleIcon(entityId, spec?.icon ?: "power", spec?.iconOn, CardChrome.TOGGLE_ICON_DP, doc.color(Vars.tile(CardRenderer.TILE, Vars.KEY_BG_INK)))
+        Box(
+            doc.tap(
+                Modifier.size(
+                    doc.units.px(CardChrome.TOGGLE_DP),
+                    doc.units.px(CardChrome.TOGGLE_DP),
+                ).clip(
+                    doc.rounded((CardChrome.TOGGLE_DP) / 2f),
+                ).background(doc.color(Vars.tile(CardRenderer.TILE, Vars.KEY_BG))),
+                r,
+            ),
+            horizontal = RcHorizontalPositioning.Center,
+            vertical = RcVerticalPositioning.Center,
+        ) {
+            doc.toggleIcon(
+                entityId,
+                spec?.icon ?: "power",
+                spec?.iconOn,
+                CardChrome.TOGGLE_ICON_DP,
+                doc.color(Vars.tile(CardRenderer.TILE, Vars.KEY_BG_INK)),
+            )
         }
     }
 }
@@ -147,7 +190,9 @@ internal fun DocContext.bar(
         steps = CardChrome.LEVEL_STEPS,
         levelOf = { states ->
             if (level == "tilt") {
-                ((states[entityId]?.number("current_tilt_position") ?: 0.0) / CardChrome.LEVEL_DEFAULT_MAX).toFloat()
+                ((states[entityId]?.number(
+                    "current_tilt_position",
+                ) ?: 0.0) / CardChrome.LEVEL_DEFAULT_MAX).toFloat()
             } else {
                 Present.view(states[entityId], i18n).level ?: 0f
             }
@@ -157,7 +202,14 @@ internal fun DocContext.bar(
         ref(
             entityId,
             verb,
-            if (value % 1.0 == 0.0) value.toInt().toString() else "%.1f".format(java.util.Locale.ROOT, value),
+            if (value % 1.0 == 0.0) {
+                value.toInt().toString()
+            } else {
+                "%.1f".format(
+                    java.util.Locale.ROOT,
+                    value,
+                )
+            },
         )
     }
 }
@@ -166,7 +218,17 @@ internal fun DocContext.swatches(colors: List<Pair<Int, ActionRef>>) {
     scope.Row(Modifier.fillMaxWidth(), horizontal = RcRowHorizontalPositioning.SpaceBetween) {
         val doc = this@swatches
         for ((argb, r) in colors) {
-            Box(doc.tap(Modifier.size(doc.units.px(CardChrome.SWATCH_DP), doc.units.px(CardChrome.SWATCH_DP)).clip(doc.rounded((CardChrome.SWATCH_DP) / 2f)).background(doc.fixed(argb or CardChrome.OPAQUE_ARGB.toInt())), r))
+            Box(
+                doc.tap(
+                    Modifier.size(
+                        doc.units.px(CardChrome.SWATCH_DP),
+                        doc.units.px(CardChrome.SWATCH_DP),
+                    ).clip(
+                        doc.rounded((CardChrome.SWATCH_DP) / 2f),
+                    ).background(doc.fixed(argb or CardChrome.OPAQUE_ARGB)),
+                    r,
+                ),
+            )
         }
     }
 }
@@ -179,13 +241,26 @@ internal fun DocContext.flowKeys(
 ) {
     bindChoices(entityId, verb, entityId, choices.map { it.first }, chosen)
     if (choices.size in 2..CardChrome.FLOW_KEYS_SEGMENT_MAX) {
-        choiceRow(entityId, verb, choices, { ref(entityId, verb, it) }, CardChrome.FLOW_KEY_SEG_H_DP)
+        choiceRow(
+            entityId,
+            verb,
+            choices,
+            { ref(entityId, verb, it) },
+            CardChrome.FLOW_KEY_SEG_H_DP,
+        )
         return
     }
     scope.Flow(Modifier.fillMaxWidth()) {
         val doc = this@flowKeys
         choices.forEachIndexed { index, (value, word) ->
-            Box(Modifier.padding(0f, 0f, doc.units.px(CardChrome.FLOW_PAD_DP), doc.units.px(CardChrome.FLOW_PAD_DP))) {
+            Box(
+                Modifier.padding(
+                    0f,
+                    0f,
+                    doc.units.px(CardChrome.FLOW_PAD_DP),
+                    doc.units.px(CardChrome.FLOW_PAD_DP),
+                ),
+            ) {
                 doc.key(
                     ref(entityId, verb, value),
                     text = word,

@@ -20,17 +20,31 @@ internal fun DocContext.lightCard(entityId: String, entityState: EntityState?, w
     }
     if (modes.any { it in setOf("hs", "rgb", "rgbw", "rgbww", "xy") }) {
         section(i18n.t("ui.colour"))
-        swatches(HUES.map { h -> Color.HSBtoRGB(h / CardChrome.HUE_DEGREES, CardChrome.HUE_SATURATION, 1f) to ref(entityId, "hue", h.toString()) })
+        swatches(
+            HUES.map { h -> Color.HSBtoRGB(
+                h / CardChrome.HUE_DEGREES,
+                CardChrome.HUE_SATURATION,
+                1f,
+            ) to ref(entityId, "hue", h.toString()) },
+        )
     }
     if ("color_temp" in modes) {
         section(i18n.t("ui.white"))
-        swatches(KELVINS.map { kelvin -> kelvinColor(kelvin) to ref(entityId, "kelvin", kelvin.toString()) })
+        swatches(
+            KELVINS.map { kelvin -> kelvinColor(
+                kelvin,
+            ) to ref(entityId, "kelvin", kelvin.toString()) },
+        )
     }
     val effects = entityState?.list("effect_list").orEmpty()
     if (effects.isNotEmpty()) {
         structural(entityId) { it?.list("effect_list")?.joinToString() ?: "" }
         section(i18n.t("ui.effects"))
-        flowKeys(entityId, "effect", effects.take(CardChrome.EFFECTS_TAKE).map { it to it }) { it.attr("effect") }
+        flowKeys(
+            entityId,
+            "effect",
+            effects.take(CardChrome.EFFECTS_TAKE).map { it to it },
+        ) { it.attr("effect") }
     }
 }
 
@@ -47,7 +61,9 @@ internal fun DocContext.fanCard(entityId: String, entityState: EntityState?, w: 
             it?.list("preset_modes")?.joinToString(),
         ).joinToString("|")
     }
-    if (entityState?.supports(CardChrome.FAN_OSCILLATE_FLAG) == true || entityState?.attr("oscillating") != null) {
+    if (entityState?.supports(
+            CardChrome.FAN_OSCILLATE_FLAG,
+        ) == true || entityState?.attr("oscillating") != null) {
         section(i18n.t("ui.oscillate"))
         flowKeys(
             entityId,
@@ -55,7 +71,9 @@ internal fun DocContext.fanCard(entityId: String, entityState: EntityState?, w: 
             listOf("true" to i18n.t("state.on"), "false" to i18n.t("state.off")),
         ) { it.attr("oscillating")?.lowercase() }
     }
-    if (entityState?.supports(CardChrome.FAN_DIRECTION_FLAG) == true || entityState?.attr("direction") != null) {
+    if (entityState?.supports(
+            CardChrome.FAN_DIRECTION_FLAG,
+        ) == true || entityState?.attr("direction") != null) {
         section(i18n.t("ui.direction"))
         flowKeys(
             entityId,
@@ -66,7 +84,11 @@ internal fun DocContext.fanCard(entityId: String, entityState: EntityState?, w: 
     val presets = entityState?.list("preset_modes").orEmpty()
     if (presets.isNotEmpty()) {
         section(i18n.t("ui.preset"))
-        flowKeys(entityId, "preset", presets.map { it to it.replace('_', ' ').replaceFirstChar(Char::uppercase) }) {
+        flowKeys(
+            entityId,
+            "preset",
+            presets.map { it to it.replace('_', ' ').replaceFirstChar(Char::uppercase) },
+        ) {
             it.attr("preset_mode")
         }
     }
@@ -84,17 +106,26 @@ internal fun DocContext.humidifierCard(entityId: String, entityState: EntityStat
         val doc = this@humidifierCard
         doc.key(
             ref(entityId, "humidity", "-$step"),
-            icon = "minus", heightDp = CardChrome.STEPPER_KEY_DP, widthDp = CardChrome.STEPPER_KEY_DP, round = true,
+            icon = "minus",
+            heightDp = CardChrome.STEPPER_KEY_DP,
+            widthDp = CardChrome.STEPPER_KEY_DP,
+            round = true,
         )
         Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
             doc.label(
                 doc.text(Vars.entity(entityId, Vars.KEY_VALUE)),
-                Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center,
+                Type.DISPLAY,
+                doc.role(Role.INK),
+                Weight.NORMAL,
+                align = RcTextAlign.Center,
             )
         }
         doc.key(
             ref(entityId, "humidity", "+$step"),
-            icon = "plus", heightDp = CardChrome.STEPPER_KEY_DP, widthDp = CardChrome.STEPPER_KEY_DP, round = true,
+            icon = "plus",
+            heightDp = CardChrome.STEPPER_KEY_DP,
+            widthDp = CardChrome.STEPPER_KEY_DP,
+            round = true,
         )
     }
     gap(CardChrome.CARD_GAP_DP)
@@ -103,7 +134,11 @@ internal fun DocContext.humidifierCard(entityId: String, entityState: EntityStat
     if (modes.isNotEmpty()) {
         structural(entityId) { it?.list("available_modes")?.joinToString() ?: "" }
         section(i18n.t("ui.mode"))
-        flowKeys(entityId, "mode", modes.map { it to it.replace('_', ' ').replaceFirstChar(Char::uppercase) }) {
+        flowKeys(
+            entityId,
+            "mode",
+            modes.map { it to it.replace('_', ' ').replaceFirstChar(Char::uppercase) },
+        ) {
             it.attr("mode")
         }
     }

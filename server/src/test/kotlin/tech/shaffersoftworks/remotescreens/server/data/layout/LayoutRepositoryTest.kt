@@ -16,7 +16,10 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class LayoutRepositoryTest {
-    private val fixtures = File(System.getProperty("fixtures.dir") ?: "../tests/fixtures", "layouts")
+    private val fixtures = File(
+        System.getProperty("fixtures.dir") ?: "../tests/fixtures",
+        "layouts",
+    )
 
     private fun dirWith(layout: String): File = Files.createTempDirectory("layouts").toFile().also {
         File(it, "layouts.json").writeText(layout)
@@ -36,10 +39,15 @@ class LayoutRepositoryTest {
 
     @Test
     fun theV2FixtureKeepsItsFreeFormTree() {
-        val s = LayoutRepository(dirWith(File(fixtures, "v2.json").readText())).layout.value.screens.single()
+        val s = LayoutRepository(
+            dirWith(File(fixtures, "v2.json").readText()),
+        ).layout.value.screens.single()
         val root = s.pages[0].root!!
         assertEquals("column", root.type)
-        assertEquals(listOf("n1", "n2", "n3", "n4", "n5", "n6", "n7"), root.walk().map { it.id }.toList())
+        assertEquals(
+            listOf("n1", "n2", "n3", "n4", "n5", "n6", "n7"),
+            root.walk().map { it.id }.toList(),
+        )
         assertEquals("light.kitchen", root.walk().first { it.type == "tile" }.tile?.entityId)
         assertEquals("value", root.walk().first { it.id == "n6" }.bind?.format)
         assertEquals(null, s.pages[1].root)
@@ -69,10 +77,14 @@ class LayoutRepositoryTest {
 
     @Test
     fun aNewerSchemaIsKeptAsideNotOverwritten() {
-        val dir = dirWith("""{"schemaVersion": ${SCHEMA_VERSION + 1}, "screens": [], "somethingNew": true}""")
+        val dir = dirWith(
+            """{"schemaVersion": ${SCHEMA_VERSION + 1}, "screens": [], "somethingNew": true}""",
+        )
         val repository = LayoutRepository(dir)
         assertTrue(repository.layout.value.screens.isEmpty())
-        assertTrue(File(dir, "layouts.v${SCHEMA_VERSION + 1}.json").readText().contains("somethingNew"))
+        assertTrue(
+            File(dir, "layouts.v${SCHEMA_VERSION + 1}.json").readText().contains("somethingNew"),
+        )
     }
 
     @Test
@@ -87,9 +99,15 @@ class LayoutRepositoryTest {
     fun migrationsRunInOrderAndStampTheVersion() {
         val steps = mapOf<Int, (JsonObject) -> JsonObject>(
             1 to { JsonObject(it + ("one" to JsonPrimitive(true))) },
-            2 to { o -> JsonObject(o + ("two" to JsonPrimitive(o["one"]?.jsonPrimitive?.content == "true"))) },
+            2 to { o -> JsonObject(
+                o + ("two" to JsonPrimitive(o["one"]?.jsonPrimitive?.content == "true")),
+            ) },
         )
-        val out = LayoutMigrations.migrate(JsonObject(mapOf("schemaVersion" to JsonPrimitive(1))), steps, target = 3)
+        val out = LayoutMigrations.migrate(
+            JsonObject(mapOf("schemaVersion" to JsonPrimitive(1))),
+            steps,
+            target = 3,
+        )
         assertEquals(3, out["schemaVersion"]?.jsonPrimitive?.intOrNull)
         assertEquals("true", out["two"]?.jsonPrimitive?.content)
         val unversioned = LayoutMigrations.migrate(JsonObject(emptyMap()), steps, target = 2)

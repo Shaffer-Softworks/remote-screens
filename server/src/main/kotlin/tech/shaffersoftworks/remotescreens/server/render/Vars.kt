@@ -74,8 +74,14 @@ private class EntityBinding(
             VarValue.string(Vars.entity(entityId, Vars.KEY_NAME), view.name),
             VarValue.string(Vars.entity(entityId, Vars.KEY_STATE), view.stateText),
             VarValue.string(Vars.entity(entityId, Vars.KEY_VALUE), view.value),
-            VarValue.int(Vars.entity(entityId, Vars.KEY_ON), if (view.on) Vars.VISIBLE else Vars.GONE),
-            VarValue.int(Vars.entity(entityId, Vars.KEY_OFF), if (view.on) Vars.GONE else Vars.VISIBLE),
+            VarValue.int(
+                Vars.entity(entityId, Vars.KEY_ON),
+                if (view.on) Vars.VISIBLE else Vars.GONE,
+            ),
+            VarValue.int(
+                Vars.entity(entityId, Vars.KEY_OFF),
+                if (view.on) Vars.GONE else Vars.VISIBLE,
+            ),
             VarValue.float(Vars.entity(entityId, Vars.KEY_LEVEL), view.level ?: 0f),
             VarValue.float(Vars.entity(entityId, Vars.KEY_LEVEL_REST), 1f - (view.level ?: 0f)),
         )
@@ -104,11 +110,23 @@ fun DocContext.bindTileColors(tileId: String, entityId: String?, accent: Int, al
         }
         listOf(
             VarValue.color(Vars.tile(tileId, Vars.KEY_BG), if (lit) accent else Role.KEY.argb),
-            VarValue.color(Vars.tile(tileId, Vars.KEY_BG_INK), if (lit) Role.KEY_ON_INK.argb else Role.INK.argb),
+            VarValue.color(
+                Vars.tile(tileId, Vars.KEY_BG_INK),
+                if (lit) Role.KEY_ON_INK.argb else Role.INK.argb,
+            ),
             // Mockup domain tiles: teal accent line under every header (brighter while on).
-            VarValue.color(Vars.tile(tileId, Vars.KEY_LINE), if (lit) accent else Role.ACCENT_SOFT.argb),
-            VarValue.color(Vars.tile(tileId, Vars.KEY_INK), if (!isAvailable) Role.INK_FAINT.argb else Role.INK.argb),
-            VarValue.color(Vars.tile(tileId, Vars.KEY_INK2), if (!isAvailable) Role.INK_FAINT.argb else Role.INK_SOFT.argb),
+            VarValue.color(
+                Vars.tile(tileId, Vars.KEY_LINE),
+                if (lit) accent else Role.ACCENT_SOFT.argb,
+            ),
+            VarValue.color(
+                Vars.tile(tileId, Vars.KEY_INK),
+                if (!isAvailable) Role.INK_FAINT.argb else Role.INK.argb,
+            ),
+            VarValue.color(
+                Vars.tile(tileId, Vars.KEY_INK2),
+                if (!isAvailable) Role.INK_FAINT.argb else Role.INK_SOFT.argb,
+            ),
             VarValue.color(Vars.tile(tileId, Vars.KEY_ICON), iconColor),
             VarValue.color(Vars.tile(tileId, Vars.KEY_FILL), Role.KEY.argb),
         )
@@ -128,8 +146,14 @@ fun DocContext.bindChoices(
         choices.flatMapIndexed { index, choice ->
             val on = choice == current
             listOf(
-                VarValue.color(Vars.option(scopeId, group, index, Vars.KEY_BG), (if (on) Role.KEY_ON else Role.KEY).argb),
-                VarValue.color(Vars.option(scopeId, group, index, Vars.KEY_INK), (if (on) Role.KEY_ON_INK else Role.INK).argb),
+                VarValue.color(
+                    Vars.option(scopeId, group, index, Vars.KEY_BG),
+                    (if (on) Role.KEY_ON else Role.KEY).argb,
+                ),
+                VarValue.color(
+                    Vars.option(scopeId, group, index, Vars.KEY_INK),
+                    (if (on) Role.KEY_ON_INK else Role.INK).argb,
+                ),
             )
         }
     }

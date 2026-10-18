@@ -17,21 +17,35 @@ import timber.log.Timber
  */
 class InstallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        when (val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)) {
+        when (val status = intent.getIntExtra(
+            PackageInstaller.EXTRA_STATUS,
+            PackageInstaller.STATUS_FAILURE,
+        )) {
             PackageInstaller.STATUS_PENDING_USER_ACTION -> {
-                val confirmIntent = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_INTENT, Intent::class.java)
+                val confirmIntent = IntentCompat.getParcelableExtra(
+                    intent,
+                    Intent.EXTRA_INTENT,
+                    Intent::class.java,
+                )
                 confirmIntent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)?.let(context::startActivity)
             }
             PackageInstaller.STATUS_SUCCESS -> {
                 // BootReceiver also hears MY_PACKAGE_REPLACED; relaunch here too so a kiosk does not sit dark.
                 context.startActivity(
-                    Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    Intent(
+                        context,
+                        MainActivity::class.java,
+                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 )
             }
             else -> {
                 val statusMessage = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
                 Timber.w("Update not installed (%d): %s", status, statusMessage)
-                Toast.makeText(context, context.getString(R.string.update_failed), Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.update_failed),
+                    Toast.LENGTH_LONG,
+                ).show()
             }
         }
     }

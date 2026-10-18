@@ -12,7 +12,9 @@ import kotlinx.serialization.json.contentOrNull
 class HomeAssistantCatalogService(private val homeAssistant: HomeAssistant) {
 
     suspend fun areas(): List<AreaResponse> {
-        val registry = runCatching { homeAssistant.command("config/area_registry/list") }.getOrNull() as? JsonArray
+        val registry = runCatching { homeAssistant.command(
+            "config/area_registry/list",
+        ) }.getOrNull() as? JsonArray
         return registry.orEmpty()
             .mapNotNull { element ->
                 val area = element as? JsonObject ?: return@mapNotNull null

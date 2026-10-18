@@ -31,7 +31,9 @@ data class EntityState(
     fun number(key: String): Double? = (attributes[key] as? JsonPrimitive)?.doubleOrNull
 
     fun list(key: String): List<String> =
-        runCatching { attributes.getValue(key).jsonArray.map { it.jsonPrimitive.content } }.getOrDefault(emptyList())
+        runCatching { attributes.getValue(
+            key,
+        ).jsonArray.map { it.jsonPrimitive.content } }.getOrDefault(emptyList())
 
     fun features(): Int = number("supported_features")?.toInt() ?: 0
 

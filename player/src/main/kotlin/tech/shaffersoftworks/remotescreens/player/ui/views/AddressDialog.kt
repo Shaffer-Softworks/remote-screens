@@ -43,13 +43,20 @@ fun AddressDialog(
                     onValueChange = { value -> address = value },
                     placeholder = { Text(stringResource(R.string.address_hint)) },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                        imeAction = ImeAction.Done,
+                    ),
                     keyboardActions = KeyboardActions(onDone = { onConfirm(address) }),
                 )
             }
         },
-        confirmButton = { TextButton(onClick = { onConfirm(address) }) { Text(stringResource(R.string.ok)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+        confirmButton = { TextButton(
+            onClick = { onConfirm(address) },
+        ) { Text(stringResource(R.string.ok)) } },
+        dismissButton = { TextButton(
+            onClick = onDismiss,
+        ) { Text(stringResource(R.string.cancel)) } },
     )
 }
 
