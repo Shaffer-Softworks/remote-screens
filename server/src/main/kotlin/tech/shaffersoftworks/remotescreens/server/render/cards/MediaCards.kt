@@ -178,21 +178,40 @@ internal fun DocContext.cameraCard(entityId: String, w: Float, h: Float) {
 internal fun DocContext.mapCard(entityId: String, w: Float, h: Float) {
     val pw = units.px(w).toInt()
     val ph = units.px(h).toInt()
-    val who = if (entityId.startsWith(
-            "person.",
-        ) || entityId.startsWith(
-            "device_tracker.",
-        )) {
+    val who = if (entityId.startsWith("person.") || entityId.startsWith("device_tracker.")) {
         listOf(entityId)
     } else {
         states.keys.filter { it.startsWith("person.") }
     }
-    for (p in who) structural(p) { s -> "${s?.number("latitude")},${s?.number("longitude")}" }
+    for (personId in who) {
+        structural(personId) { state -> "${state?.number("latitude")},${state?.number("longitude")}" }
+        val picturePath = states[personId]?.attr("entity_picture")
+        if (!picturePath.isNullOrBlank()) {
+            val markerPx = units.px(CardChrome.MAP_MARKER_DP).toInt().coerceAtLeast(1)
+            picture(
+                PictureSlot(
+                    "${Vars.MAP_PIC_PREFIX}$personId",
+                    "attr:$personId:entity_picture",
+                    markerPx,
+                    markerPx,
+                    0,
+                ),
+            )
+        }
+    }
     picture(PictureSlot("map.card", "map:${mapStyle()}:${who.joinToString(",")}", pw, ph, 0))
-    scope.Image(
-        image("map.card", pw, ph),
-        Modifier.size(units.px(w), units.px(h)).clip(rounded(CardChrome.CARD_GAP_DP)),
-        contentScale = RcContentScale.Crop,
-    )
+    val mapComponent = liveMap(who)
+    val frame = Modifier.size(units.px(w), units.px(h))
+        .clip(rounded(CardChrome.CARD_GAP_DP))
+        .background(role(Role.TRACK))
+        .componentId(mapComponent)
+    scope.Box(frame) {
+        val doc = this@mapCard
+        Image(
+            doc.image("map.card", pw, ph),
+            Modifier.fillMaxSize(),
+            contentScale = RcContentScale.Crop,
+        )
+    }
     label(i18n.t("ui.map_credit"), Type.CAPTION, role(Role.INK_SOFT))
 }

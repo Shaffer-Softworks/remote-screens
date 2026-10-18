@@ -80,6 +80,7 @@ internal class SessionDocument(
         )
         media.sendPictures(shown, states, isForced = true)
         for (video in renderedDoc.docContext.videos) media.sendVideo(shown, video)
+        for (map in renderedDoc.docContext.maps) media.sendMap(shown, map, states)
     }
 
     /** Sends what changed in [states]; a document whose structure depends on a changed entity is built again. */
@@ -101,6 +102,7 @@ internal class SessionDocument(
                 )
             }
             media.sendPictures(shown, states, isForced = false)
+            for (map in shown.renderedDoc.docContext.maps) media.sendMap(shown, map, states)
         }
     }
 

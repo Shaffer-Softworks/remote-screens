@@ -20,6 +20,7 @@ import tech.shaffersoftworks.remotescreens.player.data.kiosk.KioskState
 import tech.shaffersoftworks.remotescreens.player.data.preferences.PlayerPreferencesRepository
 import tech.shaffersoftworks.remotescreens.player.data.update.UpdateRepository
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteScreenState
+import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotMap
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotVideo
 import tech.shaffersoftworks.remotescreens.player.utils.decodeBase64OrNull
 import tech.shaffersoftworks.remotescreens.shared.isNightAt
@@ -64,6 +65,7 @@ private val PLAYER_CAPABILITIES =
         "settings",
         "deflate",
         Protocol.CAPABILITY_VIDEO,
+        Protocol.CAPABILITY_MAP,
     )
 
 /**
@@ -305,6 +307,7 @@ class PlayerViewModel @Inject constructor(
             is ServerMessage.UpdateAvailable -> onUpdateAvailable(message)
             is ServerMessage.Toast -> _events.send(PlayerEvent.ShowMessage(message.text))
             is ServerMessage.Video -> onVideo(message)
+            is ServerMessage.LiveMap -> onMap(message)
             ServerMessage.Pong -> Unit
         }
     }
@@ -373,6 +376,17 @@ class PlayerViewModel @Inject constructor(
             message.crop,
         )
         updateRemoteScreen { it.withVideo(message.slot, video) }
+    }
+
+    private fun onMap(message: ServerMessage.LiveMap) {
+        val map = SlotMap(
+            revision = message.rev,
+            componentId = message.componentId,
+            tileUrl = message.tileUrl,
+            dark = message.dark,
+            markers = message.markers,
+        )
+        updateRemoteScreen { it.withMap(message.slot, map) }
     }
 
     /** The add-on starts the camera's stream again, as Home Assistant ends one nobody watched for a while. */

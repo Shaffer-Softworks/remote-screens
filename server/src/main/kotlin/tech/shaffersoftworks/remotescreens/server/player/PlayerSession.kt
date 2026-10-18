@@ -57,6 +57,7 @@ class PlayerSession(
     private val device = Device(hello.widthDp, hello.heightDp, hello.density)
     private val supportsDeflate = Rc.DEFLATE in hello.capabilities
     private val supportsVideo = Protocol.CAPABILITY_VIDEO in hello.capabilities
+    private val supportsMap = Protocol.CAPABILITY_MAP in hello.capabilities
     private val tapMemory = TapMemory()
 
     var pairingCode: String? = null
@@ -284,6 +285,7 @@ class PlayerSession(
         override val device get() = this@PlayerSession.device
         override val supportsDeflate get() = this@PlayerSession.supportsDeflate
         override val supportsVideo get() = this@PlayerSession.supportsVideo
+        override val supportsMap get() = this@PlayerSession.supportsMap
         override val buildMutex get() = this@PlayerSession.buildMutex
         override val shownDocuments get() = this@PlayerSession.shownDocuments
         override val jobs get() = this@PlayerSession.jobs
@@ -331,6 +333,7 @@ class PlayerSession(
             "cards",
             "settings",
             Protocol.CAPABILITY_VIDEO,
+            Protocol.CAPABILITY_MAP,
         )
         const val RESYNC_MS = 3000L
     }
