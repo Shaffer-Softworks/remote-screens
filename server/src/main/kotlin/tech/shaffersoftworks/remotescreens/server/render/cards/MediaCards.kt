@@ -1,6 +1,6 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render.cards
+package tech.shaffersoftworks.remotescreens.server.render
 
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import androidx.compose.remote.creation.dsl.Modifier
@@ -18,19 +18,6 @@ import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.visibility
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
-import tech.shaffersoftworks.remotescreens.server.render.DocContext
-import tech.shaffersoftworks.remotescreens.server.render.Role
-import tech.shaffersoftworks.remotescreens.server.render.Type
-import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.Weight
-import tech.shaffersoftworks.remotescreens.server.render.gap
-import tech.shaffersoftworks.remotescreens.server.render.icon
-import tech.shaffersoftworks.remotescreens.server.render.key
-import tech.shaffersoftworks.remotescreens.server.render.label
-import tech.shaffersoftworks.remotescreens.server.render.liveMap
-import tech.shaffersoftworks.remotescreens.server.render.rounded
-import tech.shaffersoftworks.remotescreens.server.render.spinner
-import tech.shaffersoftworks.remotescreens.server.render.tap
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 
 internal fun DocContext.mediaCard(entityId: String, entityState: EntityState?, w: Float) {
@@ -56,17 +43,17 @@ internal fun DocContext.mediaCard(entityId: String, entityState: EntityState?, w
         doc.gap(CardChrome.HEADER_GAP_DP)
         Row(horizontal = RcRowHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
             doc.key(ref(entityId, "previous"), icon = "skip-previous", heightDp = CardChrome.MEDIA_CTRL_DP, widthDp = CardChrome.MEDIA_CTRL_DP, round = true)
-            Spacer(width(doc.units.px(CardChrome.SECTION_TITLE_GAP_DP)))
+            Spacer(Modifier.width(doc.units.px(CardChrome.SECTION_TITLE_GAP_DP)))
             Box(doc.tap(
-                size(doc.units.px(CardChrome.PLAY_KEY_DP), doc.units.px(CardChrome.PLAY_KEY_DP))
+                Modifier.size(doc.units.px(CardChrome.PLAY_KEY_DP), doc.units.px(CardChrome.PLAY_KEY_DP))
                     .clip(doc.rounded((CardChrome.PLAY_KEY_DP) / 2f))
-                    .background(doc.role(
-                    Role.KEY_ON)), ref(entityId, "play_pause")),
-                horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
+                    .background(doc.role(Role.KEY_ON)),
+                ref(entityId, "play_pause"),
+            ), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
                 doc.icon("pause", CardChrome.CLOSE_KEY_DP, doc.role(Role.KEY_ON_INK), doc.int(Vars.entity(entityId, "playing")))
                 doc.icon("play", CardChrome.CLOSE_KEY_DP, doc.role(Role.KEY_ON_INK), doc.int(Vars.entity(entityId, "notplaying")))
             }
-            Spacer(width(doc.units.px(CardChrome.SECTION_TITLE_GAP_DP)))
+            Spacer(Modifier.width(doc.units.px(CardChrome.SECTION_TITLE_GAP_DP)))
             doc.key(ref(entityId, "next"), icon = "skip-next", heightDp = CardChrome.MEDIA_CTRL_DP, widthDp = CardChrome.MEDIA_CTRL_DP, round = true)
         }
     }

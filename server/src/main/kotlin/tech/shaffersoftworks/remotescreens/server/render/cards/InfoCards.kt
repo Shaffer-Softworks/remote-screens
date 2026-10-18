@@ -1,6 +1,6 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render.cards
+package tech.shaffersoftworks.remotescreens.server.render
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
@@ -14,19 +14,6 @@ import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
-import tech.shaffersoftworks.remotescreens.server.render.DocContext
-import tech.shaffersoftworks.remotescreens.server.render.Present
-import tech.shaffersoftworks.remotescreens.server.render.Role
-import tech.shaffersoftworks.remotescreens.server.render.Type
-import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.Weight
-import tech.shaffersoftworks.remotescreens.server.render.bindChoices
-import tech.shaffersoftworks.remotescreens.server.render.calendarEvent
-import tech.shaffersoftworks.remotescreens.server.render.gap
-import tech.shaffersoftworks.remotescreens.server.render.icon
-import tech.shaffersoftworks.remotescreens.server.render.isToday
-import tech.shaffersoftworks.remotescreens.server.render.key
-import tech.shaffersoftworks.remotescreens.server.render.label
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.ZoneId
 import kotlin.math.roundToInt
@@ -91,15 +78,12 @@ internal fun DocContext.historyCard(entityId: String, w: Float, h: Float) {
         val unit = entityState.attr("unit_of_measurement").orEmpty()
         scope.Row(Modifier.fillMaxWidth()) {
             val doc = this@historyCard
-            doc.label(doc.i18n.t("ui.max", "value" to "${doc.i18n.number(max.second, 1)} $unit"), Type.BODY, doc.role(
-                Role.DANGER), Weight.MEDIUM, modifier = Modifier.horizontalWeight(1f))
-            doc.label(doc.i18n.t("ui.min", "value" to "${doc.i18n.number(min.second, 1)} $unit"), Type.BODY, doc.role(
-                Role.ACCENT), Weight.MEDIUM)
+            doc.label(doc.i18n.t("ui.max", "value" to "${doc.i18n.number(max.second, 1)} $unit"), Type.BODY, doc.role(Role.DANGER), Weight.MEDIUM, modifier = Modifier.horizontalWeight(1f))
+            doc.label(doc.i18n.t("ui.min", "value" to "${doc.i18n.number(min.second, 1)} $unit"), Type.BODY, doc.role(Role.ACCENT), Weight.MEDIUM)
         }
         gap(CardChrome.PANEL_CORNER_DP)
     }
-    graph(points, w, (h - CardChrome.MEDIA_CTRL_DP).coerceAtLeast(CardChrome.PLAY_KEY_DP), role(Role.ACCENT), role(
-        Role.INK_SOFT))
+    graph(points, w, (h - CardChrome.MEDIA_CTRL_DP).coerceAtLeast(CardChrome.PLAY_KEY_DP), role(Role.ACCENT), role(Role.INK_SOFT))
 }
 
 internal fun DocContext.alarmCard(entityId: String, entityState: EntityState?, w: Float) {
@@ -129,8 +113,7 @@ internal fun DocContext.alarmCard(entityId: String, entityState: EntityState?, w
 
 internal fun DocContext.keypad(entityId: String, w: Float) {
     scope.Box(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
-        this@keypad.label(this@keypad.text(Vars.tile("e:$entityId", "code")), Type.DISPLAY, this@keypad.role(
-            Role.INK), Weight.MEDIUM, align = RcTextAlign.Center)
+        this@keypad.label(this@keypad.text(Vars.tile("e:$entityId", "code")), Type.DISPLAY, this@keypad.role(Role.INK), Weight.MEDIUM, align = RcTextAlign.Center)
     }
     gap(CardChrome.FLOW_PAD_DP)
     val keyW = minOf((w - 24f) / 3f, 110f)

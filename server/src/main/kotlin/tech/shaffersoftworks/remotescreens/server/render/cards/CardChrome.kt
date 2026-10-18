@@ -1,6 +1,6 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render.cards
+package tech.shaffersoftworks.remotescreens.server.render
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
@@ -14,25 +14,8 @@ import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
-import tech.shaffersoftworks.remotescreens.server.render.DocContext
-import tech.shaffersoftworks.remotescreens.server.render.HaRenderFlags
-import tech.shaffersoftworks.remotescreens.server.render.Present
-import tech.shaffersoftworks.remotescreens.server.render.Role
-import tech.shaffersoftworks.remotescreens.server.render.Type
-import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.Weight
-import tech.shaffersoftworks.remotescreens.server.render.bindChoices
-import tech.shaffersoftworks.remotescreens.server.render.choiceRow
-import tech.shaffersoftworks.remotescreens.server.render.gap
-import tech.shaffersoftworks.remotescreens.server.render.key
-import tech.shaffersoftworks.remotescreens.server.render.label
-import tech.shaffersoftworks.remotescreens.server.render.rounded
-import tech.shaffersoftworks.remotescreens.server.render.segmentedLevelBar
-import tech.shaffersoftworks.remotescreens.server.render.tap
-import tech.shaffersoftworks.remotescreens.server.render.toggleIcon
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
-import java.util.Locale
 import kotlin.math.roundToInt
 
 internal object CardChrome {
@@ -133,11 +116,9 @@ internal fun DocContext.bigToggle(entityId: String, entityState: EntityState?, v
     predict(r, entityId)
     scope.Box(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
         val doc = this@bigToggle
-        Box(doc.tap(Modifier.size(doc.units.px(CardChrome.TOGGLE_DP), doc.units.px(CardChrome.TOGGLE_DP)).clip(doc.rounded((CardChrome.TOGGLE_DP) / 2f)).background(doc.color(
-            Vars.tile(CardRenderer.TILE, Vars.KEY_BG))), r),
+        Box(doc.tap(Modifier.size(doc.units.px(CardChrome.TOGGLE_DP), doc.units.px(CardChrome.TOGGLE_DP)).clip(doc.rounded((CardChrome.TOGGLE_DP) / 2f)).background(doc.color(Vars.tile(CardRenderer.TILE, Vars.KEY_BG))), r),
             horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-            doc.toggleIcon(entityId, spec?.icon ?: "power", spec?.iconOn, CardChrome.TOGGLE_ICON_DP, doc.color(
-                Vars.tile(CardRenderer.TILE, Vars.KEY_BG_INK)))
+            doc.toggleIcon(entityId, spec?.icon ?: "power", spec?.iconOn, CardChrome.TOGGLE_ICON_DP, doc.color(Vars.tile(CardRenderer.TILE, Vars.KEY_BG_INK)))
         }
     }
 }
@@ -176,7 +157,7 @@ internal fun DocContext.bar(
         ref(
             entityId,
             verb,
-            if (value % 1.0 == 0.0) value.toInt().toString() else "%.1f".format(Locale.ROOT, value),
+            if (value % 1.0 == 0.0) value.toInt().toString() else "%.1f".format(java.util.Locale.ROOT, value),
         )
     }
 }
