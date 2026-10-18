@@ -39,14 +39,6 @@
     <ID>LongMethod:SpecialtyTiles.kt:internal fun DocContext.weatherTile</ID>
     <ID>LongMethod:ThermostatBind.kt:internal fun DocContext.bindThermostat</ID>
     <ID>LongMethod:WeatherPanel.kt:fun DocContext.weatherPanel</ID>
-    <ID>MagicNumber:CardChrome.kt:16</ID>
-    <ID>MagicNumber:CardChrome.kt:8</ID>
-    <ID>MagicNumber:CoverCards.kt:100</ID>
-    <ID>MagicNumber:MediaCards.kt:4</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:RenderedDoc$1000L</ID>
-    <ID>MagicNumber:SpecialtyTiles.kt:300</ID>
-    <ID>MagicNumber:SpecialtyTiles.kt:4</ID>
-    <ID>MagicNumber:WeatherPanel.kt:1800</ID>
     <ID>MaxLineLength:BuiltinThemes.kt:Themes$Pastel.PURPLE to 0xFF8E6CC9</ID>
     <ID>MaxLineLength:BuiltinThemes.kt:Themes$Pastel.PURPLE to 0xFFB39DDB</ID>
     <ID>MaxLineLength:BuiltinThemes.kt:Themes$Pastel.PURPLE to 0xFFC599FF</ID>

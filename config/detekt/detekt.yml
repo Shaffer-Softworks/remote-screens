@@ -3,10 +3,8 @@ naming:
     ignoreAnnotated: ['Composable']
   TopLevelPropertyNaming:
     constantPattern: '[A-Z][_A-Z0-9]*'
-  # Feature folders under render/ (cards/, tiles/, freeform/) keep package
-  # tech.shaffersoftworks.remotescreens.server.render for shared internal APIs.
   InvalidPackageDeclaration:
-    active: false
+    active: true
 
 complexity:
   LongParameterList:
@@ -26,6 +24,22 @@ style:
     # Options: 'never', 'always', 'consistent', or 'necessary'
     singleLine: 'necessary'
     multiLine: 'always'
+  # Prefer named constants over unexplained literals (see kotlin-magic-numbers-detekt.mdc).
+  MagicNumber:
+    active: true
+    ignoreNumbers: ['-1', '0', '1', '2']
+    ignoreHashCodeFunction: true
+    # Named consts / companion vals are fine; flag literals in locals and expressions.
+    ignorePropertyDeclaration: true
+    ignoreLocalVariableDeclaration: false
+    ignoreConstantDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotation: false
+    ignoreNamedArgument: true
+    ignoreEnums: false
+    ignoreRanges: false
+    ignoreExtensionFunctions: true
+    excludes: ['**/test/**', '**/androidTest/**', '**/*.kts']
 
 # Requires detektPlugins("dev.detekt:detekt-rules-ktlint-wrapper") — see root build.gradle.kts.
 # Style aligned with RPI (trailing commas, chain wrapping, arg wrapping, multiline if/else).
@@ -138,7 +152,8 @@ ktlint:
   NoUnitReturn:
     active: false
   NoUnusedImports:
-    active: false
+    active: true
+    autoCorrect: true
   NoWildcardImports:
     active: false
   NullableTypeSpacing:

@@ -130,9 +130,12 @@ class DocContext(
         scope.remoteNamedBitmap(Rc.USER + name, placeholder)
     }
 
-    fun path(icon: String?): RcPath {
-        val svg = Icons.path(icon)
-        return declare(paths, svg, { path(icon) }) { scope.remotePathData(Rc.path(svg)) }
+    /**
+     * MDI icon [icon], or raw SVG [rawSvg] (HA weather layers). Exactly one should be set.
+     */
+    fun path(icon: String? = null, rawSvg: String? = null): RcPath {
+        val svg = rawSvg ?: Icons.path(icon)
+        return declare(paths, svg, { path(icon, rawSvg) }) { scope.remotePathData(Rc.path(svg)) }
     }
 
     fun meta(ref: ActionRef): RcText {

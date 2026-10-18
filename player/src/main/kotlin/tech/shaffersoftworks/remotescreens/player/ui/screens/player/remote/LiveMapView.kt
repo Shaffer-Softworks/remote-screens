@@ -56,6 +56,8 @@ private const val TILE_SIZE = 256
 private const val MULTI_MARKER_PADDING = 1.35
 private const val MAX_FIT_ZOOM = 16.0
 private const val MIN_SPAN_DEGREES = 0.01
+/** Full longitude span used when converting a bounding box to a zoom level. */
+private const val EARTH_LONGITUDE_DEGREES = 360.0
 private const val DARK_TILE_MULTIPLY = 0xFF888888.toInt()
 private const val INITIALS_COUNT = 2
 private const val PHOTO_INSET_PX = 2f
@@ -217,7 +219,10 @@ private fun viewOf(markers: List<MapMarker>): Pair<GeoPoint, Double> = when {
         val lonSpan = max((longitudes.max() - longitudes.min()) * MULTI_MARKER_PADDING, MIN_SPAN_DEGREES)
         val zoom = min(
             MAX_FIT_ZOOM,
-            max(MIN_TILE_ZOOM.toDouble(), ln(360.0 / max(latSpan, lonSpan)) / ln(2.0)),
+            max(
+                MIN_TILE_ZOOM.toDouble(),
+                ln(EARTH_LONGITUDE_DEGREES / max(latSpan, lonSpan)) / ln(2.0),
+            ),
         )
         centre to zoom
     }

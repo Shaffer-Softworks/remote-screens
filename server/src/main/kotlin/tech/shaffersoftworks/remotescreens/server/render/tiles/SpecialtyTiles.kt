@@ -1,6 +1,30 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.tiles
+
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.Pastel
+import tech.shaffersoftworks.remotescreens.server.render.Role
+import tech.shaffersoftworks.remotescreens.server.render.ThermostatMetrics
+import tech.shaffersoftworks.remotescreens.server.render.Type
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.Weight
+import tech.shaffersoftworks.remotescreens.server.render.at
+import tech.shaffersoftworks.remotescreens.server.render.bindChoices
+import tech.shaffersoftworks.remotescreens.server.render.bindEntity
+import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
+import tech.shaffersoftworks.remotescreens.server.render.calendarEvent
+import tech.shaffersoftworks.remotescreens.server.render.choiceRow
+import tech.shaffersoftworks.remotescreens.server.render.gap
+import tech.shaffersoftworks.remotescreens.server.render.icon
+import tech.shaffersoftworks.remotescreens.server.render.initials
+import tech.shaffersoftworks.remotescreens.server.render.weatherStateIcon
+import tech.shaffersoftworks.remotescreens.server.render.isToday
+import tech.shaffersoftworks.remotescreens.server.render.key
+import tech.shaffersoftworks.remotescreens.server.render.label
+import tech.shaffersoftworks.remotescreens.server.render.paint
+import tech.shaffersoftworks.remotescreens.server.render.rounded
+import tech.shaffersoftworks.remotescreens.server.render.tap
 
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import androidx.compose.remote.creation.dsl.Modifier
@@ -28,7 +52,7 @@ import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.ZoneId
 import kotlin.math.roundToInt
-import tech.shaffersoftworks.remotescreens.server.render.TileChrome as C
+import tech.shaffersoftworks.remotescreens.server.render.tiles.TileChrome as C
 
 internal fun DocContext.clockTile(tile: Tile, box: TileBox) {
     val ink = color(Vars.tile(tile.id, Vars.KEY_INK))
@@ -61,7 +85,7 @@ internal fun DocContext.bedsideTile(tile: Tile, box: TileBox) {
     val ink = role(Role.INK_SOFT)
     val keys = tile.options["keys"].orEmpty().split(
         ',',
-    ).map { it.trim() }.filter { it.isNotEmpty() }.take(3)
+    ).map { it.trim() }.filter { it.isNotEmpty() }.take(C.BEDSIDE_KEYS_MAX)
     scope.Column(
         Modifier.fillMaxSize().padding(units.px(C.PAD_XXL_DP)),
         horizontal = RcHorizontalPositioning.Center,
@@ -298,16 +322,16 @@ internal fun DocContext.weatherTile(tile: Tile, box: TileBox, entityState: Entit
     ) }.getOrDefault(ZoneId.of("UTC"))
     val dayCount = when {
         box.w >= C.WEATHER_WIDE_DP -> C.WEATHER_DAYS_WIDE
-        box.w >= C.HEADER_TALL_MIN_DP -> 3
+        box.w >= C.HEADER_TALL_MIN_DP -> C.WEATHER_DAYS_MID
         else -> 0
     }.coerceAtMost(days.size)
     scope.Column(Modifier.fillMaxSize().padding(units.px(C.PAD_LG_DP))) {
         val doc = this@weatherTile
         Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
-            doc.icon(
-                Present.weatherIcon(entityState?.state ?: ""),
+            doc.weatherStateIcon(
+                entityState?.state ?: "",
                 if (box.h >= C.TALL_HEIGHT_DP) C.WEATHER_ICON_TALL_DP else C.HEADER_SHORT_DP,
-                ink,
+                fallbackColor = ink,
             )
             Spacer(Modifier.width(doc.units.px(C.CARD_CORNER_DP)))
             Column(Modifier.horizontalWeight(1f)) {
@@ -335,7 +359,7 @@ internal fun DocContext.weatherTile(tile: Tile, box: TileBox, entityState: Entit
                             ink2,
                             align = RcTextAlign.Center,
                         )
-                        doc.icon(Present.weatherIcon(d.condition), C.FORECAST_ICON_DP, ink)
+                        doc.weatherStateIcon(d.condition, C.FORECAST_ICON_DP, fallbackColor = ink)
                         doc.label(
                             listOfNotNull(
                                 d.high?.let { "${it.roundToInt()}°" },
@@ -363,9 +387,12 @@ internal fun DocContext.climateTile(tile: Tile, box: TileBox, entityState: Entit
     val entityId = tile.entityId ?: return
     val ink = color(Vars.tile(tile.id, Vars.KEY_INK))
     val ink2 = color(Vars.tile(tile.id, Vars.KEY_INK2))
-    val step = entityState?.number(
-        "target_temp_step",
-    ) ?: if (homeAssistantConfig.temperatureUnit.contains("F")) 1.0 else 0.5
+    val step = entityState?.number("target_temp_step")
+        ?: if (homeAssistantConfig.temperatureUnit.contains("F")) {
+            ThermostatMetrics.TEMP_STEP_F
+        } else {
+            ThermostatMetrics.TEMP_STEP_C
+        }
     val stepper = box.w >= C.HEADER_TALL_MIN_DP || box.h >= C.TALL_HEIGHT_DP
     val modes = entityState?.list("hvac_modes").orEmpty()
     structural(entityId) { it?.list("hvac_modes")?.joinToString() ?: "" }
@@ -600,7 +627,9 @@ internal fun DocContext.cameraTile(tile: Tile, box: TileBox, named: Boolean) {
     val entityId = tile.entityId ?: return
     val w = units.px(box.w).toInt()
     val h = units.px(box.h).toInt()
-    val every = tile.options["live"]?.toIntOrNull()?.coerceIn(5, 30) ?: 60
+    val every = tile.options["live"]?.toIntOrNull()
+        ?.coerceIn(C.CAMERA_LIVE_MIN_S, C.CAMERA_LIVE_MAX_S)
+        ?: C.CAMERA_LIVE_DEFAULT_S
     picture(
         PictureSlot(
             "cam.$entityId.${tile.id}",
@@ -678,7 +707,7 @@ fun DocContext.historyTile(tile: Tile, box: TileBox, named: Boolean = true) {
     val entityId = tile.entityId ?: return
     val ink = color(Vars.tile(tile.id, Vars.KEY_INK))
     val ink2 = color(Vars.tile(tile.id, Vars.KEY_INK2))
-    refreshEvery(300)
+    refreshEvery(C.HISTORY_REFRESH_S)
     val points = data.history[entityId].orEmpty()
     scope.Column(Modifier.fillMaxSize().padding(units.px(C.PAD_LG_DP))) {
         val doc = this@historyTile
@@ -729,8 +758,10 @@ fun DocContext.graph(points: List<Pair<Long, Double>>, wDp: Float, hDp: Float, l
     val t0 = points.first().first.toFloat()
     val t1 = points.last().first.toFloat().coerceAtLeast(t0 + 1)
     val lo = points.minOf { it.second }
-    val hi = points.maxOf { it.second }.let { if (it - lo < 0.001) lo + 1 else it }
-    val stroke = units.px(2.5f)
+    val hi = points.maxOf { it.second }.let {
+        if (it - lo < C.GRAPH_FLAT_EPS) lo + 1 else it
+    }
+    val stroke = units.px(C.GRAPH_STROKE_DP)
     fun px(p: Pair<Long, Double>) = ((p.first - t0) / (t1 - t0) * w) to (h - stroke - ((p.second - lo) / (hi - lo)).toFloat() * (h - 2 * stroke))
     scope.Canvas(Modifier.size(w, h)) {
         paint { color(line); strokeWidth(stroke); style(RcPaintStyle.Stroke) }
@@ -791,7 +822,7 @@ fun DocContext.energyFlow(wDp: Float, hDp: Float, compact: Boolean) {
         prefs.battery?.let { Triple("battery", it, "home-battery") },
     )
     for ((_, entity, _) in nodes) bindEntity(entity)
-    val r = if (compact) C.COL_ICON_SHORT_DP else 42f
+    val r = if (compact) C.COL_ICON_SHORT_DP else C.ENERGY_NODE_DP
     val cx = wDp / 2f
     val cy = hDp / 2f + C.HISTORY_GAP_DP
     val spots = mapOf(
@@ -882,9 +913,10 @@ fun DocContext.energyFlow(wDp: Float, hDp: Float, compact: Boolean) {
         if (!compact && prefs.devices.isNotEmpty()) {
             doc.at(
                 C.PAD_MD_DP,
-                hDp - C.SPACE_20_DP - C.ENERGY_LABEL_EXTRA_DP * prefs.devices.size.coerceAtMost(4),
+                hDp - C.SPACE_20_DP -
+                    C.ENERGY_LABEL_EXTRA_DP * prefs.devices.size.coerceAtMost(C.ENERGY_DEVICE_MAX),
             ) { doc.scope.Column {
-                for ((name, entity) in prefs.devices.take(4)) {
+                for ((name, entity) in prefs.devices.take(C.ENERGY_DEVICE_MAX)) {
                     doc.bindEntity(entity)
                     Row(vertical = RcVerticalPositioning.Center) {
                         doc.label(name, Type.CAPTION, ink2)

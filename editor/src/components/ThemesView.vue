@@ -524,5 +524,6 @@ const vars = computed(() => themeVars(shown.value))
 
 .pv-nav span.on {
   background: var(--rc-nav-on);
+  color: var(--rc-key-on-ink);
 }
 </style>

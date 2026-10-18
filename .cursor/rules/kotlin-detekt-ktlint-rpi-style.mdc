@@ -1,0 +1,73 @@
+---
+description: Detekt 2 ktlint wrapper + RPI-aligned Kotlin formatting (PR #56 / detetk-adds)
+globs: "**/*.kt,**/*.kts,config/detekt/**,**/build.gradle.kts,gradle/libs.versions.toml"
+alwaysApply: false
+---
+
+# Detekt / ktlint style (align with RPI)
+
+Style source of truth: **Shaffer-Softworks/RPI** (`StudioProjects/RPI`) — trailing commas, one arg per line when wrapped, braced multiline statement `if`/`else`, short expression `if`s allowed on one line.
+
+## Wiring (Detekt 2.0)
+
+- Plugin id: `dev.detekt` (not `io.gitlab.arturbosch.detekt`).
+- Config: `config/detekt/detekt.yml`; shared via root `build.gradle.kts` `withPlugin("dev.detekt")`.
+- Ktlint rules need: `detektPlugins("dev.detekt:detekt-rules-ktlint-wrapper")` (catalog: `libs.detekt.rules.ktlint.wrapper`).
+- Config key is **`ktlint:`**, not `formatting:` (1.x name).
+- Baselines: `shared/detekt-baseline.xml`, `server/detekt-baseline.xml`, `player/detekt-baseline.xml`.
+
+## Active ktlint rules (keep others off unless intentional)
+
+- `ArgumentListWrapping` — `maxLineLength: 120`, `autoCorrect: true`
+- `TrailingCommaOnCallSite` / `TrailingCommaOnDeclarationSite` — `autoCorrect: true`
+- `ChainWrapping` / `Indentation` — `autoCorrect: true`
+- `MultiLineIfElse` / `IfElseBracing` / `IfElseWrapping` — `autoCorrect: true`
+- `Kdoc` — no dangling top-level KDocs (attach to the declaration or delete)
+
+## Style rules
+
+```yaml
+style:
+  BracesOnIfStatements:
+    singleLine: 'necessary'   # short `if (a) b else c` OK (RPI)
+    multiLine: 'always'       # statement if/else use { }
+```
+
+## Do / don’t
+
+```kotlin
+// Do — wrapped call (RPI)
+Box(
+    docContext.tap(
+        Modifier.fillMaxSize().background(docContext.role(Role.SCRIM)),
+        ActionRef("_", "close"),
+    ),
+    horizontal = RcHorizontalPositioning.Center,
+    vertical = RcVerticalPositioning.Center,
+)
+
+// Do — statement if/else
+if (isTrusted) {
+    record.screenId
+} else {
+    null
+}
+
+// Do — short expression if (RPI)
+val level = if (debug) Log.DEBUG else logData.priority
+```
+
+## After config or large format changes
+
+1. Auto-correct **one module at a time**:  
+   `./gradlew :shared:detekt --auto-correct --rerun` then `:server:` then `:player:`
+2. Regenerate baselines if needed:  
+   `./gradlew :shared:detektBaseline :server:detektBaseline :player:detektBaseline`
+3. Verify:  
+   `./gradlew :shared:detekt :server:detekt :player:detekt :shared:test :server:test :player:testDebugUnitTest`
+
+Do **not** run custom regex “expand all if/else” scripts — they break call-site / string-template ifs.
+
+## Cursor attribution
+
+Commit hooks may add `Co-authored-by: Cursor`. Strip with `git commit-tree` + `git push --force-with-lease` on the feature branch only after the user asks.

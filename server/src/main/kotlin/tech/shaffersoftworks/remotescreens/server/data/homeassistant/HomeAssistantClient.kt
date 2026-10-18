@@ -46,6 +46,7 @@ import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val WEBSOCKET_PING_INTERVAL_MS = 30_000L
 private const val REQUEST_TIMEOUT_MS = 20_000L
@@ -108,7 +109,7 @@ class HomeAssistantClient(
                     IllegalStateException("disconnected"),
                 ) }
                 pendingCommands.clear()
-                delay(backoffMs)
+                delay(backoffMs.milliseconds)
                 backoffMs = (backoffMs * 2).coerceAtMost(MAX_BACKOFF_MS)
             }
         }
@@ -189,7 +190,7 @@ class HomeAssistantClient(
             payload + mapOf("id" to JsonPrimitive(id), "type" to JsonPrimitive(type)),
         )
         sendMutex.withLock { activeSession.send(Frame.Text(body.toString())) }
-        val result = withTimeout(COMMAND_TIMEOUT_MS) { response.await() }
+        val result = withTimeout(COMMAND_TIMEOUT_MS.milliseconds) { response.await() }
         if (result["success"]?.jsonPrimitive?.content != "true") {
             val error = result["error"]?.jsonObject
             throw HomeAssistantException(

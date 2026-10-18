@@ -2,13 +2,12 @@
 
 package tech.shaffersoftworks.remotescreens.server.render
 
+import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
+
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcBorderShape
-import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
-import androidx.compose.remote.creation.dsl.RcPaintStyle
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
-import androidx.compose.remote.creation.dsl.RcStrokeCap
 import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
@@ -25,11 +24,6 @@ import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Tile
-import tech.shaffersoftworks.remotescreens.shared.VarValue
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
-
 
 private fun small(base: Float, layoutScale: Float) = maxOf(
     base * layoutScale,
@@ -68,7 +62,11 @@ fun DocContext.thermostatPanel(tile: Tile, box: TileBox) {
     val id = tile.entityId ?: return
     val entityState = states[id]
     val step = entityState?.number("target_temp_step")
-        ?: if (homeAssistantConfig.temperatureUnit.contains("F")) 1.0 else 0.5
+        ?: if (homeAssistantConfig.temperatureUnit.contains("F")) {
+            ThermostatMetrics.TEMP_STEP_F
+        } else {
+            ThermostatMetrics.TEMP_STEP_C
+        }
     val dual = isDual(entityState)
     val modes = haModes(entityState?.list("hvac_modes").orEmpty())
     val fans = entityState?.list("fan_modes").orEmpty()
@@ -97,7 +95,7 @@ fun DocContext.thermostatPanel(tile: Tile, box: TileBox) {
     val layoutScale = minOf(
         box.w / ThermostatMetrics.BASE_W,
         box.h / ThermostatMetrics.BASE_H,
-    ).coerceIn(0.4f, 1.5f)
+    ).coerceIn(ThermostatMetrics.LAYOUT_SCALE_MIN, ThermostatMetrics.LAYOUT_SCALE_MAX)
     scope.Column(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@thermostatPanel
         doc.thermostatHeader(layoutScale)

@@ -2,47 +2,61 @@
 
 package tech.shaffersoftworks.remotescreens.server.render
 
-import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
+import tech.shaffersoftworks.remotescreens.server.render.freeform.resolve
+
+import tech.shaffersoftworks.remotescreens.server.render.freeform.Axis
+import tech.shaffersoftworks.remotescreens.server.render.freeform.Dims
+import tech.shaffersoftworks.remotescreens.server.render.freeform.Spec
+import tech.shaffersoftworks.remotescreens.server.render.freeform.analogNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.avatarNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.badgeNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.buttonNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.choicesNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.clockNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.container
+import tech.shaffersoftworks.remotescreens.server.render.freeform.countdownNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.dialNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.dividerSize
+import tech.shaffersoftworks.remotescreens.server.render.freeform.gaugeNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.graphNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.iconButtonNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.iconNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.imageNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.keypadNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.keysNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.markdownNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.progressNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.qrNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.sliderNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.spacerSize
+import tech.shaffersoftworks.remotescreens.server.render.freeform.stepperNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.swatchesNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.switchNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.tabsNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.textNode
+import tech.shaffersoftworks.remotescreens.server.render.freeform.tileNode
+import tech.shaffersoftworks.remotescreens.server.render.tiles.tapRef
+
 import androidx.compose.remote.core.operations.layout.animation.AnimationSpec
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.animationSpec
 import androidx.compose.remote.creation.dsl.RcBorderShape
 import androidx.compose.remote.creation.dsl.RcColor
-import androidx.compose.remote.creation.dsl.RcFloat
-import androidx.compose.remote.creation.dsl.RcInteger
-import androidx.compose.remote.creation.dsl.RcStrokeCap
-import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning
-import androidx.compose.remote.creation.dsl.RcContentScale
-import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
-import androidx.compose.remote.creation.dsl.RcPaintStyle
-import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
-import androidx.compose.remote.creation.dsl.RcTextAlign
-import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.border
 import androidx.compose.remote.creation.dsl.clip
 import androidx.compose.remote.creation.dsl.fillMaxHeight
-import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.height
-import androidx.compose.remote.creation.dsl.horizontalScroll
 import androidx.compose.remote.creation.dsl.horizontalWeight
-import androidx.compose.remote.creation.dsl.marquee
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
-import androidx.compose.remote.creation.dsl.verticalScroll
 import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.visibility
 import androidx.compose.remote.creation.dsl.width
-import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Node
-import tech.shaffersoftworks.remotescreens.shared.VarValue
-import java.util.Locale
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
 /**
  * A free-form page: [root] laid out in the content area at ([xDp], [yDp]), [wDp] by [hDp]. Containers become the

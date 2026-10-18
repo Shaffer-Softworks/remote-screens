@@ -1,6 +1,20 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.cards
+
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.Role
+import tech.shaffersoftworks.remotescreens.server.render.Type
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.Weight
+import tech.shaffersoftworks.remotescreens.server.render.gap
+import tech.shaffersoftworks.remotescreens.server.render.icon
+import tech.shaffersoftworks.remotescreens.server.render.key
+import tech.shaffersoftworks.remotescreens.server.render.label
+import tech.shaffersoftworks.remotescreens.server.render.liveMap
+import tech.shaffersoftworks.remotescreens.server.render.rounded
+import tech.shaffersoftworks.remotescreens.server.render.spinner
+import tech.shaffersoftworks.remotescreens.server.render.tap
 
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import androidx.compose.remote.creation.dsl.Modifier
@@ -21,7 +35,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 
 internal fun DocContext.mediaCard(entityId: String, entityState: EntityState?, w: Float) {
-    val art = minOf(w, 280f)
+    val art = minOf(w, CardChrome.MEDIA_ART_MAX_DP)
     val px = units.px(art).toInt()
     picture(PictureSlot("art.card.$entityId", "attr:$entityId:entity_picture", px, px, 0))
     bind(entityId) { states ->
@@ -151,7 +165,14 @@ internal fun DocContext.cameraCard(entityId: String, w: Float, h: Float) {
     val pw = units.px(w).toInt()
     val ph = units.px(h).toInt()
     picture(
-        PictureSlot("cam.card.$entityId", "/api/camera_proxy/$entityId", pw, ph, 4, crop = false),
+        PictureSlot(
+            "cam.card.$entityId",
+            "/api/camera_proxy/$entityId",
+            pw,
+            ph,
+            CardChrome.CAMERA_CARD_FIT,
+            crop = false,
+        ),
     )
     val video = liveVideo(entityId, crop = false)
     val waiting = int(Vars.entity(entityId, Vars.KEY_CAM_WAITING), Vars.VISIBLE)

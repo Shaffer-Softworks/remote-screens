@@ -2,6 +2,11 @@
 
 package tech.shaffersoftworks.remotescreens.server.render
 
+import tech.shaffersoftworks.remotescreens.server.render.tiles.edgeToEdge
+
+import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
+import tech.shaffersoftworks.remotescreens.server.render.tiles.tile
+
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcColor
@@ -30,7 +35,6 @@ import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.TopBar
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 
-
 private const val CLOCK_WIDTH_SHARE = 0.42f
 private const val NAV_BOTH_ICON_SHARE = 0.4f
 private const val TOP_BAR_MIN_SCALE = 0.7f
@@ -42,6 +46,11 @@ private const val NAV_BOTH_ICON_MAX_DP = 40f
 private const val STAT_ICON_GAP_DP = 4f
 private const val NAV_ICON_LABEL_GAP_DP = 5f
 private const val CLOCK_PAD_EXTRA_DP = 8f
+private const val MS_PER_SECOND = 1000L
+private const val PERCENT = 100f
+private const val LAYOUT_SCALE_MAX = 2f
+private const val BACK_KEY_BASE_DP = 34f
+private const val BACK_KEY_INSET_DP = 6f
 
 /** The device a document is built for. */
 data class Device(val widthDp: Int, val heightDp: Int, val density: Float) {
@@ -87,7 +96,8 @@ class RenderedDoc(
     /** Whether something drawn into the document (not a variable) has changed, so it must be built again. */
     fun stale(states: Map<String, EntityState>, now: Long = System.currentTimeMillis()): Boolean =
         docContext.structure.any { (id, what, was) -> what(states[id]) != was } ||
-            (docContext.refreshSeconds > 0 && now - builtAt > docContext.refreshSeconds * 1000L)
+            (docContext.refreshSeconds > 0 &&
+                now - builtAt > docContext.refreshSeconds * MS_PER_SECOND)
 }
 
 class RenderInput(
@@ -219,9 +229,9 @@ object ScreenRenderer {
     private fun DocContext.topBar(screen: Screen, page: Page, spec: GridSpec, back: Boolean, home: Int) {
         val bar = screen.topBar
         val ink = role(Role.INK)
-        val layoutScale = (spec.topBar / Grid.TOP_BAR).coerceIn(TOP_BAR_MIN_SCALE, 2f)
+        val layoutScale = (spec.topBar / Grid.TOP_BAR).coerceIn(TOP_BAR_MIN_SCALE, LAYOUT_SCALE_MAX)
         val headerSp = HEADER_SP * layoutScale
-        val clockW = bar.clockWidth?.let { spec.widthDp * it / 100f } ?: minOf(
+        val clockW = bar.clockWidth?.let { spec.widthDp * it / PERCENT } ?: minOf(
             CLOCK_MAX_WIDTH_DP,
             spec.widthDp * CLOCK_WIDTH_SHARE,
         )
@@ -253,7 +263,7 @@ object ScreenRenderer {
             Spacer(Modifier.width(doc.units.px(spec.padding + CLOCK_PAD_EXTRA_DP)))
             Row(Modifier.horizontalWeight(1f), vertical = RcVerticalPositioning.Center) {
                 if (back) {
-                    val keyDp = minOf(34f * layoutScale, spec.topBar - 6f)
+                    val keyDp = minOf(BACK_KEY_BASE_DP * layoutScale, spec.topBar - BACK_KEY_INSET_DP)
                     val backRef = ActionRef("_", "back", home.toString())
                     doc.key(
                         backRef,
@@ -412,7 +422,8 @@ object ScreenRenderer {
             val doc = this@navButton
             val word = title.uppercase(doc.i18n.locale)
             val wordW = Modifier.width(doc.units.px(wDp - STAT_ICON_GAP_DP))
-            val ink = doc.role(Role.INK)
+            // Idle = page ink; on the teal pill use KEY_ON_INK so the glyph reads (mockup hybrid).
+            val ink = doc.role(if (on) Role.KEY_ON_INK else Role.INK)
             when (style.labels) {
                 "icons" -> doc.icon(icon, minOf(NAV_ICON_ONLY_MAX, hDp * NAV_ICON_ONLY_SHARE), ink)
                 "text" -> {

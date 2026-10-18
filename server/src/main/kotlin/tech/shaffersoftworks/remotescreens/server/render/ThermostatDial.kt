@@ -3,33 +3,18 @@
 package tech.shaffersoftworks.remotescreens.server.render
 
 import androidx.compose.remote.creation.dsl.Modifier
-import androidx.compose.remote.creation.dsl.RcBorderShape
 import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcPaintStyle
-import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcStrokeCap
 import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
-import androidx.compose.remote.creation.dsl.background
-import androidx.compose.remote.creation.dsl.border
-import androidx.compose.remote.creation.dsl.clip
-import androidx.compose.remote.creation.dsl.fillMaxSize
-import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.height
-import androidx.compose.remote.creation.dsl.horizontalWeight
-import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
-import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
-import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
-import tech.shaffersoftworks.remotescreens.shared.ActionRef
-import tech.shaffersoftworks.remotescreens.shared.Tile
-import tech.shaffersoftworks.remotescreens.shared.VarValue
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
-
 
 /**
  * The dial: single target (one tinted arc) or dual Heat/Cool (orange low arc + blue high arc with a white gap),
@@ -57,7 +42,10 @@ internal fun DocContext.thermostatDial(tileId: String, entityId: String, diamete
     val coolStart = float(Vars.tile(tileId, "coolStart"))
     val coolSweep = float(Vars.tile(tileId, "coolSweep"))
     val ink = role(Role.INK)
-    val layoutScale = (diameterDp / ThermostatMetrics.DIAL_BASE_DP).coerceIn(0.4f, 1.5f)
+    val layoutScale = (diameterDp / ThermostatMetrics.DIAL_BASE_DP).coerceIn(
+        ThermostatMetrics.LAYOUT_SCALE_MIN,
+        ThermostatMetrics.LAYOUT_SCALE_MAX,
+    )
     scope.Box(
         Modifier.size(px, px),
         horizontal = RcHorizontalPositioning.Center,

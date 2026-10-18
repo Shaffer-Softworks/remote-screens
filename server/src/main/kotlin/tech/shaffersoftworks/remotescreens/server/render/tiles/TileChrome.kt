@@ -1,6 +1,16 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.tiles
+
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.HaRenderFlags
+import tech.shaffersoftworks.remotescreens.server.render.Present
+import tech.shaffersoftworks.remotescreens.server.render.Role
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.icon
+import tech.shaffersoftworks.remotescreens.server.render.label
+import tech.shaffersoftworks.remotescreens.server.render.paint
+import tech.shaffersoftworks.remotescreens.server.render.toggleIcon
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
@@ -71,6 +81,7 @@ internal object TileChrome {
     const val WEATHER_MID_DP = 200f
     const val WEATHER_DAYS_WIDE = 5
     const val WEATHER_DAYS_MID = 3
+    const val BEDSIDE_KEYS_MAX = 3
     const val WEATHER_ICON_TALL_DP = 52f
     const val WEATHER_ICON_SHORT_DP = 36f
     const val FORECAST_ICON_DP = 26f

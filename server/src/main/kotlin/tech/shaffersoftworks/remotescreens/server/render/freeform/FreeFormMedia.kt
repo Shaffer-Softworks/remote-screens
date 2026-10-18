@@ -1,17 +1,40 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.freeform
+
+import tech.shaffersoftworks.remotescreens.server.render.cards.HUES
+import tech.shaffersoftworks.remotescreens.server.render.cards.KELVINS
+
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.MarkdownLines
+import tech.shaffersoftworks.remotescreens.server.render.Pages
+import tech.shaffersoftworks.remotescreens.server.render.Pastel
+import tech.shaffersoftworks.remotescreens.server.render.Role
+import tech.shaffersoftworks.remotescreens.server.render.Type
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.Weight
+import tech.shaffersoftworks.remotescreens.server.render.accent
+import tech.shaffersoftworks.remotescreens.server.render.bindEntity
+import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
+import tech.shaffersoftworks.remotescreens.server.render.cards.kelvinColor
+import tech.shaffersoftworks.remotescreens.server.render.gap
+import tech.shaffersoftworks.remotescreens.server.render.icon
+import tech.shaffersoftworks.remotescreens.server.render.key
+import tech.shaffersoftworks.remotescreens.server.render.label
+import tech.shaffersoftworks.remotescreens.server.render.node
+import tech.shaffersoftworks.remotescreens.server.render.paint
+import tech.shaffersoftworks.remotescreens.server.render.rounded
+import tech.shaffersoftworks.remotescreens.server.render.sized
+import tech.shaffersoftworks.remotescreens.server.render.styled
+import tech.shaffersoftworks.remotescreens.server.render.tap
+import tech.shaffersoftworks.remotescreens.server.render.toggleIcon
 
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
-import androidx.compose.remote.core.operations.layout.animation.AnimationSpec
 import androidx.compose.remote.creation.dsl.Modifier
-import androidx.compose.remote.creation.dsl.animationSpec
-import androidx.compose.remote.creation.dsl.RcBorderShape
 import androidx.compose.remote.creation.dsl.RcColor
 import androidx.compose.remote.creation.dsl.RcFloat
 import androidx.compose.remote.creation.dsl.RcInteger
 import androidx.compose.remote.creation.dsl.RcStrokeCap
-import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning
 import androidx.compose.remote.creation.dsl.RcContentScale
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcPaintStyle
@@ -19,20 +42,13 @@ import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
-import androidx.compose.remote.creation.dsl.border
 import androidx.compose.remote.creation.dsl.clip
-import androidx.compose.remote.creation.dsl.fillMaxHeight
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.height
-import androidx.compose.remote.creation.dsl.horizontalScroll
 import androidx.compose.remote.creation.dsl.horizontalWeight
-import androidx.compose.remote.creation.dsl.marquee
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
-import androidx.compose.remote.creation.dsl.verticalScroll
-import androidx.compose.remote.creation.dsl.verticalWeight
-import androidx.compose.remote.creation.dsl.visibility
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.ActionRef

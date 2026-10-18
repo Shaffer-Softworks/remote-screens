@@ -1,6 +1,15 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.cards
+
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.Role
+import tech.shaffersoftworks.remotescreens.server.render.Type
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.Weight
+import tech.shaffersoftworks.remotescreens.server.render.gap
+import tech.shaffersoftworks.remotescreens.server.render.key
+import tech.shaffersoftworks.remotescreens.server.render.label
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
@@ -13,9 +22,12 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 
 internal fun DocContext.climateCard(entityId: String, entityState: EntityState?) {
-    val step = entityState?.number(
-        "target_temp_step",
-    ) ?: if (homeAssistantConfig.temperatureUnit.contains("F")) 1.0 else 0.5
+    val step = entityState?.number("target_temp_step")
+        ?: if (homeAssistantConfig.temperatureUnit.contains("F")) {
+            CardChrome.TEMP_STEP_F
+        } else {
+            CardChrome.TEMP_STEP_C
+        }
     val dualSetpoint = entityState?.supports(CardChrome.CLIMATE_TEMP_RANGE_FLAG) == true ||
         entityState?.state == "heat_cool" ||
         (entityState?.number(

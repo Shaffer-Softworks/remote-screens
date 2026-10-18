@@ -2,7 +2,6 @@
 
 package tech.shaffersoftworks.remotescreens.server.render
 
-import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 
 /** Readings, dial colours/sweeps, action, dual setpoints, fan word, and which mode is lit. */
