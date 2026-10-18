@@ -58,7 +58,9 @@ internal fun DocContext.mediaCard(entityId: String, entityState: EntityState?, w
             doc.key(ref(entityId, "previous"), icon = "skip-previous", heightDp = CardChrome.MEDIA_CTRL_DP, widthDp = CardChrome.MEDIA_CTRL_DP, round = true)
             Spacer(width(doc.units.px(CardChrome.SECTION_TITLE_GAP_DP)))
             Box(doc.tap(
-                size(doc.units.px(CardChrome.PLAY_KEY_DP), doc.units.px(CardChrome.PLAY_KEY_DP)).clip(doc.rounded((CardChrome.PLAY_KEY_DP) / 2f)).background(doc.role(
+                size(doc.units.px(CardChrome.PLAY_KEY_DP), doc.units.px(CardChrome.PLAY_KEY_DP))
+                    .clip(doc.rounded((CardChrome.PLAY_KEY_DP) / 2f))
+                    .background(doc.role(
                     Role.KEY_ON)), ref(entityId, "play_pause")),
                 horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
                 doc.icon("pause", CardChrome.CLOSE_KEY_DP, doc.role(Role.KEY_ON_INK), doc.int(Vars.entity(entityId, "playing")))
