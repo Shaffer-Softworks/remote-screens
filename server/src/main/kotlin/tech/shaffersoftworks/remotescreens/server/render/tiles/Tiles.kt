@@ -32,10 +32,17 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
 
     val tapRef = tapRef(tile, tile.tap, spec, pageIndex, hold = false)
     val holdRef = tapRef(tile, tile.hold, spec, pageIndex, hold = true)
-    if (tapRef != null && entityId != null && spec?.predict?.containsKey(tapRef.verb) == true) predict(tapRef, entityId)
+    if (tapRef != null && entityId != null && spec?.predict?.containsKey(
+            tapRef.verb,
+        ) == true) {
+        predict(tapRef, entityId)
+    }
 
     if (kind == "home" || box.edge) {
-        at(box.x, box.y) { scope.Box(tap(Modifier.size(units.px(box.w), units.px(box.h)), tapRef, holdRef)) {
+        at(
+            box.x,
+            box.y,
+        ) { scope.Box(tap(Modifier.size(units.px(box.w), units.px(box.h)), tapRef, holdRef)) {
             when (kind) {
                 "home" -> this@tile.homeTile(tile, box)
                 "climate" -> this@tile.thermostatPanel(tile, box)
@@ -46,23 +53,58 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
     }
 
     val inner = box.copy(w = box.w - 2 * C.CARD_EDGE, h = box.h - 2 * C.CARD_EDGE)
-    val asMap = kind == "map" || (kind in setOf("person", "device_tracker") && tile.options["map"] == "true")
+    val asMap = kind == "map" || (kind in setOf(
+        "person",
+        "device_tracker",
+    ) && tile.options["map"] == "true")
     val hasHeader = (asMap || kind !in C.NO_HEADER) && inner.w >= C.HEADER_MIN_DP && inner.h >= C.HEADER_MIN_DP &&
         !(kind == "camera" && tile.options["name"] == "false")
-    val headerH = if (!hasHeader) 0f else if (inner.h >= C.HEADER_TALL_MIN_DP) C.HEADER_TALL_DP else C.HEADER_SHORT_DP
+    val headerH = if (!hasHeader) {
+        0f
+    } else if (inner.h >= C.HEADER_TALL_MIN_DP) {
+        C.HEADER_TALL_DP
+    } else {
+        C.HEADER_SHORT_DP
+    }
     val body = inner.copy(h = inner.h - if (hasHeader) headerH + C.HEADER_LINE else 0f)
     val named = !hasHeader
 
-    val modifier = Modifier.size(units.px(box.w), units.px(box.h)).clip(rounded(C.CARD_CORNER_DP)).background(edgeOf(tile)).padding(units.px(C.CARD_EDGE))
+    val modifier = Modifier.size(
+        units.px(box.w),
+        units.px(box.h),
+    ).clip(rounded(C.CARD_CORNER_DP)).background(edgeOf(tile)).padding(units.px(C.CARD_EDGE))
     at(box.x, box.y) { scope.Box(tap(modifier, tapRef, holdRef)) {
         val docContext = this@tile
-        Column(Modifier.fillMaxSize().clip(docContext.rounded(C.PAD_SM_DP)).background(docContext.role(Role.CARD))) {
+        Column(
+            Modifier.fillMaxSize().clip(
+                docContext.rounded(C.PAD_SM_DP),
+            ).background(docContext.role(Role.CARD)),
+        ) {
             if (hasHeader) {
-                Box(Modifier.fillMaxWidth().height(docContext.units.px(headerH)).background(docContext.role(Role.CARD_HEADER)).padding(docContext.units.px(C.PAD_LG_DP), 0f, docContext.units.px(C.PAD_LG_DP), 0f),
-                    vertical = RcVerticalPositioning.Center) {
-                    docContext.headerTitle(tile, kind, if (headerH >= C.HEADER_TALL_DP) Type.TITLE else Type.BODY + 1f)
+                Box(
+                    Modifier.fillMaxWidth().height(
+                        docContext.units.px(headerH),
+                    ).background(
+                        docContext.role(Role.CARD_HEADER),
+                    ).padding(
+                        docContext.units.px(C.PAD_LG_DP),
+                        0f,
+                        docContext.units.px(C.PAD_LG_DP),
+                        0f,
+                    ),
+                    vertical = RcVerticalPositioning.Center,
+                ) {
+                    docContext.headerTitle(
+                        tile,
+                        kind,
+                        if (headerH >= C.HEADER_TALL_DP) Type.TITLE else Type.BODY + 1f,
+                    )
                 }
-                Box(Modifier.fillMaxWidth().height(docContext.units.px(C.HEADER_LINE)).background(docContext.color(Vars.tile(tile.id, Vars.KEY_LINE))))
+                Box(
+                    Modifier.fillMaxWidth().height(
+                        docContext.units.px(C.HEADER_LINE),
+                    ).background(docContext.color(Vars.tile(tile.id, Vars.KEY_LINE))),
+                )
             }
             Box(Modifier.fillMaxWidth().verticalWeight(1f)) {
                 when (kind) {
@@ -74,12 +116,32 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
                     "media_player" -> docContext.mediaTile(tile, body, entityState)
                     "camera" -> docContext.cameraTile(tile, body, named)
                     "history" -> docContext.historyTile(tile, body, named)
-                    "energy" -> docContext.energyFlow(body.w, body.h, compact = !body.full && body.w < 400f)
+                    "energy" -> docContext.energyFlow(
+                        body.w,
+                        body.h,
+                        compact = !body.full && body.w < 400f,
+                    )
                     "map" -> docContext.mapTile(tile, body, named)
-                    "person", "device_tracker" -> if (asMap) docContext.mapTile(tile, body, named) else docContext.personTile(tile, body, entityState)
+                    "person", "device_tracker" -> if (asMap) {
+                        docContext.mapTile(
+                            tile,
+                            body,
+                            named,
+                        )
+                    } else {
+                        docContext.personTile(tile, body, entityState)
+                    }
                     "favourite" -> docContext.favouriteTile(tile, body, named)
                     "calendar" -> docContext.calendarTile(tile, body, entityState, named)
-                    "sensor" -> if (tile.options["graph"] == "true" && body.h >= C.SHORT_HEIGHT_DP) docContext.historyTile(tile, body, named) else docContext.entityTile(tile, body, spec, entityState, named)
+                    "sensor" -> if (tile.options["graph"] == "true" && body.h >= C.SHORT_HEIGHT_DP) {
+                        docContext.historyTile(
+                            tile,
+                            body,
+                            named,
+                        )
+                    } else {
+                        docContext.entityTile(tile, body, spec, entityState, named)
+                    }
                     else -> docContext.entityTile(tile, body, spec, entityState, named)
                 }
             }

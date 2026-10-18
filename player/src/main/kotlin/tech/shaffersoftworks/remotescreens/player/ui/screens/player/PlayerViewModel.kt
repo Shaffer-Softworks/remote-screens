@@ -56,7 +56,15 @@ private const val PAIRING_CODE_GROUP_SIZE = 3
 /** After this many failed reconnects, look for the add-on over mDNS again (stale saved IP). */
 private const val REDISCOVER_AFTER_FAILURES = 5
 private val PLAYER_CAPABILITIES =
-    listOf("predictions", "bitmaps", "alerts", "cards", "settings", "deflate", Protocol.CAPABILITY_VIDEO)
+    listOf(
+        "predictions",
+        "bitmaps",
+        "alerts",
+        "cards",
+        "settings",
+        "deflate",
+        Protocol.CAPABILITY_VIDEO,
+    )
 
 /**
  * Runs a wall screen: finds and talks to the add-on, keeps the documents it sends, and does what a wall screen does
@@ -167,7 +175,9 @@ class PlayerViewModel @Inject constructor(
 
     private fun start() {
         viewModelScope.launch {
-            savedStateHandle.get<String>(EXTRA_SERVER)?.let { server -> preferencesRepository.setServer(server) }
+            savedStateHandle.get<String>(
+                EXTRA_SERVER,
+            )?.let { server -> preferencesRepository.setServer(server) }
             val server = preferencesRepository.server.first()
             if (server != null) connect(server) else searchForServer()
         }
@@ -355,7 +365,13 @@ class PlayerViewModel @Inject constructor(
     private suspend fun onVideo(message: ServerMessage.Video) {
         val server = connectionRepository.server.value ?: return
         val token = preferencesRepository.token.first() ?: return
-        val video = SlotVideo(message.rev, message.componentId, "http://$server${message.path}", token, message.crop)
+        val video = SlotVideo(
+            message.rev,
+            message.componentId,
+            "http://$server${message.path}",
+            token,
+            message.crop,
+        )
         updateRemoteScreen { it.withVideo(message.slot, video) }
     }
 
@@ -390,7 +406,12 @@ class PlayerViewModel @Inject constructor(
             val screenName = preferencesRepository.screenName.first() ?: deviceRepository.model
             _viewState.update { it.copy(identifyScreenName = screenName) }
             wake(true)
-            delay(seconds.coerceIn(MIN_IDENTIFY_SECONDS, MAX_IDENTIFY_SECONDS) * MILLISECONDS_PER_SECOND)
+            delay(
+                seconds.coerceIn(
+                    MIN_IDENTIFY_SECONDS,
+                    MAX_IDENTIFY_SECONDS,
+                ) * MILLISECONDS_PER_SECOND,
+            )
             _viewState.update { it.copy(identifyScreenName = null) }
         }
     }
@@ -559,12 +580,17 @@ class PlayerViewModel @Inject constructor(
 
     /** The window is shown again. After standby turned the screen off, that means the power button was pressed. */
     fun onResumed() {
-        _viewState.update { it.copy(isBatteryRestricted = !deviceRepository.isIgnoringBatteryOptimizations()) }
+        _viewState.update { it.copy(
+            isBatteryRestricted = !deviceRepository.isIgnoringBatteryOptimizations(),
+        ) }
         if (screenPowerRepository.isScreenOff) onUserInteraction()
     }
 
     private fun applyScreenSettings(settings: ScreenSettings) {
-        _viewState.update { it.copy(screenSettings = settings, isNight = settings.isNightAt(LocalTime.now())) }
+        _viewState.update { it.copy(
+            screenSettings = settings,
+            isNight = settings.isNightAt(LocalTime.now()),
+        ) }
         onUserInteraction()
     }
 
@@ -605,7 +631,9 @@ class PlayerViewModel @Inject constructor(
     private fun observeNightSchedule() {
         viewModelScope.launch {
             while (true) {
-                _viewState.update { it.copy(isNight = it.screenSettings.isNightAt(LocalTime.now())) }
+                _viewState.update { it.copy(
+                    isNight = it.screenSettings.isNightAt(LocalTime.now()),
+                ) }
                 delay(NIGHT_CHECK_INTERVAL_MS)
             }
         }
@@ -623,7 +651,10 @@ class PlayerViewModel @Inject constructor(
             ) { isEnabled, isSuppressed -> isEnabled to isSuppressed }
                 .collect { (isEnabled, isSuppressed) ->
                     _viewState.update {
-                        it.copy(isKioskEnabled = isEnabled, isLocallyUnlocked = isEnabled && isSuppressed)
+                        it.copy(
+                            isKioskEnabled = isEnabled,
+                            isLocallyUnlocked = isEnabled && isSuppressed,
+                        )
                     }
                 }
         }
@@ -640,7 +671,9 @@ class PlayerViewModel @Inject constructor(
         if (kioskPin != null && pin == kioskPin) {
             openSettingsDialog(isPinVerified = true)
         } else {
-            viewModelScope.launch { _events.send(PlayerEvent.ShowMessageResource(R.string.kiosk_pin_wrong)) }
+            viewModelScope.launch { _events.send(
+                PlayerEvent.ShowMessageResource(R.string.kiosk_pin_wrong),
+            ) }
         }
         onUserInteraction()
     }
@@ -702,7 +735,9 @@ class PlayerViewModel @Inject constructor(
                     canOfferCameraPermission = !isKioskLocked &&
                         currentState.screenSettings.wakeOnFace &&
                         !faceWakeMonitor.hasCameraPermission(),
-                    wakeOnFaceUnavailableNote = wakeOnFaceUnavailableNote(currentState.screenSettings.wakeOnFace),
+                    wakeOnFaceUnavailableNote = wakeOnFaceUnavailableNote(
+                        currentState.screenSettings.wakeOnFace,
+                    ),
                     kioskAction = kioskAction,
                     canRemoveDeviceOwner = !isKioskLocked && kioskManager.isDeviceOwner(),
                 ),
@@ -740,13 +775,17 @@ class PlayerViewModel @Inject constructor(
 
     fun onForgetRequested() {
         _viewState.update { state ->
-            state.copy(settingsDialog = state.settingsDialog?.copy(isForgetConfirmationVisible = true))
+            state.copy(
+                settingsDialog = state.settingsDialog?.copy(isForgetConfirmationVisible = true),
+            )
         }
     }
 
     fun onForgetCancelled() {
         _viewState.update { state ->
-            state.copy(settingsDialog = state.settingsDialog?.copy(isForgetConfirmationVisible = false))
+            state.copy(
+                settingsDialog = state.settingsDialog?.copy(isForgetConfirmationVisible = false),
+            )
         }
     }
 
@@ -794,7 +833,9 @@ class PlayerViewModel @Inject constructor(
     fun openAddressDialog() {
         viewModelScope.launch {
             val savedServer = preferencesRepository.server.first().orEmpty()
-            _viewState.update { it.copy(addressDialog = AddressDialogState(initialAddress = savedServer)) }
+            _viewState.update { it.copy(
+                addressDialog = AddressDialogState(initialAddress = savedServer),
+            ) }
         }
     }
 
@@ -837,7 +878,11 @@ class PlayerViewModel @Inject constructor(
             return
         }
         // Screen pinning would hide a confirm sheet on older Android; stop it before committing.
-        if (kioskManager.lockTaskState() == KioskState.PINNED) _events.send(PlayerEvent.StopScreenPinning)
+        if (kioskManager.lockTaskState() == KioskState.PINNED) {
+            _events.send(
+                PlayerEvent.StopScreenPinning,
+            )
+        }
         val installed = updateRepository.install(server, update.path, token, silent = silent)
         if (!installed) {
             _events.send(PlayerEvent.ShowMessageResource(R.string.update_failed))

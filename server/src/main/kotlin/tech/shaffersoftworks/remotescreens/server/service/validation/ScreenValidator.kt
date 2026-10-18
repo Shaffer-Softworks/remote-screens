@@ -52,22 +52,32 @@ object ScreenValidator {
     /** What a free-form page may hold: known components, ids that differ, a bounded size and depth. */
     fun validateTree(root: Node, pageTitle: String) {
         val nodes = root.walk().toList()
-        ensureValid(nodes.size <= MAX_NODES_PER_PAGE) { "$pageTitle: at most $MAX_NODES_PER_PAGE components" }
-        ensureValid(root.depth() <= MAX_NODE_DEPTH) { "$pageTitle: components nest at most $MAX_NODE_DEPTH deep" }
-        ensureValid(nodes.map { it.id }.toSet().size == nodes.size) { "$pageTitle: component ids must differ" }
+        ensureValid(
+            nodes.size <= MAX_NODES_PER_PAGE,
+        ) { "$pageTitle: at most $MAX_NODES_PER_PAGE components" }
+        ensureValid(
+            root.depth() <= MAX_NODE_DEPTH,
+        ) { "$pageTitle: components nest at most $MAX_NODE_DEPTH deep" }
+        ensureValid(
+            nodes.map { it.id }.toSet().size == nodes.size,
+        ) { "$pageTitle: component ids must differ" }
         for (node in nodes) {
             ensureValid(node.type in NodeTypes.ALL) { "$pageTitle: unknown component ${node.type}" }
             ensureValid(node.children.isEmpty() || node.type in NodeTypes.CONTAINERS) {
                 "$pageTitle: a ${node.type} holds no components"
             }
-            ensureValid(node.type != "tile" || node.tile != null) { "$pageTitle: tile ${node.id} has no card" }
+            ensureValid(
+                node.type != "tile" || node.tile != null,
+            ) { "$pageTitle: tile ${node.id} has no card" }
             for (size in listOf(node.size.width, node.size.height)) {
                 ensureValid(NODE_SIZE.matches(size)) { "$pageTitle: size $size of ${node.id}" }
             }
         }
     }
 
-    fun normalizeName(name: String): String = name.trim().ifEmpty { DEFAULT_SCREEN_NAME }.take(MAX_SCREEN_NAME_LENGTH)
+    fun normalizeName(name: String): String = name.trim().ifEmpty { DEFAULT_SCREEN_NAME }.take(
+        MAX_SCREEN_NAME_LENGTH,
+    )
 
     fun coerceDesignSize(size: DeviceSize): DeviceSize = DeviceSize(
         size.widthDp.coerceIn(DeviceSize.MIN, DeviceSize.MAX),

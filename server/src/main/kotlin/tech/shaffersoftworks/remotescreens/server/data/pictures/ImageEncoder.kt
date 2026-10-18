@@ -27,7 +27,10 @@ object ImageEncoder {
         val scaledHeight = (source.height * scale).roundToInt()
         val output = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
         val graphics = output.createGraphics()
-        graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+        graphics.setRenderingHint(
+            RenderingHints.KEY_INTERPOLATION,
+            RenderingHints.VALUE_INTERPOLATION_BILINEAR,
+        )
         graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
         graphics.drawImage(
             source,
@@ -48,7 +51,10 @@ object ImageEncoder {
     private fun encodeRoundPng(image: BufferedImage): ByteArray {
         val masked = BufferedImage(image.width, image.height, BufferedImage.TYPE_INT_ARGB)
         val graphics = masked.createGraphics()
-        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+        graphics.setRenderingHint(
+            RenderingHints.KEY_ANTIALIASING,
+            RenderingHints.VALUE_ANTIALIAS_ON,
+        )
         graphics.clip = Ellipse2D.Double(0.0, 0.0, image.width.toDouble(), image.height.toDouble())
         graphics.drawImage(image, 0, 0, null)
         graphics.dispose()

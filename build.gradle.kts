@@ -14,5 +14,8 @@ subprojects {
             buildUponDefaultConfig.set(true)
             config.setFrom(rootProject.file("config/detekt/detekt.yml"))
         }
+        dependencies {
+            add("detektPlugins", rootProject.libs.detekt.rules.ktlint.wrapper)
+        }
     }
 }

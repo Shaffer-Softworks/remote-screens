@@ -33,7 +33,9 @@ fun KioskPinDialog(onConfirm: (pin: String) -> Unit, onDismiss: () -> Unit) {
         text = {
             OutlinedTextField(
                 value = pin,
-                onValueChange = { input -> pin = input.filter(Char::isDigit).take(MAX_KIOSK_PIN_LENGTH) },
+                onValueChange = { input -> pin = input.filter(
+                    Char::isDigit,
+                ).take(MAX_KIOSK_PIN_LENGTH) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
@@ -44,7 +46,10 @@ fun KioskPinDialog(onConfirm: (pin: String) -> Unit, onDismiss: () -> Unit) {
             )
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(pin) }, enabled = ScreenSettings.KIOSK_PIN.matches(pin)) {
+            TextButton(
+                onClick = { onConfirm(pin) },
+                enabled = ScreenSettings.KIOSK_PIN.matches(pin),
+            ) {
                 Text(stringResource(R.string.ok))
             }
         },

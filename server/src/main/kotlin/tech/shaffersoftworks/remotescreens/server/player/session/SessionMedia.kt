@@ -36,7 +36,9 @@ internal class SessionMedia(
                 showCameraStillFallback(shown, video)
                 return@launch
             }
-            host.send(ServerMessage.Video(shown.slot, shown.revision, video.componentId, path, video.crop))
+            host.send(
+                ServerMessage.Video(shown.slot, shown.revision, video.componentId, path, video.crop),
+            )
         }
     }
 
@@ -84,7 +86,12 @@ internal class SessionMedia(
             context.scope.launch {
                 val bytes = context.pictureRepository.load(picture, states) ?: return@launch
                 if (shownDocuments[shown.slot] === shown) {
-                    host.send(ServerMessage.Bitmap(picture.name, Base64.getEncoder().encodeToString(bytes)))
+                    host.send(
+                        ServerMessage.Bitmap(
+                            picture.name,
+                            Base64.getEncoder().encodeToString(bytes),
+                        ),
+                    )
                 }
             }
         }

@@ -6,7 +6,13 @@ import kotlin.test.assertEquals
 class VideoProtocolTest {
     @Test
     fun aVideoReadsBackAsSent() {
-        val video = ServerMessage.Video(Slot.ALERT, 7, 0x5C_0000, "/stream/hls/abc/master_playlist.m3u8", crop = true)
+        val video = ServerMessage.Video(
+            Slot.ALERT,
+            7,
+            0x5C_0000,
+            "/stream/hls/abc/master_playlist.m3u8",
+            crop = true,
+        )
 
         assertEquals(video, Protocol.decodeServer(Protocol.encode(video)))
         assertEquals(
@@ -39,7 +45,9 @@ class VideoProtocolTest {
         assertEquals(state, Protocol.decodePlayer(Protocol.encode(state)))
         assertEquals(
             PlayerMessage.DeviceState(awake = false, page = 0),
-            Protocol.decodePlayer(Protocol.encode(PlayerMessage.DeviceState(awake = false, page = 0))),
+            Protocol.decodePlayer(
+                Protocol.encode(PlayerMessage.DeviceState(awake = false, page = 0)),
+            ),
         )
     }
 }

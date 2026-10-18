@@ -51,7 +51,11 @@ class ActionRouterTest {
     @Test
     fun volumeIsAFraction() {
         tap("t5|volume|+10")
-        assertEquals(0.45, (ha.calls.last().third["volume_level"] as JsonPrimitive).doubleOrNull!!, 0.001)
+        assertEquals(
+            0.45,
+            (ha.calls.last().third["volume_level"] as JsonPrimitive).doubleOrNull!!,
+            0.001,
+        )
     }
 
     @Test
@@ -67,7 +71,9 @@ class ActionRouterTest {
     fun aLateSecondTapAsksAgain() {
         val memory = TapMemory()
         tap("t7|toggle|", memory, now = 1000)
-        assertIs<TapOutcome.Confirm>(tap("t7|toggle|", memory, now = 1000 + ActionRouter.CONFIRM_MS + 1))
+        assertIs<TapOutcome.Confirm>(
+            tap("t7|toggle|", memory, now = 1000 + ActionRouter.CONFIRM_MS + 1),
+        )
     }
 
     @Test

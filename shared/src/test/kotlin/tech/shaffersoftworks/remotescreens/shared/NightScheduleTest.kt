@@ -43,6 +43,8 @@ class NightScheduleTest {
 
     @Test
     fun `unreadable times are no night`() {
-        assertFalse(ScreenSettings(nightStart = "late", nightEnd = "06:00").isNightAt(LocalTime.of(3, 0)))
+        assertFalse(
+            ScreenSettings(nightStart = "late", nightEnd = "06:00").isNightAt(LocalTime.of(3, 0)),
+        )
     }
 }

@@ -171,7 +171,13 @@ data class Node(
             kind = if (type == "graph") "history" else null,
             tap = tap ?: if (type == "switch") TapAction(TapType.TOGGLE) else TapAction(),
             hold = hold ?: TapAction(TapType.NONE),
-            options = if (type == "graph") mapOf("hours" to (props["hours"] ?: "24")) else emptyMap(),
+            options = if (type == "graph") {
+                mapOf(
+                    "hours" to (props["hours"] ?: "24"),
+                )
+            } else {
+                emptyMap()
+            },
         )
         else -> null
     }

@@ -113,11 +113,19 @@ data class RemoteScreenState(
         return copy(values = values + predictedValues.associateBy(VarValue::name))
     }
 
-    fun withBitmap(name: String, bitmap: Bitmap): RemoteScreenState = copy(bitmaps = bitmaps + (name to bitmap))
+    fun withBitmap(name: String, bitmap: Bitmap): RemoteScreenState = copy(
+        bitmaps = bitmaps + (name to bitmap),
+    )
 
     /** A video for a document that is no longer shown is dropped. */
     fun withVideo(slot: Slot, video: SlotVideo): RemoteScreenState =
-        if (documents[slot]?.revision == video.revision) copy(videos = videos + (slot to video)) else this
+        if (documents[slot]?.revision == video.revision) {
+            copy(
+                videos = videos + (slot to video),
+            )
+        } else {
+            this
+        }
 
     /** Forgets [video] once it stopped; a newer one the add-on sent for the slot stays. */
     fun withoutVideo(slot: Slot, video: SlotVideo): RemoteScreenState =
@@ -125,7 +133,9 @@ data class RemoteScreenState(
 
     fun withPage(index: Int): RemoteScreenState = copy(page = index.coerceIn(0, pageCount - 1))
 
-    fun withLocalInt(name: String, value: Int): RemoteScreenState = copy(localInts = localInts + (name to value))
+    fun withLocalInt(name: String, value: Int): RemoteScreenState = copy(
+        localInts = localInts + (name to value),
+    )
 
     /** The main document cannot be closed, only replaced or cleared. */
     fun closed(slot: Slot): RemoteScreenState =
@@ -133,5 +143,10 @@ data class RemoteScreenState(
 
     /** Hides every document and forgets the values, as when the screen must be paired again. */
     fun cleared(): RemoteScreenState =
-        copy(documents = emptyMap(), values = emptyMap(), videos = emptyMap(), localInts = emptyMap())
+        copy(
+            documents = emptyMap(),
+            values = emptyMap(),
+            videos = emptyMap(),
+            localInts = emptyMap(),
+        )
 }

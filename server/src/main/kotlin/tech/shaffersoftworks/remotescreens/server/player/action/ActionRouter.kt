@@ -50,7 +50,10 @@ class ActionRouter(private val homeAssistant: HomeAssistant, private val i18n: (
         val verb = resolveVerb(ref.verb, target, entity)
         return try {
             when (verb) {
-                "card" -> TapOutcome.Card(target.entityId, if (ref.arg == "history") "history" else target.kind)
+                "card" -> TapOutcome.Card(
+                    target.entityId,
+                    if (ref.arg == "history") "history" else target.kind,
+                )
                 "run" -> runTileAction(target)
                 "favourite" -> playFavourite(target)
                 "event" -> fireEvent(ref.arg, target)
@@ -72,10 +75,22 @@ class ActionRouter(private val homeAssistant: HomeAssistant, private val i18n: (
     /** The state Home Assistant will most likely report once [ref] is done, or null when it cannot be told. */
     fun foresee(ref: ActionRef, target: TapTarget?, entity: EntityState): EntityState? {
         val spec = target?.spec ?: Catalogue.of(entity.domain)
-        val verb = resolveVerb(ref.verb, target ?: TapTarget("", entity.entityId, entity.domain, null), entity)
+        val verb = resolveVerb(
+            ref.verb,
+            target ?: TapTarget("", entity.entityId, entity.domain, null),
+            entity,
+        )
         val prediction = spec?.predict?.get(verb) ?: return null
         val action = spec.actions[verb]
-        val arg = if (action != null) ServiceDataBuilder.resolveArg(action, ref.arg, entity) else ref.arg
+        val arg = if (action != null) {
+            ServiceDataBuilder.resolveArg(
+                action,
+                ref.arg,
+                entity,
+            )
+        } else {
+            ref.arg
+        }
         val attributes = prediction.attributes.mapValues { (_, value) ->
             if (ServiceDataBuilder.isArgExpression(value)) {
                 ServiceDataBuilder.argValue(value, arg)
@@ -118,7 +133,11 @@ class ActionRouter(private val homeAssistant: HomeAssistant, private val i18n: (
             val code = memory.codes.remove(entityId)
             val data = ServiceDataBuilder.build(action, verb, ref.arg, entity, code)
             val (domain, service) = action.service.split('.', limit = 2)
-            homeAssistant.callService(domain, service, JsonObject(data + ("entity_id" to JsonPrimitive(entityId))))
+            homeAssistant.callService(
+                domain,
+                service,
+                JsonObject(data + ("entity_id" to JsonPrimitive(entityId))),
+            )
             TapOutcome.Done
         }
     }
@@ -145,14 +164,17 @@ class ActionRouter(private val homeAssistant: HomeAssistant, private val i18n: (
     }
 
     private suspend fun runTileAction(target: TapTarget): TapOutcome {
-        val tap = target.tile?.let { tile -> listOf(tile.tap, tile.hold).firstOrNull { it.type == TapType.ACTION } }
+        val tap = target.tile?.let { tile -> listOf(
+            tile.tap,
+            tile.hold,
+        ).firstOrNull { it.type == TapType.ACTION } }
         val service = tap?.service
         val serviceParts = service?.split('.', limit = 2)
         return when {
             serviceParts == null -> TapOutcome.Ignored
             serviceParts.size != 2 -> TapOutcome.Failed("Bad service $service")
             else -> {
-                val data = (tap?.data ?: JsonObject(emptyMap())).toMutableMap()
+                val data = (tap.data ?: JsonObject(emptyMap())).toMutableMap()
                 if ("entity_id" !in data && target.entityId != null) {
                     data["entity_id"] = JsonPrimitive(target.entityId)
                 }

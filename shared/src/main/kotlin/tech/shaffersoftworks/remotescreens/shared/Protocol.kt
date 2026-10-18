@@ -26,8 +26,14 @@ object Protocol {
         explicitNulls = false
     }
 
-    fun encode(message: ServerMessage): String = json.encodeToString(ServerMessage.serializer(), message)
-    fun encode(message: PlayerMessage): String = json.encodeToString(PlayerMessage.serializer(), message)
+    fun encode(message: ServerMessage): String = json.encodeToString(
+        ServerMessage.serializer(),
+        message,
+    )
+    fun encode(message: PlayerMessage): String = json.encodeToString(
+        PlayerMessage.serializer(),
+        message,
+    )
     fun decodeServer(text: String): ServerMessage? =
         runCatching { json.decodeFromString(ServerMessage.serializer(), text) }.getOrNull()
 
@@ -62,7 +68,11 @@ data class VarValue(val name: String, val type: VarType, val value: String) {
         fun int(name: String, value: Int) = VarValue(name, VarType.INT, value.toString())
         fun float(name: String, value: Float) = VarValue(name, VarType.FLOAT, value.toString())
         fun color(name: String, argb: Int) =
-            VarValue(name, VarType.COLOR, argb.toUInt().toString(HEX_RADIX).padStart(ARGB_HEX_DIGITS, '0'))
+            VarValue(
+                name,
+                VarType.COLOR,
+                argb.toUInt().toString(HEX_RADIX).padStart(ARGB_HEX_DIGITS, '0'),
+            )
     }
 
     fun asInt(): Int = value.toIntOrNull() ?: 0

@@ -45,8 +45,10 @@ class PictureRepository(
             .substringAfter(':')
             .split(',')
             .joinToString(";") { entityId ->
-            states[entityId]?.let { "${it.number("latitude")},${it.number("longitude")},${it.state}" }.orEmpty()
-        }
+                states[entityId]?.let { "${it.number(
+                    "latitude",
+                )},${it.number("longitude")},${it.state}" }.orEmpty()
+            }
         slot.source.startsWith(QR_SOURCE_PREFIX) -> qrPayload(slot.source, states)
         else -> slot.source
     }
@@ -63,12 +65,27 @@ class PictureRepository(
                 QrBitmaps.encode(qrPayload(slot.source, states), maxOf(slot.widthPx, slot.heightPx))
             else -> fetchImage(slot, states)
         }
-        image?.let { ImageEncoder.encode(ImageEncoder.fit(it, slot.widthPx, slot.heightPx, slot.crop), slot.round) }
+        image?.let { ImageEncoder.encode(
+            ImageEncoder.fit(it, slot.widthPx, slot.heightPx, slot.crop),
+            slot.round,
+        ) }
     }.onFailure { logger.warn("Picture {} failed: {}", slot.name, it.toString()) }.getOrNull()
 
     private suspend fun fetchImage(slot: PictureSlot, states: Map<String, EntityState>): BufferedImage? {
-        val url = if (slot.source.startsWith(ATTRIBUTE_SOURCE_PREFIX)) sourceKey(slot, states) else slot.source
-        val bytes = url?.let { if (it.startsWith("http")) fetchUrl(it) else homeAssistant.fetch(it) }
+        val url = if (slot.source.startsWith(
+                ATTRIBUTE_SOURCE_PREFIX,
+            )) {
+            sourceKey(slot, states)
+        } else {
+            slot.source
+        }
+        val bytes = url?.let { if (it.startsWith(
+                "http",
+            )) {
+            fetchUrl(it)
+        } else {
+            homeAssistant.fetch(it)
+        } }
         return bytes?.let { ImageIO.read(ByteArrayInputStream(it)) }
     }
 
@@ -95,7 +112,9 @@ class PictureRepository(
         val key = "$zoom/$x/$y"
         tileCache[key]?.let { return it }
         val url = tileUrl.replace("{z}", "$zoom").replace("{x}", "$x").replace("{y}", "$y")
-        val image = runCatching { fetchUrl(url) }.getOrNull()?.let { ImageIO.read(ByteArrayInputStream(it)) }
+        val image = runCatching { fetchUrl(
+            url,
+        ) }.getOrNull()?.let { ImageIO.read(ByteArrayInputStream(it)) }
         if (image != null) {
             if (tileCache.size > MAX_CACHED_TILES) tileCache.clear()
             tileCache[key] = image

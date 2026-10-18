@@ -52,7 +52,13 @@ class PlayerPreferencesRepository @Inject constructor(
     suspend fun setPairing(token: String, screenName: String?) {
         dataStore.edit { preferences ->
             preferences[TOKEN_KEY] = token
-            if (screenName != null) preferences[SCREEN_NAME_KEY] = screenName else preferences.remove(SCREEN_NAME_KEY)
+            if (screenName != null) {
+                preferences[SCREEN_NAME_KEY] = screenName
+            } else {
+                preferences.remove(
+                    SCREEN_NAME_KEY,
+                )
+            }
         }
     }
 

@@ -45,8 +45,12 @@ class RenderDataRepository(private val homeAssistant: HomeAssistant) {
     /** What the screen needs, for its tiles and for any card that may be opened from them. */
     suspend fun forScreen(screen: Screen): RenderData {
         val tiles = screen.pages.flatMap { it.allTiles() }
-        val weatherEntities = tiles.mapNotNull { it.entityId }.filter { it.startsWith("weather.") }.distinct()
-        val todoEntities = tiles.mapNotNull { it.entityId }.filter { it.startsWith("todo.") }.distinct()
+        val weatherEntities = tiles.mapNotNull { it.entityId }.filter { it.startsWith(
+            "weather.",
+        ) }.distinct()
+        val todoEntities = tiles.mapNotNull { it.entityId }.filter { it.startsWith(
+            "todo.",
+        ) }.distinct()
         val graphedEntities = tiles.filter(::isGraphed).mapNotNull { it.entityId }.distinct()
         val mediaPlayers = tiles.filter { it.effectiveKind() == "media_player" }.mapNotNull { it.entityId }.distinct()
         val needsEnergy = tiles.any { it.effectiveKind() == "energy" }
@@ -67,20 +71,35 @@ class RenderDataRepository(private val homeAssistant: HomeAssistant) {
     /** What the card of [entityId], or of a [kind] with no entity such as energy, needs. */
     suspend fun forCard(entityId: String?, kind: String?): RenderData = when {
         entityId == null -> RenderData(energy = if (kind == "energy") energy() else null)
-        entityId.startsWith("weather.") -> RenderData(forecasts = mapOf(entityId to forecast(entityId)))
-        kind == "history" || entityId.startsWith("sensor.") || entityId.startsWith("binary_sensor.") ->
+        entityId.startsWith(
+            "weather.",
+        ) -> RenderData(forecasts = mapOf(entityId to forecast(entityId)))
+        kind == "history" || entityId.startsWith(
+            "sensor.",
+        ) || entityId.startsWith("binary_sensor.") ->
             RenderData(history = mapOf(entityId to history(entityId, DEFAULT_HISTORY_HOURS)))
-        entityId.startsWith("media_player.") -> RenderData(browse = mapOf(entityId to browse(entityId)))
+        entityId.startsWith(
+            "media_player.",
+        ) -> RenderData(browse = mapOf(entityId to browse(entityId)))
         entityId.startsWith("todo.") -> RenderData(todos = mapOf(entityId to todoItems(entityId)))
         else -> RenderData()
     }
 
-    suspend fun forecast(entityId: String): List<Forecast> = cached(forecasts, entityId, FORECAST_TTL_MS) {
+    suspend fun forecast(entityId: String): List<Forecast> = cached(
+        forecasts,
+        entityId,
+        FORECAST_TTL_MS,
+    ) {
         val request = buildJsonObject {
             put("entity_id", entityId)
             put("type", "daily")
         }
-        val result = homeAssistant.callService("weather", "get_forecasts", request, returnResponse = true)
+        val result = homeAssistant.callService(
+            "weather",
+            "get_forecasts",
+            request,
+            returnResponse = true,
+        )
         HomeAssistantResponseParser.forecasts(result, entityId)
     }
 
@@ -100,18 +119,30 @@ class RenderDataRepository(private val homeAssistant: HomeAssistant) {
     suspend fun energy(): EnergyPrefs? {
         energyPreferences?.takeIf { it.isFresh(ENERGY_TTL_MS) }?.let { return it.value }
         val value = runCatching {
-            (homeAssistant.command("energy/get_prefs") as? JsonObject)?.let(HomeAssistantResponseParser::energy)
+            (homeAssistant.command(
+                "energy/get_prefs",
+            ) as? JsonObject)?.let(HomeAssistantResponseParser::energy)
         }.onFailure { logger.debug("No energy preferences: {}", it.message) }.getOrNull()
         energyPreferences = Cached(value, System.currentTimeMillis())
         return value
     }
 
-    suspend fun browse(entityId: String): List<BrowseItem> = cached(libraries, entityId, BROWSE_TTL_MS) {
+    suspend fun browse(entityId: String): List<BrowseItem> = cached(
+        libraries,
+        entityId,
+        BROWSE_TTL_MS,
+    ) {
         val request = buildJsonObject { put("entity_id", entityId) }
-        HomeAssistantResponseParser.library(homeAssistant.command("media_player/browse_media", request))
+        HomeAssistantResponseParser.library(
+            homeAssistant.command("media_player/browse_media", request),
+        )
     }
 
-    suspend fun todoItems(entityId: String): List<TodoItem> = cached(todos, entityId, BROWSE_TTL_MS) {
+    suspend fun todoItems(entityId: String): List<TodoItem> = cached(
+        todos,
+        entityId,
+        BROWSE_TTL_MS,
+    ) {
         val request = buildJsonObject { put("entity_id", entityId) }
         val result = homeAssistant.callService("todo", "get_items", request, returnResponse = true)
         HomeAssistantResponseParser.todos(result, entityId)

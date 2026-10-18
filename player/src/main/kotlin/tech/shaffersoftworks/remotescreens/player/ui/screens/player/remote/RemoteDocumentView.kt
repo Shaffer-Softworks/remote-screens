@@ -31,7 +31,9 @@ const val PAGE_VARIABLE = "page"
  */
 @SuppressLint("ViewConstructor")
 class RemoteDocumentView(context: Context) : SwipeFrame(context) {
-    private val players: Map<Slot, RemoteComposePlayer> = Slot.entries.associateWith { RemoteComposePlayer(context) }
+    private val players: Map<Slot, RemoteComposePlayer> = Slot.entries.associateWith { RemoteComposePlayer(
+        context,
+    ) }
     private val loadedDocuments = mutableMapOf<Slot, SlotDocument>()
     private var appliedValues: Map<String, VarValue> = emptyMap()
     private var appliedBitmaps: Map<String, Bitmap> = emptyMap()
@@ -143,7 +145,10 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
     private fun placeVideo() {
         val slot = videoSlot ?: return
         val player = players.getValue(slot)
-        val bounds = liveVideoView.video?.let { video -> componentBounds(player, video.componentId) }
+        val bounds = liveVideoView.video?.let { video -> componentBounds(
+            player,
+            video.componentId,
+        ) }
         if (bounds == null) {
             liveVideoView.visibility = View.INVISIBLE
             return
@@ -171,7 +176,9 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
      * fails closed on that path alone (that left the overlay invisible and only the spinner or still showed).
      */
     private fun componentBounds(player: RemoteComposePlayer, componentId: Int): Rect? {
-        val component = runCatching { player.document.document.getComponent(componentId) }.getOrNull()
+        val component = runCatching { player.document.document.getComponent(
+            componentId,
+        ) }.getOrNull()
         val width = component?.width?.roundToInt() ?: 0
         val height = component?.height?.roundToInt() ?: 0
         if (component == null || width <= 0 || height <= 0) return null
@@ -221,7 +228,9 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
             val player = players.getValue(slot)
             // Load with Home Assistant's zone so analog hands match the digital TIME/DATE vars.
             // Each document needs its own clock: CalendarSystemClock's calendar is not thread-safe.
-            player.setDocument(RemoteDocument(ByteArrayInputStream(document.bytes), clockFor(state.timeZone)))
+            player.setDocument(
+                RemoteDocument(ByteArrayInputStream(document.bytes), clockFor(state.timeZone)),
+            )
             // Action listeners belong to the loaded document, so each new document needs its own.
             player.addIdActionListener { _, metadata ->
                 if (metadata != null) onAction(slot, document.revision, metadata)

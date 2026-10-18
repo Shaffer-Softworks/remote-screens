@@ -47,7 +47,9 @@ class UpdateRepository @Inject constructor(
                 val response = httpClient.get("http://$server$path?token=$token")
                 if (!response.status.isSuccess()) return@withContext false
                 response.bodyAsChannel().toInputStream().use { apkInputStream ->
-                    apkFile.outputStream().use { apkOutputStream -> apkInputStream.copyTo(apkOutputStream) }
+                    apkFile.outputStream().use { apkOutputStream -> apkInputStream.copyTo(
+                        apkOutputStream,
+                    ) }
                 }
                 commitInstallSession(apkFile, silent)
                 true
@@ -64,19 +66,29 @@ class UpdateRepository @Inject constructor(
     @Throws(IOException::class)
     private fun commitInstallSession(apkFile: File, silent: Boolean) {
         val packageInstaller = context.packageManager.packageInstaller
-        val sessionParams = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
+        val sessionParams = PackageInstaller.SessionParams(
+            PackageInstaller.SessionParams.MODE_FULL_INSTALL,
+        )
         // Same-signature self-update on Android 12+: skip the system confirm. [silent] is for callers that also skip
         // our own dialog (device owner); the flag still helps after a manual confirm on other tablets.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            sessionParams.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
+            sessionParams.setRequireUserAction(
+                PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED,
+            )
             if (silent) {
                 Timber.i("Committing player update without a system confirm (Android 12+)")
             }
         }
         val sessionId = packageInstaller.createSession(sessionParams)
         packageInstaller.openSession(sessionId).use { installSession ->
-            installSession.openWrite(INSTALL_SESSION_NAME, 0, apkFile.length()).use { apkOutputStream ->
-                apkFile.inputStream().use { apkInputStream -> apkInputStream.copyTo(apkOutputStream) }
+            installSession.openWrite(
+                INSTALL_SESSION_NAME,
+                0,
+                apkFile.length(),
+            ).use { apkOutputStream ->
+                apkFile.inputStream().use { apkInputStream -> apkInputStream.copyTo(
+                    apkOutputStream,
+                ) }
                 installSession.fsync(apkOutputStream)
             }
             val statusIntent = PendingIntent.getBroadcast(

@@ -73,18 +73,34 @@ class DocContext(
         declare(texts, name, { text(name) }) { scope.remoteNamedText(Rc.USER + name, "") }
 
     fun int(name: String, initial: Int = 0): RcInteger =
-        declare(ints, name, { int(name, initial) }) { scope.remoteNamedInteger(Rc.USER + name, initial) }
+        declare(
+            ints,
+            name,
+            { int(name, initial) },
+        ) { scope.remoteNamedInteger(Rc.USER + name, initial) }
 
     fun float(name: String, initial: Float = 0f): RcFloat =
-        declare(floats, name, { float(name, initial) }) { scope.remoteNamedFloat(Rc.USER + name, initial) }
+        declare(
+            floats,
+            name,
+            { float(name, initial) },
+        ) { scope.remoteNamedFloat(Rc.USER + name, initial) }
 
     fun color(name: String, initial: Int = 0): RcColor =
-        declare(colors, name, { color(name, initial) }) { scope.remoteNamedColor(Rc.USER + name, initial) }
+        declare(
+            colors,
+            name,
+            { color(name, initial) },
+        ) { scope.remoteNamedColor(Rc.USER + name, initial) }
 
     /** A fixed text for canvas text operations, which take a declared text rather than a string. */
     fun literal(s: String): RcText = declare(literals, s, { literal(s) }) { scope.remoteText(s) }
     fun fixed(argb: Int): RcColor =
-        declare(colors, "#" + argb.toUInt().toString(HEX_RADIX), { fixed(argb) }) { scope.remoteColor(argb) }
+        declare(
+            colors,
+            "#" + argb.toUInt().toString(HEX_RADIX),
+            { fixed(argb) },
+        ) { scope.remoteColor(argb) }
 
     fun role(r: Role): RcColor = fixed(palette[r])
     fun pastel(p: Pastel): RcColor = fixed(palette[p])
@@ -99,8 +115,16 @@ class DocContext(
     /** Whether the document has a named variable [name], so a value for it is worth sending. */
     fun declares(name: String): Boolean = name in texts || name in ints || name in floats || name in colors
 
-    fun image(name: String, w: Int, h: Int): RcImage = declare(images, name, { image(name, w, h) }) {
-        val placeholder = BufferedImage(w.coerceAtLeast(1), h.coerceAtLeast(1), BufferedImage.TYPE_INT_ARGB)
+    fun image(name: String, w: Int, h: Int): RcImage = declare(
+        images,
+        name,
+        { image(name, w, h) },
+    ) {
+        val placeholder = BufferedImage(
+            w.coerceAtLeast(1),
+            h.coerceAtLeast(1),
+            BufferedImage.TYPE_INT_ARGB,
+        )
         scope.remoteNamedBitmap(Rc.USER + name, placeholder)
     }
 

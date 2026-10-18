@@ -31,13 +31,18 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 
-private fun small(base: Float, layoutScale: Float) = maxOf(base * layoutScale, ThermostatMetrics.SMALL_LABEL_MIN_SP)
+private fun small(base: Float, layoutScale: Float) = maxOf(
+    base * layoutScale,
+    ThermostatMetrics.SMALL_LABEL_MIN_SP,
+)
 
 /** Dual low/high setpoints: range feature, `heat_cool`, or both target temps present. */
 private fun isDual(entityState: EntityState?): Boolean =
     entityState?.supports(ThermostatMetrics.CLIMATE_TEMP_RANGE_FLAG) == true ||
         entityState?.state == "heat_cool" ||
-        (entityState?.number("target_temp_high") != null && entityState.number("target_temp_low") != null)
+        (entityState?.number(
+            "target_temp_high",
+        ) != null && entityState.number("target_temp_low") != null)
 
 /**
  * Modes in HA more-info order (Heat/Cool, Heat, Cool, Off). Prefers `heat_cool`, else `auto`.
@@ -89,7 +94,10 @@ fun DocContext.thermostatPanel(tile: Tile, box: TileBox) {
     for (mode in fans) predict(ActionRef(tile.id, "fan", mode), id)
     bindThermostat(tile.id, id, modes, dual)
 
-    val layoutScale = minOf(box.w / ThermostatMetrics.BASE_W, box.h / ThermostatMetrics.BASE_H).coerceIn(0.4f, 1.5f)
+    val layoutScale = minOf(
+        box.w / ThermostatMetrics.BASE_W,
+        box.h / ThermostatMetrics.BASE_H,
+    ).coerceIn(0.4f, 1.5f)
     scope.Column(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@thermostatPanel
         doc.thermostatHeader(layoutScale)
@@ -108,12 +116,20 @@ private fun DocContext.thermostatHeader(layoutScale: Float) {
         Box(
             Modifier.size(
                 this@thermostatHeader.units.px(ThermostatMetrics.ACCENT_BAR_WIDTH_DP * layoutScale),
-                this@thermostatHeader.units.px(ThermostatMetrics.ACCENT_BAR_HEIGHT_DP * layoutScale),
+                this@thermostatHeader.units.px(
+                    ThermostatMetrics.ACCENT_BAR_HEIGHT_DP * layoutScale,
+                ),
             ).background(accent),
         )
-        Spacer(Modifier.height(this@thermostatHeader.units.px(ThermostatMetrics.HEADER_GAP_DP * layoutScale)))
+        Spacer(
+            Modifier.height(
+                this@thermostatHeader.units.px(ThermostatMetrics.HEADER_GAP_DP * layoutScale),
+            ),
+        )
         this@thermostatHeader.label(
-            this@thermostatHeader.i18n.t("ui.adjust_temperature").uppercase(this@thermostatHeader.i18n.locale),
+            this@thermostatHeader.i18n.t(
+                "ui.adjust_temperature",
+            ).uppercase(this@thermostatHeader.i18n.locale),
             small(ThermostatMetrics.ADJUST_CAPTION_SP, layoutScale),
             ink,
         )
@@ -133,7 +149,10 @@ private fun DocContext.thermostatBody(
     boxH: Float,
 ) {
     val keyDp = ThermostatMetrics.ADJUST_KEY_DP * layoutScale
-    val dialDp = minOf(ThermostatMetrics.DIAL_BASE_DP * layoutScale, boxH * ThermostatMetrics.DIAL_HEIGHT_SHARE)
+    val dialDp = minOf(
+        ThermostatMetrics.DIAL_BASE_DP * layoutScale,
+        boxH * ThermostatMetrics.DIAL_HEIGHT_SHARE,
+    )
     scope.Row(Modifier.fillMaxWidth().verticalWeight(1f), vertical = RcVerticalPositioning.Center) {
         val doc = this@thermostatBody
         doc.reading(
@@ -147,7 +166,10 @@ private fun DocContext.thermostatBody(
         } else {
             doc.key(
                 ActionRef(tileId, "temperature", "-$step"),
-                icon = "minus", heightDp = keyDp, widthDp = keyDp, round = true,
+                icon = "minus",
+                heightDp = keyDp,
+                widthDp = keyDp,
+                round = true,
             )
         }
         Spacer(Modifier.width(doc.units.px(ThermostatMetrics.DIAL_SIDE_GAP_DP * layoutScale)))
@@ -158,7 +180,10 @@ private fun DocContext.thermostatBody(
         } else {
             doc.key(
                 ActionRef(tileId, "temperature", "+$step"),
-                icon = "plus", heightDp = keyDp, widthDp = keyDp, round = true,
+                icon = "plus",
+                heightDp = keyDp,
+                widthDp = keyDp,
+                round = true,
             )
         }
         doc.reading(
@@ -176,12 +201,18 @@ private fun DocContext.adjustKeys(tileId: String, verb: String, step: Double, ke
         val doc = this@adjustKeys
         doc.key(
             ActionRef(tileId, verb, "+$step"),
-            icon = "plus", heightDp = keyDp, widthDp = keyDp, round = true,
+            icon = "plus",
+            heightDp = keyDp,
+            widthDp = keyDp,
+            round = true,
         )
         Spacer(Modifier.height(doc.units.px(ThermostatMetrics.KEY_STACK_GAP_DP * layoutScale)))
         doc.key(
             ActionRef(tileId, verb, "-$step"),
-            icon = "minus", heightDp = keyDp, widthDp = keyDp, round = true,
+            icon = "minus",
+            heightDp = keyDp,
+            widthDp = keyDp,
+            round = true,
         )
     }
 }
@@ -208,11 +239,19 @@ private fun DocContext.thermostatModes(
     val segW = if (modes.isEmpty()) {
         0f
     } else {
-        minOf(ThermostatMetrics.SEG_WIDTH_DP * layoutScale, (boxW - ThermostatMetrics.MODE_ROW_MARGIN_DP - fanW) / modes.size)
+        minOf(
+            ThermostatMetrics.SEG_WIDTH_DP * layoutScale,
+            (boxW - ThermostatMetrics.MODE_ROW_MARGIN_DP - fanW) / modes.size,
+        )
     }
     val nextFan = nextFanMode(states[entityId]?.attr("fan_mode"), fans)
     scope.Box(
-        Modifier.fillMaxWidth().padding(0f, 0f, 0f, units.px(ThermostatMetrics.PANEL_PAD_DP * layoutScale)),
+        Modifier.fillMaxWidth().padding(
+            0f,
+            0f,
+            0f,
+            units.px(ThermostatMetrics.PANEL_PAD_DP * layoutScale),
+        ),
         horizontal = RcHorizontalPositioning.Center,
     ) {
         val doc = this@thermostatModes
@@ -231,31 +270,54 @@ private fun DocContext.thermostatModes(
                     modes.forEachIndexed { i, mode ->
                         if (i > 0) {
                             Box(
-                                Modifier.size(doc.units.px(ThermostatMetrics.SEG_EDGE_DP), doc.units.px(segH))
+                                Modifier.size(
+                                    doc.units.px(ThermostatMetrics.SEG_EDGE_DP),
+                                    doc.units.px(segH),
+                                )
                                     .background(accent),
                             )
                         }
                         val bg = doc.color(Vars.option(tileId, "seg", i, Vars.KEY_BG))
                         Row(
                             doc.tap(
-                                Modifier.size(doc.units.px(segW), doc.units.px(segH)).background(bg),
+                                Modifier.size(
+                                    doc.units.px(segW),
+                                    doc.units.px(segH),
+                                ).background(bg),
                                 ActionRef(tileId, "mode", mode),
                             ),
                             horizontal = RcRowHorizontalPositioning.Center,
                             vertical = RcVerticalPositioning.Center,
                         ) {
-                            doc.icon(HA_MODE_ICONS[mode] ?: "thermostat", ThermostatMetrics.MODE_ICON_DP * layoutScale, ink)
-                            Spacer(Modifier.width(doc.units.px(ThermostatMetrics.MODE_ICON_GAP_DP * layoutScale)))
-                            doc.label(doc.i18n.state("climate", mode), small(ThermostatMetrics.MODE_LABEL_SP, layoutScale), ink)
+                            doc.icon(
+                                HA_MODE_ICONS[mode] ?: "thermostat",
+                                ThermostatMetrics.MODE_ICON_DP * layoutScale,
+                                ink,
+                            )
+                            Spacer(
+                                Modifier.width(
+                                    doc.units.px(ThermostatMetrics.MODE_ICON_GAP_DP * layoutScale),
+                                ),
+                            )
+                            doc.label(
+                                doc.i18n.state("climate", mode),
+                                small(ThermostatMetrics.MODE_LABEL_SP, layoutScale),
+                                ink,
+                            )
                         }
                     }
                 }
             }
             if (fans.isNotEmpty() && nextFan != null) {
-                Spacer(Modifier.width(doc.units.px(ThermostatMetrics.MODE_ROW_GAP_DP * layoutScale)))
+                Spacer(
+                    Modifier.width(doc.units.px(ThermostatMetrics.MODE_ROW_GAP_DP * layoutScale)),
+                )
                 Row(
                     doc.tap(
-                        Modifier.size(doc.units.px(ThermostatMetrics.FAN_BUTTON_WIDTH_DP * layoutScale), doc.units.px(segH))
+                        Modifier.size(
+                            doc.units.px(ThermostatMetrics.FAN_BUTTON_WIDTH_DP * layoutScale),
+                            doc.units.px(segH),
+                        )
                             .clip(doc.rounded(corner))
                             .border(
                                 doc.units.px(border),
@@ -270,9 +332,17 @@ private fun DocContext.thermostatModes(
                     vertical = RcVerticalPositioning.Center,
                 ) {
                     doc.icon("fan", ThermostatMetrics.FAN_ICON_DP * layoutScale, ink)
-                    Spacer(Modifier.width(doc.units.px(ThermostatMetrics.MODE_ICON_GAP_DP * layoutScale)))
+                    Spacer(
+                        Modifier.width(
+                            doc.units.px(ThermostatMetrics.MODE_ICON_GAP_DP * layoutScale),
+                        ),
+                    )
                     Column {
-                        doc.label(doc.i18n.t("ui.fan_mode"), small(ThermostatMetrics.FAN_CAPTION_SP, layoutScale), ink)
+                        doc.label(
+                            doc.i18n.t("ui.fan_mode"),
+                            small(ThermostatMetrics.FAN_CAPTION_SP, layoutScale),
+                            ink,
+                        )
                         doc.label(
                             doc.text(Vars.tile(tileId, "fan")),
                             small(ThermostatMetrics.FAN_VALUE_SP, layoutScale),

@@ -28,7 +28,9 @@ class PlayerApkRepository(private val apkDir: File?) {
     fun current(): PlayerApk? {
         val file = apkDir?.let { File(it, APK_FILE_NAME) }?.takeIf { it.isFile } ?: return null
         return runCatching {
-            val meta = Json.parseToJsonElement(File(file.parentFile, "version.json").readText()).jsonObject
+            val meta = Json.parseToJsonElement(
+                File(file.parentFile, "version.json").readText(),
+            ).jsonObject
             PlayerApk(
                 versionCode = checkNotNull(meta["versionCode"]).jsonPrimitive.int,
                 versionName = meta["versionName"]?.jsonPrimitive?.contentOrNull.orEmpty(),

@@ -23,20 +23,24 @@ internal class SessionLifecycle(
     suspend fun welcome() {
         val record = layoutRepository.layout.value.players.firstOrNull { it.deviceId == host.hello.deviceId }
         val token = host.hello.token
-        val isTrusted = record?.tokenHash != null && token != null && PlayerTokens.hash(token) == record.tokenHash
+        val isTrusted = record?.tokenHash != null && token != null && PlayerTokens.hash(
+            token,
+        ) == record.tokenHash
         layoutRepository.update { layout ->
             val updated = (record ?: PlayerRecord(host.hello.deviceId, host.hello.deviceName)).copy(
                 widthDp = host.hello.widthDp,
                 heightDp = host.hello.heightDp,
                 appVersion = host.hello.appVersion,
                 lastSeen = System.currentTimeMillis(),
-                screenId = if (isTrusted) record?.screenId else null,
-                tokenHash = if (isTrusted) record?.tokenHash else null,
+                screenId = if (isTrusted) record.screenId else null,
+                tokenHash = if (isTrusted) record.tokenHash else null,
             )
-            layout.copy(players = layout.players.filterNot { it.deviceId == host.hello.deviceId } + updated)
+            layout.copy(
+                players = layout.players.filterNot { it.deviceId == host.hello.deviceId } + updated,
+            )
         }
         val screen = if (isTrusted) {
-            layoutRepository.layout.value.screens.firstOrNull { it.id == record?.screenId }
+            layoutRepository.layout.value.screens.firstOrNull { it.id == record.screenId }
         } else {
             null
         }
@@ -103,13 +107,19 @@ internal class SessionLifecycle(
         documents.showMain(screen)
         context.playerApkRepository.current()
             ?.takeIf { it.versionCode > host.hello.appVersion }
-            ?.let { apk -> host.send(ServerMessage.UpdateAvailable(apk.versionCode, apk.versionName, "/player/apk")) }
+            ?.let { apk -> host.send(
+                ServerMessage.UpdateAvailable(apk.versionCode, apk.versionName, "/player/apk"),
+            ) }
     }
 
     /** Rebuilds every document when night switches the screen to or from its dark theme. */
     suspend fun checkNight() {
         val screen = host.screen() ?: return
-        if (applyTheme(screen.settings)) for (shown in shownDocuments.values.toList()) documents.rebuild(shown)
+        if (applyTheme(
+                screen.settings,
+            )) {
+            for (shown in shownDocuments.values.toList()) documents.rebuild(shown)
+        }
     }
 
     suspend fun layoutChanged(screen: Screen?) {

@@ -63,7 +63,11 @@ object Present {
         "locking" to "lock-clock",
         "unlocking" to "lock-clock",
     )
-    private val CLIMATE_ICONS = mapOf("cool" to "snowflake", "heat" to "fire", "off" to "thermostat-off")
+    private val CLIMATE_ICONS = mapOf(
+        "cool" to "snowflake",
+        "heat" to "fire",
+        "off" to "thermostat-off",
+    )
     private val ALARM_ICONS = mapOf(
         "disarmed" to "shield-off",
         "triggered" to "bell-ring",
@@ -91,22 +95,48 @@ object Present {
     fun view(entityState: EntityState?, i18n: I18n, nameOverride: String? = null, iconOverride: String? = null): EntityView {
         if (entityState == null) {
             val unavailable = i18n.state("", "unavailable")
-            return EntityView(nameOverride ?: "?", unavailable, "–", false, null, false, iconOverride ?: Icons.FALLBACK)
+            return EntityView(
+                nameOverride ?: "?",
+                unavailable,
+                "–",
+                false,
+                null,
+                false,
+                iconOverride ?: Icons.FALLBACK,
+            )
         }
         val spec = Catalogue.of(entityState.domain)
         val on = spec?.onStates?.contains(entityState.state) ?: (entityState.state == "on")
-        val word = i18n.state(entityState.domain, entityState.state, entityState.attr("device_class"))
+        val word = i18n.state(
+            entityState.domain,
+            entityState.state,
+            entityState.attr("device_class"),
+        )
         val level = levelOf(entityState, on)
         val stateText = stateTextOf(entityState, i18n, on, level, word)
         val value = valueOf(entityState, i18n, stateText, word)
         val icon = iconOverride ?: entityState.attr("icon") ?: iconFor(entityState, on)
-        return EntityView(nameOverride ?: entityState.name, stateText, value, on, level, entityState.isAvailable, icon)
+        return EntityView(
+            nameOverride ?: entityState.name,
+            stateText,
+            value,
+            on,
+            level,
+            entityState.isAvailable,
+            icon,
+        )
     }
 
     // One branch per Home Assistant domain, as a lookup table would be.
     @Suppress("CyclomaticComplexMethod")
     private fun levelOf(entityState: EntityState, on: Boolean): Float? = when (entityState.domain) {
-        "light" -> if (on) (entityState.number("brightness")?.toFloat() ?: MAX_BRIGHTNESS) / MAX_BRIGHTNESS else 0f
+        "light" -> if (on) {
+            (entityState.number(
+                "brightness",
+            )?.toFloat() ?: MAX_BRIGHTNESS) / MAX_BRIGHTNESS
+        } else {
+            0f
+        }
         "cover" -> entityState.number("current_position")?.toFloat()?.div(PERCENT)
         "fan" -> if (on) (entityState.number("percentage")?.toFloat() ?: PERCENT) / PERCENT else 0f
         "humidifier" -> {
@@ -145,25 +175,44 @@ object Present {
                 ?.takeIf { entityState.state == "open" }
                 ?.let { i18n.percent(it.roundToInt()) }
                 ?: word
-            "fan" -> entityState.number("percentage")?.takeIf { on }?.let { i18n.percent(it.roundToInt()) } ?: word
-            "humidifier" -> entityState.number("humidity")?.takeIf { on }?.let { i18n.percent(it.roundToInt()) } ?: word
+            "fan" -> entityState.number(
+                "percentage",
+            )?.takeIf { on }?.let { i18n.percent(it.roundToInt()) } ?: word
+            "humidifier" -> entityState.number(
+                "humidity",
+            )?.takeIf { on }?.let { i18n.percent(it.roundToInt()) } ?: word
             "climate" -> entityState.number("current_temperature")
-                ?.let { "${i18n.number(it, 1)} ${entityState.attr("temperature_unit") ?: "°"} · $word" }
+                ?.let { "${i18n.number(
+                    it,
+                    1,
+                )} ${entityState.attr("temperature_unit") ?: "°"} · $word" }
                 ?: word
-            "media_player" -> listOfNotNull(entityState.attr("media_title"), entityState.attr("media_artist"))
+            "media_player" -> listOfNotNull(
+                entityState.attr("media_title"),
+                entityState.attr("media_artist"),
+            )
                 .joinToString(" · ")
                 .ifEmpty { word }
-            "sensor", "number", "input_number" -> numberWithUnit(entityState, i18n) ?: entityState.state
-            "weather" -> entityState.number("temperature")?.let { "${i18n.number(it, 0)}° · $word" } ?: word
+            "sensor", "number", "input_number" -> numberWithUnit(
+                entityState,
+                i18n,
+            ) ?: entityState.state
+            "weather" -> entityState.number(
+                "temperature",
+            )?.let { "${i18n.number(it, 0)}° · $word" } ?: word
             "scene", "button", "input_button" -> ""
             "script" -> if (on) word else ""
             "vacuum", "lawn_mower" ->
-                entityState.number("battery_level")?.let { "$word · ${i18n.percent(it.roundToInt())}" } ?: word
+                entityState.number(
+                    "battery_level",
+                )?.let { "$word · ${i18n.percent(it.roundToInt())}" } ?: word
             "input_select", "select", "input_text", "input_datetime" -> entityState.state
             "calendar" -> entityState.attr("message") ?: word
             "todo", "counter" -> entityState.state
             "timer" -> entityState.attr("remaining") ?: word
-            "water_heater" -> entityState.number("temperature")?.let { "${i18n.number(it, 0)}° · $word" } ?: word
+            "water_heater" -> entityState.number(
+                "temperature",
+            )?.let { "${i18n.number(it, 0)}° · $word" } ?: word
             "valve" -> entityState.number("current_position")
                 ?.takeIf { entityState.state == "open" }
                 ?.let { i18n.percent(it.roundToInt()) }
@@ -174,10 +223,18 @@ object Present {
     @Suppress("CyclomaticComplexMethod")
     private fun valueOf(entityState: EntityState, i18n: I18n, stateText: String, word: String): String = when (entityState.domain) {
         "sensor", "number", "input_number", "counter", "todo" ->
-            entityState.numericState()?.let { numberOnly(entityState, it, i18n) } ?: entityState.state
-        "humidifier" -> entityState.number("humidity")?.let { i18n.percent(it.roundToInt()) } ?: word
+            entityState.numericState()?.let { numberOnly(
+                entityState,
+                it,
+                i18n,
+            ) } ?: entityState.state
+        "humidifier" -> entityState.number(
+            "humidity",
+        )?.let { i18n.percent(it.roundToInt()) } ?: word
         "climate", "water_heater" ->
-            entityState.number("temperature")?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + "°" } ?: word
+            entityState.number(
+                "temperature",
+            )?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + "°" } ?: word
         "weather" -> entityState.number("temperature")?.let { i18n.number(it, 0) + "°" } ?: word
         "timer" -> entityState.attr("remaining") ?: word
         "calendar" -> entityState.attr("message") ?: word
@@ -189,7 +246,9 @@ object Present {
         val (scaled, _) = scale(v, unit)
         val decimals = when {
             abs(scaled) >= LARGE_VALUE -> 0
-            entityState.attr("device_class") in setOf("temperature", "humidity") || abs(scaled) >= MEDIUM_VALUE -> 1
+            entityState.attr(
+                "device_class",
+            ) in setOf("temperature", "humidity") || abs(scaled) >= MEDIUM_VALUE -> 1
             else -> if (scaled % 1.0 == 0.0) 0 else 1
         }
         return i18n.number(scaled, decimals)
@@ -199,7 +258,13 @@ object Present {
         val v = entityState.numericState() ?: return null
         val numberText = numberOnly(entityState, v, i18n)
         val (_, unit) = scale(v, entityState.attr("unit_of_measurement").orEmpty())
-        return if (unit.isEmpty()) numberText else if (unit == "%") "$numberText %" else "$numberText $unit"
+        return if (unit.isEmpty()) {
+            numberText
+        } else if (unit == "%") {
+            "$numberText %"
+        } else {
+            "$numberText $unit"
+        }
     }
 
     /** 5200 W reads as 5.2 kW, as Home Assistant's energy views do. */

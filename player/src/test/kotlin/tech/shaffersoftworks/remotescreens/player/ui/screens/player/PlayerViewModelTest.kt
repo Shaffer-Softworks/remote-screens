@@ -185,7 +185,10 @@ class PlayerViewModelTest {
         connectionStatus.value = ConnectionStatus.CONNECTING
         runCurrent()
 
-        assertEquals(InfoPanelState.Connecting("10.0.0.5:8100"), viewModel.viewState.value.infoPanel)
+        assertEquals(
+            InfoPanelState.Connecting("10.0.0.5:8100"),
+            viewModel.viewState.value.infoPanel,
+        )
     }
 
     @Test
@@ -209,7 +212,11 @@ class PlayerViewModelTest {
     fun `a local page action changes page without asking the add-on`() {
         receive(mainDocument())
 
-        viewModel.onDocumentAction(Slot.MAIN, revision = 7, metadata = ActionRef("_", "page", "2").encode())
+        viewModel.onDocumentAction(
+            Slot.MAIN,
+            revision = 7,
+            metadata = ActionRef("_", "page", "2").encode(),
+        )
         runCurrent()
 
         assertEquals(2, viewModel.viewState.value.remoteScreen.page)
@@ -393,7 +400,11 @@ class PlayerViewModelTest {
     }
 
     private fun openSettings() {
-        viewModel.onDocumentAction(Slot.MAIN, revision = 7, metadata = ActionRef("_", "settings").encode())
+        viewModel.onDocumentAction(
+            Slot.MAIN,
+            revision = 7,
+            metadata = ActionRef("_", "settings").encode(),
+        )
         runCurrent()
     }
 

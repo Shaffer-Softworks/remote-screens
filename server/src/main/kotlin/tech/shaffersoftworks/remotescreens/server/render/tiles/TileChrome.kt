@@ -126,7 +126,9 @@ internal object TileChrome {
 }
 
 /** The tile's own border colour, else the theme's card edge. */
-internal fun DocContext.edgeOf(tile: Tile) = tile.borderColor?.let { paint(it) } ?: role(Role.CARD_EDGE)
+internal fun DocContext.edgeOf(tile: Tile) = tile.borderColor?.let { paint(
+    it,
+) } ?: role(Role.CARD_EDGE)
 
 /** The words of a card's header strip: the entity's name, or the tile's own for tiles without one. */
 internal fun DocContext.headerTitle(tile: Tile, kind: String, sp: Float) {
@@ -135,9 +137,20 @@ internal fun DocContext.headerTitle(tile: Tile, kind: String, sp: Float) {
     when {
         kind == "map" && entityId == null -> {
             val who = mapPeople(tile)
-            label(tile.name ?: i18n.t("ui.people_home", "count" to who.count { states[it]?.state == "home" }), sp, ink)
+            label(
+                tile.name ?: i18n.t(
+                    "ui.people_home",
+                    "count" to who.count { states[it]?.state == "home" },
+                ),
+                sp,
+                ink,
+            )
         }
-        entityId != null && kind != "favourite" -> label(text(Vars.entity(entityId, Vars.KEY_NAME)), sp, ink)
+        entityId != null && kind != "favourite" -> label(
+            text(Vars.entity(entityId, Vars.KEY_NAME)),
+            sp,
+            ink,
+        )
         else -> label(tile.name ?: tile.options["title"] ?: Catalogue.of(kind)?.name ?: "", sp, ink)
     }
 }

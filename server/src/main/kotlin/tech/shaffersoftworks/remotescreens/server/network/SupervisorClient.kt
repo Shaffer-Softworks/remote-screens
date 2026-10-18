@@ -28,11 +28,16 @@ class SupervisorClient(private val httpClient: HttpClient, private val superviso
      * Supervisor choose a free one, which it then tells us here.
      */
     suspend fun ingressPort(): Int? = runCatching {
-        val body = httpClient.get("$SUPERVISOR_URL/addons/self/info") { bearerAuth(supervisorToken) }.bodyAsText()
+        val body = httpClient.get(
+            "$SUPERVISOR_URL/addons/self/info",
+        ) { bearerAuth(supervisorToken) }.bodyAsText()
         Json.parseToJsonElement(body).jsonObject["data"]?.jsonObject
             ?.get("ingress_port")?.jsonPrimitive?.int
             ?.takeIf { it > 0 }
-    }.onFailure { logger.warn("Could not ask the Supervisor for the ingress port: {}", it.message) }.getOrNull()
+    }.onFailure { logger.warn(
+        "Could not ask the Supervisor for the ingress port: {}",
+        it.message,
+    ) }.getOrNull()
 
     /** Tells Home Assistant the add-on is here, so the integration sets itself up with the key. */
     suspend fun announce(playerPort: Int, apiKey: String) {
@@ -52,6 +57,10 @@ class SupervisorClient(private val httpClient: HttpClient, private val superviso
             contentType(ContentType.Application.Json)
             setBody(body.toString())
         }
-        logger.info("Discovery sent: {} {}", response.status, response.bodyAsText().take(DISCOVERY_LOG_LENGTH))
+        logger.info(
+            "Discovery sent: {} {}",
+            response.status,
+            response.bodyAsText().take(DISCOVERY_LOG_LENGTH),
+        )
     }
 }

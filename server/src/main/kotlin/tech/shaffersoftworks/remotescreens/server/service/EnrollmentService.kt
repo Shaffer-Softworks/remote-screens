@@ -39,7 +39,9 @@ class EnrollmentService(
         val apk = playerApkRepository.current()
             ?: throw EnrollmentUnavailableException("The add-on has no player app to hand out")
         val host = request.host?.trim()?.ifEmpty { null } ?: defaultHost()
-            ?: throw EnrollmentUnavailableException("The add-on's address on the network is unknown; enter it")
+            ?: throw EnrollmentUnavailableException(
+                "The add-on's address on the network is unknown; enter it",
+            )
         val token = playerTokens.newToken()
         val expiresAt = now() + ENROLLMENT_TOKEN_TTL_MINUTES * MILLISECONDS_PER_MINUTE
         tokens[token] = expiresAt

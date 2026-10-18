@@ -30,7 +30,10 @@ class RemoteScreenStateTest {
 
     @Test
     fun `main document sets pages and keeps only valid swipe pages in order`() {
-        val state = RemoteScreenState().withDocument(mainDocument(swipePages = listOf(3, 9, 1)), documentBytes)
+        val state = RemoteScreenState().withDocument(
+            mainDocument(swipePages = listOf(3, 9, 1)),
+            documentBytes,
+        )
 
         assertTrue(state.hasMainDocument)
         assertEquals(4, state.pageCount)
@@ -76,7 +79,10 @@ class RemoteScreenStateTest {
     fun `back closes the alert before the card`() {
         val overlay = ServerMessage.Document(slot = Slot.OVERLAY, rev = 1, data = "")
         val alert = ServerMessage.Document(slot = Slot.ALERT, rev = 1, data = "")
-        val state = RemoteScreenState().withDocument(overlay, documentBytes).withDocument(alert, documentBytes)
+        val state = RemoteScreenState().withDocument(
+            overlay,
+            documentBytes,
+        ).withDocument(alert, documentBytes)
 
         assertEquals(Slot.ALERT, state.topOverlay)
         assertEquals(Slot.OVERLAY, state.closed(Slot.ALERT).topOverlay)
@@ -102,7 +108,10 @@ class RemoteScreenStateTest {
         )
         val state = RemoteScreenState().withDocument(document, documentBytes)
 
-        assertEquals(predicted, state.withPrediction(Slot.MAIN, "light|toggle|")?.values?.get("light"))
+        assertEquals(
+            predicted,
+            state.withPrediction(Slot.MAIN, "light|toggle|")?.values?.get("light"),
+        )
         assertNull(state.withPrediction(Slot.MAIN, "other|toggle|"))
     }
 
@@ -141,7 +150,11 @@ class RemoteScreenStateTest {
         assertEquals(2, state.page)
     }
 
-    private fun overlay(slot: Slot, rev: Int) = ServerMessage.Document(slot = slot, rev = rev, data = "")
+    private fun overlay(slot: Slot, rev: Int) = ServerMessage.Document(
+        slot = slot,
+        rev = rev,
+        data = "",
+    )
 
     private fun video(rev: Int, url: String = "http://addon:8100/stream/hls/abc/master_playlist.m3u8") =
         SlotVideo(rev, componentId = 0x5C_0000, url = url, token = "token", crop = false)
@@ -193,7 +206,9 @@ class RemoteScreenStateTest {
             .withDocument(overlay(Slot.OVERLAY, rev = 2), documentBytes)
             .withVideo(Slot.OVERLAY, video(rev = 2))
 
-        assertTrue(playing.withDocument(overlay(Slot.OVERLAY, rev = 4), documentBytes).videos.isEmpty())
+        assertTrue(
+            playing.withDocument(overlay(Slot.OVERLAY, rev = 4), documentBytes).videos.isEmpty(),
+        )
         assertTrue(playing.closed(Slot.OVERLAY).videos.isEmpty())
         assertTrue(playing.cleared().videos.isEmpty())
     }
@@ -201,7 +216,10 @@ class RemoteScreenStateTest {
     @Test
     fun `a stopped video is forgotten unless the add-on already sent a newer one`() {
         val stopped = video(rev = 2)
-        val restarted = video(rev = 2, url = "http://addon:8100/stream/hls/def/master_playlist.m3u8")
+        val restarted = video(
+            rev = 2,
+            url = "http://addon:8100/stream/hls/def/master_playlist.m3u8",
+        )
         val state = RemoteScreenState()
             .withDocument(overlay(Slot.OVERLAY, rev = 2), documentBytes)
             .withVideo(Slot.OVERLAY, stopped)
@@ -209,7 +227,10 @@ class RemoteScreenStateTest {
         assertNull(state.withoutVideo(Slot.OVERLAY, stopped).playingVideo)
         assertEquals(
             Slot.OVERLAY to restarted,
-            state.withVideo(Slot.OVERLAY, restarted).withoutVideo(Slot.OVERLAY, stopped).playingVideo,
+            state.withVideo(
+                Slot.OVERLAY,
+                restarted,
+            ).withoutVideo(Slot.OVERLAY, stopped).playingVideo,
         )
     }
 }

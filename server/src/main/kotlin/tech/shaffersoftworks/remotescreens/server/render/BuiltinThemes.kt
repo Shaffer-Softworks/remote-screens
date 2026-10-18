@@ -100,8 +100,12 @@ object Themes {
 
     private fun over(theme: Theme): Palette {
         val base = BUILTIN[theme.base]?.second ?: RPI
-        val roles = theme.roles.mapNotNull { (k, v) -> Role.of(k)?.let { r -> parse(v)?.let { r to it } } }.toMap()
-        val pastels = theme.pastels.mapNotNull { (k, v) -> Pastel.of(k)?.let { p -> parse(v)?.let { p to it } } }.toMap()
+        val roles = theme.roles.mapNotNull { (k, v) -> Role.of(
+            k,
+        )?.let { r -> parse(v)?.let { r to it } } }.toMap()
+        val pastels = theme.pastels.mapNotNull { (k, v) -> Pastel.of(
+            k,
+        )?.let { p -> parse(v)?.let { p to it } } }.toMap()
         return base.with(roles, pastels)
     }
 
@@ -138,8 +142,13 @@ object Themes {
     }
 
     private fun palette(roles: Map<Role, Long>, pastels: Map<Pastel, Long>): Palette {
-        require(roles.size == Role.entries.size && pastels.size == Pastel.entries.size) { "a built-in theme names every colour" }
-        return Palette(IntArray(Role.entries.size) { roles.getValue(Role.entries[it]).toInt() }, IntArray(Pastel.entries.size) { pastels.getValue(Pastel.entries[it]).toInt() })
+        require(
+            roles.size == Role.entries.size && pastels.size == Pastel.entries.size,
+        ) { "a built-in theme names every colour" }
+        return Palette(
+            IntArray(Role.entries.size) { roles.getValue(Role.entries[it]).toInt() },
+            IntArray(Pastel.entries.size) { pastels.getValue(Pastel.entries[it]).toInt() },
+        )
     }
 
     private fun Palette.over(roles: Map<Role, Long>, pastels: Map<Pastel, Long>): Palette =

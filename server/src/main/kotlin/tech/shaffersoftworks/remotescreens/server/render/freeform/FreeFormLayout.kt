@@ -31,8 +31,20 @@ internal fun DocContext.resolve(node: Node, avail: Dims, axis: Axis, share: Dims
         Spec.Wrap -> if (natural > 0f) minOf(natural, room) else room
     }
     return Dims(
-        one(Spec.of(node.size.width), avail.w, if (axis == Axis.ROW) share.w else avail.w, nat.w, axis == Axis.ROW),
-        one(Spec.of(node.size.height), avail.h, if (axis == Axis.COLUMN) share.h else avail.h, nat.h, axis == Axis.COLUMN),
+        one(
+            Spec.of(node.size.width),
+            avail.w,
+            if (axis == Axis.ROW) share.w else avail.w,
+            nat.w,
+            axis == Axis.ROW,
+        ),
+        one(
+            Spec.of(node.size.height),
+            avail.h,
+            if (axis == Axis.COLUMN) share.h else avail.h,
+            nat.h,
+            axis == Axis.COLUMN,
+        ),
     )
 }
 
@@ -70,7 +82,9 @@ internal fun Node.looseChildren(looseW: Boolean, looseH: Boolean): List<Node> =
     children.filter { !it.hidden }.map { child ->
         when {
             looseW && fills(child.size.width) -> child.copy(size = child.size.copy(width = "wrap"))
-            looseH && fills(child.size.height) -> child.copy(size = child.size.copy(height = "wrap"))
+            looseH && fills(
+                child.size.height,
+            ) -> child.copy(size = child.size.copy(height = "wrap"))
             else -> child
         }
     }
@@ -84,10 +98,26 @@ internal fun DocContext.container(node: Node, given: Dims, axis: Axis, pages: Pa
     val children = node.looseChildren(looseW, looseH)
     // A wrapped row whose children fill its height is as tall as its tallest child, so cards side by side match,
     // rather than the fill stretching to the page; a wrapped column whose children fill its width, likewise.
-    val pinH = node.type == "row" && node.size.height == "wrap" && children.any { fills(it.size.height) }
-    val pinW = node.type == "column" && node.size.width == "wrap" && children.any { fills(it.size.width) }
-    val self = if (pinH || pinW) content(node).let { Dims(if (pinW) minOf(it.w, given.w) else given.w, if (pinH) minOf(it.h, given.h) else given.h) } else given
-    val inner = Dims((self.w - node.style.padX).coerceAtLeast(0f), (self.h - node.style.padY).coerceAtLeast(0f))
+    val pinH = node.type == "row" && node.size.height == "wrap" && children.any { fills(
+        it.size.height,
+    ) }
+    val pinW = node.type == "column" && node.size.width == "wrap" && children.any { fills(
+        it.size.width,
+    ) }
+    val self = if (pinH || pinW) {
+        content(
+            node,
+        ).let { Dims(
+            if (pinW) minOf(it.w, given.w) else given.w,
+            if (pinH) minOf(it.h, given.h) else given.h,
+        ) }
+    } else {
+        given
+    }
+    val inner = Dims(
+        (self.w - node.style.padX).coerceAtLeast(0f),
+        (self.h - node.style.padY).coerceAtLeast(0f),
+    )
     val gap = node.props["gap"]?.toFloatOrNull()?.coerceAtLeast(0f) ?: 0f
     val mine = when (node.type) { "row" -> Axis.ROW; "column" -> Axis.COLUMN; else -> Axis.BOX }
     val sizes = childSizes(children, inner, mine, gap)
@@ -95,33 +125,78 @@ internal fun DocContext.container(node: Node, given: Dims, axis: Axis, pages: Pa
     if (pinH) base = base.height(units.px(self.h))
     if (pinW) base = base.width(units.px(self.w))
     var modifier = styled(node, axis, pages, base)
-    if (node.props["scroll"] == "true") modifier = if (mine == Axis.ROW) modifier.horizontalScroll() else if (mine == Axis.COLUMN) modifier.verticalScroll() else modifier
+    if (node.props["scroll"] == "true") {
+        modifier = if (mine == Axis.ROW) {
+            modifier.horizontalScroll()
+        } else if (mine == Axis.COLUMN) {
+            modifier.verticalScroll()
+        } else {
+            modifier
+        }
+    }
     val doc = this
     fun drawChildren() {
         children.forEachIndexed { i, child ->
-            if (i > 0 && gap > 0f) scope.Spacer(if (mine == Axis.ROW) Modifier.width(units.px(gap)) else Modifier.height(units.px(gap)))
+            if (i > 0 && gap > 0f) {
+                scope.Spacer(
+                    if (mine == Axis.ROW) {
+                        Modifier.width(
+                            units.px(gap),
+                        )
+                    } else {
+                        Modifier.height(units.px(gap))
+                    },
+                )
+            }
             val place = child.props["place"]
-            if (place == null) doc.node(child, sizes[i], mine, pages) else doc.placed(child, place, sizes[i], mine, pages)
+            if (place == null) {
+                doc.node(
+                    child,
+                    sizes[i],
+                    mine,
+                    pages,
+                )
+            } else {
+                doc.placed(child, place, sizes[i], mine, pages)
+            }
         }
     }
     val alignment = node.props["alignment"]
     val arrangement = node.props["arrangement"]
     if (node.type == "flow") {
         // A flow has no spacing of its own: each child carries the gap after it and below it.
-        scope.Flow(modifier, horizontal = horizontal(alignment), vertical = RcVerticalPositioning.Top) {
+        scope.Flow(
+            modifier,
+            horizontal = horizontal(alignment),
+            vertical = RcVerticalPositioning.Top,
+        ) {
             children.forEachIndexed { i, child ->
-                Box(Modifier.padding(0f, 0f, units.px(gap), units.px(gap))) { doc.node(child, sizes[i], Axis.BOX, pages) }
+                Box(
+                    Modifier.padding(0f, 0f, units.px(gap), units.px(gap)),
+                ) { doc.node(child, sizes[i], Axis.BOX, pages) }
             }
         }
         return
     }
     when (mine) {
-        Axis.COLUMN -> scope.Column(modifier, horizontal = horizontal(alignment), vertical = columnArrangement(arrangement)) { drawChildren() }
-        Axis.ROW -> scope.Row(modifier, horizontal = rowArrangement(arrangement), vertical = vertical(alignment)) { drawChildren() }
+        Axis.COLUMN -> scope.Column(
+            modifier,
+            horizontal = horizontal(alignment),
+            vertical = columnArrangement(arrangement),
+        ) { drawChildren() }
+        Axis.ROW -> scope.Row(
+            modifier,
+            horizontal = rowArrangement(arrangement),
+            vertical = vertical(alignment),
+        ) { drawChildren() }
         Axis.BOX -> {
             val parts = (alignment ?: "top-start").split('-')
             val (vertAlign, horizAlign) = if (parts.size == 2) parts[0] to parts[1] else parts[0] to parts[0]
-            scope.Box(modifier, horizontal = horizontal(horizAlign), vertical = vertical(vertAlign)) { drawChildren() }
+            scope.Box(
+                modifier,
+                horizontal = horizontal(horizAlign),
+                vertical = vertical(vertAlign),
+            ) { drawChildren() }
         }
     }
 }
@@ -144,14 +219,30 @@ internal fun DocContext.placed(child: Node, place: String, self: Dims, axis: Axi
     val (vertAlign, horizAlign) = if (parts.size == 2) parts[0] to parts[1] else parts[0] to parts[0]
     when (axis) {
         Axis.COLUMN -> scope.Box(
-            main(child.size.height, { Modifier.verticalWeight(it) }, Modifier.verticalWeight(1f), { Modifier.height(units.px(it)) }).fillMaxWidth(),
-            horizontal = horizontal(place), vertical = RcVerticalPositioning.Top,
+            main(
+                child.size.height,
+                { Modifier.verticalWeight(it) },
+                Modifier.verticalWeight(1f),
+                { Modifier.height(units.px(it)) },
+            ).fillMaxWidth(),
+            horizontal = horizontal(place),
+            vertical = RcVerticalPositioning.Top,
         ) { doc.node(child, self, Axis.BOX, pages) }
         Axis.ROW -> scope.Box(
-            main(child.size.width, { Modifier.horizontalWeight(it) }, Modifier.horizontalWeight(1f), { Modifier.width(units.px(it)) }).fillMaxHeight(),
-            horizontal = RcHorizontalPositioning.Start, vertical = vertical(place),
+            main(
+                child.size.width,
+                { Modifier.horizontalWeight(it) },
+                Modifier.horizontalWeight(1f),
+                { Modifier.width(units.px(it)) },
+            ).fillMaxHeight(),
+            horizontal = RcHorizontalPositioning.Start,
+            vertical = vertical(place),
         ) { doc.node(child, self, Axis.BOX, pages) }
-        Axis.BOX -> scope.Box(Modifier.fillMaxSize(), horizontal = horizontal(horizAlign), vertical = vertical(vertAlign)) { doc.node(child, self, Axis.BOX, pages) }
+        Axis.BOX -> scope.Box(
+            Modifier.fillMaxSize(),
+            horizontal = horizontal(horizAlign),
+            vertical = vertical(vertAlign),
+        ) { doc.node(child, self, Axis.BOX, pages) }
     }
 }
 
@@ -159,15 +250,26 @@ internal fun DocContext.placed(child: Node, place: String, self: Dims, axis: Axi
 internal fun DocContext.childSizes(children: List<Node>, inner: Dims, axis: Axis, gap: Float): List<Dims> {
     if (axis == Axis.BOX) return children.map { resolve(it, inner, Axis.BOX, inner) }
     val main = { dims: Dims -> if (axis == Axis.ROW) dims.w else dims.h }
-    val mainSpec = { node: Node -> Spec.of(if (axis == Axis.ROW) node.size.width else node.size.height) }
-    val weightOf = { node: Node -> when (val sizeSpec = mainSpec(node)) { is Spec.Weight -> sizeSpec.value; Spec.Fill -> 1f; else -> 0f } }
-    val fixed = children.filter { weightOf(it) == 0f }.sumOf { main(resolve(it, inner, axis, Dims(0f, 0f))).toDouble() }.toFloat()
+    val mainSpec = { node: Node -> Spec.of(
+        if (axis == Axis.ROW) node.size.width else node.size.height,
+    ) }
+    val weightOf = { node: Node -> when (val sizeSpec = mainSpec(
+        node,
+    )) { is Spec.Weight -> sizeSpec.value; Spec.Fill -> 1f; else -> 0f } }
+    val fixed = children.filter { weightOf(
+        it,
+    ) == 0f }.sumOf { main(resolve(it, inner, axis, Dims(0f, 0f))).toDouble() }.toFloat()
     val weights = children.sumOf { weightOf(it).toDouble() }.toFloat()
     val left = (main(inner) - fixed - gap * (children.size - 1).coerceAtLeast(0)).coerceAtLeast(0f)
     return children.map { child ->
         val weight = weightOf(child)
         val part = if (weights > 0f) left * weight / weights else 0f
-        resolve(child, inner, axis, if (axis == Axis.ROW) Dims(part, inner.h) else Dims(inner.w, part))
+        resolve(
+            child,
+            inner,
+            axis,
+            if (axis == Axis.ROW) Dims(part, inner.h) else Dims(inner.w, part),
+        )
     }
 }
 

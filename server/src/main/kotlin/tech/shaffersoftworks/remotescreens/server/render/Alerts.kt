@@ -82,13 +82,23 @@ object AlertRenderer {
             alert.title,
             { input.context(device) },
         ) { docContext ->
-            val scrim = docContext.tap(Modifier.fillMaxSize().background(docContext.role(Role.SCRIM)), ActionRef("alert", "dismiss"))
-            Box(scrim, horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
+            val scrim = docContext.tap(
+                Modifier.fillMaxSize().background(docContext.role(Role.SCRIM)),
+                ActionRef("alert", "dismiss"),
+            )
+            Box(
+                scrim,
+                horizontal = RcHorizontalPositioning.Center,
+                vertical = RcVerticalPositioning.Center,
+            ) {
                 val panel = Modifier.width(docContext.units.px(panelW))
                     .clip(docContext.rounded(PANEL_CORNER_DP))
                     .background(docContext.role(Role.CARD))
                 Column(
-                    docContext.tap(panel, ActionRef("_", "noop")).padding(docContext.units.px(PANEL_PADDING_DP)),
+                    docContext.tap(
+                        panel,
+                        ActionRef("_", "noop"),
+                    ).padding(docContext.units.px(PANEL_PADDING_DP)),
                     horizontal = RcHorizontalPositioning.Center,
                 ) {
                     docContext.badge(alert)
@@ -111,7 +121,13 @@ object AlertRenderer {
                             align = RcTextAlign.Center,
                         )
                     }
-                    if (alert.camera != null) docContext.camera(alert.camera, panelW - SCREEN_MARGIN_DP, camH)
+                    if (alert.camera != null) {
+                        docContext.camera(
+                            alert.camera,
+                            panelW - SCREEN_MARGIN_DP,
+                            camH,
+                        )
+                    }
                     docContext.gap(BUTTONS_GAP_DP)
                     docContext.buttons(alert.buttons.take(MAX_BUTTONS))
                 }
@@ -126,8 +142,15 @@ object AlertRenderer {
             "warning" -> Role.WARN
             else -> Role.ACCENT
         }
-        val badge = Modifier.size(units.px(BADGE_DP), units.px(BADGE_DP)).clip(rounded(BADGE_DP / 2f)).background(role(tone))
-        scope.Box(badge, horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
+        val badge = Modifier.size(
+            units.px(BADGE_DP),
+            units.px(BADGE_DP),
+        ).clip(rounded(BADGE_DP / 2f)).background(role(tone))
+        scope.Box(
+            badge,
+            horizontal = RcHorizontalPositioning.Center,
+            vertical = RcVerticalPositioning.Center,
+        ) {
             val icon = alert.icon ?: if (alert.level == "info") "bell-ring" else "alert"
             this@badge.icon(icon, BADGE_ICON_DP, role(Role.KEY_ON_INK))
         }
@@ -141,7 +164,10 @@ object AlertRenderer {
         gap(TITLE_GAP_DP)
         scope.Image(
             image("alert.cam", pw, ph),
-            Modifier.size(units.px(widthDp), units.px(heightDp)).clip(rounded(CAMERA_CORNER_DP)).componentId(video),
+            Modifier.size(
+                units.px(widthDp),
+                units.px(heightDp),
+            ).clip(rounded(CAMERA_CORNER_DP)).componentId(video),
             contentScale = RcContentScale.Crop,
         )
     }
@@ -158,7 +184,13 @@ object AlertRenderer {
                     heightDp = BUTTON_HEIGHT_DP,
                     modifier = Modifier.horizontalWeight(1f),
                     bg = if (isPrimary) docContext.role(Role.KEY_ON) else docContext.role(Role.KEY),
-                    ink = if (isPrimary) docContext.role(Role.KEY_ON_INK) else docContext.role(Role.INK),
+                    ink = if (isPrimary) {
+                        docContext.role(
+                            Role.KEY_ON_INK,
+                        )
+                    } else {
+                        docContext.role(Role.INK)
+                    },
                 )
             }
             if (buttons.isNotEmpty()) Spacer(Modifier.width(docContext.units.px(BUTTON_SPACING_DP)))

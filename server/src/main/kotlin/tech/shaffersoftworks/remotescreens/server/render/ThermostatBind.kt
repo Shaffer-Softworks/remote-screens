@@ -9,7 +9,13 @@ import tech.shaffersoftworks.remotescreens.shared.VarValue
 internal fun DocContext.bindThermostat(tileId: String, entityId: String, modes: List<String>, dual: Boolean) {
     bind(entityId) { states ->
         val entityState = states[entityId]
-        val unit = if (homeAssistantConfig.temperatureUnit.contains("F")) ThermostatMetrics.TEMP_DECIMALS_F else ThermostatMetrics.TEMP_DECIMALS_C
+        val unit = if (homeAssistantConfig.temperatureUnit.contains(
+                "F",
+            )) {
+            ThermostatMetrics.TEMP_DECIMALS_F
+        } else {
+            ThermostatMetrics.TEMP_DECIMALS_C
+        }
         val unitSuffix = if (homeAssistantConfig.temperatureUnit.contains("F")) "°F" else "°"
         val action = entityState?.attr("hvac_action")
         val tintArgb = when (action) {
@@ -21,19 +27,28 @@ internal fun DocContext.bindThermostat(tileId: String, entityId: String, modes: 
         val maxValue = entityState?.number("max_temp") ?: ThermostatMetrics.DEFAULT_MAX_TEMP_C
         val span = (maxValue - minValue).coerceAtLeast(1.0)
         fun sweepOf(value: Double?) = value?.let {
-            (((it - minValue) / span).coerceIn(0.0, 1.0) * ThermostatMetrics.FULL_CIRCLE_DEG).toFloat()
+            (((it - minValue) / span).coerceIn(
+                0.0,
+                1.0,
+            ) * ThermostatMetrics.FULL_CIRCLE_DEG).toFloat()
         } ?: 0f
         fun tempLabel(attr: String) =
-            entityState?.number(attr)?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + unitSuffix } ?: "–"
+            entityState?.number(
+                attr,
+            )?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + unitSuffix } ?: "–"
         val lowSweep = sweepOf(entityState?.number("target_temp_low"))
         val highSweep = sweepOf(entityState?.number("target_temp_high"))
         val coolStart = ThermostatMetrics.ARC_START_DEG + lowSweep + ThermostatMetrics.DUAL_ARC_GAP_DEG
-        val coolSweep = (highSweep - lowSweep - ThermostatMetrics.DUAL_ARC_GAP_DEG).coerceAtLeast(0f)
+        val coolSweep = (highSweep - lowSweep - ThermostatMetrics.DUAL_ARC_GAP_DEG).coerceAtLeast(
+            0f,
+        )
         val state = entityState?.state
         listOf(
             VarValue.string(
                 Vars.tile(tileId, "current"),
-                entityState?.number("current_temperature")?.let { i18n.number(it, unit) + "°" } ?: "–",
+                entityState?.number(
+                    "current_temperature",
+                )?.let { i18n.number(it, unit) + "°" } ?: "–",
             ),
             VarValue.string(
                 Vars.tile(tileId, "humidity"),
@@ -44,15 +59,27 @@ internal fun DocContext.bindThermostat(tileId: String, entityId: String, modes: 
                 action?.let { actionWord(it) } ?: i18n.state("climate", state ?: "off"),
             ),
             VarValue.color(Vars.tile(tileId, "dial"), tintArgb),
-            VarValue.color(Vars.tile(tileId, "dialInner"), withAlpha(tintArgb, ThermostatMetrics.DIAL_INNER_ALPHA)),
-            VarValue.color(Vars.tile(tileId, "dialOuter"), withAlpha(Role.INK.argb, ThermostatMetrics.DIAL_OUTER_ALPHA)),
+            VarValue.color(
+                Vars.tile(tileId, "dialInner"),
+                withAlpha(tintArgb, ThermostatMetrics.DIAL_INNER_ALPHA),
+            ),
+            VarValue.color(
+                Vars.tile(tileId, "dialOuter"),
+                withAlpha(Role.INK.argb, ThermostatMetrics.DIAL_OUTER_ALPHA),
+            ),
             VarValue.float(Vars.tile(tileId, "sweep"), sweepOf(entityState?.number("temperature"))),
             VarValue.float(Vars.tile(tileId, "sweepLow"), lowSweep),
             VarValue.float(Vars.tile(tileId, "sweepHigh"), highSweep),
             VarValue.float(Vars.tile(tileId, "coolStart"), coolStart),
             VarValue.float(Vars.tile(tileId, "coolSweep"), coolSweep),
-            VarValue.string(Vars.tile(tileId, "low"), if (dual) tempLabel("target_temp_low") else ""),
-            VarValue.string(Vars.tile(tileId, "high"), if (dual) tempLabel("target_temp_high") else ""),
+            VarValue.string(
+                Vars.tile(tileId, "low"),
+                if (dual) tempLabel("target_temp_low") else "",
+            ),
+            VarValue.string(
+                Vars.tile(tileId, "high"),
+                if (dual) tempLabel("target_temp_high") else "",
+            ),
             VarValue.string(
                 Vars.tile(tileId, "fan"),
                 entityState?.attr("fan_mode")?.let { fanWord(it) } ?: "–",

@@ -28,29 +28,95 @@ internal fun DocContext.mediaCard(entityId: String, entityState: EntityState?, w
         val s = states[entityId]
         listOf(
             VarValue.string(Vars.entity(entityId, "title"), s?.attr("media_title") ?: ""),
-            VarValue.string(Vars.entity(entityId, "artist"), listOfNotNull(s?.attr("media_artist"), s?.attr("media_album_name")).joinToString(" · ")),
-            VarValue.int(Vars.entity(entityId, "playing"), if (s?.state == "playing") Vars.VISIBLE else Vars.GONE),
-            VarValue.int(Vars.entity(entityId, "notplaying"), if (s?.state == "playing") Vars.GONE else Vars.VISIBLE),
+            VarValue.string(
+                Vars.entity(entityId, "artist"),
+                listOfNotNull(
+                    s?.attr("media_artist"),
+                    s?.attr("media_album_name"),
+                ).joinToString(" · "),
+            ),
+            VarValue.int(
+                Vars.entity(entityId, "playing"),
+                if (s?.state == "playing") Vars.VISIBLE else Vars.GONE,
+            ),
+            VarValue.int(
+                Vars.entity(entityId, "notplaying"),
+                if (s?.state == "playing") Vars.GONE else Vars.VISIBLE,
+            ),
         )
     }
     predict(ref(entityId, "play_pause"), entityId)
     scope.Column(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
         val doc = this@mediaCard
-        Image(doc.image("art.card.$entityId", px, px), Modifier.size(doc.units.px(art), doc.units.px(art)).clip(doc.rounded(CardChrome.PANEL_PAD_DP)), contentScale = RcContentScale.Crop)
+        Image(
+            doc.image("art.card.$entityId", px, px),
+            Modifier.size(
+                doc.units.px(art),
+                doc.units.px(art),
+            ).clip(doc.rounded(CardChrome.PANEL_PAD_DP)),
+            contentScale = RcContentScale.Crop,
+        )
         doc.gap(CardChrome.HEADER_GAP_DP)
-        doc.label(doc.text(Vars.entity(entityId, "title")), Type.HEADLINE, doc.role(Role.INK), Weight.SEMI_BOLD, align = RcTextAlign.Center)
-        doc.label(doc.text(Vars.entity(entityId, "artist")), Type.BODY, doc.role(Role.INK_SOFT), align = RcTextAlign.Center)
+        doc.label(
+            doc.text(Vars.entity(entityId, "title")),
+            Type.HEADLINE,
+            doc.role(Role.INK),
+            Weight.SEMI_BOLD,
+            align = RcTextAlign.Center,
+        )
+        doc.label(
+            doc.text(Vars.entity(entityId, "artist")),
+            Type.BODY,
+            doc.role(Role.INK_SOFT),
+            align = RcTextAlign.Center,
+        )
         doc.gap(CardChrome.HEADER_GAP_DP)
-        Row(horizontal = RcRowHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-            doc.key(ref(entityId, "previous"), icon = "skip-previous", heightDp = CardChrome.MEDIA_CTRL_DP, widthDp = CardChrome.MEDIA_CTRL_DP, round = true)
+        Row(
+            horizontal = RcRowHorizontalPositioning.Center,
+            vertical = RcVerticalPositioning.Center,
+        ) {
+            doc.key(
+                ref(entityId, "previous"),
+                icon = "skip-previous",
+                heightDp = CardChrome.MEDIA_CTRL_DP,
+                widthDp = CardChrome.MEDIA_CTRL_DP,
+                round = true,
+            )
             Spacer(Modifier.width(doc.units.px(CardChrome.SECTION_TITLE_GAP_DP)))
-            Box(doc.tap(Modifier.size(doc.units.px(CardChrome.PLAY_KEY_DP), doc.units.px(CardChrome.PLAY_KEY_DP)).clip(doc.rounded((CardChrome.PLAY_KEY_DP) / 2f)).background(doc.role(Role.KEY_ON)), ref(entityId, "play_pause")),
-                horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-                doc.icon("pause", CardChrome.CLOSE_KEY_DP, doc.role(Role.KEY_ON_INK), doc.int(Vars.entity(entityId, "playing")))
-                doc.icon("play", CardChrome.CLOSE_KEY_DP, doc.role(Role.KEY_ON_INK), doc.int(Vars.entity(entityId, "notplaying")))
+            Box(
+                doc.tap(
+                    Modifier.size(
+                        doc.units.px(CardChrome.PLAY_KEY_DP),
+                        doc.units.px(CardChrome.PLAY_KEY_DP),
+                    ).clip(
+                        doc.rounded((CardChrome.PLAY_KEY_DP) / 2f),
+                    ).background(doc.role(Role.KEY_ON)),
+                    ref(entityId, "play_pause"),
+                ),
+                horizontal = RcHorizontalPositioning.Center,
+                vertical = RcVerticalPositioning.Center,
+            ) {
+                doc.icon(
+                    "pause",
+                    CardChrome.CLOSE_KEY_DP,
+                    doc.role(Role.KEY_ON_INK),
+                    doc.int(Vars.entity(entityId, "playing")),
+                )
+                doc.icon(
+                    "play",
+                    CardChrome.CLOSE_KEY_DP,
+                    doc.role(Role.KEY_ON_INK),
+                    doc.int(Vars.entity(entityId, "notplaying")),
+                )
             }
             Spacer(Modifier.width(doc.units.px(CardChrome.SECTION_TITLE_GAP_DP)))
-            doc.key(ref(entityId, "next"), icon = "skip-next", heightDp = CardChrome.MEDIA_CTRL_DP, widthDp = CardChrome.MEDIA_CTRL_DP, round = true)
+            doc.key(
+                ref(entityId, "next"),
+                icon = "skip-next",
+                heightDp = CardChrome.MEDIA_CTRL_DP,
+                widthDp = CardChrome.MEDIA_CTRL_DP,
+                round = true,
+            )
         }
     }
     section(i18n.t("ui.volume"))
@@ -59,13 +125,23 @@ internal fun DocContext.mediaCard(entityId: String, entityState: EntityState?, w
     if (sources.isNotEmpty()) {
         structural(entityId) { it?.list("source_list")?.joinToString() ?: "" }
         section(i18n.t("ui.sources"))
-        flowKeys(entityId, "source", sources.take(CardChrome.SOURCES_TAKE).map { it to it }) { it.attr("source") }
+        flowKeys(
+            entityId,
+            "source",
+            sources.take(CardChrome.SOURCES_TAKE).map { it to it },
+        ) { it.attr("source") }
     }
     val library = data.browse[entityId].orEmpty()
     if (library.isNotEmpty()) {
         section(i18n.t("ui.library"))
         for (item in library.filter { it.canPlay }.take(CardChrome.LIBRARY_TAKE)) {
-            key(ref(entityId, "play_media", "${item.contentType}|${item.contentId}"), text = item.title, icon = "play-circle-outline", heightDp = CardChrome.FLOW_KEY_H_DP, modifier = Modifier.fillMaxWidth())
+            key(
+                ref(entityId, "play_media", "${item.contentType}|${item.contentId}"),
+                text = item.title,
+                icon = "play-circle-outline",
+                heightDp = CardChrome.FLOW_KEY_H_DP,
+                modifier = Modifier.fillMaxWidth(),
+            )
             gap(CardChrome.ROW_GAP_DP)
         }
     }
@@ -74,7 +150,9 @@ internal fun DocContext.mediaCard(entityId: String, entityState: EntityState?, w
 internal fun DocContext.cameraCard(entityId: String, w: Float, h: Float) {
     val pw = units.px(w).toInt()
     val ph = units.px(h).toInt()
-    picture(PictureSlot("cam.card.$entityId", "/api/camera_proxy/$entityId", pw, ph, 4, crop = false))
+    picture(
+        PictureSlot("cam.card.$entityId", "/api/camera_proxy/$entityId", pw, ph, 4, crop = false),
+    )
     val video = liveVideo(entityId, crop = false)
     val waiting = int(Vars.entity(entityId, Vars.KEY_CAM_WAITING), Vars.VISIBLE)
     val still = int(Vars.entity(entityId, Vars.KEY_CAM_STILL), Vars.GONE)
@@ -82,7 +160,11 @@ internal fun DocContext.cameraCard(entityId: String, w: Float, h: Float) {
         .clip(rounded(CardChrome.CARD_GAP_DP))
         .background(role(Role.TRACK))
         .componentId(video)
-    scope.Box(frame, horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
+    scope.Box(
+        frame,
+        horizontal = RcHorizontalPositioning.Center,
+        vertical = RcVerticalPositioning.Center,
+    ) {
         val doc = this@cameraCard
         Image(
             doc.image("cam.card.$entityId", pw, ph),
@@ -96,9 +178,21 @@ internal fun DocContext.cameraCard(entityId: String, w: Float, h: Float) {
 internal fun DocContext.mapCard(entityId: String, w: Float, h: Float) {
     val pw = units.px(w).toInt()
     val ph = units.px(h).toInt()
-    val who = if (entityId.startsWith("person.") || entityId.startsWith("device_tracker.")) listOf(entityId) else states.keys.filter { it.startsWith("person.") }
+    val who = if (entityId.startsWith(
+            "person.",
+        ) || entityId.startsWith(
+            "device_tracker.",
+        )) {
+        listOf(entityId)
+    } else {
+        states.keys.filter { it.startsWith("person.") }
+    }
     for (p in who) structural(p) { s -> "${s?.number("latitude")},${s?.number("longitude")}" }
     picture(PictureSlot("map.card", "map:${mapStyle()}:${who.joinToString(",")}", pw, ph, 0))
-    scope.Image(image("map.card", pw, ph), Modifier.size(units.px(w), units.px(h)).clip(rounded(CardChrome.CARD_GAP_DP)), contentScale = RcContentScale.Crop)
+    scope.Image(
+        image("map.card", pw, ph),
+        Modifier.size(units.px(w), units.px(h)).clip(rounded(CardChrome.CARD_GAP_DP)),
+        contentScale = RcContentScale.Crop,
+    )
     label(i18n.t("ui.map_credit"), Type.CAPTION, role(Role.INK_SOFT))
 }

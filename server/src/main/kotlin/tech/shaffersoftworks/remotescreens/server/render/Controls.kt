@@ -54,7 +54,9 @@ fun DocContext.levelBar(
             drawRect(0f.rf, 0f.rf, level * widthPx, heightPx.rf)
         }
         Row(Modifier.size(widthPx, heightPx)) {
-            for (i in 1..steps) Box(this@levelBar.tap(Modifier.horizontalWeight(1f).fillMaxHeight(), refAt(i)))
+            for (i in 1..steps) Box(
+                this@levelBar.tap(Modifier.horizontalWeight(1f).fillMaxHeight(), refAt(i)),
+            )
         }
     }
 }
@@ -140,7 +142,11 @@ fun DocContext.choiceRow(
                 if (icon != null) {
                     doc.icon(icon, heightDp * CHOICE_ICON_SHARE, ink)
                     if (word.isNotEmpty()) {
-                        Spacer(Modifier.width(doc.units.px(CHOICE_GAP_DP / CHOICE_ICON_TEXT_GAP_DIVISOR)))
+                        Spacer(
+                            Modifier.width(
+                                doc.units.px(CHOICE_GAP_DP / CHOICE_ICON_TEXT_GAP_DIVISOR),
+                            ),
+                        )
                     }
                 }
                 if (icon == null || word.isNotEmpty()) {

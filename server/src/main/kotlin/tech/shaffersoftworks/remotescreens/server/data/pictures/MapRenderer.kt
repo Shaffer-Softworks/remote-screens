@@ -48,12 +48,26 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
         val people = entities.mapNotNull { entity ->
             val latitude = entity.number("latitude")
             val longitude = entity.number("longitude")
-            if (latitude != null && longitude != null) PlacedPerson(entity.name, latitude, longitude) else null
+            if (latitude != null && longitude != null) {
+                PlacedPerson(
+                    entity.name,
+                    latitude,
+                    longitude,
+                )
+            } else {
+                null
+            }
         }
         val image = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
         val graphics = image.createGraphics()
-        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-        graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+        graphics.setRenderingHint(
+            RenderingHints.KEY_ANTIALIASING,
+            RenderingHints.VALUE_ANTIALIAS_ON,
+        )
+        graphics.setRenderingHint(
+            RenderingHints.KEY_TEXT_ANTIALIASING,
+            RenderingHints.VALUE_TEXT_ANTIALIAS_ON,
+        )
         graphics.color = if (isDark) DARK_BACKGROUND else LIGHT_BACKGROUND
         graphics.fillRect(0, 0, width, height)
 

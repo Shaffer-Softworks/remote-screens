@@ -15,7 +15,14 @@ fun Tile.edgeToEdge(): Boolean = full && effectiveKind() in setOf("home", "weath
 /** What a tap (or a hold) on a tile sends. */
 fun tapRef(tile: Tile, action: TapAction, spec: TypeSpec?, pageIndex: (String) -> Int?, hold: Boolean): ActionRef? {
     val hasEntityFor = tile.entityId != null || spec?.needsEntity == false
-    fun card() = if (spec != null && spec.card != "none" && hasEntityFor) ActionRef(tile.id, "card") else null
+    fun card() = if (spec != null && spec.card != "none" && hasEntityFor) {
+        ActionRef(
+            tile.id,
+            "card",
+        )
+    } else {
+        null
+    }
     return when (action.type) {
         TapType.NONE -> null
         TapType.TOGGLE -> ActionRef(tile.id, "toggle")
@@ -23,10 +30,16 @@ fun tapRef(tile: Tile, action: TapAction, spec: TypeSpec?, pageIndex: (String) -
         TapType.ACTION -> ActionRef(tile.id, "run")
         TapType.PAGE -> action.page?.let(pageIndex)?.let { ActionRef("_", "page", it.toString()) }
         TapType.URL -> action.url?.takeIf { it.isNotBlank() }?.let { ActionRef("_", "url", it) }
-        TapType.EVENT -> action.event?.takeIf { it.isNotBlank() }?.let { ActionRef(tile.id, "event", it) }
+        TapType.EVENT -> action.event?.takeIf { it.isNotBlank() }?.let { ActionRef(
+            tile.id,
+            "event",
+            it,
+        ) }
         TapType.DEFAULT -> when {
             hold -> card()
-            tile.effectiveKind() == "nav" -> tile.options["page"]?.let(pageIndex)?.let { ActionRef("_", "page", it.toString()) }
+            tile.effectiveKind() == "nav" -> tile.options["page"]?.let(
+                pageIndex,
+            )?.let { ActionRef("_", "page", it.toString()) }
             tile.effectiveKind() == "favourite" -> ActionRef(tile.id, "favourite")
             spec == null -> null
             spec.tap == "toggle" -> ActionRef(tile.id, "toggle")
