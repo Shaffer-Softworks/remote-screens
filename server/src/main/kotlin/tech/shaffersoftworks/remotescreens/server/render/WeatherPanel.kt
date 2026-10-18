@@ -2,6 +2,9 @@
 
 package tech.shaffersoftworks.remotescreens.server.render
 
+import tech.shaffersoftworks.remotescreens.server.render.cards.CardChrome
+import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
+
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
@@ -19,7 +22,6 @@ import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.ZoneId
 import kotlin.math.roundToInt
-
 
 private const val TEMP_WEIGHT = 100f
 private const val CONDITION_ICON_DP = 110f
@@ -42,6 +44,10 @@ private const val FORECAST_GAP_DP = 6f
 /** The size the RPI weather page was drawn for; the page scales from it. */
 private const val BASE_W = 1280f
 private const val BASE_H = 650f
+private const val LAYOUT_SCALE_MIN = 0.4f
+private const val LAYOUT_SCALE_MAX = 1.5f
+private const val FORECAST_DAY_W_DP = 120f
+private const val FORECAST_DAYS_MAX = 7
 
 /** Small labels stop shrinking here so they stay readable on 7" panels. */
 private fun small(base: Float, layoutScale: Float) = maxOf(base * layoutScale, MIN_LABEL_SP)
@@ -59,19 +65,20 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
     structural(
         id,
     ) { s -> (listOf(s?.state ?: "") + DETAILS.filter { s?.number(it) != null }).joinToString() }
-    refreshEvery(1800)
+    refreshEvery(CardChrome.WEATHER_REFRESH_S)
     val details = DETAILS.filter { entityState?.number(it) != null }
     bindWeatherDetails(tile.id, id, details)
 
-    val layoutScale = minOf(box.w / BASE_W, box.h / BASE_H).coerceIn(0.4f, 1.5f)
+    val layoutScale = minOf(box.w / BASE_W, box.h / BASE_H)
+        .coerceIn(LAYOUT_SCALE_MIN, LAYOUT_SCALE_MAX)
     val ink = role(Role.INK)
     val soft = role(Role.INK_SOFT)
     val zone = runCatching { ZoneId.of(
         homeAssistantConfig.timeZone,
     ) }.getOrDefault(ZoneId.of("UTC"))
-    val dayW = 120f * layoutScale
+    val dayW = FORECAST_DAY_W_DP * layoutScale
     val days = data.forecasts[id].orEmpty().take(
-        ((box.w - DETAIL_GAP_BASE_DP) / dayW).toInt().coerceIn(0, 7),
+        ((box.w - DETAIL_GAP_BASE_DP) / dayW).toInt().coerceIn(0, FORECAST_DAYS_MAX),
     )
 
     scope.Column(
@@ -88,10 +95,10 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
         )
         Spacer(Modifier.verticalWeight(1f))
         Row(vertical = RcVerticalPositioning.Center) {
-            doc.icon(
-                Present.weatherIcon(entityState?.state ?: ""),
+            doc.weatherStateIcon(
+                entityState?.state ?: "",
                 CONDITION_ICON_DP * layoutScale,
-                ink,
+                fallbackColor = ink,
             )
             Spacer(Modifier.width(doc.units.px(TEMP_ICON_GAP_DP * layoutScale)))
             doc.label(
@@ -147,10 +154,10 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
                             align = RcTextAlign.Center,
                         )
                         Spacer(Modifier.height(doc.units.px(STRIP_PAD_DP * layoutScale)))
-                        doc.icon(
-                            Present.weatherIcon(d.condition),
+                        doc.weatherStateIcon(
+                            d.condition,
                             FORECAST_ICON_DP * layoutScale,
-                            ink,
+                            fallbackColor = ink,
                         )
                         Spacer(Modifier.height(doc.units.px(FORECAST_GAP_DP * layoutScale)))
                         doc.label(

@@ -1,9 +1,13 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.cards
+
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.gap
+import tech.shaffersoftworks.remotescreens.server.render.key
 
 import androidx.compose.remote.creation.dsl.Modifier
-import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.width
@@ -48,7 +52,8 @@ internal fun DocContext.coverCard(entityId: String, entityState: EntityState?, w
         ) { s -> listOf(
             VarValue.float(
                 Vars.entity(entityId, "tilt"),
-                ((s[entityId]?.number("current_tilt_position") ?: 0.0) / 100).toFloat(),
+                ((s[entityId]?.number("current_tilt_position") ?: 0.0) / CardChrome.PERCENT_SCALE)
+                    .toFloat(),
             ),
         ) }
         section(i18n.t("ui.tilt"))

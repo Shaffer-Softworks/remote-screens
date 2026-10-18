@@ -18,11 +18,9 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -50,6 +48,7 @@ class DemoHome : HomeAssistant {
     val calls = mutableListOf<Triple<String, String, JsonObject>>()
     /** Uids marked complete via `todo.update_item`, so `get_items` drops them. */
     private val completedTodos = mutableSetOf<String>()
+    private val serviceHandlers = DemoServiceHandlers(::set, completedTodos)
 
     fun set(entityId: String, state: String, attrs: Map<String, JsonElement> = emptyMap()) {
         _states.update { all ->
@@ -69,9 +68,9 @@ class DemoHome : HomeAssistant {
             is JsonArray -> entityIdValue.map { it.jsonPrimitive.content }
             else -> emptyList()
         }
-        return when {
-            domain == "weather" && service == "get_forecasts" -> forecasts(ids)
-            domain == "todo" && service == "get_items" -> todoItems(ids)
+        return when (domain) {
+            "weather" if service == "get_forecasts" -> forecasts(ids)
+            "todo" if service == "get_items" -> todoItems(ids)
             else -> {
                 for (id in ids) apply(id, domain, service, data)
                 null
@@ -79,153 +78,9 @@ class DemoHome : HomeAssistant {
         }
     }
 
-    // One branch per Home Assistant service the demo answers, as a lookup table would be.
-    @Suppress("CyclomaticComplexMethod", "LongMethod", "ReturnCount")
     private fun apply(id: String, domain: String, service: String, data: JsonObject) {
         val current = _states.value[id] ?: return
-        fun num(key: String) = (data[key] as? JsonPrimitive)?.doubleOrNull
-        fun str(key: String) = (data[key] as? JsonPrimitive)?.contentOrNull
-        when (service) {
-            "toggle" -> set(
-                id,
-                if (current.state in setOf(
-                        "on",
-                        "open",
-                        "above_horizon",
-                        "home",
-                        "locked",
-                        "playing",
-                        "active",
-                    )) {
-                    when (current.domain) {
-                        "sun" -> "below_horizon"
-                        "person" -> "not_home"
-                        else -> off(current.domain)
-                    }
-                } else {
-                    when (current.domain) {
-                        "sun" -> "above_horizon"
-                        "person" -> "home"
-                        else -> on(current.domain)
-                    }
-                },
-            )
-            "turn_on" -> {
-                val attrs = mutableMapOf<String, JsonElement>()
-                num(
-                    "brightness_pct",
-                )?.let { attrs["brightness"] = JsonPrimitive((it * 2.55).toInt()) }
-                num("percentage")?.let { attrs["percentage"] = JsonPrimitive(it.toInt()) }
-                (data["hs_color"] as? JsonArray)?.let { attrs["hs_color"] = it }
-                num(
-                    "color_temp_kelvin",
-                )?.let { attrs["color_temp_kelvin"] = JsonPrimitive(it.toInt()) }
-                str("effect")?.let { attrs["effect"] = JsonPrimitive(it) }
-                if (current.domain == "scene" || current.domain == "script") return
-                set(id, "on", attrs)
-            }
-            "turn_off" -> set(id, "off")
-            "open_cover" -> set(id, "open", mapOf("current_position" to JsonPrimitive(100)))
-            "close_cover" -> set(id, "closed", mapOf("current_position" to JsonPrimitive(0)))
-            "set_cover_position" -> num(
-                "position",
-            )?.let { set(
-                id,
-                if (it > 0) "open" else "closed",
-                mapOf("current_position" to JsonPrimitive(it.toInt())),
-            ) }
-            "lock" -> set(id, "locked")
-            "unlock" -> set(id, "unlocked")
-            "set_temperature" -> {
-                val attrs = mutableMapOf<String, JsonElement>()
-                num("temperature")?.let { attrs["temperature"] = JsonPrimitive(it) }
-                num("target_temp_high")?.let { attrs["target_temp_high"] = JsonPrimitive(it) }
-                num("target_temp_low")?.let { attrs["target_temp_low"] = JsonPrimitive(it) }
-                if (attrs.isNotEmpty()) set(id, current.state, attrs)
-            }
-            "set_hvac_mode" -> str("hvac_mode")?.let { set(id, it) }
-            "set_swing_mode" -> str(
-                "swing_mode",
-            )?.let { set(id, current.state, mapOf("swing_mode" to JsonPrimitive(it))) }
-            "set_preset_mode" -> str(
-                "preset_mode",
-            )?.let { set(id, current.state, mapOf("preset_mode" to JsonPrimitive(it))) }
-            "set_fan_mode" -> str(
-                "fan_mode",
-            )?.let { set(id, current.state, mapOf("fan_mode" to JsonPrimitive(it))) }
-            "set_humidity" -> num(
-                "humidity",
-            )?.let { set(id, "on", mapOf("humidity" to JsonPrimitive(it.toInt()))) }
-            "set_mode" -> str(
-                "mode",
-            )?.let { set(id, current.state, mapOf("mode" to JsonPrimitive(it))) }
-            "oscillate" -> (data["oscillating"] as? JsonPrimitive)?.booleanOrNull?.let {
-                set(id, current.state, mapOf("oscillating" to JsonPrimitive(it)))
-            }
-            "set_direction" -> str(
-                "direction",
-            )?.let { set(id, current.state, mapOf("direction" to JsonPrimitive(it))) }
-            "media_play_pause" -> set(id, if (current.state == "playing") "paused" else "playing")
-            "media_play" -> set(id, "playing")
-            "media_pause" -> set(id, "paused")
-            "volume_set" -> num(
-                "volume_level",
-            )?.let { set(id, current.state, mapOf("volume_level" to JsonPrimitive(it))) }
-            "select_option" -> str("option")?.let { set(id, it) }
-            "start", "start_mowing" -> set(
-                id,
-                when (domain) {
-                    "lawn_mower" -> "mowing"
-                    "timer" -> "active"
-                    else -> "cleaning"
-                },
-            )
-            "return_to_base", "dock" -> set(id, "returning")
-            "stop", "pause", "cancel" -> set(
-                id,
-                when (domain) {
-                    "vacuum", "lawn_mower" -> "idle"
-                    "timer" -> if (service == "pause") "paused" else "idle"
-                    else -> current.state
-                },
-            )
-            "finish" -> set(id, "idle")
-            "alarm_disarm" -> set(id, "disarmed")
-            "alarm_arm_away" -> set(id, "armed_away")
-            "alarm_arm_home" -> set(id, "armed_home")
-            "alarm_arm_night" -> set(id, "armed_night")
-            "set_percentage" -> num(
-                "percentage",
-            )?.let { set(
-                id,
-                if (it > 0) "on" else "off",
-                mapOf("percentage" to JsonPrimitive(it.toInt())),
-            ) }
-            "press" -> set(id, java.time.Instant.now().toString())
-            "increment" -> set(id, ((current.numericState() ?: 0.0) + 1).toInt().toString())
-            "decrement" -> set(id, ((current.numericState() ?: 0.0) - 1).toInt().toString())
-            "reset" -> set(id, "0")
-            "open_valve" -> set(id, "open", mapOf("current_position" to JsonPrimitive(100)))
-            "close_valve" -> set(id, "closed", mapOf("current_position" to JsonPrimitive(0)))
-            "set_valve_position" -> num("position")?.let {
-                set(
-                    id,
-                    if (it > 0) "open" else "closed",
-                    mapOf("current_position" to JsonPrimitive(it.toInt())),
-                )
-            }
-            "set_operation_mode" -> str("operation_mode")?.let { set(id, it) }
-            "set_value" -> str("value")?.let { set(id, it) }
-            "set_datetime" -> str("datetime")?.let { set(id, it) }
-            "update_item" -> {
-                val uid = str("item") ?: return
-                if (str("status") == "completed") {
-                    completedTodos += uid
-                    val open = (current.numericState()?.toInt() ?: 2) - 1
-                    set(id, open.coerceAtLeast(0).toString())
-                }
-            }
-        }
+        serviceHandlers.apply(id, domain, service, data, current)
     }
 
     private fun todoItems(ids: List<String>): JsonObject = buildJsonObject {
@@ -247,9 +102,6 @@ class DemoHome : HomeAssistant {
             }
         })
     }
-
-    private fun on(domain: String) = if (domain == "cover") "open" else "on"
-    private fun off(domain: String) = if (domain == "cover") "closed" else "off"
 
     @Suppress("CyclomaticComplexMethod")
     override suspend fun command(type: String, payload: JsonObject): JsonElement? = when (type) {

@@ -2,6 +2,11 @@
 
 package tech.shaffersoftworks.remotescreens.server.render
 
+import tech.shaffersoftworks.remotescreens.server.render.tiles.bindWhere
+import tech.shaffersoftworks.remotescreens.server.render.tiles.photo
+
+import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
+
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
@@ -13,16 +18,10 @@ import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.width
-import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.shared.VarValue
-import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-
 
 private const val WEATHER_EVENT_GAP_SHARE = 0.08f
 private const val EVENT_WIDTH_SHARE = 0.42f
@@ -44,6 +43,11 @@ private const val WEATHER_SIDE_PAD_DP = 50f
 private const val EVENT_TIME_SP = 72f
 private const val META_GAP_DP = 6f
 private const val STRIP_ACCENT_H_DP = 8f
+private const val STRIP_MAX_H_DP = 120f
+private const val STRIP_H_SHARE = 0.24f
+private const val PERSON_PHOTO_H_SHARE = 0.58f
+private const val LAYOUT_SCALE_MIN = 0.4f
+private const val LAYOUT_SCALE_MAX = 1.25f
 
 /** The size the RPI home page was drawn for; the page scales from it. */
 private const val BASE_W = 1280f
@@ -66,9 +70,10 @@ fun DocContext.homeTile(tile: Tile, box: TileBox) {
     val calendars = listed("calendars", "calendar")
     val people = listed("people", "person")
 
-    val stripH = if (people.isEmpty()) 0f else minOf(120f, box.h * 0.24f)
+    val stripH = if (people.isEmpty()) 0f else minOf(STRIP_MAX_H_DP, box.h * STRIP_H_SHARE)
     val upperH = box.h - stripH
-    val layoutScale = minOf(box.w / BASE_W, upperH / BASE_H).coerceIn(0.4f, 1.25f)
+    val layoutScale = minOf(box.w / BASE_W, upperH / BASE_H)
+        .coerceIn(LAYOUT_SCALE_MIN, LAYOUT_SCALE_MAX)
 
     bindHomeWeather(tile.id, weather)
     bindNextEvent(tile.id, calendars)
@@ -115,10 +120,9 @@ private fun DocContext.homeWeather(tileId: String, weather: String?, wDp: Float,
             doc.role(Role.INK),
         )
         Row(vertical = RcVerticalPositioning.Center) {
-            doc.icon(
-                Present.weatherIcon(entityState?.state ?: ""),
+            doc.weatherStateIcon(
+                entityState?.state ?: "",
                 WEATHER_ICON_DP * layoutScale,
-                doc.role(Role.INK),
             )
             Spacer(Modifier.width(doc.units.px(SECTION_GAP_DP * layoutScale)))
             doc.label(
@@ -186,7 +190,7 @@ private fun DocContext.homeEvent(tileId: String, wDp: Float, layoutScale: Float)
 }
 
 private fun DocContext.homePeople(tileId: String, people: List<String>, wDp: Float, hDp: Float) {
-    val photo = (hDp * 0.58f).coerceAtLeast(EVENT_TIME_GAP_DP)
+    val photo = (hDp * PERSON_PHOTO_H_SHARE).coerceAtLeast(EVENT_TIME_GAP_DP)
     scope.Row(
         Modifier.size(units.px(wDp), units.px(hDp)).background(role(Role.HOME_STRIP)),
         horizontal = RcRowHorizontalPositioning.SpaceEvenly,

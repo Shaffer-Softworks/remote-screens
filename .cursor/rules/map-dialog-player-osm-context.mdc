@@ -1,0 +1,49 @@
+---
+description: Map card dialog — player-side osmdroid pinch/pan over RC componentId; still bitmap for old APKs; grid tiles stay server-drawn
+globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/cards/MediaCards.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/DocContext.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/Vars.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/session/SessionMedia.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/session/SessionDocument.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/PlayerSession.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/PlayerSessionContext.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/remote/LiveMapView.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/remote/RemoteDocumentView.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/remote/RemoteScreenState.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/PlayerViewModel.kt,shared/src/main/kotlin/tech/shaffersoftworks/remotescreens/shared/Protocol.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/data/pictures/MapRenderer.kt
+alwaysApply: false
+---
+
+# Map dialog: player-side interactive OSM
+
+## What landed
+
+- **Map card** (`MediaCards.mapCard`): rounded TRACK `Box` with `componentId(liveMap)` over a still `map.card` Image (fallback). Marker photos as `map.pic.<entityId>` PictureSlots when `entity_picture` exists.
+- **Protocol:** `CAPABILITY_MAP = "map"`; `ServerMessage.LiveMap` (`@SerialName("map")`) — not named `Map` (clashes with `kotlin.collections.Map`). Markers: lat/lon/label + optional bitmap name.
+- **Server:** `DocContext.liveMap` extension + `LiveMap` (component id `0x5D_0000+`). `SessionMedia.sendMap` only if `supportsMap`; skips sending `map.card` bitmap for capable players. `mapTileUrl` from `PlayerSessionContext` / addon `map_tiles`.
+- **Player:** `LiveMapView` (osmdroid + `osm-android-compose`, same stack as RPI `MapViewDialog`) over component bounds; **consumes touches** (unlike `LiveVideoView`). Pinch-zoom / pan local. Initials markers or circle photos from bitmaps. Dark theme: tile multiply filter.
+- **Unchanged:** grid `mapTile` / `MapRenderer` still bitmaps; old APKs without `map` keep server-drawn stills.
+
+## Wiring
+
+```
+tap card → openCard → mapCard + liveMap(componentId)
+  → show OVERLAY → sendPictures (skip map.card if supportsMap) + sendMap
+  → ServerMessage.LiveMap → SlotMap → LiveMapView over bounds
+```
+
+- Hello capabilities include `map`; FEATURES advertise it.
+- RPI reference: `/Users/michaelshaffer/RPI/.../ui/views/maps/MapViewDialog.kt`
+
+## Gotchas
+
+- RC has no pinch/drag — interactive maps must be native player overlays (camera video pattern).
+- Never name a `ServerMessage` type `Map`.
+- `liveMap` is a **file-level extension** on `DocContext` (keeps `TooManyFunctions` under limit); do not move it back onto the class without raising the limit / baseline.
+- Marker Compose: `rememberMarkerState` only inside `@Composable` children keyed per marker — not raw `forEach` hooks in the parent.
+- OSM tile policy: set `Configuration.userAgentValue` (e.g. `RemoteScreens/<version>`).
+
+## Verify
+
+```bash
+./gradlew :shared:test --tests '...MapProtocolTest' \
+  :server:test --tests '...RenderTest.aPersonCardsMapTargetsItsBoxAndStillBitmap' \
+  :player:testDebugUnitTest --tests '...RemoteScreenStateTest' \
+  :server:detekt :player:detekt
+```
+
+## Follow-ups / out of scope
+
+- Pinch/pan on grid map tiles.
+- Replacing `MapRenderer` for capable players on tiles.
+- Proxying marker photos via add-on HTTP (today: named bitmaps already sent).

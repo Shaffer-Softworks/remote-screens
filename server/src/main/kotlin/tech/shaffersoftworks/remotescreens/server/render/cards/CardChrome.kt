@@ -1,6 +1,23 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.cards
+
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.HaRenderFlags
+import tech.shaffersoftworks.remotescreens.server.render.Present
+import tech.shaffersoftworks.remotescreens.server.render.Role
+import tech.shaffersoftworks.remotescreens.server.render.Type
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.Weight
+import tech.shaffersoftworks.remotescreens.server.render.bindChoices
+import tech.shaffersoftworks.remotescreens.server.render.choiceRow
+import tech.shaffersoftworks.remotescreens.server.render.gap
+import tech.shaffersoftworks.remotescreens.server.render.key
+import tech.shaffersoftworks.remotescreens.server.render.label
+import tech.shaffersoftworks.remotescreens.server.render.rounded
+import tech.shaffersoftworks.remotescreens.server.render.segmentedLevelBar
+import tech.shaffersoftworks.remotescreens.server.render.tap
+import tech.shaffersoftworks.remotescreens.server.render.toggleIcon
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
@@ -71,6 +88,9 @@ internal object CardChrome {
     const val OPAQUE_ARGB = OPAQUE_ALPHA_BYTE shl 24
     const val ALPHA_OPAQUE = 0xFF
     const val ALPHA_SHIFT = 24
+    const val RED_SHIFT = 16
+    const val GREEN_SHIFT = 8
+    const val CHANNEL_MAX = 255
     const val KELVIN_MIN = 2200
     const val KELVIN_SPAN = 4300f
     const val KELVIN_GREEN_BASE = 190
@@ -81,6 +101,20 @@ internal object CardChrome {
     const val SOURCES_TAKE = 16
     const val LIBRARY_TAKE = 20
     const val FORECAST_DAYS = 7
+    /** PictureSlot fit mode for the camera card still. */
+    const val CAMERA_CARD_FIT = 4
+    const val PERCENT_SCALE = 100.0
+    const val TEMP_STEP_F = 1.0
+    const val TEMP_STEP_C = 0.5
+    const val MEDIA_ART_MAX_DP = 280f
+    const val KEYPAD_ROW_GAP_DP = 24f
+    const val KEYPAD_COLS = 3f
+    const val KEYPAD_KEY_MAX_DP = 110f
+    /** Home Assistant alarm_control_panel supported_features bits. */
+    const val ALARM_FEAT_ARM_HOME = 1
+    const val ALARM_FEAT_ARM_AWAY = 2
+    const val ALARM_FEAT_ARM_NIGHT = 4
+    const val ALARM_FEAT_ARM_VACATION = 32
 }
 
 internal fun ref(entityId: String, verb: String, arg: String = "") = ActionRef(
@@ -279,8 +313,11 @@ val KELVINS = listOf(2200, 2700, 3500, 4500, 5500, 6500)
 /** The colour of white light at [k] kelvin, near enough for a swatch. */
 fun kelvinColor(k: Int): Int {
     val t = ((k - CardChrome.KELVIN_MIN) / CardChrome.KELVIN_SPAN).coerceIn(0f, 1f)
-    val r = 255
+    val r = CardChrome.CHANNEL_MAX
     val g = (CardChrome.KELVIN_GREEN_BASE + CardChrome.KELVIN_GREEN_RANGE * t).roundToInt()
     val b = (CardChrome.KELVIN_BLUE_BASE + CardChrome.KELVIN_BLUE_RANGE * t).roundToInt()
-    return (CardChrome.ALPHA_OPAQUE shl CardChrome.ALPHA_SHIFT) or (r shl 16) or (g shl 8) or b
+    return (CardChrome.ALPHA_OPAQUE shl CardChrome.ALPHA_SHIFT) or
+        (r shl CardChrome.RED_SHIFT) or
+        (g shl CardChrome.GREEN_SHIFT) or
+        b
 }

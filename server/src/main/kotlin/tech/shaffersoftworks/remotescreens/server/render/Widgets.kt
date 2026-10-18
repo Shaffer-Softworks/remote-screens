@@ -100,6 +100,34 @@ fun DocContext.icon(name: String?, sizeDp: Float, color: RcColor, visible: RcInt
     }
 }
 
+/**
+ * Home Assistant's coloured weather state SVG for [condition] (17×17 viewBox).
+ * Falls back to the monochrome MDI glyph when HA has no layered SVG (e.g. `exceptional`).
+ */
+fun DocContext.weatherStateIcon(
+    condition: String,
+    sizeDp: Float,
+    nightTime: Boolean = false,
+    fallbackColor: RcColor = role(Role.INK),
+) {
+    val pieces = HaWeatherIcons.pieces(condition, nightTime)
+    if (pieces == null) {
+        icon(Present.weatherIcon(condition), sizeDp, fallbackColor)
+        return
+    }
+    val px = units.px(sizeDp)
+    val layers = pieces.map { piece -> path(rawSvg = piece.path) to fixed(HaWeatherIcons.color(piece.layer)) }
+    scope.Canvas(Modifier.size(px, px)) {
+        save {
+            scale(px / HaWeatherIcons.VIEWPORT, px / HaWeatherIcons.VIEWPORT)
+            for ((iconPath, color) in layers) {
+                paint { color(color); style(RcPaintStyle.Fill) }
+                drawPath(iconPath)
+            }
+        }
+    }
+}
+
 /** An icon that shows [on] when the entity is on and [off] otherwise, both drawn and one hidden. */
 fun DocContext.toggleIcon(entityId: String, off: String, on: String?, sizeDp: Float, color: RcColor) {
     if (on == null || on == off) {

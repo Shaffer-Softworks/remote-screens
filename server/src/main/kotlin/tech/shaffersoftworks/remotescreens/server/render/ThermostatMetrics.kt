@@ -71,6 +71,10 @@ internal object ThermostatMetrics {
     const val DEFAULT_MAX_TEMP_C = 35.0
     const val TEMP_DECIMALS_F = 0
     const val TEMP_DECIMALS_C = 1
+    const val TEMP_STEP_F = 1.0
+    const val TEMP_STEP_C = 0.5
+    const val LAYOUT_SCALE_MIN = 0.4f
+    const val LAYOUT_SCALE_MAX = 1.5f
     /** Home Assistant `ClimateEntityFeature.TARGET_TEMPERATURE_RANGE`. */
     const val CLIMATE_TEMP_RANGE_FLAG = 2
     /** Gap in degrees between the heat and cool arcs on a dual dial. */

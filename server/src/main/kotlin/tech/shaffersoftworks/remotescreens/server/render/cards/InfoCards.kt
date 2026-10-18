@@ -1,6 +1,22 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.cards
+
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.Role
+import tech.shaffersoftworks.remotescreens.server.render.Type
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.Weight
+import tech.shaffersoftworks.remotescreens.server.render.bindChoices
+import tech.shaffersoftworks.remotescreens.server.render.calendarEvent
+import tech.shaffersoftworks.remotescreens.server.render.gap
+import tech.shaffersoftworks.remotescreens.server.render.icon
+import tech.shaffersoftworks.remotescreens.server.render.isToday
+import tech.shaffersoftworks.remotescreens.server.render.weatherStateIcon
+import tech.shaffersoftworks.remotescreens.server.render.key
+import tech.shaffersoftworks.remotescreens.server.render.label
+import tech.shaffersoftworks.remotescreens.server.render.paint
+import tech.shaffersoftworks.remotescreens.server.render.tiles.graph
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
@@ -28,7 +44,7 @@ internal fun DocContext.weatherCard(entityId: String, entityState: EntityState?,
     ) }.getOrDefault(ZoneId.of("UTC"))
     scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@weatherCard
-        doc.icon(Present.weatherIcon(entityState?.state ?: ""), CardChrome.STEPPER_KEY_DP, ink)
+        doc.weatherStateIcon(entityState?.state ?: "", CardChrome.STEPPER_KEY_DP, fallbackColor = ink)
         Spacer(Modifier.width(doc.units.px(CardChrome.CARD_GAP_DP)))
         Column {
             doc.label(
@@ -73,7 +89,7 @@ internal fun DocContext.weatherCard(entityId: String, entityState: EntityState?,
                 Weight.MEDIUM,
                 modifier = Modifier.width(doc.units.px(CardChrome.MEDIA_CTRL_DP)),
             )
-            doc.icon(Present.weatherIcon(d.condition), CardChrome.WEATHER_ICON_ROW_DP, ink)
+            doc.weatherStateIcon(d.condition, CardChrome.WEATHER_ICON_ROW_DP, fallbackColor = ink)
             Spacer(Modifier.width(doc.units.px(CardChrome.PANEL_CORNER_DP)))
             doc.label(
                 d.rain?.let { "$it%" } ?: "",
@@ -154,10 +170,10 @@ internal fun DocContext.historyCard(entityId: String, w: Float, h: Float) {
 internal fun DocContext.alarmCard(entityId: String, entityState: EntityState?, w: Float) {
     val features = entityState?.features() ?: 0
     val modes = listOfNotNull(
-        "arm_home".takeIf { features and 1 != 0 },
-        "arm_away".takeIf { features and 2 != 0 },
-        "arm_night".takeIf { features and 4 != 0 },
-        "arm_vacation".takeIf { features and 32 != 0 },
+        "arm_home".takeIf { features and CardChrome.ALARM_FEAT_ARM_HOME != 0 },
+        "arm_away".takeIf { features and CardChrome.ALARM_FEAT_ARM_AWAY != 0 },
+        "arm_night".takeIf { features and CardChrome.ALARM_FEAT_ARM_NIGHT != 0 },
+        "arm_vacation".takeIf { features and CardChrome.ALARM_FEAT_ARM_VACATION != 0 },
     )
     bind(entityId) { states ->
         listOf(VarValue.string(Vars.tile("e:$entityId", "code"), ""))
@@ -203,7 +219,10 @@ internal fun DocContext.keypad(entityId: String, w: Float) {
         )
     }
     gap(CardChrome.FLOW_PAD_DP)
-    val keyW = minOf((w - 24f) / 3f, 110f)
+    val keyW = minOf(
+        (w - CardChrome.KEYPAD_ROW_GAP_DP) / CardChrome.KEYPAD_COLS,
+        CardChrome.KEYPAD_KEY_MAX_DP,
+    )
     for (row in listOf(
         listOf("1", "2", "3"),
         listOf("4", "5", "6"),

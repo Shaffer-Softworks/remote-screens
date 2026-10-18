@@ -1172,5 +1172,6 @@ const highlight = computed(() => {
 
 .nav .button.on {
   background: var(--rc-nav-on);
+  color: var(--rc-key-on-ink);
 }
 </style>

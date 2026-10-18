@@ -1,6 +1,21 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.tiles
+
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.Pastel
+import tech.shaffersoftworks.remotescreens.server.render.Role
+import tech.shaffersoftworks.remotescreens.server.render.Type
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.accent
+import tech.shaffersoftworks.remotescreens.server.render.at
+import tech.shaffersoftworks.remotescreens.server.render.bindEntity
+import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
+import tech.shaffersoftworks.remotescreens.server.render.homeTile
+import tech.shaffersoftworks.remotescreens.server.render.rounded
+import tech.shaffersoftworks.remotescreens.server.render.tap
+import tech.shaffersoftworks.remotescreens.server.render.thermostatPanel
+import tech.shaffersoftworks.remotescreens.server.render.weatherPanel
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
@@ -14,7 +29,7 @@ import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.verticalWeight
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Tile
-import tech.shaffersoftworks.remotescreens.server.render.TileChrome as C
+import tech.shaffersoftworks.remotescreens.server.render.tiles.TileChrome as C
 
 /**
  * A tile is an RPI card: a black edge, a grey body and, where there is room, a darker header strip with its name.

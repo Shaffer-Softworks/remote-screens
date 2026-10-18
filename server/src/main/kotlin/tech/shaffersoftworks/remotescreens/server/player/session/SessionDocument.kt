@@ -4,7 +4,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
 import tech.shaffersoftworks.remotescreens.server.render.Alert
 import tech.shaffersoftworks.remotescreens.server.render.AlertRenderer
-import tech.shaffersoftworks.remotescreens.server.render.CardRenderer
+import tech.shaffersoftworks.remotescreens.server.render.cards.CardRenderer
 import tech.shaffersoftworks.remotescreens.server.render.Rc
 import tech.shaffersoftworks.remotescreens.server.render.RenderInput
 import tech.shaffersoftworks.remotescreens.server.render.RenderedDoc

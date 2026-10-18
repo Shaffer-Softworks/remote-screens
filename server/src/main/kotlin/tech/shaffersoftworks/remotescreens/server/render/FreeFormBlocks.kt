@@ -2,6 +2,14 @@
 
 package tech.shaffersoftworks.remotescreens.server.render
 
+import tech.shaffersoftworks.remotescreens.server.render.tiles.bindWhere
+import tech.shaffersoftworks.remotescreens.server.render.tiles.photo
+
+import tech.shaffersoftworks.remotescreens.server.render.freeform.Axis
+import tech.shaffersoftworks.remotescreens.server.render.freeform.Dims
+import tech.shaffersoftworks.remotescreens.server.render.freeform.measured
+import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
+
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcContentScale
@@ -371,7 +379,7 @@ private fun DocContext.forecastNode(node: Node, self: Dims, axis: Axis, pages: P
                         soft,
                         align = RcTextAlign.Center,
                     )
-                    doc.icon(Present.weatherIcon(day.condition), BlockMetrics.FORECAST_ICON_DP, ink)
+                    doc.weatherStateIcon(day.condition, BlockMetrics.FORECAST_ICON_DP, fallbackColor = ink)
                     doc.label(
                         listOfNotNull(
                             day.high?.let { "${it.roundToInt()}°" },
