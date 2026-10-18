@@ -28,7 +28,7 @@ internal fun DocContext.lockCard(entityId: String, entityState: EntityState?) {
     bigToggle(entityId, entityState)
     gap(CardChrome.PANEL_CORNER_DP)
     scope.Box(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
-        this@lockCard.label(text = this@lockCard.text(name = Vars.tile("e:$entityId", Vars.KEY_CONFIRM)), Type.TITLE, this@lockCard.role(
+        this@lockCard.label(this@lockCard.text(Vars.tile("e:$entityId", Vars.KEY_CONFIRM)), Type.TITLE, this@lockCard.role(
             Role.WARN), Weight.SEMI_BOLD, align = RcTextAlign.Center)
     }
     if (entityState?.supports(CardChrome.FAN_PERCENTAGE_FLAG) == true) {
