@@ -44,8 +44,12 @@ internal fun DocContext.mediaCard(entityId: String, entityState: EntityState?, w
         Row(horizontal = RcRowHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
             doc.key(ref(entityId, "previous"), icon = "skip-previous", heightDp = CardChrome.MEDIA_CTRL_DP, widthDp = CardChrome.MEDIA_CTRL_DP, round = true)
             Spacer(Modifier.width(doc.units.px(CardChrome.SECTION_TITLE_GAP_DP)))
-            Box(doc.tap(Modifier.size(doc.units.px(CardChrome.PLAY_KEY_DP), doc.units.px(CardChrome.PLAY_KEY_DP)).clip(doc.rounded((CardChrome.PLAY_KEY_DP) / 2f)).background(doc.role(Role.KEY_ON)), ref(entityId, "play_pause")),
-                horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
+            Box(doc.tap(
+                Modifier.size(doc.units.px(CardChrome.PLAY_KEY_DP), doc.units.px(CardChrome.PLAY_KEY_DP))
+                    .clip(doc.rounded((CardChrome.PLAY_KEY_DP) / 2f))
+                    .background(doc.role(Role.KEY_ON)),
+                ref(entityId, "play_pause"),
+            ), horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
                 doc.icon("pause", CardChrome.CLOSE_KEY_DP, doc.role(Role.KEY_ON_INK), doc.int(Vars.entity(entityId, "playing")))
                 doc.icon("play", CardChrome.CLOSE_KEY_DP, doc.role(Role.KEY_ON_INK), doc.int(Vars.entity(entityId, "notplaying")))
             }
@@ -96,9 +100,40 @@ internal fun DocContext.cameraCard(entityId: String, w: Float, h: Float) {
 internal fun DocContext.mapCard(entityId: String, w: Float, h: Float) {
     val pw = units.px(w).toInt()
     val ph = units.px(h).toInt()
-    val who = if (entityId.startsWith("person.") || entityId.startsWith("device_tracker.")) listOf(entityId) else states.keys.filter { it.startsWith("person.") }
-    for (p in who) structural(p) { s -> "${s?.number("latitude")},${s?.number("longitude")}" }
+    val who = if (entityId.startsWith("person.") || entityId.startsWith("device_tracker.")) {
+        listOf(entityId)
+    } else {
+        states.keys.filter { it.startsWith("person.") }
+    }
+    for (personId in who) {
+        structural(personId) { state -> "${state?.number("latitude")},${state?.number("longitude")}" }
+        val picturePath = states[personId]?.attr("entity_picture")
+        if (!picturePath.isNullOrBlank()) {
+            val markerPx = units.px(CardChrome.MAP_MARKER_DP).toInt().coerceAtLeast(1)
+            picture(
+                PictureSlot(
+                    "${Vars.MAP_PIC_PREFIX}$personId",
+                    "attr:$personId:entity_picture",
+                    markerPx,
+                    markerPx,
+                    0,
+                ),
+            )
+        }
+    }
     picture(PictureSlot("map.card", "map:${mapStyle()}:${who.joinToString(",")}", pw, ph, 0))
-    scope.Image(image("map.card", pw, ph), Modifier.size(units.px(w), units.px(h)).clip(rounded(CardChrome.CARD_GAP_DP)), contentScale = RcContentScale.Crop)
+    val mapComponent = liveMap(who)
+    val frame = Modifier.size(units.px(w), units.px(h))
+        .clip(rounded(CardChrome.CARD_GAP_DP))
+        .background(role(Role.TRACK))
+        .componentId(mapComponent)
+    scope.Box(frame) {
+        val doc = this@mapCard
+        Image(
+            doc.image("map.card", pw, ph),
+            Modifier.fillMaxSize(),
+            contentScale = RcContentScale.Crop,
+        )
+    }
     label(i18n.t("ui.map_credit"), Type.CAPTION, role(Role.INK_SOFT))
 }
