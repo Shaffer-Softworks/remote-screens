@@ -1,15 +1,22 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.cards
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcTextAlign
-import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.Role
+import tech.shaffersoftworks.remotescreens.server.render.Type
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.Weight
+import tech.shaffersoftworks.remotescreens.server.render.gap
+import tech.shaffersoftworks.remotescreens.server.render.key
+import tech.shaffersoftworks.remotescreens.server.render.label
 
 internal fun DocContext.toggleCard(entityId: String, entityState: EntityState?) {
     gap(CardChrome.PANEL_PAD_DP)
@@ -21,7 +28,8 @@ internal fun DocContext.lockCard(entityId: String, entityState: EntityState?) {
     bigToggle(entityId, entityState)
     gap(CardChrome.PANEL_CORNER_DP)
     scope.Box(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
-        this@lockCard.label(this@lockCard.text(Vars.tile("e:$entityId", Vars.KEY_CONFIRM)), Type.TITLE, this@lockCard.role(Role.WARN), Weight.SEMI_BOLD, align = RcTextAlign.Center)
+        this@lockCard.label(text = this@lockCard.text(name = Vars.tile("e:$entityId", Vars.KEY_CONFIRM)), Type.TITLE, this@lockCard.role(
+            Role.WARN), Weight.SEMI_BOLD, align = RcTextAlign.Center)
     }
     if (entityState?.supports(CardChrome.FAN_PERCENTAGE_FLAG) == true) {
         gap(CardChrome.HEADER_GAP_DP)

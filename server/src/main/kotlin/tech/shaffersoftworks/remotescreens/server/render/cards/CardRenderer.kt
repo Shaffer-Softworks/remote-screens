@@ -1,6 +1,6 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.cards
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
@@ -13,6 +13,17 @@ import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.verticalScroll
 import androidx.compose.remote.creation.dsl.verticalWeight
+import tech.shaffersoftworks.remotescreens.server.render.Device
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.Pastel
+import tech.shaffersoftworks.remotescreens.server.render.RenderInput
+import tech.shaffersoftworks.remotescreens.server.render.RenderedDoc
+import tech.shaffersoftworks.remotescreens.server.render.Role
+import tech.shaffersoftworks.remotescreens.server.render.bindEntity
+import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
+import tech.shaffersoftworks.remotescreens.server.render.gap
+import tech.shaffersoftworks.remotescreens.server.render.rounded
+import tech.shaffersoftworks.remotescreens.server.render.tap
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 
@@ -36,7 +47,8 @@ object CardRenderer {
             docContext.bindTileColors(TILE, entityId, Pastel.forDomain(entityState?.domain), alwaysOn = card in setOf("camera", "map", "energy", "history"))
             Box(docContext.tap(Modifier.fillMaxSize().background(docContext.role(Role.SCRIM)), ActionRef("_", "close")),
                 horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-                Column(docContext.tap(Modifier.size(docContext.units.px(panelW), docContext.units.px(panelH)).clip(docContext.rounded(CardChrome.PANEL_CORNER_DP)).background(docContext.role(Role.CARD)), ActionRef("_", "noop"))
+                Column(docContext.tap(Modifier.size(docContext.units.px(panelW), docContext.units.px(panelH)).clip(docContext.rounded(CardChrome.PANEL_CORNER_DP)).background(docContext.role(
+                    Role.CARD)), ActionRef("_", "noop"))
                     .padding(docContext.units.px(CardChrome.PANEL_PAD_DP))) {
                     docContext.header(entityId, card)
                     docContext.gap(CardChrome.SECTION_GAP_DP)

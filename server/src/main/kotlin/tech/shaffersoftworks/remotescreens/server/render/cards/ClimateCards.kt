@@ -1,6 +1,6 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.cards
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
@@ -10,6 +10,14 @@ import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.Role
+import tech.shaffersoftworks.remotescreens.server.render.Type
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.Weight
+import tech.shaffersoftworks.remotescreens.server.render.gap
+import tech.shaffersoftworks.remotescreens.server.render.key
+import tech.shaffersoftworks.remotescreens.server.render.label
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 
 internal fun DocContext.climateCard(entityId: String, entityState: EntityState?) {
@@ -28,7 +36,8 @@ internal fun DocContext.climateCard(entityId: String, entityState: EntityState?)
             doc.key(ref(entityId, "temperature", "-$step"), icon = "minus", heightDp = CardChrome.STEPPER_KEY_DP, widthDp = CardChrome.STEPPER_KEY_DP, round = true)
             Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
                 doc.label(doc.i18n.t("ui.target"), Type.BODY, doc.role(Role.INK_SOFT), align = RcTextAlign.Center)
-                doc.label(doc.text(Vars.entity(entityId, Vars.KEY_VALUE)), Type.DISPLAY, doc.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)
+                doc.label(doc.text(Vars.entity(entityId, Vars.KEY_VALUE)), Type.DISPLAY, doc.role(
+                    Role.INK), Weight.NORMAL, align = RcTextAlign.Center)
             }
             doc.key(ref(entityId, "temperature", "+$step"), icon = "plus", heightDp = CardChrome.STEPPER_KEY_DP, widthDp = CardChrome.STEPPER_KEY_DP, round = true)
         }

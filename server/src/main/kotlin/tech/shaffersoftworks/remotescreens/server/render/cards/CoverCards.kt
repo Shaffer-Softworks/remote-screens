@@ -1,13 +1,16 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.cards
 
 import androidx.compose.remote.creation.dsl.Modifier
-import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.gap
+import tech.shaffersoftworks.remotescreens.server.render.key
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 
 internal fun DocContext.coverCard(entityId: String, entityState: EntityState?, w: Float) {
