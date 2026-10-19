@@ -1,0 +1,36 @@
+---
+description: Apply when implementing business logic, databases, repositories, or dependency injection
+globs: ["*ViewModel.kt", "*Repository.kt", "*Dao.kt", "*Module.kt", "di/**/*.kt", "data/**/*.kt"]
+alwaysApply: false
+---
+# Android Architecture & Storage Standards
+
+## MVVM Pattern
+- Follow standard MVVM architectural structure with explicit separation between ViewModels and View layer data maps.
+- ViewModels must expose state exclusively through an immutable backing property wrapping `StateFlow`.
+- Collect flow flows safely on the UI view using `collectAsStateWithLifecycle()`.
+
+## Dependency Injection (Hilt)
+- Leverage Dagger Hilt for dependency injections across components.
+- Declare dependencies targeting abstractions/interfaces rather than concrete implementations.
+- Properly scope modules using `@InstallIn(ViewModelComponent::class)` or `@InstallIn(SingletonComponent::class)`.
+
+## Database (Room)
+- Utilize Room for all database layers, returning reactive data flows using `Flow<List<T>>`.
+- Keep database operations abstract. Never fetch query operations synchronously on the UI thread.
+
+# What to Avoid
+- Do not use XML layouts — use Compose.
+- Do not use LiveData — prefer StateFlow.
+- Do not block the main thread.
+- Do not use `!!` operator — handle nullability properly.
+
+# Code Conventions
+- Use Jetpack Compose for all UI — no XML layouts.
+- Follow MVVM architecture with ViewModel and StateFlow.
+- Use Hilt for dependency injection.
+- Use Room for local database with Flow/StateFlow.
+- Use Kotlin coroutines for async operations.
+- Use Navigation Compose for screen navigation.
+- Use Material 3 design components.
+- Write UI previews with `@Preview` annotation.

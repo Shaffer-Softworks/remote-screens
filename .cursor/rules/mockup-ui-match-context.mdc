@@ -18,7 +18,7 @@ Concept screenshots in `docs/screenshots/` are the visual target (not live captu
 
 ## Implemented patterns
 
-- **Nav (`ScreenRenderer.navButton` + `GridMockup`):** Hybrid of both mockups — continuous `NAV_LINE` + per-item top bar + teal pill when on. Icon/label stay `Role.INK` when selected (not `KEY_ON_INK`). CSS: `.nav .button .top-bar` / `.pill`.
+- **Nav (`ScreenRenderer.navButton` + `GridMockup` / `ThemesView`):** Hybrid of both mockups — continuous `NAV_LINE` + per-item top bar + teal pill when on. Idle icon/label = `Role.INK`; active = `KEY_ON_INK` on pill (white-on-teal washes out). CSS: `.nav .button.on` / `.pv-nav span.on` → `background: var(--rc-nav-on); color: var(--rc-key-on-ink)`.
 - **Tabs (`FreeForm.tabsNode`):** Pipe-separated labels; teal underline under active; selection in `n.<id>.tab` via `StateLayout`. Helpers `tabStrip` / `tabLabel` call layout APIs through `scope.*`.
 - **Segmented bars (`Controls.segmentedLevelBar`):** Detail cards (`CardRenderer.bar`) → fill `Role.INK`; domain tiles (`Tiles.entityTileLevelBar`) → fill `Role.ACCENT`, track `Role.TRACK`.
 - **Choices:** Short lists (2–`FLOW_KEYS_SEGMENT_MAX`) → `choiceRow` / `flowKeys`; bind via `bindChoices` (selected teal fill, ink stays `Role.INK`). HVAC thermostat segments same (`ThermostatBind` `seg` ink).

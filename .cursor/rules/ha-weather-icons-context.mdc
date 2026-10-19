@@ -1,0 +1,41 @@
+---
+description: Home Assistant coloured weather SVGs (not monochrome MDI) for weather UI; path format and call sites.
+globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/HaWeatherIcons.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/Widgets.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/WeatherPanel.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/Home.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/FreeFormBlocks.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/cards/InfoCards.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/tiles/SpecialtyTiles.kt,server/src/main/resources/ha-weather-paths.json,tools/generate_icons.py
+alwaysApply: false
+---
+
+# HA weather icons (Oct 2026)
+
+Weather UI uses Home Assistant’s **multi-colour** state SVGs (`frontend` `src/data/weather.ts` `getWeatherStateSVG`), not monochrome MDI.
+
+## Wiring
+
+- **Draw:** `DocContext.weatherStateIcon(condition, sizeDp, nightTime?, fallbackColor?)` in `Widgets.kt`.
+- **Layers / colours:** `HaWeatherIcons.pieces` + default fills (`#FDD93C` sun, `#FCF497` moon, cloud/rain/snow).
+- **Paths:** `server/src/main/resources/ha-weather-paths.json` — absolute **M / L / C / Z** only (same normalisation as `tools/generate_icons.py` `normalise`).
+- **Call sites:** `WeatherPanel`, `Home` weather, `SpecialtyTiles.weatherTile`, `InfoCards.weatherCard`, `FreeFormBlocks` forecast.
+- **Fallback:** `exceptional` / unknown → `Present.weatherIcon` (MDI) + `fallbackColor`. Keep `Present.weatherIcon` for generic `iconFor` entity chrome.
+
+## Rc.path constraint
+
+`Rc.path` only accepts space-separated absolute `M`/`L`/`C`/`Z`. Raw HA `d=` (relative `m`/`c`, commas, `h`/`v`) **will throw**. Never paste frontend path strings into Kotlin without normalising into the JSON.
+
+## Regenerating paths
+
+1. Take `d="..."` from HA `getWeatherStateSVG`.
+2. Run through `tools/generate_icons.py`’s `normalise()`.
+3. Update keys in `ha-weather-paths.json` (`sunny`, `clear_night`, `partly_disk`, `cloud_back`/`front`, `rain_*`, `pour_*`, `wind_*`, `snow_*`, `bolt`).
+
+## Gotchas
+
+- Snow in HA also has a stroke; we fill only (acceptable).
+- `partlycloudy` night uses moon disk (`nightTime = true`); forecast model has no `is_daytime` yet — day disk by default.
+- Viewport is **17×17** (`HaWeatherIcons.VIEWPORT`), not MDI’s 24.
+
+## Verify
+
+```bash
+./gradlew :server:detekt :server:test \
+  --tests 'tech.shaffersoftworks.remotescreens.server.render.RenderTest' \
+  --tests 'tech.shaffersoftworks.remotescreens.server.render.FreeFormTest'
+```
