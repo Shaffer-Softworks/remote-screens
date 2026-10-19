@@ -6,23 +6,28 @@
 
 ## 0.1.18
 
-- See the [v0.1.18](https://github.com/Shaffer-Softworks/remote-screens/releases/tag/v0.1.18) release notes; replace this line with curated notes before merging.
+- Free-form weather and next-event components.
+- Clarify navigation component docs in the editor.
 
 ## 0.1.17
 
-- See the [v0.1.17](https://github.com/Shaffer-Softworks/remote-screens/releases/tag/v0.1.17) release notes; replace this line with curated notes before merging.
+- Detekt / formatting clean-up for the Kotlin modules.
 
 ## 0.1.16
 
-- See the [v0.1.16](https://github.com/Shaffer-Softworks/remote-screens/releases/tag/v0.1.16) release notes; replace this line with curated notes before merging.
+- Free-form thermostat component (RPI-style climate page).
+- Interactive live map view on current players.
+- Player time-zone handling improvements.
+- Detekt rules and formatting updates.
 
 ## 0.1.15
 
-- See the [v0.1.15](https://github.com/Shaffer-Softworks/remote-screens/releases/tag/v0.1.15) release notes; replace this line with curated notes before merging.
+- Editor preview polish for GridMockup and NodeView.
 
 ## 0.1.14
 
-- See the [v0.1.14](https://github.com/Shaffer-Softworks/remote-screens/releases/tag/v0.1.14) release notes; replace this line with curated notes before merging.
+- Release workflow opens a version sync PR after builds.
+- Editor attributes panel and component set expansions from 0.1.13.
 
 ## 0.1.13
 

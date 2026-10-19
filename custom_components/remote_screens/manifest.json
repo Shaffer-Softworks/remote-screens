@@ -4,10 +4,10 @@
   "codeowners": ["@sickkick"],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/sickkick/remote-screens",
+  "documentation": "https://github.com/Shaffer-Softworks/remote-screens/wiki",
   "integration_type": "hub",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/sickkick/remote-screens/issues",
+  "issue_tracker": "https://github.com/Shaffer-Softworks/remote-screens/issues",
   "requirements": [],
   "version": "0.1.0"
 }

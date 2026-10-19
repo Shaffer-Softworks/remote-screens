@@ -89,4 +89,4 @@ All creation calls go through `server/.../render/Rc.kt` and the tile renderers; 
 - `RcSpikeTest` (JVM): a document with named strings, ints and colours, a `StateLayout` and a click with host
   action metadata is written, read back by `CoreDocument`, and lists its named variables.
 - On a device: the player renders the demo home, a tap reaches the add-on and the change shows (see
-  docs/TESTING.md, "On a device").
+  [TESTING.md](TESTING.md#on-a-device)).

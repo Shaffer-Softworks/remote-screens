@@ -21,5 +21,5 @@ LABEL \
     io.hass.type="addon" \
     io.hass.arch="${BUILD_ARCH}" \
     io.hass.version="${BUILD_VERSION}" \
-    org.opencontainers.image.source="https://github.com/sickkick/remote-screens" \
+    org.opencontainers.image.source="https://github.com/Shaffer-Softworks/remote-screens" \
     org.opencontainers.image.licenses="MIT"
