@@ -652,13 +652,20 @@ const presenceStatusColor = computed(
   () => colorOf(viewNode.value.props.color) ?? colorOf('accent_soft') ?? colorOf('accent'),
 )
 const nextEventDayColor = computed(
-  () => colorOf(viewNode.value.props.color) ?? colorOf('accent_dark') ?? colorOf('accent'),
+  () => colorOf(viewNode.value.props.color) ?? colorOf('ink_soft') ?? colorOf('ink'),
 )
 const nextEventInkColor = computed(
   () => colorOf(viewNode.value.props.ink) ?? colorOf('ink'),
 )
+const nextEventMetaColor = computed(
+  () => colorOf(viewNode.value.props.ink) ?? colorOf('ink_soft') ?? colorOf('ink'),
+)
 const weatherInkColor = computed(
   () => colorOf(viewNode.value.props.ink) ?? colorOf('ink'),
+)
+/** Same HA layered icon set as the forecast chips (live state when bound). */
+const weatherCondition = computed(
+  () => entity.value?.state || MOCK_FORECAST_CONDITIONS[0],
 )
 
 const todoItems = computed(() => {
@@ -1264,7 +1271,7 @@ function end(): void {
         (node.props.text || 'Temperature outside now').toUpperCase()
       }}</span>
       <span class="wx-row" :style="{ color: weatherInkColor }">
-        <MdiIcon name="weather-sunny" :size="48" />
+        <HaWeatherIcon :condition="weatherCondition" :size="48" />
         <strong class="wx-temp">70F</strong>
         <span class="wx-spacer" />
         <MdiIcon name="tune" :size="28" />
@@ -1273,9 +1280,8 @@ function end(): void {
     <template v-else-if="node.type === 'nextevent'">
       <span class="ne-day" :style="{ color: nextEventDayColor }">Monday</span>
       <strong class="ne-time" :style="{ color: nextEventInkColor }">7:30PM</strong>
-      <span class="ne-spacer" />
       <span class="ne-title" :style="{ color: nextEventInkColor }">Dentist appointment</span>
-      <span class="ne-meta" :style="{ color: nextEventInkColor }">Family · Main St</span>
+      <span class="ne-meta" :style="{ color: nextEventMetaColor }">Family · Main St</span>
     </template>
     <span v-else-if="node.type === 'led'" class="led" />
   </div>
@@ -2191,16 +2197,19 @@ function end(): void {
 .t-weather {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  align-items: flex-start;
+  justify-content: flex-start;
   width: 100%;
   height: 100%;
   padding: 12px;
   box-sizing: border-box;
+  gap: 8px;
 }
 
 .wx-caption {
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: 0.04em;
+  line-height: 1.2;
 }
 
 .wx-row {
@@ -2212,7 +2221,7 @@ function end(): void {
 
 .wx-temp {
   font-size: 48px;
-  font-weight: 300;
+  font-weight: 100;
   line-height: 1;
 }
 
@@ -2223,38 +2232,40 @@ function end(): void {
 .t-nextevent {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
   width: 100%;
   height: 100%;
   padding: 16px;
   box-sizing: border-box;
+  gap: 0;
 }
 
 .ne-day {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 300;
+  line-height: 1.2;
 }
 
 .ne-time {
-  font-size: 36px;
-  font-weight: 600;
+  font-size: 40px;
+  font-weight: 100;
   line-height: 1.1;
 }
 
-.ne-spacer {
-  flex: 1;
-}
-
 .ne-title {
+  margin-top: 12px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 400;
+  line-height: 1.25;
 }
 
 .ne-meta {
-  font-size: 12px;
   margin-top: 4px;
-  opacity: 0.9;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.2;
 }
 
 .t-led {

@@ -933,8 +933,9 @@ const highlight = computed(() => {
   justify-content: center;
   gap: 8px;
   background: var(--rc-page);
+  color: var(--rc-ink);
   font-size: 16px;
-  box-shadow: inset -1px 0 0 var(--rc-accent-dark);
+  box-shadow: inset -2px 0 0 var(--rc-accent-dark);
 }
 
 .th-modes span:last-child {
@@ -943,6 +944,7 @@ const highlight = computed(() => {
 
 .th-modes span.on {
   background: var(--rc-accent-dark);
+  color: var(--rc-ink);
 }
 
 .th-fan {

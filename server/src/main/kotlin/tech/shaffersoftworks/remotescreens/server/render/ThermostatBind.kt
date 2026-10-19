@@ -72,6 +72,10 @@ internal fun DocContext.bindThermostat(tileId: String, entityId: String, modes: 
             VarValue.float(Vars.tile(tileId, "coolStart"), coolStart),
             VarValue.float(Vars.tile(tileId, "coolSweep"), coolSweep),
             VarValue.string(
+                Vars.tile(tileId, "target"),
+                if (dual) "" else tempLabel("temperature"),
+            ),
+            VarValue.string(
                 Vars.tile(tileId, "low"),
                 if (dual) tempLabel("target_temp_low") else "",
             ),
@@ -83,14 +87,10 @@ internal fun DocContext.bindThermostat(tileId: String, entityId: String, modes: 
                 Vars.tile(tileId, "fan"),
                 entityState?.attr("fan_mode")?.let { fanWord(it) } ?: "–",
             ),
-        ) + modes.flatMapIndexed { i, mode ->
-            listOf(
-                VarValue.color(
-                    Vars.option(tileId, "seg", i, Vars.KEY_BG),
-                    (if (modeSelected(state, mode)) Role.ACCENT_DARK else Role.PAGE).argb,
-                ),
-                // Selected teal segment keeps white icon/label (same as nav / choice rows).
-                VarValue.color(Vars.option(tileId, "seg", i, Vars.KEY_INK), Role.INK.argb),
+        ) + modes.mapIndexed { i, mode ->
+            VarValue.color(
+                Vars.option(tileId, "seg", i, Vars.KEY_BG),
+                (if (modeSelected(state, mode)) Role.ACCENT_DARK else Role.PAGE).argb,
             )
         }
     }

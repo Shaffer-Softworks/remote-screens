@@ -93,11 +93,17 @@ class RenderedDoc(
         return out
     }
 
+    /** Whether a structural entity changed, so the document must be built again. */
+    fun structureChanged(states: Map<String, EntityState>): Boolean =
+        docContext.structure.any { (id, what, was) -> what(states[id]) != was }
+
+    /** Whether a timed refresh (forecast, to-do list, …) is due. */
+    fun isTimedRefreshDue(now: Long = System.currentTimeMillis()): Boolean =
+        docContext.refreshSeconds > 0 && now - builtAt > docContext.refreshSeconds * MS_PER_SECOND
+
     /** Whether something drawn into the document (not a variable) has changed, so it must be built again. */
     fun stale(states: Map<String, EntityState>, now: Long = System.currentTimeMillis()): Boolean =
-        docContext.structure.any { (id, what, was) -> what(states[id]) != was } ||
-            (docContext.refreshSeconds > 0 &&
-                now - builtAt > docContext.refreshSeconds * MS_PER_SECOND)
+        structureChanged(states) || isTimedRefreshDue(now)
 }
 
 class RenderInput(
@@ -118,11 +124,17 @@ class RenderInput(
 }
 
 object ScreenRenderer {
-    /** Every page of [screen] in one document, the page shown chosen by the named integer `page`. */
-    fun render(screen: Screen, device: Device, input: RenderInput): RenderedDoc {
+    /**
+     * Every page of [screen] in one document, the page shown chosen by the named integer `page`.
+     * [initialPage] is the page the tablet is on, so a rebuild does not flash the home page before the player
+     * restores it.
+     */
+    fun render(screen: Screen, device: Device, input: RenderInput, initialPage: Int = 0): RenderedDoc {
         val pages = screen.pages.ifEmpty { listOf(Page("home", input.i18n.t("state.home"))) }
         val pageIndex: (String) -> Int? = { id -> pages.indexOfFirst { it.id == id }.takeIf { it >= 0 } }
         val home = pageIndex(screen.homePage) ?: 0
+        val pageCount = pages.size.coerceAtLeast(1)
+        val startPage = initialPage.coerceIn(0, pageCount - 1)
         val visible = pages.withIndex().filter { !it.value.hidden }.map { it.index }
         val showBar = screen.topBar.show
         val widthDp = device.widthDp.toFloat()
@@ -137,7 +149,7 @@ object ScreenRenderer {
             { input.context(device) },
         ) { docContext ->
             docContext.bindSystem(screen)
-            val page = docContext.int(Vars.PAGE, home)
+            val page = docContext.int(Vars.PAGE, startPage)
             Box(Modifier.fillMaxSize().background(docContext.role(Role.PAGE))) {
                 StateLayout(page, Modifier.fillMaxSize()) {
                     pages.forEachIndexed { i, p ->

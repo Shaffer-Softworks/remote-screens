@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { api } from '../api'
 import { PASTEL_KEYS, cssColor, themeById, themeVars, themes } from '../model/palette'
+import { PASTELS_INTRO, THEME_ROLE_SECTIONS } from '../model/themeRoles'
 import type { ResolvedTheme, Theme } from '../model/types'
 import { attempt, refreshThemes, state, toast } from '../store'
 import ColorInput from './ColorInput.vue'
@@ -59,9 +60,16 @@ const shown = computed<ResolvedTheme | undefined>(() => {
   }
 })
 
-const roleKeys = computed(() => Object.keys(shown.value?.roles ?? {}))
-const label = (key: string) =>
-  key === 'card_edge' ? 'card edge (tile border)' : key.replace(/_/g, ' ')
+/** Sections whose roles exist on the shown theme (skip unknown keys). */
+const roleSections = computed(() => {
+  const roles = shown.value?.roles ?? {}
+  return THEME_ROLE_SECTIONS.map(section => ({
+    ...section,
+    roles: section.roles.filter(role => role.key in roles),
+  })).filter(section => section.roles.length > 0)
+})
+
+const pastelLabel = (key: string) => key.replace(/_/g, ' ')
 
 function setColour(kind: 'roles' | 'pastels', key: string, value: string): void {
   const draftTheme = draft.value
@@ -141,7 +149,7 @@ const vars = computed(() => themeVars(shown.value))
     <p class="muted intro">
       A screen wears one theme by day and another in dark mode and at night (pick them in the
       screen's settings). Duplicate a theme to make your own; its colours are laid over the theme it
-      was made from.
+      was made from. Each role below names where that colour lands on the tablet.
     </p>
 
     <div class="layout">
@@ -201,45 +209,70 @@ const vars = computed(() => themeVars(shown.value))
           Worn by {{ usedBy(shown.id).join(', ') }}
         </p>
 
-        <div class="preview" :style="vars">
-          <div class="pv-top">
-            <span class="pv-when">12:34</span><span class="grow" /><span class="pv-blue">14°</span>
-          </div>
-          <div class="pv-body">
-            <div class="pv-card">
-              <div class="pv-head">Ceiling light</div>
-              <i class="pv-line" :style="{ background: 'var(--rc-p-yellow)' }" />
-              <div class="pv-in">
-                <MdiIcon
-                  name="lightbulb"
-                  :size="26"
-                  :style="{ color: 'var(--rc-p-yellow)' }"
-                /><span class="grow" />On
+        <div class="preview-wrap">
+          <div class="preview" :style="vars">
+            <div class="pv-top">
+              <span class="pv-when">12:34</span>
+              <span class="grow" />
+              <MdiIcon name="battery" :size="14" class="pv-stat" />
+              <span class="pv-blue">14°</span>
+            </div>
+            <div class="pv-body">
+              <div class="pv-card">
+                <div class="pv-head">Ceiling light</div>
+                <i class="pv-line on" />
+                <div class="pv-in">
+                  <MdiIcon
+                    name="lightbulb"
+                    :size="26"
+                    :style="{ color: 'var(--rc-p-yellow)' }"
+                  /><span class="grow" />On
+                </div>
+              </div>
+              <div class="pv-card">
+                <div class="pv-head">Fan</div>
+                <i class="pv-line" />
+                <div class="pv-in">
+                  <MdiIcon name="fan" :size="26" class="pv-dim" /><span class="grow" /><span
+                    class="pv-soft"
+                    >Off</span
+                  >
+                </div>
+              </div>
+              <div class="pv-card pv-keys">
+                <span class="pv-key on">Heat</span><span class="pv-key">Cool</span>
+                <span class="pv-track"><i /></span>
+                <div class="pv-badges">
+                  <span class="pv-badge warn">Heat</span>
+                  <span class="pv-badge danger">Alert</span>
+                </div>
+              </div>
+              <div class="pv-home">
+                <span class="pv-home-label">Home</span>
+                <div class="pv-home-strip">
+                  <span class="pv-person">Alex</span>
+                  <span class="pv-person">Sam</span>
+                </div>
               </div>
             </div>
-            <div class="pv-card">
-              <div class="pv-head">Fan</div>
-              <i class="pv-line" />
-              <div class="pv-in">
-                <MdiIcon name="fan" :size="26" class="pv-dim" /><span class="grow" /><span
-                  class="pv-soft"
-                  >Off</span
-                >
-              </div>
+            <div class="pv-scrim" aria-hidden="true">
+              <span class="pv-scrim-card">Card</span>
             </div>
-            <div class="pv-card pv-keys">
-              <span class="pv-key on">Heat</span><span class="pv-key">Cool</span>
-              <span class="pv-track"><i /></span>
+            <div class="pv-nav">
+              <span class="on"><MdiIcon name="home" :size="18" /></span
+              ><span><MdiIcon name="view-dashboard" :size="18" /></span
+              ><span><MdiIcon name="cog" :size="18" /></span>
             </div>
           </div>
-          <div class="pv-nav">
-            <span class="on"><MdiIcon name="home" :size="18" /></span
-            ><span><MdiIcon name="view-dashboard" :size="18" /></span
-            ><span><MdiIcon name="cog" :size="18" /></span>
+          <div class="pv-bands">
+            <span>Header</span>
+            <span>Cards</span>
+            <span>Nav</span>
           </div>
         </div>
 
         <h3>Pastels</h3>
+        <p class="muted hint">{{ PASTELS_INTRO }}</p>
         <div class="colours">
           <div
             v-for="k in PASTEL_KEYS"
@@ -252,7 +285,9 @@ const vars = computed(() => themeVars(shown.value))
               :disabled="!draft"
               @update:model-value="setColour('pastels', k, $event!)"
             />
-            <span class="grow">{{ label(k) }}</span>
+            <span class="grow">
+              <span class="colour-title">{{ pastelLabel(k) }}</span>
+            </span>
             <button
               v-if="draft && draft.pastels[k]"
               class="icon quiet"
@@ -264,33 +299,35 @@ const vars = computed(() => themeVars(shown.value))
           </div>
         </div>
 
-        <h3>Roles</h3>
-        <p class="muted hint">
-          Card edge is every tile's border; a tile can override it with its own border colour.
-        </p>
-        <div class="colours">
-          <div
-            v-for="k in roleKeys"
-            :key="k"
-            class="colour"
-            :class="{ own: draft && draft.roles[k] }"
-          >
-            <ColorInput
-              :model-value="shown.roles[k]"
-              :disabled="!draft"
-              @update:model-value="setColour('roles', k, $event!)"
-            />
-            <span class="grow">{{ label(k) }}</span>
-            <button
-              v-if="draft && draft.roles[k]"
-              class="icon quiet"
-              title="Back to the base's"
-              @click="reset('roles', k)"
+        <template v-for="section in roleSections" :key="section.id">
+          <h3>{{ section.title }}</h3>
+          <div class="colours">
+            <div
+              v-for="role in section.roles"
+              :key="role.key"
+              class="colour"
+              :class="{ own: draft && draft.roles[role.key] }"
             >
-              <MdiIcon name="restore" :size="14" />
-            </button>
+              <ColorInput
+                :model-value="shown.roles[role.key]"
+                :disabled="!draft"
+                @update:model-value="setColour('roles', role.key, $event!)"
+              />
+              <span class="grow">
+                <span class="colour-title">{{ role.title }}</span>
+                <small class="muted colour-applies">{{ role.applies }}</small>
+              </span>
+              <button
+                v-if="draft && draft.roles[role.key]"
+                class="icon quiet"
+                title="Back to the base's"
+                @click="reset('roles', role.key)"
+              >
+                <MdiIcon name="restore" :size="14" />
+              </button>
+            </div>
           </div>
-        </div>
+        </template>
       </section>
     </div>
   </div>
@@ -380,43 +417,72 @@ const vars = computed(() => themeVars(shown.value))
 
 .colours {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 6px;
 }
 
 .colour {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  padding: 4px 6px;
+  padding: 6px;
   border-radius: 8px;
-  text-transform: capitalize;
 }
 
 .colour.own {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.colour-title {
+  display: block;
   font-weight: 500;
+  text-transform: capitalize;
+}
+
+.colour.own .colour-title {
+  font-weight: 600;
+}
+
+.colour-applies {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.35;
+  text-transform: none;
 }
 
 .colour :deep(.color-input) {
-  flex: 1;
-  min-width: 0;
+  flex: 0 0 auto;
+  margin-top: 2px;
 }
 
 /* The preview, drawn in the theme's colours. */
+.preview-wrap {
+  margin: 6px;
+}
+
 .preview {
+  position: relative;
   border-radius: 14px;
   overflow: hidden;
   background: var(--rc-page);
   color: var(--rc-ink);
   box-shadow: 0 0 0 6px #1d1d1f;
-  margin: 6px;
   font-size: 13px;
+}
+
+.pv-bands {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 10px 0;
+  font-size: 11px;
+  color: var(--muted, #888);
 }
 
 .pv-top {
   display: flex;
   align-items: center;
+  gap: 8px;
   height: 34px;
   padding-right: 12px;
   background: var(--rc-header);
@@ -428,6 +494,10 @@ const vars = computed(() => themeVars(shown.value))
   align-items: center;
   padding: 0 18px;
   background: var(--rc-header-dark);
+}
+
+.pv-stat {
+  color: var(--rc-accent-soft);
 }
 
 .pv-blue {
@@ -458,7 +528,11 @@ const vars = computed(() => themeVars(shown.value))
 
 .pv-line {
   height: 3px;
-  background: var(--rc-card-header);
+  background: var(--rc-accent-soft);
+}
+
+.pv-line.on {
+  background: var(--rc-p-yellow);
 }
 
 .pv-in {
@@ -508,11 +582,89 @@ const vars = computed(() => themeVars(shown.value))
   background: var(--rc-accent);
 }
 
+.pv-badges {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.pv-badge {
+  flex: 1;
+  padding: 3px 0;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--rc-key-on);
+  color: var(--rc-key-on-ink);
+}
+
+.pv-badge.warn {
+  background: var(--rc-warn);
+  color: var(--rc-key-on-ink);
+}
+
+.pv-badge.danger {
+  background: var(--rc-danger);
+  color: var(--rc-ink);
+}
+
+.pv-home {
+  grid-column: 1 / -1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--rc-home);
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pv-home-label {
+  padding: 6px 10px 2px;
+  font-size: 11px;
+  color: var(--rc-ink);
+}
+
+.pv-home-strip {
+  display: flex;
+  gap: 12px;
+  padding: 6px 10px;
+  background: var(--rc-home-strip);
+}
+
+.pv-person {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rc-ink-dark);
+}
+
+.pv-scrim {
+  position: absolute;
+  inset: 34px 0 38px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 10px;
+  pointer-events: none;
+  background: linear-gradient(135deg, transparent 55%, var(--rc-scrim) 55%);
+}
+
+.pv-scrim-card {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--rc-card);
+  border: 1px solid var(--rc-card-edge);
+  font-size: 11px;
+  color: var(--rc-ink);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 35%);
+}
+
 .pv-nav {
   display: flex;
   justify-content: space-evenly;
   border-top: 2px solid var(--rc-nav-line);
   background: var(--rc-nav);
+  color: var(--rc-ink);
 }
 
 .pv-nav span {
@@ -524,6 +676,6 @@ const vars = computed(() => themeVars(shown.value))
 
 .pv-nav span.on {
   background: var(--rc-nav-on);
-  color: var(--rc-key-on-ink);
+  color: var(--rc-ink);
 }
 </style>

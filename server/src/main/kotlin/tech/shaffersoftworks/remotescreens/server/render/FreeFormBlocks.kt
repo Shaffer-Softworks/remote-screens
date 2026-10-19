@@ -25,7 +25,6 @@ import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
-import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Node
@@ -72,7 +71,6 @@ private object BlockMetrics {
     /** Reserved width beside the progress bar for elapsed/duration captions. */
     const val MEDIA_TIME_LABELS_W_DP = 80f
     const val MEDIA_VOLUME_PERCENT = 100
-    const val MEDIA_REFRESH_S = 5
     const val MEDIA_SECONDS_PER_MINUTE = 60
     const val MEDIA_TIME_PAD = 2
     const val FORECAST_DAY_W_DP = 56f
@@ -90,11 +88,22 @@ private object BlockMetrics {
     const val WEATHER_NATURAL_H = 100f
     const val WEATHER_ICON_DP = 48f
     const val WEATHER_TEMP_SP = 48f
+    const val WEATHER_TEMP_WEIGHT = 100f
     const val WEATHER_TUNE_DP = 28f
     const val WEATHER_GAP_DP = 12f
     const val WEATHER_PAD_DP = 12f
+    const val WEATHER_CAPTION_SP = 13f
+    const val WEATHER_CAPTION_GAP_DP = 8f
     const val NEXT_EVENT_NATURAL = 200f
     const val NEXT_EVENT_PAD_DP = 16f
+    /** Day / time / title / meta — same hierarchy as the home-panel next-event block. */
+    const val NEXT_EVENT_DAY_SP = 18f
+    const val NEXT_EVENT_TIME_SP = 40f
+    const val NEXT_EVENT_TITLE_SP = 16f
+    const val NEXT_EVENT_META_SP = 13f
+    const val NEXT_EVENT_TITLE_GAP_DP = 12f
+    const val NEXT_EVENT_META_GAP_DP = 4f
+    const val NEXT_EVENT_TIME_WEIGHT = 100f
     const val LED_DEFAULT_DP = 16f
     const val LED_MIN_DP = 8f
     const val LED_MAX_DP = 64f
@@ -452,7 +461,7 @@ private fun DocContext.bindMediaBar(node: Node, id: String) {
     predict(ActionRef(node.id, "play_pause"), id)
     predict(ActionRef(node.id, "volume"), id)
     predict(ActionRef(node.id, "seek"), id)
-    refreshEvery(BlockMetrics.MEDIA_REFRESH_S)
+    // Progress and metadata are variables from entity state; a timed full rebuild only flashed the home page.
 }
 
 private fun formatMediaTime(seconds: Double): String {
@@ -572,49 +581,54 @@ private fun DocContext.presenceNode(node: Node, self: Dims, axis: Axis, pages: P
     }
 }
 
-/** Current weather: caption, condition icon, large temp, tune → card. */
+/** Current weather: left-stacked caption, then icon + large temp + tune (RPI home style). */
 private fun DocContext.weatherNowNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
     val id = node.bind?.entityId
     val ink = node.props["ink"]?.let { paint(it) } ?: role(Role.INK)
     val caption = node.props["text"]?.takeIf { it.isNotBlank() }
         ?: i18n.t("ui.temperature_outside_now")
     if (id != null) bindWeatherNow(node, id)
+    val cardRef = id?.let { ActionRef("e:$it", "card") }
     scope.Column(
-        styled(node, axis, pages, measured(node, axis, self))
-            .padding(units.px(BlockMetrics.WEATHER_PAD_DP)),
+        tap(
+            styled(node, axis, pages, measured(node, axis, self))
+                .padding(units.px(BlockMetrics.WEATHER_PAD_DP)),
+            cardRef,
+        ),
     ) {
         val doc = this@weatherNowNode
-        doc.label(caption.uppercase(doc.i18n.locale), Type.CAPTION, ink)
-        Spacer(Modifier.verticalWeight(1f))
-        Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+        doc.label(
+            caption.uppercase(doc.i18n.locale),
+            BlockMetrics.WEATHER_CAPTION_SP,
+            ink,
+        )
+        Spacer(Modifier.height(doc.units.px(BlockMetrics.WEATHER_CAPTION_GAP_DP)))
+        Row(vertical = RcVerticalPositioning.Center) {
             val condition = id?.let { doc.states[it]?.state }.orEmpty()
-            doc.icon(Present.weatherIcon(condition), BlockMetrics.WEATHER_ICON_DP, ink)
+            doc.weatherStateIcon(
+                condition,
+                BlockMetrics.WEATHER_ICON_DP,
+                fallbackColor = ink,
+            )
             Spacer(Modifier.width(doc.units.px(BlockMetrics.WEATHER_GAP_DP)))
             if (id != null) {
                 doc.label(
                     doc.text(Vars.tile(node.id, "temp")),
                     BlockMetrics.WEATHER_TEMP_SP,
                     ink,
-                    Weight.LIGHT,
+                    BlockMetrics.WEATHER_TEMP_WEIGHT,
                 )
             } else {
-                doc.label("—", BlockMetrics.WEATHER_TEMP_SP, ink, Weight.LIGHT)
+                doc.label(
+                    "—",
+                    BlockMetrics.WEATHER_TEMP_SP,
+                    ink,
+                    BlockMetrics.WEATHER_TEMP_WEIGHT,
+                )
             }
-            Box(Modifier.horizontalWeight(1f))
             if (id != null) {
-                Box(
-                    doc.tap(
-                        Modifier.size(
-                            doc.units.px(BlockMetrics.WEATHER_TUNE_DP + BlockMetrics.WEATHER_GAP_DP),
-                            doc.units.px(BlockMetrics.WEATHER_TUNE_DP + BlockMetrics.WEATHER_GAP_DP),
-                        ),
-                        ActionRef("e:$id", "card"),
-                    ),
-                    horizontal = RcHorizontalPositioning.Center,
-                    vertical = RcVerticalPositioning.Center,
-                ) {
-                    doc.icon("tune", BlockMetrics.WEATHER_TUNE_DP, ink)
-                }
+                Spacer(Modifier.horizontalWeight(1f))
+                doc.icon("tune", BlockMetrics.WEATHER_TUNE_DP, ink)
             }
         }
     }
@@ -638,14 +652,16 @@ private fun DocContext.bindWeatherNow(node: Node, id: String) {
     }
 }
 
-/** Next calendar event card: day, large time, title, calendar · location. */
+/** Next calendar event card: left-stacked day, large time, title, calendar · location (RPI home style). */
 private fun DocContext.nextEventNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
     val calendars = listedEntities(node, "calendars", "calendar")
     val zone = runCatching { ZoneId.of(
         homeAssistantConfig.timeZone,
     ) }.getOrDefault(ZoneId.of("UTC"))
-    val dayColor = node.props["color"]?.let { paint(it) } ?: role(Role.ACCENT_DARK)
+    // Day defaults to soft ink so it reads on teal fills; override with `color` for accent-on-page.
+    val dayColor = node.props["color"]?.let { paint(it) } ?: role(Role.INK_SOFT)
     val ink = node.props["ink"]?.let { paint(it) } ?: role(Role.INK)
+    val metaInk = node.props["ink"]?.let { paint(it) } ?: role(Role.INK_SOFT)
     val calendarId = bindNextEventLeaf(node, calendars, zone)
     val cardRef = calendarId?.let { ActionRef("e:$it", "card") }
     scope.Column(
@@ -654,36 +670,32 @@ private fun DocContext.nextEventNode(node: Node, self: Dims, axis: Axis, pages: 
                 .padding(units.px(BlockMetrics.NEXT_EVENT_PAD_DP)),
             cardRef,
         ),
-        horizontal = RcHorizontalPositioning.Center,
     ) {
         val doc = this@nextEventNode
         doc.label(
             doc.text(Vars.tile(node.id, "ev.day")),
-            Type.CAPTION + 1f,
+            BlockMetrics.NEXT_EVENT_DAY_SP,
             dayColor,
-            align = RcTextAlign.Center,
+            Weight.LIGHT,
         )
         doc.label(
             doc.text(Vars.tile(node.id, "ev.time")),
-            Type.HEADLINE,
+            BlockMetrics.NEXT_EVENT_TIME_SP,
             ink,
-            Weight.MEDIUM,
-            align = RcTextAlign.Center,
+            BlockMetrics.NEXT_EVENT_TIME_WEIGHT,
         )
-        Spacer(Modifier.verticalWeight(1f))
+        Spacer(Modifier.height(doc.units.px(BlockMetrics.NEXT_EVENT_TITLE_GAP_DP)))
         doc.label(
             doc.text(Vars.tile(node.id, "ev.title")),
-            Type.BODY + 1f,
+            BlockMetrics.NEXT_EVENT_TITLE_SP,
             ink,
-            Weight.SEMI_BOLD,
             lines = 2,
-            align = RcTextAlign.Center,
         )
+        Spacer(Modifier.height(doc.units.px(BlockMetrics.NEXT_EVENT_META_GAP_DP)))
         doc.label(
             doc.text(Vars.tile(node.id, "ev.meta")),
-            Type.CAPTION,
-            ink,
-            align = RcTextAlign.Center,
+            BlockMetrics.NEXT_EVENT_META_SP,
+            metaInk,
         )
     }
 }

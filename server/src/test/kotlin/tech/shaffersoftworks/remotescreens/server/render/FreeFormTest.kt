@@ -805,6 +805,11 @@ class FreeFormTest {
         assertEquals("3:15", vars["e.media_player.living_room.dur"]?.value)
         assertTrue(vars.containsKey("e.media_player.living_room.progress"))
         assertTrue(vars.containsKey("e.media_player.living_room.level"))
+        assertEquals(
+            0,
+            doc.docContext.refreshSeconds,
+            "media bar updates are variables; a timed rebuild flashed the home page",
+        )
         assertTrue(
             doc.docContext.predicted.keys.any { it.startsWith("now|seek|") },
             "predicted: ${doc.docContext.predicted.keys}",

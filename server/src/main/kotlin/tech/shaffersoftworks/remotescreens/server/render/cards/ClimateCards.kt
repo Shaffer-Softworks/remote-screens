@@ -10,6 +10,7 @@ import tech.shaffersoftworks.remotescreens.server.render.Weight
 import tech.shaffersoftworks.remotescreens.server.render.gap
 import tech.shaffersoftworks.remotescreens.server.render.key
 import tech.shaffersoftworks.remotescreens.server.render.label
+import tech.shaffersoftworks.remotescreens.server.render.usesDualSetpoint
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
@@ -28,11 +29,7 @@ internal fun DocContext.climateCard(entityId: String, entityState: EntityState?)
         } else {
             CardChrome.TEMP_STEP_C
         }
-    val dualSetpoint = entityState?.supports(CardChrome.CLIMATE_TEMP_RANGE_FLAG) == true ||
-        entityState?.state == "heat_cool" ||
-        (entityState?.number(
-            "target_temp_high",
-        ) != null && entityState.number("target_temp_low") != null)
+    val dualSetpoint = entityState.usesDualSetpoint()
     gap(CardChrome.PANEL_CORNER_DP)
     if (dualSetpoint) {
         climateDualSetpoint(entityId, entityState, step)
@@ -76,7 +73,7 @@ internal fun DocContext.climateCard(entityId: String, entityState: EntityState?)
     structural(entityId) {
         listOf("hvac_modes", "preset_modes", "fan_modes", "swing_modes").joinToString("|") { key ->
             it?.list(key)?.joinToString() ?: ""
-        } + "|${it?.number("target_temp_high")}|${it?.number("target_temp_low")}"
+        } + "|${it?.state}|${it.usesDualSetpoint()}|${it?.number("target_temp_high")}|${it?.number("target_temp_low")}"
     }
     if (modes.isNotEmpty()) {
         section(i18n.t("ui.mode"))
