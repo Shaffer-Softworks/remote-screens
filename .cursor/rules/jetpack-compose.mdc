@@ -1,0 +1,72 @@
+---
+description: Apply when editing or creating Android Jetpack Compose UI elements
+globs: ["*Screen.kt", "*Component.kt", "*Composable.kt", "ui/**/*.kt"]
+alwaysApply: false
+---
+# Jetpack Compose Best Practices
+
+## UI Constraints
+- Build user interfaces exclusively using Jetpack Compose; do not use legacy XML layouts.
+- Emit zero or exactly one root layout node per Composable function.
+- Separate UI functions strictly: a Composable must either emit UI or return a calculation value, never both.
+
+## Modifiers Management
+- Accept `modifier: Modifier = Modifier` as the very first parameter of your Composable.
+- Pass this external modifier parameter exclusively onto the root layout node component within the UI block.
+- Do not layer internal layout/spacing constraints directly into the reusable element's parameters; keep them abstract.
+
+## State & Architecture
+- Prefer stateless Composables to allow maximizing code reusability.
+- Hoist state to the lowest common ancestor where the parameters are fully needed.
+- Utilize `remember` and `derivedStateOf` to handle calculations and limit unnecessary recomposition cycles.
+- Wrap views structurally in a `Scaffold` layout and respect the container's standard padding values.
+
+### 4.2 Use Lazy Containers for Large Lists
+For lists with potentially many items, always use `LazyColumn`, `LazyRow`, or `LazyVerticalGrid`. These components only compose and lay out visible items, preventing performance bottlenecks.
+
+❌ **BAD**
+```kotlin
+@Composable
+fun MyScrollableList(items: List<String>) {
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        items.forEach { Text(it) } // All items composed, even if not visible
+    }
+}
+```
+
+✅ **GOOD**
+```kotlin
+@Composable
+fun MyScrollableList(items: List<String>) {
+    LazyColumn {
+        items(items) { Text(it) } // Only visible items composed
+    }
+}
+```
+
+### 4.1 Optimize Recomposition with `remember` and `derivedStateOf`
+Use `remember` to cache values that don't change frequently across recompositions. Use `derivedStateOf` when a state is derived from other states and you want to avoid recomposing consumers unless the *derived* state actually changes.
+
+❌ **BAD**
+```kotlin
+@Composable
+fun MyListScreen(items: List<String>) {
+    val filteredItems = items.filter { it.contains("A") } // Re-calculated on every recomposition
+    LazyColumn {
+        items(filteredItems) { Text(it) }
+    }
+}
+```
+
+✅ **GOOD**
+```kotlin
+@Composable
+fun MyListScreen(items: List<String>) {
+    val filteredItems by remember(items) { // Only re-calculate if `items` changes
+        derivedStateOf { items.filter { it.contains("A") } }
+    }
+    LazyColumn {
+        items(filteredItems) { Text(it) }
+    }
+}
+```
