@@ -266,6 +266,9 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
         for ((slot, document) in state.documents) {
             if (loadedDocuments[slot] === document) continue
             val player = players.getValue(slot)
+            // Hide while swapping: a new main document defaults to the home page until PAGE is set, which
+            // otherwise flashes home on every rebuild (weather, to-do refresh, layout save, …).
+            player.visibility = View.INVISIBLE
             // Load with Home Assistant's zone so analog hands match the digital TIME/DATE vars.
             // Each document needs its own clock: CalendarSystemClock's calendar is not thread-safe.
             player.setDocument(
@@ -274,6 +277,10 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
             // Action listeners belong to the loaded document, so each new document needs its own.
             player.addIdActionListener { _, metadata ->
                 if (metadata != null) onAction(slot, document.revision, metadata)
+            }
+            if (slot == Slot.MAIN) {
+                player.setUserLocalInt(PAGE_VARIABLE, state.page)
+                appliedPage = state.page
             }
             for (value in state.values.values) player.applyValue(value)
             for ((name, bitmap) in state.bitmaps) player.setUserLocalBitmap(name, bitmap)

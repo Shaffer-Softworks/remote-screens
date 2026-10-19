@@ -40,6 +40,8 @@ internal interface SessionHost {
     var previewScreen: Screen?
     var previewJob: Job?
     var currentAlert: Alert?
+    /** The page the tablet last reported, baked into rebuilt main documents so they do not flash home. */
+    val page: Int
 
     fun screen(): Screen?
     suspend fun send(message: ServerMessage)

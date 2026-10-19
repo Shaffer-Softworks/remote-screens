@@ -40,6 +40,7 @@ internal class SessionDocument(
             screen,
             host.device,
             renderInput(context.renderDataRepository.forScreen(screen)),
+            initialPage = host.page,
         )
 
     suspend fun showMain(screen: Screen) {

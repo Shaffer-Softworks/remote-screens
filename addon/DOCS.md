@@ -144,8 +144,9 @@ screen's settings, pick its **Theme** and its **Dark theme**; the dark theme is 
 **Dark at night**, during the night hours. The editor's Day / Dark switch previews both.
 
 To make your own, open **Themes** on the editor's home page, duplicate any theme and change its colours. Each
-colour you leave alone follows the theme it was made from. Saving sends the change to every tablet wearing it;
-deleting it puts those screens back on RPI dark.
+colour you leave alone follows the theme it was made from. The Themes page groups roles (chrome, surfaces, ink,
+accents, keys, and so on) and says where each colour lands on the tablet; the preview above the list shows the
+main bands. Saving sends the change to every tablet wearing it; deleting it puts those screens back on RPI dark.
 
 ## Languages
 

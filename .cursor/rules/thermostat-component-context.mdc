@@ -12,7 +12,7 @@ alwaysApply: false
 - Layout: teal bar + "ADJUST THE TEMPERATURE"; CURRENT TEMP / humidity flanking the dial; HA-style mode bar (Heat/Cool · Heat · Cool · Off) + Fan mode cycle button.
 - Remote Compose cannot drag knobs → +/− keys. Single setpoint: − left, + right. Dual (Heat/Cool range): stacked +/− left for `temperature_low`, right for `temperature_high`.
 - Dual dial: orange heat arc (bottom → low), white gap (`DUAL_ARC_GAP_DEG`), blue cool arc → high; knobs at both ends; center shows action + orange `low` / blue `high` labels (`°` or `°F` from HA unit).
-- Dual detection (`isDual`): `supports(CLIMATE_TEMP_RANGE_FLAG)` (bit 2), state `heat_cool`, or both `target_temp_low`/`high` present. Structural key includes `isDual` so the document rebuilds when range appears.
+- Dual detection (`usesDualSetpoint`): **only** while state is `heat_cool` (or `auto` with both range targets). Feature flag / leftover `target_temp_*` must **not** keep dual UI in Heat/Cool/Off — that left stacked +/− beside humidity with no single target.
 - Catalogue already had `temperature_low` / `temperature_high` actions + predictions; panel predicts those in dual mode.
 - Demo: `climate.living_room` is `heat_cool` with low/high, humidity, fan modes, `supported_features` 59. Free-form + full Thermostat page bind it.
 - Editor: `NodeView` + `GridMockup` dual-dial mockups; palette entry in `nodes.ts`. Merge with main kept thermostat **and** dial/countdown/qr/… blocks from #50.

@@ -48,7 +48,6 @@ internal object ThermostatMetrics {
     const val READING_VALUE_SP = 70f
     /** +/− key size; Remote Compose cannot drag the dial as the RPI page does. */
     const val ADJUST_KEY_DP = 64f
-    const val SEG_EDGE_DP = 1f
     /** RPI tick gap outside the ring (`gap = 15f` on a 500.dp dial). */
     const val TICK_GAP_SHARE = 15f / 500f
     /** Both stops of the dial fill gradient are remote colour ids. */

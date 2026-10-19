@@ -21,7 +21,7 @@ import kotlin.math.sin
  * knobs at each end, action and target(s) in the middle.
  */
 @Suppress("LongMethod")
-internal fun DocContext.thermostatDial(tileId: String, entityId: String, diameterDp: Float, dual: Boolean) {
+internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: Boolean) {
     val strokeDp = diameterDp * ThermostatMetrics.RING_THICKNESS_SHARE
     val knobDp = diameterDp / 2f * ThermostatMetrics.KNOB_RADIUS_SHARE
     val knobRingDp = diameterDp / 2f * ThermostatMetrics.KNOB_RING_SHARE
@@ -183,7 +183,7 @@ internal fun DocContext.thermostatDial(tileId: String, entityId: String, diamete
                 }
             } else {
                 doc.label(
-                    doc.text(Vars.entity(entityId, Vars.KEY_VALUE)),
+                    doc.text(Vars.tile(tileId, "target")),
                     ThermostatMetrics.TARGET_LABEL_SP * layoutScale,
                     ink,
                     Weight.LIGHT,

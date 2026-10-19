@@ -30,13 +30,17 @@ private fun small(base: Float, layoutScale: Float) = maxOf(
     ThermostatMetrics.SMALL_LABEL_MIN_SP,
 )
 
-/** Dual low/high setpoints: range feature, `heat_cool`, or both target temps present. */
-private fun isDual(entityState: EntityState?): Boolean =
-    entityState?.supports(ThermostatMetrics.CLIMATE_TEMP_RANGE_FLAG) == true ||
-        entityState?.state == "heat_cool" ||
-        (entityState?.number(
-            "target_temp_high",
-        ) != null && entityState.number("target_temp_low") != null)
+/**
+ * Dual low/high setpoints only while HVAC is in Heat/Cool (or auto with a live range).
+ * Supporting the range feature flag is not enough — Heat and Cool use a single `temperature`.
+ */
+internal fun EntityState?.usesDualSetpoint(): Boolean =
+    when (this?.state) {
+        "heat_cool" -> true
+        "auto" ->
+            number("target_temp_low") != null && number("target_temp_high") != null
+        else -> false
+    }
 
 /**
  * Modes in HA more-info order (Heat/Cool, Heat, Cool, Off). Prefers `heat_cool`, else `auto`.
@@ -67,15 +71,16 @@ fun DocContext.thermostatPanel(tile: Tile, box: TileBox) {
         } else {
             ThermostatMetrics.TEMP_STEP_C
         }
-    val dual = isDual(entityState)
+    val dual = entityState.usesDualSetpoint()
     val modes = haModes(entityState?.list("hvac_modes").orEmpty())
     val fans = entityState?.list("fan_modes").orEmpty()
     structural(id) { s ->
         listOf(
+            s?.state ?: "",
             s?.list("hvac_modes")?.joinToString() ?: "",
             s?.list("fan_modes")?.joinToString() ?: "",
             s?.attr("fan_mode") ?: "",
-            isDual(s).toString(),
+            s.usesDualSetpoint().toString(),
             (s?.number("current_humidity") != null).toString(),
         ).joinToString("|")
     }
@@ -99,7 +104,7 @@ fun DocContext.thermostatPanel(tile: Tile, box: TileBox) {
     scope.Column(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@thermostatPanel
         doc.thermostatHeader(layoutScale)
-        doc.thermostatBody(tile.id, id, step, dual, layoutScale, box.h)
+        doc.thermostatBody(tile.id, step, dual, layoutScale, box.h)
         doc.thermostatModes(tile.id, id, modes, fans, layoutScale, box.w)
     }
 }
@@ -140,7 +145,6 @@ private fun DocContext.thermostatHeader(layoutScale: Float) {
  */
 private fun DocContext.thermostatBody(
     tileId: String,
-    entityId: String,
     step: Double,
     dual: Boolean,
     layoutScale: Float,
@@ -171,7 +175,7 @@ private fun DocContext.thermostatBody(
             )
         }
         Spacer(Modifier.width(doc.units.px(ThermostatMetrics.DIAL_SIDE_GAP_DP * layoutScale)))
-        doc.thermostatDial(tileId, entityId, dialDp, dual)
+        doc.thermostatDial(tileId, dialDp, dual)
         Spacer(Modifier.width(doc.units.px(ThermostatMetrics.DIAL_SIDE_GAP_DP * layoutScale)))
         if (dual) {
             doc.adjustKeys(tileId, "temperature_high", step, keyDp, layoutScale)
@@ -265,18 +269,22 @@ private fun DocContext.thermostatModes(
                         )
                         .background(doc.role(Role.PAGE)),
                 ) {
+                    val selected = states[entityId]?.state
                     modes.forEachIndexed { i, mode ->
                         if (i > 0) {
+                            // Same weight as the outer border so every cell edge reads like RPI / Material.
                             Box(
                                 Modifier.size(
-                                    doc.units.px(ThermostatMetrics.SEG_EDGE_DP),
+                                    doc.units.px(border),
                                     doc.units.px(segH),
-                                )
-                                    .background(accent),
+                                ).background(accent),
                             )
                         }
-                        val bg = doc.color(Vars.option(tileId, "seg", i, Vars.KEY_BG))
-                        val segInk = doc.color(Vars.option(tileId, "seg", i, Vars.KEY_INK))
+                        val on = modeSelected(selected, mode)
+                        val bg = doc.color(
+                            Vars.option(tileId, "seg", i, Vars.KEY_BG),
+                            (if (on) Role.ACCENT_DARK else Role.PAGE).argb,
+                        )
                         Row(
                             doc.tap(
                                 Modifier.size(
@@ -288,10 +296,11 @@ private fun DocContext.thermostatModes(
                             horizontal = RcRowHorizontalPositioning.Center,
                             vertical = RcVerticalPositioning.Center,
                         ) {
+                            // Fixed page ink (same as nav). Named seg ink starts at 0 and reads as dark on teal.
                             doc.icon(
                                 HA_MODE_ICONS[mode] ?: "thermostat",
                                 ThermostatMetrics.MODE_ICON_DP * layoutScale,
-                                segInk,
+                                ink,
                             )
                             Spacer(
                                 Modifier.width(
@@ -301,7 +310,7 @@ private fun DocContext.thermostatModes(
                             doc.label(
                                 doc.i18n.state("climate", mode),
                                 small(ThermostatMetrics.MODE_LABEL_SP, layoutScale),
-                                segInk,
+                                ink,
                             )
                         }
                     }
@@ -354,6 +363,12 @@ private fun DocContext.thermostatModes(
         }
     }
 }
+
+/** Whether [state] lights the mode cell for [mode] (`auto` ↔ `heat_cool`). */
+private fun modeSelected(state: String?, mode: String): Boolean =
+    state == mode ||
+        (mode == "heat_cool" && state == "auto") ||
+        (mode == "auto" && state == "heat_cool")
 
 /** Heat/Cool · Heat · Cool · Off from the entity's modes (`auto` stands in when there is no `heat_cool`). */
 private fun haModes(available: List<String>): List<String> {

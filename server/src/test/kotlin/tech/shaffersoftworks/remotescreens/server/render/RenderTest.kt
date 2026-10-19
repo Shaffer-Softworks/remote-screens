@@ -20,6 +20,7 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -182,10 +183,6 @@ class RenderTest {
         assertEquals("18°", vars["t.c1.low"]?.value)
         assertEquals("24°", vars["t.c1.high"]?.value)
         assertEquals(Role.ACCENT_DARK.argb, vars["o.c1.seg.0.bg"]?.asColor(), "Heat/Cool is lit")
-        val heatOnly = doc.vars(
-            states + ("climate.living_room" to states.getValue("climate.living_room").with("heat")),
-        )
-        assertEquals(Role.ACCENT_DARK.argb, heatOnly["o.c1.seg.1.bg"]?.asColor())
         assertTrue("c1|temperature_low|+0.5" in doc.docContext.predicted)
         assertTrue("c1|temperature_high|-0.5" in doc.docContext.predicted)
         assertTrue("c1|fan|on" in doc.docContext.predicted)
@@ -193,14 +190,55 @@ class RenderTest {
     }
 
     @Test
+    fun heatModeUsesASingleSetpointNotDualControls() {
+        val states = ha.states.value
+        val heatStates = states + (
+            "climate.living_room" to states.getValue("climate.living_room").with("heat")
+            )
+        val doc = ScreenRenderer.render(
+            DemoLayout.screen(),
+            tablet,
+            RenderInput(heatStates, i18n, ha.config.value, RenderData(), Themes.RPI),
+        )
+        assertTrue("c1|temperature|+0.5" in doc.docContext.predicted)
+        assertTrue("c1|temperature|-0.5" in doc.docContext.predicted)
+        assertFalse(
+            doc.docContext.predicted.keys.any { it.startsWith("c1|temperature_low|") },
+            "Heat must not keep dual low/high keys",
+        )
+        assertFalse(doc.docContext.predicted.keys.any { it.startsWith("c1|temperature_high|") })
+        val vars = doc.vars(heatStates)
+        assertEquals("21°", vars["t.c1.target"]?.value)
+        assertEquals(Role.ACCENT_DARK.argb, vars["o.c1.seg.1.bg"]?.asColor(), "Heat is lit")
+        assertTrue(
+            doc.structureChanged(states),
+            "switching Heat/Cool ↔ Heat must rebuild the dial and keys",
+        )
+    }
+
+    @Test
     fun aDocumentIsStaleOnlyWhenWhatIsDrawnChanges() {
         val doc = ScreenRenderer.render(DemoLayout.screen(), tablet, input())
         val states = ha.states.value
         assertFalse(doc.stale(states))
+        assertFalse(doc.structureChanged(states))
         val lamp = states.getValue("light.table_lamp")
         assertFalse(
             doc.stale(states + ("light.table_lamp" to lamp.with("on"))),
             "a state change is a value, not a rebuild",
+        )
+    }
+
+    @Test
+    fun aRebuildKeepsThePageTheTabletIsOn() {
+        val screen = DemoLayout.screen()
+        val onHome = ScreenRenderer.render(screen, tablet, input(), initialPage = 0)
+        val onLiving = ScreenRenderer.render(screen, tablet, input(), initialPage = 1)
+        assertEquals(0, onHome.homePage)
+        assertNotEquals(
+            onHome.bytes.toList(),
+            onLiving.bytes.toList(),
+            "initial page is baked into the document so a rebuild does not flash home",
         )
     }
 

@@ -316,6 +316,7 @@ class PlayerSession(
         override var currentAlert
             get() = this@PlayerSession.currentAlert
             set(value) { this@PlayerSession.currentAlert = value }
+        override val page get() = this@PlayerSession.page
 
         override fun screen(): Screen? = this@PlayerSession.screen()
         override suspend fun send(message: ServerMessage) = this@PlayerSession.send(message)
