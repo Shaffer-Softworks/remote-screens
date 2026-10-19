@@ -39,30 +39,6 @@
     <ID>LongMethod:SpecialtyTiles.kt:internal fun DocContext.weatherTile</ID>
     <ID>LongMethod:ThermostatBind.kt:internal fun DocContext.bindThermostat</ID>
     <ID>LongMethod:WeatherPanel.kt:fun DocContext.weatherPanel</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Pastel.PURPLE to 0xFF8E6CC9</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Pastel.PURPLE to 0xFFB39DDB</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Pastel.PURPLE to 0xFFC599FF</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Pastel.YELLOW to 0xFFE0A800</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Pastel.YELLOW to 0xFFFFC94D</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Pastel.YELLOW to 0xFFFFE600</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.ACCENT to 0xFF0F9E84</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.ACCENT to 0xFF14E1BA</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.ACCENT_DARK to 0xFF00C8A4</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.HEADER to 0xFF000000</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.HEADER to 0xFF494949</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.HEADER to 0xFFFFFFFF</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.HOME to 0xFF0F9E84</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.HOME to 0xFF14E1BA</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.INK_FAINT to 0xFF5C5C5C</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.INK_FAINT to 0xFF9E9E9E</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.INK_FAINT to 0xFFB5B5B8</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.NAV_LINE to 0xFF03DAC5</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.NAV_LINE to 0xFF0F9E84</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.NAV_LINE to 0xFFFFFFFF</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.PAGE to 0xFF000000</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.PAGE to 0xFF494949</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$Role.PAGE to 0xFFEDEBE7</ID>
-    <ID>MaxLineLength:BuiltinThemes.kt:Themes$private</ID>
     <ID>MaxLineLength:EntityTile.kt:internal</ID>
     <ID>MaxLineLength:FreeFormControls.kt:ChoiceSet$internal</ID>
     <ID>MaxLineLength:FreeFormControls.kt:val verb = when (domain) { "light" -&gt; "brightness"; "fan" -&gt; "percentage"; "cover" -&gt; "position"; "media_player" -&gt; "volume"; else -&gt; "value" }</ID>

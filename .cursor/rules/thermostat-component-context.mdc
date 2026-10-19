@@ -1,35 +1,58 @@
 ---
-description: Free-form thermostat leaf + full climate tile — HA Heat/Cool dual dial, mode/fan bar, editor mockups, demo entity, CI gotchas (PR #53, merged Oct 2026)
-globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/ThermostatPanel.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/FreeFormBlocks.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/data/homeassistant/demo/DemoHome.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/data/homeassistant/demo/DemoLayout.kt,server/src/test/kotlin/tech/shaffersoftworks/remotescreens/server/render/FreeFormTest.kt,server/src/test/kotlin/tech/shaffersoftworks/remotescreens/server/render/RenderTest.kt,editor/src/components/NodeView.vue,editor/src/components/GridMockup.vue,editor/src/model/nodes.ts,shared/src/main/kotlin/tech/shaffersoftworks/remotescreens/shared/Layout.kt,server/src/main/resources/translations/**
+description: Thermostat panel — dual dial, mode/fan bar corners, HA dual set_temperature payload, sticky paint, local HA deploy (Oct 2026)
+globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/ThermostatPanel.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/ThermostatDial.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/ThermostatBind.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/ThermostatMetrics.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/FreeFormBlocks.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/Widgets.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/action/ServiceDataBuilder.kt,server/src/test/kotlin/tech/shaffersoftworks/remotescreens/server/player/action/ActionRouterTest.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/data/homeassistant/demo/DemoHome.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/data/homeassistant/demo/DemoLayout.kt,server/src/test/kotlin/tech/shaffersoftworks/remotescreens/server/render/FreeFormTest.kt,server/src/test/kotlin/tech/shaffersoftworks/remotescreens/server/render/RenderTest.kt,editor/src/components/NodeView.vue,editor/src/components/GridMockup.vue,editor/src/model/nodes.ts,tools/deploy_ha_dev.sh,catalogue/climate.yaml
 alwaysApply: false
 ---
 
-# Thermostat component (PR #53, merged Oct 2026)
+# Thermostat component (PR #53 + follow-ups, Oct 2026)
 
-## What landed
+## What landed (UI)
 
 - Free-form node type `thermostat` → `thermostatNode` in `FreeFormBlocks.kt` → same drawing as full climate tile via `thermostatPanel` in `ThermostatPanel.kt`.
 - Layout: teal bar + "ADJUST THE TEMPERATURE"; CURRENT TEMP / humidity flanking the dial; HA-style mode bar (Heat/Cool · Heat · Cool · Off) + Fan mode cycle button.
 - Remote Compose cannot drag knobs → +/− keys. Single setpoint: − left, + right. Dual (Heat/Cool range): stacked +/− left for `temperature_low`, right for `temperature_high`.
-- Dual dial: orange heat arc (bottom → low), white gap (`DUAL_ARC_GAP_DEG`), blue cool arc → high; knobs at both ends; center shows action + orange `low` / blue `high` labels (`°` or `°F` from HA unit).
-- Dual detection (`usesDualSetpoint`): **only** while state is `heat_cool` (or `auto` with both range targets). Feature flag / leftover `target_temp_*` must **not** keep dual UI in Heat/Cool/Off — that left stacked +/− beside humidity with no single target.
-- Catalogue already had `temperature_low` / `temperature_high` actions + predictions; panel predicts those in dual mode.
-- Demo: `climate.living_room` is `heat_cool` with low/high, humidity, fan modes, `supported_features` 59. Free-form + full Thermostat page bind it.
-- Editor: `NodeView` + `GridMockup` dual-dial mockups; palette entry in `nodes.ts`. Merge with main kept thermostat **and** dial/countdown/qr/… blocks from #50.
+- Dual dial: orange heat arc (bottom → low), white gap (`DUAL_ARC_GAP_DEG`), blue cool arc → high; knobs at both ends; center shows action + orange `low` / blue `high` labels.
+- Dual detection (`EntityState?.usesDualSetpoint()`): **only** while state is `heat_cool` (or `auto` with both range targets). Leftover `target_temp_*` must **not** keep dual UI in Heat/Cool/Off. Include `state` in `structural {…}` so mode changes rebuild the document.
+- Mode bar: per-segment **background** is a named colour (`seg.*.bg`); icon/label use fixed `role(Role.INK)`.
+- Demo: `climate.living_room` is `heat_cool` with low/high, humidity, fan modes. Editor mockups in `NodeView` / `GridMockup` (`.th-modes` / `.th-fan`: `border-radius: 10px`, `overflow: hidden`).
 
-## Gotchas
+## Gotchas (controls — verified on HA 2026-10-19)
 
-- **i18n:** every `ui.*` key in `en.json` must exist in de/nl/fr/es/it/pt/pl (`I18nTest`). `ui.fan_mode` was the miss that failed CI.
-- **ThemesTest:** no bare `0xAARRGGBB` (8 hex digits) outside `Themes.kt`. Use `0xFFFFFF` (6 digits) or `0xFF000000.toInt()`.
-- **Cursor trailer:** commits can get `Co-authored-by: Cursor`; strip with `git commit-tree` + `--force-with-lease` on the feature branch only (user must ask / approve rewrite).
-- Prefer merge from `main` over rebase on shared PR branches (`avoid-force-push` rule).
+- **Dual `set_temperature` needs both sides.** Catalogue verbs send only `target_temp_low` or only `target_temp_high`. Real Home Assistant rejects that (`vol.Inclusive`). Demo accepted one-sided updates, so tests missed it until `ActionRouterTest.aHeatCool*`.
+- **Fix:** `ServiceDataBuilder.completeClimateTemperatureRange` — after building catalogue data, pair the missing side from the entity; coerce so low ≤ high; if a lone `temperature` arrives while the entity is in range mode, rewrite to a delta on both ends (`rewriteSingleTemperatureToRange`).
+- **Detekt:** keep those helpers ≤2 `return`s (`ReturnCount`); extract `pairClimateRangeTargets` rather than early-return chains.
+
+## Gotchas (mode / fan chrome)
+
+- **Do not** stack `.border(accent)` on top of `.background(accent)` with square inner cells — outer stroke + square plate produce a kinked / double-edge corner (seen on the tablet).
+- **Do:** outer = `clip(rounded(corner))` + `background(accent)` + `padding(border)`; inner plate = `clip(rounded(corner - border))` + page/segment fills. Solid ring, concentric corners (same idea as editor `overflow: hidden`).
+- **Fan tap:** put `doc.tap` on the **inner** page-coloured plate, not a padded outer Box. Layout hit-testing can miss the parent when an opaque child fills it.
+- Mode segment taps stay on each cell `Row` (unchanged).
+
+## Gotchas (paint)
+
+- Dial `radialGradient` sticks on the shared document paint. Icons later (nav, modes) fill with the faded gradient → grey. `clearShader()` before solid paints — see `nav-icon-paint-context.mdc`. `alpha(1f)` alone does not.
+
+## Local HA deploy
+
+- Script: [`tools/deploy_ha_dev.sh`](tools/deploy_ha_dev.sh) — package → Samba `local_apps/remote_screens` → optional Supervisor rebuild.
+- Dev slug: `local_remote_screens` (**Remote Screens dev**). Keep store add-on stopped — both want host port 8100.
+- Credentials: Samba via `ha_get_app(slug=core_samba)` options (never commit passwords). Rebuild with `ha_manage_app(slug=local_remote_screens, action=rebuild)` when `HA_TOKEN` is unset.
+- Same `addon/VERSION` → rebuild; bump version for store-style update.
 
 ## Verify
 
-`./gradlew :server:test :server:detekt` — especially `RenderTest.aFullClimateTileIsTheRpiThermostatPage`, `FreeFormTest.aThermostatComponentStepsAndSetsModesThroughTheRouter`, `I18nTest`, `ThemesTest.onlyThemesHoldsHexColours`.
+```bash
+./gradlew :server:detekt :server:test \
+  --tests 'tech.shaffersoftworks.remotescreens.server.player.action.ActionRouterTest' \
+  --tests 'tech.shaffersoftworks.remotescreens.server.render.RenderTest' \
+  --tests 'tech.shaffersoftworks.remotescreens.server.render.FreeFormTest'
+```
 
-## Not in this PR / follow-ups
+Especially: `aHeatCoolLowStepSendsBothRangeTargets`, `aHeatCoolHighStepSendsBothRangeTargets`, `aHeatCoolLowStepThatCrossesHighRaisesHigh`, `aFullClimateTileIsTheRpiThermostatPage`, `aThermostatComponentStepsAndSetsModesThroughTheRouter`.
 
-- Reverted earlier attempt to make SlotDocument predictions a mutable map — leave predictions as-is.
-- Bedroom `climate.bedroom` is also dual but unused by the Thermostat page; living_room is the demo target.
+## Out of scope / follow-ups
+
 - No continuous dial drag until Remote Compose supports it.
+- Bedroom `climate.bedroom` is dual but unused by the Thermostat page; living_room is the demo target.
+- Outreach paste drafts were intentionally **not** committed (`docs/outreach/` removed from the tree).

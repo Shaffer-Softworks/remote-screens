@@ -94,7 +94,14 @@ fun DocContext.icon(name: String?, sizeDp: Float, color: RcColor, visible: RcInt
     scope.Canvas(modifier) {
         save {
             scale(px / ICON_VIEWPORT, px / ICON_VIEWPORT)
-            paint { color(color); style(RcPaintStyle.Fill) }
+            // Paint is shared for the whole document. The dial's gradient stays installed
+            // until cleared, so icons drawn later (nav, modes) fill with it and look grey.
+            paint {
+                clearShader()
+                color(color)
+                alpha(1f)
+                style(RcPaintStyle.Fill)
+            }
             drawPath(iconPath)
         }
     }
@@ -121,7 +128,12 @@ fun DocContext.weatherStateIcon(
         save {
             scale(px / HaWeatherIcons.VIEWPORT, px / HaWeatherIcons.VIEWPORT)
             for ((iconPath, color) in layers) {
-                paint { color(color); style(RcPaintStyle.Fill) }
+                paint {
+                    clearShader()
+                    color(color)
+                    alpha(1f)
+                    style(RcPaintStyle.Fill)
+                }
                 drawPath(iconPath)
             }
         }

@@ -83,7 +83,7 @@ internal object CardChrome {
     const val TODO_CARD_TAKE = 12
     const val WEATHER_REFRESH_S = 1800
     const val HISTORY_REFRESH_S = 300
-    /** Opaque alpha in the high byte; not a theme colour (kept out of BuiltinThemes.kt hex inventory). */
+    /** Opaque alpha in the high byte; not a theme colour (see Color.kt / Themes.kt inventory). */
     const val OPAQUE_ALPHA_BYTE = 0xFF
     const val OPAQUE_ARGB = OPAQUE_ALPHA_BYTE shl 24
     const val ALPHA_OPAQUE = 0xFF

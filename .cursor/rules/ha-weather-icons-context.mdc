@@ -13,7 +13,7 @@ Weather UI uses Home Assistant’s **multi-colour** state SVGs (`frontend` `src/
 - **Draw:** `DocContext.weatherStateIcon(condition, sizeDp, nightTime?, fallbackColor?)` in `Widgets.kt`.
 - **Layers / colours:** `HaWeatherIcons.pieces` + default fills (`#FDD93C` sun, `#FCF497` moon, cloud/rain/snow).
 - **Paths:** `server/src/main/resources/ha-weather-paths.json` — absolute **M / L / C / Z** only (same normalisation as `tools/generate_icons.py` `normalise`).
-- **Call sites:** `WeatherPanel`, `Home` weather, `SpecialtyTiles.weatherTile`, `InfoCards.weatherCard`, `FreeFormBlocks` forecast.
+- **Call sites:** `WeatherPanel`, `Home` weather, `SpecialtyTiles.weatherTile`, `InfoCards.weatherCard`, `FreeFormBlocks` `forecast` **and** `weather` (`weatherNowNode` — not monochrome `Present.weatherIcon`). Editor `NodeView` weather row uses `HaWeatherIcon`.
 - **Fallback:** `exceptional` / unknown → `Present.weatherIcon` (MDI) + `fallbackColor`. Keep `Present.weatherIcon` for generic `iconFor` entity chrome.
 
 ## Rc.path constraint

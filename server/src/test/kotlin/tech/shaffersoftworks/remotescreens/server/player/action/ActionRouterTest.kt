@@ -37,8 +37,37 @@ class ActionRouterTest {
 
     @Test
     fun aStepCountsFromTheCurrentTarget() {
+        // Living room is heat_cool — a single temperature step becomes a range shift.
         tap("t4|temperature|+0.5")
-        assertEquals(21.5, (ha.calls.last().third["temperature"] as JsonPrimitive).doubleOrNull)
+        val data = ha.calls.last().third
+        assertEquals(18.5, (data["target_temp_low"] as JsonPrimitive).doubleOrNull)
+        assertEquals(24.5, (data["target_temp_high"] as JsonPrimitive).doubleOrNull)
+        assertTrue("temperature" !in data)
+    }
+
+    @Test
+    fun aHeatCoolLowStepSendsBothRangeTargets() {
+        tap("c1|temperature_low|+0.5")
+        val data = ha.calls.last().third
+        assertEquals("set_temperature", ha.calls.last().second)
+        assertEquals(18.5, (data["target_temp_low"] as JsonPrimitive).doubleOrNull)
+        assertEquals(24.0, (data["target_temp_high"] as JsonPrimitive).doubleOrNull)
+    }
+
+    @Test
+    fun aHeatCoolHighStepSendsBothRangeTargets() {
+        tap("c1|temperature_high|-0.5")
+        val data = ha.calls.last().third
+        assertEquals(18.0, (data["target_temp_low"] as JsonPrimitive).doubleOrNull)
+        assertEquals(23.5, (data["target_temp_high"] as JsonPrimitive).doubleOrNull)
+    }
+
+    @Test
+    fun aHeatCoolLowStepThatCrossesHighRaisesHigh() {
+        tap("c1|temperature_low|+10")
+        val data = ha.calls.last().third
+        assertEquals(28.0, (data["target_temp_low"] as JsonPrimitive).doubleOrNull)
+        assertEquals(28.0, (data["target_temp_high"] as JsonPrimitive).doubleOrNull)
     }
 
     @Test

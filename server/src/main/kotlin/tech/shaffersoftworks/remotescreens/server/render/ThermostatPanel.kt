@@ -5,13 +5,11 @@ package tech.shaffersoftworks.remotescreens.server.render
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
 
 import androidx.compose.remote.creation.dsl.Modifier
-import androidx.compose.remote.creation.dsl.RcBorderShape
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
-import androidx.compose.remote.creation.dsl.border
 import androidx.compose.remote.creation.dsl.clip
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.fillMaxWidth
@@ -257,61 +255,73 @@ private fun DocContext.thermostatModes(
         horizontal = RcHorizontalPositioning.Center,
     ) {
         val doc = this@thermostatModes
+
         Row(vertical = RcVerticalPositioning.Center) {
+            // Ring = accent fill + padding (no stroke). A stroke on top of the fill draws a
+            // second edge; square inner cells then kink the corner. Clip the plate to the
+            // inner radius so both edges stay concentric (editor: border-radius + overflow).
+            val borderPx = doc.units.px(border)
+            val innerCorner = (corner - border).coerceAtLeast(0f)
             if (modes.isNotEmpty()) {
-                Row(
-                    Modifier.clip(doc.rounded(corner))
-                        .border(
-                            doc.units.px(border),
-                            doc.units.px(corner),
-                            accent,
-                            RcBorderShape.RoundedRectangle,
-                        )
-                        .background(doc.role(Role.PAGE)),
+                val innerW = modes.size * segW + (modes.size - 1) * border
+                val frameW = innerW + border * 2
+                Box(
+                    Modifier.size(
+                        doc.units.px(frameW),
+                        doc.units.px(segH + border * 2),
+                    )
+                        .clip(doc.rounded(corner))
+                        .background(accent)
+                        .padding(borderPx),
                 ) {
-                    val selected = states[entityId]?.state
-                    modes.forEachIndexed { i, mode ->
-                        if (i > 0) {
-                            // Same weight as the outer border so every cell edge reads like RPI / Material.
-                            Box(
-                                Modifier.size(
-                                    doc.units.px(border),
-                                    doc.units.px(segH),
-                                ).background(accent),
+                    Row(
+                        Modifier.size(doc.units.px(innerW), doc.units.px(segH))
+                            .clip(doc.rounded(innerCorner)),
+                    ) {
+                        val selected = states[entityId]?.state
+                        modes.forEachIndexed { i, mode ->
+                            if (i > 0) {
+                                Box(
+                                    Modifier.size(
+                                        doc.units.px(border),
+                                        doc.units.px(segH),
+                                    ).background(accent),
+                                )
+                            }
+                            val on = modeSelected(selected, mode)
+                            val bg = doc.color(
+                                Vars.option(tileId, "seg", i, Vars.KEY_BG),
+                                (if (on) Role.ACCENT_DARK else Role.PAGE).argb,
                             )
-                        }
-                        val on = modeSelected(selected, mode)
-                        val bg = doc.color(
-                            Vars.option(tileId, "seg", i, Vars.KEY_BG),
-                            (if (on) Role.ACCENT_DARK else Role.PAGE).argb,
-                        )
-                        Row(
-                            doc.tap(
-                                Modifier.size(
-                                    doc.units.px(segW),
-                                    doc.units.px(segH),
-                                ).background(bg),
-                                ActionRef(tileId, "mode", mode),
-                            ),
-                            horizontal = RcRowHorizontalPositioning.Center,
-                            vertical = RcVerticalPositioning.Center,
-                        ) {
-                            // Fixed page ink (same as nav). Named seg ink starts at 0 and reads as dark on teal.
-                            doc.icon(
-                                HA_MODE_ICONS[mode] ?: "thermostat",
-                                ThermostatMetrics.MODE_ICON_DP * layoutScale,
-                                ink,
-                            )
-                            Spacer(
-                                Modifier.width(
-                                    doc.units.px(ThermostatMetrics.MODE_ICON_GAP_DP * layoutScale),
+                            Row(
+                                doc.tap(
+                                    Modifier.size(
+                                        doc.units.px(segW),
+                                        doc.units.px(segH),
+                                    ).background(bg),
+                                    ActionRef(tileId, "mode", mode),
                                 ),
-                            )
-                            doc.label(
-                                doc.i18n.state("climate", mode),
-                                small(ThermostatMetrics.MODE_LABEL_SP, layoutScale),
-                                ink,
-                            )
+                                horizontal = RcRowHorizontalPositioning.Center,
+                                vertical = RcVerticalPositioning.Center,
+                            ) {
+                                doc.icon(
+                                    HA_MODE_ICONS[mode] ?: "thermostat",
+                                    ThermostatMetrics.MODE_ICON_DP * layoutScale,
+                                    ink,
+                                )
+                                Spacer(
+                                    Modifier.width(
+                                        doc.units.px(
+                                            ThermostatMetrics.MODE_ICON_GAP_DP * layoutScale,
+                                        ),
+                                    ),
+                                )
+                                doc.label(
+                                    doc.i18n.state("climate", mode),
+                                    small(ThermostatMetrics.MODE_LABEL_SP, layoutScale),
+                                    ink,
+                                )
+                            }
                         }
                     }
                 }
@@ -320,43 +330,46 @@ private fun DocContext.thermostatModes(
                 Spacer(
                     Modifier.width(doc.units.px(ThermostatMetrics.MODE_ROW_GAP_DP * layoutScale)),
                 )
-                Row(
-                    doc.tap(
-                        Modifier.size(
-                            doc.units.px(ThermostatMetrics.FAN_BUTTON_WIDTH_DP * layoutScale),
-                            doc.units.px(segH),
-                        )
-                            .clip(doc.rounded(corner))
-                            .border(
-                                doc.units.px(border),
-                                doc.units.px(corner),
-                                accent,
-                                RcBorderShape.RoundedRectangle,
-                            )
-                            .background(doc.role(Role.PAGE))
-                            .padding(doc.units.px(ThermostatMetrics.FAN_PAD_DP * layoutScale), 0f),
-                        ActionRef(tileId, "fan", nextFan),
-                    ),
-                    vertical = RcVerticalPositioning.Center,
-                ) {
-                    doc.icon("fan", ThermostatMetrics.FAN_ICON_DP * layoutScale, ink)
-                    Spacer(
-                        Modifier.width(
-                            doc.units.px(ThermostatMetrics.MODE_ICON_GAP_DP * layoutScale),
-                        ),
+                val fanPad = doc.units.px(ThermostatMetrics.FAN_PAD_DP * layoutScale)
+                val fanInnerW = ThermostatMetrics.FAN_BUTTON_WIDTH_DP * layoutScale
+                Box(
+                    Modifier.size(
+                        doc.units.px(fanInnerW + border * 2),
+                        doc.units.px(segH + border * 2),
                     )
-                    Column {
-                        doc.label(
-                            doc.i18n.t("ui.fan_mode"),
-                            small(ThermostatMetrics.FAN_CAPTION_SP, layoutScale),
-                            ink,
+                        .clip(doc.rounded(corner))
+                        .background(accent)
+                        .padding(borderPx),
+                ) {
+                    Row(
+                        doc.tap(
+                            Modifier.size(doc.units.px(fanInnerW), doc.units.px(segH))
+                                .clip(doc.rounded(innerCorner))
+                                .background(doc.role(Role.PAGE))
+                                .padding(fanPad, 0f, fanPad, 0f),
+                            ActionRef(tileId, "fan", nextFan),
+                        ),
+                        vertical = RcVerticalPositioning.Center,
+                    ) {
+                        doc.icon("fan", ThermostatMetrics.FAN_ICON_DP * layoutScale, ink)
+                        Spacer(
+                            Modifier.width(
+                                doc.units.px(ThermostatMetrics.MODE_ICON_GAP_DP * layoutScale),
+                            ),
                         )
-                        doc.label(
-                            doc.text(Vars.tile(tileId, "fan")),
-                            small(ThermostatMetrics.FAN_VALUE_SP, layoutScale),
-                            ink,
-                            Weight.MEDIUM,
-                        )
+                        Column {
+                            doc.label(
+                                doc.i18n.t("ui.fan_mode"),
+                                small(ThermostatMetrics.FAN_CAPTION_SP, layoutScale),
+                                ink,
+                            )
+                            doc.label(
+                                doc.text(Vars.tile(tileId, "fan")),
+                                small(ThermostatMetrics.FAN_VALUE_SP, layoutScale),
+                                ink,
+                                Weight.MEDIUM,
+                            )
+                        }
                     }
                 }
             }

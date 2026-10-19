@@ -18,17 +18,17 @@ Concept screenshots in `docs/screenshots/` are the visual target (not live captu
 
 ## Implemented patterns
 
-- **Nav (`ScreenRenderer.navButton` + `GridMockup` / `ThemesView`):** Hybrid of both mockups — continuous `NAV_LINE` + per-item top bar + teal pill when on. Idle icon/label = `Role.INK`; active = `KEY_ON_INK` on pill (white-on-teal washes out). CSS: `.nav .button.on` / `.pv-nav span.on` → `background: var(--rc-nav-on); color: var(--rc-key-on-ink)`.
+- **Nav (`ScreenRenderer.navButton` + `GridMockup` / `ThemesView`):** Hybrid — continuous `NAV_LINE` + per-item top bar + teal pill when on. Icon/label stay **`Role.INK` on the pill** (never `KEY_ON_INK` — that charcoal reads grey on teal). CSS: `.nav .button.on` / `.pv-nav span.on` → `background: var(--rc-nav-on); color: var(--rc-ink)`.
 - **Tabs (`FreeForm.tabsNode`):** Pipe-separated labels; teal underline under active; selection in `n.<id>.tab` via `StateLayout`. Helpers `tabStrip` / `tabLabel` call layout APIs through `scope.*`.
 - **Segmented bars (`Controls.segmentedLevelBar`):** Detail cards (`CardRenderer.bar`) → fill `Role.INK`; domain tiles (`Tiles.entityTileLevelBar`) → fill `Role.ACCENT`, track `Role.TRACK`.
-- **Choices:** Short lists (2–`FLOW_KEYS_SEGMENT_MAX`) → `choiceRow` / `flowKeys`; bind via `bindChoices` (selected teal fill, ink stays `Role.INK`). HVAC thermostat segments same (`ThermostatBind` `seg` ink).
+- **Choices / HVAC mode cells:** Selected fill teal (`KEY_ON` / `ACCENT_DARK`); icon+label stay **fixed** `Role.INK`. Do **not** bind segment ink as a named colour with default `0` — it paints black on teal. `KEY_ON_INK` is only for text on lit **keys/badges**, not nav or mode bars.
 - **Tile header line (`Vars` `KEY_LINE`):** Off = `Role.ACCENT_SOFT`, on = pastel accent. Editor `.tile .line` uses `--rc-accent-soft`.
 - **QR:** White rounded plate behind the code (`FreeForm.qrNode`).
 - **Editor bindables:** Dial / countdown / QR + free-form blocks (timerkeys, todolist, events, mediabar, forecast, presence, led) in `AttributesPanel` / `nodes.ts`.
 
 ## Themes / CSS
 
-Roles `accent_soft` and `key_on_ink` live in `Themes.kt` → `--rc-accent-soft` / `--rc-key-on-ink` via `editor/src/model/palette.ts` `themeVars`.
+Roles `accent_soft` and `key_on_ink` live in `Color.kt` / `Themes.kt` → `--rc-accent-soft` / `--rc-key-on-ink` via `editor/src/model/palette.ts` `themeVars`.
 
 ## Verify
 
