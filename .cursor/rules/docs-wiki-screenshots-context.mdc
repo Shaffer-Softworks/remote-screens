@@ -1,0 +1,40 @@
+---
+description: Docs, GitHub Wiki, screenshot capture, and Shaffer-Softworks ownership (PR #65)
+globs: README.md,CONTRIBUTING.md,addon/DOCS.md,addon/CHANGELOG.md,addon/Dockerfile,repository.yaml,docker/compose.yaml,docs/**/*,tools/capture_screenshots.mjs,tools/capture_player_screenshots.sh,editor/src/components/ScreensView.vue,custom_components/remote_screens/manifest.json
+alwaysApply: false
+---
+
+# Docs, wiki, and screenshots (PR #65)
+
+## What landed
+
+- **Ownership:** install/docs/GHCR URLs use `Shaffer-Softworks/remote-screens` (not `sickkick/…`). Keep `@sickkick` codeowners and `sickkick40@gmail.com` maintainer email. Image: `ghcr.io/shaffer-softworks/remote-screens-{arch}`.
+- **GitHub Wiki:** enabled and published at https://github.com/Shaffer-Softworks/remote-screens/wiki (sidebar + Installation, Pairing, Editor, Free-form, Architecture, Demo, Screenshots, Troubleshooting, …). Wiki git remote only exists after the first page is created in the GitHub UI; then push to `remote-screens.wiki.git`.
+- **In-repo docs:** `addon/DOCS.md` (Supervisor panel — must stay self-contained), `CONTRIBUTING.md`, `docs/DEMO.md`, `docs/SCREENSHOTS.md`, `docs/TESTING.md`, `docs/REMOTE_COMPOSE.md`. README links the wiki and embeds live screenshots.
+- **Screenshots:** under `docs/screenshots/` — `editor-*`, `player-*`, `screens.png`, `themes.png`. No concept mockup JPGs. Wiki embeds via `https://raw.githubusercontent.com/Shaffer-Softworks/remote-screens/main/docs/screenshots/<file>.png` (after merge to `main`).
+
+## Capture tooling
+
+- Editor: `node tools/capture_screenshots.mjs http://localhost:18099` (Playwright). Needs demo server; `editor-enroll.png` needs `REMOTE_SCREENS_APK` so `playerApp` is advertised.
+- Player: `tools/capture_player_screenshots.sh` against **Pixel_Tablet** (2560×1600 nav tap coords). Prefer Device Manager if CLI emulator dies.
+- Demo: `REMOTE_SCREENS_DEMO=1` … see `docs/DEMO.md`. Emulator→host: usually `10.0.2.2:18100`; after wipe with no route, `adb reverse tcp:18100 tcp:18100` and `PLAYER_HOST=127.0.0.1`. Keep the demo server in a long-lived shell (`block_until_ms: 0`) so it is not killed when the agent turn ends.
+- Dismiss Android “Viewing full screen / Got it” before final player shots.
+
+## Source split
+
+| Surface | Role |
+| ------- | ---- |
+| `addon/DOCS.md` | End-user / Supervisor add-on panel |
+| GitHub Wiki | Deep browsable guide |
+| `docs/*.md` | Maintainer notes (demo, screenshots, testing, Remote Compose) |
+
+Do not add a second GitHub Pages / MkDocs site unless asked.
+
+## Attribution
+
+Never add Cursor as author, co-author, or Made-with trailer. Hooks may inject `Co-authored-by: Cursor <cursoragent@cursor.com>` — strip with `git commit-tree` on the feature branch before the first push (user must approve any force-push after push).
+
+## PR / branch
+
+- Branch: `docs/wiki-screenshots-and-guides`
+- PR: https://github.com/Shaffer-Softworks/remote-screens/pull/65

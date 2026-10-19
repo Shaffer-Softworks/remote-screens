@@ -64,14 +64,20 @@ internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: 
                 )
             }
             drawCircle(cx, cx, r)
-            paint { color(ink); alpha(1f); strokeWidth(stroke); style(RcPaintStyle.Stroke) }
+            paint {
+                clearShader()
+                color(ink)
+                alpha(1f)
+                strokeWidth(stroke)
+                style(RcPaintStyle.Stroke)
+            }
             drawCircle(cx, cx, r)
             paint {
-                color(
-                    tint,
-                ); alpha(
-                    ThermostatMetrics.DIAL_TICK_ALPHA,
-                ); strokeWidth(doc.units.px(1f)); style(RcPaintStyle.Stroke)
+                clearShader()
+                color(tint)
+                alpha(ThermostatMetrics.DIAL_TICK_ALPHA)
+                strokeWidth(doc.units.px(1f))
+                style(RcPaintStyle.Stroke)
             }
             val tickInner = r + stroke / 2f + doc.units.px(tickGapDp)
             val tickOuter = tickInner + stroke
@@ -92,6 +98,7 @@ internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: 
             val bottom = (cx + r).rf
             if (dual) {
                 paint {
+                    clearShader()
                     color(heat)
                     alpha(1f)
                     strokeWidth(stroke)
@@ -100,6 +107,7 @@ internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: 
                 }
                 drawArc(left, top, right, bottom, ThermostatMetrics.ARC_START_DEG.rf, sweepLow)
                 paint {
+                    clearShader()
                     color(cool)
                     alpha(1f)
                     strokeWidth(stroke)
@@ -110,24 +118,33 @@ internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: 
                 val knob = doc.units.px(knobDp)
                 save {
                     rotate(sweepLow, cx.rf, cx.rf)
-                    paint { color(heat); style(RcPaintStyle.Fill) }
+                    paint { clearShader(); color(heat); alpha(1f); style(RcPaintStyle.Fill) }
                     drawCircle(cx, cx + r, knob)
-                    paint { color(
-                        ink,
-                    ); strokeWidth(doc.units.px(knobRingDp)); style(RcPaintStyle.Stroke) }
+                    paint {
+                        clearShader()
+                        color(ink)
+                        alpha(1f)
+                        strokeWidth(doc.units.px(knobRingDp))
+                        style(RcPaintStyle.Stroke)
+                    }
                     drawCircle(cx, cx + r, knob)
                 }
                 save {
                     rotate(sweepHigh, cx.rf, cx.rf)
-                    paint { color(cool); style(RcPaintStyle.Fill) }
+                    paint { clearShader(); color(cool); alpha(1f); style(RcPaintStyle.Fill) }
                     drawCircle(cx, cx + r, knob)
-                    paint { color(
-                        ink,
-                    ); strokeWidth(doc.units.px(knobRingDp)); style(RcPaintStyle.Stroke) }
+                    paint {
+                        clearShader()
+                        color(ink)
+                        alpha(1f)
+                        strokeWidth(doc.units.px(knobRingDp))
+                        style(RcPaintStyle.Stroke)
+                    }
                     drawCircle(cx, cx + r, knob)
                 }
             } else {
                 paint {
+                    clearShader()
                     color(tint)
                     alpha(1f)
                     strokeWidth(stroke)
@@ -138,11 +155,15 @@ internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: 
                 save {
                     rotate(sweep, cx.rf, cx.rf)
                     val knob = doc.units.px(knobDp)
-                    paint { color(tint); style(RcPaintStyle.Fill) }
+                    paint { clearShader(); color(tint); alpha(1f); style(RcPaintStyle.Fill) }
                     drawCircle(cx, cx + r, knob)
-                    paint { color(
-                        ink,
-                    ); strokeWidth(doc.units.px(knobRingDp)); style(RcPaintStyle.Stroke) }
+                    paint {
+                        clearShader()
+                        color(ink)
+                        alpha(1f)
+                        strokeWidth(doc.units.px(knobRingDp))
+                        style(RcPaintStyle.Stroke)
+                    }
                     drawCircle(cx, cx + r, knob)
                 }
             }

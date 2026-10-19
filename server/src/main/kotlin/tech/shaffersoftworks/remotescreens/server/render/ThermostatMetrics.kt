@@ -40,7 +40,7 @@ internal object ThermostatMetrics {
     const val SEG_WIDTH_DP = 160f
     const val MODE_CORNER_DP = 10f
     const val MODE_BORDER_DP = 2f
-    const val FAN_BUTTON_WIDTH_DP = 140f
+    const val FAN_BUTTON_WIDTH_DP = 150f
     const val FAN_CAPTION_SP = 12f
     const val FAN_VALUE_SP = 16f
     const val FAN_ICON_DP = 28f

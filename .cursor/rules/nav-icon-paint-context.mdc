@@ -1,0 +1,25 @@
+---
+description: Home-page nav icons grey — thermostat dial gradient stays on the shared Remote Compose paint
+globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/Widgets.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/ThermostatDial.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/ScreenRenderer.kt
+alwaysApply: false
+---
+
+# Sticky canvas paint (nav icons, Oct 2026)
+
+Remote Compose uses one paint for the whole document. `applyPaint` merges deltas, so a shader or alpha set by the thermostat dial stays until something clears it. Backgrounds and text save, replace, and restore paint, which puts the shader back. Icons only apply a delta.
+
+## Symptom
+
+On the home page (thermostat card) the nav icons look charcoal/grey. On page 2 they are white. Both pages use `Role.INK` (`0xFFFFFFFF`). Labels stay white because `Text` replaces the paint. Mode icons drawn after the dial had the same leak. Resetting `alpha(1f)` alone did not fix it.
+
+## Cause
+
+`ThermostatDial` installs a `radialGradient` (inner tint at `DIAL_INNER_ALPHA` 0.45, outer ink at `DIAL_OUTER_ALPHA` 0.15). `ScreenRenderer.page` draws the nav after that dial. With the shader still set, `drawPath` ignores the icon color’s RGB and fills with the faded gradient, which reads grey on the dark bar and on the teal pill.
+
+## Fix
+
+- `Widgets.icon` and `weatherStateIcon`: `clearShader()`, then `color`, `alpha(1f)`, and `Fill`, before `drawPath`.
+- Every solid paint in `ThermostatDial` after the gradient: `clearShader()`, so the ring, ticks, arcs, and knobs stay real colors and the shader does not leak.
+- Nav icon and label stay `Role.INK`. Never `KEY_ON_INK` — that charcoal reads grey on the teal pill.
+
+Verified on Remote Screens dev (`local_remote_screens`) 0.1.19, 2026-10-19.

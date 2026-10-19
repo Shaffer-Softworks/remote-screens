@@ -7,6 +7,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.doubleOrNull
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -20,6 +21,9 @@ private const val DEFAULT_MAX_VALUE = 100.0
 private const val MAX_WHOLE_NUMBER = 1e9
 private const val ARG_PLACEHOLDER = "\$arg"
 private const val CODE_PLACEHOLDER = "\$code"
+private const val CLIMATE_SET_TEMPERATURE = "climate.set_temperature"
+private const val ATTR_TARGET_TEMP_LOW = "target_temp_low"
+private const val ATTR_TARGET_TEMP_HIGH = "target_temp_high"
 
 /** Fills the service data of a catalogue action with the tap's argument and a typed code. */
 object ServiceDataBuilder {
@@ -44,8 +48,91 @@ object ServiceDataBuilder {
             val filled = fill(template, resolvedArg, code)
             if (filled != JsonNull) serviceData[key] = filled
         }
+        completeClimateTemperatureRange(serviceData, action, entity)
         return serviceData
     }
+
+    /**
+     * Home Assistant requires `target_temp_low` and `target_temp_high` together in heat/cool,
+     * and rejects a lone `temperature` in that mode. Catalogue steps often change one side (or the
+     * compact tile still uses `temperature`); complete or rewrite the payload so HA accepts it.
+     */
+    private fun completeClimateTemperatureRange(
+        serviceData: MutableMap<String, JsonElement>,
+        action: ActionSpec,
+        entity: EntityState?,
+    ) {
+        if (action.service != CLIMATE_SET_TEMPERATURE || entity == null) return
+        when {
+            "temperature" in serviceData && entity.usesTemperatureRange() ->
+                rewriteSingleTemperatureToRange(serviceData, entity)
+            "temperature" in serviceData -> Unit
+            else -> pairClimateRangeTargets(serviceData, entity)
+        }
+    }
+
+    /** Copy the unchanged range side from the entity, then keep low ≤ high. */
+    private fun pairClimateRangeTargets(
+        serviceData: MutableMap<String, JsonElement>,
+        entity: EntityState,
+    ) {
+        val changedLow = ATTR_TARGET_TEMP_LOW in serviceData
+        val changedHigh = ATTR_TARGET_TEMP_HIGH in serviceData
+        if (!changedLow && !changedHigh) return
+        if (!changedLow) {
+            entity.number(ATTR_TARGET_TEMP_LOW)?.let {
+                serviceData[ATTR_TARGET_TEMP_LOW] = JsonPrimitive(wholeOrDecimal(it))
+            }
+        }
+        if (!changedHigh) {
+            entity.number(ATTR_TARGET_TEMP_HIGH)?.let {
+                serviceData[ATTR_TARGET_TEMP_HIGH] = JsonPrimitive(wholeOrDecimal(it))
+            }
+        }
+        coerceTemperatureRange(serviceData, changedLow = changedLow, changedHigh = changedHigh)
+    }
+
+    /** Shift both ends of the range by the same delta the single setpoint would have applied. */
+    private fun rewriteSingleTemperatureToRange(
+        serviceData: MutableMap<String, JsonElement>,
+        entity: EntityState,
+    ) {
+        val newTemp = (serviceData.remove("temperature") as? JsonPrimitive)?.doubleOrNull
+        val low = entity.number(ATTR_TARGET_TEMP_LOW)
+        val high = entity.number(ATTR_TARGET_TEMP_HIGH)
+        if (newTemp == null || low == null || high == null) return
+        val oldTemp = entity.number("temperature") ?: ((low + high) / 2.0)
+        val delta = newTemp - oldTemp
+        val limits = limits(entity, "temperature")
+        serviceData[ATTR_TARGET_TEMP_LOW] = JsonPrimitive(wholeOrDecimal((low + delta).coerceIn(limits)))
+        serviceData[ATTR_TARGET_TEMP_HIGH] = JsonPrimitive(wholeOrDecimal((high + delta).coerceIn(limits)))
+        coerceTemperatureRange(serviceData, changedLow = true, changedHigh = true)
+    }
+
+    private fun coerceTemperatureRange(
+        serviceData: MutableMap<String, JsonElement>,
+        changedLow: Boolean,
+        changedHigh: Boolean,
+    ) {
+        val low = (serviceData[ATTR_TARGET_TEMP_LOW] as? JsonPrimitive)?.doubleOrNull
+        val high = (serviceData[ATTR_TARGET_TEMP_HIGH] as? JsonPrimitive)?.doubleOrNull
+        if (low == null || high == null || low <= high) return
+        when {
+            changedLow && !changedHigh ->
+                serviceData[ATTR_TARGET_TEMP_HIGH] = JsonPrimitive(wholeOrDecimal(low))
+            changedHigh && !changedLow ->
+                serviceData[ATTR_TARGET_TEMP_LOW] = JsonPrimitive(wholeOrDecimal(high))
+            else ->
+                serviceData[ATTR_TARGET_TEMP_HIGH] = JsonPrimitive(wholeOrDecimal(low))
+        }
+    }
+
+    private fun EntityState.usesTemperatureRange(): Boolean =
+        when (state) {
+            "heat_cool" -> true
+            "auto" -> number(ATTR_TARGET_TEMP_LOW) != null && number(ATTR_TARGET_TEMP_HIGH) != null
+            else -> false
+        }
 
     /** An argument of `+0.5` or `-10` counts from the entity's current value, within its limits. */
     fun resolveArg(action: ActionSpec, arg: String, entity: EntityState?): String {

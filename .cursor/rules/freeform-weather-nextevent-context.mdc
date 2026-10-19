@@ -1,0 +1,25 @@
+---
+description: Free-form weather + nextevent leaf layout — RPI home stack (top-aligned), HA icons, day/meta ink
+globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/FreeFormBlocks.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/Home.kt,editor/src/components/NodeView.vue,editor/src/model/nodes.ts
+alwaysApply: false
+---
+
+# Free-form weather & next event (Oct 2026)
+
+Match the home-panel hierarchy: **top-stacked**, left-aligned — not centered with a flex/`verticalWeight` spacer shoving content to the bottom.
+
+## `weather` (`weatherNowNode`)
+
+- Caption → small gap → row: `weatherStateIcon` + large temp (+ tune). Whole card taps open the entity card.
+- Temp weight ~100 (light). Editor `.t-weather`: `justify-content: flex-start`, not `space-between`.
+- Icons: HA layered SVGs via `weatherStateIcon` (same as forecast) — never bare `Present.weatherIcon` for this leaf.
+
+## `nextevent` (`nextEventNode`)
+
+- Stack: day (soft/light) → large time → gap → title → tight gap → meta (`calendar · location`).
+- Default day colour `Role.INK_SOFT` (readable on teal fills); override with prop `color`. Ink prop for time/title; meta soft when ink unset.
+- No `RcHorizontalPositioning.Center` / centered text. Editor `.t-nextevent` matches (no `.ne-spacer` flex grow).
+
+## Detekt
+
+Removing `verticalWeight` spacers → drop the unused `verticalWeight` import or CI `NoUnusedImports` fails.
