@@ -78,5 +78,6 @@
   "ui.reset": "Reimposta",
   "ui.tone": "Tono",
   "ui.empty_text": "(vuoto)",
-  "ui.datetime_hint": "Modifica questo helper in Home Assistant"
+  "ui.datetime_hint": "Modifica questo helper in Home Assistant",
+  "ui.temperature_outside_now": "Temperatura esterna ora"
 }

@@ -28,6 +28,7 @@ import tech.shaffersoftworks.remotescreens.server.render.tap
 
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import androidx.compose.remote.creation.dsl.Modifier
+import androidx.compose.remote.creation.dsl.RcColor
 import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning
 import androidx.compose.remote.creation.dsl.RcContentScale
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
@@ -279,7 +280,13 @@ internal fun DocContext.calendarTile(tile: Tile, box: TileBox, @Suppress(
 }
 
 /** A person's photo in a circle, or their initials when Home Assistant has no picture. */
-fun DocContext.photo(entityState: EntityState?, entityId: String, slot: String, sizeDp: Float) {
+fun DocContext.photo(
+    entityState: EntityState?,
+    entityId: String,
+    slot: String,
+    sizeDp: Float,
+    ink: RcColor = role(Role.INK),
+) {
     val pic = entityState?.attr("entity_picture")
     val px = units.px(sizeDp).toInt()
     if (pic != null) {
@@ -290,7 +297,7 @@ fun DocContext.photo(entityState: EntityState?, entityId: String, slot: String, 
             contentScale = RcContentScale.Crop,
         )
     } else {
-        initials(entityState?.name ?: entityId, sizeDp, role(Role.KEY), role(Role.INK))
+        initials(entityState?.name ?: entityId, sizeDp, role(Role.KEY), ink)
     }
 }
 

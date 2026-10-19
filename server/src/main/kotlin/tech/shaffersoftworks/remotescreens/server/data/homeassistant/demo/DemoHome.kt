@@ -455,6 +455,8 @@ class DemoHome : HomeAssistant {
                     "media_artist" to "Debussy",
                     "media_album_name" to "Suite bergamasque",
                     "volume_level" to 0.35,
+                    "media_position" to 42.0,
+                    "media_duration" to 195.0,
                     "supported_features" to 152463,
                     "entity_picture" to "/api/media_player_proxy/media_player.living_room",
                     "source_list" to listOf("Spotify", "Radio"),

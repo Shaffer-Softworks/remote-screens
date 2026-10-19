@@ -143,6 +143,11 @@ internal class DemoServiceHandlers(
         "media_play" to { set(it.entityId, "playing", emptyMap()) },
         "media_pause" to { set(it.entityId, "paused", emptyMap()) },
         "volume_set" to { it.setAttr("volume_level") },
+        "media_seek" to {
+            it.num("seek_position")?.let { position ->
+                set(it.entityId, it.current.state, mapOf("media_position" to JsonPrimitive(position)))
+            }
+        },
         "select_option" to { it.setStateFrom("option") },
         "start" to { it.startActivity() },
         "start_mowing" to { it.startActivity() },

@@ -199,6 +199,7 @@ internal sealed interface Spec {
 }
 
 /** What a wrapped leaf takes when nothing else says, so a weight or a card has something to share out. */
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 internal fun Node.natural(): Dims = when (type) {
     "text" -> Dims(
         Metrics.TEXT_NATURAL_W,
@@ -248,7 +249,9 @@ internal fun Node.natural(): Dims = when (type) {
     }
     "countdown" -> Dims(Metrics.COUNTDOWN_NATURAL_W, Metrics.COUNTDOWN_NATURAL_H)
     "qr" -> (props["size"]?.toFloatOrNull() ?: Metrics.QR_DEFAULT_DP).let { Dims(it, it) }
-    "timerkeys", "todolist", "events", "mediabar", "forecast", "presence", "led", "thermostat" ->
+    "timerkeys", "todolist", "events", "mediabar", "forecast", "presence", "led", "thermostat",
+    "weather", "nextevent",
+    ->
         blockNatural(this) ?: Dims(Metrics.TEXT_NATURAL_W, Metrics.TEXT_NATURAL_W)
     "markdown" -> Dims(
         Metrics.MARKDOWN_NATURAL_W,

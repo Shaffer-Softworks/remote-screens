@@ -133,7 +133,7 @@ fun DocContext.bindTileColors(tileId: String, entityId: String?, accent: Int, al
     }
 }
 
-/** A row of choices (modes, options, speeds): the chosen one is teal, the rest plain grey keys. */
+/** A row of choices (modes, options, speeds): the chosen one is teal; icon and label stay page ink. */
 fun DocContext.bindChoices(
     scopeId: String,
     group: String,
@@ -152,7 +152,7 @@ fun DocContext.bindChoices(
                 ),
                 VarValue.color(
                     Vars.option(scopeId, group, index, Vars.KEY_INK),
-                    (if (on) Role.KEY_ON_INK else Role.INK).argb,
+                    Role.INK.argb,
                 ),
             )
         }
