@@ -48,6 +48,8 @@ const BINDABLE = [
   'presence',
   'led',
   'thermostat',
+  'weather',
+  'nextevent',
 ]
 /** Components whose own keys take the taps. */
 const OWN_TAPS = [
@@ -64,6 +66,8 @@ const OWN_TAPS = [
   'mediabar',
   'presence',
   'thermostat',
+  'weather',
+  'nextevent',
 ]
 const COLOURED = [
   'text',
@@ -78,7 +82,6 @@ const COLOURED = [
   'analog',
   'dial',
   'countdown',
-  'forecast',
   'led',
 ]
 const BIND_NOTES: Record<string, string> = {
@@ -104,10 +107,13 @@ const BIND_NOTES: Record<string, string> = {
   todolist: 'Lists open to-dos; a tap marks one complete.',
   events:
     'Upcoming events from the bound calendar, or every calendar when none is set. Optional calendars list overrides.',
-  mediabar: 'Album art, title and transport keys for a media player.',
+  mediabar:
+    'Album art, title, transport, track time/progress and volume for a media player.',
   forecast: 'Daily forecast chips for a weather entity.',
   presence:
     'People chips with photo and HOME/AWAY. Optional people list; otherwise every person entity.',
+  weather: 'Current conditions and temperature for a weather entity.',
+  nextevent: 'Next event card from a calendar (or every calendar when none is set).',
   led: 'A small on/off light for any entity that turns on and off.',
   thermostat:
     'The RPI thermostat page for a climate entity: dial, readings, Heat/Cool modes and Fan mode.',
@@ -1027,6 +1033,22 @@ const typeIcon = computed(() =>
             @input="setProp('days', ($event.target as HTMLInputElement).value)"
           />
         </label>
+        <div class="field">
+          <span class="label">Day colour</span>
+          <ColorSwatches
+            :model-value="currentProps.ink"
+            :keys="INK_SWATCHES"
+            @update:model-value="setProp('ink', $event)"
+          />
+        </div>
+        <div class="field">
+          <span class="label">Temp colour</span>
+          <ColorSwatches
+            :model-value="currentProps.color"
+            :keys="INK_SWATCHES"
+            @update:model-value="setProp('color', $event)"
+          />
+        </div>
       </template>
       <template v-if="currentNode.type === 'presence'">
         <label class="field">
@@ -1036,6 +1058,81 @@ const typeIcon = computed(() =>
             placeholder="all people"
             @input="setProp('people', ($event.target as HTMLInputElement).value)"
           />
+        </label>
+        <div class="field">
+          <span class="label">Name colour</span>
+          <ColorSwatches
+            :model-value="currentProps.ink"
+            :keys="INK_SWATCHES"
+            @update:model-value="setProp('ink', $event)"
+          />
+        </div>
+        <div class="field">
+          <span class="label">Status colour</span>
+          <ColorSwatches
+            :model-value="currentProps.color"
+            :keys="INK_SWATCHES"
+            @update:model-value="setProp('color', $event)"
+          />
+        </div>
+      </template>
+      <template v-if="currentNode.type === 'weather'">
+        <label class="field">
+          Caption
+          <input
+            :value="currentProps.text ?? ''"
+            placeholder="Temperature outside now"
+            @input="setProp('text', ($event.target as HTMLInputElement).value)"
+          />
+        </label>
+        <div class="field">
+          <span class="label">Colour</span>
+          <ColorSwatches
+            :model-value="currentProps.ink"
+            :keys="INK_SWATCHES"
+            @update:model-value="setProp('ink', $event)"
+          />
+        </div>
+      </template>
+      <template v-if="currentNode.type === 'nextevent'">
+        <label class="field">
+          Calendars (comma-separated entity ids)
+          <input
+            :value="currentProps.calendars ?? ''"
+            placeholder="bound or all calendars"
+            @input="setProp('calendars', ($event.target as HTMLInputElement).value)"
+          />
+        </label>
+        <div class="field">
+          <span class="label">Day colour</span>
+          <ColorSwatches
+            :model-value="currentProps.color"
+            :keys="INK_SWATCHES"
+            @update:model-value="setProp('color', $event)"
+          />
+        </div>
+        <div class="field">
+          <span class="label">Ink colour</span>
+          <ColorSwatches
+            :model-value="currentProps.ink"
+            :keys="INK_SWATCHES"
+            @update:model-value="setProp('ink', $event)"
+          />
+        </div>
+      </template>
+      <template v-if="currentNode.type === 'mediabar'">
+        <label class="check">
+          <input
+            type="checkbox"
+            :checked="currentProps.openCard !== 'false'"
+            @change="
+              setProp(
+                'openCard',
+                ($event.target as HTMLInputElement).checked ? undefined : 'false',
+              )
+            "
+          />
+          Open player card when art or title is tapped
         </label>
       </template>
       <template v-if="currentNode.type === 'led'">

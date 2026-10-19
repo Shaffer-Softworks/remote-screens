@@ -88,6 +88,8 @@ export const INK_SWATCHES = [
   'ink_dim',
   'ink_dark',
   'accent',
+  'accent_soft',
+  'accent_dark',
   'nav_line',
   ...PASTEL_KEYS,
 ]

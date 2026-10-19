@@ -648,6 +648,11 @@ object Catalogue {
                 mapOf("volume_level" to "\$arg/100"),
                 false,
                 "volume_level*100",
+            ), "seek" to ActionSpec(
+                "media_player.media_seek",
+                mapOf("seek_position" to "\$arg"),
+                false,
+                null,
             ), "mute" to ActionSpec(
                 "media_player.volume_mute",
                 mapOf("is_volume_muted" to "\$arg"),
@@ -677,6 +682,7 @@ object Catalogue {
             predict = mapOf(
                 "play_pause" to PredictSpec("play_pause", mapOf()),
                 "volume" to PredictSpec(null, mapOf("volume_level" to "\$arg/100")),
+                "seek" to PredictSpec(null, mapOf("media_position" to "\$arg")),
             ),
             needsEntity = true,
         ),

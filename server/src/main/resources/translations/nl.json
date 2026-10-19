@@ -78,5 +78,6 @@
   "ui.reset": "Resetten",
   "ui.tone": "Toon",
   "ui.empty_text": "(leeg)",
-  "ui.datetime_hint": "Wijzig deze helper in Home Assistant"
+  "ui.datetime_hint": "Wijzig deze helper in Home Assistant",
+  "ui.temperature_outside_now": "Temperatuur buiten nu"
 }

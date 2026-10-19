@@ -113,7 +113,7 @@ object NodeTypes {
         "gauge", "analog", "iconbutton", "keys", "swatches", "keypad",
         "dial", "countdown", "qr", "markdown",
         "timerkeys", "todolist", "events", "mediabar", "forecast", "presence", "led",
-        "thermostat",
+        "thermostat", "weather", "nextevent",
     )
     val ALL = CONTAINERS + LEAVES
 }
@@ -128,8 +128,11 @@ object NodeTypes {
  * `iconbutton` (icon, iconOn, size, color), `keys` (size), `swatches` (show: colour or white), `keypad` (size),
  * `dial` (size, step), `countdown` (text), `qr` (text, size), `markdown` (text), `tabs` (labels: comma-separated),
  * `timerkeys` (timer Start/Pause/Cancel), `todolist` (max), `events` (calendars, max), `mediabar` (media strip),
- * `forecast` (days), `presence` (people), `led` (size, colour while on),
- * `thermostat` (the RPI climate page: dial, readings, Heat/Cool modes and Fan mode).
+ * `forecast` (days, ink: weekday colour, color: temp colour), `presence` (people, ink, color: status),
+ * `led` (size, colour while on), `weather` (text caption, ink; current conditions + temp),
+ * `nextevent` (calendars, ink, color: day line; next calendar event card),
+ * `thermostat` (the RPI climate page: dial, readings, Heat/Cool modes and Fan mode),
+ * `mediabar` (openCard: open player card from art/title).
  * Columns and rows take `scroll`; a `flow` wraps its children onto new lines. Text takes `marquee`. A bound
  * component takes `showWhen` (on or off) and `animate` (fade, left, right, up, down or none) for how it comes and goes.
  * Any component takes `place`, its own alignment in its parent: start, center or end across a column, top, center or

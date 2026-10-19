@@ -276,6 +276,7 @@ private fun DocContext.thermostatModes(
                             )
                         }
                         val bg = doc.color(Vars.option(tileId, "seg", i, Vars.KEY_BG))
+                        val segInk = doc.color(Vars.option(tileId, "seg", i, Vars.KEY_INK))
                         Row(
                             doc.tap(
                                 Modifier.size(
@@ -290,7 +291,7 @@ private fun DocContext.thermostatModes(
                             doc.icon(
                                 HA_MODE_ICONS[mode] ?: "thermostat",
                                 ThermostatMetrics.MODE_ICON_DP * layoutScale,
-                                ink,
+                                segInk,
                             )
                             Spacer(
                                 Modifier.width(
@@ -300,7 +301,7 @@ private fun DocContext.thermostatModes(
                             doc.label(
                                 doc.i18n.state("climate", mode),
                                 small(ThermostatMetrics.MODE_LABEL_SP, layoutScale),
-                                ink,
+                                segInk,
                             )
                         }
                     }

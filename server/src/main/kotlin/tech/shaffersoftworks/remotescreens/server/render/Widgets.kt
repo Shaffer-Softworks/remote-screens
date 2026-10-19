@@ -94,7 +94,7 @@ fun DocContext.icon(name: String?, sizeDp: Float, color: RcColor, visible: RcInt
     scope.Canvas(modifier) {
         save {
             scale(px / ICON_VIEWPORT, px / ICON_VIEWPORT)
-            paint { color(color); style(RcPaintStyle.Fill) }
+            paint { color(color); alpha(1f); style(RcPaintStyle.Fill) }
             drawPath(iconPath)
         }
     }

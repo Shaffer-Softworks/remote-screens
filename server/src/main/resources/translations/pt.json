@@ -78,5 +78,6 @@
   "ui.reset": "Repor",
   "ui.tone": "Tom",
   "ui.empty_text": "(vazio)",
-  "ui.datetime_hint": "Altere este auxiliar no Home Assistant"
+  "ui.datetime_hint": "Altere este auxiliar no Home Assistant",
+  "ui.temperature_outside_now": "Temperatura lá fora agora"
 }
