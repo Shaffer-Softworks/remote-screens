@@ -7,7 +7,7 @@
 # Leave out HA_URL and the token and it starts with a made-up demo home.
 services:
   remote-screens:
-    image: ghcr.io/sickkick/remote-screens-amd64:latest
+    image: ghcr.io/shaffer-softworks/remote-screens-amd64:latest
     restart: unless-stopped
     # Tablets find it over mDNS, which needs the host's network.
     network_mode: host

@@ -10,7 +10,7 @@ import MdiIcon from './MdiIcon.vue'
 
 const emit = defineEmits<{ edit: [screen: Screen]; themes: [] }>()
 
-const RELEASES = 'https://github.com/sickkick/remote-screens/releases/latest'
+const RELEASES = 'https://github.com/Shaffer-Softworks/remote-screens/releases/latest'
 
 const screens = computed(() => state.layout?.screens ?? [])
 const waiting = computed(() => state.players.filter(player => !player.screenId))

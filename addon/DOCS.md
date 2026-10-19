@@ -5,6 +5,9 @@ Remote Screens turns Android tablets into Home Assistant wall screens. You lay o
 to the tablets, which show it with the Remote Screens app. Taps come back to the add-on, which calls Home
 Assistant. The tablets never talk to Home Assistant themselves, and need no token.
 
+The full guide (editor, free-form components, architecture, troubleshooting) is on the
+[GitHub Wiki](https://github.com/Shaffer-Softworks/remote-screens/wiki).
+
 ## Getting started
 
 1. Start the add-on and open **Remote Screens** in the sidebar.
@@ -116,6 +119,11 @@ To give an enrolled tablet back its normal use, unlock it (turn Kiosk lock off, 
 and choose **Stop managing this tablet**. The app can then be uninstalled like any other. A factory reset does the
 same.
 
+## Top bar
+
+Per screen, the top bar can show the clock, date, outdoor temperature, people home count, Wi‑Fi signal and
+battery level. Turn each on in the editor under the screen’s settings.
+
 ## Tiles
 
 Every tile follows its entity live. A tap does the obvious thing for its type (toggle a light, open a cover's
@@ -124,16 +132,18 @@ history). The editor lets you change the tap and the long press to: toggle, open
 page, open a URL on the tablet, fire a Home Assistant event, or nothing.
 
 Tiles that are not an entity: clock, bedside clock, page navigation, history graph, energy flow, map, and a
-favourite (a playlist on a player). Entities whose domain has no dedicated tile still appear in the library as a
-generic on/off tile (`homeassistant.toggle`).
+favourite (a playlist on a player). Dedicated domain tiles cover the usual Home Assistant domains (lights,
+covers, climate, media, cameras, calendars, timers, humidifiers, and more); entities without a dedicated tile
+still appear in the library as a generic on/off tile (`homeassistant.toggle`).
 
 The **map card** (person, device tracker, or the map tile's detail) is an interactive OpenStreetMap on current
 players: pinch to zoom and drag to pan. Older players still get a still image drawn by the add-on. Grid map tiles
 stay as still images.
 
-Besides the grid, a page can be **free-form**: a tree of layout and control components (columns, dials, tabs,
-markdown, QR codes, and the rest in the component palette). The demo screen includes a Compose page that shows
-several of them.
+Besides the grid, a page can be **free-form**: convert it in the page settings, then drag components from the
+palette (columns, rows, dials, tabs, markdown, QR codes, thermostat, weather, and the rest). Bound components
+can use `showWhen` and `animate`. The wiki’s **Free-form components** page lists every type and its props. The
+demo screen includes a Compose page that shows several of them.
 
 A page can be hidden: it has no page dot and is only reached from a navigation tile, with a Back key.
 
@@ -158,9 +168,9 @@ English in other languages.
 ## Settings from Home Assistant
 
 The **Remote Screens** integration (installed with HACS) adds, for each screen, entities for brightness, dark
-mode, standby, night mode, swipe, back-to-home and the page shown, and the services
-`remote_screens.show_alert`, `remote_screens.open_page`, `remote_screens.wake` and `remote_screens.close`. The
-add-on announces itself, so Home Assistant offers to set the integration up.
+mode, standby, night mode, swipe, back-to-home, the page shown, kiosk lock, and wake-on-proximity /
+wake-on-face, and the services `remote_screens.show_alert`, `remote_screens.open_page`, `remote_screens.wake`
+and `remote_screens.close`. The add-on announces itself, so Home Assistant offers to set the integration up.
 
 Alerts can also come from an event, without the integration. In a script or automation:
 
