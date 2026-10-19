@@ -1,0 +1,28 @@
+---
+description: Themes editor role sections — where each Role lands on the tablet; catalogue + preview conventions
+globs: editor/src/model/themeRoles.ts,editor/src/components/ThemesView.vue,editor/src/model/palette.ts,addon/DOCS.md,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/ThemeModel.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/Themes.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/Color.kt
+alwaysApply: false
+---
+
+# Theme role sections (Oct 2026)
+
+Authors edit colours on **Themes**; each role needs a one-line “where it applies,” not just the key name.
+
+## Source of truth
+
+- [`editor/src/model/themeRoles.ts`](editor/src/model/themeRoles.ts) — `THEME_ROLE_SECTIONS` (Chrome, Surfaces, Ink, Accents, Keys, Status, Overlays) + `PASTELS_INTRO`.
+- [`ThemesView.vue`](editor/src/components/ThemesView.vue) — groups pickers from that catalogue; preview must demonstrate the roles.
+
+## Preview must show
+
+- Tile header line: `--rc-accent-soft` (off) / pastel (on) — not `card_header`
+- Active nav: `--rc-ink` on `--rc-nav-on` (match live `ScreenRenderer.navButton`)
+- Home strip: `home` / `home_strip` / `ink_dark`
+- Status/keys: warn / danger / `key_on` samples; scrim corner optional
+- Band captions under preview: Header / Cards / Nav
+
+## Gotchas
+
+- `ok` is picker-only today (no player `Role.OK` path) — blurb must say so.
+- `key_on_ink` ≠ nav ink; nav stays `ink` on teal.
+- When adding a Kotlin `Role`, add a section entry + CSS var via `themeVars` (`role_key` → `--rc-role-key`).

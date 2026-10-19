@@ -2,7 +2,7 @@ package tech.shaffersoftworks.remotescreens.server.render
 
 /**
  * The colours of the screens, by what they are for. Code asks for a role, never for a hex value; the values come from
- * the screen's theme (see [Themes] in BuiltinThemes.kt); [ThemesTest] keeps hex colours out of other files.
+ * the screen's theme (see [Themes]); hex colours live in Color.kt ([ThemesTest]).
  */
 enum class Role {
     PAGE,
