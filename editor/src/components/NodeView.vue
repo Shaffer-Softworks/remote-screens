@@ -7,11 +7,13 @@ import { CATALOGUE } from '../generated/catalogue'
 import { DESIGN } from '../model/design'
 import { dragged } from '../model/drag'
 import { isContainer, paddingOf, type Where } from '../model/nodes'
+import { MOCK_FORECAST_CONDITIONS } from '../model/haWeatherIcons'
 import { colorOf, pastel } from '../model/palette'
 import { iconOf, nameOf, stateOf } from '../model/tiles'
 import type { EntityInfo, Node } from '../model/types'
 import { domainOf } from '../model/types'
 import { entityById, state } from '../store'
+import HaWeatherIcon from './HaWeatherIcon.vue'
 import MdiIcon from './MdiIcon.vue'
 
 defineOptions({ name: 'NodeView' })
@@ -298,19 +300,28 @@ const style = computed<CSSProperties>(() => {
       break
     }
     case 'mediabar':
-      if (viewNode.value.size.width === 'wrap') css.width = '360px'
-      if (viewNode.value.size.height === 'wrap') css.height = '72px'
+      if (viewNode.value.size.width === 'wrap') css.width = '420px'
+      if (viewNode.value.size.height === 'wrap') css.height = '112px'
       break
     case 'forecast': {
       const days = Number(nodeProps.days ?? 5)
       if (viewNode.value.size.width === 'wrap') css.width = `${days * 56}px`
       if (viewNode.value.size.height === 'wrap') css.height = '72px'
-      css.color = colorOf(nodeProps.color) ?? colorOf('ink')
       break
     }
     case 'presence':
       if (viewNode.value.size.width === 'wrap') css.width = '320px'
       if (viewNode.value.size.height === 'wrap') css.height = '72px'
+      break
+    case 'weather':
+      if (viewNode.value.size.width === 'wrap') css.width = '360px'
+      if (viewNode.value.size.height === 'wrap') css.height = '100px'
+      css.color = colorOf(nodeProps.ink) ?? colorOf('ink')
+      break
+    case 'nextevent':
+      if (viewNode.value.size.width === 'wrap') css.width = '200px'
+      if (viewNode.value.size.height === 'wrap') css.height = '200px'
+      css.color = colorOf(nodeProps.ink) ?? colorOf('ink')
       break
     case 'led': {
       const led = `${Number(nodeProps.size ?? 16)}px`
@@ -625,8 +636,30 @@ const forecastDays = computed(() => {
     day,
     high: 19 - index,
     low: 10 - Math.floor(index / 2),
+    condition: MOCK_FORECAST_CONDITIONS[index % MOCK_FORECAST_CONDITIONS.length],
   }))
 })
+const forecastDayColor = computed(
+  () => colorOf(viewNode.value.props.ink) ?? colorOf('ink_soft') ?? colorOf('ink'),
+)
+const forecastTempColor = computed(
+  () => colorOf(viewNode.value.props.color) ?? colorOf('ink'),
+)
+const presenceNameColor = computed(
+  () => colorOf(viewNode.value.props.ink) ?? colorOf('ink'),
+)
+const presenceStatusColor = computed(
+  () => colorOf(viewNode.value.props.color) ?? colorOf('accent_soft') ?? colorOf('accent'),
+)
+const nextEventDayColor = computed(
+  () => colorOf(viewNode.value.props.color) ?? colorOf('accent_dark') ?? colorOf('accent'),
+)
+const nextEventInkColor = computed(
+  () => colorOf(viewNode.value.props.ink) ?? colorOf('ink'),
+)
+const weatherInkColor = computed(
+  () => colorOf(viewNode.value.props.ink) ?? colorOf('ink'),
+)
 
 const todoItems = computed(() => {
   const max = Number(viewNode.value.props.max ?? 8)
@@ -1185,33 +1218,64 @@ function end(): void {
       <span v-else class="hint">Bind a calendar</span>
     </template>
     <template v-else-if="node.type === 'mediabar'">
-      <span class="art"><MdiIcon name="music" :size="28" /></span>
-      <span class="meta">
-        <strong>{{ mediaTitle }}</strong>
-        <span>{{ mediaArtist }}</span>
-      </span>
-      <span class="round"><MdiIcon name="skip-previous" :size="20" /></span>
-      <span class="round on"><MdiIcon name="play" :size="20" /></span>
-      <span class="round"><MdiIcon name="skip-next" :size="20" /></span>
+      <div class="media-top">
+        <span class="art"><MdiIcon name="music" :size="28" /></span>
+        <span class="meta">
+          <strong>{{ mediaTitle }}</strong>
+          <span>{{ mediaArtist }}</span>
+        </span>
+        <span class="round"><MdiIcon name="skip-previous" :size="20" /></span>
+        <span class="round on"><MdiIcon name="play" :size="20" /></span>
+        <span class="round"><MdiIcon name="skip-next" :size="20" /></span>
+      </div>
+      <div class="media-bottom">
+        <span class="media-time">0:42</span>
+        <span class="media-progress"><span style="width: 22%" /></span>
+        <span class="media-time">3:15</span>
+        <MdiIcon name="volume-high" :size="16" />
+        <span class="media-volume"><span style="width: 35%" /></span>
+      </div>
     </template>
     <template v-else-if="node.type === 'forecast'">
       <span v-for="day in forecastDays" :key="day.day" class="day">
-        <span>{{ day.day }}</span>
-        <MdiIcon name="weather-partly-cloudy" :size="28" />
-        <span>{{ day.high }}° / {{ day.low }}°</span>
+        <span :style="{ color: forecastDayColor }">{{ day.day }}</span>
+        <HaWeatherIcon :condition="day.condition" :size="28" />
+        <span :style="{ color: forecastTempColor }">{{ day.high }}° / {{ day.low }}°</span>
       </span>
     </template>
     <template v-else-if="node.type === 'presence'">
       <template v-if="presencePeople.length">
         <span v-for="person in presencePeople" :key="person.entityId" class="person">
-          <span class="photo">{{ (person.name || '?').slice(0, 1).toUpperCase() }}</span>
+          <span class="photo" :style="{ color: presenceNameColor }">{{
+            (person.name || '?').slice(0, 1).toUpperCase()
+          }}</span>
           <span class="who">
-            <strong>{{ person.name }}</strong>
-            <span class="where">{{ whereWord(person) }}</span>
+            <strong :style="{ color: presenceNameColor }">{{ person.name }}</strong>
+            <span class="where" :style="{ color: presenceStatusColor }">{{
+              whereWord(person)
+            }}</span>
           </span>
         </span>
       </template>
-      <span v-else class="hint">No people</span>
+      <span v-else class="hint" :style="{ color: presenceNameColor }">No people</span>
+    </template>
+    <template v-else-if="node.type === 'weather'">
+      <span class="wx-caption" :style="{ color: weatherInkColor }">{{
+        (node.props.text || 'Temperature outside now').toUpperCase()
+      }}</span>
+      <span class="wx-row" :style="{ color: weatherInkColor }">
+        <MdiIcon name="weather-sunny" :size="48" />
+        <strong class="wx-temp">70F</strong>
+        <span class="wx-spacer" />
+        <MdiIcon name="tune" :size="28" />
+      </span>
+    </template>
+    <template v-else-if="node.type === 'nextevent'">
+      <span class="ne-day" :style="{ color: nextEventDayColor }">Monday</span>
+      <strong class="ne-time" :style="{ color: nextEventInkColor }">7:30PM</strong>
+      <span class="ne-spacer" />
+      <span class="ne-title" :style="{ color: nextEventInkColor }">Dentist appointment</span>
+      <span class="ne-meta" :style="{ color: nextEventInkColor }">Family · Main St</span>
     </template>
     <span v-else-if="node.type === 'led'" class="led" />
   </div>
@@ -1980,9 +2044,56 @@ function end(): void {
 
 .t-mediabar {
   display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.media-top {
+  display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
+}
+
+.media-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  font-size: 11px;
+  color: var(--rc-ink-soft);
+}
+
+.media-time {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.media-progress,
+.media-volume {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--rc-track);
+  overflow: hidden;
+}
+
+.media-progress {
+  flex: 1;
+  min-width: 48px;
+}
+
+.media-volume {
+  width: 72px;
+  flex: none;
+}
+
+.media-progress > span,
+.media-volume > span {
+  display: block;
+  height: 100%;
+  background: var(--rc-accent);
 }
 
 .art {
@@ -2075,6 +2186,75 @@ function end(): void {
 .who .where {
   font-size: 12px;
   color: var(--rc-accent-soft, var(--rc-accent));
+}
+
+.t-weather {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.wx-caption {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.wx-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.wx-temp {
+  font-size: 48px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.wx-spacer {
+  flex: 1;
+}
+
+.t-nextevent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.ne-day {
+  font-size: 14px;
+  font-weight: 300;
+}
+
+.ne-time {
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.ne-spacer {
+  flex: 1;
+}
+
+.ne-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.ne-meta {
+  font-size: 12px;
+  margin-top: 4px;
+  opacity: 0.9;
 }
 
 .t-led {

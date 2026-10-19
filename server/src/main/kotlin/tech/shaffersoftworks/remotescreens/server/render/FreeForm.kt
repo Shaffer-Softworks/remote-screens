@@ -132,7 +132,7 @@ internal fun DocContext.sized(node: Node, axis: Axis): Modifier {
 /** Components whose keys inside take the taps, so the component as a whole takes none. */
 internal val OWN_TAPS = setOf(
     "tile", "slider", "stepper", "choices", "keys", "swatches", "keypad", "dial", "tabs",
-    "timerkeys", "todolist", "events", "mediabar", "presence", "thermostat",
+    "timerkeys", "todolist", "events", "mediabar", "presence", "thermostat", "weather", "nextevent",
 )
 
 /**
@@ -253,7 +253,9 @@ internal fun DocContext.node(node: Node, self: Dims, axis: Axis, pages: Pages) {
         "countdown" -> countdownNode(node, axis, pages)
         "qr" -> qrNode(node, axis, pages)
         "markdown" -> markdownNode(node, axis, pages)
-        "timerkeys", "todolist", "events", "mediabar", "forecast", "presence", "led", "thermostat" ->
+        "timerkeys", "todolist", "events", "mediabar", "forecast", "presence", "led", "thermostat",
+        "weather", "nextevent",
+        ->
             blockNode(node, self, axis, pages)
     }
 }

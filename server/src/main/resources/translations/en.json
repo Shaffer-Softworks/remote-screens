@@ -125,5 +125,6 @@
   "ui.reset": "Reset",
   "ui.tone": "Tone",
   "ui.empty_text": "(empty)",
-  "ui.datetime_hint": "Change this helper in Home Assistant"
+  "ui.datetime_hint": "Change this helper in Home Assistant",
+  "ui.temperature_outside_now": "Temperature outside now"
 }

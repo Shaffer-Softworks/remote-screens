@@ -258,9 +258,29 @@ class FreeFormTest {
                     "days",
                     "forecast",
                     bind = NodeBinding("weather.home"),
-                    props = mapOf("days" to "3"),
+                    props = mapOf("days" to "3", "ink" to "ink_soft", "color" to "ink"),
                 ),
-                Node("people", "presence", props = mapOf("people" to "person.sam,person.alex")),
+                Node(
+                    "people",
+                    "presence",
+                    props = mapOf(
+                        "people" to "person.sam,person.alex",
+                        "ink" to "ink",
+                        "color" to "accent_soft",
+                    ),
+                ),
+                Node(
+                    "outside",
+                    "weather",
+                    bind = NodeBinding("weather.home"),
+                    props = mapOf("ink" to "ink"),
+                ),
+                Node(
+                    "next",
+                    "nextevent",
+                    bind = NodeBinding("calendar.family"),
+                    props = mapOf("ink" to "ink", "color" to "accent_dark"),
+                ),
                 Node(
                     "dot",
                     "led",
@@ -703,5 +723,104 @@ class FreeFormTest {
             ),
         )
         assertFailsWith<BadRequestException> { ScreenValidator.validate(screen(clash)) }
+    }
+
+    @Test
+    fun presenceInkAndStatusColoursChangeTheDocument() {
+        fun people(ink: String, color: String) = Node(
+            "people",
+            "presence",
+            props = mapOf("people" to "person.sam", "ink" to ink, "color" to color),
+        )
+        val soft = ScreenRenderer.render(
+            screen(people("ink", "accent_soft")),
+            tablet,
+            input(),
+        ).bytes
+        val bright = ScreenRenderer.render(
+            screen(people("accent", "blue")),
+            tablet,
+            input(),
+        ).bytes
+        assertTrue(soft.isNotEmpty())
+        assertTrue(
+            !soft.contentEquals(bright),
+            "presence ink/color props must change the document",
+        )
+        val vars = ScreenRenderer.render(screen(people("ink", "accent_soft")), tablet, input())
+            .vars(ha.states.value)
+        assertTrue(vars.containsKey("t.people.where.person.sam"))
+    }
+
+    @Test
+    fun forecastDayAndTempColoursChangeTheDocument() {
+        fun days(ink: String, color: String) = Node(
+            "days",
+            "forecast",
+            bind = NodeBinding("weather.home"),
+            props = mapOf("days" to "3", "ink" to ink, "color" to color),
+        )
+        val a = ScreenRenderer.render(screen(days("ink_soft", "ink")), tablet, input()).bytes
+        val b = ScreenRenderer.render(screen(days("accent", "blue")), tablet, input()).bytes
+        assertTrue(a.isNotEmpty())
+        assertTrue(!a.contentEquals(b), "forecast ink/color props must change the document")
+    }
+
+    @Test
+    fun currentWeatherDeclaresTempAndTuneCard() {
+        val root = Node("outside", "weather", bind = NodeBinding("weather.home"))
+        val doc = ScreenRenderer.render(screen(root), tablet, input())
+        val vars = doc.vars(ha.states.value)
+        assertEquals("14C", vars["t.outside.temp"]?.value)
+        assertContains(doc.entities, "weather.home")
+    }
+
+    @Test
+    fun nextEventDeclaresDayTimeTitleAndMeta() {
+        val root = Node("next", "nextevent", bind = NodeBinding("calendar.family"))
+        val doc = ScreenRenderer.render(screen(root), tablet, input())
+        val vars = doc.vars(ha.states.value)
+        assertEquals("Dentist appointment", vars["t.next.ev.title"]?.value)
+        assertTrue(vars["t.next.ev.day"]?.value?.isNotBlank() == true)
+        assertTrue(vars["t.next.ev.time"]?.value?.isNotBlank() == true)
+        assertContains(vars["t.next.ev.meta"]?.value.orEmpty(), "Family")
+        assertContains(vars["t.next.ev.meta"]?.value.orEmpty(), "Main St")
+        val coloured = Node(
+            "next",
+            "nextevent",
+            bind = NodeBinding("calendar.family"),
+            props = mapOf("ink" to "accent", "color" to "blue"),
+        )
+        val plain = doc.bytes
+        val tinted = ScreenRenderer.render(screen(coloured), tablet, input()).bytes
+        assertTrue(!plain.contentEquals(tinted), "nextevent ink/color props must change the document")
+    }
+
+    @Test
+    fun mediaBarDeclaresTrackTimeProgressVolumeSeekAndCard() {
+        val root = Node("now", "mediabar", bind = NodeBinding("media_player.living_room"))
+        val doc = ScreenRenderer.render(screen(root), tablet, input())
+        val vars = doc.vars(ha.states.value)
+        assertEquals("0:42", vars["e.media_player.living_room.pos"]?.value)
+        assertEquals("3:15", vars["e.media_player.living_room.dur"]?.value)
+        assertTrue(vars.containsKey("e.media_player.living_room.progress"))
+        assertTrue(vars.containsKey("e.media_player.living_room.level"))
+        assertTrue(
+            doc.docContext.predicted.keys.any { it.startsWith("now|seek|") },
+            "predicted: ${doc.docContext.predicted.keys}",
+        )
+        assertTrue(doc.docContext.predicted.keys.any { it.startsWith("now|volume|") })
+        val closed = Node(
+            "now",
+            "mediabar",
+            bind = NodeBinding("media_player.living_room"),
+            props = mapOf("openCard" to "false"),
+        )
+        val openBytes = doc.bytes
+        val closedBytes = ScreenRenderer.render(screen(closed), tablet, input()).bytes
+        assertTrue(
+            !openBytes.contentEquals(closedBytes),
+            "openCard=false must omit the art/title card tap",
+        )
     }
 }

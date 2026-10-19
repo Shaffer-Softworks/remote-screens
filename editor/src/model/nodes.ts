@@ -122,6 +122,8 @@ export const COMPONENTS: ComponentSpec[] = [
   { id: 'events', type: 'events', label: 'Events', icon: 'calendar-month', group: 'Display' },
   { id: 'mediabar', type: 'mediabar', label: 'Media bar', icon: 'play-box-outline', group: 'Controls' },
   { id: 'forecast', type: 'forecast', label: 'Forecast', icon: 'weather-partly-cloudy', group: 'Display' },
+  { id: 'weather', type: 'weather', label: 'Current weather', icon: 'weather-sunny', group: 'Display' },
+  { id: 'nextevent', type: 'nextevent', label: 'Next event', icon: 'calendar-clock', group: 'Display' },
   { id: 'presence', type: 'presence', label: 'Presence', icon: 'account-group-outline', group: 'Display' },
   { id: 'led', type: 'led', label: 'LED', icon: 'circle', group: 'Display' },
   { id: 'thermostat', type: 'thermostat', label: 'Thermostat', icon: 'thermostat', group: 'Controls' },
@@ -190,6 +192,7 @@ const DEFAULT_PROPS: Partial<Record<NodeType, Record<string, string>>> = {
   todolist: { max: '8' },
   events: { max: '3' },
   forecast: { days: '5' },
+  weather: { text: 'Temperature outside now' },
   led: { size: '16' },
 }
 

@@ -109,7 +109,8 @@ fun DocContext.segmentedLevelBar(
 }
 
 /**
- * Connected segmented choices (mode / oscillate / preset): the chosen cell is teal with dark ink via [bindChoices].
+ * Connected segmented choices (mode / oscillate / preset): the chosen cell is teal; ink stays page colour via
+ * [bindChoices].
  */
 fun DocContext.choiceRow(
     scopeId: String,

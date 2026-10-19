@@ -78,5 +78,6 @@
   "ui.reset": "Réinitialiser",
   "ui.tone": "Tonalité",
   "ui.empty_text": "(vide)",
-  "ui.datetime_hint": "Modifier cet assistant dans Home Assistant"
+  "ui.datetime_hint": "Modifier cet assistant dans Home Assistant",
+  "ui.temperature_outside_now": "Température dehors maintenant"
 }

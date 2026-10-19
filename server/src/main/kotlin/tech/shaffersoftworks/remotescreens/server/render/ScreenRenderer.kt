@@ -422,8 +422,8 @@ object ScreenRenderer {
             val doc = this@navButton
             val word = title.uppercase(doc.i18n.locale)
             val wordW = Modifier.width(doc.units.px(wDp - STAT_ICON_GAP_DP))
-            // Idle = page ink; on the teal pill use KEY_ON_INK so the glyph reads (mockup hybrid).
-            val ink = doc.role(if (on) Role.KEY_ON_INK else Role.INK)
+            // Icon and label stay page ink on the teal pill (selected does not flip to KEY_ON_INK).
+            val ink = doc.role(Role.INK)
             when (style.labels) {
                 "icons" -> doc.icon(icon, minOf(NAV_ICON_ONLY_MAX, hDp * NAV_ICON_ONLY_SHARE), ink)
                 "text" -> {
