@@ -163,6 +163,8 @@ internal fun DocContext.buttonNode(node: Node, axis: Axis, pages: Pages) {
     }
     val word = node.props["text"]?.takeIf { it.isNotEmpty() }
     val icon = node.props["icon"]?.takeIf { it.isNotEmpty() }
+    val sp = node.props["fontSize"]?.toFloatOrNull() ?: Type.BODY
+    val weight = node.props["weight"]?.toFloatOrNull() ?: Weight.MEDIUM
     scope.Row(
         modifier,
         horizontal = RcRowHorizontalPositioning.Center,
@@ -181,7 +183,7 @@ internal fun DocContext.buttonNode(node: Node, axis: Axis, pages: Pages) {
                 Modifier.width(doc.units.px(Metrics.BUTTON_ICON_GAP_DP)),
             )
         }
-        if (word != null) doc.label(word, Type.BODY, ink, weight = Weight.MEDIUM)
+        if (word != null) doc.label(word, sp, ink, weight = weight)
     }
 }
 
@@ -253,18 +255,20 @@ internal fun DocContext.tileNode(node: Node, self: Dims, axis: Axis, pages: Page
 /** The time, the date, or the time over the date, from the values the player keeps itself. */
 internal fun DocContext.clockNode(node: Node, axis: Axis, pages: Pages) {
     val sp = node.props["fontSize"]?.toFloatOrNull() ?: Type.DISPLAY
+    val weight = node.props["weight"]?.toFloatOrNull() ?: Weight.LIGHT
     val ink = node.props["color"]?.let { paint(it) } ?: role(Role.INK)
     val show = node.props["show"] ?: "time"
     val textAlign = align(node.props["align"])
     scope.Column(styled(node, axis, pages), horizontal = horizontal(node.props["align"])) {
         val doc = this@clockNode
-        if (show != "date") doc.label(doc.text(Vars.TIME), sp, ink, Weight.LIGHT, align = textAlign)
-        if (show == "date") doc.label(doc.text(Vars.DATE), sp, ink, align = textAlign, lines = 2)
+        if (show != "date") doc.label(doc.text(Vars.TIME), sp, ink, weight, align = textAlign)
+        if (show == "date") doc.label(doc.text(Vars.DATE), sp, ink, weight, align = textAlign, lines = 2)
         if (show == "both") {
             doc.label(
                 doc.text(Vars.DATE),
                 maxOf(sp * Metrics.CLOCK_DATE_SCALE, Type.BODY),
                 doc.role(Role.INK_SOFT),
+                weight,
                 align = textAlign,
                 lines = 2,
             )
@@ -307,6 +311,8 @@ internal fun DocContext.badgeNode(node: Node, axis: Axis, pages: Pages) {
     val icon = node.props["icon"]?.takeIf { it.isNotEmpty() } ?: id?.let { states[it]?.attr(
         "icon",
     ) } ?: domain?.let { Catalogue.of(it)?.icon }
+    val sp = node.props["fontSize"]?.toFloatOrNull() ?: Type.BODY
+    val weight = node.props["weight"]?.toFloatOrNull() ?: Weight.MEDIUM
     scope.Row(
         modifier,
         horizontal = RcRowHorizontalPositioning.Center,
@@ -320,12 +326,12 @@ internal fun DocContext.badgeNode(node: Node, axis: Axis, pages: Pages) {
         if (id != null && node.props["text"].isNullOrEmpty()) {
             doc.label(
                 doc.text(Vars.entity(id, Vars.KEY_STATE)),
-                Type.BODY,
+                sp,
                 ink,
-                Weight.MEDIUM,
+                weight,
             )
         } else {
-            doc.label(node.props["text"].orEmpty(), Type.BODY, ink, Weight.MEDIUM)
+            doc.label(node.props["text"].orEmpty(), sp, ink, weight)
         }
     }
 }

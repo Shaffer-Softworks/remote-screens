@@ -170,6 +170,8 @@ const style = computed<CSSProperties>(() => {
       if (!viewNode.value.style.corner) css.borderRadius = `${48 / 2.6}px`
       if (!bg) css.background = colorOf(nodeProps.color ?? 'key')
       css.color = colorOf(nodeProps.ink) ?? colorOf('ink')
+      css.fontSize = `${Number(nodeProps.fontSize ?? 14)}px`
+      css.fontWeight = Number(nodeProps.weight ?? 500)
       if (!padded) css.padding = '0 12px'
       break
     case 'slider':
@@ -184,6 +186,7 @@ const style = computed<CSSProperties>(() => {
       css.color = colorOf(nodeProps.color) ?? colorOf('ink')
       css.textAlign = (nodeProps.align as CSSProperties['textAlign']) ?? 'start'
       css.alignItems = ALIGN[nodeProps.align ?? 'start']
+      css.fontWeight = Number(nodeProps.weight ?? 300)
       break
     case 'badge': {
       const explicit = colorOf(nodeProps.color)
@@ -191,6 +194,8 @@ const style = computed<CSSProperties>(() => {
       if (!viewNode.value.style.corner) css.borderRadius = '16px'
       if (!bg) css.background = explicit ?? (on.value ? accent.value : colorOf('key'))
       css.color = explicit || on.value ? colorOf('key_on_ink') : colorOf('ink')
+      css.fontSize = `${Number(nodeProps.fontSize ?? 14)}px`
+      css.fontWeight = Number(nodeProps.weight ?? 500)
       if (!padded) css.padding = '0 12px'
       break
     }
@@ -265,7 +270,8 @@ const style = computed<CSSProperties>(() => {
     case 'countdown':
       css.color = colorOf(nodeProps.color) ?? colorOf('ink')
       css.fontSize = `${Number(nodeProps.fontSize ?? 44)}px`
-      css.fontWeight = 300
+      css.fontWeight = Number(nodeProps.weight ?? 300)
+      css.textAlign = (nodeProps.align as CSSProperties['textAlign']) ?? 'center'
       break
     case 'qr': {
       const qr = Number(nodeProps.size ?? 160)
@@ -277,7 +283,8 @@ const style = computed<CSSProperties>(() => {
     }
     case 'markdown':
       css.color = colorOf(nodeProps.color) ?? colorOf('ink')
-      css.fontSize = `${Number(nodeProps.fontSize ?? 16)}px`
+      css.fontSize = `${Number(nodeProps.fontSize ?? 14)}px`
+      css.textAlign = (nodeProps.align as CSSProperties['textAlign']) ?? 'start'
       break
     case 'tabs':
       if (viewNode.value.size.width === 'wrap') css.width = '320px'
@@ -835,16 +842,23 @@ function end(): void {
       <span
         v-if="node.props.show !== 'date'"
         class="time"
-        :style="{ fontSize: `${Number(node.props.fontSize ?? 44)}px` }"
+        :style="{
+          fontSize: `${Number(node.props.fontSize ?? 44)}px`,
+          fontWeight: Number(node.props.weight ?? 300),
+        }"
         >{{ clockTime }}</span
       >
       <span
         v-if="node.props.show === 'date' || node.props.show === 'both'"
         :style="
           node.props.show === 'date'
-            ? { fontSize: `${Number(node.props.fontSize ?? 44)}px` }
+            ? {
+                fontSize: `${Number(node.props.fontSize ?? 44)}px`,
+                fontWeight: Number(node.props.weight ?? 300),
+              }
             : {
                 fontSize: `${Math.max(Number(node.props.fontSize ?? 44) * 0.33, 14)}px`,
+                fontWeight: Number(node.props.weight ?? 300),
                 color: colorOf('ink_soft'),
               }
         "
@@ -1380,8 +1394,6 @@ function end(): void {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 14px;
-  font-weight: 500;
 }
 
 .t-icon {
@@ -1404,7 +1416,6 @@ function end(): void {
 }
 
 .t-clock .time {
-  font-weight: 300;
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -1413,8 +1424,6 @@ function end(): void {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
-  font-weight: 500;
   white-space: nowrap;
 }
 

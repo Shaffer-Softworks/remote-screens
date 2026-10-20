@@ -602,9 +602,12 @@ internal fun DocContext.countdownNode(node: Node, axis: Axis, pages: Pages) {
     if (id != null) bindEntity(id)
     val ink = node.props["color"]?.let { paint(it) } ?: role(Role.INK)
     val sp = node.props["fontSize"]?.toFloatOrNull() ?: Type.DISPLAY
+    val weight = node.props["weight"]?.toFloatOrNull() ?: Weight.LIGHT
+    val alignSpec = node.props["align"] ?: "center"
+    val textAlign = align(alignSpec)
     scope.Box(
         styled(node, axis, pages),
-        horizontal = RcHorizontalPositioning.Center,
+        horizontal = horizontal(alignSpec),
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@countdownNode
@@ -613,15 +616,15 @@ internal fun DocContext.countdownNode(node: Node, axis: Axis, pages: Pages) {
                 doc.text(Vars.entity(id, Vars.KEY_VALUE)),
                 sp,
                 ink,
-                Weight.LIGHT,
-                align = RcTextAlign.Center,
+                weight,
+                align = textAlign,
             )
             else -> doc.label(
                 node.props["text"] ?: "0:00",
                 sp,
                 ink,
-                Weight.LIGHT,
-                align = RcTextAlign.Center,
+                weight,
+                align = textAlign,
             )
         }
     }
@@ -666,7 +669,8 @@ internal fun DocContext.markdownNode(node: Node, axis: Axis, pages: Pages) {
     val lines = MarkdownLines.parse(node.props["text"].orEmpty())
     val ink = node.props["color"]?.let { paint(it) } ?: role(Role.INK)
     val sp = node.props["fontSize"]?.toFloatOrNull() ?: Type.BODY
-    scope.Column(styled(node, axis, pages)) {
+    val textAlign = align(node.props["align"])
+    scope.Column(styled(node, axis, pages), horizontal = horizontal(node.props["align"])) {
         val doc = this@markdownNode
         for (line in lines) {
             val weight = when {
@@ -674,7 +678,7 @@ internal fun DocContext.markdownNode(node: Node, axis: Axis, pages: Pages) {
                 line.italic -> Weight.NORMAL
                 else -> Weight.NORMAL
             }
-            doc.label(line.text.ifEmpty { " " }, sp, ink, weight)
+            doc.label(line.text.ifEmpty { " " }, sp, ink, weight, align = textAlign)
         }
     }
 }

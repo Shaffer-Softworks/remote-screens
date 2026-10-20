@@ -1,0 +1,59 @@
+---
+description: Editor uses Preview-first shell only (rail + large canvas + overlay inspector)
+globs: editor/src/components/ScreenEditor.vue,editor/src/components/EditorToolbar.vue,editor/src/components/layouts/**/*
+alwaysApply: false
+---
+
+# Editor layout: Preview first
+
+## Decision
+
+The screen editor ships **one** shell: Preview first (canvas-first). Do **not** reintroduce a layout switcher or parallel Classic / Insert-Layers / Side-activities shells unless the user explicitly asks to experiment again.
+
+## Structure
+
+| Piece | Role |
+|-------|------|
+| [`ScreenEditor.vue`](editor/src/components/ScreenEditor.vue) | State: history, device, save/preview, page CRUD, selection, `railTool` |
+| [`EditorToolbar.vue`](editor/src/components/EditorToolbar.vue) | Back, name, undo/redo, Day/Dark, device, grid size, Preview, Save |
+| [`layouts/EditorLayoutCanvas.vue`](editor/src/components/layouts/EditorLayoutCanvas.vue) | Left rail (Add / Tree / Page / Screen), page picker, canvas, selection overlay |
+| [`layouts/EditorCanvasSection.vue`](editor/src/components/layouts/EditorCanvasSection.vue) | Free-form Design/Split/Code + `DesignCanvas`/`CodeView`, or grid `GridMockup` |
+
+Panels stay as shared children: `ComponentPalette`, `ComponentTree`, `EntityLibrary`, `PagePanel`, `ScreenPanel`, `AttributesPanel`, `TileDrawer`.
+
+## UX rules for this shell
+
+- **Rail** opens a labeled flyout (title + short blurb + close). Toggle the same button to collapse.
+- **Tree** is free-form only; disabled on grid pages with a clear title.
+- **Add** = palette (free-form, includes HA tab) or `EntityLibrary` (grid).
+- **Selection** opens a right overlay over the preview (“Selected …” + close). Esc clears selection.
+- When nothing is selected and no flyout is open, show the canvas tip pointing at Add / click-to-select.
+- Page chrome: “Editing” dropdown + Free-form/Grid badge; buttons to add free-form or grid pages.
+
+## Removed on purpose
+
+These were A/B prototypes and should stay gone unless revived deliberately:
+
+- Layout dropdown / `rs.editorLayout` / `editorLayout.ts`
+- `EditorLayoutCurrent`, `EditorLayoutLayers`, `EditorLayoutRail`
+- `PageTabs` as the primary page switcher (pages live in the canvas layout row)
+- `InspectorDock` / pinned Page-Screen strip / `EditorStatusBar` layout hints
+
+## Local run (layout work)
+
+```sh
+./gradlew :server:installDist
+# terminal 1 — demo API
+REMOTE_SCREENS_DEMO=1 REMOTE_SCREENS_DATA=/tmp/rs-demo \
+REMOTE_SCREENS_STATIC=editor/dist \
+REMOTE_SCREENS_INGRESS_PORT=18099 REMOTE_SCREENS_PLAYER_PORT=18100 \
+server/build/install/server/bin/server
+
+# terminal 2
+cd editor && npm run dev
+```
+
+## Follow-ups (not done yet)
+
+- Commit the Preview-first editor changes when asked.
+- Refresh wiki / `docs/screenshots/editor*.png` after the UI settles (see docs-wiki-screenshots-context).

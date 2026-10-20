@@ -12,6 +12,7 @@ import { entityById, state } from '../store'
 import ColorSwatches from './ColorSwatches.vue'
 import IconPicker from './IconPicker.vue'
 import MdiIcon from './MdiIcon.vue'
+import TypographyFields from './TypographyFields.vue'
 
 const props = defineProps<{ node: Node; screen: Screen; isRoot: boolean; parentType?: string }>()
 const ctx = inject(DESIGN)!
@@ -607,49 +608,24 @@ const typeIcon = computed(() =>
             @input="setProp('text', ($event.target as HTMLTextAreaElement).value)"
           />
         </label>
-        <div class="row two">
-          <label class="field"
-            >Size (sp)<input
-              type="number"
-              min="6"
-              step="1"
-              :value="currentProps.fontSize ?? 16"
-              @input="setProp('fontSize', ($event.target as HTMLInputElement).value)"
-          /></label>
-          <label class="field">
-            Weight
-            <select
-              :value="currentProps.weight ?? '400'"
-              @change="setProp('weight', ($event.target as HTMLSelectElement).value)"
-            >
-              <option value="300">Light</option>
-              <option value="400">Regular</option>
-              <option value="500">Medium</option>
-              <option value="700">Bold</option>
-            </select>
-          </label>
-        </div>
-        <div class="row two">
-          <label class="field">
-            Align
-            <select
-              :value="currentProps.align ?? 'start'"
-              @change="setProp('align', ($event.target as HTMLSelectElement).value)"
-            >
-              <option value="start">Start</option>
-              <option value="center">Center</option>
-              <option value="end">End</option>
-            </select>
-          </label>
-          <label v-if="currentProps.marquee !== 'true'" class="field"
-            >Max lines<input
-              type="number"
-              min="1"
-              max="20"
-              :value="currentProps.lines ?? 1"
-              @input="setProp('lines', ($event.target as HTMLInputElement).value)"
-          /></label>
-        </div>
+        <TypographyFields
+          :font-size="currentProps.fontSize"
+          :weight="currentProps.weight"
+          :align="currentProps.align"
+          :default-font-size="16"
+          default-weight="400"
+          @update:font-size="setProp('fontSize', $event)"
+          @update:weight="setProp('weight', $event)"
+          @update:align="setProp('align', $event)"
+        />
+        <label v-if="currentProps.marquee !== 'true'" class="field"
+          >Max lines<input
+            type="number"
+            min="1"
+            max="20"
+            :value="currentProps.lines ?? 1"
+            @input="setProp('lines', ($event.target as HTMLInputElement).value)"
+        /></label>
         <label class="check">
           <input
             type="checkbox"
@@ -693,6 +669,16 @@ const typeIcon = computed(() =>
             :value="currentProps.text ?? ''"
             @input="setProp('text', ($event.target as HTMLInputElement).value)"
         /></label>
+        <TypographyFields
+          :font-size="currentProps.fontSize"
+          :weight="currentProps.weight"
+          :default-font-size="14"
+          default-weight="500"
+          :show-align="false"
+          :min-size="8"
+          @update:font-size="setProp('fontSize', $event)"
+          @update:weight="setProp('weight', $event)"
+        />
         <div class="field">
           <span class="label">Icon</span>
           <IconPicker
@@ -748,27 +734,17 @@ const typeIcon = computed(() =>
             <option value="both">The time over the date</option>
           </select>
         </label>
-        <div class="row two">
-          <label class="field"
-            >Size (sp)<input
-              type="number"
-              min="8"
-              step="2"
-              :value="currentProps.fontSize ?? 44"
-              @input="setProp('fontSize', ($event.target as HTMLInputElement).value)"
-          /></label>
-          <label class="field">
-            Align
-            <select
-              :value="currentProps.align ?? 'start'"
-              @change="setProp('align', ($event.target as HTMLSelectElement).value)"
-            >
-              <option value="start">Start</option>
-              <option value="center">Center</option>
-              <option value="end">End</option>
-            </select>
-          </label>
-        </div>
+        <TypographyFields
+          :font-size="currentProps.fontSize"
+          :weight="currentProps.weight"
+          :align="currentProps.align"
+          :default-font-size="44"
+          default-weight="300"
+          :min-size="8"
+          @update:font-size="setProp('fontSize', $event)"
+          @update:weight="setProp('weight', $event)"
+          @update:align="setProp('align', $event)"
+        />
       </template>
       <template v-if="currentNode.type === 'badge'">
         <label class="field"
@@ -777,6 +753,16 @@ const typeIcon = computed(() =>
             :placeholder="currentNode.bind ? 'the entity\'s state' : ''"
             @input="setProp('text', ($event.target as HTMLInputElement).value)"
         /></label>
+        <TypographyFields
+          :font-size="currentProps.fontSize"
+          :weight="currentProps.weight"
+          :default-font-size="14"
+          default-weight="500"
+          :show-align="false"
+          :min-size="8"
+          @update:font-size="setProp('fontSize', $event)"
+          @update:weight="setProp('weight', $event)"
+        />
         <div class="field">
           <span class="label">Icon</span>
           <IconPicker
@@ -951,16 +937,18 @@ const typeIcon = computed(() =>
         </label>
       </template>
       <template v-if="currentNode.type === 'countdown'">
-        <label class="field">
-          Font size
-          <input
-            type="number"
-            min="12"
-            max="120"
-            :value="currentProps.fontSize ?? '44'"
-            @input="setProp('fontSize', ($event.target as HTMLInputElement).value)"
-          />
-        </label>
+        <TypographyFields
+          :font-size="currentProps.fontSize"
+          :weight="currentProps.weight"
+          :align="currentProps.align"
+          :default-font-size="44"
+          default-weight="300"
+          default-align="center"
+          :min-size="12"
+          @update:font-size="setProp('fontSize', $event)"
+          @update:weight="setProp('weight', $event)"
+          @update:align="setProp('align', $event)"
+        />
       </template>
       <template v-if="currentNode.type === 'qr' || currentNode.type === 'countdown'">
         <label v-if="!currentNode.bind" class="field">
@@ -980,6 +968,15 @@ const typeIcon = computed(() =>
             @input="setProp('text', ($event.target as HTMLTextAreaElement).value)"
           />
         </label>
+        <TypographyFields
+          :font-size="currentProps.fontSize"
+          :align="currentProps.align"
+          :default-font-size="14"
+          :show-weight="false"
+          :min-size="8"
+          @update:font-size="setProp('fontSize', $event)"
+          @update:align="setProp('align', $event)"
+        />
       </template>
       <template v-if="currentNode.type === 'tabs'">
         <label class="field">

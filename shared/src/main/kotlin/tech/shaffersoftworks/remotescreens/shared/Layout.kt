@@ -121,12 +121,14 @@ object NodeTypes {
 /**
  * One component of a free-form page. Sizes are `wrap`, `fill`, `dp:N` or `weight:N`, as in Compose.
  * Props by type: `text` (text, fontSize, weight, align, color, lines), `icon` (icon, iconOn, size, color),
- * `button` (text, icon, color, ink), containers (arrangement, alignment, gap), `slider` (steps), `image` (fit),
- * `clock` (show: time, date or both; fontSize, color, align), `badge` (text, icon, color), `avatar` (text, size),
+ * `button` (text, icon, color, ink, fontSize, weight), containers (arrangement, alignment, gap), `slider` (steps),
+ * `image` (fit), `clock` (show: time, date or both; fontSize, weight, color, align),
+ * `badge` (text, icon, color, fontSize, weight), `avatar` (text, size),
  * `progress` (min, max, color), `graph` (hours, color), `switch` (color), `stepper` (step), `choices` (max),
  * `gauge` (min, max, color, size, caption: words or `@name`), `analog` (size, seconds, numbers: all or quarters),
  * `iconbutton` (icon, iconOn, size, color), `keys` (size), `swatches` (show: colour or white), `keypad` (size),
- * `dial` (size, step), `countdown` (text), `qr` (text, size), `markdown` (text), `tabs` (labels: comma-separated),
+ * `dial` (size, step), `countdown` (text, fontSize, weight, align), `qr` (text, size),
+ * `markdown` (text, fontSize, align), `tabs` (labels: comma-separated),
  * `timerkeys` (timer Start/Pause/Cancel), `todolist` (max), `events` (calendars, max), `mediabar` (media strip),
  * `forecast` (days, ink: weekday colour, color: temp colour), `presence` (people, ink, color: status),
  * `led` (size, colour while on), `weather` (text caption, ink; current conditions + temp),
