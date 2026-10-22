@@ -16,6 +16,8 @@ internal object MusicMetrics {
     const val ART_DP = 120f
     /** Now-playing card: art beside title, album, times, and transport icons. */
     const val NOW_CARD_H_DP = 200f
+    /** Cap so Browse still gets the lower left column on a short page. */
+    const val NOW_CARD_MAX_SHARE = 0.45f
     const val TRANSPORT_DP = 40f
     const val TRANSPORT_ICON_DP = 24f
     const val ART_CORNER_DP = 8f

@@ -97,7 +97,7 @@ private fun musicFrame(box: TileBox): MusicFrame {
     val innerW = (box.w - pad * 2f).coerceAtLeast(1f)
     val innerH = (box.h - pad * 2f).coerceAtLeast(1f)
     val colW = ((innerW - columnGap) / 2f).coerceAtLeast(1f)
-    val nowH = MusicMetrics.NOW_CARD_H_DP.coerceAtMost(innerH * 0.45f)
+    val nowH = MusicMetrics.NOW_CARD_H_DP.coerceAtMost(innerH * MusicMetrics.NOW_CARD_MAX_SHARE)
     val browseH = (innerH - nowH - sectionGap).coerceAtLeast(1f)
     val progressW = (
         colW - cardPad * 2f - MusicMetrics.ART_DP - columnGap

@@ -5,9 +5,7 @@ package tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
-import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
 import androidx.compose.remote.core.CalendarSystemClock
 import androidx.compose.remote.core.RemoteClock
 import androidx.compose.remote.player.core.RemoteDocument
@@ -41,12 +39,7 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
     private var appliedValues: Map<String, VarValue> = emptyMap()
     private var appliedBitmaps: Map<String, Bitmap> = emptyMap()
     private var appliedPage: Int? = null
-    private val liveVideoView = LiveVideoView(context)
-    private val liveMapView = LiveMapView(context)
-    private val liveSearchView = LiveSearchView(context)
-    private var videoSlot: Slot? = null
-    private var mapSlot: Slot? = null
-    private var searchSlot: Slot? = null
+    private val overlays = DocumentOverlays(parent = this, documentPlayer = ::documentPlayer)
     private var lastState: RemoteScreenState? = null
     private var appliedTimeZone: String? = null
     /** After a MAIN rebuild into the back buffer, swap once PAGE has been drawn off-screen. */
@@ -80,39 +73,23 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
         }
         mainBackPlayer.visibility = View.GONE
         addView(mainBackPlayer, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-        liveVideoView.onFailed = { video, httpCode ->
-            val slot = videoSlot
-            stopVideo()
-            if (slot != null) onVideoFailed(slot, video, httpCode)
-        }
-        liveSearchView.onQueryChange = { tileId, query -> onSearchQuery(tileId, query) }
-        liveSearchView.onPlayUri = { tileId, uri -> onSearchPlay(tileId, uri) }
-        liveSearchView.onEnqueueUri = { tileId, uri -> onSearchEnqueue(tileId, uri) }
         // A text that changes while it is measured registers a relayout boundary in the middle of the partial
         // layout pass, which then throws ConcurrentModificationException on every frame (alpha20). A full pass
         // never walks that list, so the partial pass is never left to run.
         viewTreeObserver.addOnPreDrawListener {
             for (slot in loadedDocuments.keys) fullLayoutIfDirty(documentPlayer(slot))
-            placeOwnedOverlay(videoSlot, liveVideoView, liveVideoView.video?.componentId)
-            placeOwnedOverlay(mapSlot, liveMapView, liveMapView.map?.componentId)
-            placeSearchOverlay()
+            overlays.placeBeforeDraw()
             true
         }
     }
 
     override fun onWindowVisibilityChanged(visibility: Int) {
         super.onWindowVisibilityChanged(visibility)
-        lastState?.let { state ->
-            renderVideo(state)
-            renderMap(state)
-            renderSearch(state)
-        }
+        lastState?.let { state -> overlays.renderAll(state) }
     }
 
     override fun onDetachedFromWindow() {
-        stopVideo()
-        stopMap()
-        stopSearch()
+        overlays.stopAll()
         super.onDetachedFromWindow()
     }
 
@@ -125,18 +102,31 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
         appliedValues = state.values
         appliedBitmaps = state.bitmaps
 
+        syncMainPage(state, newlyLoaded)
+        showSlots(state)
+        invalidateDocuments()
+        pendingMainSwap?.let { document -> revealMainSwap(document) }
+        pendingMainFirstReveal?.let { document -> revealMainFirst(document) }
+        overlays.renderAll(state)
+    }
+
+    private fun syncMainPage(state: RemoteScreenState, newlyLoaded: Set<Slot>) {
         val mainTarget = if (pendingMainSwap != null) mainInactive() else player(Slot.MAIN)
         if (Slot.MAIN in newlyLoaded || state.page != appliedPage) {
             mainTarget.setUserLocalInt(PAGE_VARIABLE, state.page)
             appliedPage = state.page
         }
-        if (Slot.MAIN in loadedDocuments) {
-            for ((name, value) in state.localInts) {
-                mainTarget.setUserLocalInt(name, value)
-            }
+        if (Slot.MAIN !in loadedDocuments) return
+        for ((name, value) in state.localInts) {
+            mainTarget.setUserLocalInt(name, value)
         }
+    }
+
+    private fun showSlots(state: RemoteScreenState) {
         for (slot in Slot.entries) {
-            if (slot == Slot.MAIN && (pendingMainSwap != null || pendingMainFirstReveal != null)) continue
+            val pendingMain = slot == Slot.MAIN && pendingMainSwap != null
+            val pendingFirst = slot == Slot.MAIN && pendingMainFirstReveal != null
+            if (pendingMain || pendingFirst) continue
             val isShown = slot in state.documents
             player(slot).visibility = when {
                 isShown -> View.VISIBLE
@@ -145,7 +135,10 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
             }
         }
         if (pendingMainSwap == null) mainInactive().visibility = View.GONE
-        // A value set from outside a touch is not drawn until the player is asked to.
+    }
+
+    /** A value set from outside a touch is not drawn until the player is asked to. */
+    private fun invalidateDocuments() {
         for (slot in loadedDocuments.keys) {
             if (slot == Slot.MAIN && pendingMainSwap != null) {
                 mainInactive().invalidate()
@@ -153,11 +146,6 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
                 player(slot).invalidate()
             }
         }
-        pendingMainSwap?.let { document -> revealMainSwap(document) }
-        pendingMainFirstReveal?.let { document -> revealMainFirst(document) }
-        renderVideo(state)
-        renderMap(state)
-        renderSearch(state)
     }
 
     /** Active document player for [slot] (MAIN may be either buffer). */
@@ -202,7 +190,7 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
                 pendingMainSwap = null
                 mainSwapPosted = false
                 newFront.invalidate()
-                lastState?.let { renderSearch(it) }
+                lastState?.let { overlays.renderAll(it) }
             }
         }
     }
@@ -228,7 +216,7 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
                 mainFirstPosted = false
                 main.alpha = 1f
                 main.invalidate()
-                lastState?.let { renderSearch(it) }
+                lastState?.let { overlays.renderAll(it) }
             }
         }
     }
@@ -242,108 +230,6 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
 
     private fun swapStillPending(document: SlotDocument): Boolean =
         loadedDocuments[Slot.MAIN] === document && pendingMainSwap === document
-
-    private fun renderVideo(state: RemoteScreenState) {
-        val activeVideo = state.playingVideo?.takeIf { isVideoAllowed && windowVisibility == View.VISIBLE }
-        when {
-            activeVideo == null -> stopVideo()
-            activeVideo.first != videoSlot || activeVideo.second != liveVideoView.video ->
-                startVideo(activeVideo.first, activeVideo.second)
-        }
-    }
-
-    /** Just above its document player, so a card's video stays under an alert. */
-    private fun startVideo(slot: Slot, video: SlotVideo) {
-        (liveVideoView.parent as? ViewGroup)?.removeView(liveVideoView)
-        val layoutParams = LayoutParams(0, 0).apply { gravity = Gravity.TOP or Gravity.START }
-        // Insert above that slot only — never bringToFront, or the overlay sits over alerts and steals taps.
-        addView(liveVideoView, indexOfChild(documentPlayer(slot)) + 1, layoutParams)
-        liveVideoView.visibility = View.INVISIBLE
-        videoSlot = slot
-        liveVideoView.play(video)
-        placeOwnedOverlay(slot, liveVideoView, video.componentId)
-    }
-
-    private fun stopVideo() {
-        liveVideoView.stop()
-        videoSlot = null
-        (liveVideoView.parent as? ViewGroup)?.removeView(liveVideoView)
-    }
-
-    private fun renderMap(state: RemoteScreenState) {
-        val activeMap = state.playingMap?.takeIf { windowVisibility == View.VISIBLE }
-        when {
-            activeMap == null -> stopMap()
-            activeMap.first != mapSlot || activeMap.second != liveMapView.map ->
-                startMap(activeMap.first, activeMap.second, state.bitmaps)
-            else -> liveMapView.show(activeMap.second, state.bitmaps)
-        }
-    }
-
-    /** Just above its document player, so a card's map stays under an alert. */
-    private fun startMap(slot: Slot, map: SlotMap, bitmaps: Map<String, Bitmap>) {
-        (liveMapView.parent as? ViewGroup)?.removeView(liveMapView)
-        val layoutParams = LayoutParams(0, 0).apply { gravity = Gravity.TOP or Gravity.START }
-        addView(liveMapView, indexOfChild(documentPlayer(slot)) + 1, layoutParams)
-        liveMapView.visibility = View.INVISIBLE
-        mapSlot = slot
-        liveMapView.show(map, bitmaps)
-        placeOwnedOverlay(slot, liveMapView, map.componentId)
-    }
-
-    private fun stopMap() {
-        liveMapView.stop()
-        mapSlot = null
-        (liveMapView.parent as? ViewGroup)?.removeView(liveMapView)
-    }
-
-    private fun renderSearch(state: RemoteScreenState) {
-        val activeSearch = state.playingSearch?.takeIf { windowVisibility == View.VISIBLE }
-        when {
-            activeSearch == null -> stopSearch()
-            activeSearch.first != searchSlot ||
-                activeSearch.second.componentId != liveSearchView.search?.componentId ||
-                activeSearch.second.revision != liveSearchView.search?.revision ->
-                startSearch(activeSearch.first, activeSearch.second)
-            else -> {
-                liveSearchView.setResults(activeSearch.second.tileId, activeSearch.second.rows)
-                placeSearchOverlay()
-            }
-        }
-    }
-
-    private fun startSearch(slot: Slot, search: SlotSearch) {
-        (liveSearchView.parent as? ViewGroup)?.removeView(liveSearchView)
-        val layoutParams = LayoutParams(0, 0).apply { gravity = Gravity.TOP or Gravity.START }
-        addView(liveSearchView, indexOfChild(documentPlayer(slot)) + 1, layoutParams)
-        liveSearchView.visibility = View.INVISIBLE
-        searchSlot = slot
-        liveSearchView.show(search)
-        placeSearchOverlay()
-    }
-
-    /** Prefer the rectangle from the add-on. Component bounds stay 0×0 inside the listen column. */
-    private fun placeSearchOverlay() {
-        val active = lastState?.playingSearch ?: return
-        val (slot, search) = active
-        val host = documentPlayer(slot)
-        if (search.width > 0 && search.height > 0) {
-            placeFixedOverlay(liveSearchView, host, search.x, search.y, search.width, search.height)
-        } else {
-            placeRemoteOverlay(liveSearchView, host, search.componentId)
-        }
-    }
-
-    private fun stopSearch() {
-        liveSearchView.stop()
-        searchSlot = null
-        (liveSearchView.parent as? ViewGroup)?.removeView(liveSearchView)
-    }
-
-    private fun placeOwnedOverlay(slot: Slot?, overlay: View, componentId: Int?) {
-        if (slot == null || componentId == null) return
-        placeRemoteOverlay(overlay, documentPlayer(slot), componentId)
-    }
 
     private fun loadNewDocuments(state: RemoteScreenState): Set<Slot> {
         if (state.timeZone != appliedTimeZone) {

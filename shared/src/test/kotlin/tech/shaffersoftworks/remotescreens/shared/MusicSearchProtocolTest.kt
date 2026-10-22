@@ -19,7 +19,8 @@ class MusicSearchProtocolTest {
             page = 3,
         )
         assertEquals(search, Protocol.decodeServer(Protocol.encode(search)))
-        val legacy = """{"type":"live_search","slot":"main","rev":3,"componentId":6160384,"tileId":"ma1","playerEntityId":"media_player.living_room"}"""
+        val legacy = """{"type":"live_search","slot":"main","rev":3,"componentId":6160384,""" +
+            """"tileId":"ma1","playerEntityId":"media_player.living_room"}"""
         val decoded = Protocol.decodeServer(legacy) as ServerMessage.LiveSearch
         assertEquals(-1, decoded.page)
     }

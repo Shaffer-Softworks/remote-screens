@@ -25,12 +25,9 @@ internal fun placeFixedOverlay(
     val layoutParams = overlay.layoutParams as FrameLayout.LayoutParams
     val left = player.left + x
     val top = player.top + y
-    if (
-        layoutParams.leftMargin != left ||
-        layoutParams.topMargin != top ||
-        layoutParams.width != width ||
-        layoutParams.height != height
-    ) {
+    val positionChanged = layoutParams.leftMargin != left || layoutParams.topMargin != top
+    val sizeChanged = layoutParams.width != width || layoutParams.height != height
+    if (positionChanged || sizeChanged) {
         layoutParams.leftMargin = left
         layoutParams.topMargin = top
         layoutParams.width = width
