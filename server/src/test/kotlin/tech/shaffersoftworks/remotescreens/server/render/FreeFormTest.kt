@@ -622,7 +622,7 @@ class FreeFormTest {
     @Test
     fun keysKeypadAndSwatchesTapThroughTheRouter() {
         val s = screen(everyType)
-        val router = ActionRouter(ha) { i18n }
+        val router = ActionRouter(ha, { i18n })
         val memory = TapMemory()
         fun tap(ref: ActionRef) = runBlocking { router.handle(ref, s, memory) }
         tap(ActionRef("remote", "next"))

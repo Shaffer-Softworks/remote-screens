@@ -79,6 +79,9 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
             onAction = viewModel::onDocumentAction,
             onSwipe = viewModel::onSwipe,
             onVideoFailed = viewModel::onVideoFailed,
+            onSearchQuery = viewModel::onSearchQuery,
+            onSearchPlay = viewModel::onSearchPlay,
+            onSearchEnqueue = viewModel::onSearchEnqueue,
         )
         viewState.infoPanel?.let { infoPanel ->
             InfoPanel(
@@ -110,6 +113,9 @@ private fun RemoteScreen(
     onAction: (Slot, Int, String) -> Unit,
     onSwipe: (Boolean) -> Unit,
     onVideoFailed: (Slot, SlotVideo, Int?) -> Unit,
+    onSearchQuery: (String, String) -> Unit,
+    onSearchPlay: (String, String) -> Unit,
+    onSearchEnqueue: (String, String) -> Unit,
 ) {
     AndroidView(
         factory = { context -> RemoteDocumentView(context) },
@@ -118,6 +124,9 @@ private fun RemoteScreen(
             remoteDocumentView.onAction = onAction
             remoteDocumentView.onSwipe = onSwipe
             remoteDocumentView.onVideoFailed = onVideoFailed
+            remoteDocumentView.onSearchQuery = onSearchQuery
+            remoteDocumentView.onSearchPlay = onSearchPlay
+            remoteDocumentView.onSearchEnqueue = onSearchEnqueue
             remoteDocumentView.isSwipeEnabled = isSwipeEnabled
             remoteDocumentView.isVideoAllowed = isVideoAllowed
             remoteDocumentView.render(state)

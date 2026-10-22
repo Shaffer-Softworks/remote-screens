@@ -26,6 +26,7 @@ internal interface SessionHost {
     val supportsDeflate: Boolean
     val supportsVideo: Boolean
     val supportsMap: Boolean
+    val supportsMusicSearch: Boolean
     val buildMutex: Mutex
     val shownDocuments: ConcurrentHashMap<Slot, ShownDocument>
     val jobs: MutableList<Job>

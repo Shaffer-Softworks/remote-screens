@@ -97,6 +97,7 @@ const isHomePanel = (tile: Tile) => kindOf(tile) === 'home'
 const isWeatherPanel = (tile: Tile) => kindOf(tile) === 'weather' && tile.full === true
 const WEATHER_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const isThermostatPanel = (tile: Tile) => kindOf(tile) === 'climate' && tile.full === true
+const isMusicPanel = (tile: Tile) => kindOf(tile) === 'music' && tile.full === true
 const THERMOSTAT_MODES = [
   { label: 'Heat/Cool', icon: 'sun-snowflake-variant', on: true },
   { label: 'Heat', icon: 'fire' },
@@ -109,7 +110,8 @@ function place(placement: { tile: Tile; col: number; row: number; w: number; h: 
   if (
     isHomePanel(placement.tile) ||
     isWeatherPanel(placement.tile) ||
-    isThermostatPanel(placement.tile)
+    isThermostatPanel(placement.tile) ||
+    isMusicPanel(placement.tile)
   ) {
     return {
       left: '0px',
@@ -370,6 +372,7 @@ const highlight = computed(() => {
           panel: isHomePanel(placement.tile),
           'weather-panel': isWeatherPanel(placement.tile) || isThermostatPanel(placement.tile),
           'thermostat-panel': isThermostatPanel(placement.tile),
+          'music-panel': isMusicPanel(placement.tile),
           selected: placement.tile.id === selectedId,
           moved: moved.has(placement.tile.id),
           dragging: dragged?.type === 'tile' && dragged.id === placement.tile.id,
@@ -407,6 +410,44 @@ const highlight = computed(() => {
                 <span class="where">{{ who.state === 'home' ? 'HOME' : 'AWAY' }}</span>
               </span>
             </span>
+          </div>
+        </template>
+        <template v-else-if="isMusicPanel(placement.tile)">
+          <div class="ma-split">
+            <div class="ma-left">
+              <div class="ma-now">
+                <span class="ma-art" />
+                <span class="ma-meta">
+                  <strong>Phantom Grid</strong>
+                  <span>Summer Nights</span>
+                  <span class="soft">Vol. 01 · Indie Electronic</span>
+                  <span class="ma-times"><span>0:00</span><span>4:54</span></span>
+                  <span class="ma-progress" />
+                  <span class="ma-transport">
+                    <MdiIcon name="skip-previous" :size="22" />
+                    <MdiIcon name="pause" :size="22" />
+                    <MdiIcon name="skip-next" :size="22" />
+                    <MdiIcon name="volume-minus" :size="22" />
+                    <MdiIcon name="volume-plus" :size="22" />
+                  </span>
+                </span>
+              </div>
+              <div class="ma-card">
+                <span class="ma-label">Browse</span>
+                <span class="ma-chips"
+                  ><i>Artist</i><i>Album</i><i class="on">Track</i><i>Playlist</i><i>Radio</i></span
+                >
+                <span class="ma-row">Track · Where I Find God</span>
+                <span class="ma-row">Track · Neon Skyline</span>
+                <span class="ma-more">Load more</span>
+              </div>
+            </div>
+            <div class="ma-card">
+              <span class="ma-segments"><i class="on">Search</i><i>Queue</i></span>
+              <span class="ma-field">Search library</span>
+              <span class="ma-label">Results</span>
+              <span class="ma-row">Track · Night Drive</span>
+            </div>
           </div>
         </template>
         <template v-else-if="isThermostatPanel(placement.tile)">
@@ -811,6 +852,169 @@ const highlight = computed(() => {
 
 .tile.thermostat-panel {
   align-items: stretch;
+}
+
+.tile.music-panel {
+  align-items: stretch;
+  padding: 16px;
+  background: var(--rc-page);
+}
+
+.ma-split {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 16px;
+}
+
+.ma-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ma-left .ma-card,
+.ma-split > .ma-card {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.ma-now {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--rc-card) 22%, transparent);
+}
+
+.ma-art {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  background: var(--rc-track);
+  flex-shrink: 0;
+}
+
+.ma-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--rc-ink-soft);
+  font-size: 14px;
+}
+
+.ma-meta strong {
+  color: var(--rc-ink);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.ma-times {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.ma-progress {
+  display: block;
+  height: 4px;
+  margin-top: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--rc-accent) 70%, var(--rc-track));
+}
+
+.ma-transport {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  color: var(--rc-ink);
+}
+
+.ma-segments {
+  display: flex;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.ma-segments i {
+  flex: 1;
+  text-align: center;
+  padding: 8px 10px;
+  background: var(--rc-key);
+  color: var(--rc-ink);
+  font-style: normal;
+  font-size: 13px;
+}
+
+.ma-segments i.on {
+  background: var(--rc-accent, #14e1ba);
+  color: #10221e;
+}
+
+.ma-field {
+  border: 1px solid color-mix(in srgb, var(--rc-ink) 45%, transparent);
+  border-radius: 4px;
+  padding: 14px 12px 8px;
+  color: var(--rc-ink-soft);
+  font-size: 12px;
+}
+
+.ma-more {
+  color: var(--rc-accent, #14e1ba);
+  font-size: 14px;
+}
+
+.ma-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--rc-card) 18%, transparent);
+}
+
+.ma-label {
+  color: var(--rc-ink);
+  font-weight: 600;
+}
+
+.ma-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ma-chips i {
+  font-style: normal;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--rc-key);
+  color: var(--rc-ink);
+  font-size: 12px;
+}
+
+.ma-chips i.on {
+  background: var(--rc-key-on);
+  color: var(--rc-key-on-ink);
+}
+
+.ma-row {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--rc-card) 14%, transparent);
+  color: var(--rc-ink);
+  font-size: 14px;
+}
+
+.ma-hint {
+  color: var(--rc-ink-soft);
+  font-size: 13px;
+  margin-top: 8px;
 }
 
 .th-head {

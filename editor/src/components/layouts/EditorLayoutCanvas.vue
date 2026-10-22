@@ -177,6 +177,7 @@ function onLibraryAdd(source: { entityId?: string; kind?: string }): void {
           :page="page"
           @delete="emit('deletePage')"
           @convert="emit('convert')"
+          @add-page="kind => emit('addPage', kind)"
         />
         <ScreenPanel v-else-if="activeTool === 'screen'" :screen="screen" :device-width="device.w" />
       </div>
@@ -198,13 +199,23 @@ function onLibraryAdd(source: { entityId?: string; kind?: string }): void {
           <span class="kind muted">{{ pageKind }}</span>
         </label>
         <span class="grow" />
-        <button type="button" class="quiet" @click="emit('addPage', 'free')">
+        <button
+          type="button"
+          class="quiet"
+          title="Add a free-form page"
+          @click="emit('addPage', 'free')"
+        >
           <MdiIcon name="vector-square" :size="16" />
-          Free-form page
+          Add free-form
         </button>
-        <button type="button" class="quiet" @click="emit('addPage', 'grid')">
+        <button
+          type="button"
+          class="quiet"
+          title="Add a grid page"
+          @click="emit('addPage', 'grid')"
+        >
           <MdiIcon name="view-grid-outline" :size="16" />
-          Grid page
+          Add grid
         </button>
       </div>
 

@@ -49,6 +49,11 @@ class ServerDependencies(
     private val renderDataRepository = RenderDataRepository(homeAssistant)
     private val pictureRepository = PictureRepository(homeAssistant, httpClient, config.mapTileUrl)
     private val languageRepository = LanguageRepository(homeAssistant, layoutRepository)
+    private val actionRouter = ActionRouter(
+        homeAssistant,
+        { languageRepository.current() },
+        renderDataRepository,
+    )
 
     val screenService = ScreenService(layoutRepository)
     val themeService = ThemeService(layoutRepository)
@@ -71,7 +76,7 @@ class ServerDependencies(
             cameraStreamService = cameraStreamService,
             languageRepository = languageRepository,
             playerApkRepository = playerApkRepository,
-            actionRouter = ActionRouter(homeAssistant) { languageRepository.current() },
+            actionRouter = actionRouter,
             screenClock = ScreenClock(homeAssistant, languageRepository),
             scope = scope,
             mapTileUrl = config.mapTileUrl,

@@ -231,7 +231,9 @@ class PlayerViewModelTest {
         viewModel.onDocumentAction(Slot.MAIN, revision = 7, metadata = metadata)
         runCurrent()
 
-        verifyBlocking(connectionRepository) { send(PlayerMessage.Action(Slot.MAIN, 7, metadata)) }
+        verifyBlocking(connectionRepository) {
+            send(PlayerMessage.Action(Slot.MAIN, 7, metadata, page = 0))
+        }
     }
 
     @Test

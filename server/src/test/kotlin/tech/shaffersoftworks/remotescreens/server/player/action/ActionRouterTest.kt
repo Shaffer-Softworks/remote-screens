@@ -2,6 +2,8 @@ package tech.shaffersoftworks.remotescreens.server.player.action
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoHome
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoLayout
+import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
@@ -15,7 +17,8 @@ import kotlin.test.assertTrue
 
 class ActionRouterTest {
     private val ha = DemoHome()
-    private val router = ActionRouter(ha) { I18n("en", I18n.load("en"), emptyMap(), true) }
+    private val renderData = RenderDataRepository(ha)
+    private val router = ActionRouter(ha, { I18n("en", I18n.load("en"), emptyMap(), true) }, renderData)
     private val screen = DemoLayout.screen()
 
     private fun tap(meta: String, memory: TapMemory = TapMemory(), now: Long = 0) =
@@ -145,5 +148,39 @@ class ActionRouterTest {
     @Test
     fun anUnknownTileIsIgnored() {
         assertEquals(TapOutcome.Ignored, tap("nope|toggle|"))
+    }
+
+    @Test
+    fun musicBrowseTypeRebuilds() {
+        assertEquals(TapOutcome.Rebuild, tap("ma1|browse_type|album"))
+        assertEquals("album", renderData.musicUi.state("ma1").browseMediaType)
+    }
+
+    @Test
+    fun musicListenModeRebuilds() {
+        assertEquals(TapOutcome.Rebuild, tap("ma1|listen_mode|search"))
+        assertEquals(MusicUiState.LISTEN_SEARCH, renderData.musicUi.state("ma1").listenMode)
+    }
+
+    @Test
+    fun musicPrimaryTabRebuilds() {
+        assertEquals(TapOutcome.Rebuild, tap("ma1|primary_tab|listen"))
+        assertEquals(MusicUiState.PRIMARY_LISTEN, renderData.musicUi.state("ma1").primarySection)
+    }
+
+    @Test
+    fun musicPlayUriCallsMusicAssistant() {
+        assertEquals(TapOutcome.Rebuild, tap("ma1|play_uri|demo://track/1"))
+        val (domain, service, data) = ha.calls.last()
+        assertEquals("music_assistant" to "play_media", domain to service)
+        assertEquals("demo://track/1", (data["media_id"] as JsonPrimitive).content)
+        assertEquals("play", (data["enqueue"] as JsonPrimitive).content)
+    }
+
+    @Test
+    fun musicClearQueueCallsMediaPlayer() {
+        assertEquals(TapOutcome.Rebuild, tap("ma1|clear_queue|"))
+        val (domain, service, _) = ha.calls.last()
+        assertEquals("media_player" to "clear_playlist", domain to service)
     }
 }

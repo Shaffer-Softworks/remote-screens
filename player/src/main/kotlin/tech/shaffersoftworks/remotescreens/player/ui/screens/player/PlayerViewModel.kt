@@ -21,6 +21,7 @@ import tech.shaffersoftworks.remotescreens.player.data.preferences.PlayerPrefere
 import tech.shaffersoftworks.remotescreens.player.data.update.UpdateRepository
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteScreenState
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotMap
+import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotSearch
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotVideo
 import tech.shaffersoftworks.remotescreens.player.utils.decodeBase64OrNull
 import tech.shaffersoftworks.remotescreens.shared.isNightAt
@@ -66,6 +67,7 @@ private val PLAYER_CAPABILITIES =
         "deflate",
         Protocol.CAPABILITY_VIDEO,
         Protocol.CAPABILITY_MAP,
+        Protocol.CAPABILITY_MUSIC_SEARCH,
     )
 
 /**
@@ -308,6 +310,8 @@ class PlayerViewModel @Inject constructor(
             is ServerMessage.Toast -> _events.send(PlayerEvent.ShowMessage(message.text))
             is ServerMessage.Video -> onVideo(message)
             is ServerMessage.LiveMap -> onMap(message)
+            is ServerMessage.LiveSearch -> onLiveSearch(message)
+            is ServerMessage.SearchResults -> onSearchResults(message)
             ServerMessage.Pong -> Unit
         }
     }
@@ -389,6 +393,54 @@ class PlayerViewModel @Inject constructor(
         updateRemoteScreen { it.withMap(message.slot, map) }
     }
 
+    private fun onLiveSearch(message: ServerMessage.LiveSearch) {
+        val search = SlotSearch(
+            revision = message.rev,
+            componentId = message.componentId,
+            tileId = message.tileId,
+            playerEntityId = message.playerEntityId,
+            x = message.x,
+            y = message.y,
+            width = message.width,
+            height = message.height,
+            page = message.page,
+        )
+        updateRemoteScreen { it.withSearch(message.slot, search) }
+    }
+
+    private fun onSearchResults(message: ServerMessage.SearchResults) {
+        updateRemoteScreen { it.withSearchResults(message.tileId, message.rows) }
+    }
+
+    fun onSearchQuery(tileId: String, query: String) {
+        send(PlayerMessage.SearchQuery(tileId, query))
+    }
+
+    fun onSearchPlay(tileId: String, uri: String) {
+        val metadata = ActionRef(tileId, "play_uri", uri).encode()
+        val slot = _viewState.value.remoteScreen.playingSearch?.first ?: Slot.MAIN
+        val revision = _viewState.value.remoteScreen.documents[slot]?.revision ?: return
+        sendAction(slot, revision, metadata)
+    }
+
+    fun onSearchEnqueue(tileId: String, uri: String) {
+        val metadata = ActionRef(tileId, "enqueue_uri", uri).encode()
+        val slot = _viewState.value.remoteScreen.playingSearch?.first ?: Slot.MAIN
+        val revision = _viewState.value.remoteScreen.documents[slot]?.revision ?: return
+        sendAction(slot, revision, metadata)
+    }
+
+    private fun sendAction(slot: Slot, revision: Int, metadata: String) {
+        send(
+            PlayerMessage.Action(
+                slot,
+                revision,
+                metadata,
+                page = _viewState.value.remoteScreen.page,
+            ),
+        )
+    }
+
     /** The add-on starts the camera's stream again, as Home Assistant ends one nobody watched for a while. */
     fun onVideoFailed(slot: Slot, video: SlotVideo, httpCode: Int?) {
         updateRemoteScreen { it.withoutVideo(slot, video) }
@@ -445,7 +497,7 @@ class PlayerViewModel @Inject constructor(
         _viewState.value.remoteScreen.withPrediction(slot, metadata)?.let { predicted ->
             _viewState.update { it.copy(remoteScreen = predicted) }
         }
-        send(PlayerMessage.Action(slot, revision, metadata))
+        sendAction(slot, revision, metadata)
     }
 
     private fun handleLocalAction(slot: Slot, actionRef: ActionRef) {
@@ -497,7 +549,7 @@ class PlayerViewModel @Inject constructor(
         if (slot == Slot.MAIN) return
         val document = _viewState.value.remoteScreen.documents[slot] ?: return
         updateRemoteScreen { it.closed(slot) }
-        send(PlayerMessage.Action(slot, document.revision, CLOSE_METADATA))
+        sendAction(slot, document.revision, CLOSE_METADATA)
     }
 
     private fun closeTopOverlay(): Boolean {
