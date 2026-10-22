@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
 const val SCHEMA_VERSION = 2
-const val MAX_PAGES = 8
+const val MAX_PAGES = 9
 const val MAX_TILES_PER_SCREEN = 96
 const val MAX_NODES_PER_PAGE = 400
 const val MAX_NODE_DEPTH = 16

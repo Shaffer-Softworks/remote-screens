@@ -53,6 +53,6 @@ internal object MusicMetrics {
     const val ROW_PAD_V_DP = 6f
     const val ROW_THUMB_GAP_DP = 10f
     const val ALPHA_BYTE_MAX = 255f
-    const val RGB_MASK = 0x00FFFFFF
+    const val RGB_MASK = 0x00FFFFFF.toInt()
     const val ALPHA_SHIFT = 24
 }

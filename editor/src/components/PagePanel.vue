@@ -11,7 +11,7 @@ const emit = defineEmits<{
   addPage: [kind: 'free' | 'grid']
 }>()
 
-const atPageLimit = computed(() => props.screen.pages.length >= 8)
+const atPageLimit = computed(() => props.screen.pages.length >= 9)
 
 const index = computed(() => props.screen.pages.indexOf(props.page))
 
@@ -64,7 +64,7 @@ const isHome = computed({
         <button
           type="button"
           :disabled="atPageLimit"
-          :title="atPageLimit ? 'At most 8 pages' : 'Add a grid page'"
+          :title="atPageLimit ? 'At most 9 pages' : 'Add a grid page'"
           @click="emit('addPage', 'grid')"
         >
           <MdiIcon name="view-grid-outline" :size="16" />
@@ -73,7 +73,7 @@ const isHome = computed({
         <button
           type="button"
           :disabled="atPageLimit"
-          :title="atPageLimit ? 'At most 8 pages' : 'Add a free-form page'"
+          :title="atPageLimit ? 'At most 9 pages' : 'Add a free-form page'"
           @click="emit('addPage', 'free')"
         >
           <MdiIcon name="vector-square" :size="16" />
