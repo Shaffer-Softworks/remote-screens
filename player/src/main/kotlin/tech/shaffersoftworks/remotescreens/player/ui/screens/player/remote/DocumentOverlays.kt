@@ -1,3 +1,5 @@
+@file:Suppress("RestrictedApi")
+
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote
 
 import android.graphics.Bitmap
