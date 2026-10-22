@@ -10,7 +10,8 @@ import tech.shaffersoftworks.remotescreens.shared.TypeSpec
 data class TileBox(val x: Float, val y: Float, val w: Float, val h: Float, val cols: Int, val rows: Int, val full: Boolean, val edge: Boolean = false)
 
 /** Whether the tile is a page of its own (the home panel, a full weather or climate tile), drawn without a card from edge to edge. */
-fun Tile.edgeToEdge(): Boolean = full && effectiveKind() in setOf("home", "weather", "climate")
+fun Tile.edgeToEdge(): Boolean =
+    full && effectiveKind() in setOf("home", "weather", "climate", "music")
 
 /** What a tap (or a hold) on a tile sends. */
 fun tapRef(tile: Tile, action: TapAction, spec: TypeSpec?, pageIndex: (String) -> Int?, hold: Boolean): ActionRef? {

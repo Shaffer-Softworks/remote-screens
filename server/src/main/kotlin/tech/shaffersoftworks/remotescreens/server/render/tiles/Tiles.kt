@@ -14,6 +14,7 @@ import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
 import tech.shaffersoftworks.remotescreens.server.render.homeTile
 import tech.shaffersoftworks.remotescreens.server.render.rounded
 import tech.shaffersoftworks.remotescreens.server.render.tap
+import tech.shaffersoftworks.remotescreens.server.render.musicPanel
 import tech.shaffersoftworks.remotescreens.server.render.thermostatPanel
 import tech.shaffersoftworks.remotescreens.server.render.weatherPanel
 
@@ -61,6 +62,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
             when (kind) {
                 "home" -> this@tile.homeTile(tile, box)
                 "climate" -> this@tile.thermostatPanel(tile, box)
+                "music" -> this@tile.musicPanel(tile, box)
                 else -> this@tile.weatherPanel(tile, box)
             }
         } }

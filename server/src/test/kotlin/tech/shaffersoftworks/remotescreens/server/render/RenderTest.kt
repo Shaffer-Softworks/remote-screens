@@ -190,6 +190,22 @@ class RenderTest {
     }
 
     @Test
+    fun aFullMusicTileIsTheMusicAssistantPage() {
+        val screen = DemoLayout.screen()
+        val data = runBlocking { RenderDataRepository(ha).forScreen(screen) }
+        val doc = ScreenRenderer.render(screen, tablet, input(data))
+        val vars = doc.vars(ha.states.value)
+        assertTrue(vars.containsKey("e.media_player.living_room.title"))
+        assertTrue(
+            "ma1|play_pause|" in doc.docContext.predicted ||
+                doc.docContext.predicted.keys.any { it.startsWith("ma1|play_pause") },
+        )
+        assertTrue(data.musicBrowse["ma1"].orEmpty().isNotEmpty())
+        assertTrue(data.musicQueue["ma1"]?.rows.orEmpty().isNotEmpty())
+        assertEquals("demo_music_assistant", data.musicConfigEntry["ma1"])
+    }
+
+    @Test
     fun heatModeUsesASingleSetpointNotDualControls() {
         val states = ha.states.value
         val heatStates = states + (

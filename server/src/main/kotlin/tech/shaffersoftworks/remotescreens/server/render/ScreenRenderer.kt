@@ -173,6 +173,7 @@ object ScreenRenderer {
         home: Int,
         showBar: Boolean,
     ) {
+        renderingPage = index
         if (showBar) topBar(screen, page, spec, back = page.hidden, home = home)
         val contentH = spec.heightDp - spec.topBar - spec.navBar
         val root = page.root

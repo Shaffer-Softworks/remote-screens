@@ -5,7 +5,13 @@ import IconPicker from './IconPicker.vue'
 import MdiIcon from './MdiIcon.vue'
 
 const props = defineProps<{ screen: Screen; page: Page }>()
-const emit = defineEmits<{ delete: []; convert: [] }>()
+const emit = defineEmits<{
+  delete: []
+  convert: []
+  addPage: [kind: 'free' | 'grid']
+}>()
+
+const atPageLimit = computed(() => props.screen.pages.length >= 8)
 
 const index = computed(() => props.screen.pages.indexOf(props.page))
 
@@ -52,6 +58,29 @@ const isHome = computed({
         {{ page.root ? 'Back to a grid page' : 'Convert to free-form' }}
       </button>
     </div>
+    <div class="field">
+      <span class="label">Add a page</span>
+      <div class="add-row">
+        <button
+          type="button"
+          :disabled="atPageLimit"
+          :title="atPageLimit ? 'At most 8 pages' : 'Add a grid page'"
+          @click="emit('addPage', 'grid')"
+        >
+          <MdiIcon name="view-grid-outline" :size="16" />
+          Grid
+        </button>
+        <button
+          type="button"
+          :disabled="atPageLimit"
+          :title="atPageLimit ? 'At most 8 pages' : 'Add a free-form page'"
+          @click="emit('addPage', 'free')"
+        >
+          <MdiIcon name="vector-square" :size="16" />
+          Free-form
+        </button>
+      </div>
+    </div>
     <div class="row">
       <button class="icon" title="Move left" :disabled="index === 0" @click="shift(-1)">
         <MdiIcon name="chevron-left" :size="18" />
@@ -94,5 +123,18 @@ const isHome = computed({
 
 .note {
   margin: 0;
+}
+
+.add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.add-row > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
 }
 </style>

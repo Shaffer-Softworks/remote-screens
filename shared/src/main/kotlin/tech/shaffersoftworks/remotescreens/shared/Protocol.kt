@@ -22,6 +22,9 @@ object Protocol {
     /** A player that can show an interactive [ServerMessage.LiveMap] over a map card. Others get a still bitmap. */
     const val CAPABILITY_MAP = "map"
 
+    /** A player that can show a native Music Assistant search overlay ([ServerMessage.LiveSearch]). */
+    const val CAPABILITY_MUSIC_SEARCH = "music_search"
+
     val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = false
@@ -121,10 +124,18 @@ sealed interface PlayerMessage {
         val darkSystem: Boolean = false,
     ) : PlayerMessage
 
-    /** A tap, from [ActionRef.encode]. */
+    /**
+     * A tap, from [ActionRef.encode].
+     * [page] is the page the tablet is on when it taps, so a rebuild can bake that page in (older players omit it).
+     */
     @Serializable
     @SerialName("action")
-    data class Action(val slot: Slot, val rev: Int, val metadata: String) : PlayerMessage
+    data class Action(
+        val slot: Slot,
+        val rev: Int,
+        val metadata: String,
+        val page: Int? = null,
+    ) : PlayerMessage
 
     @Serializable
     @SerialName("page")
@@ -160,6 +171,14 @@ sealed interface PlayerMessage {
         val componentId: Int,
         val httpCode: Int? = null,
     ) : PlayerMessage
+
+    /**
+     * A search query typed in the Music Assistant overlay for [tileId]. The add-on answers with
+     * [ServerMessage.SearchResults].
+     */
+    @Serializable
+    @SerialName("search_query")
+    data class SearchQuery(val tileId: String, val query: String) : PlayerMessage
 
     @Serializable
     @SerialName("ping")
@@ -242,6 +261,35 @@ sealed interface ServerMessage {
         val markers: List<MapMarker> = emptyList(),
     ) : ServerMessage
 
+    /**
+     * A native Music Assistant search field over the component with [componentId] in document [rev] of [slot].
+     * Only for players with [Protocol.CAPABILITY_MUSIC_SEARCH]; it ends when the document goes.
+     */
+    @Serializable
+    @SerialName("live_search")
+    data class LiveSearch(
+        val slot: Slot,
+        val rev: Int,
+        val componentId: Int,
+        val tileId: String,
+        val playerEntityId: String,
+        /** Document pixels of the search slot. The player places the field here when the component has no size. */
+        val x: Int = 0,
+        val y: Int = 0,
+        val width: Int = 0,
+        val height: Int = 0,
+        /** Page the field belongs to. Older servers omit it; the player then keeps the field up. */
+        val page: Int = -1,
+    ) : ServerMessage
+
+    /** Rows for an open [LiveSearch] after [PlayerMessage.SearchQuery]. */
+    @Serializable
+    @SerialName("search_results")
+    data class SearchResults(
+        val tileId: String,
+        val rows: List<MusicSearchRow> = emptyList(),
+    ) : ServerMessage
+
     @Serializable
     @SerialName("settings")
     data class Settings(val settings: ScreenSettings) : ServerMessage
@@ -283,4 +331,13 @@ data class MapMarker(
     val longitude: Double,
     val label: String,
     val picture: String? = null,
+)
+
+/** One hit in [ServerMessage.SearchResults]. */
+@Serializable
+data class MusicSearchRow(
+    val title: String,
+    val subtitle: String? = null,
+    val uri: String,
+    val imagePathOrUrl: String? = null,
 )

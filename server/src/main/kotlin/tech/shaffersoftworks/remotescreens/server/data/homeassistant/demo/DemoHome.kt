@@ -71,11 +71,109 @@ class DemoHome : HomeAssistant {
         return when (domain) {
             "weather" if service == "get_forecasts" -> forecasts(ids)
             "todo" if service == "get_items" -> todoItems(ids)
+            "music_assistant" -> musicAssistant(service, data)
             else -> {
                 for (id in ids) apply(id, domain, service, data)
                 null
             }
         }
+    }
+
+    private fun musicAssistant(service: String, data: JsonObject): JsonElement? = when (service) {
+        "get_library" -> demoMusicLibrary()
+        "search" -> demoMusicSearch(data["name"]?.jsonPrimitive?.contentOrNull.orEmpty())
+        "get_queue" -> demoMusicQueue()
+        "play_media" -> null
+        else -> null
+    }
+
+    private fun demoMusicLibrary(): JsonObject = buildJsonObject {
+        put(
+            "service_response",
+            buildJsonObject {
+                put(
+                    "items",
+                    buildJsonArray {
+                        listOf(
+                            "Neon Skyline" to "Synthwave Trio",
+                            "Where I Find God" to "Larry Fleet",
+                            "Phantom Grid" to "Summer Nights",
+                        ).forEach { (title, artist) ->
+                            add(
+                                buildJsonObject {
+                                    put("uri", "demo://track/${title.hashCode()}")
+                                    put("name", title)
+                                    put("artist", artist)
+                                },
+                            )
+                        }
+                    },
+                )
+            },
+        )
+    }
+
+    private fun demoMusicSearch(name: String): JsonObject = buildJsonObject {
+        put(
+            "service_response",
+            buildJsonObject {
+                put(
+                    "tracks",
+                    buildJsonArray {
+                        add(
+                            buildJsonObject {
+                                put("uri", "demo://search/${name.hashCode()}")
+                                put("name", if (name.isBlank()) "Night Drive" else name)
+                                put("artist", "Demo Artist")
+                            },
+                        )
+                    },
+                )
+            },
+        )
+    }
+
+    private fun demoMusicQueue(): JsonObject = buildJsonObject {
+        put(
+            "service_response",
+            buildJsonObject {
+                put(
+                    "current_item",
+                    buildJsonObject {
+                        put("name", "Phantom Grid")
+                        put("queue_item_id", "q1")
+                        put(
+                            "media_item",
+                            buildJsonObject {
+                                put("uri", "demo://queue/1")
+                                put("name", "Phantom Grid")
+                                put(
+                                    "artists",
+                                    buildJsonArray {
+                                        add(buildJsonObject { put("name", "Summer Nights") })
+                                    },
+                                )
+                            },
+                        )
+                    },
+                )
+                put(
+                    "next_item",
+                    buildJsonObject {
+                        put("name", "Next Up")
+                        put("queue_item_id", "q2")
+                        put(
+                            "media_item",
+                            buildJsonObject {
+                                put("uri", "demo://queue/2")
+                                put("name", "Next Up")
+                            },
+                        )
+                    },
+                )
+                put("items", 5)
+            },
+        )
     }
 
     private fun apply(id: String, domain: String, service: String, data: JsonObject) {
@@ -112,6 +210,17 @@ class DemoHome : HomeAssistant {
         }
         "config/area_registry/list" -> buildJsonArray {
             for ((id, name) in AREAS) add(buildJsonObject { put("area_id", id); put("name", name) })
+        }
+        "config/entity_registry/get" -> {
+            val entityId = payload["entity_id"]?.jsonPrimitive?.contentOrNull
+            if (entityId == "media_player.living_room") {
+                buildJsonObject {
+                    put("entity_id", entityId)
+                    put("config_entry_id", "demo_music_assistant")
+                }
+            } else {
+                null
+            }
         }
         "config/entity_registry/list_for_display" -> buildJsonObject {
             put("entities", buildJsonArray {

@@ -1,5 +1,9 @@
 package tech.shaffersoftworks.remotescreens.server.data.renderdata
 
+import tech.shaffersoftworks.remotescreens.server.data.music.MusicListRow
+import tech.shaffersoftworks.remotescreens.server.data.music.MusicQueueSnapshot
+import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
+
 /** A picture the add-on fetches and sends as a `bitmap` message. */
 data class PictureSlot(
     val name: String,
@@ -20,6 +24,16 @@ data class RenderData(
     val energy: EnergyPrefs? = null,
     val browse: Map<String, List<BrowseItem>> = emptyMap(),
     val todos: Map<String, List<TodoItem>> = emptyMap(),
+    /** Music Assistant library rows keyed by music tile id. */
+    val musicBrowse: Map<String, List<MusicListRow>> = emptyMap(),
+    /** Music Assistant queues keyed by music tile id. */
+    val musicQueue: Map<String, MusicQueueSnapshot> = emptyMap(),
+    /** Resolved MA config entry ids keyed by music tile id. */
+    val musicConfigEntry: Map<String, String> = emptyMap(),
+    /** Per-tile browse/listen UI for music pages. */
+    val musicUi: Map<String, MusicUiState> = emptyMap(),
+    /** Whether browse has another page, keyed by music tile id. */
+    val musicBrowseHasMore: Map<String, Boolean> = emptyMap(),
 )
 
 /** One incomplete to-do item, as `todo.get_items` returns it. */

@@ -6,6 +6,9 @@ sealed interface TapOutcome {
 
     data object Ignored : TapOutcome
 
+    /** Rebuild the main document (Music Assistant browse type / listen mode / load more). */
+    data object Rebuild : TapOutcome
+
     /** Open the card of [entityId] (or of a kind with no entity, such as energy). */
     data class Card(val entityId: String?, val kind: String?) : TapOutcome
 

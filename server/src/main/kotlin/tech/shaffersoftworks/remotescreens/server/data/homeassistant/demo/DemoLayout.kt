@@ -222,6 +222,20 @@ object DemoLayout {
                 listOf(Tile("c1", "climate.living_room", full = true)),
                 icon = "thermostat",
             ),
+            Page(
+                "music",
+                "Music",
+                listOf(
+                    Tile(
+                        "ma1",
+                        "media_player.living_room",
+                        kind = "music",
+                        full = true,
+                        options = mapOf("config_entry_id" to "demo_music_assistant"),
+                    ),
+                ),
+                icon = "music",
+            ),
         ),
     )
 }

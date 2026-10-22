@@ -507,6 +507,7 @@ export const CATALOGUE: Record<string, TypeSpec> = {
       "next",
       "previous",
       "volume",
+      "seek",
       "mute",
       "shuffle",
       "repeat",
@@ -924,6 +925,21 @@ export const CATALOGUE: Record<string, TypeSpec> = {
       "1x1",
       "2x1",
       "2x2"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": true
+  },
+  "music": {
+    "name": "Music Assistant",
+    "icon": "music",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "none",
+    "controls": [],
+    "sizes": [
+      "full"
     ],
     "options": [],
     "verbs": [],

@@ -1,0 +1,59 @@
+---
+description: Free-form typography props (fontSize, weight, align) in editor Attributes + server FreeForm + NodeView preview
+globs: editor/src/components/TypographyFields.vue,editor/src/components/AttributesPanel.vue,editor/src/components/NodeView.vue,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/freeform/FreeFormNodes.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/freeform/FreeFormMedia.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/Widgets.kt,shared/src/main/kotlin/tech/shaffersoftworks/remotescreens/shared/Layout.kt
+alwaysApply: false
+---
+
+# Free-form text style controls (Oct 2026)
+
+## What landed
+
+Authorable **fontSize** / **weight** / **align** for free-form leaves that draw text. Shared editor UI → JSON props → server `DocContext.label` → canvas `NodeView` preview.
+
+| Component | Props | Defaults (when unset) |
+| --- | --- | --- |
+| `text` | fontSize, weight, align (+ lines, marquee, color) | Title 16 / Regular 400 / start |
+| `clock` | fontSize, weight, align, color, show | Display 44 / Light 300 / start |
+| `countdown` | fontSize, weight, align, color, text | Display 44 / Light 300 / **center** |
+| `markdown` | fontSize, align, color, text | Body 14 / start; bold/italic still from `**` / `*` per line |
+| `button` | fontSize, weight (+ text, icon, color, ink) | Body 14 / Medium 500 (no align) |
+| `badge` | fontSize, weight (+ text, icon, color) | Body 14 / Medium 500 (no align) |
+
+**No `fontFamily`** — Remote Compose `scope.Text` in `Widgets.kt` has size + weight only; tablets use the platform default typeface.
+
+## Wiring
+
+```
+AttributesPanel → TypographyFields.vue
+  → node.props fontSize | weight | align
+  → NodeView.vue (CSS fontSize / fontWeight / textAlign)
+  → FreeFormNodes / FreeFormMedia → label(..., sp, ink, weight, align)
+```
+
+- **Presets** in `TypographyFields`: Caption 12, Body 14, Title 16, Headline 22, Value 28, Display 44, Huge 96 — match `Type` in `Widgets.kt`.
+- **Weights**: 300 / 400 / 500 / **600** (`Weight.SEMI_BOLD`) / 700.
+- Prop docs: `Node` KDoc in `Layout.kt`.
+
+## Gotchas
+
+- Countdown align default is **center** (preserve old look); UI uses `default-align="center"`. Do not treat missing `align` as start for countdown.
+- Button/badge had hard-coded `Type.BODY` + `Weight.MEDIUM` — keep those as defaults when props are absent.
+- Clock weight default stays **Light** so existing clocks do not jump to Regular.
+- Markdown: do not add a global weight control; line weight comes from markdown markers.
+- Preview: `.t-button` / `.t-badge` must not hard-code font-size/weight in CSS — set from props on the root style (same as `text`).
+
+## Out of scope
+
+- Custom typefaces / Google Fonts on tablets.
+- Editor chrome typography tokens (panels, toolbars).
+- Grid tile title sizes (fixed tile renderers).
+
+## Verify
+
+```bash
+./gradlew :server:detekt :server:test \
+  --tests 'tech.shaffersoftworks.remotescreens.server.render.FreeFormTest'
+cd editor && npm run lint
+```
+
+In the editor: Text / Clock / Button / Badge / Markdown / Countdown → change size + Bold → canvas updates immediately.

@@ -50,6 +50,10 @@ class DocContext(
     val videos = mutableListOf<LiveVideo>()
     /** Maps whose interactive OSM view plays over one of the document's boxes, for players that can show it. */
     val maps = mutableListOf<LiveMap>()
+    /** Music Assistant search overlays for players with CAPABILITY_MUSIC_SEARCH. */
+    val searches = mutableListOf<LiveSearch>()
+    /** Page index currently being drawn, so a search overlay can hide on the other pages. */
+    var renderingPage: Int = 0
     /** Action metadata to the action and the entity it changes. */
     val predicted = LinkedHashMap<String, Pair<ActionRef, String>>()
     /** What of an entity is drawn into the document itself (an icon, a list of modes), and what it was. */
@@ -218,9 +222,46 @@ data class LiveMap(val entityIds: List<String>, val componentId: Int, val dark: 
     }
 }
 
+/** Native Music Assistant search over [componentId] for [tileId] / [playerEntityId]. */
+data class LiveSearch(
+    val tileId: String,
+    val playerEntityId: String,
+    val componentId: Int,
+    val xPx: Int = 0,
+    val yPx: Int = 0,
+    val widthPx: Int = 0,
+    val heightPx: Int = 0,
+    /** Document page this field belongs to. The player hides it on every other page. */
+    val page: Int = 0,
+) {
+    companion object {
+        /** Next to [LiveMap.FIRST_COMPONENT_ID], so search, map, and video targets never share an id. */
+        const val FIRST_COMPONENT_ID = 0x5E_0000
+    }
+}
+
 /** The component id to give the box an interactive map of [entityIds] plays over, with `Modifier.componentId`. */
 fun DocContext.liveMap(entityIds: List<String>): Int {
     val componentId = LiveMap.FIRST_COMPONENT_ID + maps.size
     maps += LiveMap(entityIds, componentId, dark = palette.dark)
     return componentId
 }
+
+/** The component id for a native Music Assistant search overlay, placed at [boundsPx] in the document. */
+fun DocContext.liveSearch(tileId: String, playerEntityId: String, boundsPx: SearchBoundsPx): Int {
+    val componentId = LiveSearch.FIRST_COMPONENT_ID + searches.size
+    searches += LiveSearch(
+        tileId,
+        playerEntityId,
+        componentId,
+        xPx = boundsPx.x,
+        yPx = boundsPx.y,
+        widthPx = boundsPx.width,
+        heightPx = boundsPx.height,
+        page = renderingPage,
+    )
+    return componentId
+}
+
+/** Document-pixel rectangle for the native search field. */
+data class SearchBoundsPx(val x: Int, val y: Int, val width: Int, val height: Int)

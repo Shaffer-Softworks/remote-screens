@@ -2,6 +2,7 @@ package tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote
 
 import android.graphics.Bitmap
 import tech.shaffersoftworks.remotescreens.shared.MapMarker
+import tech.shaffersoftworks.remotescreens.shared.MusicSearchRow
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Slot
 import tech.shaffersoftworks.remotescreens.shared.VarValue
@@ -41,6 +42,25 @@ data class SlotMap(
     val markers: List<MapMarker>,
 )
 
+/** Native Music Assistant search over [componentId] in document [revision] of a slot. */
+data class SlotSearch(
+    val revision: Int,
+    val componentId: Int,
+    val tileId: String,
+    val playerEntityId: String,
+    val rows: List<MusicSearchRow> = emptyList(),
+    /** Document pixels. Used when the remote component has not been measured. */
+    val x: Int = 0,
+    val y: Int = 0,
+    val width: Int = 0,
+    val height: Int = 0,
+    /** Page this field belongs to. Negative means an older add-on that did not say. */
+    val page: Int = -1,
+) {
+    /** True on the music page, and for an older add-on that did not name a page. */
+    fun isShowingOn(currentPage: Int): Boolean = page < 0 || page == currentPage
+}
+
 /**
  * Everything the Remote Compose players show: the pages of the screen, a card over them, an alert over both.
  * Values go to every shown document; each document takes the ones it names.
@@ -54,6 +74,8 @@ data class RemoteScreenState(
     val videos: Map<Slot, SlotVideo> = emptyMap(),
     /** Interactive map the add-on started for a shown document; it goes with the document. */
     val maps: Map<Slot, SlotMap> = emptyMap(),
+    /** Native music search overlay for a shown document; it goes with the document. */
+    val searches: Map<Slot, SlotSearch> = emptyMap(),
     /** Named integers the player sets itself (free-form tabs), kept across document rebuilds. */
     val localInts: Map<String, Int> = emptyMap(),
     val page: Int = 0,
@@ -94,6 +116,12 @@ data class RemoteScreenState(
                 ?.let { map -> slot to map }
         }
 
+    /** Music search overlay matching a shown document revision, and only on its page. */
+    val playingSearch: Pair<Slot, SlotSearch>?
+        get() = searches.entries.firstOrNull { (slot, search) ->
+            documents[slot]?.revision == search.revision && search.isShowingOn(page)
+        }?.let { it.key to it.value }
+
     /** The page to show after a new main document: the same one if it still exists, otherwise home. */
     val pageAfterNewDocument: Int get() = if (page < pageCount) page else homePage
 
@@ -109,6 +137,7 @@ data class RemoteScreenState(
             values = values + message.vars.associateBy(VarValue::name),
             videos = videos - message.slot,
             maps = maps - message.slot,
+            searches = searches - message.slot,
         )
         if (message.slot != Slot.MAIN) return updated
         val newPageCount = message.pageCount.coerceAtLeast(1)
@@ -160,6 +189,20 @@ data class RemoteScreenState(
     fun withMap(slot: Slot, map: SlotMap): RemoteScreenState =
         if (documents[slot]?.revision == map.revision) copy(maps = maps + (slot to map)) else this
 
+    fun withSearch(slot: Slot, search: SlotSearch): RemoteScreenState =
+        if (documents[slot]?.revision == search.revision) {
+            copy(searches = searches + (slot to search))
+        } else {
+            this
+        }
+
+    fun withSearchResults(tileId: String, rows: List<MusicSearchRow>): RemoteScreenState {
+        val entry = searches.entries.firstOrNull { it.value.tileId == tileId } ?: return this
+        return copy(
+            searches = searches + (entry.key to entry.value.copy(rows = rows)),
+        )
+    }
+
     fun withPage(index: Int): RemoteScreenState = copy(page = index.coerceIn(0, pageCount - 1))
 
     fun withLocalInt(name: String, value: Int): RemoteScreenState = copy(
@@ -171,7 +214,12 @@ data class RemoteScreenState(
         if (slot == Slot.MAIN) {
             this
         } else {
-            copy(documents = documents - slot, videos = videos - slot, maps = maps - slot)
+            copy(
+                documents = documents - slot,
+                videos = videos - slot,
+                maps = maps - slot,
+                searches = searches - slot,
+            )
         }
 
     /** Hides every document and forgets the values, as when the screen must be paired again. */
@@ -181,6 +229,7 @@ data class RemoteScreenState(
             values = emptyMap(),
             videos = emptyMap(),
             maps = emptyMap(),
+            searches = emptyMap(),
             localInts = emptyMap(),
         )
 }

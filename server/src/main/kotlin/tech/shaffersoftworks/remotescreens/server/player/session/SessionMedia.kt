@@ -2,9 +2,11 @@ package tech.shaffersoftworks.remotescreens.server.player.session
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.render.LiveMap
+import tech.shaffersoftworks.remotescreens.server.render.LiveSearch
 import tech.shaffersoftworks.remotescreens.server.render.LiveVideo
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.shared.MapMarker
+import tech.shaffersoftworks.remotescreens.shared.MusicSearchRow
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.VarValue
@@ -15,7 +17,7 @@ import java.util.Base64
 private const val MS_PER_SECOND = 1000L
 private const val MAP_CARD_PICTURE = "map.card"
 
-/** Camera video streams, interactive maps, and picture bitmaps for a [SessionHost]. */
+/** Camera video streams, interactive maps, music search, and picture bitmaps for a [SessionHost]. */
 internal class SessionMedia(
     private val host: SessionHost,
 ) {
@@ -73,6 +75,54 @@ internal class SessionMedia(
                     markers = markers,
                 ),
             )
+        }
+    }
+
+    /** Opens the native Music Assistant search overlay; no-op for older players. */
+    suspend fun sendSearch(shown: ShownDocument, search: LiveSearch) {
+        if (!host.supportsMusicSearch) return
+        if (shownDocuments[shown.slot] !== shown) return
+        host.send(
+            ServerMessage.LiveSearch(
+                slot = shown.slot,
+                rev = shown.revision,
+                componentId = search.componentId,
+                tileId = search.tileId,
+                playerEntityId = search.playerEntityId,
+                x = search.xPx,
+                y = search.yPx,
+                width = search.widthPx,
+                height = search.heightPx,
+                page = search.page,
+            ),
+        )
+    }
+
+    /** Runs Music Assistant search and pushes [ServerMessage.SearchResults] to the player. */
+    fun runSearchQuery(tileId: String, query: String) {
+        context.scope.launch {
+            val fromDoc = shownDocuments.values
+                .asSequence()
+                .mapNotNull { it.renderedDoc.docContext.data.musicConfigEntry[tileId] }
+                .firstOrNull()
+            val configEntryId = fromDoc ?: run {
+                val screen = host.screen() ?: return@launch
+                val tile = screen.pages.flatMap { it.allTiles() }.firstOrNull { it.id == tileId }
+                    ?: return@launch
+                val entityId = tile.entityId ?: return@launch
+                tile.options["config_entry_id"]
+                    ?: context.renderDataRepository.music.configEntryIdForEntity(entityId)
+            } ?: return@launch
+            val rows = context.renderDataRepository.music.search(configEntryId, query)
+                .map { row ->
+                    MusicSearchRow(
+                        title = row.title,
+                        subtitle = row.subtitle,
+                        uri = row.uri,
+                        imagePathOrUrl = row.imagePathOrUrl,
+                    )
+                }
+            host.send(ServerMessage.SearchResults(tileId = tileId, rows = rows))
         }
     }
 

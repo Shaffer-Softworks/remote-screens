@@ -23,13 +23,16 @@ const others = computed(() => props.page.tiles.filter(tile => tile.id !== props.
 const edgeToEdge = computed(
   () =>
     kindOf(props.tile) === 'home' ||
-    (!!props.tile.full && ['weather', 'climate'].includes(kindOf(props.tile))),
+    (!!props.tile.full && ['weather', 'climate', 'music'].includes(kindOf(props.tile))),
 )
 
 /** An entity may be shown another way: a sensor as a graph, a player as its favourite music. */
 const SHOW_AS: Record<string, { kind: string; label: string }[]> = {
   sensor: [{ kind: 'history', label: 'History graph' }],
-  media_player: [{ kind: 'favourite', label: 'Favourite music' }],
+  media_player: [
+    { kind: 'favourite', label: 'Favourite music' },
+    { kind: 'music', label: 'Music Assistant' },
+  ],
 }
 const showAs = computed(() => (domain.value ? (SHOW_AS[domain.value] ?? []) : []))
 

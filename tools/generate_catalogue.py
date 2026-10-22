@@ -85,7 +85,7 @@ def kt_str(s):
 def kotlin(types):
     out = [
         f"// {HEADER}",
-        '@file:Suppress("MaxLineLength")',
+        '@file:Suppress("MaxLineLength", "LargeClass")',
         "",
         "package tech.shaffersoftworks.remotescreens.shared",
         "",

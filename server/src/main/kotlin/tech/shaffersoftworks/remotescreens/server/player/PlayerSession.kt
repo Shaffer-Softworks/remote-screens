@@ -58,6 +58,7 @@ class PlayerSession(
     private val supportsDeflate = Rc.DEFLATE in hello.capabilities
     private val supportsVideo = Protocol.CAPABILITY_VIDEO in hello.capabilities
     private val supportsMap = Protocol.CAPABILITY_MAP in hello.capabilities
+    private val supportsMusicSearch = Protocol.CAPABILITY_MUSIC_SEARCH in hello.capabilities
     private val tapMemory = TapMemory()
 
     var pairingCode: String? = null
@@ -177,6 +178,7 @@ class PlayerSession(
                 ) { message.settings } }
             is PlayerMessage.Action -> handleAction(message)
             is PlayerMessage.VideoFailed -> media.restartVideo(message)
+            is PlayerMessage.SearchQuery -> media.runSearchQuery(message.tileId, message.query)
             is PlayerMessage.Hello -> Unit
         }
     }
@@ -188,6 +190,8 @@ class PlayerSession(
             logger.debug("Tap on an old document ({} rev {}), ignored", message.slot, message.rev)
             return
         }
+        // Prefer the page from the tap: PageShown can lag, and rebuilds bake this into StateLayout.
+        message.page?.let { page = it }
         when {
             ref.tile == "alert" -> handleAlertAction(ref)
             ref.local -> if (ref.verb == "close" && message.slot != Slot.MAIN) {
@@ -218,6 +222,10 @@ class PlayerSession(
             TapOutcome.Done -> jobs += context.scope.launch {
                 delay(RESYNC_MS)
                 documents.resync()
+            }
+            TapOutcome.Rebuild -> {
+                val main = shownDocuments[Slot.MAIN]
+                if (main != null) documents.rebuild(main)
             }
             TapOutcome.Ignored -> Unit
         }
@@ -286,6 +294,7 @@ class PlayerSession(
         override val supportsDeflate get() = this@PlayerSession.supportsDeflate
         override val supportsVideo get() = this@PlayerSession.supportsVideo
         override val supportsMap get() = this@PlayerSession.supportsMap
+        override val supportsMusicSearch get() = this@PlayerSession.supportsMusicSearch
         override val buildMutex get() = this@PlayerSession.buildMutex
         override val shownDocuments get() = this@PlayerSession.shownDocuments
         override val jobs get() = this@PlayerSession.jobs
@@ -335,6 +344,7 @@ class PlayerSession(
             "settings",
             Protocol.CAPABILITY_VIDEO,
             Protocol.CAPABILITY_MAP,
+            Protocol.CAPABILITY_MUSIC_SEARCH,
         )
         const val RESYNC_MS = 3000L
     }
