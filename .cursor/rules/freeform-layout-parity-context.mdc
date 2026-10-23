@@ -1,0 +1,27 @@
+---
+description: Free-form page layout parity between the editor (HTML/CSS) and the tablet (Remote Compose), including the wrapped-row fill fix
+globs: server/src/main/kotlin/**/render/freeform/FreeFormLayout.kt,server/src/main/kotlin/**/render/FreeForm.kt,server/src/test/kotlin/**/render/FreeFormTest.kt,editor/src/components/NodeView.vue
+alwaysApply: false
+---
+
+# Free-form layout parity
+
+## Who draws what
+
+- **Editor canvas**: `editor/src/components/NodeView.vue` draws the page JSON as HTML (rows and columns are CSS flexbox, a box is CSS grid). It never sees the Remote Compose document.
+- **Server**: `FreeForm.kt` and `render/freeform/FreeFormLayout.kt` turn the same JSON into a Remote Compose document — layout instructions, not pixels.
+- **Tablet**: the player runs that document with the stock Remote Compose player. This is the first place the layout is drawn as Compose.
+
+A page that looks right in the editor and wrong on the device means CSS and Compose disagree. Fix it in `FreeFormLayout.kt`, not in the player.
+
+## Fill children of a wrapped row or column
+
+- A `fill` or `weight:N` child becomes `horizontalWeight`. In CSS, a fill child of a shrink-to-fit row gets its content width. In Compose, a weight in a wrap-content row takes all the room the row could grow to and pushes its siblings off screen.
+- `Node.looseChildren` in `FreeFormLayout.kt`: a `wrap` row treats children that fill its width as `wrap` (`looseW`); a `wrap` column does the same for heights (`looseH`). Cross-axis sizing stays in `pinH` / `pinW` (a wrapped row whose children fill its height is as tall as its tallest child).
+- Test: `FreeFormTest.aComponentThatFillsAWrappedRowTakesItsContentsWidth` — chips render the same whether the inner column is `wrap`, `fill`, or `weight:2`.
+
+## Other CSS vs Compose gaps
+
+- `fillMaxWidth` / `fillMaxHeight` inside a wrap-content container takes the max, unlike CSS. That is why `pinH` / `pinW` exist.
+- A wrapped **box** with fill children has the same mismatch and is left alone (`looseW` / `looseH` apply only to rows and columns).
+- `content()` / `natural()` estimate sizes (a text is 120 dp wide), so pinned sizes can differ slightly from the editor.

@@ -1,6 +1,6 @@
 ---
 description: "Cursor rules for Vue 3 development with Composition API integration."
-globs: **/*
+globs: editor/**/*.{vue,ts,js}
 alwaysApply: false
 ---
 // Vue 3 Composition API .cursorrules

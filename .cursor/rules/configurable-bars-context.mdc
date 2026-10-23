@@ -1,0 +1,32 @@
+---
+description: Configurable top bar and bottom navigation bar — heights in the grid math, how the renderer scales them, and the editor controls
+globs: shared/src/main/kotlin/**/Layout.kt,shared/src/main/kotlin/**/Grid.kt,shared/src/test/kotlin/**/GridParityTest.kt,tests/fixtures/grid_parity.json,server/src/main/kotlin/**/render/ScreenRenderer.kt,server/src/main/kotlin/**/validation/ScreenValidator.kt,editor/src/model/grid.ts,editor/src/model/grid.test.ts,editor/src/components/ScreenPanel.vue,editor/src/components/GridMockup.vue
+alwaysApply: false
+---
+
+# Configurable top and bottom bars
+
+## Model (`shared/.../Layout.kt`, mirrored in `editor/src/model/types.ts`)
+
+- `TopBar`: `date` (default true), `wifi` and `battery` (default false), `height` (null is 48 dp, clamped 32–120), `clockWidth` (percent of the screen width; null is `min(350, 42%)`, clamped 15–60), `background` / `clockBackground`.
+- `Screen.navBar`: `height` (null is 102 dp, or 66 dp under 600 dp wide, clamped 48–160), `labels` (`both` | `icons` | `text`), `layout` (`spread` | `center` | `fill`), colours `background`, `line`, `active`.
+- Colour fields take a theme role, a pastel key, or `#RRGGBB` / `#AARRGGBB`. The server resolves them with `DocContext.paint()` in `FreeForm.kt`.
+- Defaults match the original look, so old layouts load unchanged. `TopBar.validated()` and `NavBar.validated()` clamp values. `navBar` is optional in TypeScript; `store.open()` sets `navBar ??= {}` before the saved copy, so opening an old screen is not a change.
+
+## Grid math (keep Kotlin and TypeScript in step)
+
+- `Grid.spec(size, w, h, topBar, navBar)` takes bar heights in dp. `Grid.topBarHeight` returns 0 when the bar is hidden. `Grid.navBarHeight` uses the width-based default when height is null. `suggest()` (used on adoption) still uses the defaults.
+- `editor/src/model/grid.ts` mirrors it with `Math.fround`. Its `spec` takes `(size, w, h, topBar, nav)`.
+- `tests/fixtures/grid_parity.json` is the shared answer key. Regenerate with `./gradlew :shared:test -PupdateFixtures` and check the diff only adds the intended lines.
+
+## Renderer (`ScreenRenderer.kt`)
+
+- Top bar scale `k = (spec.topBar / Grid.TOP_BAR).coerceIn(0.7, 2)` multiplies the header text, the icons, the Back key (capped at `topBar - 6`) and the spacers. The date shows only when `date` is on and the screen is at least `Grid.NARROW` wide.
+- Bottom bar scale is the bar height against that width's default bar, so the defaults draw as before. `navArrangement()` picks the row arrangement. `fill` makes each button `width / count` wide; the other layouts use square buttons.
+- `GridMockup.vue` repeats this sizing. Change the renderer and the mockup together. Sliders need `v-range` (see `editor-sliders-and-theme-preview-context.mdc`).
+
+## Tests
+
+- `RenderTest.barsTakeTheirOwnSizeLabelsLayoutAndColours`
+- `ScreenValidatorTest.barSettingsAreKeptInRange`
+- `editor/src/model/grid.test.ts` bar-height cases

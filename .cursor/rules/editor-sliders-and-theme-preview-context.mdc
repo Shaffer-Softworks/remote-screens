@@ -1,0 +1,20 @@
+---
+description: Editor range sliders (v-range) and the Day/Dark theme preview toggle
+globs: editor/src/range.ts,editor/src/main.ts,editor/src/style.css,editor/src/components/ScreenPanel.vue,editor/src/components/ScreenEditor.vue,editor/src/components/EditorToolbar.vue,editor/src/components/ColorInput.vue
+alwaysApply: false
+---
+
+# Editor sliders and the Day/Dark preview
+
+## Day/Dark preview
+
+- The toggle only previews. `ScreenEditor.vue` sets `activeThemeId` from `settings.theme` or `settings.darkTheme`, each falling back to `DEFAULT_THEME` (`rpi`). It does not change the screen's `darkMode`.
+- With neither theme picked, both resolve to RPI dark, so Day and Dark look the same. The tablet does the same: both default to `"rpi"` in `shared/.../Layout.kt`.
+- `sameTheme` is true when both ids match. `EditorToolbar.vue` shows an info icon beside the toggle; clicking it opens Screen settings (`chooseDarkTheme` sets `railTool` to `'screen'`).
+- The default day theme is itself dark. Changing that default would change existing tablets.
+
+## Range sliders
+
+- A native range fills to the thumb's centre, but the thumb stops a radius short of each end, so 0% showed a sliver of the filled colour and 100% a sliver of the empty track.
+- `v-range` (`editor/src/range.ts`, registered in `main.ts`) sets `--fill` (0 to 1) on mount, on update, and on `input`. `style.css` draws the track so the gradient sits under the thumb at both ends.
+- Every `<input type="range">` needs `v-range`, or its track stays empty. It is on the screen-panel sliders (top bar height, clock width, navigation bar height, brightness, standby brightness, night brightness) and on `ColorInput.vue`. Add it to any new slider.

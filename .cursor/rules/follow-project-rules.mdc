@@ -1,42 +1,51 @@
 ---
-description: Before finishing a change, read every project rule that covers the files you touched
+description: Before finishing a change, read the project rule for the files you are changing
 alwaysApply: true
 ---
 
-# Read the rule before you finish
+# Read the rule for the files you change
 
-File-scoped rules are not in the prompt until a matching file is open. A new file is written before its rule attaches. Before editing, and again before you finish, read the rules below for the paths you changed.
-
-`ProjectRuleIndexTest` fails the build when a file in `.cursor/rules/` is missing from this list.
+A file-scoped rule is not in the prompt until a matching file is already open, so a new file is written before its rule attaches. Before editing, and again before you finish, read every rule below whose files you touched. `ProjectRuleIndexTest` fails when a file in `.cursor/rules/` is missing from this list.
 
 ## The build already checks
 
-- `kotlin-detekt-ktlint-rpi-style.mdc`, `kotlin-magic-numbers-detekt.mdc`, `kotlin-detekt-top-level-property-naming.mdc`: `./gradlew :<module>:detekt` in CI.
+- `kotlin-detekt-ktlint-rpi-style.mdc`, `kotlin-magic-numbers-detekt.mdc`, and `kotlin-detekt-top-level-property-naming.mdc`: `./gradlew :<module>:detekt` in CI.
 - `composable-preview.mdc`: `ComposablePreviewRuleTest` in `:player:testDebugUnitTest`. A UI `@Composable` under `player/**/ui` needs a same-file `@Preview` that calls it. Each preview is private, `widthDp = 800` and `heightDp = 480` unless `name` is set, and wrapped in `RemoteScreensTheme`.
 - `kotlin-core.mdc` (`GlobalScope`) and the no-XML-layout line in `jetpack-compose.mdc` and `android-architecture.mdc`: the same player test.
 - `editor-preview-first-layout.mdc`: `editor/src/model/editorShell.test.ts` in `npm test`.
 - `editor-naming-variables.mdc` and `vue3-composition-api-cursorrules-prompt-file.mdc`: `npm run lint` in CI.
 
-## Read these for the files you touch
+## Kotlin
 
-- Any `*.kt` or `*.kts`: `kotlin-core.mdc`, `kotlin-naming-variables.mdc`, and the three detekt rules above.
-- `*Screen.kt`, `*Component.kt`, `*Composable.kt`, `ui/**/*.kt`: also `jetpack-compose.mdc` and `composable-preview.mdc`.
-- `*ViewModel.kt`, `*Repository.kt`, `*Dao.kt`, `*Module.kt`, `di/**`, `data/**`: `android-architecture.mdc`.
-- `editor/**`: `vue3-composition-api-cursorrules-prompt-file.mdc` and `editor-naming-variables.mdc`. The screen-editor shell also uses `editor-preview-first-layout.mdc`.
+Any `*.kt` or `*.kts`: read `kotlin-core.mdc`, `kotlin-naming-variables.mdc`, `kotlin-magic-numbers-detekt.mdc`, `kotlin-detekt-top-level-property-naming.mdc`, and `kotlin-detekt-ktlint-rpi-style.mdc`.
 
-## Read the context rule when its files change
+`*Screen.kt`, `*Component.kt`, `*Composable.kt`, and `ui/**/*.kt`: also `jetpack-compose.mdc` and `composable-preview.mdc`.
 
-These describe behavior that is already shipped. Keep it when you edit those files.
+`*ViewModel.kt`, `*Repository.kt`, `*Dao.kt`, `*Module.kt`, `di/**`, and `data/**`: also `android-architecture.mdc`.
 
-- `mockup-ui-match-context.mdc` — player chrome and `GridMockup.vue`
-- `theme-roles-editor-context.mdc` — theme roles
-- `nav-icon-paint-context.mdc` — nav icon paint
-- `session-document-rebuild-context.mdc` — document rebuild versus vars
+## Editor
+
+Any `editor/**` Vue or TypeScript: read `vue3-composition-api-cursorrules-prompt-file.mdc` and `editor-naming-variables.mdc`. The screen-editor shell also uses `editor-preview-first-layout.mdc`.
+
+## Context rules
+
+Read the rule whose files you are changing. These describe behavior that is already shipped.
+
 - `map-dialog-player-osm-context.mdc` — map dialog
-- `camera-dialog-live-video-context.mdc` — camera dialog
-- `ha-weather-icons-context.mdc` — weather icons
-- `standby-wake-sources-context.mdc` — wake sources
-- `docs-wiki-screenshots-context.mdc` — docs, wiki, screenshots
-- `freeform-text-style-controls-context.mdc` — free-form type
-- `freeform-weather-nextevent-context.mdc` — weather and next-event leaves
 - `thermostat-component-context.mdc` — thermostat
+- `configurable-bars-context.mdc` — top bar and nav bar sizes
+- `standby-wake-sources-context.mdc` — wake sources
+- `standby-screen-off-context.mdc` — standby countdown and screen off
+- `theme-roles-editor-context.mdc` — theme roles
+- `session-document-rebuild-context.mdc` — document rebuild versus vars
+- `kiosk-lock-context.mdc` — kiosk lock and enrollment
+- `nav-icon-paint-context.mdc` — nav icon paint
+- `docs-wiki-screenshots-context.mdc` — docs, wiki, and screenshots
+- `mockup-ui-match-context.mdc` — mockup chrome
+- `camera-dialog-live-video-context.mdc` — camera dialog
+- `tile-border-colour-context.mdc` — tile border colour
+- `freeform-text-style-controls-context.mdc` — free-form type
+- `freeform-layout-parity-context.mdc` — free-form editor and tablet layout
+- `freeform-weather-nextevent-context.mdc` — weather and next event
+- `ha-weather-icons-context.mdc` — weather icons
+- `editor-sliders-and-theme-preview-context.mdc` — range sliders and Day/Dark preview

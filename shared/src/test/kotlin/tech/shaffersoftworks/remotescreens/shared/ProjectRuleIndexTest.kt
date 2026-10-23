@@ -1,9 +1,9 @@
 package tech.shaffersoftworks.remotescreens.shared
 
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
 import java.io.File
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /** Fails when a project rule exists and the always-on index does not name it. */
 class ProjectRuleIndexTest {
@@ -12,13 +12,13 @@ class ProjectRuleIndexTest {
         val rulesDir = File("../.cursor/rules")
         val index = File(rulesDir, INDEX_FILE)
         val text = index.readText()
-        assertTrue(text.contains("alwaysApply: true"), "The rule index must always apply")
+        assertTrue("The rule index must always apply", text.contains("alwaysApply: true"))
         val missing = rulesDir.listFiles { file -> file.extension == "mdc" && file.name != INDEX_FILE }
             .orEmpty()
             .map { it.name }
             .filter { name -> !text.contains(name) }
             .sorted()
-        assertEquals(emptyList(), missing, "Add these rule files to $INDEX_FILE")
+        assertEquals("Add these rule files to $INDEX_FILE", emptyList<String>(), missing)
     }
 
     private companion object {

@@ -1,0 +1,33 @@
+---
+description: Kiosk lock (lock task when device owner, screen pinning otherwise), PIN unlock, and QR enrollment
+globs: player/src/main/kotlin/**/kiosk/**,player/src/main/kotlin/**/receiver/LockTaskDeviceAdminReceiver.kt,player/src/main/kotlin/**/ui/screens/provisioning/**,player/src/main/kotlin/**/ui/views/KioskPinDialog.kt,player/src/main/kotlin/**/ui/screens/player/PlayerViewModel.kt,player/src/main/kotlin/**/MainActivity.kt,server/src/main/kotlin/**/service/EnrollmentService.kt,editor/src/components/EnrollTabletPanel.vue,scripts/enroll-device-owner.sh
+alwaysApply: false
+---
+
+# Kiosk lock
+
+## Behaviour
+
+- Full lock task when the app is device owner; `startLockTask()` (screen pinning) otherwise. `KioskManager` is a Hilt `@Singleton`. `KioskState` is `OFF`, `PINNED`, or `LOCKED` from `lockTaskModeState`.
+- Home Assistant controls it: screen setting `kiosk` (switch "Kiosk lock") and `kioskPin` (text "Kiosk PIN", 4–8 digits, `ScreenSettings.KIOSK_PIN`). `validated()` drops a PIN that does not match.
+- Device-owner policies (lock-task packages, `LOCK_TASK_FEATURE_GLOBAL_ACTIONS` on API 28+, persistent HOME, status bar and keyguard disabled, `DISALLOW_SAFE_BOOT` / `FACTORY_RESET` / `ADD_USER`) are each undone by `stopLockTaskMode`. `removeDeviceOwner()` clears them and calls `clearDeviceOwnerApp`. A `SecurityException` means the app is not device owner.
+- Two device admins on purpose: `LockTaskDeviceAdminReceiver` (device owner) and `ScreenOffAdminReceiver` (screen off). `ScreenPowerRepository.canTurnScreenOff()` accepts either, so an existing screen-off activation survives enrollment.
+- `PlayerPreferencesRepository` stores `kiosk_enabled` and `kiosk_suppressed` (a local unlock that survives restarts). Turning kiosk from off to on clears the suppress flag. `ViewState.isKioskEnabled` is `Boolean?` (null until DataStore is read) so lock task is not stopped and restarted at startup. `isKioskWanted` is enabled and not locally unlocked.
+- `MainActivity` collects `isKioskWanted` while resumed and calls `KioskManager.applyKiosk`, which re-pins after the user unpins and after the battery dialog closes.
+- PIN: settings (long press the top bar) shows `KioskPinDialog` when kiosk is wanted and a PIN is set. The right PIN opens settings with "Unlock tablet"; while unlocked, "Lock again". No PIN means no local unlock. "Stop managing this tablet" is only offered while unlocked. Self-start, screen-off, and battery buttons stay hidden while locked.
+- An update while only pinned sends `PlayerEvent.StopScreenPinning` before the install confirmation; resume re-pins.
+- `DeviceState.kiosk` reports `off` / `pinned` / `locked` to the HA binary sensor and the editor's tablet list.
+
+## QR enrollment
+
+- Editor: Screens → Tablets → Enroll a tablet. Fallback: `scripts/enroll-device-owner.sh`.
+- Player: `ProvisioningModeActivity` (`GET_PROVISIONING_MODE` → fully managed) and `PolicyComplianceActivity` (`ADMIN_POLICY_COMPLIANCE` → `KioskManager.onProvisioned`). The receiver's `onProfileProvisioningComplete` covers older Android. `onProvisioned` reads the admin extra `server` and enables kiosk.
+- `EnrollmentService` tokens last 60 minutes and can be reused, so one code enrolls several tablets and survives a download retry. The provisioning JSON includes the admin component, `http://<host>:8100/player/apk?enroll=<token>`, the signature checksum, skip encryption, leave system apps, optional Wi-Fi, and admin extras `{server}`. `POST /api/enrollment` returns 409 when there is no APK or host.
+- `tools/package_addon.sh` writes `signatureChecksum` (SHA-256 of the signing cert, URL-safe Base64, no padding) into `version.json`.
+- A QR-enrolled tablet starts locked and stays locked until it is paired. After pairing it follows its screen's Kiosk lock (default off).
+
+## Gotchas
+
+- The PIN is plain text in HA state and history and on the LAN WebSocket. It is a deterrent, not a secret.
+- Tablets are only offered an APK with a higher `versionCode`. A same-version deploy does not reach them.
+- The player application id is `tech.shaffersoftworks.remotescreens.player`. The admin component string lives in `EnrollmentService` and the adb script; a tablet enrolled under an older id needs a factory reset and a new enrollment.

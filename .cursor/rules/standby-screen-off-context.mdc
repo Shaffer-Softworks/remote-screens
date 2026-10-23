@@ -1,0 +1,37 @@
+---
+description: Player standby — settings must not reset the countdown, and standby can turn the screen off with device-admin lockNow
+globs: player/src/main/kotlin/**/ui/screens/player/PlayerViewModel.kt,player/src/main/kotlin/**/ui/screens/player/PlayerScreen.kt,player/src/main/kotlin/**/data/device/ScreenPowerRepository.kt,player/src/main/kotlin/**/receiver/ScreenOffAdminReceiver.kt,player/src/main/kotlin/**/MainActivity.kt,shared/src/main/kotlin/**/Layout.kt,editor/src/components/ScreenPanel.vue
+alwaysApply: false
+---
+
+# Standby and screen off
+
+Wake sources (Home Assistant, proximity, face) are in `standby-wake-sources-context.mdc`. This rule is the countdown and the screen-off path those sources sit on.
+
+## How standby works
+
+- The player never lets Android turn the screen off on its own: `MainActivity` sets `FLAG_KEEP_SCREEN_ON`.
+- After `standbyMinutes` with no touch, `PlayerViewModel.setAwake(false)` drops window brightness to `standbyBrightness` (floor `0.01`, so the backlight stays on). At standby brightness 0, `PlayerScreen` also draws a full-screen black box (`ViewState.isBlackout`). On AMOLED that looks fully off; on LCD the backlight still glows.
+- With `ScreenSettings.standbyScreenOff` and a device admin, standby calls `DevicePolicyManager.lockNow()` instead. The editor checkbox is under Standby; the HA switch is `standby_screen_off`. Default is false.
+
+## Settings are not a touch
+
+- The add-on sends `ServerMessage.Settings` on every reconnect, layout save, HA settings patch, and preview. Those used to call `onUserInteraction()`, so the countdown never finished.
+- `onServerSettings` stores the settings without waking. It restarts the clocks only when `standbyMinutes` or `backToHomeSeconds` changed. Standby turned off (`standbyMinutes == 0`) while asleep does wake the screen. The tablet's own settings dialog (`applyScreenSettings`) still counts as a touch.
+- Still restart the countdown: touches, alerts and overlays, `OpenPage`, `Wake(true)`, identify.
+
+## Turning the screen off
+
+- `ScreenPowerRepository.turnScreenOff()` takes a partial wake lock (so the WebSocket survives and HA can wake the tablet) then `lockNow()`. `turnScreenOn()` takes a 5 s `SCREEN_BRIGHT_WAKE_LOCK | ACQUIRE_CAUSES_WAKEUP` and drops the partial lock. `canTurnScreenOff()` accepts `ScreenOffAdminReceiver` or the kiosk `LockTaskDeviceAdminReceiver`.
+- `updateScreenPower()` runs when awake changes and when `standbyScreenOff` or the wake-source settings change. When face wake is usable it skips `lockNow()` and stays on the software blackout, because the camera often dies with the panel off. Proximity-only may still turn the screen off.
+- `onResumed()` treats a resume while `isScreenOff` as a power-button wake. `MainActivity.showOverLockScreen()` (`setShowWhenLocked(true)`) shows the player instead of the keyguard.
+- Without an admin, standby falls back to dimming. The settings dialog offers "Allow turning the screen off in standby" (`ACTION_ADD_DEVICE_ADMIN`) when the setting is on and no admin is active.
+- A screen that is off cannot be woken by touch. Wake it with the power button, `remote_screens.wake`, an alert, or `OpenPage`.
+
+## Diagnosing standby on a tablet
+
+- Release builds print no app logs (Timber is debug only). A debug build signed with the local debug key installs over a debug-key-signed release with `adb install -r` and keeps the pairing.
+- Debug lines in `PlayerViewModel`: `Standby clock restarted`, `Awake`. Read them with `adb logcat -d -v time -s PlayerViewModel`.
+- Window brightness: `adb shell dumpsys window` and look for `sbrt` on `MainActivity` (`sbrt=1.0` is awake at 100%).
+- A countdown whose deadline jumps back up was cancelled and relaunched. Phantom touches show up in `adb shell getevent -lt`.
+- The partial wake lock is fine while plugged in. On battery, Doze can still drop the connection, and the screen then wakes only from the power button.

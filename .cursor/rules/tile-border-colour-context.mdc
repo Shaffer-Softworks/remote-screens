@@ -1,0 +1,15 @@
+---
+description: Per-tile border colour over the theme's card_edge role
+globs: shared/src/main/kotlin/**/Layout.kt,server/src/main/kotlin/**/render/tiles/TileChrome.kt,server/src/main/kotlin/**/render/FreeForm.kt,editor/src/components/TileDrawer.vue,editor/src/components/GridMockup.vue,editor/src/model/themeRoles.ts,editor/src/model/types.ts
+alwaysApply: false
+---
+
+# Tile border colour
+
+- The theme-wide default is the existing `card_edge` role. There is no separate border role. A tile may override it.
+- `Tile.borderColor: String?` in `shared/.../Layout.kt`, mirrored as `borderColor?: string` in `editor/src/model/types.ts`. Null means the theme's card edge. The value is a pastel key, a role key, or a hex colour, picked in the editor from `INK_SWATCHES`.
+- `tiles/TileChrome.kt` `DocContext.edgeOf(tile)` is `tile.borderColor?.let { paint(it) } ?: role(Role.CARD_EDGE)`. `paint` in `FreeForm.kt` tries a pastel, then `#RRGGBB` / `#AARRGGBB`, then a role. The 2 dp edge is the card's background behind its padding.
+- Edge-to-edge tiles have no card, so no border: `kind == "home"`, or a `full` weather, climate, or music tile. `TileDrawer.vue` hides the control with the same `edgeToEdge` check.
+- Editor control: "Border colour" under Colour, `ColorSwatches` with `clear-title="The theme's card edge"`.
+- Preview: `GridMockup.vue` sets an inline `borderColor` over `.tile { border: 2px solid var(--rc-card-edge) }`. The selected-tile highlight is an outline, so the two do not cover each other.
+- `editor/src/model/themeRoles.ts` describes `card_edge` as the default tile border. Built-in themes still have to be duplicated before their roles can be edited.
