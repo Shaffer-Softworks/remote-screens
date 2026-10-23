@@ -37,15 +37,30 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import tech.shaffersoftworks.remotescreens.shared.MusicSearchRow
+import kotlin.time.Duration.Companion.milliseconds
 
 private val Teal = Color(0xFF14E1BA)
 private val Ink = Color.White
 private val RowBg = Color(0xFF333333)
 private const val SEARCH_DEBOUNCE_MS = 400L
+private const val PREVIEW_QUERY = "daft punk"
+
+private val PREVIEW_SEARCH_ROWS = listOf(
+    MusicSearchRow(
+        title = "Digital Love",
+        subtitle = "Daft Punk",
+        uri = "library://track/digital-love",
+    ),
+    MusicSearchRow(
+        title = "One More Time",
+        uri = "library://track/one-more-time",
+    ),
+)
 
 /**
  * Native Music Assistant search over a document component: TextField + results.
@@ -133,14 +148,15 @@ private fun SearchContent(
     onQuery: (String) -> Unit,
     onPlay: (String) -> Unit,
     onEnqueue: (String) -> Unit,
+    initialText: String = "",
 ) {
-    var text by remember(search.tileId, search.revision) { mutableStateOf("") }
+    var text by remember(search.tileId, search.revision) { mutableStateOf(initialText) }
     LaunchedEffect(text) {
         if (text.isBlank()) {
             onQuery("")
             return@LaunchedEffect
         }
-        delay(SEARCH_DEBOUNCE_MS)
+        delay(SEARCH_DEBOUNCE_MS.milliseconds)
         onQuery(text)
     }
     val showResults = text.isNotBlank() || rows.isNotEmpty()
@@ -149,24 +165,22 @@ private fun SearchContent(
             .fillMaxSize()
             .padding(top = 0.dp),
     ) {
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TextButton(onClick = { text = "" }, enabled = text.isNotBlank()) {
-                Text(
-                    "×",
-                    color = Ink.copy(alpha = if (text.isNotBlank()) 0.9f else 0.35f),
-                    fontSize = 22.sp,
-                )
-            }
-        }
         OutlinedTextField(
             value = text,
             onValueChange = { text = it },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Search library") },
+            trailingIcon = {
+                if (text.isNotEmpty()) {
+                    TextButton(onClick = { text = "" }, enabled = text.isNotBlank()) {
+                        Text(
+                            "×",
+                            color = Ink.copy(alpha = if (text.isNotBlank()) 0.9f else 0.35f),
+                            fontSize = 22.sp,
+                        )
+                    }
+                }
+            },
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Ink,
@@ -267,3 +281,117 @@ private fun SearchRow(
         }
     }
 }
+
+@Preview(name = "Empty", widthDp = 400, heightDp = 780)
+@Composable
+private fun SearchContentEmptyPreview() {
+    SearchPreviewBackdrop {
+        SearchContent(
+            search = previewSlotSearch(),
+            rows = emptyList(),
+            isLoading = false,
+            onQuery = {},
+            onPlay = {},
+            onEnqueue = {},
+        )
+    }
+}
+
+@Preview(name = "Loading", widthDp = 400, heightDp = 780)
+@Composable
+private fun SearchContentLoadingPreview() {
+    SearchPreviewBackdrop {
+        SearchContent(
+            search = previewSlotSearch(),
+            rows = emptyList(),
+            isLoading = true,
+            onQuery = {},
+            onPlay = {},
+            onEnqueue = {},
+            initialText = PREVIEW_QUERY,
+        )
+    }
+}
+
+@Preview(name = "No results", widthDp = 400, heightDp = 780)
+@Composable
+private fun SearchContentNoResultsPreview() {
+    SearchPreviewBackdrop {
+        SearchContent(
+            search = previewSlotSearch(),
+            rows = emptyList(),
+            isLoading = false,
+            onQuery = {},
+            onPlay = {},
+            onEnqueue = {},
+            initialText = PREVIEW_QUERY,
+        )
+    }
+}
+
+@Preview(name = "Results", widthDp = 400, heightDp = 780)
+@Composable
+private fun SearchContentResultsPreview() {
+    SearchPreviewBackdrop {
+        SearchContent(
+            search = previewSlotSearch(),
+            rows = PREVIEW_SEARCH_ROWS,
+            isLoading = false,
+            onQuery = {},
+            onPlay = {},
+            onEnqueue = {},
+            initialText = PREVIEW_QUERY,
+        )
+    }
+}
+
+@Preview(name = "Row", widthDp = 400, heightDp = 780)
+@Composable
+private fun SearchRowPreview() {
+    SearchPreviewBackdrop {
+        SearchRow(
+            row = PREVIEW_SEARCH_ROWS.first(),
+            onPlay = {},
+            onEnqueue = {},
+        )
+    }
+}
+
+@Preview(name = "Row, title only", widthDp = 400, heightDp = 780)
+@Composable
+private fun SearchRowTitleOnlyPreview() {
+    SearchPreviewBackdrop {
+        SearchRow(
+            row = PREVIEW_SEARCH_ROWS.last(),
+            onPlay = {},
+            onEnqueue = {},
+        )
+    }
+}
+
+@Preview(name = "Backdrop", widthDp = 400, heightDp = 780)
+@Composable
+private fun SearchPreviewBackdropPreview() {
+    SearchPreviewBackdrop {
+        Text(text = "Search", color = Ink)
+    }
+}
+
+/** Dark plate so white search ink is visible. The live overlay sits on the document, which supplies this. */
+@Composable
+private fun SearchPreviewBackdrop(content: @Composable () -> Unit) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(RowBg),
+    ) {
+        content()
+    }
+}
+
+private fun previewSlotSearch(): SlotSearch = SlotSearch(
+    revision = 1,
+    componentId = 1,
+    tileId = "music-search",
+    playerEntityId = "media_player.kitchen",
+)

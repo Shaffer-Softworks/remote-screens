@@ -119,3 +119,25 @@ private fun InfoPanelSearchingPreview() {
         )
     }
 }
+
+@Preview(widthDp = 800, heightDp = 480)
+@Composable
+private fun InfoPanelConnectingPreview() {
+    RemoteScreensTheme {
+        InfoPanel(
+            state = InfoPanelState.Connecting(server = "192.168.1.10:8100"),
+            onEnterAddress = {},
+        )
+    }
+}
+
+@Preview(widthDp = 800, heightDp = 480)
+@Composable
+private fun InfoPanelDisconnectedPreview() {
+    RemoteScreensTheme {
+        InfoPanel(
+            state = InfoPanelState.Disconnected,
+            onEnterAddress = {},
+        )
+    }
+}
