@@ -6,6 +6,8 @@ internal object MusicMetrics {
     const val BASE_H = 600f
     const val WIDE_BREAKPOINT_DP = 720f
     const val PAD_DP = 16f
+    /** Gap between the music cards and the navigation bar. Side inset stays [PAD_DP]. */
+    const val BOTTOM_PAD_DP = 16f
     const val CARD_PAD_DP = 14f
     const val CARD_CORNER_DP = 12f
     const val COLUMN_GAP_DP = 16f
@@ -14,10 +16,6 @@ internal object MusicMetrics {
     const val CHIP_GAP_DP = 6f
     /** Album art on the now-playing card (RPI `NowPlayingSection`). */
     const val ART_DP = 120f
-    /** Now-playing card: art beside title, album, times, and transport icons. */
-    const val NOW_CARD_H_DP = 200f
-    /** Cap so Browse still gets the lower left column on a short page. */
-    const val NOW_CARD_MAX_SHARE = 0.45f
     const val TRANSPORT_DP = 40f
     const val TRANSPORT_ICON_DP = 24f
     const val ART_CORNER_DP = 8f
@@ -45,6 +43,13 @@ internal object MusicMetrics {
     const val PROGRESS_TIME_GAP_DP = 4f
     const val BROWSE_TITLE_GAP_DP = 10f
     const val LISTEN_SEGMENT_GAP_DP = 10f
+    /**
+     * Font box over the sp size. The now-playing card hugs its text, so the browse list height
+     * is the column minus this estimate. High keeps the last row inside the card.
+     */
+    const val TEXT_LINE_FACTOR = 1.25f
+    /** Taken off a scrolling list so its last row stops inside the card padding. */
+    const val LIST_SHORTFALL_DP = 0f
     /** Floor for the native search overlay; the slot also gets an explicit size so it can be measured. */
     const val SEARCH_MIN_H_DP = 160f
     const val KEY_ICON_SHARE = 0.5f

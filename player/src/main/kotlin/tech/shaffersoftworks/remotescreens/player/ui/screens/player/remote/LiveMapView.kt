@@ -24,8 +24,10 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.tooling.preview.Preview
 import com.utsman.osmandcompose.MapProperties
 import com.utsman.osmandcompose.Marker
 import com.utsman.osmandcompose.OpenStreetMap
@@ -56,6 +58,9 @@ private const val TILE_SIZE = 256
 private const val MULTI_MARKER_PADDING = 1.35
 private const val MAX_FIT_ZOOM = 16.0
 private const val MIN_SPAN_DEGREES = 0.01
+private const val PREVIEW_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+private const val PREVIEW_NEARBY_LATITUDE = 52.36
+private const val PREVIEW_NEARBY_LONGITUDE = 4.90
 /** Full longitude span used when converting a bounding box to a zoom level. */
 private const val EARTH_LONGITUDE_DEGREES = 360.0
 private const val DARK_TILE_MULTIPLY = 0xFF888888.toInt()
@@ -281,6 +286,66 @@ private fun markerIcon(picture: Bitmap?, label: String, colourIndex: Int): Drawa
         canvas.drawText(initials, size / 2f, textY, paint)
     }
     return BitmapDrawable(null, bitmap)
+}
+
+@Preview(name = "Markers", widthDp = 800, heightDp = 480)
+@Composable
+private fun InteractiveMapPreview() {
+    val context = LocalContext.current
+    LiveMapView.ensureOsmdroidConfigured(context)
+    InteractiveMap(
+        tileUrl = PREVIEW_TILE_URL,
+        dark = false,
+        markers = listOf(
+            MapMarker(latitude = DEFAULT_LATITUDE, longitude = DEFAULT_LONGITUDE, label = "Kitchen"),
+            MapMarker(
+                latitude = PREVIEW_NEARBY_LATITUDE,
+                longitude = PREVIEW_NEARBY_LONGITUDE,
+                label = "Ada Lovelace",
+            ),
+        ),
+        pictures = emptyMap(),
+    )
+}
+
+@Preview(name = "Dark, empty", widthDp = 800, heightDp = 480)
+@Composable
+private fun InteractiveMapDarkPreview() {
+    val context = LocalContext.current
+    LiveMapView.ensureOsmdroidConfigured(context)
+    InteractiveMap(
+        tileUrl = PREVIEW_TILE_URL,
+        dark = true,
+        markers = emptyList(),
+        pictures = emptyMap(),
+    )
+}
+
+@Preview(name = "Marker pin", widthDp = 800, heightDp = 480)
+@Composable
+private fun MapMarkerPinPreview() {
+    val context = LocalContext.current
+    LiveMapView.ensureOsmdroidConfigured(context)
+    val marker = MapMarker(
+        latitude = DEFAULT_LATITUDE,
+        longitude = DEFAULT_LONGITUDE,
+        label = "Ada Lovelace",
+    )
+    val cameraState = rememberCameraState {
+        geoPoint = GeoPoint(marker.latitude, marker.longitude)
+        zoom = SINGLE_MARKER_ZOOM
+    }
+    OpenStreetMap(
+        modifier = Modifier.fillMaxSize(),
+        cameraState = cameraState,
+        properties = MapProperties(zoomButtonVisibility = ZoomButtonVisibility.NEVER),
+    ) {
+        MapMarkerPin(
+            marker = marker,
+            icon = markerIcon(picture = null, label = marker.label, colourIndex = 0),
+            index = 0,
+        )
+    }
 }
 
 private fun applyDarkTileFilter(root: View) {

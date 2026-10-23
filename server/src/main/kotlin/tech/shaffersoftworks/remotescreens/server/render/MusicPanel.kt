@@ -16,9 +16,12 @@ import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
 import androidx.compose.remote.creation.dsl.componentId
 import androidx.compose.remote.creation.dsl.fillMaxWidth
+import androidx.compose.remote.creation.modifiers.RectShape
+import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.horizontalScroll
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
+import androidx.compose.remote.creation.dsl.requiredHeightIn
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.verticalScroll
 import androidx.compose.remote.creation.dsl.verticalWeight
@@ -26,6 +29,7 @@ import androidx.compose.remote.creation.dsl.visibility
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Tile
+import kotlin.math.max
 import kotlin.math.roundToInt
 
 /**
@@ -64,9 +68,16 @@ fun DocContext.musicPanel(tile: Tile, box: TileBox) {
         configured = configured,
         progressWidthDp = frame.progressW,
         searchSlot = frame.search,
+        browseListDp = frame.browseList,
+        queueListDp = frame.queueList,
     )
+    // A plain height is stretched to the page, so the cards meet the nav bar. requiredHeightIn
+    // is applied after that stretch and keeps this surface the gap above the bar.
+    val panelH = (box.h - MusicMetrics.BOTTOM_PAD_DP).coerceAtLeast(1f)
     scope.Box(
-        Modifier.size(units.px(box.w), units.px(box.h))
+        Modifier.size(units.px(box.w), units.px(panelH))
+            .requiredHeightIn(max = units.px(panelH))
+            .clip(RectShape(0f, 0f, 0f, 0f))
             .background(role(Role.PAGE)),
     ) {
         this@musicPanel.musicPlaced(layout, frame)
@@ -81,35 +92,58 @@ private data class MusicFrame(
     val pad: Float,
     val colW: Float,
     val innerH: Float,
-    val nowH: Float,
-    val browseH: Float,
     val sectionGap: Float,
     val columnGap: Float,
     val progressW: Float,
     val search: SearchSlot,
+    val browseList: Float,
+    val queueList: Float,
 )
 
 private fun musicFrame(box: TileBox): MusicFrame {
     val pad = MusicMetrics.PAD_DP
+    val bottom = MusicMetrics.BOTTOM_PAD_DP
     val columnGap = MusicMetrics.COLUMN_GAP_DP
     val sectionGap = MusicMetrics.SECTION_GAP_DP
     val cardPad = MusicMetrics.CARD_PAD_DP
     val innerW = (box.w - pad * 2f).coerceAtLeast(1f)
-    val innerH = (box.h - pad * 2f).coerceAtLeast(1f)
+    val innerH = (box.h - pad - bottom).coerceAtLeast(1f)
     val colW = ((innerW - columnGap) / 2f).coerceAtLeast(1f)
-    val nowH = MusicMetrics.NOW_CARD_H_DP.coerceAtMost(innerH * MusicMetrics.NOW_CARD_MAX_SHARE)
-    val browseH = (innerH - nowH - sectionGap).coerceAtLeast(1f)
     val progressW = (
         colW - cardPad * 2f - MusicMetrics.ART_DP - columnGap
         ).coerceAtLeast(MusicMetrics.PROGRESS_BAR_MIN_W_DP)
     val searchChrome = cardPad * 2f + MusicMetrics.SEGMENT_H_DP + MusicMetrics.LISTEN_SEGMENT_GAP_DP
+    val line = MusicMetrics.TEXT_LINE_FACTOR
+    val nowMeta = Type.TITLE * line +
+        Type.BODY * line +
+        Type.CAPTION * line +
+        MusicMetrics.CHIP_GAP_DP +
+        Type.CAPTION * line +
+        MusicMetrics.PROGRESS_TIME_GAP_DP +
+        MusicMetrics.PROGRESS_H_DP +
+        MusicMetrics.CHIP_GAP_DP +
+        MusicMetrics.TRANSPORT_DP
+    val nowCard = max(MusicMetrics.ART_DP, nowMeta) + cardPad * 2f
+    val browseHeader = Type.TITLE * line +
+        MusicMetrics.BROWSE_TITLE_GAP_DP +
+        MusicMetrics.CHIP_H_DP +
+        MusicMetrics.CHIP_GAP_DP
+    val browseList = (
+        innerH - nowCard - sectionGap - cardPad * 2f - browseHeader - MusicMetrics.LIST_SHORTFALL_DP
+        ).coerceAtLeast(MusicMetrics.ROW_H_DP)
+    val queueList = (
+        innerH - cardPad * 2f -
+            MusicMetrics.SEGMENT_H_DP - MusicMetrics.LISTEN_SEGMENT_GAP_DP -
+            MusicMetrics.CHIP_H_DP - MusicMetrics.CHIP_GAP_DP -
+            MusicMetrics.LIST_SHORTFALL_DP
+        ).coerceAtLeast(MusicMetrics.ROW_H_DP)
     val search = SearchSlot(
         xDp = box.x + pad + colW + columnGap + cardPad,
         yDp = box.y + pad + cardPad + MusicMetrics.SEGMENT_H_DP + MusicMetrics.LISTEN_SEGMENT_GAP_DP,
         widthDp = (colW - cardPad * 2f).coerceAtLeast(1f),
         heightDp = (innerH - searchChrome).coerceAtLeast(1f),
     )
-    return MusicFrame(pad, colW, innerH, nowH, browseH, sectionGap, columnGap, progressW, search)
+    return MusicFrame(pad, colW, innerH, sectionGap, columnGap, progressW, search, browseList, queueList)
 }
 
 private data class SearchSlot(
@@ -130,26 +164,29 @@ private data class MusicPanelLayout(
     val configured: Boolean,
     val progressWidthDp: Float,
     val searchSlot: SearchSlot,
+    val browseListDp: Float,
+    val queueListDp: Float,
 )
 
 private fun DocContext.musicPlaced(layout: MusicPanelLayout, frame: MusicFrame) {
     val doc = this
+    // Now playing hugs its content so the space under the transport buttons is only the
+    // card padding. Browse takes whatever height is left in the column.
     at(frame.pad, frame.pad) {
-        doc.nowPlayingCard(
-            layout,
-            Modifier.size(doc.units.px(frame.colW), doc.units.px(frame.nowH)),
-        )
-    }
-    at(frame.pad, frame.pad + frame.nowH + frame.sectionGap) {
-        doc.browseCard(
-            layout,
-            Modifier.size(doc.units.px(frame.colW), doc.units.px(frame.browseH)),
-        )
+        doc.scope.Column(
+            Modifier.size(doc.units.px(frame.colW), doc.units.px(frame.innerH))
+                .requiredHeightIn(max = doc.units.px(frame.innerH)),
+        ) {
+            doc.nowPlayingCard(layout, Modifier.fillMaxWidth())
+            Spacer(Modifier.height(doc.units.px(frame.sectionGap)))
+            doc.browseCard(layout, Modifier.fillMaxWidth().verticalWeight(1f))
+        }
     }
     at(frame.pad + frame.colW + frame.columnGap, frame.pad) {
         doc.listenCard(
             layout,
-            Modifier.size(doc.units.px(frame.colW), doc.units.px(frame.innerH)),
+            Modifier.size(doc.units.px(frame.colW), doc.units.px(frame.innerH))
+                .requiredHeightIn(max = doc.units.px(frame.innerH)),
         )
     }
 }
@@ -287,10 +324,11 @@ private fun DocContext.transportIcon(ref: ActionRef, name: String, hitDp: Float,
 
 private fun DocContext.browseCard(layout: MusicPanelLayout, modifier: Modifier) {
     val cardBg = fixed(withAlpha(roleArgb(Role.CARD), MusicMetrics.CARD_FILL_ALPHA))
+    val pad = units.px(MusicMetrics.CARD_PAD_DP)
     scope.Column(
         modifier.clip(rounded(MusicMetrics.CARD_CORNER_DP))
             .background(cardBg)
-            .padding(units.px(MusicMetrics.CARD_PAD_DP)),
+            .padding(pad),
     ) {
         val doc = this@browseCard
         val tileId = layout.tileId
@@ -311,7 +349,15 @@ private fun DocContext.browseCard(layout: MusicPanelLayout, modifier: Modifier) 
             }
         }
         doc.gap(MusicMetrics.CHIP_GAP_DP)
-        Column(Modifier.fillMaxWidth().verticalWeight(1f).verticalScroll()) {
+        // Weight on a scroller is ignored and the rows paint to the card edge. An exact
+        // height is the viewport, short of the card padding, and the rect clip holds it.
+        Column(
+            Modifier.fillMaxWidth()
+                .height(doc.units.px(layout.browseListDp))
+                .requiredHeightIn(max = doc.units.px(layout.browseListDp))
+                .clip(RectShape(0f, 0f, 0f, 0f))
+                .verticalScroll(),
+        ) {
             if (!layout.configured) {
                 doc.label("Bind a Music Assistant player on this tile.", Type.BODY, doc.role(Role.INK_SOFT))
             } else if (layout.browseRows.isEmpty()) {
@@ -337,10 +383,11 @@ private fun DocContext.browseCard(layout: MusicPanelLayout, modifier: Modifier) 
 
 private fun DocContext.listenCard(layout: MusicPanelLayout, modifier: Modifier) {
     val cardBg = fixed(withAlpha(roleArgb(Role.CARD), MusicMetrics.CARD_FILL_ALPHA))
+    val pad = units.px(MusicMetrics.CARD_PAD_DP)
     scope.Column(
         modifier.clip(rounded(MusicMetrics.CARD_CORNER_DP))
             .background(cardBg)
-            .padding(units.px(MusicMetrics.CARD_PAD_DP)),
+            .padding(pad),
     ) {
         val doc = this@listenCard
         doc.listenModeStrip(layout.tileId, layout.ui)
@@ -357,6 +404,7 @@ private fun DocContext.listenCard(layout: MusicPanelLayout, modifier: Modifier) 
                 layout.queueRows,
                 layout.queueMore,
                 layout.configured,
+                layout.queueListDp,
                 Modifier.verticalWeight(1f).fillMaxWidth(),
             )
         }
@@ -418,6 +466,7 @@ private fun DocContext.queueSection(
     rows: List<MusicListRow>,
     moreCount: Int,
     configured: Boolean,
+    listHeightDp: Float,
     modifier: Modifier,
 ) {
     scope.Column(modifier) {
@@ -430,7 +479,13 @@ private fun DocContext.queueSection(
             )
         }
         doc.gap(MusicMetrics.CHIP_GAP_DP)
-        Column(Modifier.fillMaxWidth().verticalWeight(1f).verticalScroll()) {
+        Column(
+            Modifier.fillMaxWidth()
+                .height(doc.units.px(listHeightDp))
+                .requiredHeightIn(max = doc.units.px(listHeightDp))
+                .clip(RectShape(0f, 0f, 0f, 0f))
+                .verticalScroll(),
+        ) {
             when {
                 !configured -> doc.label(
                     "Bind a Music Assistant player.",

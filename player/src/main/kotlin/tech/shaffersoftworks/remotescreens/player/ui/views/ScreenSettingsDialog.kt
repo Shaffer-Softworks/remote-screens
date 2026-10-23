@@ -224,3 +224,41 @@ private fun ScreenSettingsDialogPreview() {
         )
     }
 }
+
+@Preview(name = "Lock again", widthDp = 800, heightDp = 480)
+@Composable
+private fun ScreenSettingsDialogLockAgainPreview() {
+    RemoteScreensTheme {
+        ScreenSettingsDialog(
+            settings = ScreenSettings(),
+            server = null,
+            canOfferSelfStart = false,
+            canOfferScreenOff = false,
+            canOfferUnrestrictedBattery = false,
+            canOfferCameraPermission = false,
+            wakeOnFaceUnavailableNote = R.string.face_wake_low_ram,
+            kioskAction = KioskAction.LOCK_AGAIN,
+            canRemoveDeviceOwner = true,
+            onBrightnessPreview = {},
+            onConfirm = { _, _, _ -> },
+            onDismiss = {},
+            onChangeServer = {},
+            onForget = {},
+            onAllowSelfStart = {},
+            onAllowScreenOff = {},
+            onAllowUnrestrictedBattery = {},
+            onAllowCameraPermission = {},
+            onUnlockKiosk = {},
+            onLockKioskAgain = {},
+            onRemoveDeviceOwner = {},
+        )
+    }
+}
+
+@Preview(widthDp = 800, heightDp = 480)
+@Composable
+private fun ForgetScreenDialogPreview() {
+    RemoteScreensTheme {
+        ForgetScreenDialog(onConfirm = {}, onDismiss = {})
+    }
+}
