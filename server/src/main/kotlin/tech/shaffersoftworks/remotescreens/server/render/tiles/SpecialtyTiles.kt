@@ -304,14 +304,14 @@ fun DocContext.photo(
 /** HOME, or AWAY (or the zone's name), in capitals as the RPI panel writes it. */
 fun DocContext.bindWhere(varName: String, personId: String) {
     bind(personId) { states ->
-        val s = states[personId]?.state ?: "unknown"
-        val word = if (s == "home" || s == "not_home") {
+        val place = states[personId]?.state ?: "unknown"
+        val word = if (place == "home" || place == "not_home") {
             i18n.state(
                 "person",
-                s,
+                place,
             )
         } else {
-            s.replace('_', ' ')
+            place.replace('_', ' ')
         }
         listOf(VarValue.string(varName, word.uppercase(i18n.locale)))
     }
@@ -358,19 +358,19 @@ internal fun DocContext.weatherTile(tile: Tile, box: TileBox, entityState: Entit
         Spacer(Modifier.verticalWeight(1f))
         if (dayCount > 0) {
             Row(Modifier.fillMaxWidth(), horizontal = RcRowHorizontalPositioning.SpaceBetween) {
-                for (d in days.take(dayCount)) {
+                for (day in days.take(dayCount)) {
                     Column(horizontal = RcHorizontalPositioning.Center) {
                         doc.label(
-                            doc.i18n.weekday(d.time.withZoneSameInstant(zone)),
+                            doc.i18n.weekday(day.time.withZoneSameInstant(zone)),
                             Type.CAPTION,
                             ink2,
                             align = RcTextAlign.Center,
                         )
-                        doc.weatherStateIcon(d.condition, C.FORECAST_ICON_DP, fallbackColor = ink)
+                        doc.weatherStateIcon(day.condition, C.FORECAST_ICON_DP, fallbackColor = ink)
                         doc.label(
                             listOfNotNull(
-                                d.high?.let { "${it.roundToInt()}°" },
-                                d.low?.let { "${it.roundToInt()}°" },
+                                day.high?.let { "${it.roundToInt()}°" },
+                                day.low?.let { "${it.roundToInt()}°" },
                             ).joinToString(" "),
                             Type.CAPTION,
                             ink,
@@ -528,26 +528,26 @@ internal fun DocContext.mediaTile(tile: Tile, box: TileBox, entityState: EntityS
     val ink2 = color(Vars.tile(tile.id, Vars.KEY_INK2))
     val big = box.w >= C.HEADER_TALL_MIN_DP && box.h >= C.TALL_HEIGHT_DP
     bind(entityId) { states ->
-        val s = states[entityId]
+        val current = states[entityId]
         listOf(
             VarValue.string(
                 Vars.entity(entityId, "title"),
-                s?.attr("media_title") ?: s?.name ?: "",
+                current?.attr("media_title") ?: current?.name ?: "",
             ),
             VarValue.string(
                 Vars.entity(entityId, "artist"),
                 listOfNotNull(
-                    s?.attr("media_artist"),
-                    s?.attr("media_album_name"),
-                ).joinToString(" · ").ifEmpty { i18n.state("media_player", s?.state ?: "off") },
+                    current?.attr("media_artist"),
+                    current?.attr("media_album_name"),
+                ).joinToString(" · ").ifEmpty { i18n.state("media_player", current?.state ?: "off") },
             ),
             VarValue.int(
                 Vars.entity(entityId, "playing"),
-                if (s?.state == "playing") Vars.VISIBLE else Vars.GONE,
+                if (current?.state == "playing") Vars.VISIBLE else Vars.GONE,
             ),
             VarValue.int(
                 Vars.entity(entityId, "notplaying"),
-                if (s?.state == "playing") Vars.GONE else Vars.VISIBLE,
+                if (current?.state == "playing") Vars.GONE else Vars.VISIBLE,
             ),
         )
     }
@@ -769,12 +769,14 @@ fun DocContext.graph(points: List<Pair<Long, Double>>, wDp: Float, hDp: Float, l
         if (it - lo < C.GRAPH_FLAT_EPS) lo + 1 else it
     }
     val stroke = units.px(C.GRAPH_STROKE_DP)
-    fun px(p: Pair<Long, Double>) = ((p.first - t0) / (t1 - t0) * w) to (h - stroke - ((p.second - lo) / (hi - lo)).toFloat() * (h - 2 * stroke))
+    fun px(point: Pair<Long, Double>) =
+        ((point.first - t0) / (t1 - t0) * w) to
+            (h - stroke - ((point.second - lo) / (hi - lo)).toFloat() * (h - 2 * stroke))
     scope.Canvas(Modifier.size(w, h)) {
         paint { color(line); strokeWidth(stroke); style(RcPaintStyle.Stroke) }
         var prev = px(points.first())
-        for (p in points.drop(1)) {
-            val next = px(p)
+        for (point in points.drop(1)) {
+            val next = px(point)
             drawLine(prev.first, prev.second, next.first, next.second)
             prev = next
         }
@@ -791,7 +793,11 @@ internal fun DocContext.mapTile(tile: Tile, box: TileBox, named: Boolean) {
     val w = units.px(box.w).toInt()
     val h = units.px(box.h).toInt()
     val who = mapPeople(tile)
-    for (p in who) structural(p) { s -> "${s?.number("latitude")},${s?.number("longitude")}" }
+    for (personId in who) {
+        structural(personId) { person ->
+            "${person?.number("latitude")},${person?.number("longitude")}"
+        }
+    }
     picture(PictureSlot("map.${tile.id}", "map:${mapStyle()}:${who.joinToString(",")}", w, h, 0))
     scope.Box(Modifier.fillMaxSize(), vertical = RcVerticalPositioning.Bottom) {
         val doc = this@mapTile
@@ -848,10 +854,10 @@ fun DocContext.energyFlow(wDp: Float, hDp: Float, compact: Boolean) {
             ); strokeWidth(doc.units.px(C.ENERGY_LINE_DP)); style(RcPaintStyle.Stroke) }
             val home = spots.getValue("home")
             for ((key, _, _) in nodes) {
-                val p = spots.getValue(key)
+                val spot = spots.getValue(key)
                 drawLine(
-                    doc.units.px(p.first),
-                    doc.units.px(p.second),
+                    doc.units.px(spot.first),
+                    doc.units.px(spot.second),
                     doc.units.px(home.first),
                     doc.units.px(home.second),
                 )

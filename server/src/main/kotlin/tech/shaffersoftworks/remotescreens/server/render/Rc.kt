@@ -57,24 +57,31 @@ object Rc {
      * A path from `M`, `L`, `C` and `Z` with absolute coordinates, as `tools/generate_icons.py` writes them.
      * The library's own parser reads neither relative commands nor `V`, so icons never go through it.
      */
-    fun path(d: String): RemotePathBase {
-        val p = RemotePathBase()
-        val t = d.split(' ')
+    fun path(commands: String): RemotePathBase {
+        val remotePath = RemotePathBase()
+        val tokens = commands.split(' ')
         var i = 0
-        fun n() = t[i++].toFloat()
-        while (i < t.size) {
-            when (t[i++]) {
-                "M" -> p.moveTo(n(), n())
-                "L" -> p.lineTo(n(), n())
-                "C" -> p.cubicTo(n(), n(), n(), n(), n(), n())
-                "Z" -> p.close()
+        fun nextNumber() = tokens[i++].toFloat()
+        while (i < tokens.size) {
+            when (tokens[i++]) {
+                "M" -> remotePath.moveTo(nextNumber(), nextNumber())
+                "L" -> remotePath.lineTo(nextNumber(), nextNumber())
+                "C" -> remotePath.cubicTo(
+                    nextNumber(),
+                    nextNumber(),
+                    nextNumber(),
+                    nextNumber(),
+                    nextNumber(),
+                    nextNumber(),
+                )
+                "Z" -> remotePath.close()
                 "" -> Unit
                 else -> throw IllegalArgumentException(
-                    "Unexpected path command at $i in ${d.take(ERROR_SNIPPET_LENGTH)}",
+                    "Unexpected path command at $i in ${commands.take(ERROR_SNIPPET_LENGTH)}",
                 )
             }
         }
-        return p
+        return remotePath
     }
 
     /** The JVM services, except that any path that can write itself out is taken (alpha20 takes only its own class). */

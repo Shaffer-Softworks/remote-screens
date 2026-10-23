@@ -52,6 +52,7 @@ jobs:
           cache-dependency-path: editor/package-lock.json
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run lint
       - run: npm test
       - run: npx vite build
 

@@ -18,9 +18,9 @@ const index = computed(() => props.screen.pages.indexOf(props.page))
 function shift(by: number): void {
   const pages = props.screen.pages
   const i = index.value
-  const j = i + by
-  if (j < 0 || j >= pages.length) return
-  ;[pages[i], pages[j]] = [pages[j], pages[i]]
+  const targetIndex = i + by
+  if (targetIndex < 0 || targetIndex >= pages.length) return
+  ;[pages[i], pages[targetIndex]] = [pages[targetIndex], pages[i]]
 }
 
 const isHome = computed({

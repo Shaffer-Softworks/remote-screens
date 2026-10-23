@@ -172,8 +172,8 @@ internal fun DocContext.header(entityId: String, card: String) {
 
 internal fun DocContext.bigToggle(entityId: String, entityState: EntityState?, verb: String = "toggle") {
     val spec = Catalogue.of(entityState?.domain ?: "")
-    val r = ref(entityId, verb)
-    predict(r, entityId)
+    val action = ref(entityId, verb)
+    predict(action, entityId)
     scope.Box(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
         val doc = this@bigToggle
         Box(
@@ -184,7 +184,7 @@ internal fun DocContext.bigToggle(entityId: String, entityState: EntityState?, v
                 ).clip(
                     doc.rounded((CardChrome.TOGGLE_DP) / 2f),
                 ).background(doc.color(Vars.tile(CardRenderer.TILE, Vars.KEY_BG))),
-                r,
+                action,
             ),
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcVerticalPositioning.Center,

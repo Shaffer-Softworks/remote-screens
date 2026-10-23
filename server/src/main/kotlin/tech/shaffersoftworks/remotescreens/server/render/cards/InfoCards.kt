@@ -71,7 +71,7 @@ internal fun DocContext.weatherCard(entityId: String, entityState: EntityState?,
     val days = data.forecasts[entityId].orEmpty()
     val lo = days.mapNotNull { it.low }.minOrNull() ?: 0.0
     val hi = days.mapNotNull { it.high }.maxOrNull() ?: 1.0
-    for (d in days.take(CardChrome.FORECAST_DAYS)) {
+    for (day in days.take(CardChrome.FORECAST_DAYS)) {
         scope.Row(
             Modifier.fillMaxWidth().padding(
                 0f,
@@ -83,29 +83,29 @@ internal fun DocContext.weatherCard(entityId: String, entityState: EntityState?,
         ) {
             val doc = this@weatherCard
             doc.label(
-                doc.i18n.weekday(d.time.withZoneSameInstant(zone)),
+                doc.i18n.weekday(day.time.withZoneSameInstant(zone)),
                 Type.TITLE,
                 ink,
                 Weight.MEDIUM,
                 modifier = Modifier.width(doc.units.px(CardChrome.MEDIA_CTRL_DP)),
             )
-            doc.weatherStateIcon(d.condition, CardChrome.WEATHER_ICON_ROW_DP, fallbackColor = ink)
+            doc.weatherStateIcon(day.condition, CardChrome.WEATHER_ICON_ROW_DP, fallbackColor = ink)
             Spacer(Modifier.width(doc.units.px(CardChrome.PANEL_CORNER_DP)))
             doc.label(
-                d.rain?.let { "$it%" } ?: "",
+                day.rain?.let { "$it%" } ?: "",
                 Type.BODY,
                 doc.role(Role.ACCENT),
                 modifier = Modifier.width(doc.units.px(CardChrome.FLOW_KEY_H_DP)),
             )
             doc.label(
-                d.low?.let { "${it.roundToInt()}°" } ?: "",
+                day.low?.let { "${it.roundToInt()}°" } ?: "",
                 Type.BODY,
                 soft,
                 modifier = Modifier.width(doc.units.px(CardChrome.CLOSE_KEY_DP)),
             )
             val span = (hi - lo).coerceAtLeast(1.0)
-            val start = (((d.low ?: lo) - lo) / span).toFloat().coerceIn(0f, 1f)
-            val end = (((d.high ?: hi) - lo) / span).toFloat().coerceIn(start, 1f)
+            val start = (((day.low ?: lo) - lo) / span).toFloat().coerceIn(0f, 1f)
+            val end = (((day.high ?: hi) - lo) / span).toFloat().coerceIn(start, 1f)
             val barW = doc.units.px(
                 (width - CardChrome.MEDIA_CTRL_DP - CardChrome.WEATHER_ICON_ROW_DP - CardChrome.PANEL_CORNER_DP - CardChrome.FLOW_KEY_H_DP - CardChrome.CLOSE_KEY_DP - CardChrome.CLOSE_KEY_DP - CardChrome.SECTION_GAP_DP).coerceAtLeast(
                     CardChrome.CLOSE_KEY_DP,
@@ -117,12 +117,12 @@ internal fun DocContext.weatherCard(entityId: String, entityState: EntityState?,
                 paint { color(doc.role(Role.DIVIDER)); style(RcPaintStyle.Fill) }
                 drawRoundRect(0f, 0f, barW, barH, barH / 2f, barH / 2f)
                 paint { color(doc.role(Role.WARN)) }
-                val l = start * barW
-                drawRoundRect(l, 0f, maxOf(end * barW, l + barH), barH, barH / 2f, barH / 2f)
+                val barLeft = start * barW
+                drawRoundRect(barLeft, 0f, maxOf(end * barW, barLeft + barH), barH, barH / 2f, barH / 2f)
             }
             Spacer(Modifier.width(doc.units.px(CardChrome.ROW_GAP_DP)))
             doc.label(
-                d.high?.let { "${it.roundToInt()}°" } ?: "",
+                day.high?.let { "${it.roundToInt()}°" } ?: "",
                 Type.BODY,
                 ink,
                 Weight.SEMI_BOLD,

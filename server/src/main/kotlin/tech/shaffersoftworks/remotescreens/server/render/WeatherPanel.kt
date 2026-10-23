@@ -135,7 +135,7 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
                 ).padding(doc.units.px(STRIP_PAD_DP)),
                 horizontal = RcRowHorizontalPositioning.SpaceEvenly,
             ) {
-                for (d in days) {
+                for (day in days) {
                     Column(
                         Modifier.width(
                             doc.units.px(dayW),
@@ -148,20 +148,20 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
                         horizontal = RcHorizontalPositioning.Center,
                     ) {
                         doc.label(
-                            doc.i18n.fullWeekday(d.time.withZoneSameInstant(zone)),
+                            doc.i18n.fullWeekday(day.time.withZoneSameInstant(zone)),
                             small(WEEKDAY_SP, layoutScale),
                             ink,
                             align = RcTextAlign.Center,
                         )
                         Spacer(Modifier.height(doc.units.px(STRIP_PAD_DP * layoutScale)))
                         doc.weatherStateIcon(
-                            d.condition,
+                            day.condition,
                             FORECAST_ICON_DP * layoutScale,
                             fallbackColor = ink,
                         )
                         Spacer(Modifier.height(doc.units.px(FORECAST_GAP_DP * layoutScale)))
                         doc.label(
-                            doc.i18n.state("weather", d.condition),
+                            doc.i18n.state("weather", day.condition),
                             small(CONDITION_SP, layoutScale),
                             soft,
                             align = RcTextAlign.Center,
@@ -169,13 +169,13 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
                         Spacer(Modifier.height(doc.units.px(TEMP_ROW_GAP_DP * layoutScale)))
                         Row(vertical = RcVerticalPositioning.Bottom) {
                             doc.label(
-                                d.high?.let { "${it.roundToInt()}°" } ?: "–",
+                                day.high?.let { "${it.roundToInt()}°" } ?: "–",
                                 small(HIGH_TEMP_SP, layoutScale),
                                 ink,
                                 Weight.MEDIUM,
                             )
                             doc.label(
-                                d.low?.let { " / ${it.roundToInt()}°" } ?: "",
+                                day.low?.let { " / ${it.roundToInt()}°" } ?: "",
                                 small(LOW_TEMP_SP, layoutScale),
                                 soft,
                             )
@@ -190,9 +190,9 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
 /** "Wind 12 km/h", "Humidity 71%" and "Pressure 1013 hPa", in the units the weather entity reports. */
 private fun DocContext.bindWeatherDetails(tileId: String, entityId: String, details: List<String>) {
     fun measure(entityState: EntityState, key: String, unitKey: String, fallback: String): String? {
-        val v = entityState.number(key) ?: return null
+        val reading = entityState.number(key) ?: return null
         val unit = entityState.attr(unitKey) ?: fallback
-        return "${i18n.number(v, if (unit == "inHg") 2 else 0)} $unit"
+        return "${i18n.number(reading, if (unit == "inHg") 2 else 0)} $unit"
     }
     bind(entityId) { states ->
         val entityState = states[entityId]

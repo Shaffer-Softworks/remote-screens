@@ -443,11 +443,11 @@ const progress = computed(() => {
 })
 
 const stepperValue = computed(() => {
-  const e = entity.value
+  const bound = entity.value
   if (!viewNode.value.bind) return '–'
-  if (!e) return `‹${viewNode.value.bind.entityId}›`
-  if (e.domain === 'climate') return 'Target'
-  return e.unit ? `${e.state} ${e.unit}` : stateOf(e) || e.state
+  if (!bound) return `‹${viewNode.value.bind.entityId}›`
+  if (bound.domain === 'climate') return 'Target'
+  return bound.unit ? `${bound.state} ${bound.unit}` : stateOf(bound) || bound.state
 })
 
 /** Stand-in readings for the RPI thermostat preview (GridMockup / ThermostatPanel). */
@@ -459,12 +459,12 @@ const THERMOSTAT_MODES = [
 ]
 const THERMOSTAT_TICKS = Array.from({ length: 20 }, (_, i) => i * 18)
 const thermostatPreview = computed(() => {
-  const e = entity.value
-  const state = e?.state?.toLowerCase() ?? 'heat_cool'
+  const bound = entity.value
+  const state = bound?.state?.toLowerCase() ?? 'heat_cool'
   const modeOn = Math.max(
     0,
-    THERMOSTAT_MODES.findIndex(m => {
-      const word = m.label.toLowerCase().replace('/', '_')
+    THERMOSTAT_MODES.findIndex(mode => {
+      const word = mode.label.toLowerCase().replace('/', '_')
       return word === state || (state === 'auto' && word === 'heat_cool')
     }),
   )
@@ -526,8 +526,8 @@ const iconColor = computed(() => {
 })
 
 const sliderFill = computed(() => {
-  const e = entity.value
-  if (!e) return 50
+  const bound = entity.value
+  if (!bound) return 50
   return on.value ? 60 : 0
 })
 

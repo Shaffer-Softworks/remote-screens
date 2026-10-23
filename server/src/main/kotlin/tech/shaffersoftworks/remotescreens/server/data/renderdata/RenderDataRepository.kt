@@ -15,6 +15,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import java.time.ZoneId
 import java.util.concurrent.ConcurrentHashMap
 
 private const val MS_PER_MINUTE = 60_000L
@@ -37,6 +38,7 @@ class RenderDataRepository(
     private val homeAssistant: HomeAssistant,
     private val musicClient: MusicAssistantClient = MusicAssistantClient(homeAssistant),
     private val musicUiStore: MusicUiStore = MusicUiStore(),
+    val calendarAgenda: CalendarAgendaStore = CalendarAgendaStore(homeAssistant),
 ) {
     private val logger = LoggerFactory.getLogger(RenderDataRepository::class.java)
 
@@ -66,6 +68,7 @@ class RenderDataRepository(
         val graphedEntities = tiles.filter(::isGraphed).mapNotNull { it.entityId }.distinct()
         val mediaPlayers = tiles.filter { it.effectiveKind() == "media_player" }.mapNotNull { it.entityId }.distinct()
         val musicTiles = tiles.filter { it.effectiveKind() == "music" }
+        val needsAgenda = tiles.any { it.full && it.effectiveKind() == "calendar" }
         val needsEnergy = tiles.any { it.effectiveKind() == "energy" }
         val historyHours = tiles.firstOrNull { it.effectiveKind() == "history" }
             ?.options?.get("hours")?.toIntOrNull()
@@ -73,6 +76,8 @@ class RenderDataRepository(
         // Drop cached to-dos so a complete on the page is visible after the next rebuild.
         for (entityId in todoEntities) todos.remove(entityId)
         val musicPayload = musicPayload(musicTiles)
+        val zone = runCatching { ZoneId.of(homeAssistant.config.value.timeZone) }.getOrDefault(ZoneId.of("UTC"))
+        val agenda = if (needsAgenda) calendarAgenda.snapshot(homeAssistant.states.value, zone) else null
         return RenderData(
             forecasts = weatherEntities.associateWith { forecast(it) },
             history = graphedEntities.associateWith { history(it, historyHours) },
@@ -84,6 +89,8 @@ class RenderDataRepository(
             musicConfigEntry = musicPayload.configEntries,
             musicUi = musicPayload.ui,
             musicBrowseHasMore = musicPayload.hasMore,
+            agenda = agenda,
+            agendaNotices = calendarAgenda.notices(),
         )
     }
 
@@ -184,6 +191,7 @@ class RenderDataRepository(
         musicQueueCache.clear()
         configEntryCache.clear()
         energyPreferences = null
+        calendarAgenda.clear()
     }
 
     private data class MusicPayload(
@@ -200,8 +208,8 @@ class RenderDataRepository(
         val configEntries = linkedMapOf<String, String>()
         val ui = linkedMapOf<String, MusicUiState>()
         val hasMore = linkedMapOf<String, Boolean>()
-        for (tile in musicTiles.filter { it.entityId != null }) {
-            val playerEntityId = tile.entityId!!
+        for (tile in musicTiles) {
+            val playerEntityId = tile.entityId ?: continue
             val state = musicUiStore.state(tile.id)
             ui[tile.id] = state
             val configEntryId = resolveConfigEntry(tile, playerEntityId)

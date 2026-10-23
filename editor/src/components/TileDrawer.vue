@@ -23,7 +23,7 @@ const others = computed(() => props.page.tiles.filter(tile => tile.id !== props.
 const edgeToEdge = computed(
   () =>
     kindOf(props.tile) === 'home' ||
-    (!!props.tile.full && ['weather', 'climate', 'music'].includes(kindOf(props.tile))),
+    (!!props.tile.full && ['weather', 'climate', 'music', 'calendar'].includes(kindOf(props.tile))),
 )
 
 /** An entity may be shown another way: a sensor as a graph, a player as its favourite music. */

@@ -27,13 +27,13 @@ class LayoutRepositoryTest {
 
     @Test
     fun everyReleasedSchemaLoads() {
-        val files = fixtures.listFiles { f -> f.name.matches(Regex("v\\d+\\.json")) }.orEmpty()
+        val files = fixtures.listFiles { file -> file.name.matches(Regex("v\\d+\\.json")) }.orEmpty()
         assertTrue(files.isNotEmpty(), "no layout fixtures in $fixtures")
-        for (f in files) {
-            val data = LayoutRepository(dirWith(f.readText())).layout.value
-            assertEquals(SCHEMA_VERSION, data.schemaVersion, f.name)
-            assertTrue(data.screens.isNotEmpty(), "${f.name} lost its screens")
-            assertTrue(data.players.isNotEmpty(), "${f.name} lost its players")
+        for (file in files) {
+            val data = LayoutRepository(dirWith(file.readText())).layout.value
+            assertEquals(SCHEMA_VERSION, data.schemaVersion, file.name)
+            assertTrue(data.screens.isNotEmpty(), "${file.name} lost its screens")
+            assertTrue(data.players.isNotEmpty(), "${file.name} lost its players")
         }
     }
 
@@ -42,7 +42,7 @@ class LayoutRepositoryTest {
         val s = LayoutRepository(
             dirWith(File(fixtures, "v2.json").readText()),
         ).layout.value.screens.single()
-        val root = s.pages[0].root!!
+        val root = checkNotNull(s.pages[0].root)
         assertEquals("column", root.type)
         assertEquals(
             listOf("n1", "n2", "n3", "n4", "n5", "n6", "n7"),
@@ -92,7 +92,7 @@ class LayoutRepositoryTest {
         val dir = Files.createTempDirectory("layouts").toFile()
         LayoutRepository(dir).update { it.copy(screens = listOf(Screen(id = "a", name = "A"))) }
         assertEquals(listOf("a"), LayoutRepository(dir).layout.value.screens.map { it.id })
-        assertEquals(listOf("layouts.json"), dir.list()!!.toList())
+        assertEquals(listOf("layouts.json"), checkNotNull(dir.list()).toList())
     }
 
     @Test

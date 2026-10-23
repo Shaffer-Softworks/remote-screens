@@ -11,6 +11,7 @@ import tech.shaffersoftworks.remotescreens.server.render.accent
 import tech.shaffersoftworks.remotescreens.server.render.at
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
+import tech.shaffersoftworks.remotescreens.server.render.calendarPanel
 import tech.shaffersoftworks.remotescreens.server.render.homeTile
 import tech.shaffersoftworks.remotescreens.server.render.rounded
 import tech.shaffersoftworks.remotescreens.server.render.tap
@@ -55,14 +56,17 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
     }
 
     if (kind == "home" || box.edge) {
+        val pageTap = if (kind == "calendar") null else tapRef
+        val pageHold = if (kind == "calendar") null else holdRef
         at(
             box.x,
             box.y,
-        ) { scope.Box(tap(Modifier.size(units.px(box.w), units.px(box.h)), tapRef, holdRef)) {
+        ) { scope.Box(tap(Modifier.size(units.px(box.w), units.px(box.h)), pageTap, pageHold)) {
             when (kind) {
                 "home" -> this@tile.homeTile(tile, box)
                 "climate" -> this@tile.thermostatPanel(tile, box)
                 "music" -> this@tile.musicPanel(tile, box)
+                "calendar" -> this@tile.calendarPanel(tile, box)
                 else -> this@tile.weatherPanel(tile, box)
             }
         } }

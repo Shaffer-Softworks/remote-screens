@@ -33,3 +33,9 @@ If the composable branches on state, add one named preview per meaningful state 
 
 - The preview function itself.
 - A `@Composable` that returns a value and emits no layout.
+- A screen entry whose body only calls `hiltViewModel()` and composables that already have previews in the same file.
+- A composable that only runs effects (`LaunchedEffect`, `LocalContext`, and the same kind of call) and emits no layout.
+
+## Build check
+
+`ComposablePreviewRuleTest` in `:player:testDebugUnitTest` fails when a UI `@Composable` under `player/**/ui` has no same-file `@Preview` that calls it, or a preview is not private, not 800×480 without a `name`, or not wrapped in `RemoteScreensTheme`.

@@ -40,6 +40,7 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.util.MapTileIndex
 import org.osmdroid.views.MapView
 import tech.shaffersoftworks.remotescreens.player.BuildConfig
+import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 import tech.shaffersoftworks.remotescreens.shared.MapMarker
 import java.io.File
 import kotlin.math.ln
@@ -291,60 +292,66 @@ private fun markerIcon(picture: Bitmap?, label: String, colourIndex: Int): Drawa
 @Preview(name = "Markers", widthDp = 800, heightDp = 480)
 @Composable
 private fun InteractiveMapPreview() {
-    val context = LocalContext.current
-    LiveMapView.ensureOsmdroidConfigured(context)
-    InteractiveMap(
-        tileUrl = PREVIEW_TILE_URL,
-        dark = false,
-        markers = listOf(
-            MapMarker(latitude = DEFAULT_LATITUDE, longitude = DEFAULT_LONGITUDE, label = "Kitchen"),
-            MapMarker(
-                latitude = PREVIEW_NEARBY_LATITUDE,
-                longitude = PREVIEW_NEARBY_LONGITUDE,
-                label = "Ada Lovelace",
+    RemoteScreensTheme {
+        val context = LocalContext.current
+        LiveMapView.ensureOsmdroidConfigured(context)
+        InteractiveMap(
+            tileUrl = PREVIEW_TILE_URL,
+            dark = false,
+            markers = listOf(
+                MapMarker(latitude = DEFAULT_LATITUDE, longitude = DEFAULT_LONGITUDE, label = "Kitchen"),
+                MapMarker(
+                    latitude = PREVIEW_NEARBY_LATITUDE,
+                    longitude = PREVIEW_NEARBY_LONGITUDE,
+                    label = "Ada Lovelace",
+                ),
             ),
-        ),
-        pictures = emptyMap(),
-    )
+            pictures = emptyMap(),
+        )
+    }
 }
 
 @Preview(name = "Dark, empty", widthDp = 800, heightDp = 480)
 @Composable
 private fun InteractiveMapDarkPreview() {
-    val context = LocalContext.current
-    LiveMapView.ensureOsmdroidConfigured(context)
-    InteractiveMap(
-        tileUrl = PREVIEW_TILE_URL,
-        dark = true,
-        markers = emptyList(),
-        pictures = emptyMap(),
-    )
+    RemoteScreensTheme {
+        val context = LocalContext.current
+        LiveMapView.ensureOsmdroidConfigured(context)
+        InteractiveMap(
+            tileUrl = PREVIEW_TILE_URL,
+            dark = true,
+            markers = emptyList(),
+            pictures = emptyMap(),
+        )
+    }
 }
 
 @Preview(name = "Marker pin", widthDp = 800, heightDp = 480)
 @Composable
 private fun MapMarkerPinPreview() {
-    val context = LocalContext.current
-    LiveMapView.ensureOsmdroidConfigured(context)
-    val marker = MapMarker(
-        latitude = DEFAULT_LATITUDE,
-        longitude = DEFAULT_LONGITUDE,
-        label = "Ada Lovelace",
-    )
-    val cameraState = rememberCameraState {
-        geoPoint = GeoPoint(marker.latitude, marker.longitude)
-        zoom = SINGLE_MARKER_ZOOM
-    }
-    OpenStreetMap(
-        modifier = Modifier.fillMaxSize(),
-        cameraState = cameraState,
-        properties = MapProperties(zoomButtonVisibility = ZoomButtonVisibility.NEVER),
-    ) {
-        MapMarkerPin(
-            marker = marker,
-            icon = markerIcon(picture = null, label = marker.label, colourIndex = 0),
-            index = 0,
+    RemoteScreensTheme {
+        val context = LocalContext.current
+        LiveMapView.ensureOsmdroidConfigured(context)
+        val marker = MapMarker(
+            latitude = DEFAULT_LATITUDE,
+            longitude = DEFAULT_LONGITUDE,
+            label = "Ada Lovelace",
         )
+        val cameraState = rememberCameraState {
+            geoPoint = GeoPoint(marker.latitude, marker.longitude)
+            zoom = SINGLE_MARKER_ZOOM
+        }
+        OpenStreetMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraState = cameraState,
+            properties = MapProperties(zoomButtonVisibility = ZoomButtonVisibility.NEVER),
+        ) {
+            MapMarkerPin(
+                marker = marker,
+                icon = markerIcon(picture = null, label = marker.label, colourIndex = 0),
+                index = 0,
+            )
+        }
     }
 }
 

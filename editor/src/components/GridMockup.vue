@@ -98,6 +98,14 @@ const isWeatherPanel = (tile: Tile) => kindOf(tile) === 'weather' && tile.full =
 const WEATHER_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const isThermostatPanel = (tile: Tile) => kindOf(tile) === 'climate' && tile.full === true
 const isMusicPanel = (tile: Tile) => kindOf(tile) === 'music' && tile.full === true
+/** A calendar that owns the page: the Full page size, or a tile that already covers the grid. */
+function isCalendarPanel(placement: { tile: Tile; w: number; h: number }): boolean {
+  return (
+    kindOf(placement.tile) === 'calendar' &&
+    (placement.tile.full === true ||
+      (placement.w >= gridLayout.value.cols && placement.h >= gridLayout.value.rows))
+  )
+}
 const THERMOSTAT_MODES = [
   { label: 'Heat/Cool', icon: 'sun-snowflake-variant', on: true },
   { label: 'Heat', icon: 'fire' },
@@ -111,7 +119,8 @@ function place(placement: { tile: Tile; col: number; row: number; w: number; h: 
     isHomePanel(placement.tile) ||
     isWeatherPanel(placement.tile) ||
     isThermostatPanel(placement.tile) ||
-    isMusicPanel(placement.tile)
+    isMusicPanel(placement.tile) ||
+    isCalendarPanel(placement)
   ) {
     return {
       left: '0px',
@@ -152,9 +161,9 @@ const navIcon = (page: Page) =>
 // The bars as ScreenRenderer.kt draws them: text and icons scale with each bar's height against its default.
 const top = computed(() => {
   const bar = props.screen.topBar
-  const k = Math.min(Math.max(gridLayout.value.topBar / TOP_BAR, 0.7), 2)
+  const barScale = Math.min(Math.max(gridLayout.value.topBar / TOP_BAR, 0.7), 2)
   return {
-    k,
+    barScale,
     clockW:
       bar.clockWidth !== undefined
         ? (props.device.w * bar.clockWidth) / 100
@@ -169,7 +178,7 @@ const nav = computed(() => {
   const barH = gridLayout.value.navBar - 2
   const count = visiblePages.value.length + 1
   const layout = bar.layout ?? 'spread'
-  const k = barH / (navBar(props.device.w) - 2)
+  const barScale = barH / (navBar(props.device.w) - 2)
   const labels = bar.labels ?? 'both'
   return {
     labels,
@@ -184,8 +193,10 @@ const nav = computed(() => {
             : 'space-evenly',
     iconSize: labels === 'icons' ? Math.min(48, barH * 0.55) : Math.min(40, barH * 0.4),
     fontSize:
-      labels === 'text' ? Math.min(Math.max(14 * k, 10), 24) : Math.min(Math.max(10 * k, 9), 16),
-    gap: 5 * Math.min(k, 1.5),
+      labels === 'text'
+        ? Math.min(Math.max(14 * barScale, 10), 24)
+        : Math.min(Math.max(10 * barScale, 9), 16),
+    gap: 5 * Math.min(barScale, 1.5),
     background: colorOf(bar.background),
     line: colorOf(bar.line),
     active: colorOf(bar.active),
@@ -298,8 +309,8 @@ const highlight = computed(() => {
         class="topbar"
         :style="{
           height: `${gridLayout.topBar}px`,
-          fontSize: `${20 * top.k}px`,
-          gap: `${15 * top.k}px`,
+          fontSize: `${20 * top.barScale}px`,
+          gap: `${15 * top.barScale}px`,
           background: top.background,
         }"
       >
@@ -310,33 +321,33 @@ const highlight = computed(() => {
         >
           <strong>12:34</strong><span v-if="top.date">24 MAY 2026</span>
         </div>
-        <div class="grow middle" :style="{ fontSize: `${16 * top.k}px` }">
+        <div class="grow middle" :style="{ fontSize: `${16 * top.barScale}px` }">
           <template v-if="page.hidden">
             <span
               class="back"
               :style="{
-                width: `${Math.min(34 * top.k, gridLayout.topBar - 6)}px`,
-                height: `${Math.min(34 * top.k, gridLayout.topBar - 6)}px`,
+                width: `${Math.min(34 * top.barScale, gridLayout.topBar - 6)}px`,
+                height: `${Math.min(34 * top.barScale, gridLayout.topBar - 6)}px`,
               }"
             >
-              <MdiIcon name="arrow-left" :size="20 * top.k" />
+              <MdiIcon name="arrow-left" :size="20 * top.barScale" />
             </span>
             <span>{{ page.title }}</span>
           </template>
         </div>
         <span v-if="screen.topBar.temperatureEntity" class="stat"
-          ><MdiIcon name="thermometer" :size="26 * top.k" class="blue" />14°</span
+          ><MdiIcon name="thermometer" :size="26 * top.barScale" class="blue" />14°</span
         >
         <span v-if="screen.topBar.people" class="stat"
-          ><MdiIcon name="home-account" :size="26 * top.k" class="teal" />{{
+          ><MdiIcon name="home-account" :size="26 * top.barScale" class="teal" />{{
             people.filter(person => person.state === 'home').length
           }}</span
         >
         <span v-if="screen.topBar.wifi" class="stat"
-          ><MdiIcon name="wifi" :size="26 * top.k" class="teal" />3</span
+          ><MdiIcon name="wifi" :size="26 * top.barScale" class="teal" />3</span
         >
         <span v-if="screen.topBar.battery" class="stat"
-          ><MdiIcon name="battery" :size="26 * top.k" class="teal" />87%</span
+          ><MdiIcon name="battery" :size="26 * top.barScale" class="teal" />87%</span
         >
       </div>
 
@@ -373,6 +384,7 @@ const highlight = computed(() => {
           'weather-panel': isWeatherPanel(placement.tile) || isThermostatPanel(placement.tile),
           'thermostat-panel': isThermostatPanel(placement.tile),
           'music-panel': isMusicPanel(placement.tile),
+          'calendar-panel': isCalendarPanel(placement),
           selected: placement.tile.id === selectedId,
           moved: moved.has(placement.tile.id),
           dragging: dragged?.type === 'tile' && dragged.id === placement.tile.id,
@@ -519,6 +531,20 @@ const highlight = computed(() => {
               <span><small>Fan mode</small><strong>Auto</strong></span>
             </div>
           </div>
+        </template>
+        <template v-else-if="isCalendarPanel(placement)">
+          <span class="cal-title">Upcoming events</span>
+          <i class="cal-rule" />
+          <span class="cal-day">Wed, Jul 15</span>
+          <span class="cal-row">
+            <span class="cal-time">5:30PM</span>
+            <i class="cal-rule-v" />
+            <span class="cal-copy">
+              <span class="cal-event">Soccer practice</span>
+              <span class="cal-meta">Family · Field 2</span>
+            </span>
+          </span>
+          <span class="cal-fab"><MdiIcon name="plus" :size="24" /></span>
         </template>
         <template v-else-if="isWeatherPanel(placement.tile)">
           <span class="wx-name">{{
@@ -858,6 +884,84 @@ const highlight = computed(() => {
   align-items: stretch;
   padding: 16px;
   background: var(--rc-page);
+}
+
+.tile.calendar-panel {
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 16px 24px 88px;
+  background: #333333;
+  color: #ffffff;
+  border: none;
+  border-radius: 0;
+}
+
+.cal-title {
+  font-size: 28px;
+  font-weight: 300;
+}
+
+.cal-rule {
+  height: 2px;
+  background: #03dac5;
+  margin: 12px 0 16px;
+}
+
+.cal-day {
+  color: #1da48c;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 8px 0 4px;
+}
+
+.cal-row {
+  display: flex;
+  align-items: center;
+  height: 72px;
+  background: #3b3b3b;
+  padding: 10px 16px;
+  gap: 16px;
+}
+
+.cal-time {
+  width: 110px;
+  font-size: 18px;
+  font-weight: 300;
+}
+
+.cal-rule-v {
+  width: 2px;
+  align-self: stretch;
+  background: #4a4a4a;
+}
+
+.cal-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cal-event {
+  font-size: 22px;
+}
+
+.cal-meta {
+  color: #cacaca;
+  font-size: 16px;
+}
+
+.cal-fab {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #03dac5;
+  color: #333333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ma-split {
