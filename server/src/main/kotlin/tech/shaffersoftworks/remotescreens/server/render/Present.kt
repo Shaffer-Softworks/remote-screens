@@ -154,10 +154,10 @@ object Present {
         }
         "media_player" -> entityState.number("volume_level")?.toFloat()
         "number", "input_number" -> {
-            val v = entityState.numericState()
+            val numeric = entityState.numericState()
             val min = entityState.number("min") ?: 0.0
             val max = entityState.number("max") ?: DEFAULT_NUMBER_MAX
-            if (v != null && max > min) ((v - min) / (max - min)).toFloat() else null
+            if (numeric != null && max > min) ((numeric - min) / (max - min)).toFloat() else null
         }
         "vacuum" -> entityState.number("battery_level")?.toFloat()?.div(PERCENT)
         else -> null
@@ -255,9 +255,9 @@ object Present {
     }
 
     fun numberWithUnit(entityState: EntityState, i18n: I18n): String? {
-        val v = entityState.numericState() ?: return null
-        val numberText = numberOnly(entityState, v, i18n)
-        val (_, unit) = scale(v, entityState.attr("unit_of_measurement").orEmpty())
+        val numeric = entityState.numericState() ?: return null
+        val numberText = numberOnly(entityState, numeric, i18n)
+        val (_, unit) = scale(numeric, entityState.attr("unit_of_measurement").orEmpty())
         return if (unit.isEmpty()) {
             numberText
         } else if (unit == "%") {

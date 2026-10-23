@@ -3,10 +3,15 @@ package tech.shaffersoftworks.remotescreens.server.player.action
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoHome
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoLayout
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.AGENDA_FIELD_SEPARATOR
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
+import tech.shaffersoftworks.remotescreens.shared.CalendarDialogMode
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
+import tech.shaffersoftworks.remotescreens.shared.Page
+import tech.shaffersoftworks.remotescreens.shared.Screen
+import tech.shaffersoftworks.remotescreens.shared.Tile
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.doubleOrNull
@@ -22,7 +27,10 @@ class ActionRouterTest {
     private val screen = DemoLayout.screen()
 
     private fun tap(meta: String, memory: TapMemory = TapMemory(), now: Long = 0) =
-        runBlocking { router.handle(ActionRef.decode(meta)!!, screen, memory, now) }
+        runBlocking {
+            val action = checkNotNull(ActionRef.decode(meta))
+            router.handle(action, screen, memory, now)
+        }
 
     @Test
     fun aToggleTileTogglesItsEntity() {
@@ -75,9 +83,9 @@ class ActionRouterTest {
 
     @Test
     fun aStepStaysWithinTheLimits() {
-        val climate = Catalogue.of("climate")!!.actions.getValue("temperature")
-        val e = ha.states.value.getValue("climate.living_room")
-        assertEquals("30", router.resolveArg(climate, "+50", e))
+        val climate = checkNotNull(Catalogue.of("climate")).actions.getValue("temperature")
+        val entityState = ha.states.value.getValue("climate.living_room")
+        assertEquals("30", router.resolveArg(climate, "+50", entityState))
     }
 
     @Test
@@ -85,7 +93,7 @@ class ActionRouterTest {
         tap("t5|volume|+10")
         assertEquals(
             0.45,
-            (ha.calls.last().third["volume_level"] as JsonPrimitive).doubleOrNull!!,
+            checkNotNull((ha.calls.last().third["volume_level"] as JsonPrimitive).doubleOrNull),
             0.001,
         )
     }
@@ -182,5 +190,31 @@ class ActionRouterTest {
         assertEquals(TapOutcome.Rebuild, tap("ma1|clear_queue|"))
         val (domain, service, _) = ha.calls.last()
         assertEquals("media_player" to "clear_playlist", domain to service)
+    }
+
+    @Test
+    fun aCalendarPageOpensCreateAndDeleteDialogs() = runBlocking {
+        val calendarScreen = Screen(
+            id = "s",
+            name = "S",
+            pages = listOf(
+                Page(
+                    "home",
+                    "Home",
+                    listOf(Tile(id = "cal", entityId = "calendar.family", full = true)),
+                ),
+            ),
+        )
+        renderData.forScreen(calendarScreen)
+        val create = router.handle(ActionRef("cal", "calendar_create"), calendarScreen, TapMemory())
+        val opened = assertIs<TapOutcome.OpenCalendar>(create)
+        assertEquals(CalendarDialogMode.CREATE, opened.mode)
+        assertTrue(opened.calendars.any { it.entityId == "calendar.family" && it.canCreate })
+
+        val arg = listOf("calendar.family", "demo-dentist", "").joinToString(AGENDA_FIELD_SEPARATOR)
+        val delete = router.handle(ActionRef("cal", "calendar_delete", arg), calendarScreen, TapMemory())
+        val confirm = assertIs<TapOutcome.OpenCalendar>(delete)
+        assertEquals(CalendarDialogMode.DELETE, confirm.mode)
+        assertEquals("Dentist appointment", confirm.event?.summary)
     }
 }

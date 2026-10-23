@@ -35,6 +35,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import tech.shaffersoftworks.remotescreens.player.R
 import tech.shaffersoftworks.remotescreens.player.receiver.ScreenOffAdminReceiver
+import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.CalendarCreateForm
+import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.CalendarDialogState
+import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.CalendarDialogs
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteDocumentView
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteScreenState
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotVideo
@@ -50,6 +53,8 @@ import tech.shaffersoftworks.remotescreens.player.ui.views.UpdateDialog
 import tech.shaffersoftworks.remotescreens.player.utils.applyScreenOrientation
 import tech.shaffersoftworks.remotescreens.player.utils.hideSystemBars
 import tech.shaffersoftworks.remotescreens.player.utils.setWindowBrightness
+import tech.shaffersoftworks.remotescreens.shared.CalendarChoice
+import tech.shaffersoftworks.remotescreens.shared.CalendarDialogMode
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Slot
 
@@ -94,6 +99,9 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
         onAddressDismissed = viewModel::onAddressDismissed,
         onInstallUpdate = viewModel::onInstallUpdateConfirmed,
         onUpdateDismissed = viewModel::onUpdateDismissed,
+        onCalendarDismiss = viewModel::dismissCalendarDialog,
+        onCalendarCreate = viewModel::submitCalendarCreate,
+        onCalendarDelete = viewModel::submitCalendarDelete,
     )
 }
 
@@ -207,7 +215,18 @@ private fun PlayerDialogs(
     onAddressDismissed: () -> Unit = {},
     onInstallUpdate: () -> Unit = {},
     onUpdateDismissed: () -> Unit = {},
+    onCalendarDismiss: () -> Unit = {},
+    onCalendarCreate: (CalendarCreateForm) -> Unit = {},
+    onCalendarDelete: () -> Unit = {},
 ) {
+    viewState.remoteScreen.calendarDialog?.let { calendarDialog ->
+        CalendarDialogs(
+            state = calendarDialog,
+            onDismiss = onCalendarDismiss,
+            onCreate = onCalendarCreate,
+            onDelete = onCalendarDelete,
+        )
+    }
     viewState.settingsDialog?.let { settingsDialog ->
         if (settingsDialog.isForgetConfirmationVisible) {
             ForgetScreenDialog(
@@ -384,17 +403,19 @@ private fun PlayerScreenBlackoutPreview() {
 @Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun RemoteScreenPreview() {
-    RemoteScreen(
-        state = RemoteScreenState(),
-        isSwipeEnabled = true,
-        isVideoAllowed = true,
-        onAction = { _, _, _ -> },
-        onSwipe = {},
-        onVideoFailed = { _, _, _ -> },
-        onSearchQuery = { _, _ -> },
-        onSearchPlay = { _, _ -> },
-        onSearchEnqueue = { _, _ -> },
-    )
+    RemoteScreensTheme {
+        RemoteScreen(
+            state = RemoteScreenState(),
+            isSwipeEnabled = true,
+            isVideoAllowed = true,
+            onAction = { _, _, _ -> },
+            onSwipe = {},
+            onVideoFailed = { _, _, _ -> },
+            onSearchQuery = { _, _ -> },
+            onSearchPlay = { _, _ -> },
+            onSearchEnqueue = { _, _ -> },
+        )
+    }
 }
 
 @Preview(name = "Settings", widthDp = 800, heightDp = 480)
@@ -447,6 +468,24 @@ private fun PlayerDialogsAddressPreview() {
         PlayerDialogs(
             viewState = PlayerViewModel.ViewState(
                 addressDialog = AddressDialogState(initialAddress = "192.168.1.10:8100"),
+            ),
+        )
+    }
+}
+
+@Preview(name = "Calendar", widthDp = 800, heightDp = 480)
+@Composable
+private fun PlayerDialogsCalendarPreview() {
+    RemoteScreensTheme {
+        PlayerDialogs(
+            viewState = PlayerViewModel.ViewState(
+                remoteScreen = RemoteScreenState(
+                    calendarDialog = CalendarDialogState(
+                        mode = CalendarDialogMode.CREATE,
+                        tileId = "calendar",
+                        calendars = listOf(CalendarChoice("calendar.family", "Family")),
+                    ),
+                ),
             ),
         )
     }

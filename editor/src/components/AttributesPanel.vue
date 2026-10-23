@@ -585,8 +585,8 @@ const typeIcon = computed(() =>
           :value="currentNode.style.border ?? 0"
           @input="
             (() => {
-              const v = Number(($event.target as HTMLInputElement).value)
-              if (v > 0) currentNode.style.border = v
+              const borderDp = Number(($event.target as HTMLInputElement).value)
+              if (borderDp > 0) currentNode.style.border = borderDp
               else delete currentNode.style.border
             })()
           "
@@ -900,14 +900,14 @@ const typeIcon = computed(() =>
             "
             @change="
               (() => {
-                const v = ($event.target as HTMLSelectElement).value
+                const caption = ($event.target as HTMLSelectElement).value
                 setProp(
                   'caption',
-                  v === 'words'
+                  caption === 'words'
                     ? currentProps.caption && currentProps.caption !== '@name'
                       ? currentProps.caption
                       : 'Caption'
-                    : v,
+                    : caption,
                 )
               })()
             "
@@ -1207,10 +1207,10 @@ const typeIcon = computed(() =>
             :value="tile.entityId ? `e:${tile.entityId}` : `k:${tile.kind}`"
             @change="
               (() => {
-                const v = ($event.target as HTMLSelectElement).value
-                if (v.startsWith('e:'))
-                  Object.assign(tile, { entityId: v.slice(2), kind: undefined })
-                else Object.assign(tile, { entityId: undefined, kind: v.slice(2) })
+                const selected = ($event.target as HTMLSelectElement).value
+                if (selected.startsWith('e:'))
+                  Object.assign(tile, { entityId: selected.slice(2), kind: undefined })
+                else Object.assign(tile, { entityId: undefined, kind: selected.slice(2) })
               })()
             "
           >

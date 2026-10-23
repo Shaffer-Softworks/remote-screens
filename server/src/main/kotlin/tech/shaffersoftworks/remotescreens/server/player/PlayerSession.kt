@@ -2,6 +2,8 @@ package tech.shaffersoftworks.remotescreens.server.player
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.player.action.ActionRouter
+import tech.shaffersoftworks.remotescreens.server.player.action.AgendaMutation
+import tech.shaffersoftworks.remotescreens.server.player.action.CalendarMutations
 import tech.shaffersoftworks.remotescreens.server.player.action.TapMemory
 import tech.shaffersoftworks.remotescreens.server.player.action.TapOutcome
 import tech.shaffersoftworks.remotescreens.server.player.session.SessionDocument
@@ -17,6 +19,9 @@ import tech.shaffersoftworks.remotescreens.server.render.Rc
 import tech.shaffersoftworks.remotescreens.server.render.Themes
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
+import tech.shaffersoftworks.remotescreens.shared.CalendarChoice
+import tech.shaffersoftworks.remotescreens.shared.CalendarDeleteTarget
+import tech.shaffersoftworks.remotescreens.shared.CalendarDialogMode
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import tech.shaffersoftworks.remotescreens.shared.Protocol
 import tech.shaffersoftworks.remotescreens.shared.Screen
@@ -59,6 +64,7 @@ class PlayerSession(
     private val supportsVideo = Protocol.CAPABILITY_VIDEO in hello.capabilities
     private val supportsMap = Protocol.CAPABILITY_MAP in hello.capabilities
     private val supportsMusicSearch = Protocol.CAPABILITY_MUSIC_SEARCH in hello.capabilities
+    private val supportsCalendarDialogs = Protocol.CAPABILITY_CALENDAR_DIALOGS in hello.capabilities
     private val tapMemory = TapMemory()
 
     var pairingCode: String? = null
@@ -179,6 +185,8 @@ class PlayerSession(
             is PlayerMessage.Action -> handleAction(message)
             is PlayerMessage.VideoFailed -> media.restartVideo(message)
             is PlayerMessage.SearchQuery -> media.runSearchQuery(message.tileId, message.query)
+            is PlayerMessage.CalendarCreate -> createCalendarEvent(message)
+            is PlayerMessage.CalendarDelete -> deleteCalendarEvent(message)
             is PlayerMessage.Hello -> Unit
         }
     }
@@ -227,12 +235,77 @@ class PlayerSession(
                 val main = shownDocuments[Slot.MAIN]
                 if (main != null) documents.rebuild(main)
             }
+            is TapOutcome.OpenCalendar -> send(calendarDialog(outcome))
+            is TapOutcome.AgendaNotice -> publishAgendaNotice(outcome.tileId, outcome.message)
             TapOutcome.Ignored -> Unit
         }
         jobs.removeAll { !it.isActive }
     }
 
     suspend fun showAlert(alert: Alert) = documents.showAlert(alert)
+
+    private fun calendarDialog(outcome: TapOutcome.OpenCalendar): ServerMessage.CalendarDialog {
+        val event = outcome.event
+        return if (outcome.mode == CalendarDialogMode.DELETE && event?.uid != null) {
+            ServerMessage.CalendarDialog(
+                mode = CalendarDialogMode.DELETE,
+                tileId = outcome.tileId,
+                event = CalendarDeleteTarget(
+                    entityId = event.entityId,
+                    uid = event.uid,
+                    recurrenceId = event.recurrenceId,
+                    summary = event.summary,
+                ),
+            )
+        } else {
+            ServerMessage.CalendarDialog(
+                mode = CalendarDialogMode.CREATE,
+                tileId = outcome.tileId,
+                calendars = outcome.calendars.map { calendar -> CalendarChoice(calendar.entityId, calendar.name) },
+            )
+        }
+    }
+
+    private suspend fun createCalendarEvent(message: PlayerMessage.CalendarCreate) {
+        when (val result = calendarMutations.create(message)) {
+            is AgendaMutation.Accepted -> {
+                send(ServerMessage.CalendarDialog(CalendarDialogMode.CLOSE, message.tileId))
+                publishAgendaNotice(message.tileId, result.message)
+            }
+            is AgendaMutation.Rejected -> send(
+                ServerMessage.CalendarDialog(
+                    mode = CalendarDialogMode.ERROR,
+                    tileId = message.tileId,
+                    error = result.message,
+                ),
+            )
+        }
+    }
+
+    private suspend fun deleteCalendarEvent(message: PlayerMessage.CalendarDelete) {
+        send(ServerMessage.CalendarDialog(CalendarDialogMode.CLOSE, message.tileId))
+        when (val result = calendarMutations.delete(message)) {
+            is AgendaMutation.Accepted -> publishAgendaNotice(message.tileId, result.message)
+            is AgendaMutation.Rejected -> publishAgendaNotice(message.tileId, result.message)
+        }
+    }
+
+    private suspend fun publishAgendaNotice(tileId: String, message: String) {
+        val agendas = context.renderDataRepository.calendarAgenda
+        agendas.setNotice(tileId, message)
+        val main = shownDocuments[Slot.MAIN]
+        if (main != null) documents.rebuild(main)
+        jobs += context.scope.launch {
+            delay(AGENDA_NOTICE_MS)
+            if (agendas.notice(tileId) == message) {
+                agendas.setNotice(tileId, null)
+                val shown = shownDocuments[Slot.MAIN]
+                if (shown != null) documents.rebuild(shown)
+            }
+        }
+    }
+
+    private val calendarMutations = CalendarMutations(homeAssistant, context.renderDataRepository.calendarAgenda)
 
     /** Closes the alert; for one of its buttons, also calls the button's service and tells Home Assistant. */
     private suspend fun handleAlertAction(ref: ActionRef) {
@@ -295,6 +368,7 @@ class PlayerSession(
         override val supportsVideo get() = this@PlayerSession.supportsVideo
         override val supportsMap get() = this@PlayerSession.supportsMap
         override val supportsMusicSearch get() = this@PlayerSession.supportsMusicSearch
+        override val supportsCalendarDialogs get() = this@PlayerSession.supportsCalendarDialogs
         override val buildMutex get() = this@PlayerSession.buildMutex
         override val shownDocuments get() = this@PlayerSession.shownDocuments
         override val jobs get() = this@PlayerSession.jobs
@@ -345,7 +419,9 @@ class PlayerSession(
             Protocol.CAPABILITY_VIDEO,
             Protocol.CAPABILITY_MAP,
             Protocol.CAPABILITY_MUSIC_SEARCH,
+            Protocol.CAPABILITY_CALENDAR_DIALOGS,
         )
         const val RESYNC_MS = 3000L
+        const val AGENDA_NOTICE_MS = 4_000L
     }
 }

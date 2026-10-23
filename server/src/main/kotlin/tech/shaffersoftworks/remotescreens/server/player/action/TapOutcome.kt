@@ -1,5 +1,8 @@
 package tech.shaffersoftworks.remotescreens.server.player.action
 
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaCalendar
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaEvent
+
 /** What came of a tap. */
 sealed interface TapOutcome {
     data object Done : TapOutcome
@@ -19,4 +22,15 @@ sealed interface TapOutcome {
     data class Code(val varName: String, val shown: String) : TapOutcome
 
     data class Failed(val message: String) : TapOutcome
+
+    /** Open the native calendar create or delete dialog. */
+    data class OpenCalendar(
+        val tileId: String,
+        val mode: String,
+        val calendars: List<AgendaCalendar> = emptyList(),
+        val event: AgendaEvent? = null,
+    ) : TapOutcome
+
+    /** Show [message] under the agenda title, then clear it. */
+    data class AgendaNotice(val tileId: String, val message: String) : TapOutcome
 }

@@ -29,7 +29,7 @@ object Icons {
     fun exists(name: String): Boolean = data.containsKey(key(name))
 
     fun search(query: String, limit: Int = 60): List<String> {
-        val q = key(query)
-        return data.keys.asSequence().filter { q in it }.take(limit).toList()
+        val queryKey = key(query)
+        return data.keys.asSequence().filter { queryKey in it }.take(limit).toList()
     }
 }

@@ -2,9 +2,13 @@ package tech.shaffersoftworks.remotescreens.server.player.action
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.AGENDA_FIELD_SEPARATOR
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaCopy
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaSnapshot
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
+import tech.shaffersoftworks.remotescreens.shared.CalendarDialogMode
 import tech.shaffersoftworks.remotescreens.shared.ActionSpec
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.PredictSpec
@@ -54,20 +58,10 @@ class ActionRouter(
         val entity = target.entityId?.let { homeAssistant.states.value[it] }
         val verb = resolveVerb(ref.verb, target, entity)
         return try {
-            when (verb) {
-                "card" -> TapOutcome.Card(
-                    target.entityId,
-                    if (ref.arg == "history") "history" else target.kind,
-                )
-                "run" -> runTileAction(target)
-                "favourite" -> playFavourite(target)
-                "event" -> fireEvent(ref.arg, target)
-                "code_digit", "code_back", "code_clear" -> typeCode(verb, ref.arg, target, memory)
-                "browse_type", "listen_mode", "primary_tab", "load_more",
-                "clear_queue", "play_uri", "enqueue_uri",
-                "volume_up", "volume_down",
-                -> handleMusic(verb, ref, target)
-                else -> callService(verb, ref, target, entity, memory, nowMs)
+            if (verb == "calendar_create" || verb == "calendar_delete") {
+                handleCalendar(verb, ref, target)
+            } else {
+                dispatchTap(verb, ref, target, entity, memory, nowMs)
             }
         } catch (cancellation: CancellationException) {
             throw cancellation
@@ -75,6 +69,29 @@ class ActionRouter(
             logger.warn("Action {} failed: {}", ref.encode(), e.message)
             TapOutcome.Failed(e.message ?: e.javaClass.simpleName)
         }
+    }
+
+    private suspend fun dispatchTap(
+        verb: String,
+        ref: ActionRef,
+        target: TapTarget,
+        entity: EntityState?,
+        memory: TapMemory,
+        nowMs: Long,
+    ): TapOutcome = when (verb) {
+        "card" -> TapOutcome.Card(
+            target.entityId,
+            if (ref.arg == "history") "history" else target.kind,
+        )
+        "run" -> runTileAction(target)
+        "favourite" -> playFavourite(target)
+        "event" -> fireEvent(ref.arg, target)
+        "code_digit", "code_back", "code_clear" -> typeCode(verb, ref.arg, target, memory)
+        "browse_type", "listen_mode", "primary_tab", "load_more",
+        "clear_queue", "play_uri", "enqueue_uri",
+        "volume_up", "volume_down",
+        -> handleMusic(verb, ref, target)
+        else -> callService(verb, ref, target, entity, memory, nowMs)
     }
 
     /** See [ServiceDataBuilder.resolveArg]. */
@@ -149,6 +166,37 @@ class ActionRouter(
                 JsonObject(data + ("entity_id" to JsonPrimitive(entityId))),
             )
             TapOutcome.Done
+        }
+    }
+
+    private fun handleCalendar(verb: String, ref: ActionRef, target: TapTarget): TapOutcome {
+        val agendas = renderData?.calendarAgenda ?: return TapOutcome.Ignored
+        val snapshot = agendas.latest
+        return when (verb) {
+            "calendar_create" -> TapOutcome.OpenCalendar(
+                tileId = target.tileId,
+                mode = CalendarDialogMode.CREATE,
+                calendars = snapshot.calendars.filter { it.canCreate },
+            )
+            "calendar_delete" -> deleteDialog(ref.arg, target.tileId, snapshot)
+            else -> TapOutcome.Ignored
+        }
+    }
+
+    private fun deleteDialog(arg: String, tileId: String, snapshot: AgendaSnapshot): TapOutcome {
+        val parts = arg.split(AGENDA_FIELD_SEPARATOR)
+        val entityId = parts.getOrNull(0).orEmpty()
+        val uid = parts.getOrNull(1).orEmpty()
+        if (entityId.isBlank() || uid.isBlank()) return TapOutcome.Ignored
+        val recurrenceId = parts.getOrNull(2)?.takeIf { it.isNotEmpty() }
+        val event = snapshot.events.firstOrNull { candidate ->
+            candidate.entityId == entityId && candidate.uid == uid &&
+                (recurrenceId == null || candidate.recurrenceId == recurrenceId)
+        }
+        return if (event == null || !event.canDelete) {
+            TapOutcome.AgendaNotice(tileId, AgendaCopy.CANNOT_DELETE)
+        } else {
+            TapOutcome.OpenCalendar(tileId, CalendarDialogMode.DELETE, event = event)
         }
     }
 

@@ -3,6 +3,7 @@ package tech.shaffersoftworks.remotescreens.server.data.renderdata
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicListRow
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicQueueSnapshot
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
+import java.time.Instant
 
 /** A picture the add-on fetches and sends as a `bitmap` message. */
 data class PictureSlot(
@@ -34,7 +35,44 @@ data class RenderData(
     val musicUi: Map<String, MusicUiState> = emptyMap(),
     /** Whether browse has another page, keyed by music tile id. */
     val musicBrowseHasMore: Map<String, Boolean> = emptyMap(),
+    /** The 14-day agenda for a full calendar page, or null when the screen has none. */
+    val agenda: AgendaSnapshot? = null,
+    /** Transient lines under the agenda title, keyed by tile id. */
+    val agendaNotices: Map<String, String> = emptyMap(),
 )
+
+/** One calendar the agenda can read, and whether Home Assistant allows creating or deleting on it. */
+data class AgendaCalendar(
+    val entityId: String,
+    val name: String,
+    val canCreate: Boolean,
+    val canDelete: Boolean,
+)
+
+/** One event in the 14-day agenda. Times are instants; the page formats them. */
+data class AgendaEvent(
+    val uid: String?,
+    val recurrenceId: String?,
+    val entityId: String,
+    val calendarName: String,
+    val summary: String,
+    val location: String?,
+    val start: Instant?,
+    val end: Instant?,
+    val isAllDay: Boolean,
+    val canDelete: Boolean,
+)
+
+/** The agenda a full calendar page draws. [errorMessage] is set when the list could not be loaded. */
+data class AgendaSnapshot(
+    val events: List<AgendaEvent> = emptyList(),
+    val calendars: List<AgendaCalendar> = emptyList(),
+    val errorMessage: String? = null,
+    val isLoading: Boolean = false,
+)
+
+/** Joins the entity, uid, and recurrence id in a hold action. The separator does not appear in those fields. */
+const val AGENDA_FIELD_SEPARATOR = "\u001f"
 
 /** One incomplete to-do item, as `todo.get_items` returns it. */
 data class TodoItem(

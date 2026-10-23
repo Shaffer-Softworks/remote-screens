@@ -71,9 +71,11 @@ class RenderedDoc(
 
     fun vars(states: Map<String, EntityState>): Map<String, VarValue> {
         val out = LinkedHashMap<String, VarValue>()
-        for (b in docContext.bindings) for (v in runCatching { b.compute(
-            states,
-        ) }.getOrDefault(emptyList())) if (docContext.declares(v.name)) out[v.name] = v
+        for (binding in docContext.bindings) {
+            for (value in runCatching { binding.compute(states) }.getOrDefault(emptyList())) {
+                if (docContext.declares(value.name)) out[value.name] = value
+            }
+        }
         return out
     }
 
@@ -112,6 +114,7 @@ class RenderInput(
     val homeAssistantConfig: HomeAssistantConfig,
     val data: RenderData,
     val palette: Palette = Themes.RPI,
+    val supportsCalendarDialogs: Boolean = false,
 ) {
     fun context(device: Device) = DocContext(
         Units(device.density),
@@ -120,6 +123,7 @@ class RenderInput(
         states,
         homeAssistantConfig,
         data,
+        supportsCalendarDialogs,
     )
 }
 
@@ -152,9 +156,18 @@ object ScreenRenderer {
             val page = docContext.int(Vars.PAGE, startPage)
             Box(Modifier.fillMaxSize().background(docContext.role(Role.PAGE))) {
                 StateLayout(page, Modifier.fillMaxSize()) {
-                    pages.forEachIndexed { i, p ->
+                    pages.forEachIndexed { pageNumber, screenPage ->
                         Box(Modifier.fillMaxSize()) {
-                            docContext.page(screen, p, i, spec, pageIndex, visible, home, showBar)
+                            docContext.page(
+                                screen,
+                                screenPage,
+                                pageNumber,
+                                spec,
+                                pageIndex,
+                                visible,
+                                home,
+                                showBar,
+                            )
                         }
                     }
                 }
@@ -210,14 +223,9 @@ object ScreenRenderer {
                 }
             }
         }
-        for (p in placed) {
-            val tile = p.tile
-            val full = tile.full || (p.w == spec.cols && p.h == spec.rows)
-            val box = if (tile.edgeToEdge()) {
-                TileBox(0f, spec.topBar, spec.widthDp, contentH, p.w, p.h, full = true, edge = true)
-            } else {
-                TileBox(spec.x(p.col), spec.y(p.row), spec.w(p.w), spec.h(p.h), p.w, p.h, full)
-            }
+        for (placement in placed) {
+            val tile = placement.tile
+            val box = tileBox(spec, placement, contentH)
             val named = if (tile.effectiveKind() == "nav" && tile.name == null) {
                 tile.copy(
                     name = screen.pages.firstOrNull { it.id == tile.options["page"] }?.title,
@@ -228,6 +236,33 @@ object ScreenRenderer {
             tile(named, box, pageIndex)
         }
         navBar(screen, spec, visible, index, home)
+    }
+
+    private fun tileBox(spec: GridSpec, placement: Reflow.Placed, contentH: Float): TileBox {
+        val tile = placement.tile
+        val full = tile.full || (placement.w == spec.cols && placement.h == spec.rows)
+        return if (tile.edgeToEdge()) {
+            TileBox(
+                0f,
+                spec.topBar,
+                spec.widthDp,
+                contentH,
+                placement.w,
+                placement.h,
+                full = true,
+                edge = true,
+            )
+        } else {
+            TileBox(
+                spec.x(placement.col),
+                spec.y(placement.row),
+                spec.w(placement.w),
+                spec.h(placement.h),
+                placement.w,
+                placement.h,
+                full,
+            )
+        }
     }
 
     private fun DocContext.tileUsable(tile: tech.shaffersoftworks.remotescreens.shared.Tile): Boolean {
@@ -380,10 +415,10 @@ object ScreenRenderer {
                 vertical = RcVerticalPositioning.Center,
             ) {
                 for (i in visible) {
-                    val p = screen.pages[i]
-                    val icon = p.icon ?: if (i == home) "home" else "view-dashboard"
+                    val page = screen.pages[i]
+                    val icon = page.icon ?: if (i == home) "home" else "view-dashboard"
                     doc.navButton(
-                        p.title,
+                        page.title,
                         icon,
                         buttonW,
                         barH,
@@ -503,7 +538,9 @@ object ScreenRenderer {
             }
             listOf(VarValue.string(Vars.TEMP, text))
         }
-        for (p in states.keys.filter { it.startsWith("person.") }) bind(p) { emptyList() }
+        for (personId in states.keys.filter { it.startsWith("person.") }) {
+            bind(personId) { emptyList() }
+        }
         bind(null) { states ->
             val home = states.values.count { it.domain == "person" && it.state == "home" }
             listOf(VarValue.string(Vars.PEOPLE, home.toString()))

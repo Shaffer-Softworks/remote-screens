@@ -63,7 +63,9 @@ class EnrollmentServiceTest {
             provisioning["${EXTRA}PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM"]?.jsonPrimitive?.content,
         )
         assertTrue(
-            provisioning["${EXTRA}PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED"]!!.jsonPrimitive.boolean,
+            checkNotNull(
+                provisioning["${EXTRA}PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED"],
+            ).jsonPrimitive.boolean,
         )
         assertEquals(
             "192.168.1.10:8100",

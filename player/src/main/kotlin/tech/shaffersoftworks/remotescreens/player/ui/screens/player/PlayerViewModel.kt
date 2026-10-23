@@ -19,6 +19,7 @@ import tech.shaffersoftworks.remotescreens.player.data.kiosk.KioskManager
 import tech.shaffersoftworks.remotescreens.player.data.kiosk.KioskState
 import tech.shaffersoftworks.remotescreens.player.data.preferences.PlayerPreferencesRepository
 import tech.shaffersoftworks.remotescreens.player.data.update.UpdateRepository
+import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.CalendarCreateForm
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteScreenState
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotMap
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotSearch
@@ -32,6 +33,7 @@ import tech.shaffersoftworks.remotescreens.shared.Protocol
 import tech.shaffersoftworks.remotescreens.shared.ScreenSettings
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Slot
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -68,6 +70,7 @@ private val PLAYER_CAPABILITIES =
         Protocol.CAPABILITY_VIDEO,
         Protocol.CAPABILITY_MAP,
         Protocol.CAPABILITY_MUSIC_SEARCH,
+        Protocol.CAPABILITY_CALENDAR_DIALOGS,
     )
 
 /**
@@ -312,6 +315,7 @@ class PlayerViewModel @Inject constructor(
             is ServerMessage.LiveMap -> onMap(message)
             is ServerMessage.LiveSearch -> onLiveSearch(message)
             is ServerMessage.SearchResults -> onSearchResults(message)
+            is ServerMessage.CalendarDialog -> updateRemoteScreen { it.withCalendarDialog(message) }
             ServerMessage.Pong -> Unit
         }
     }
@@ -410,6 +414,46 @@ class PlayerViewModel @Inject constructor(
 
     private fun onSearchResults(message: ServerMessage.SearchResults) {
         updateRemoteScreen { it.withSearchResults(message.tileId, message.rows) }
+    }
+
+    fun dismissCalendarDialog() {
+        val dialog = _viewState.value.remoteScreen.calendarDialog ?: return
+        if (dialog.isMutating) return
+        updateRemoteScreen { it.copy(calendarDialog = null) }
+    }
+
+    fun submitCalendarCreate(form: CalendarCreateForm) {
+        val dialog = _viewState.value.remoteScreen.calendarDialog ?: return
+        if (dialog.isMutating) return
+        updateRemoteScreen { it.withCalendarMutating(true) }
+        send(
+            PlayerMessage.CalendarCreate(
+                tileId = dialog.tileId,
+                entityId = form.entityId,
+                summary = form.summary,
+                location = form.location,
+                allDay = form.isAllDay,
+                startDate = form.startDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                startTime = if (form.isAllDay) null else form.startTime.format(DateTimeFormatter.ISO_LOCAL_TIME),
+                endDate = form.endDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                endTime = if (form.isAllDay) null else form.endTime.format(DateTimeFormatter.ISO_LOCAL_TIME),
+            ),
+        )
+    }
+
+    fun submitCalendarDelete() {
+        val dialog = _viewState.value.remoteScreen.calendarDialog
+        val event = dialog?.event
+        if (dialog == null || event == null || dialog.isMutating) return
+        updateRemoteScreen { it.withCalendarMutating(true) }
+        send(
+            PlayerMessage.CalendarDelete(
+                tileId = dialog.tileId,
+                entityId = event.entityId,
+                uid = event.uid,
+                recurrenceId = event.recurrenceId,
+            ),
+        )
     }
 
     fun onSearchQuery(tileId: String, query: String) {

@@ -1,5 +1,8 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote
 
+import tech.shaffersoftworks.remotescreens.shared.CalendarChoice
+import tech.shaffersoftworks.remotescreens.shared.CalendarDeleteTarget
+import tech.shaffersoftworks.remotescreens.shared.CalendarDialogMode
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Slot
 import tech.shaffersoftworks.remotescreens.shared.VarValue
@@ -271,5 +274,42 @@ class RemoteScreenStateTest {
 
         assertNull(state.playingMap)
         assertEquals(Slot.OVERLAY to map(rev = 2), state.closed(Slot.ALERT).playingMap)
+    }
+
+    @Test
+    fun `a calendar dialog opens, reports an error, and closes`() {
+        val opened = RemoteScreenState().withCalendarDialog(
+            ServerMessage.CalendarDialog(
+                mode = CalendarDialogMode.CREATE,
+                tileId = "cal",
+                calendars = listOf(CalendarChoice("calendar.family", "Family")),
+            ),
+        )
+        assertEquals(CalendarDialogMode.CREATE, opened.calendarDialog?.mode)
+        assertEquals("Family", opened.calendarDialog?.calendars?.single()?.name)
+
+        val deleting = opened.withCalendarDialog(
+            ServerMessage.CalendarDialog(
+                mode = CalendarDialogMode.DELETE,
+                tileId = "cal",
+                event = CalendarDeleteTarget("calendar.family", "event-1", summary = "Soccer practice"),
+            ),
+        )
+        assertEquals("Soccer practice", deleting.calendarDialog?.event?.summary)
+
+        val failed = deleting.withCalendarMutating(true).withCalendarDialog(
+            ServerMessage.CalendarDialog(
+                mode = CalendarDialogMode.ERROR,
+                tileId = "cal",
+                error = "Failed to create event",
+            ),
+        )
+        assertEquals("Failed to create event", failed.calendarDialog?.error)
+        assertFalse(failed.calendarDialog?.isMutating == true)
+        assertNull(
+            failed.withCalendarDialog(
+                ServerMessage.CalendarDialog(mode = CalendarDialogMode.CLOSE, tileId = "cal"),
+            ).calendarDialog,
+        )
     }
 }

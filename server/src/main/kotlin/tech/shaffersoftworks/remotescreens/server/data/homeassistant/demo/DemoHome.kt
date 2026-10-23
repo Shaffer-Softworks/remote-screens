@@ -5,6 +5,8 @@ package tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.calendarEntityId
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.isCalendarListPath
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistantConfig
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistantEvent
 import io.ktor.http.HttpStatusCode
@@ -46,6 +48,8 @@ class DemoHome : HomeAssistant {
     )
 
     val calls = mutableListOf<Triple<String, String, JsonObject>>()
+    /** WebSocket commands the demo recorded, such as `calendar/event/delete`. */
+    val commands = mutableListOf<Pair<String, JsonObject>>()
     /** Uids marked complete via `todo.update_item`, so `get_items` drops them. */
     private val completedTodos = mutableSetOf<String>()
     private val serviceHandlers = DemoServiceHandlers(::set, completedTodos)
@@ -283,10 +287,56 @@ class DemoHome : HomeAssistant {
             })
         }
         "frontend/get_translations" -> buildJsonObject { put("resources", buildJsonObject { }) }
+        "calendar/event/delete" -> {
+            commands += type to payload
+            JsonObject(emptyMap())
+        }
         else -> null
     }
 
-    override suspend fun fetch(path: String): ByteArray? = picture(path.hashCode())
+    override suspend fun fetch(path: String): ByteArray? {
+        calendarPayload(path)?.let { return it.toByteArray(Charsets.UTF_8) }
+        return picture(path.hashCode())
+    }
+
+    private fun calendarPayload(path: String): String? {
+        val entityId = calendarEntityId(path)
+        return when {
+            isCalendarListPath(path) -> calendarListJson()
+            entityId != null -> calendarEventsJson(entityId)
+            else -> null
+        }
+    }
+
+    private fun calendarListJson(): String = buildJsonArray {
+        add(buildJsonObject { put("entity_id", "calendar.family"); put("name", "Family") })
+        add(buildJsonObject { put("entity_id", "calendar.holidays"); put("name", "Holidays") })
+    }.toString()
+
+    private fun calendarEventsJson(entityId: String): String {
+        val day = java.time.LocalDate.now(java.time.ZoneOffset.UTC).plusDays(1)
+        val later = day.plusDays(1)
+        return when (entityId) {
+            "calendar.family" -> buildJsonArray {
+                add(buildJsonObject {
+                    put("summary", "Dentist appointment")
+                    put("location", "Main St")
+                    put("uid", "demo-dentist")
+                    put("start", buildJsonObject { put("dateTime", "${day}T17:30:00Z") })
+                    put("end", buildJsonObject { put("dateTime", "${day}T18:30:00Z") })
+                })
+            }.toString()
+            "calendar.holidays" -> buildJsonArray {
+                add(buildJsonObject {
+                    put("summary", "School holiday")
+                    put("uid", "demo-holiday")
+                    put("start", buildJsonObject { put("date", later.toString()) })
+                    put("end", buildJsonObject { put("date", later.plusDays(1).toString()) })
+                })
+            }.toString()
+            else -> "[]"
+        }
+    }
 
     /** The demo cameras have no video, so screens fall back to their snapshots. */
     override suspend fun stream(path: String, onBody: suspend (contentType: String?, body: ByteReadChannel) -> Unit): Int =
@@ -304,17 +354,17 @@ class DemoHome : HomeAssistant {
                     "pouring",
                     "partlycloudy",
                 )
-                for (d in 0 until 7) add(buildJsonObject {
+                for (day in 0 until 7) add(buildJsonObject {
                     put(
                         "datetime",
                         java.time.LocalDate.now().plusDays(
-                            d.toLong(),
+                            day.toLong(),
                         ).toString() + "T12:00:00+00:00",
                     )
-                    put("condition", conditions[d])
-                    put("temperature", 18 + d % 4)
-                    put("templow", 9 + d % 3)
-                    put("precipitation_probability", listOf(0, 10, 80, 30, 0, 90, 20)[d])
+                    put("condition", conditions[day])
+                    put("temperature", 18 + day % 4)
+                    put("templow", 9 + day % 3)
+                    put("precipitation_probability", listOf(0, 10, 80, 30, 0, 90, 20)[day])
                 })
             })
         })
@@ -632,6 +682,7 @@ class DemoHome : HomeAssistant {
                 "all_day" to false,
                 "start_time" to "${java.time.LocalDate.now().plusDays(1)} 19:30:00",
                 "end_time" to "${java.time.LocalDate.now().plusDays(1)} 20:30:00",
+                "supported_features" to 3,
             )),
             EntityState("todo.shopping", "2", attrs("friendly_name" to "Shopping")),
             EntityState(
@@ -695,9 +746,9 @@ class DemoHome : HomeAssistant {
         /** A soft gradient, standing in for a camera snapshot or an album cover. */
         fun picture(seed: Int, w: Int = 320, h: Int = 240): ByteArray {
             val img = BufferedImage(w, h, BufferedImage.TYPE_INT_RGB)
-            val g = img.createGraphics()
+            val graphics = img.createGraphics()
             val hue = (seed and 0xff) / 255f
-            g.paint = GradientPaint(
+            graphics.paint = GradientPaint(
                 0f,
                 0f,
                 Color.getHSBColor(hue, 0.35f, 0.95f),
@@ -705,8 +756,8 @@ class DemoHome : HomeAssistant {
                 h.toFloat(),
                 Color.getHSBColor(hue + 0.15f, 0.55f, 0.6f),
             )
-            g.fillRect(0, 0, w, h)
-            g.dispose()
+            graphics.fillRect(0, 0, w, h)
+            graphics.dispose()
             return ByteArrayOutputStream().also { ImageIO.write(img, "png", it) }.toByteArray()
         }
     }

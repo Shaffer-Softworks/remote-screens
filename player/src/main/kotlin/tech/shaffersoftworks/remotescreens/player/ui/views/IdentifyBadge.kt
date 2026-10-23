@@ -14,6 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import tech.shaffersoftworks.remotescreens.player.R
 import tech.shaffersoftworks.remotescreens.player.ui.theme.IdentifyBadgeBackground
+import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 
 private val BADGE_TEXT_SIZE = 40.sp
 
@@ -38,5 +39,7 @@ fun IdentifyBadge(screenName: String, modifier: Modifier = Modifier) {
 @Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun IdentifyBadgePreview() {
-    IdentifyBadge(screenName = "Kitchen")
+    RemoteScreensTheme {
+        IdentifyBadge(screenName = "Kitchen")
+    }
 }

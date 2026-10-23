@@ -91,10 +91,10 @@ class RenderTest {
                 placed.map { it.tile.id }.sorted(),
                 "tiles dropped from ${page.id}",
             )
-            for (p in placed) assertEquals(
-                p.tile.col to p.tile.row,
-                p.col to p.row,
-                "${p.tile.id} moved on ${page.id}",
+            for (placement in placed) assertEquals(
+                placement.tile.col to placement.tile.row,
+                placement.col to placement.row,
+                "${placement.tile.id} moved on ${page.id}",
             )
         }
     }

@@ -33,6 +33,7 @@ internal class SessionDocument(
         homeAssistantConfig = homeAssistant.config.value,
         data = renderData,
         palette = host.palette,
+        supportsCalendarDialogs = host.supportsCalendarDialogs,
     )
 
     suspend fun renderScreen(screen: Screen): RenderedDoc =
@@ -89,6 +90,9 @@ internal class SessionDocument(
     suspend fun refresh(states: Map<String, EntityState>) {
         for (shown in shownDocuments.values.toList()) {
             if (shown.renderedDoc.stale(states)) {
+                if (calendarStructureChanged(shown.renderedDoc, states)) {
+                    context.renderDataRepository.calendarAgenda.invalidate()
+                }
                 rebuild(shown)
                 continue
             }
@@ -163,3 +167,8 @@ internal class SessionDocument(
         show(Slot.ALERT, renderedDoc, build, timeoutSeconds = alert.timeout)
     }
 }
+
+private fun calendarStructureChanged(rendered: RenderedDoc, states: Map<String, EntityState>): Boolean =
+    rendered.docContext.structure.any { (entityId, what, was) ->
+        entityId.startsWith("calendar.") && what(states[entityId]) != was
+    }
