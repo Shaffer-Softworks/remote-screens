@@ -1,42 +1,33 @@
 ---
-description: Kiosk lock (lock task when device owner, screen pinning otherwise), PIN unlock, QR and adb enrollment — design, decisions, gotchas, what's not verified
-globs: player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/data/kiosk/**,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/receiver/LockTaskDeviceAdminReceiver.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/provisioning/**,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/views/KioskPinDialog.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/PlayerViewModel.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/MainActivity.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/service/EnrollmentService.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/routes/PlayerRoutes.kt,editor/src/components/EnrollTabletPanel.vue,custom_components/remote_screens/text.py,custom_components/remote_screens/switch.py,scripts/enroll-device-owner.sh,tools/package_addon.sh
+description: Kiosk lock (lock task when device owner, screen pinning otherwise), PIN unlock, and QR enrollment
+globs: player/src/main/kotlin/**/kiosk/**,player/src/main/kotlin/**/receiver/LockTaskDeviceAdminReceiver.kt,player/src/main/kotlin/**/ui/screens/provisioning/**,player/src/main/kotlin/**/ui/views/KioskPinDialog.kt,player/src/main/kotlin/**/ui/screens/player/PlayerViewModel.kt,player/src/main/kotlin/**/MainActivity.kt,server/src/main/kotlin/**/service/EnrollmentService.kt,editor/src/components/EnrollTabletPanel.vue,scripts/enroll-device-owner.sh
 alwaysApply: false
 ---
 
-# Kiosk lock (PR #19, battery prompt added in #21)
+# Kiosk lock
 
-## Decisions (user chose, Oct 2026)
+## Behaviour
 
-- Full lock task when the app is device owner; plain `startLockTask()` (screen pinning) otherwise.
-- Controlled from Home Assistant: screen settings `kiosk` (switch "Kiosk lock") and `kioskPin` (text "Kiosk PIN", password mode, 4–8 digits, `ScreenSettings.KIOSK_PIN`; invalid PINs are dropped in `validated()`).
-- Enrollment: QR code from the editor first (Screens → Tablets → Enroll a tablet), `scripts/enroll-device-owner.sh` (ported from RPI, keeps `--fresh` and `DELETE_FAILED_APP_PINNED`) as the fallback.
-- Names and patterns follow RPI (`~/StudioProjects/RPI/.cursor/rules/kiosk-lock-task-context.mdc`): `KioskManager`, `LockTaskDeviceAdminReceiver`, `relaunchKioskIfUnlocked(reason)`, persisted suppress flag. Here `KioskManager` is a Hilt `@Singleton`, not an `object`.
-
-## Player
-
-- `KioskManager`: `KioskState { OFF, PINNED, LOCKED }` from `lockTaskModeState`; device-owner policies (lock task packages + `LOCK_TASK_FEATURE_GLOBAL_ACTIONS` on API 28+, persistent HOME, status bar + keyguard disabled, `DISALLOW_SAFE_BOOT/FACTORY_RESET/ADD_USER`), each reversible; `SecurityException` logged "Is this app a device owner?". `removeDeviceOwner()` clears policies + `clearDeviceOwnerApp`.
-- Two device admins on purpose: `LockTaskDeviceAdminReceiver` (device owner) and the older `ScreenOffAdminReceiver`, so existing screen-off activations survive. `ScreenPowerRepository.canTurnScreenOff()` accepts either.
-- `PlayerPreferencesRepository`: `kiosk_enabled` and `kiosk_suppressed` (local unlock, survives restarts). Turning `kiosk_enabled` false → true clears the suppress flag.
-- `ViewState.isKioskEnabled` is `Boolean?` (null until DataStore is read) so lock task isn't stopped and restarted at startup. `isKioskWanted = isKioskEnabled && !isLocallyUnlocked`.
-- `MainActivity.observeKiosk` collects `isKioskWanted` under `repeatOnLifecycle(RESUMED)` → re-pins after the user unpins, and after the battery dialog closes.
-- PIN: settings (long press top bar) shows `KioskPinDialog` when kiosk wanted and a PIN is set. Right PIN → settings with "Unlock tablet"; while unlocked "Lock again". No PIN → no local unlock. "Stop managing this tablet" only while unlocked. Self-start / screen-off / battery buttons hidden while locked (lock task blocks those system screens).
-- Updates while only pinned: `PlayerEvent.StopScreenPinning` before the install confirmation; resume re-pins.
-- `DeviceState.kiosk` reports `off`/`pinned`/`locked` → HA `binary_sensor` attribute and the editor's tablet list icon.
+- Full lock task when the app is device owner; `startLockTask()` (screen pinning) otherwise. `KioskManager` is a Hilt `@Singleton`. `KioskState` is `OFF`, `PINNED`, or `LOCKED` from `lockTaskModeState`.
+- Home Assistant controls it: screen setting `kiosk` (switch "Kiosk lock") and `kioskPin` (text "Kiosk PIN", 4–8 digits, `ScreenSettings.KIOSK_PIN`). `validated()` drops a PIN that does not match.
+- Device-owner policies (lock-task packages, `LOCK_TASK_FEATURE_GLOBAL_ACTIONS` on API 28+, persistent HOME, status bar and keyguard disabled, `DISALLOW_SAFE_BOOT` / `FACTORY_RESET` / `ADD_USER`) are each undone by `stopLockTaskMode`. `removeDeviceOwner()` clears them and calls `clearDeviceOwnerApp`. A `SecurityException` means the app is not device owner.
+- Two device admins on purpose: `LockTaskDeviceAdminReceiver` (device owner) and `ScreenOffAdminReceiver` (screen off). `ScreenPowerRepository.canTurnScreenOff()` accepts either, so an existing screen-off activation survives enrollment.
+- `PlayerPreferencesRepository` stores `kiosk_enabled` and `kiosk_suppressed` (a local unlock that survives restarts). Turning kiosk from off to on clears the suppress flag. `ViewState.isKioskEnabled` is `Boolean?` (null until DataStore is read) so lock task is not stopped and restarted at startup. `isKioskWanted` is enabled and not locally unlocked.
+- `MainActivity` collects `isKioskWanted` while resumed and calls `KioskManager.applyKiosk`, which re-pins after the user unpins and after the battery dialog closes.
+- PIN: settings (long press the top bar) shows `KioskPinDialog` when kiosk is wanted and a PIN is set. The right PIN opens settings with "Unlock tablet"; while unlocked, "Lock again". No PIN means no local unlock. "Stop managing this tablet" is only offered while unlocked. Self-start, screen-off, and battery buttons stay hidden while locked.
+- An update while only pinned sends `PlayerEvent.StopScreenPinning` before the install confirmation; resume re-pins.
+- `DeviceState.kiosk` reports `off` / `pinned` / `locked` to the HA binary sensor and the editor's tablet list.
 
 ## QR enrollment
 
-- Player: `ProvisioningModeActivity` (`GET_PROVISIONING_MODE` → fully managed) and `PolicyComplianceActivity` (`ADMIN_POLICY_COMPLIANCE` → `KioskManager.onProvisioned`, `RESULT_OK`); receiver's `onProfileProvisioningComplete` for older Android. `onProvisioned` reads admin extra `server`, enables kiosk.
-- Server `EnrollmentService`: tokens reusable for 60 min (deviation from the plan's single use — several tablets per code, download retries); provisioning JSON with admin component, `http://<host>:8100/player/apk?enroll=<token>`, signature checksum (falls back to the APK's package checksum), skip encryption, leave system apps, optional Wi-Fi, admin extras `{server}`. `POST /api/enrollment` (409 when no APK or host).
-- `tools/package_addon.sh` writes `signatureChecksum` (SHA-256 of the signing cert, URL-safe Base64, no padding) to `version.json` via `apksigner` (needs Java: Android Studio's jbr).
-- A QR-enrolled tablet starts locked and stays locked until paired; then it follows its screen's Kiosk lock (default off → turn it on before pairing).
+- Editor: Screens → Tablets → Enroll a tablet. Fallback: `scripts/enroll-device-owner.sh`.
+- Player: `ProvisioningModeActivity` (`GET_PROVISIONING_MODE` → fully managed) and `PolicyComplianceActivity` (`ADMIN_POLICY_COMPLIANCE` → `KioskManager.onProvisioned`). The receiver's `onProfileProvisioningComplete` covers older Android. `onProvisioned` reads the admin extra `server` and enables kiosk.
+- `EnrollmentService` tokens last 60 minutes and can be reused, so one code enrolls several tablets and survives a download retry. The provisioning JSON includes the admin component, `http://<host>:8100/player/apk?enroll=<token>`, the signature checksum, skip encryption, leave system apps, optional Wi-Fi, and admin extras `{server}`. `POST /api/enrollment` returns 409 when there is no APK or host.
+- `tools/package_addon.sh` writes `signatureChecksum` (SHA-256 of the signing cert, URL-safe Base64, no padding) into `version.json`.
+- A QR-enrolled tablet starts locked and stays locked until it is paired. After pairing it follows its screen's Kiosk lock (default off).
 
 ## Gotchas
 
-- The app ID changed in #20 (`dev.remotescreens.player` → `tech.shaffersoftworks.remotescreens.player`): a different app, so device-owner tablets need a factory reset and re-enrollment. The admin component string lives in `EnrollmentService` and the adb script.
-- The PIN is plain text in HA state/history and on the LAN WebSocket — a deterrent, not security.
-- Tablets are only offered an APK with a higher versionCode; same-version deploys don't reach them.
-
-## Not verified
-
-Nothing has been tested on a real tablet yet: QR provisioning on a factory-reset device, lock task policies, pin/unpin recovery, PIN flow, update install while pinned, removal.
+- The PIN is plain text in HA state and history and on the LAN WebSocket. It is a deterrent, not a secret.
+- Tablets are only offered an APK with a higher `versionCode`. A same-version deploy does not reach them.
+- The player application id is `tech.shaffersoftworks.remotescreens.player`. The admin component string lives in `EnrollmentService` and the adb script; a tablet enrolled under an older id needs a factory reset and a new enrollment.

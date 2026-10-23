@@ -1,39 +1,20 @@
 ---
-description: Editor range sliders (v-range directive, PR #12), the Day/Dark theme preview toggle and its same-theme hint, building the editor with Cursor's bundled Node, and deploying to HA and the emulator
-globs: editor/src/range.ts,editor/src/main.ts,editor/src/style.css,editor/src/components/ScreenPanel.vue,editor/src/components/ScreenEditor.vue,editor/src/model/palette.ts
+description: Editor range sliders (v-range) and the Day/Dark theme preview toggle
+globs: editor/src/range.ts,editor/src/main.ts,editor/src/style.css,editor/src/components/ScreenPanel.vue,editor/src/components/ScreenEditor.vue,editor/src/components/EditorToolbar.vue,editor/src/components/ColorInput.vue
 alwaysApply: false
 ---
 
 # Editor sliders and the Day/Dark preview
 
-## Day/Dark preview toggle (`ScreenEditor.vue`)
+## Day/Dark preview
 
-- The toggle only previews: it sets `activeThemeId` to `settings.theme` or `settings.darkTheme`, each falling back to `DEFAULT_THEME` (`rpi`, "RPI dark"). It doesn't change the screen's `darkMode`.
-- With neither theme picked, both resolve to RPI dark, so the toggle looks broken (user report, Oct 2026). That's correct behaviour, and the tablet does the same: `PlayerHub.themeFor` picks `darkTheme` when dark, and both default to `"rpi"` in `shared/.../Layout.kt`.
-- `sameTheme` shows an info icon next to the toggle when both resolve to the same id. Clicking it opens the Screen panel (`panel = 'screen'` for grid pages, `sidePanel = 'screen'` for free-form pages).
-- The default day theme is itself dark. Changing it to "light" would change existing tablets, so it was left alone.
+- The toggle only previews. `ScreenEditor.vue` sets `activeThemeId` from `settings.theme` or `settings.darkTheme`, each falling back to `DEFAULT_THEME` (`rpi`). It does not change the screen's `darkMode`.
+- With neither theme picked, both resolve to RPI dark, so Day and Dark look the same. The tablet does the same: both default to `"rpi"` in `shared/.../Layout.kt`.
+- `sameTheme` is true when both ids match. `EditorToolbar.vue` shows an info icon beside the toggle; clicking it opens Screen settings (`chooseDarkTheme` sets `railTool` to `'screen'`).
+- The default day theme is itself dark. Changing that default would change existing tablets.
 
-## Range sliders (PR #12, merged)
+## Range sliders
 
-- Problem: native range inputs fill to the thumb's centre, but the thumb stops a radius short of each end, so 0% showed a sliver of blue and 100% a sliver of grey.
-- Fix: `v-range` (`editor/src/range.ts`, registered globally in `main.ts`) keeps `--fill` (0 to 1) on the input, set on mount and update, and on `input` events while dragging. `style.css` draws the track itself: the gradient stops at `thumb/2 + (100% - thumb) * fill`, which sits under the thumb at both ends.
-- Every `<input type="range">` needs `v-range`, or its track stays empty. There are six in `ScreenPanel.vue`: top bar height, clock width, navigation bar height (from PR #11), and brightness, standby brightness and night brightness. Add it to any new slider.
-- Checked with the type-check and the 53 editor tests, and by building. Not checked by eye in Firefox (`::-moz-range-*` rules).
-
-## Building the editor locally
-
-- Node isn't on the PATH and `npx` doesn't exist, but Cursor ships a Node binary: `N=/Applications/Cursor.app/Contents/Resources/app/resources/helpers/node`. From `editor/`:
-  - Type-check: `$N node_modules/vue-tsc/bin/vue-tsc.js --noEmit`
-  - Tests: `$N node_modules/vitest/vitest.mjs run`
-  - Build: `$N node_modules/vite/bin/vite.js build`
-- Don't run `vue-tsc` under Bun: it can't load `.vue` files and gives a misleading "Cannot find module './App.vue'". Bun works for `vite build`.
-
-## Deploying (what worked, Oct 14 2026)
-
-- HA (local add-on `local_remote_screens`): build `./gradlew :server:fatJar` plus the editor, copy into `addon/dist/` (jar, and `editor/dist` as `static/`), upload with the `ha-samba-files` skill to `addons/remote_screens/dist/`, deleting old hashed files in `static/assets/`, then `ha_manage_app action=rebuild`. Editor-only changes need just `static/`. After a deploy, reload the HA tab, and hard-refresh if the browser keeps the old bundle. See `freeform-layout-and-ha-deploy-context.mdc` for the full steps and where the credentials come from.
-- Emulator (`emulator-5554`): `./gradlew :player:assembleDebug`, then `adb install -r player/build/outputs/apk/debug/player-debug.apk` and `adb shell am start -S -n tech.shaffersoftworks.remotescreens.player/.MainActivity`. adb lives at `~/Library/Android/sdk/platform-tools/adb`. It reconnects to the HA add-on on its own.
-
-## Gotcha: parallel sessions stash your work
-
-- Another session ran `git stash` ("pre-pull: …") and pulled `main` between this session's edits and its deploy, so the deploy shipped `main` without the edits. Before building to deploy, check `git status` and `git stash list`, and that the build contains the change (for example `rg -c slider-runnable-track editor/dist/assets/*.css`).
-- To restore part of a stash, use `git checkout stash@{0} -- <files>`. Untracked files are in `stash@{0}^3`. Don't pop a mixed stash onto `main`.
+- A native range fills to the thumb's centre, but the thumb stops a radius short of each end, so 0% showed a sliver of the filled colour and 100% a sliver of the empty track.
+- `v-range` (`editor/src/range.ts`, registered in `main.ts`) sets `--fill` (0 to 1) on mount, on update, and on `input`. `style.css` draws the track so the gradient sits under the thumb at both ends.
+- Every `<input type="range">` needs `v-range`, or its track stays empty. It is on the screen-panel sliders (top bar height, clock width, navigation bar height, brightness, standby brightness, night brightness) and on `ColorInput.vue`. Add it to any new slider.
