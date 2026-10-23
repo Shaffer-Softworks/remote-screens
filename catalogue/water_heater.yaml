@@ -1,0 +1,18 @@
+domain: water_heater
+name: Water heater
+icon: water-boiler
+icon_on: water-boiler
+toggle: true
+on_states: [on, eco, electric, performance, high_demand, heat_pump, gas]
+tap: card
+card: water_heater
+controls: [stepper]
+sizes: [1x1, 2x1, 2x2]
+actions:
+  temperature: {service: water_heater.set_temperature, data: {temperature: $arg}, relative: temperature}
+  operation: {service: water_heater.set_operation_mode, data: {operation_mode: $arg}}
+  away_on: {service: water_heater.set_away_mode, data: {away_mode: "on"}}
+  away_off: {service: water_heater.set_away_mode, data: {away_mode: "off"}}
+predict:
+  temperature: {attributes: {temperature: $arg}}
+  operation: {state: $arg}

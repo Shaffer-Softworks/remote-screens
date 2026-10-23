@@ -9,12 +9,14 @@ export function specOf(tile: Pick<Tile, 'entityId' | 'kind'>): TypeSpec | undefi
 }
 
 /** Sizes as [w, h]; `full` is the whole page. */
-export function sizesOf(tile: Pick<Tile, 'entityId' | 'kind'>): { label: string; w: number; h: number; full: boolean }[] {
+export function sizesOf(
+  tile: Pick<Tile, 'entityId' | 'kind'>,
+): { label: string; w: number; h: number; full: boolean }[] {
   const sizes = specOf(tile)?.sizes ?? ['1x1', '2x1', '2x2']
-  return sizes.map((s) => {
-    if (s === 'full') return { label: 'Full page', w: 1, h: 1, full: true }
-    const [w, h] = s.split('x').map(Number)
-    return { label: s.replace('x', ' × '), w, h, full: false }
+  return sizes.map(size => {
+    if (size === 'full') return { label: 'Full page', w: 1, h: 1, full: true }
+    const [w, h] = size.split('x').map(Number)
+    return { label: size.replace('x', ' × '), w, h, full: false }
   })
 }
 
@@ -22,11 +24,16 @@ export function iconOf(tile: Tile, entity?: EntityInfo): string {
   if (tile.icon) return tile.icon
   if (entity?.icon) return entity.icon
   const spec = specOf(tile)
-  const on = entity && ['on', 'open', 'unlocked', 'playing', 'home', 'cleaning'].includes(entity.state)
+  const on =
+    entity && ['on', 'open', 'unlocked', 'playing', 'home', 'cleaning'].includes(entity.state)
   return (on && spec?.iconOn) || spec?.icon || 'help-circle-outline'
 }
 
-export function nameOf(tile: Tile, entity?: EntityInfo, pageTitle?: (id: string) => string | undefined): string {
+export function nameOf(
+  tile: Tile,
+  entity?: EntityInfo,
+  pageTitle?: (id: string) => string | undefined,
+): string {
   if (tile.name) return tile.name
   if (entity) return entity.name
   if (kindOf(tile) === 'nav' && tile.options.page) return pageTitle?.(tile.options.page) ?? 'Page'
@@ -47,11 +54,19 @@ export function newTileId(): string {
 }
 
 /** A new tile for an entity or a kind, at the first size the catalogue allows. */
-export function newTile(source: { entityId?: string; kind?: string }, col: number, row: number): Tile {
+export function newTile(
+  source: { entityId?: string; kind?: string },
+  col: number,
+  row: number,
+): Tile {
+  const domain = source.entityId?.split('.')[0]
+  const kind =
+    source.kind ??
+    (source.entityId && (!(domain! in CATALOGUE) || domain === 'generic') ? 'generic' : undefined)
   const tile: Tile = {
     id: newTileId(),
     entityId: source.entityId,
-    kind: source.kind,
+    kind,
     col,
     row,
     w: 1,
@@ -60,7 +75,7 @@ export function newTile(source: { entityId?: string; kind?: string }, col: numbe
     hold: { type: 'card' },
     options: {},
   }
-  const first = sizesOf(tile).find((s) => !s.full) ?? sizesOf(tile)[0]
+  const first = sizesOf(tile).find(size => !size.full) ?? sizesOf(tile)[0]
   tile.w = first.w
   tile.h = first.h
   tile.full = first.full || undefined

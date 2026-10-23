@@ -14,22 +14,22 @@ export function iconKey(name: string): string {
 /** The path of [name], or undefined until it has arrived. */
 export function iconPath(name: string): string | undefined {
   const key = iconKey(name)
-  const p = paths.get(key)
-  if (p === undefined && !wanted.has(key)) {
+  const path = paths.get(key)
+  if (path === undefined && !wanted.has(key)) {
     wanted.add(key)
     timer ??= setTimeout(flush, 20)
   }
-  return p
+  return path
 }
 
 async function flush(): Promise<void> {
   timer = undefined
-  const names = [...wanted].filter((n) => !paths.has(n)).slice(0, 400)
+  const names = [...wanted].filter(name => !paths.has(name)).slice(0, 400)
   if (names.length === 0) return
   try {
     const got = await api.iconPaths(names)
-    for (const [k, v] of Object.entries(got)) paths.set(k, v)
+    for (const [key, path] of Object.entries(got)) paths.set(key, path)
   } catch {
-    for (const n of names) wanted.delete(n)
+    for (const name of names) wanted.delete(name)
   }
 }

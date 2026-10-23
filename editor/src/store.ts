@@ -20,9 +20,11 @@ export const state = reactive({
 export const editing = ref<Screen | null>(null)
 const saved = ref('')
 
-export const dirty = computed(() => editing.value !== null && JSON.stringify(editing.value) !== saved.value)
+export const dirty = computed(
+  () => editing.value !== null && JSON.stringify(editing.value) !== saved.value,
+)
 
-export const entityById = computed(() => new Map(state.entities.map((e) => [e.entityId, e])))
+export const entityById = computed(() => new Map(state.entities.map(e => [e.entityId, e])))
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined
 export function toast(message: string): void {
@@ -86,16 +88,17 @@ export function open(screen: Screen | null): void {
 
 /** Saves the screen; the add-on sends it to the tablets showing it. */
 export async function save(): Promise<boolean> {
-  const s = editing.value
-  if (!s) return false
-  const stored = await attempt(() => api.saveScreen(JSON.parse(JSON.stringify(s))))
+  const screen = editing.value
+  if (!screen) return false
+  const stored = await attempt(() => api.saveScreen(JSON.parse(JSON.stringify(screen))))
   if (!stored) return false
   open(stored)
-  if (state.layout) state.layout.screens = state.layout.screens.map((x) => (x.id === stored.id ? stored : x))
+  if (state.layout)
+    state.layout.screens = state.layout.screens.map(x => (x.id === stored.id ? stored : x))
   toast('Saved and sent')
   return true
 }
 
 export function playersOf(screenId: string): PlayerStatus[] {
-  return state.players.filter((p) => p.screenId === screenId)
+  return state.players.filter(player => player.screenId === screenId)
 }

@@ -8,9 +8,9 @@ import type { Screen } from './model/types'
 
 const theming = ref(false)
 
-function edit(s: Screen | null): void {
-  if (s === null && dirty.value && !confirm('Leave without saving?')) return
-  open(s)
+function edit(screen: Screen | null): void {
+  if (screen === null && dirty.value && !confirm('Leave without saving?')) return
+  open(screen)
 }
 
 function beforeUnload(e: BeforeUnloadEvent): void {

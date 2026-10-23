@@ -28,6 +28,10 @@
     <string name="later">Later</string>
     <string name="allow_self_start">Open by itself after a restart or update</string>
     <string name="allow_screen_off">Allow turning the screen off in standby</string>
+    <string name="allow_camera_for_face_wake">Allow camera for wake on face</string>
+    <string name="camera_permission_denied">Camera permission is needed to wake on face.</string>
+    <string name="face_wake_no_camera">This tablet has no front camera, so wake on face does nothing. Use proximity or a Home Assistant motion sensor with Wake.</string>
+    <string name="face_wake_low_ram">This tablet is low on RAM, so wake on face is skipped. Use proximity or a Home Assistant motion sensor with Wake.</string>
     <string name="allow_unrestricted_battery">Stay connected while the screen is off</string>
     <string name="battery_restricted">Battery optimization is on: Home Assistant may not be able to wake this screen from standby while it is unplugged.</string>
     <string name="screen_off_explanation">Remote Screens locks the tablet to turn the screen off in standby, and turns it back on when Home Assistant wakes it.</string>

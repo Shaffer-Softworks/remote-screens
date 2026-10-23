@@ -30,7 +30,11 @@ object Rc {
      */
     const val PROFILES = RcProfiles.PROFILE_ANDROIDX or RcProfiles.PROFILE_EXPERIMENTAL
 
-    val profile: Profile = Profile(CoreDocument.DOCUMENT_API_LEVEL, PROFILES, Platform) { info, p, callback ->
+    val profile: Profile = Profile(
+        CoreDocument.DOCUMENT_API_LEVEL,
+        PROFILES,
+        Platform,
+    ) { info, p, callback ->
         RemoteComposeWriter(info, null, p, callback)
     }
 

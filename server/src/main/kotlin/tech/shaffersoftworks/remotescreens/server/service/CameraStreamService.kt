@@ -1,0 +1,128 @@
+package tech.shaffersoftworks.remotescreens.server.service
+
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistantException
+import io.ktor.utils.io.ByteReadChannel
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
+import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
+
+private const val IDLE_STREAM_MINUTES = 5L
+private const val MILLISECONDS_PER_MINUTE = 60_000L
+private val HOME_ASSISTANT_HLS_URL = Regex("^/api/hls/([A-Za-z0-9_-]+)/([A-Za-z0-9_./-]+)$")
+/**
+ * A playlist or segment under the stream token. Home Assistant's low-latency HLS names parts
+ * `segment/{seq}.{part}.m4s` (a digit, a dot, a digit), which a path segment of only `[A-Za-z0-9_-]` would refuse.
+ */
+private val STREAM_FILE =
+    Regex("^[A-Za-z0-9_-]+(/(\\d+\\.\\d+|\\d+|[A-Za-z0-9_-]+))*\\.[a-z0-9]+$")
+
+
+/**
+ * A camera's live video for the tablets, which never reach Home Assistant themselves: Home Assistant starts an HLS
+ * stream behind a token, and the add-on relays its playlists and segments to the player port. Only tokens handed out
+ * here are relayed, and each is forgotten once no tablet has asked for it for a while.
+ */
+class CameraStreamService(
+    private val homeAssistant: HomeAssistant,
+    private val now: () -> Long = System::currentTimeMillis,
+) {
+    private val logger = LoggerFactory.getLogger(CameraStreamService::class.java)
+
+    /** Token to the last time a tablet asked for it. */
+    private val tokens = ConcurrentHashMap<String, Long>()
+
+    /** Open streams by camera, so opening the same card again skips another `camera/stream` wait. */
+    private val byEntity = ConcurrentHashMap<String, ActiveStream>()
+
+    /** The path on the player port that plays [entityId], or null when the camera cannot stream. */
+    suspend fun hlsPath(entityId: String): String? {
+        forgetIdle()
+        return cachedPath(entityId) ?: newPath(entityId)
+    }
+
+    /** A still-warm token for [entityId], or null when the cache misses or the token was forgotten. */
+    private fun cachedPath(entityId: String): String? {
+        val active = byEntity[entityId] ?: return null
+        return if (tokens.containsKey(active.token)) {
+            tokens[active.token] = now()
+            "$PLAYER_PATH/${active.token}/${active.file}"
+        } else {
+            byEntity.remove(entityId, active)
+            null
+        }
+    }
+
+    /** Asks Home Assistant for a new stream and remembers its token. */
+    private suspend fun newPath(entityId: String): String? {
+        val match = startStream(entityId)?.let(HOME_ASSISTANT_HLS_URL::matchEntire) ?: return null
+        val (token, file) = match.destructured
+        tokens[token] = now()
+        byEntity[entityId] = ActiveStream(token, file)
+        return "$PLAYER_PATH/$token/$file"
+    }
+
+    /** Home Assistant's own URL of the stream, `/api/hls/<token>/master_playlist.m3u8`. */
+    private suspend fun startStream(entityId: String): String? {
+        val payload = buildJsonObject {
+            put("entity_id", entityId)
+            put("format", "hls")
+        }
+        val result = try {
+            homeAssistant.command("camera/stream", payload)
+        } catch (e: HomeAssistantException) {
+            logger.info("{} has no stream: {}", entityId, e.message)
+            null
+        } catch (e: IllegalStateException) {
+            logger.info("No stream for {}: {}", entityId, e.message)
+            null
+        } catch (e: TimeoutCancellationException) {
+            logger.info("Home Assistant did not start a stream for {}: {}", entityId, e.message)
+            null
+        }
+        return (result as? JsonObject)?.get("url")?.jsonPrimitive?.contentOrNull
+    }
+
+    /**
+     * Relays [file] of the stream behind [token], with the [query] low-latency HLS asks with. Returns Home Assistant's
+     * HTTP status, or null when the token was not handed out here or the file is not one a stream serves.
+     */
+    suspend fun relay(
+        token: String,
+        file: String,
+        query: String,
+        onBody: suspend (contentType: String?, body: ByteReadChannel) -> Unit,
+    ): Int? {
+        forgetIdle()
+        if (tokens.computeIfPresent(
+                token,
+            ) { _, _ -> now() } == null || !STREAM_FILE.matches(file)) {
+            return null
+        }
+        val suffix = if (query.isEmpty()) "" else "?$query"
+        return homeAssistant.stream("/api/hls/$token/$file$suffix", onBody)
+    }
+
+    private fun forgetIdle() {
+        val oldest = now() - IDLE_STREAM_MINUTES * MILLISECONDS_PER_MINUTE
+        val dropped = mutableSetOf<String>()
+        tokens.entries.removeIf { (token, lastUsed) ->
+            (lastUsed < oldest).also { if (it) dropped += token }
+        }
+        if (dropped.isNotEmpty()) {
+            byEntity.entries.removeIf { (_, active) -> active.token in dropped }
+        }
+    }
+
+    private data class ActiveStream(val token: String, val file: String)
+
+    companion object {
+        /** Where the player port serves streams: `/stream/hls/<token>/<file>`. */
+        const val PLAYER_PATH = "/stream/hls"
+    }
+}

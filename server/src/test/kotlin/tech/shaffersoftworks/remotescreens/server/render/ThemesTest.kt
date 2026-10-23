@@ -31,7 +31,13 @@ class ThemesTest {
 
     @Test
     fun aCustomThemeLaysItsColoursOverItsBase() {
-        val mine = Theme("mine", "Mine", base = "light", roles = mapOf("card" to "#123456", "nope" to "#FFFFFF"), pastels = mapOf("teal" to "#80FF0000"))
+        val mine = Theme(
+            "mine",
+            "Mine",
+            base = "light",
+            roles = mapOf("card" to "#123456", "nope" to "#FFFFFF"),
+            pastels = mapOf("teal" to "#80FF0000"),
+        )
         val p = Themes.resolve("mine", listOf(mine))
         assertEquals(0xFF123456.toInt(), p[Role.CARD])
         assertEquals(0x80FF0000.toInt(), p[Pastel.TEAL])
@@ -55,14 +61,32 @@ class ThemesTest {
 
     @Test
     fun aStoredThemeIsChecked() {
-        assertFailsWith<BadRequestException> { ThemeValidator.validate(Theme("rpi", "Mine"), emptyList()) }
-        assertFailsWith<BadRequestException> { ThemeValidator.validate(Theme("Bad Id", "Mine"), emptyList()) }
-        assertFailsWith<BadRequestException> { ThemeValidator.validate(Theme("mine", "Mine", base = "mine"), emptyList()) }
-        assertFailsWith<BadRequestException> { ThemeValidator.validate(Theme("mine", "Mine", roles = mapOf("card" to "blue")), emptyList()) }
+        assertFailsWith<BadRequestException> { ThemeValidator.validate(
+            Theme("rpi", "Mine"),
+            emptyList(),
+        ) }
+        assertFailsWith<BadRequestException> { ThemeValidator.validate(
+            Theme("Bad Id", "Mine"),
+            emptyList(),
+        ) }
+        assertFailsWith<BadRequestException> { ThemeValidator.validate(
+            Theme("mine", "Mine", base = "mine"),
+            emptyList(),
+        ) }
+        assertFailsWith<BadRequestException> { ThemeValidator.validate(
+            Theme("mine", "Mine", roles = mapOf("card" to "blue")),
+            emptyList(),
+        ) }
         val full = (1..Theme.MAX_THEMES).map { Theme("t$it", "T$it") }
-        assertFailsWith<BadRequestException> { ThemeValidator.validate(Theme("mine", "Mine"), full) }
+        assertFailsWith<BadRequestException> { ThemeValidator.validate(
+            Theme("mine", "Mine"),
+            full,
+        ) }
         ThemeValidator.validate(Theme("t1", "Again"), full)
-        val ok = ThemeValidator.validate(Theme("mine", "  ", roles = mapOf("CARD" to "#abcdef", "nope" to "#000000")), emptyList())
+        val ok = ThemeValidator.validate(
+            Theme("mine", "  ", roles = mapOf("CARD" to "#abcdef", "nope" to "#000000")),
+            emptyList(),
+        )
         assertEquals("mine", ok.name)
         assertEquals(mapOf("card" to "#ABCDEF"), ok.roles)
     }
@@ -72,7 +96,14 @@ class ThemesTest {
         val dir = File("src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render")
         // An opaque mask such as `argb or 0xFF000000.toInt()` is arithmetic, not a colour.
         val hex = Regex("0x[0-9A-Fa-f]{8}(?!\\.toInt\\(\\))")
-        val offenders = dir.listFiles()!!.filter { it.name != "Themes.kt" && it.name.endsWith(".kt") && hex.containsMatchIn(it.readText()) }
+        // Theme ARGB values live in Color.kt as `0xAARRGGBB.toInt()` (exempt). Bare 8-digit
+        // hex is only for parse masks in Themes.kt.
+        val hexInventory = setOf("Themes.kt")
+        val offenders = dir.listFiles()!!.filter {
+            it.name !in hexInventory && it.name.endsWith(
+                ".kt",
+            ) && hex.containsMatchIn(it.readText())
+        }
         assertEquals(emptyList(), offenders.map { it.name })
     }
 }

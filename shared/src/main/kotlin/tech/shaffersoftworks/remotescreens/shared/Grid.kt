@@ -53,8 +53,13 @@ object Grid {
 
     /** The grid a device of this size gets when it is adopted. */
     fun suggest(widthDp: Float, heightDp: Float): GridSize {
-        val (availW, availH) = available(widthDp, heightDp, TOP_BAR, navBar(widthDp))
-        return GridSize(fit(availW), fit(availH))
+        val (availableWidth, availableHeight) = available(
+            widthDp,
+            heightDp,
+            TOP_BAR,
+            navBar(widthDp),
+        )
+        return GridSize(fit(availableWidth), fit(availableHeight))
     }
 
     /** The geometry of [size] on a device of [widthDp] by [heightDp], between bars [topBar] and [navBar] dp tall. */
@@ -65,11 +70,11 @@ object Grid {
         topBar: Float = TOP_BAR,
         navBar: Float = navBar(widthDp),
     ): GridSpec {
-        val (availW, availH) = available(widthDp, heightDp, topBar, navBar)
+        val (availableWidth, availableHeight) = available(widthDp, heightDp, topBar, navBar)
         val cols = size.cols.coerceIn(1, MAX_CELLS)
         val rows = size.rows.coerceIn(1, MAX_CELLS)
-        val cellW = round1((availW - GAP * (cols - 1)) / cols)
-        val cellH = round1((availH - GAP * (rows - 1)) / rows)
+        val cellW = round1((availableWidth - GAP * (cols - 1)) / cols)
+        val cellH = round1((availableHeight - GAP * (rows - 1)) / rows)
         return GridSpec(
             cols = cols,
             rows = rows,
@@ -87,13 +92,13 @@ object Grid {
     private fun available(widthDp: Float, heightDp: Float, topBar: Float, navBar: Float): Pair<Float, Float> =
         (widthDp - 2 * PADDING) to (heightDp - topBar - navBar - 2 * PADDING)
 
-    private fun fit(avail: Float): Int =
-        ((avail + GAP) / (TARGET_CELL + GAP)).roundToInt().coerceIn(MIN_CELLS, MAX_CELLS)
+    private fun fit(availableSpan: Float): Int =
+        ((availableSpan + GAP) / (TARGET_CELL + GAP)).roundToInt().coerceIn(MIN_CELLS, MAX_CELLS)
 
     private const val TENTHS = 10f
     private const val HALF = 0.5f
 
-    private fun round1(v: Float): Float = floor(v * TENTHS + HALF) / TENTHS
+    private fun round1(value: Float): Float = floor(value * TENTHS + HALF) / TENTHS
 }
 
 /**
@@ -105,46 +110,50 @@ object Reflow {
 
     fun place(tiles: List<Tile>, size: GridSize): List<Placed> {
         val taken = Array(size.rows) { BooleanArray(size.cols) }
-        val out = mutableListOf<Placed>()
+        val placed = mutableListOf<Placed>()
         val full = tiles.firstOrNull { it.full }
         if (full != null) return listOf(Placed(full, 0, 0, size.cols, size.rows))
 
         val (fits, rest) = tiles.partition { it.col + it.w <= size.cols && it.row + it.h <= size.rows }
-        for (t in fits.sortedWith(compareBy({ it.row }, { it.col }))) {
-            if (free(taken, t.col, t.row, t.w, t.h)) {
-                mark(taken, t.col, t.row, t.w, t.h)
-                out += Placed(t, t.col, t.row, t.w, t.h)
+        for (tile in fits.sortedWith(compareBy({ it.row }, { it.col }))) {
+            if (free(taken, tile.col, tile.row, tile.w, tile.h)) {
+                mark(taken, tile.col, tile.row, tile.w, tile.h)
+                placed += Placed(tile, tile.col, tile.row, tile.w, tile.h)
             } else {
-                spot(taken, t, size)?.let { out += it }
+                spot(taken, tile, size)?.let { placed += it }
             }
         }
-        for (t in rest.sortedWith(compareBy({ it.row }, { it.col }))) spot(taken, t, size)?.let { out += it }
-        return out
+        for (tile in rest.sortedWith(compareBy({ it.row }, { it.col }))) {
+            spot(taken, tile, size)?.let { placed += it }
+        }
+        return placed
     }
 
-    private fun spot(taken: Array<BooleanArray>, t: Tile, size: GridSize): Placed? {
-        var w = t.w.coerceAtMost(size.cols)
-        var h = t.h.coerceAtMost(size.rows)
-        while (w >= 1 && h >= 1) {
-            for (r in 0..size.rows - h) for (c in 0..size.cols - w) {
-                if (free(taken, c, r, w, h)) {
-                    mark(taken, c, r, w, h)
-                    return Placed(t, c, r, w, h)
+    private fun spot(taken: Array<BooleanArray>, tile: Tile, size: GridSize): Placed? {
+        var colSpan = tile.w.coerceAtMost(size.cols)
+        var rowSpan = tile.h.coerceAtMost(size.rows)
+        while (colSpan >= 1 && rowSpan >= 1) {
+            for (row in 0..size.rows - rowSpan) for (col in 0..size.cols - colSpan) {
+                if (free(taken, col, row, colSpan, rowSpan)) {
+                    mark(taken, col, row, colSpan, rowSpan)
+                    return Placed(tile, col, row, colSpan, rowSpan)
                 }
             }
-            if (w >= h) w-- else h--
+            if (colSpan >= rowSpan) colSpan-- else rowSpan--
         }
         return null
     }
 
-    private fun free(taken: Array<BooleanArray>, c: Int, r: Int, w: Int, h: Int): Boolean {
-        for (y in r until r + h) for (x in c until c + w) {
-            if (y >= taken.size || x >= taken[y].size || taken[y][x]) return false
+    private fun free(taken: Array<BooleanArray>, col: Int, row: Int, colSpan: Int, rowSpan: Int): Boolean {
+        for (cellRow in row until row + rowSpan) for (cellCol in col until col + colSpan) {
+            if (cellRow >= taken.size || cellCol >= taken[cellRow].size || taken[cellRow][cellCol]) return false
         }
         return true
     }
 
-    private fun mark(taken: Array<BooleanArray>, c: Int, r: Int, w: Int, h: Int) {
-        for (y in r until r + h) for (x in c until c + w) taken[y][x] = true
+    private fun mark(taken: Array<BooleanArray>, col: Int, row: Int, colSpan: Int, rowSpan: Int) {
+        for (cellRow in row until row + rowSpan) for (cellCol in col until col + colSpan) {
+            taken[cellRow][cellCol] = true
+        }
     }
 }

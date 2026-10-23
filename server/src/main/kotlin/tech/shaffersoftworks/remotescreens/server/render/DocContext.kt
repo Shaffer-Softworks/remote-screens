@@ -9,9 +9,11 @@ import androidx.compose.remote.creation.dsl.RcInteger
 import androidx.compose.remote.creation.dsl.RcPath
 import androidx.compose.remote.creation.dsl.RcScope
 import androidx.compose.remote.creation.dsl.RcText
-import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistantConfig
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
+import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.awt.image.BufferedImage
@@ -24,11 +26,11 @@ private const val HEX_RADIX = 16
  * effect can be shown before Home Assistant answers. Every renderer extends it, so its functions stay on one class.
  */
 class DocContext(
-    val u: Units,
+    val units: Units,
     val palette: Palette,
     val i18n: I18n,
     val states: Map<String, EntityState>,
-    val ha: HomeAssistantConfig,
+    val homeAssistantConfig: HomeAssistantConfig,
     val data: RenderData,
 ) {
     lateinit var scope: RcScope
@@ -44,6 +46,14 @@ class DocContext(
 
     val bindings = mutableListOf<Binding>()
     val pictures = mutableListOf<PictureSlot>()
+    /** Cameras whose live video plays over one of the document's images, for players that can play it. */
+    val videos = mutableListOf<LiveVideo>()
+    /** Maps whose interactive OSM view plays over one of the document's boxes, for players that can show it. */
+    val maps = mutableListOf<LiveMap>()
+    /** Music Assistant search overlays for players with CAPABILITY_MUSIC_SEARCH. */
+    val searches = mutableListOf<LiveSearch>()
+    /** Page index currently being drawn, so a search overlay can hide on the other pages. */
+    var renderingPage: Int = 0
     /** Action metadata to the action and the entity it changes. */
     val predicted = LinkedHashMap<String, Pair<ActionRef, String>>()
     /** What of an entity is drawn into the document itself (an icon, a list of modes), and what it was. */
@@ -69,18 +79,34 @@ class DocContext(
         declare(texts, name, { text(name) }) { scope.remoteNamedText(Rc.USER + name, "") }
 
     fun int(name: String, initial: Int = 0): RcInteger =
-        declare(ints, name, { int(name, initial) }) { scope.remoteNamedInteger(Rc.USER + name, initial) }
+        declare(
+            ints,
+            name,
+            { int(name, initial) },
+        ) { scope.remoteNamedInteger(Rc.USER + name, initial) }
 
     fun float(name: String, initial: Float = 0f): RcFloat =
-        declare(floats, name, { float(name, initial) }) { scope.remoteNamedFloat(Rc.USER + name, initial) }
+        declare(
+            floats,
+            name,
+            { float(name, initial) },
+        ) { scope.remoteNamedFloat(Rc.USER + name, initial) }
 
     fun color(name: String, initial: Int = 0): RcColor =
-        declare(colors, name, { color(name, initial) }) { scope.remoteNamedColor(Rc.USER + name, initial) }
+        declare(
+            colors,
+            name,
+            { color(name, initial) },
+        ) { scope.remoteNamedColor(Rc.USER + name, initial) }
 
     /** A fixed text for canvas text operations, which take a declared text rather than a string. */
     fun literal(s: String): RcText = declare(literals, s, { literal(s) }) { scope.remoteText(s) }
     fun fixed(argb: Int): RcColor =
-        declare(colors, "#" + argb.toUInt().toString(HEX_RADIX), { fixed(argb) }) { scope.remoteColor(argb) }
+        declare(
+            colors,
+            "#" + argb.toUInt().toString(HEX_RADIX),
+            { fixed(argb) },
+        ) { scope.remoteColor(argb) }
 
     fun role(r: Role): RcColor = fixed(palette[r])
     fun pastel(p: Pastel): RcColor = fixed(palette[p])
@@ -95,14 +121,25 @@ class DocContext(
     /** Whether the document has a named variable [name], so a value for it is worth sending. */
     fun declares(name: String): Boolean = name in texts || name in ints || name in floats || name in colors
 
-    fun image(name: String, w: Int, h: Int): RcImage = declare(images, name, { image(name, w, h) }) {
-        val placeholder = BufferedImage(w.coerceAtLeast(1), h.coerceAtLeast(1), BufferedImage.TYPE_INT_ARGB)
+    fun image(name: String, w: Int, h: Int): RcImage = declare(
+        images,
+        name,
+        { image(name, w, h) },
+    ) {
+        val placeholder = BufferedImage(
+            w.coerceAtLeast(1),
+            h.coerceAtLeast(1),
+            BufferedImage.TYPE_INT_ARGB,
+        )
         scope.remoteNamedBitmap(Rc.USER + name, placeholder)
     }
 
-    fun path(icon: String?): RcPath {
-        val svg = Icons.path(icon)
-        return declare(paths, svg, { path(icon) }) { scope.remotePathData(Rc.path(svg)) }
+    /**
+     * MDI icon [icon], or raw SVG [rawSvg] (HA weather layers). Exactly one should be set.
+     */
+    fun path(icon: String? = null, rawSvg: String? = null): RcPath {
+        val svg = rawSvg ?: Icons.path(icon)
+        return declare(paths, svg, { path(icon, rawSvg) }) { scope.remotePathData(Rc.path(svg)) }
     }
 
     fun meta(ref: ActionRef): RcText {
@@ -120,6 +157,13 @@ class DocContext(
 
     fun picture(slot: PictureSlot) {
         if (pictures.none { it.name == slot.name }) pictures += slot
+    }
+
+    /** The component id to give the box [entityId]'s live video plays over, with `Modifier.componentId`. */
+    fun liveVideo(entityId: String, crop: Boolean): Int {
+        val componentId = LiveVideo.FIRST_COMPONENT_ID + videos.size
+        videos += LiveVideo(entityId, componentId, crop)
+        return componentId
     }
 
     /** The document is built again when [what] of the entity changes, such as its icon or its list of modes. */
@@ -149,60 +193,75 @@ class DocContext(
                 dry.scope = this
                 content(dry)
             }
-            val ctx = newContext()
+            val docContext = newContext()
             val bytes = Rc.document(widthPx, heightPx, description) {
-                ctx.scope = this
-                for (d in dry.declarations) d(ctx)
-                content(ctx)
+                docContext.scope = this
+                for (d in dry.declarations) d(docContext)
+                content(docContext)
             }
-            return bytes to ctx
+            return bytes to docContext
         }
     }
 }
 
 class Binding(val entityId: String?, val compute: (Map<String, EntityState>) -> List<VarValue>)
 
-/** A picture the add-on fetches and sends as a `bitmap` message. */
-data class PictureSlot(
-    val name: String,
-    /** A path Home Assistant serves (`/api/camera_proxy/camera.x`), or `map:<tile>` for a drawn map. */
-    val source: String,
-    val widthPx: Int,
-    val heightPx: Int,
-    /** 0 sends it once, and again when [source] changes. */
-    val refreshSeconds: Int,
-    val crop: Boolean = true,
-    val round: Boolean = false,
-)
+/** A camera's live video over the component with [componentId]; [crop] when the feed fills its box rather than fits. */
+data class LiveVideo(val entityId: String, val componentId: Int, val crop: Boolean) {
+    companion object {
+        /** Far above the ids the player gives components itself, so the video target is the only one with it. */
+        const val FIRST_COMPONENT_ID = 0x5C_0000
+    }
+}
 
-/** Data a renderer draws into the document, fetched before it starts. */
-data class RenderData(
-    val forecasts: Map<String, List<Forecast>> = emptyMap(),
-    val history: Map<String, List<Pair<Long, Double>>> = emptyMap(),
-    val energy: EnergyPrefs? = null,
-    val browse: Map<String, List<BrowseItem>> = emptyMap(),
-)
+/** An interactive map of [entityIds] over the component with [componentId]; [dark] matches the theme. */
+data class LiveMap(val entityIds: List<String>, val componentId: Int, val dark: Boolean) {
+    companion object {
+        /** Next to [LiveVideo.FIRST_COMPONENT_ID], so map and video targets never share an id. */
+        const val FIRST_COMPONENT_ID = 0x5D_0000
+    }
+}
 
-data class Forecast(
-    val time: java.time.ZonedDateTime,
-    val condition: String,
-    val high: Double?,
-    val low: Double?,
-    val rain: Int?,
-)
+/** Native Music Assistant search over [componentId] for [tileId] / [playerEntityId]. */
+data class LiveSearch(
+    val tileId: String,
+    val playerEntityId: String,
+    val componentId: Int,
+    val xPx: Int = 0,
+    val yPx: Int = 0,
+    val widthPx: Int = 0,
+    val heightPx: Int = 0,
+    /** Document page this field belongs to. The player hides it on every other page. */
+    val page: Int = 0,
+) {
+    companion object {
+        /** Next to [LiveMap.FIRST_COMPONENT_ID], so search, map, and video targets never share an id. */
+        const val FIRST_COMPONENT_ID = 0x5E_0000
+    }
+}
 
-data class EnergyPrefs(
-    val solar: String?,
-    val grid: String?,
-    val battery: String?,
-    val devices: List<Pair<String, String>>,
-)
+/** The component id to give the box an interactive map of [entityIds] plays over, with `Modifier.componentId`. */
+fun DocContext.liveMap(entityIds: List<String>): Int {
+    val componentId = LiveMap.FIRST_COMPONENT_ID + maps.size
+    maps += LiveMap(entityIds, componentId, dark = palette.dark)
+    return componentId
+}
 
-data class BrowseItem(
-    val title: String,
-    val contentId: String,
-    val contentType: String,
-    val canPlay: Boolean,
-    val canExpand: Boolean,
-    val thumbnail: String?,
-)
+/** The component id for a native Music Assistant search overlay, placed at [boundsPx] in the document. */
+fun DocContext.liveSearch(tileId: String, playerEntityId: String, boundsPx: SearchBoundsPx): Int {
+    val componentId = LiveSearch.FIRST_COMPONENT_ID + searches.size
+    searches += LiveSearch(
+        tileId,
+        playerEntityId,
+        componentId,
+        xPx = boundsPx.x,
+        yPx = boundsPx.y,
+        widthPx = boundsPx.width,
+        heightPx = boundsPx.height,
+        page = renderingPage,
+    )
+    return componentId
+}
+
+/** Document-pixel rectangle for the native search field. */
+data class SearchBoundsPx(val x: Int, val y: Int, val width: Int, val height: Int)

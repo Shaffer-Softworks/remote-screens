@@ -62,5 +62,22 @@
   "ui.adjust_temperature": "Temperatur einstellen",
   "ui.current_temp": "Aktuelle Temp.",
   "ui.current_humidity": "Aktuelle Luftfeuchte",
-  "ui.fan": "Lüfter"
+  "ui.fan": "Lüfter",
+  "ui.fan_mode": "Lüftermodus",
+  "ui.oscillate": "Oszillieren",
+  "ui.direction": "Richtung",
+  "ui.forward": "Vorwärts",
+  "ui.reverse": "Rückwärts",
+  "ui.target_humidity": "Ziel-Luftfeuchte",
+  "ui.swing": "Schwenken",
+  "ui.low": "Niedrig",
+  "ui.high": "Hoch",
+  "ui.no_todos": "Keine offenen Aufgaben",
+  "ui.cancel": "Abbrechen",
+  "ui.finish": "Beenden",
+  "ui.reset": "Zurücksetzen",
+  "ui.tone": "Ton",
+  "ui.empty_text": "(leer)",
+  "ui.datetime_hint": "Diesen Helfer in Home Assistant ändern",
+  "ui.temperature_outside_now": "Temperatur draußen jetzt"
 }

@@ -42,18 +42,24 @@ class MainActivity : ComponentActivity() {
                 PlayerScreen(viewModel)
             }
         }
-        viewModel.onDisplayMeasured(measureDisplay())
+        // After layout/immersive settle — a sync measure here can Hello with the wrong size until reboot.
+        scheduleDisplayMeasure()
         observeKiosk()
     }
 
     override fun onResume() {
         super.onResume()
         hideSystemBars()
+        scheduleDisplayMeasure()
         viewModel.onResumed()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        scheduleDisplayMeasure()
+    }
+
+    private fun scheduleDisplayMeasure() {
         window.decorView.post { viewModel.onDisplayMeasured(measureDisplay()) }
     }
 

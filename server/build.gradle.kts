@@ -39,6 +39,7 @@ dependencies {
     implementation(libs.coroutines.core)
     implementation(libs.logback)
     implementation(libs.jmdns)
+    implementation(libs.zxing.core)
 
     testImplementation(libs.junit)
     testImplementation(kotlin("test-junit"))

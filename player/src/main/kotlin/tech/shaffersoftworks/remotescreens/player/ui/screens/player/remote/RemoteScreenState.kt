@@ -1,19 +1,65 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote
 
 import android.graphics.Bitmap
+import tech.shaffersoftworks.remotescreens.shared.MapMarker
+import tech.shaffersoftworks.remotescreens.shared.MusicSearchRow
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Slot
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 
 /**
  * A document shown in a slot. Compared by identity, so the renderer loads each one into its player exactly once.
- * [predictions] maps an action's metadata to the values it will change.
+ * [predictions] maps an action's metadata to the values it will change, and may be updated in place when vars
+ * arrive so the document object stays the same and the player is not reloaded.
  */
 class SlotDocument(
     val revision: Int,
     val bytes: ByteArray,
-    val predictions: Map<String, List<VarValue>>,
+    val predictions: MutableMap<String, List<VarValue>>,
 )
+
+/**
+ * A camera's live video over the component with [componentId] in document [revision] of a slot. [url] is on the add-on
+ * and wants [token], the player's own, as a bearer. [crop] fills the box; else the whole picture fits inside it.
+ */
+data class SlotVideo(
+    val revision: Int,
+    val componentId: Int,
+    val url: String,
+    val token: String,
+    val crop: Boolean,
+)
+
+/**
+ * An interactive map over the component with [componentId] in document [revision] of a slot. [tileUrl] has
+ * `{z}`, `{x}` and `{y}`; [markers] are people (or trackers) to pin.
+ */
+data class SlotMap(
+    val revision: Int,
+    val componentId: Int,
+    val tileUrl: String,
+    val dark: Boolean,
+    val markers: List<MapMarker>,
+)
+
+/** Native Music Assistant search over [componentId] in document [revision] of a slot. */
+data class SlotSearch(
+    val revision: Int,
+    val componentId: Int,
+    val tileId: String,
+    val playerEntityId: String,
+    val rows: List<MusicSearchRow> = emptyList(),
+    /** Document pixels. Used when the remote component has not been measured. */
+    val x: Int = 0,
+    val y: Int = 0,
+    val width: Int = 0,
+    val height: Int = 0,
+    /** Page this field belongs to. Negative means an older add-on that did not say. */
+    val page: Int = -1,
+) {
+    /** True on the music page, and for an older add-on that did not name a page. */
+    fun isShowingOn(currentPage: Int): Boolean = page < 0 || page == currentPage
+}
 
 /**
  * Everything the Remote Compose players show: the pages of the screen, a card over them, an alert over both.
@@ -24,11 +70,21 @@ data class RemoteScreenState(
     val documents: Map<Slot, SlotDocument> = emptyMap(),
     val values: Map<String, VarValue> = emptyMap(),
     val bitmaps: Map<String, Bitmap> = emptyMap(),
+    /** Live video the add-on started for a shown document; it goes with the document. */
+    val videos: Map<Slot, SlotVideo> = emptyMap(),
+    /** Interactive map the add-on started for a shown document; it goes with the document. */
+    val maps: Map<Slot, SlotMap> = emptyMap(),
+    /** Native music search overlay for a shown document; it goes with the document. */
+    val searches: Map<Slot, SlotSearch> = emptyMap(),
+    /** Named integers the player sets itself (free-form tabs), kept across document rebuilds. */
+    val localInts: Map<String, Int> = emptyMap(),
     val page: Int = 0,
     val homePage: Int = 0,
     val pageCount: Int = 1,
     /** The pages a swipe moves through, in order. */
     val swipePages: List<Int> = listOf(0),
+    /** Home Assistant's time zone for analog clocks; null keeps the tablet's zone. */
+    val timeZone: String? = null,
 ) {
     val hasMainDocument: Boolean get() = Slot.MAIN in documents
 
@@ -42,6 +98,30 @@ data class RemoteScreenState(
             else -> null
         }
 
+    /** The video to play: only the topmost card's or alert's, as a tablet may decode one stream at a time. */
+    val playingVideo: Pair<Slot, SlotVideo>?
+        get() {
+            val slot = topOverlay ?: return null
+            return videos[slot]
+                ?.takeIf { video -> video.revision == documents[slot]?.revision }
+                ?.let { video -> slot to video }
+        }
+
+    /** The interactive map to show: only the topmost overlay's, matching its document revision. */
+    val playingMap: Pair<Slot, SlotMap>?
+        get() {
+            val slot = topOverlay ?: return null
+            return maps[slot]
+                ?.takeIf { map -> map.revision == documents[slot]?.revision }
+                ?.let { map -> slot to map }
+        }
+
+    /** Music search overlay matching a shown document revision, and only on its page. */
+    val playingSearch: Pair<Slot, SlotSearch>?
+        get() = searches.entries.firstOrNull { (slot, search) ->
+            documents[slot]?.revision == search.revision && search.isShowingOn(page)
+        }?.let { it.key to it.value }
+
     /** The page to show after a new main document: the same one if it still exists, otherwise home. */
     val pageAfterNewDocument: Int get() = if (page < pageCount) page else homePage
 
@@ -51,10 +131,13 @@ data class RemoteScreenState(
     val previousSwipePage: Int? get() = swipePages.lastOrNull { it < page }
 
     fun withDocument(message: ServerMessage.Document, bytes: ByteArray): RemoteScreenState {
-        val document = SlotDocument(message.rev, bytes, message.predictions)
+        val document = SlotDocument(message.rev, bytes, message.predictions.toMutableMap())
         val updated = copy(
             documents = documents + (message.slot to document),
             values = values + message.vars.associateBy(VarValue::name),
+            videos = videos - message.slot,
+            maps = maps - message.slot,
+            searches = searches - message.slot,
         )
         if (message.slot != Slot.MAIN) return updated
         val newPageCount = message.pageCount.coerceAtLeast(1)
@@ -69,15 +152,14 @@ data class RemoteScreenState(
     }
 
     fun withVars(message: ServerMessage.Vars): RemoteScreenState {
-        val updatedDocuments = if (message.predictions.isEmpty()) {
-            documents
-        } else {
-            documents.mapValues { (_, document) ->
-                SlotDocument(document.revision, document.bytes, document.predictions + message.predictions)
-            }
+        if (message.predictions.isNotEmpty()) {
+            for (document in documents.values) document.predictions.putAll(message.predictions)
         }
-        return copy(documents = updatedDocuments, values = values + message.vars.associateBy(VarValue::name))
+        return copy(values = values + message.vars.associateBy(VarValue::name))
     }
+
+    fun withTimeZone(timeZone: String?): RemoteScreenState =
+        if (timeZone == null || timeZone == this.timeZone) this else copy(timeZone = timeZone)
 
     /** What a tap will change, applied before Home Assistant answers. Null when the tap predicts nothing. */
     fun withPrediction(slot: Slot, metadata: String): RemoteScreenState? {
@@ -85,13 +167,69 @@ data class RemoteScreenState(
         return copy(values = values + predictedValues.associateBy(VarValue::name))
     }
 
-    fun withBitmap(name: String, bitmap: Bitmap): RemoteScreenState = copy(bitmaps = bitmaps + (name to bitmap))
+    fun withBitmap(name: String, bitmap: Bitmap): RemoteScreenState = copy(
+        bitmaps = bitmaps + (name to bitmap),
+    )
+
+    /** A video for a document that is no longer shown is dropped. */
+    fun withVideo(slot: Slot, video: SlotVideo): RemoteScreenState =
+        if (documents[slot]?.revision == video.revision) {
+            copy(
+                videos = videos + (slot to video),
+            )
+        } else {
+            this
+        }
+
+    /** Forgets [video] once it stopped; a newer one the add-on sent for the slot stays. */
+    fun withoutVideo(slot: Slot, video: SlotVideo): RemoteScreenState =
+        if (videos[slot] == video) copy(videos = videos - slot) else this
+
+    /** A map for a document that is no longer shown is dropped. */
+    fun withMap(slot: Slot, map: SlotMap): RemoteScreenState =
+        if (documents[slot]?.revision == map.revision) copy(maps = maps + (slot to map)) else this
+
+    fun withSearch(slot: Slot, search: SlotSearch): RemoteScreenState =
+        if (documents[slot]?.revision == search.revision) {
+            copy(searches = searches + (slot to search))
+        } else {
+            this
+        }
+
+    fun withSearchResults(tileId: String, rows: List<MusicSearchRow>): RemoteScreenState {
+        val entry = searches.entries.firstOrNull { it.value.tileId == tileId } ?: return this
+        return copy(
+            searches = searches + (entry.key to entry.value.copy(rows = rows)),
+        )
+    }
 
     fun withPage(index: Int): RemoteScreenState = copy(page = index.coerceIn(0, pageCount - 1))
 
+    fun withLocalInt(name: String, value: Int): RemoteScreenState = copy(
+        localInts = localInts + (name to value),
+    )
+
     /** The main document cannot be closed, only replaced or cleared. */
-    fun closed(slot: Slot): RemoteScreenState = if (slot == Slot.MAIN) this else copy(documents = documents - slot)
+    fun closed(slot: Slot): RemoteScreenState =
+        if (slot == Slot.MAIN) {
+            this
+        } else {
+            copy(
+                documents = documents - slot,
+                videos = videos - slot,
+                maps = maps - slot,
+                searches = searches - slot,
+            )
+        }
 
     /** Hides every document and forgets the values, as when the screen must be paired again. */
-    fun cleared(): RemoteScreenState = copy(documents = emptyMap(), values = emptyMap())
+    fun cleared(): RemoteScreenState =
+        copy(
+            documents = emptyMap(),
+            values = emptyMap(),
+            videos = emptyMap(),
+            maps = emptyMap(),
+            searches = emptyMap(),
+            localInts = emptyMap(),
+        )
 }

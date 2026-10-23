@@ -7,8 +7,12 @@ import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
+import io.ktor.client.request.prepareGet
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.readRawBytes
+import io.ktor.http.HttpHeaders
 import io.ktor.http.isSuccess
+import io.ktor.utils.io.ByteReadChannel
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.CancellationException
@@ -42,6 +46,7 @@ import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val WEBSOCKET_PING_INTERVAL_MS = 30_000L
 private const val REQUEST_TIMEOUT_MS = 20_000L
@@ -66,7 +71,9 @@ class HomeAssistantClient(
 
     private val _isConnected = MutableStateFlow(false)
     private val _states = MutableStateFlow<Map<String, EntityState>>(emptyMap())
-    private val _events = MutableSharedFlow<HomeAssistantEvent>(extraBufferCapacity = EVENT_BUFFER_CAPACITY)
+    private val _events = MutableSharedFlow<HomeAssistantEvent>(
+        extraBufferCapacity = EVENT_BUFFER_CAPACITY,
+    )
     private val _config = MutableStateFlow(HomeAssistantConfig())
     override val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
     override val states: StateFlow<Map<String, EntityState>> = _states.asStateFlow()
@@ -98,9 +105,11 @@ class HomeAssistantClient(
                 }
                 _isConnected.value = false
                 session = null
-                pendingCommands.values.forEach { it.completeExceptionally(IllegalStateException("disconnected")) }
+                pendingCommands.values.forEach { it.completeExceptionally(
+                    IllegalStateException("disconnected"),
+                ) }
                 pendingCommands.clear()
-                delay(backoffMs)
+                delay(backoffMs.milliseconds)
                 backoffMs = (backoffMs * 2).coerceAtMost(MAX_BACKOFF_MS)
             }
         }
@@ -118,11 +127,18 @@ class HomeAssistantClient(
             val answer = readJson()
             check(answer.type == "auth_ok") { "authentication failed: ${answer["message"]}" }
             session = this
-            logger.info("Connected to Home Assistant {}", answer["ha_version"]?.jsonPrimitive?.contentOrNull)
+            logger.info(
+                "Connected to Home Assistant {}",
+                answer["ha_version"]?.jsonPrimitive?.contentOrNull,
+            )
 
             val reader = launch {
                 for (frame in incoming) {
-                    if (frame is Frame.Text) handleMessage(json.parseToJsonElement(frame.readText()).jsonObject)
+                    if (frame is Frame.Text) {
+                        handleMessage(
+                            json.parseToJsonElement(frame.readText()).jsonObject,
+                        )
+                    }
                 }
             }
             loadInitialState()
@@ -134,15 +150,22 @@ class HomeAssistantClient(
     /** Config, every state, then the events we follow. */
     private suspend fun loadInitialState() {
         command("get_config")?.jsonObject?.let { haConfig -> _config.value = parseConfig(haConfig) }
-        val allStates = command("get_states")?.jsonArray.orEmpty().mapNotNull { parseState(it.jsonObject) }
+        val allStates = command(
+            "get_states",
+        )?.jsonArray.orEmpty().mapNotNull { parseState(it.jsonObject) }
         _states.value = allStates.associateBy { it.entityId }
         command("subscribe_events", buildJsonObject { put("event_type", "state_changed") })
-        for (eventType in FOLLOWED_EVENTS) command("subscribe_events", buildJsonObject { put("event_type", eventType) })
+        for (eventType in FOLLOWED_EVENTS) command(
+            "subscribe_events",
+            buildJsonObject { put("event_type", eventType) },
+        )
     }
 
     private fun handleMessage(message: JsonObject) {
         when (message.type) {
-            "result" -> message["id"]?.jsonPrimitive?.int?.let { id -> pendingCommands.remove(id)?.complete(message) }
+            "result" -> message["id"]?.jsonPrimitive?.int?.let { id -> pendingCommands.remove(
+                id,
+            )?.complete(message) }
             "event" -> message["event"]?.jsonObject?.let(::handleEvent)
         }
     }
@@ -163,9 +186,11 @@ class HomeAssistantClient(
         val id = nextCommandId.getAndIncrement()
         val response = CompletableDeferred<JsonObject>()
         pendingCommands[id] = response
-        val body = JsonObject(payload + mapOf("id" to JsonPrimitive(id), "type" to JsonPrimitive(type)))
+        val body = JsonObject(
+            payload + mapOf("id" to JsonPrimitive(id), "type" to JsonPrimitive(type)),
+        )
         sendMutex.withLock { activeSession.send(Frame.Text(body.toString())) }
-        val result = withTimeout(COMMAND_TIMEOUT_MS) { response.await() }
+        val result = withTimeout(COMMAND_TIMEOUT_MS.milliseconds) { response.await() }
         if (result["success"]?.jsonPrimitive?.content != "true") {
             val error = result["error"]?.jsonObject
             throw HomeAssistantException(
@@ -194,9 +219,27 @@ class HomeAssistantClient(
     }
 
     override suspend fun fetch(path: String): ByteArray? {
-        val response = httpClient.get(restBaseUrl.removeSuffix("/api") + path) { bearerAuth(accessToken) }
+        val response = httpClient.get(
+            restBaseUrl.removeSuffix("/api") + path,
+        ) { bearerAuth(accessToken) }
         return if (response.status.isSuccess()) response.readRawBytes() else null
     }
+
+    override suspend fun stream(
+        path: String,
+        onBody: suspend (contentType: String?, body: ByteReadChannel) -> Unit,
+    ): Int = httpClient.prepareGet(
+        restBaseUrl.removeSuffix("/api") + path,
+    ) { bearerAuth(accessToken) }
+        .execute { response ->
+            if (response.status.isSuccess()) {
+                onBody(
+                    response.headers[HttpHeaders.ContentType],
+                    response.bodyAsChannel(),
+                )
+            }
+            response.status.value
+        }
 
     private suspend fun DefaultClientWebSocketSession.readJson(): JsonObject {
         val frame = incoming.receive()

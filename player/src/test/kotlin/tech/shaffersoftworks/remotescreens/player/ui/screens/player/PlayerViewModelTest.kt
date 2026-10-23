@@ -6,6 +6,8 @@ import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionStat
 import tech.shaffersoftworks.remotescreens.player.data.device.BatteryStatus
 import tech.shaffersoftworks.remotescreens.player.data.device.DeviceRepository
 import tech.shaffersoftworks.remotescreens.player.data.device.DisplayInfo
+import tech.shaffersoftworks.remotescreens.player.data.device.FaceWakeMonitor
+import tech.shaffersoftworks.remotescreens.player.data.device.ProximityWakeMonitor
 import tech.shaffersoftworks.remotescreens.player.data.device.ScreenPowerRepository
 import tech.shaffersoftworks.remotescreens.player.data.discovery.DiscoveryRepository
 import tech.shaffersoftworks.remotescreens.player.data.image.ImageDecoder
@@ -35,6 +37,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
@@ -42,11 +45,13 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyBlocking
+import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlayerViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private val connectionStatus = MutableStateFlow(ConnectionStatus.IDLE)
+    private val consecutiveFailures = MutableStateFlow(0)
     private val serverMessages = MutableSharedFlow<ServerMessage>(extraBufferCapacity = 16)
     private val connectedServer = MutableStateFlow<String?>("10.0.0.5:8100")
 
@@ -54,6 +59,7 @@ class PlayerViewModelTest {
         on { status } doReturn connectionStatus
         on { messages } doReturn serverMessages
         on { server } doReturn connectedServer
+        on { consecutiveFailures } doReturn consecutiveFailures
     }
     private val isKioskEnabled = MutableStateFlow(false)
     private val isKioskSuppressed = MutableStateFlow(false)
@@ -74,6 +80,15 @@ class PlayerViewModelTest {
         on { discoverServers() } doReturn emptyFlow()
     }
     private val screenPowerRepository: ScreenPowerRepository = mock()
+    private val proximityWakeMonitor: ProximityWakeMonitor = mock {
+        on { isUsable() } doReturn false
+    }
+    private val faceWakeMonitor: FaceWakeMonitor = mock {
+        on { isUsable() } doReturn false
+        on { hasCameraPermission() } doReturn false
+        on { hasFrontCamera() } doReturn true
+        on { isLowRamDevice() } doReturn false
+    }
 
     private lateinit var viewModel: PlayerViewModel
 
@@ -88,6 +103,8 @@ class PlayerViewModelTest {
             updateRepository = mock<UpdateRepository>(),
             deviceRepository = deviceRepository,
             screenPowerRepository = screenPowerRepository,
+            proximityWakeMonitor = proximityWakeMonitor,
+            faceWakeMonitor = faceWakeMonitor,
             kioskManager = kioskManager,
             imageDecoder = mock<ImageDecoder>(),
         )
@@ -131,12 +148,47 @@ class PlayerViewModelTest {
     }
 
     @Test
+    fun `the same size again does not reconnect`() {
+        viewModel.onDisplayMeasured(DisplayInfo(widthDp = 800, heightDp = 480))
+        viewModel.onDisplayMeasured(DisplayInfo(widthDp = 800, heightDp = 480))
+
+        verify(connectionRepository, never()).reconnect()
+    }
+
+    @Test
+    fun `an empty measure is ignored`() {
+        viewModel.onDisplayMeasured(DisplayInfo(widthDp = 0, heightDp = 0))
+        runCurrent()
+
+        verify(connectionRepository, never()).connect(any(), any())
+    }
+
+    @Test
+    fun `repeated connection failures look for the add-on again`() {
+        val discovery = MutableSharedFlow<String>(extraBufferCapacity = 1)
+        whenever(discoveryRepository.discoverServers()).thenReturn(discovery)
+        viewModel.onDisplayMeasured(DisplayInfo(widthDp = 800, heightDp = 480))
+        runCurrent()
+
+        consecutiveFailures.value = 5
+        runCurrent()
+        discovery.tryEmit("10.0.0.9:8100")
+        runCurrent()
+
+        verify(connectionRepository).connect(eq("10.0.0.9:8100"), any())
+        verifyBlocking(preferencesRepository) { setServer("10.0.0.9:8100") }
+    }
+
+    @Test
     fun `connecting without a document shows the server`() {
         runCurrent()
         connectionStatus.value = ConnectionStatus.CONNECTING
         runCurrent()
 
-        assertEquals(InfoPanelState.Connecting("10.0.0.5:8100"), viewModel.viewState.value.infoPanel)
+        assertEquals(
+            InfoPanelState.Connecting("10.0.0.5:8100"),
+            viewModel.viewState.value.infoPanel,
+        )
     }
 
     @Test
@@ -160,7 +212,11 @@ class PlayerViewModelTest {
     fun `a local page action changes page without asking the add-on`() {
         receive(mainDocument())
 
-        viewModel.onDocumentAction(Slot.MAIN, revision = 7, metadata = ActionRef("_", "page", "2").encode())
+        viewModel.onDocumentAction(
+            Slot.MAIN,
+            revision = 7,
+            metadata = ActionRef("_", "page", "2").encode(),
+        )
         runCurrent()
 
         assertEquals(2, viewModel.viewState.value.remoteScreen.page)
@@ -175,7 +231,9 @@ class PlayerViewModelTest {
         viewModel.onDocumentAction(Slot.MAIN, revision = 7, metadata = metadata)
         runCurrent()
 
-        verifyBlocking(connectionRepository) { send(PlayerMessage.Action(Slot.MAIN, 7, metadata)) }
+        verifyBlocking(connectionRepository) {
+            send(PlayerMessage.Action(Slot.MAIN, 7, metadata, page = 0))
+        }
     }
 
     @Test
@@ -267,6 +325,58 @@ class PlayerViewModelTest {
     }
 
     @Test
+    fun `face wake skips turning the screen off so the camera can run`() {
+        whenever(faceWakeMonitor.isUsable()).thenReturn(true)
+        receive(ServerMessage.Settings(ScreenSettings(standbyScreenOff = true, wakeOnFace = true)))
+
+        receive(ServerMessage.Wake(awake = false))
+
+        verify(screenPowerRepository, never()).turnScreenOff()
+        verify(faceWakeMonitor).start(any())
+    }
+
+    @Test
+    fun `proximity and face wake can both run when both are enabled`() {
+        whenever(proximityWakeMonitor.isUsable()).thenReturn(true)
+        whenever(faceWakeMonitor.isUsable()).thenReturn(true)
+        receive(
+            ServerMessage.Settings(
+                ScreenSettings(standbyScreenOff = true, wakeOnProximity = true, wakeOnFace = true),
+            ),
+        )
+
+        receive(ServerMessage.Wake(awake = false))
+
+        // Face needs the panel on (blackout), even when proximity is also listening.
+        verify(screenPowerRepository, never()).turnScreenOff()
+        verify(proximityWakeMonitor).start(any())
+        verify(faceWakeMonitor).start(any())
+    }
+
+    @Test
+    fun `face wake without a usable camera still turns the screen off`() {
+        whenever(faceWakeMonitor.isUsable()).thenReturn(false)
+        receive(ServerMessage.Settings(ScreenSettings(standbyScreenOff = true, wakeOnFace = true)))
+
+        receive(ServerMessage.Wake(awake = false))
+
+        verify(screenPowerRepository).turnScreenOff()
+        verify(faceWakeMonitor, never()).start(any())
+    }
+
+    @Test
+    fun `waking stops wake monitors`() {
+        whenever(faceWakeMonitor.isUsable()).thenReturn(true)
+        receive(ServerMessage.Settings(ScreenSettings(wakeOnFace = true)))
+        receive(ServerMessage.Wake(awake = false))
+
+        viewModel.onUserInteraction()
+
+        verify(faceWakeMonitor, atLeastOnce()).stop()
+        verify(proximityWakeMonitor, atLeastOnce()).stop()
+    }
+
+    @Test
     fun `waking turns the screen on again`() {
         receive(ServerMessage.Settings(ScreenSettings(standbyScreenOff = true)))
         receive(ServerMessage.Wake(awake = false))
@@ -292,7 +402,11 @@ class PlayerViewModelTest {
     }
 
     private fun openSettings() {
-        viewModel.onDocumentAction(Slot.MAIN, revision = 7, metadata = ActionRef("_", "settings").encode())
+        viewModel.onDocumentAction(
+            Slot.MAIN,
+            revision = 7,
+            metadata = ActionRef("_", "settings").encode(),
+        )
         runCurrent()
     }
 

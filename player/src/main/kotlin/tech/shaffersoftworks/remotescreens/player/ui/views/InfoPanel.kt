@@ -47,7 +47,13 @@ fun InfoPanel(
     onAllowUnrestrictedBattery: () -> Unit = {},
 ) {
     val pairingCode = (state as? InfoPanelState.Pairing)?.code
-    val title = if (pairingCode != null) stringResource(R.string.pair_title) else stringResource(R.string.app_name)
+    val title = if (pairingCode != null) {
+        stringResource(
+            R.string.pair_title,
+        )
+    } else {
+        stringResource(R.string.app_name)
+    }
     val body = when (state) {
         InfoPanelState.Searching -> stringResource(R.string.searching)
         is InfoPanelState.Connecting -> stringResource(R.string.connecting, state.server)
@@ -106,6 +112,32 @@ private fun InfoPanelPairingPreview() {
 @Composable
 private fun InfoPanelSearchingPreview() {
     RemoteScreensTheme {
-        InfoPanel(state = InfoPanelState.Searching, onEnterAddress = {}, canOfferUnrestrictedBattery = true)
+        InfoPanel(
+            state = InfoPanelState.Searching,
+            onEnterAddress = {},
+            canOfferUnrestrictedBattery = true,
+        )
+    }
+}
+
+@Preview(widthDp = 800, heightDp = 480)
+@Composable
+private fun InfoPanelConnectingPreview() {
+    RemoteScreensTheme {
+        InfoPanel(
+            state = InfoPanelState.Connecting(server = "192.168.1.10:8100"),
+            onEnterAddress = {},
+        )
+    }
+}
+
+@Preview(widthDp = 800, heightDp = 480)
+@Composable
+private fun InfoPanelDisconnectedPreview() {
+    RemoteScreensTheme {
+        InfoPanel(
+            state = InfoPanelState.Disconnected,
+            onEnterAddress = {},
+        )
     }
 }

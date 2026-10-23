@@ -1,0 +1,10 @@
+domain: input_text
+name: Text helper
+icon: form-textbox
+tap: card
+card: input_text
+sizes: [1x1, 2x1, 2x2]
+actions:
+  clear: {service: input_text.set_value, data: {value: ""}}
+predict:
+  clear: {state: ""}

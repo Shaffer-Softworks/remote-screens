@@ -1,0 +1,35 @@
+---
+description: Require a @Preview for every UI-emitting Jetpack Compose composable
+globs: ["*Screen.kt", "*Component.kt", "*Composable.kt", "ui/**/*.kt"]
+alwaysApply: false
+---
+
+# Composable previews
+
+Every `@Composable` that emits UI must have a `@Preview` in the same file before the change is done.
+
+## Required shape
+
+- `private` preview function named `{ComposableName}Preview` (add a state suffix when there is more than one).
+- Wrap player UI in `RemoteScreensTheme`.
+- Default canvas is the wall panel: `widthDp = 800`, `heightDp = 480`. Use a different size only when the composable is a smaller surface, and set `name`.
+- Pass realistic sample data. Callbacks are empty lambdas.
+
+```kotlin
+@Preview(widthDp = 800, heightDp = 480)
+@Composable
+private fun IdentifyBadgePreview() {
+    RemoteScreensTheme {
+        IdentifyBadge(screenName = "Kitchen")
+    }
+}
+```
+
+## Multiple states
+
+If the composable branches on state, add one named preview per meaningful state (pairing vs searching, empty vs content, error).
+
+## Exemptions
+
+- The preview function itself.
+- A `@Composable` that returns a value and emits no layout.

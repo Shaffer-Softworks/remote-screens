@@ -15,6 +15,8 @@
       "night_dark": { "default": "mdi:weather-night" },
       "swipe": { "default": "mdi:gesture-swipe-horizontal" },
       "standby_screen_off": { "default": "mdi:monitor-off" },
+      "wake_on_proximity": { "default": "mdi:account-arrow-left" },
+      "wake_on_face": { "default": "mdi:face-recognition" },
       "kiosk": { "default": "mdi:lock" }
     },
     "text": {

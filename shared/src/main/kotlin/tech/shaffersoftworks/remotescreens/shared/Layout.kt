@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
 const val SCHEMA_VERSION = 2
-const val MAX_PAGES = 8
+const val MAX_PAGES = 9
 const val MAX_TILES_PER_SCREEN = 96
 const val MAX_NODES_PER_PAGE = 400
 const val MAX_NODE_DEPTH = 16
@@ -36,8 +36,10 @@ data class Theme(
     fun validated(): Theme = copy(
         name = name.trim().take(MAX_NAME).ifEmpty { id },
         base = base.take(MAX_ID),
-        roles = roles.filter { (k, v) -> k.length <= MAX_ID && HEX.matches(v) }.mapValues { it.value.uppercase() },
-        pastels = pastels.filter { (k, v) -> k.length <= MAX_ID && HEX.matches(v) }.mapValues { it.value.uppercase() },
+        roles = roles.filter { (key, value) -> key.length <= MAX_ID && HEX.matches(value) }
+            .mapValues { it.value.uppercase() },
+        pastels = pastels.filter { (key, value) -> key.length <= MAX_ID && HEX.matches(value) }
+            .mapValues { it.value.uppercase() },
     )
 
     companion object {
@@ -104,11 +106,14 @@ data class Page(
 
 /** The component types of a free-form page. Containers hold [Node.children]; the rest are leaves. */
 object NodeTypes {
-    val CONTAINERS = setOf("column", "row", "box", "flow")
+    val CONTAINERS = setOf("column", "row", "box", "flow", "tabs")
     val LEAVES = setOf(
         "text", "icon", "button", "spacer", "divider", "slider", "image", "tile",
         "clock", "badge", "avatar", "progress", "graph", "switch", "stepper", "choices",
         "gauge", "analog", "iconbutton", "keys", "swatches", "keypad",
+        "dial", "countdown", "qr", "markdown",
+        "timerkeys", "todolist", "events", "mediabar", "forecast", "presence", "led",
+        "thermostat", "weather", "nextevent",
     )
     val ALL = CONTAINERS + LEAVES
 }
@@ -116,11 +121,20 @@ object NodeTypes {
 /**
  * One component of a free-form page. Sizes are `wrap`, `fill`, `dp:N` or `weight:N`, as in Compose.
  * Props by type: `text` (text, fontSize, weight, align, color, lines), `icon` (icon, iconOn, size, color),
- * `button` (text, icon, color, ink), containers (arrangement, alignment, gap), `slider` (steps), `image` (fit),
- * `clock` (show: time, date or both; fontSize, color, align), `badge` (text, icon, color), `avatar` (text, size),
+ * `button` (text, icon, color, ink, fontSize, weight), containers (arrangement, alignment, gap), `slider` (steps),
+ * `image` (fit), `clock` (show: time, date or both; fontSize, weight, color, align),
+ * `badge` (text, icon, color, fontSize, weight), `avatar` (text, size),
  * `progress` (min, max, color), `graph` (hours, color), `switch` (color), `stepper` (step), `choices` (max),
  * `gauge` (min, max, color, size, caption: words or `@name`), `analog` (size, seconds, numbers: all or quarters),
- * `iconbutton` (icon, iconOn, size, color), `keys` (size), `swatches` (show: colour or white), `keypad` (size).
+ * `iconbutton` (icon, iconOn, size, color), `keys` (size), `swatches` (show: colour or white), `keypad` (size),
+ * `dial` (size, step), `countdown` (text, fontSize, weight, align), `qr` (text, size),
+ * `markdown` (text, fontSize, align), `tabs` (labels: comma-separated),
+ * `timerkeys` (timer Start/Pause/Cancel), `todolist` (max), `events` (calendars, max), `mediabar` (media strip),
+ * `forecast` (days, ink: weekday colour, color: temp colour), `presence` (people, ink, color: status),
+ * `led` (size, colour while on), `weather` (text caption, ink; current conditions + temp),
+ * `nextevent` (calendars, ink, color: day line; next calendar event card),
+ * `thermostat` (the RPI climate page: dial, readings, Heat/Cool modes and Fan mode),
+ * `mediabar` (openCard: open player card from art/title).
  * Columns and rows take `scroll`; a `flow` wraps its children onto new lines. Text takes `marquee`. A bound
  * component takes `showWhen` (on or off) and `animate` (fade, left, right, up, down or none) for how it comes and goes.
  * Any component takes `place`, its own alignment in its parent: start, center or end across a column, top, center or
@@ -144,7 +158,7 @@ data class Node(
 ) {
     fun walk(): Sequence<Node> = sequence {
         yield(this@Node)
-        for (c in children) yieldAll(c.walk())
+        for (child in children) yieldAll(child.walk())
     }
 
     fun depth(): Int = 1 + (children.maxOfOrNull { it.depth() } ?: 0)
@@ -162,7 +176,13 @@ data class Node(
             kind = if (type == "graph") "history" else null,
             tap = tap ?: if (type == "switch") TapAction(TapType.TOGGLE) else TapAction(),
             hold = hold ?: TapAction(TapType.NONE),
-            options = if (type == "graph") mapOf("hours" to (props["hours"] ?: "24")) else emptyMap(),
+            options = if (type == "graph") {
+                mapOf(
+                    "hours" to (props["hours"] ?: "24"),
+                )
+            } else {
+                emptyMap()
+            },
         )
         else -> null
     }
@@ -181,7 +201,22 @@ data class NodeStyle(
     val border: Float = 0f,
     /** The outline's colour, as [background]; the divider grey when null. */
     val borderColor: String? = null,
-)
+    /** One side's padding in dp, or null for [padding]. */
+    val paddingStart: Float? = null,
+    val paddingTop: Float? = null,
+    val paddingEnd: Float? = null,
+    val paddingBottom: Float? = null,
+) {
+    val start: Float get() = paddingStart ?: padding
+    val top: Float get() = paddingTop ?: padding
+    val end: Float get() = paddingEnd ?: padding
+    val bottom: Float get() = paddingBottom ?: padding
+
+    /** The padding across, start plus end, and down, top plus bottom. */
+    val padX: Float get() = start + end
+    val padY: Float get() = top + bottom
+    val padded: Boolean get() = start > 0f || top > 0f || end > 0f || bottom > 0f
+}
 
 /** What a component shows of an entity: its `state`, `value`, `name`, or the attribute [attribute]. */
 @Serializable
@@ -227,6 +262,8 @@ enum class TapType {
     @SerialName("card") CARD,
     @SerialName("action") ACTION,
     @SerialName("page") PAGE,
+    @SerialName("url") URL,
+    @SerialName("event") EVENT,
     @SerialName("none") NONE,
 }
 
@@ -238,6 +275,10 @@ data class TapAction(
     val data: JsonObject? = null,
     /** Page id for [TapType.PAGE]. */
     val page: String? = null,
+    /** Absolute URL for [TapType.URL]. */
+    val url: String? = null,
+    /** Home Assistant event type for [TapType.EVENT]. */
+    val event: String? = null,
 )
 
 @Serializable
@@ -248,6 +289,10 @@ data class ScreenSettings(
     val standbyBrightness: Int = 0,
     /** Standby turns the screen off instead of dimming it, once the tablet allows the app to lock it. */
     val standbyScreenOff: Boolean = false,
+    /** Wake from standby when the tablet's proximity sensor reports something near (a few cm on many devices). */
+    val wakeOnProximity: Boolean = false,
+    /** Wake from standby when the front camera sees a face (ignored without a usable front camera). */
+    val wakeOnFace: Boolean = false,
     /** "HH:MM", both or neither. */
     val nightStart: String? = null,
     val nightEnd: String? = null,
@@ -298,6 +343,10 @@ data class TopBar(
     val date: Boolean = true,
     val temperatureEntity: String? = null,
     val people: Boolean = true,
+    /** The tablet's Wi‑Fi signal level in the header. */
+    val wifi: Boolean = false,
+    /** The tablet's battery level in the header. */
+    val battery: Boolean = false,
     /** dp, or null for the default. Text and icons scale with it. */
     val height: Int? = null,
     /** The dark clock block's share of the screen width in percent, or null for the default. */

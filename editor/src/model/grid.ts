@@ -3,7 +3,7 @@
 
 import type { GridSize, NavBar, TopBar } from './types'
 
-const f = Math.fround
+const fround = Math.fround
 
 export const TARGET_CELL = 240
 export const MIN_CELLS = 2
@@ -48,20 +48,32 @@ export interface GridSpec {
   h(span: number): number
 }
 
-function available(widthDp: number, heightDp: number, topBar: number, navBar: number): [number, number] {
-  return [f(widthDp - 2 * PADDING), f(f(f(heightDp - topBar) - navBar) - 2 * PADDING)]
+function available(
+  widthDp: number,
+  heightDp: number,
+  topBar: number,
+  navBar: number,
+): [number, number] {
+  return [
+    fround(widthDp - 2 * PADDING),
+    fround(fround(fround(heightDp - topBar) - navBar) - 2 * PADDING),
+  ]
 }
 
-function clamp(v: number, lo: number, hi: number): number {
-  return Math.min(Math.max(v, lo), hi)
+function clamp(value: number, lo: number, hi: number): number {
+  return Math.min(Math.max(value, lo), hi)
 }
 
 function fit(avail: number): number {
-  return clamp(Math.round(f(f(avail + GAP) / f(TARGET_CELL + GAP))), MIN_CELLS, MAX_CELLS)
+  return clamp(
+    Math.round(fround(fround(avail + GAP) / fround(TARGET_CELL + GAP))),
+    MIN_CELLS,
+    MAX_CELLS,
+  )
 }
 
-function round1(v: number): number {
-  return f(Math.floor(f(f(v * 10) + 0.5)) / 10)
+function round1(value: number): number {
+  return fround(Math.floor(fround(fround(value * 10) + 0.5)) / 10)
 }
 
 /** The grid a device of this size gets when it is adopted. */
@@ -71,14 +83,20 @@ export function suggest(widthDp: number, heightDp: number): GridSize {
 }
 
 /** The geometry of [size] on a device of [widthDp] by [heightDp], under a [topBar] and over a [nav] of these heights. */
-export function spec(size: GridSize, widthDp: number, heightDp: number, topBar = TOP_BAR, nav = navBar(widthDp)): GridSpec {
-  topBar = f(topBar)
-  nav = f(nav)
+export function spec(
+  size: GridSize,
+  widthDp: number,
+  heightDp: number,
+  topBar = TOP_BAR,
+  nav = navBar(widthDp),
+): GridSpec {
+  topBar = fround(topBar)
+  nav = fround(nav)
   const [availW, availH] = available(widthDp, heightDp, topBar, nav)
   const cols = clamp(size.cols, 1, MAX_CELLS)
   const rows = clamp(size.rows, 1, MAX_CELLS)
-  const cellW = round1(f(f(availW - f(GAP * (cols - 1))) / cols))
-  const cellH = round1(f(f(availH - f(GAP * (rows - 1))) / rows))
+  const cellW = round1(fround(fround(availW - fround(GAP * (cols - 1))) / cols))
+  const cellH = round1(fround(fround(availH - fround(GAP * (rows - 1))) / rows))
   return {
     cols,
     rows,
@@ -91,10 +109,10 @@ export function spec(size: GridSize, widthDp: number, heightDp: number, topBar =
     cellW,
     cellH,
     large: cellW >= 170 && cellH >= 170,
-    x: (col) => f(PADDING + f(col * f(cellW + GAP))),
-    y: (row) => f(f(topBar + PADDING) + f(row * f(cellH + GAP))),
-    w: (span) => f(f(span * cellW) + f((span - 1) * GAP)),
-    h: (span) => f(f(span * cellH) + f((span - 1) * GAP)),
+    x: col => fround(PADDING + fround(col * fround(cellW + GAP))),
+    y: row => fround(fround(topBar + PADDING) + fround(row * fround(cellH + GAP))),
+    w: span => fround(fround(span * cellW) + fround((span - 1) * GAP)),
+    h: span => fround(fround(span * cellH) + fround((span - 1) * GAP)),
   }
 }
 
@@ -120,38 +138,40 @@ export interface Placed<T extends Placeable> {
  * cell, the rest move to the first free spot in reading order, shrinking if they must.
  */
 export function reflow<T extends Placeable>(tiles: T[], size: GridSize): Placed<T>[] {
-  const full = tiles.find((t) => t.full)
+  const full = tiles.find(tile => tile.full)
   if (full) return [{ tile: full, col: 0, row: 0, w: size.cols, h: size.rows }]
   const taken = Array.from({ length: size.rows }, () => new Array<boolean>(size.cols).fill(false))
   const out: Placed<T>[] = []
-  const byPosition = (a: T, b: T) => a.row - b.row || a.col - b.col
-  const fits = tiles.filter((t) => t.col + t.w <= size.cols && t.row + t.h <= size.rows)
-  const rest = tiles.filter((t) => !fits.includes(t))
-  for (const t of [...fits].sort(byPosition)) {
-    if (free(taken, t.col, t.row, t.w, t.h)) {
-      mark(taken, t.col, t.row, t.w, t.h)
-      out.push({ tile: t, col: t.col, row: t.row, w: t.w, h: t.h })
+  const byPosition = (tileA: T, tileB: T) => tileA.row - tileB.row || tileA.col - tileB.col
+  const fits = tiles.filter(
+    tile => tile.col + tile.w <= size.cols && tile.row + tile.h <= size.rows,
+  )
+  const rest = tiles.filter(tile => !fits.includes(tile))
+  for (const tile of [...fits].sort(byPosition)) {
+    if (free(taken, tile.col, tile.row, tile.w, tile.h)) {
+      mark(taken, tile.col, tile.row, tile.w, tile.h)
+      out.push({ tile, col: tile.col, row: tile.row, w: tile.w, h: tile.h })
     } else {
-      const p = spot(taken, t, size)
-      if (p) out.push(p)
+      const placed = spot(taken, tile, size)
+      if (placed) out.push(placed)
     }
   }
-  for (const t of [...rest].sort(byPosition)) {
-    const p = spot(taken, t, size)
-    if (p) out.push(p)
+  for (const tile of [...rest].sort(byPosition)) {
+    const placed = spot(taken, tile, size)
+    if (placed) out.push(placed)
   }
   return out
 }
 
-function spot<T extends Placeable>(taken: boolean[][], t: T, size: GridSize): Placed<T> | null {
-  let w = Math.min(t.w, size.cols)
-  let h = Math.min(t.h, size.rows)
+function spot<T extends Placeable>(taken: boolean[][], tile: T, size: GridSize): Placed<T> | null {
+  let w = Math.min(tile.w, size.cols)
+  let h = Math.min(tile.h, size.rows)
   while (w >= 1 && h >= 1) {
-    for (let r = 0; r <= size.rows - h; r++) {
-      for (let c = 0; c <= size.cols - w; c++) {
-        if (free(taken, c, r, w, h)) {
-          mark(taken, c, r, w, h)
-          return { tile: t, col: c, row: r, w, h }
+    for (let row = 0; row <= size.rows - h; row++) {
+      for (let col = 0; col <= size.cols - w; col++) {
+        if (free(taken, col, row, w, h)) {
+          mark(taken, col, row, w, h)
+          return { tile, col, row, w, h }
         }
       }
     }
@@ -161,27 +181,45 @@ function spot<T extends Placeable>(taken: boolean[][], t: T, size: GridSize): Pl
   return null
 }
 
-function free(taken: boolean[][], c: number, r: number, w: number, h: number): boolean {
-  for (let y = r; y < r + h; y++) {
-    for (let x = c; x < c + w; x++) {
+function free(taken: boolean[][], col: number, row: number, w: number, h: number): boolean {
+  for (let y = row; y < row + h; y++) {
+    for (let x = col; x < col + w; x++) {
       if (y >= taken.length || x >= taken[y].length || taken[y][x]) return false
     }
   }
   return true
 }
 
-function mark(taken: boolean[][], c: number, r: number, w: number, h: number): void {
-  for (let y = r; y < r + h; y++) for (let x = c; x < c + w; x++) taken[y][x] = true
+function mark(taken: boolean[][], col: number, row: number, w: number, h: number): void {
+  for (let y = row; y < row + h; y++) for (let x = col; x < col + w; x++) taken[y][x] = true
 }
 
 /** Whether [tile] can sit at col/row with w/h among [others] on [size], without overlapping or leaving the grid. */
-export function fitsAt(others: Placeable[], size: GridSize, col: number, row: number, w: number, h: number): boolean {
+export function fitsAt(
+  others: Placeable[],
+  size: GridSize,
+  col: number,
+  row: number,
+  w: number,
+  h: number,
+): boolean {
   if (col < 0 || row < 0 || col + w > size.cols || row + h > size.rows) return false
-  return others.every((o) => col >= o.col + o.w || o.col >= col + w || row >= o.row + o.h || o.row >= row + h)
+  return others.every(
+    other =>
+      col >= other.col + other.w ||
+      other.col >= col + w ||
+      row >= other.row + other.h ||
+      other.row >= row + h,
+  )
 }
 
 /** The first free spot for a w by h tile in reading order, or null when the page is full. */
-export function firstFree(others: Placeable[], size: GridSize, w: number, h: number): { col: number; row: number } | null {
+export function firstFree(
+  others: Placeable[],
+  size: GridSize,
+  w: number,
+  h: number,
+): { col: number; row: number } | null {
   for (let row = 0; row + h <= size.rows; row++) {
     for (let col = 0; col + w <= size.cols; col++) {
       if (fitsAt(others, size, col, row, w, h)) return { col, row }

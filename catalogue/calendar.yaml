@@ -1,0 +1,8 @@
+domain: calendar
+name: Calendar
+icon: calendar
+tap: card
+card: calendar
+sizes: [1x1, 2x1, 2x2, full]
+actions: {}
+predict: {}

@@ -90,6 +90,24 @@ export const CATALOGUE: Record<string, TypeSpec> = {
     ],
     "needsEntity": true
   },
+  "calendar": {
+    "name": "Calendar",
+    "icon": "calendar",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "calendar",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2",
+      "full"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": true
+  },
   "camera": {
     "name": "Camera",
     "icon": "cctv",
@@ -131,9 +149,34 @@ export const CATALOGUE: Record<string, TypeSpec> = {
     "options": [],
     "verbs": [
       "temperature",
+      "temperature_high",
+      "temperature_low",
       "mode",
       "preset",
-      "fan"
+      "fan",
+      "swing"
+    ],
+    "needsEntity": true
+  },
+  "counter": {
+    "name": "Counter",
+    "icon": "counter",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "counter",
+    "controls": [
+      "stepper"
+    ],
+    "sizes": [
+      "1x1",
+      "2x1"
+    ],
+    "options": [],
+    "verbs": [
+      "increment",
+      "decrement",
+      "reset"
     ],
     "needsEntity": true
   },
@@ -202,14 +245,17 @@ export const CATALOGUE: Record<string, TypeSpec> = {
     "options": [],
     "verbs": [
       "toggle",
-      "percentage"
+      "percentage",
+      "oscillate",
+      "direction",
+      "preset"
     ],
     "needsEntity": true
   },
-  "humidifier": {
-    "name": "Humidifier",
-    "icon": "air-humidifier-off",
-    "iconOn": "air-humidifier",
+  "generic": {
+    "name": "Entity",
+    "icon": "help-circle-outline",
+    "iconOn": null,
     "toggle": true,
     "tap": "toggle",
     "card": "toggle",
@@ -221,7 +267,31 @@ export const CATALOGUE: Record<string, TypeSpec> = {
     "options": [],
     "verbs": [
       "toggle",
+      "turn_on",
+      "turn_off"
+    ],
+    "needsEntity": true
+  },
+  "humidifier": {
+    "name": "Humidifier",
+    "icon": "air-humidifier-off",
+    "iconOn": "air-humidifier",
+    "toggle": true,
+    "tap": "toggle",
+    "card": "humidifier",
+    "controls": [
       "humidity"
+    ],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [
+      "toggle",
+      "humidity",
+      "mode"
     ],
     "needsEntity": true
   },
@@ -264,6 +334,24 @@ export const CATALOGUE: Record<string, TypeSpec> = {
     ],
     "needsEntity": true
   },
+  "input_datetime": {
+    "name": "Date/time helper",
+    "icon": "calendar-clock",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "input_datetime",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1"
+    ],
+    "options": [],
+    "verbs": [
+      "set"
+    ],
+    "needsEntity": true
+  },
   "input_number": {
     "name": "Number helper",
     "icon": "ray-vertex",
@@ -300,6 +388,46 @@ export const CATALOGUE: Record<string, TypeSpec> = {
     "options": [],
     "verbs": [
       "option"
+    ],
+    "needsEntity": true
+  },
+  "input_text": {
+    "name": "Text helper",
+    "icon": "form-textbox",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "input_text",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [
+      "clear"
+    ],
+    "needsEntity": true
+  },
+  "lawn_mower": {
+    "name": "Lawn mower",
+    "icon": "robot-mower",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "lawn_mower",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [
+      "start",
+      "pause",
+      "dock"
     ],
     "needsEntity": true
   },
@@ -379,6 +507,7 @@ export const CATALOGUE: Record<string, TypeSpec> = {
       "next",
       "previous",
       "volume",
+      "seek",
       "mute",
       "shuffle",
       "repeat",
@@ -509,6 +638,27 @@ export const CATALOGUE: Record<string, TypeSpec> = {
     "verbs": [],
     "needsEntity": true
   },
+  "siren": {
+    "name": "Siren",
+    "icon": "bullhorn-outline",
+    "iconOn": "bullhorn",
+    "toggle": true,
+    "tap": "toggle",
+    "card": "siren",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1"
+    ],
+    "options": [],
+    "verbs": [
+      "toggle",
+      "on",
+      "off",
+      "tone"
+    ],
+    "needsEntity": true
+  },
   "switch": {
     "name": "Switch",
     "icon": "toggle-switch-variant-off",
@@ -529,6 +679,47 @@ export const CATALOGUE: Record<string, TypeSpec> = {
       "toggle",
       "on",
       "off"
+    ],
+    "needsEntity": true
+  },
+  "timer": {
+    "name": "Timer",
+    "icon": "timer-outline",
+    "iconOn": "timer",
+    "toggle": true,
+    "tap": "card",
+    "card": "timer",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [
+      "start",
+      "pause",
+      "cancel",
+      "finish"
+    ],
+    "needsEntity": true
+  },
+  "todo": {
+    "name": "To-do",
+    "icon": "checkbox-marked-outline",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "todo",
+    "controls": [],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [
+      "complete"
     ],
     "needsEntity": true
   },
@@ -553,6 +744,55 @@ export const CATALOGUE: Record<string, TypeSpec> = {
       "dock",
       "locate",
       "fan_speed"
+    ],
+    "needsEntity": true
+  },
+  "valve": {
+    "name": "Valve",
+    "icon": "pipe-valve",
+    "iconOn": "pipe-valve",
+    "toggle": true,
+    "tap": "toggle",
+    "card": "valve",
+    "controls": [
+      "position"
+    ],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [
+      "toggle",
+      "open",
+      "close",
+      "stop",
+      "position"
+    ],
+    "needsEntity": true
+  },
+  "water_heater": {
+    "name": "Water heater",
+    "icon": "water-boiler",
+    "iconOn": "water-boiler",
+    "toggle": true,
+    "tap": "card",
+    "card": "water_heater",
+    "controls": [
+      "stepper"
+    ],
+    "sizes": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
+    "options": [],
+    "verbs": [
+      "temperature",
+      "operation",
+      "away_on",
+      "away_off"
     ],
     "needsEntity": true
   },
@@ -685,6 +925,21 @@ export const CATALOGUE: Record<string, TypeSpec> = {
       "1x1",
       "2x1",
       "2x2"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": true
+  },
+  "music": {
+    "name": "Music Assistant",
+    "icon": "music",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "none",
+    "controls": [],
+    "sizes": [
+      "full"
     ],
     "options": [],
     "verbs": [],

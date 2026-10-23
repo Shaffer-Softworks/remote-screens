@@ -20,6 +20,10 @@ data class SettingsDialogState(
     val canOfferScreenOff: Boolean = false,
     /** Whether to offer leaving battery optimization, so standby keeps its connection to the add-on. */
     val canOfferUnrestrictedBattery: Boolean = false,
+    /** Whether to offer the camera permission face wake needs. */
+    val canOfferCameraPermission: Boolean = false,
+    /** One-shot note when face wake is on but this tablet cannot run it. */
+    @StringRes val wakeOnFaceUnavailableNote: Int? = null,
     /** What the kiosk button does; null hides it (no kiosk, or locked without the PIN entered). */
     val kioskAction: KioskAction? = null,
     /** Offered once the kiosk is unlocked, so the tablet can leave kiosk duty without a factory reset. */
@@ -35,11 +39,16 @@ data class AddressDialogState(val initialAddress: String)
 sealed interface PlayerEvent {
     data class ShowMessage(val text: String) : PlayerEvent
     data class ShowMessageResource(@StringRes val messageRes: Int) : PlayerEvent
+    data class OpenUrl(val url: String) : PlayerEvent
     data object OpenInstallPermissionSettings : PlayerEvent
     data object OpenOverlayPermissionSettings : PlayerEvent
     data object OpenScreenOffAdminSettings : PlayerEvent
     data object RequestUnrestrictedBattery : PlayerEvent
+    data object RequestCameraPermission : PlayerEvent
 
     /** Screen pinning would hide the screen where Android asks to confirm an update. */
     data object StopScreenPinning : PlayerEvent
+
+    /** Put screen pinning back after an update was cancelled or failed to download. */
+    data object ReapplyKiosk : PlayerEvent
 }

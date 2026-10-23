@@ -1,0 +1,40 @@
+---
+description: Detekt TopLevelPropertyNaming — file-level `val`/`const val` must match [A-Z][_A-Z0-9]*
+globs: "**/*.kt,**/*.kts"
+alwaysApply: false
+---
+
+# Detekt: `TopLevelPropertyNaming`
+
+Detekt enforces **`TopLevelPropertyNaming`**: any **top-level** `const val` or `val` must match:
+
+```text
+[A-Z][_A-Z0-9]*
+```
+
+So the name is **`UPPER_SNAKE_CASE` only**.
+
+## Do
+
+- `private const val QUEUE_POLL_INTERVAL_MS = 8000L`
+- `private const val CARD_CORNER_DP = 10f`
+
+## Don’t (at file top level)
+
+- `private const val queuePollIntervalMs = …` (camelCase)
+- `private val CardShape = …` (PascalCase / mixed case)
+
+## If you want readable camelCase for a group
+
+Move values into a **`private object`** or **`companion object`** and use **member** `val` names there.
+
+```kotlin
+private object CardLayout {
+    const val CORNER_DP = 10f
+    const val EDGE_DP = 2f
+}
+```
+
+## After renames
+
+Update all references. Run `./gradlew :server:detekt` (or the touched module’s detekt task).

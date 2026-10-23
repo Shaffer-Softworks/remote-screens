@@ -1,0 +1,30 @@
+name: Make GHCR packages public
+
+on:
+  workflow_dispatch:
+
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  public:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package:
+          - remote-screens-amd64
+          - remote-screens-aarch64
+    steps:
+      - name: Set ${{ matrix.package }} visibility to public
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          org="${GITHUB_REPOSITORY_OWNER}"
+          pkg="${{ matrix.package }}"
+          # GITHUB_TOKEN can change visibility for packages this repo publishes.
+          gh api --method PUT \
+            -H "Accept: application/vnd.github+json" \
+            "/orgs/${org}/packages/container/${pkg}/visibility" \
+            -f visibility=public
+          echo "Set ${pkg} to public"

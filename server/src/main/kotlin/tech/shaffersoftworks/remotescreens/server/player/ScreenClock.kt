@@ -15,7 +15,9 @@ class ScreenClock(
     private val languageRepository: LanguageRepository,
 ) {
     fun zone(): ZoneId =
-        runCatching { ZoneId.of(homeAssistant.config.value.timeZone) }.getOrDefault(ZoneId.systemDefault())
+        runCatching { ZoneId.of(
+            homeAssistant.config.value.timeZone,
+        ) }.getOrDefault(ZoneId.systemDefault())
 
     fun now(): ZonedDateTime = ZonedDateTime.now(zone())
 

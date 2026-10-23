@@ -2,6 +2,8 @@ package tech.shaffersoftworks.remotescreens.server.player.action
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoHome
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoLayout
+import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
@@ -15,7 +17,8 @@ import kotlin.test.assertTrue
 
 class ActionRouterTest {
     private val ha = DemoHome()
-    private val router = ActionRouter(ha) { I18n("en", I18n.load("en"), emptyMap(), true) }
+    private val renderData = RenderDataRepository(ha)
+    private val router = ActionRouter(ha, { I18n("en", I18n.load("en"), emptyMap(), true) }, renderData)
     private val screen = DemoLayout.screen()
 
     private fun tap(meta: String, memory: TapMemory = TapMemory(), now: Long = 0) =
@@ -37,8 +40,37 @@ class ActionRouterTest {
 
     @Test
     fun aStepCountsFromTheCurrentTarget() {
+        // Living room is heat_cool — a single temperature step becomes a range shift.
         tap("t4|temperature|+0.5")
-        assertEquals(21.5, (ha.calls.last().third["temperature"] as JsonPrimitive).doubleOrNull)
+        val data = ha.calls.last().third
+        assertEquals(18.5, (data["target_temp_low"] as JsonPrimitive).doubleOrNull)
+        assertEquals(24.5, (data["target_temp_high"] as JsonPrimitive).doubleOrNull)
+        assertTrue("temperature" !in data)
+    }
+
+    @Test
+    fun aHeatCoolLowStepSendsBothRangeTargets() {
+        tap("c1|temperature_low|+0.5")
+        val data = ha.calls.last().third
+        assertEquals("set_temperature", ha.calls.last().second)
+        assertEquals(18.5, (data["target_temp_low"] as JsonPrimitive).doubleOrNull)
+        assertEquals(24.0, (data["target_temp_high"] as JsonPrimitive).doubleOrNull)
+    }
+
+    @Test
+    fun aHeatCoolHighStepSendsBothRangeTargets() {
+        tap("c1|temperature_high|-0.5")
+        val data = ha.calls.last().third
+        assertEquals(18.0, (data["target_temp_low"] as JsonPrimitive).doubleOrNull)
+        assertEquals(23.5, (data["target_temp_high"] as JsonPrimitive).doubleOrNull)
+    }
+
+    @Test
+    fun aHeatCoolLowStepThatCrossesHighRaisesHigh() {
+        tap("c1|temperature_low|+10")
+        val data = ha.calls.last().third
+        assertEquals(28.0, (data["target_temp_low"] as JsonPrimitive).doubleOrNull)
+        assertEquals(28.0, (data["target_temp_high"] as JsonPrimitive).doubleOrNull)
     }
 
     @Test
@@ -51,7 +83,11 @@ class ActionRouterTest {
     @Test
     fun volumeIsAFraction() {
         tap("t5|volume|+10")
-        assertEquals(0.45, (ha.calls.last().third["volume_level"] as JsonPrimitive).doubleOrNull!!, 0.001)
+        assertEquals(
+            0.45,
+            (ha.calls.last().third["volume_level"] as JsonPrimitive).doubleOrNull!!,
+            0.001,
+        )
     }
 
     @Test
@@ -67,7 +103,9 @@ class ActionRouterTest {
     fun aLateSecondTapAsksAgain() {
         val memory = TapMemory()
         tap("t7|toggle|", memory, now = 1000)
-        assertIs<TapOutcome.Confirm>(tap("t7|toggle|", memory, now = 1000 + ActionRouter.CONFIRM_MS + 1))
+        assertIs<TapOutcome.Confirm>(
+            tap("t7|toggle|", memory, now = 1000 + ActionRouter.CONFIRM_MS + 1),
+        )
     }
 
     @Test
@@ -110,5 +148,39 @@ class ActionRouterTest {
     @Test
     fun anUnknownTileIsIgnored() {
         assertEquals(TapOutcome.Ignored, tap("nope|toggle|"))
+    }
+
+    @Test
+    fun musicBrowseTypeRebuilds() {
+        assertEquals(TapOutcome.Rebuild, tap("ma1|browse_type|album"))
+        assertEquals("album", renderData.musicUi.state("ma1").browseMediaType)
+    }
+
+    @Test
+    fun musicListenModeRebuilds() {
+        assertEquals(TapOutcome.Rebuild, tap("ma1|listen_mode|search"))
+        assertEquals(MusicUiState.LISTEN_SEARCH, renderData.musicUi.state("ma1").listenMode)
+    }
+
+    @Test
+    fun musicPrimaryTabRebuilds() {
+        assertEquals(TapOutcome.Rebuild, tap("ma1|primary_tab|listen"))
+        assertEquals(MusicUiState.PRIMARY_LISTEN, renderData.musicUi.state("ma1").primarySection)
+    }
+
+    @Test
+    fun musicPlayUriCallsMusicAssistant() {
+        assertEquals(TapOutcome.Rebuild, tap("ma1|play_uri|demo://track/1"))
+        val (domain, service, data) = ha.calls.last()
+        assertEquals("music_assistant" to "play_media", domain to service)
+        assertEquals("demo://track/1", (data["media_id"] as JsonPrimitive).content)
+        assertEquals("play", (data["enqueue"] as JsonPrimitive).content)
+    }
+
+    @Test
+    fun musicClearQueueCallsMediaPlayer() {
+        assertEquals(TapOutcome.Rebuild, tap("ma1|clear_queue|"))
+        val (domain, service, _) = ha.calls.last()
+        assertEquals("media_player" to "clear_playlist", domain to service)
     }
 }

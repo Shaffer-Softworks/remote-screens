@@ -2,6 +2,7 @@
 
 package tech.shaffersoftworks.remotescreens.server.render
 
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcContentScale
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
@@ -9,6 +10,7 @@ import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
+import androidx.compose.remote.creation.dsl.componentId
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.horizontalWeight
@@ -74,48 +76,64 @@ object AlertRenderer {
         } else {
             0f
         }
-        val (bytes, ctx) = DocContext.build(
+        val (bytes, docContext) = DocContext.build(
             device.widthPx,
             device.heightPx,
             alert.title,
             { input.context(device) },
-        ) { ctx ->
-            val scrim = ctx.tap(Modifier.fillMaxSize().background(ctx.role(Role.SCRIM)), ActionRef("alert", "dismiss"))
-            Box(scrim, horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
-                val panel = Modifier.width(ctx.u.px(panelW))
-                    .clip(ctx.rounded(PANEL_CORNER_DP))
-                    .background(ctx.role(Role.CARD))
+        ) { docContext ->
+            val scrim = docContext.tap(
+                Modifier.fillMaxSize().background(docContext.role(Role.SCRIM)),
+                ActionRef("alert", "dismiss"),
+            )
+            Box(
+                scrim,
+                horizontal = RcHorizontalPositioning.Center,
+                vertical = RcVerticalPositioning.Center,
+            ) {
+                val panel = Modifier.width(docContext.units.px(panelW))
+                    .clip(docContext.rounded(PANEL_CORNER_DP))
+                    .background(docContext.role(Role.CARD))
                 Column(
-                    ctx.tap(panel, ActionRef("_", "noop")).padding(ctx.u.px(PANEL_PADDING_DP)),
+                    docContext.tap(
+                        panel,
+                        ActionRef("_", "noop"),
+                    ).padding(docContext.units.px(PANEL_PADDING_DP)),
                     horizontal = RcHorizontalPositioning.Center,
                 ) {
-                    ctx.badge(alert)
-                    ctx.gap(TITLE_GAP_DP)
-                    ctx.label(
+                    docContext.badge(alert)
+                    docContext.gap(TITLE_GAP_DP)
+                    docContext.label(
                         alert.title,
                         Type.HEADLINE,
-                        ctx.role(Role.INK),
+                        docContext.role(Role.INK),
                         Weight.SEMI_BOLD,
                         lines = 2,
                         align = RcTextAlign.Center,
                     )
                     if (alert.message.isNotBlank()) {
-                        ctx.gap(MESSAGE_GAP_DP)
-                        ctx.label(
+                        docContext.gap(MESSAGE_GAP_DP)
+                        docContext.label(
                             alert.message,
                             Type.TITLE,
-                            ctx.role(Role.INK_SOFT),
+                            docContext.role(Role.INK_SOFT),
                             lines = MESSAGE_LINES,
                             align = RcTextAlign.Center,
                         )
                     }
-                    if (alert.camera != null) ctx.camera(alert.camera, panelW - SCREEN_MARGIN_DP, camH)
-                    ctx.gap(BUTTONS_GAP_DP)
-                    ctx.buttons(alert.buttons.take(MAX_BUTTONS))
+                    if (alert.camera != null) {
+                        docContext.camera(
+                            alert.camera,
+                            panelW - SCREEN_MARGIN_DP,
+                            camH,
+                        )
+                    }
+                    docContext.gap(BUTTONS_GAP_DP)
+                    docContext.buttons(alert.buttons.take(MAX_BUTTONS))
                 }
             }
         }
-        return RenderedDoc(bytes, ctx)
+        return RenderedDoc(bytes, docContext)
     }
 
     private fun DocContext.badge(alert: Alert) {
@@ -124,44 +142,61 @@ object AlertRenderer {
             "warning" -> Role.WARN
             else -> Role.ACCENT
         }
-        val badge = Modifier.size(u.px(BADGE_DP), u.px(BADGE_DP)).clip(rounded(BADGE_DP / 2f)).background(role(tone))
-        scope.Box(badge, horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
+        val badge = Modifier.size(
+            units.px(BADGE_DP),
+            units.px(BADGE_DP),
+        ).clip(rounded(BADGE_DP / 2f)).background(role(tone))
+        scope.Box(
+            badge,
+            horizontal = RcHorizontalPositioning.Center,
+            vertical = RcVerticalPositioning.Center,
+        ) {
             val icon = alert.icon ?: if (alert.level == "info") "bell-ring" else "alert"
             this@badge.icon(icon, BADGE_ICON_DP, role(Role.KEY_ON_INK))
         }
     }
 
     private fun DocContext.camera(camera: String, widthDp: Float, heightDp: Float) {
-        val pw = u.px(widthDp).toInt()
-        val ph = u.px(heightDp).toInt()
+        val pw = units.px(widthDp).toInt()
+        val ph = units.px(heightDp).toInt()
         picture(PictureSlot("alert.cam", "/api/camera_proxy/$camera", pw, ph, CAMERA_FIT))
+        val video = liveVideo(camera, crop = true)
         gap(TITLE_GAP_DP)
         scope.Image(
             image("alert.cam", pw, ph),
-            Modifier.size(u.px(widthDp), u.px(heightDp)).clip(rounded(CAMERA_CORNER_DP)),
+            Modifier.size(
+                units.px(widthDp),
+                units.px(heightDp),
+            ).clip(rounded(CAMERA_CORNER_DP)).componentId(video),
             contentScale = RcContentScale.Crop,
         )
     }
 
     private fun DocContext.buttons(buttons: List<AlertButton>) {
         scope.Row(Modifier.fillMaxWidth()) {
-            val ctx = this@buttons
+            val docContext = this@buttons
             buttons.forEachIndexed { i, b ->
-                if (i > 0) Spacer(Modifier.width(ctx.u.px(BUTTON_SPACING_DP)))
+                if (i > 0) Spacer(Modifier.width(docContext.units.px(BUTTON_SPACING_DP)))
                 val isPrimary = i == 0
-                ctx.key(
+                docContext.key(
                     ActionRef("alert", "button", i.toString()),
                     text = b.title,
                     heightDp = BUTTON_HEIGHT_DP,
                     modifier = Modifier.horizontalWeight(1f),
-                    bg = if (isPrimary) ctx.role(Role.KEY_ON) else ctx.role(Role.KEY),
-                    ink = if (isPrimary) ctx.role(Role.KEY_ON_INK) else ctx.role(Role.INK),
+                    bg = if (isPrimary) docContext.role(Role.KEY_ON) else docContext.role(Role.KEY),
+                    ink = if (isPrimary) {
+                        docContext.role(
+                            Role.KEY_ON_INK,
+                        )
+                    } else {
+                        docContext.role(Role.INK)
+                    },
                 )
             }
-            if (buttons.isNotEmpty()) Spacer(Modifier.width(ctx.u.px(BUTTON_SPACING_DP)))
-            ctx.key(
+            if (buttons.isNotEmpty()) Spacer(Modifier.width(docContext.units.px(BUTTON_SPACING_DP)))
+            docContext.key(
                 ActionRef("alert", "dismiss"),
-                text = ctx.i18n.t("ui.close"),
+                text = docContext.i18n.t("ui.close"),
                 heightDp = BUTTON_HEIGHT_DP,
                 modifier = Modifier.horizontalWeight(1f),
             )

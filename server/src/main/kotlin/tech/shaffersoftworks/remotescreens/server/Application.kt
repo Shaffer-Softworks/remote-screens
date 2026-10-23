@@ -58,7 +58,10 @@ fun main() {
     val mdnsAdvertiser = MdnsAdvertiser(config.playerPort, config.version).also { it.start() }
     if (config.isSupervisor) {
         scope.launch {
-            runCatching { supervisorClient.announce(config.playerPort, dependencies.apiKeyRepository.apiKey) }
+            runCatching { supervisorClient.announce(
+                config.playerPort,
+                dependencies.apiKeyRepository.apiKey,
+            ) }
                 .onFailure { logger.warn("Discovery failed: {}", it.message) }
         }
     }
@@ -123,7 +126,12 @@ private fun Route.serveEditor(staticDir: File) {
         // Built assets have hashed names; index.html must be refetched so an update reaches the browser.
         cacheControl { file ->
             if (file.parentFile?.name == "assets") {
-                listOf(CacheControl.MaxAge(ONE_YEAR_SECONDS, visibility = CacheControl.Visibility.Public))
+                listOf(
+                    CacheControl.MaxAge(
+                        ONE_YEAR_SECONDS,
+                        visibility = CacheControl.Visibility.Public,
+                    ),
+                )
             } else {
                 listOf(CacheControl.NoCache(null))
             }
@@ -140,7 +148,12 @@ fun Application.playerModule(dependencies: ServerDependencies) {
         maxFrameSize = MAX_WEBSOCKET_FRAME_BYTES
     }
     routing {
-        playerRoutes(dependencies.playerHub, dependencies.playerApkRepository, dependencies.enrollmentService)
+        playerRoutes(
+            dependencies.playerHub,
+            dependencies.playerApkRepository,
+            dependencies.enrollmentService,
+            dependencies.cameraStreamService,
+        )
         route("/integration") {
             install(IntegrationKey) { apiKey = dependencies.apiKeyRepository.apiKey }
             integrationRoutes(dependencies.screenService, dependencies.playerHub)

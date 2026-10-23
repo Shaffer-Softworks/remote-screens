@@ -3,483 +3,62 @@
   <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>CyclomaticComplexMethod:CardRenderer.kt:CardRenderer$fun render: RenderedDoc</ID>
-    <ID>CyclomaticComplexMethod:CardRenderer.kt:CardRenderer$private fun DocContext.weatherCard</ID>
-    <ID>CyclomaticComplexMethod:FreeForm.kt:private fun DocContext.badgeNode</ID>
-    <ID>CyclomaticComplexMethod:FreeForm.kt:private fun DocContext.buttonNode</ID>
-    <ID>CyclomaticComplexMethod:FreeForm.kt:private fun DocContext.container</ID>
-    <ID>CyclomaticComplexMethod:FreeForm.kt:private fun DocContext.iconButtonNode</ID>
-    <ID>CyclomaticComplexMethod:FreeForm.kt:private fun DocContext.node</ID>
-    <ID>CyclomaticComplexMethod:FreeForm.kt:private fun DocContext.stepperNode</ID>
-    <ID>CyclomaticComplexMethod:FreeForm.kt:private fun DocContext.textNode</ID>
-    <ID>CyclomaticComplexMethod:FreeForm.kt:private fun Node.natural: Dims</ID>
-    <ID>CyclomaticComplexMethod:ThermostatPanel.kt:fun DocContext.thermostatPanel</ID>
-    <ID>CyclomaticComplexMethod:ThermostatPanel.kt:private fun DocContext.bindThermostat</ID>
-    <ID>CyclomaticComplexMethod:Tiles.kt:fun DocContext.energyFlow</ID>
-    <ID>CyclomaticComplexMethod:Tiles.kt:fun DocContext.tile</ID>
-    <ID>CyclomaticComplexMethod:Tiles.kt:fun tapRef: ActionRef?</ID>
-    <ID>CyclomaticComplexMethod:Tiles.kt:private fun DocContext.entityTile</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$0.55f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$0xFF</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$10</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$100</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$10f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$120f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$128</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$12f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$132f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$140f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$14f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$16</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$16f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$1800</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$18f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$20</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$20f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$24</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$28f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$300</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$360f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$4</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$40f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$46f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$48f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$52f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$60f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$64f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$6f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$7</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$72f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$8</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$80f</ID>
-    <ID>MagicNumber:CardRenderer.kt:CardRenderer$8f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.012f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.02f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.035f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.04f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.05f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.06f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.085f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.16f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.1f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.33f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.45f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.5f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.6f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.75f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.82f</ID>
-    <ID>MagicNumber:FreeForm.kt:0.9f</ID>
-    <ID>MagicNumber:FreeForm.kt:1.4f</ID>
-    <ID>MagicNumber:FreeForm.kt:1.5f</ID>
-    <ID>MagicNumber:FreeForm.kt:10</ID>
-    <ID>MagicNumber:FreeForm.kt:100.0</ID>
-    <ID>MagicNumber:FreeForm.kt:10f</ID>
-    <ID>MagicNumber:FreeForm.kt:12</ID>
-    <ID>MagicNumber:FreeForm.kt:120f</ID>
-    <ID>MagicNumber:FreeForm.kt:12f</ID>
-    <ID>MagicNumber:FreeForm.kt:135f</ID>
-    <ID>MagicNumber:FreeForm.kt:140f</ID>
-    <ID>MagicNumber:FreeForm.kt:15f</ID>
-    <ID>MagicNumber:FreeForm.kt:160f</ID>
-    <ID>MagicNumber:FreeForm.kt:16f</ID>
-    <ID>MagicNumber:FreeForm.kt:18f</ID>
-    <ID>MagicNumber:FreeForm.kt:2.6f</ID>
-    <ID>MagicNumber:FreeForm.kt:200f</ID>
-    <ID>MagicNumber:FreeForm.kt:20f</ID>
-    <ID>MagicNumber:FreeForm.kt:22f</ID>
-    <ID>MagicNumber:FreeForm.kt:240f</ID>
-    <ID>MagicNumber:FreeForm.kt:24f</ID>
-    <ID>MagicNumber:FreeForm.kt:270f</ID>
-    <ID>MagicNumber:FreeForm.kt:280f</ID>
-    <ID>MagicNumber:FreeForm.kt:28f</ID>
-    <ID>MagicNumber:FreeForm.kt:3</ID>
-    <ID>MagicNumber:FreeForm.kt:3.2f</ID>
-    <ID>MagicNumber:FreeForm.kt:300</ID>
-    <ID>MagicNumber:FreeForm.kt:30f</ID>
-    <ID>MagicNumber:FreeForm.kt:320f</ID>
-    <ID>MagicNumber:FreeForm.kt:32f</ID>
-    <ID>MagicNumber:FreeForm.kt:4</ID>
-    <ID>MagicNumber:FreeForm.kt:40f</ID>
-    <ID>MagicNumber:FreeForm.kt:44f</ID>
-    <ID>MagicNumber:FreeForm.kt:48f</ID>
-    <ID>MagicNumber:FreeForm.kt:52f</ID>
-    <ID>MagicNumber:FreeForm.kt:56f</ID>
-    <ID>MagicNumber:FreeForm.kt:6</ID>
-    <ID>MagicNumber:FreeForm.kt:64f</ID>
-    <ID>MagicNumber:FreeForm.kt:6f</ID>
-    <ID>MagicNumber:FreeForm.kt:8</ID>
-    <ID>MagicNumber:FreeForm.kt:8f</ID>
-    <ID>MagicNumber:Home.kt:0.08f</ID>
-    <ID>MagicNumber:Home.kt:0.42f</ID>
-    <ID>MagicNumber:Home.kt:0.5f</ID>
-    <ID>MagicNumber:Home.kt:100f</ID>
-    <ID>MagicNumber:Home.kt:10f</ID>
-    <ID>MagicNumber:Home.kt:110f</ID>
-    <ID>MagicNumber:Home.kt:12f</ID>
-    <ID>MagicNumber:Home.kt:150f</ID>
-    <ID>MagicNumber:Home.kt:16f</ID>
-    <ID>MagicNumber:Home.kt:18f</ID>
-    <ID>MagicNumber:Home.kt:20f</ID>
-    <ID>MagicNumber:Home.kt:22f</ID>
-    <ID>MagicNumber:Home.kt:28f</ID>
-    <ID>MagicNumber:Home.kt:30f</ID>
-    <ID>MagicNumber:Home.kt:32f</ID>
-    <ID>MagicNumber:Home.kt:48f</ID>
-    <ID>MagicNumber:Home.kt:50f</ID>
-    <ID>MagicNumber:Home.kt:6f</ID>
-    <ID>MagicNumber:Home.kt:72f</ID>
-    <ID>MagicNumber:Home.kt:8f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:RenderedDoc$1000L</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$0.42f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$0.4f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$0.7f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$10f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$15f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$26f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$350f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$40f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$4f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$5f</ID>
-    <ID>MagicNumber:ScreenRenderer.kt:ScreenRenderer$8f</ID>
-    <ID>MagicNumber:Themes.kt:Themes$0xFF</ID>
-    <ID>MagicNumber:Themes.kt:Themes$0xFF000000</ID>
-    <ID>MagicNumber:Themes.kt:Themes$0xFFFFFF</ID>
-    <ID>MagicNumber:Themes.kt:Themes$0xFFFFFFFF</ID>
-    <ID>MagicNumber:Themes.kt:Themes$7</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:0.3f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:0.55f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:100f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:10f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:12f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:15f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:16f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:18f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:20f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:22f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:24f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:25f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:28f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:360f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:3f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:40f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:50f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:7.5f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:70f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:8f</ID>
-    <ID>MagicNumber:ThermostatPanel.kt:90f</ID>
-    <ID>MagicNumber:Tiles.kt:0.24f</ID>
-    <ID>MagicNumber:Tiles.kt:0.35f</ID>
-    <ID>MagicNumber:Tiles.kt:0.45f</ID>
-    <ID>MagicNumber:Tiles.kt:0.4f</ID>
-    <ID>MagicNumber:Tiles.kt:0.8f</ID>
-    <ID>MagicNumber:Tiles.kt:10</ID>
-    <ID>MagicNumber:Tiles.kt:100.0</ID>
-    <ID>MagicNumber:Tiles.kt:10f</ID>
-    <ID>MagicNumber:Tiles.kt:120f</ID>
-    <ID>MagicNumber:Tiles.kt:12f</ID>
-    <ID>MagicNumber:Tiles.kt:140f</ID>
-    <ID>MagicNumber:Tiles.kt:14f</ID>
-    <ID>MagicNumber:Tiles.kt:150f</ID>
-    <ID>MagicNumber:Tiles.kt:16f</ID>
-    <ID>MagicNumber:Tiles.kt:1800</ID>
-    <ID>MagicNumber:Tiles.kt:18f</ID>
-    <ID>MagicNumber:Tiles.kt:200f</ID>
-    <ID>MagicNumber:Tiles.kt:20f</ID>
-    <ID>MagicNumber:Tiles.kt:22f</ID>
-    <ID>MagicNumber:Tiles.kt:24f</ID>
-    <ID>MagicNumber:Tiles.kt:260f</ID>
-    <ID>MagicNumber:Tiles.kt:26f</ID>
-    <ID>MagicNumber:Tiles.kt:28f</ID>
-    <ID>MagicNumber:Tiles.kt:300</ID>
-    <ID>MagicNumber:Tiles.kt:30f</ID>
-    <ID>MagicNumber:Tiles.kt:32f</ID>
-    <ID>MagicNumber:Tiles.kt:34f</ID>
-    <ID>MagicNumber:Tiles.kt:36f</ID>
-    <ID>MagicNumber:Tiles.kt:3f</ID>
-    <ID>MagicNumber:Tiles.kt:4</ID>
-    <ID>MagicNumber:Tiles.kt:40f</ID>
-    <ID>MagicNumber:Tiles.kt:44f</ID>
-    <ID>MagicNumber:Tiles.kt:4f</ID>
-    <ID>MagicNumber:Tiles.kt:52f</ID>
-    <ID>MagicNumber:Tiles.kt:56f</ID>
-    <ID>MagicNumber:Tiles.kt:6f</ID>
-    <ID>MagicNumber:Tiles.kt:70f</ID>
-    <ID>MagicNumber:Tiles.kt:76f</ID>
-    <ID>MagicNumber:Tiles.kt:8f</ID>
-    <ID>MagicNumber:Tiles.kt:90f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:100f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:10f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:110f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:12f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:13f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:14f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:16f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:1800</ID>
-    <ID>MagicNumber:WeatherPanel.kt:18f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:20f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:24f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:26f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:36f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:40f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:4f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:50f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:60f</ID>
-    <ID>MagicNumber:WeatherPanel.kt:6f</ID>
-    <ID>MatchingDeclarationName:Tiles.kt:TileBox</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$"back" -&gt; c.key(ref(entityId, "code_back"), icon = "backspace-outline", heightDp = 60f, widthDp = keyW)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$Box</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$Box(c.tap(Modifier.size(c.u.px(46f), c.u.px(46f)).clip(c.rounded((46f) / 2f)).background(c.fixed(argb or 0xFF000000.toInt())), r))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$Column</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$Image(c.image("art.card.$entityId", px, px), Modifier.size(c.u.px(art), c.u.px(art)).clip(c.rounded(20f)), contentScale = RcContentScale.Crop)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$VarValue.string(Vars.e(entityId, "artist"), listOfNotNull(s?.attr("media_artist"), s?.attr("media_album_name")).joinToString(" · "))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$bind(entityId) { s -&gt; listOf(VarValue.float(Vars.e(entityId, "tilt"), ((s[entityId]?.number("current_tilt_position") ?: 0.0) / 100).toFloat())) }</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.key(ref(entityId, "close"), text = c.i18n.t("ui.close_cover"), icon = "arrow-down", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.key(ref(entityId, "dock"), text = c.i18n.t("ui.dock"), icon = "home-import-outline", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.key(ref(entityId, "open"), text = c.i18n.t("ui.open"), icon = "arrow-up", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.key(ref(entityId, "pause"), text = c.i18n.t("ui.pause"), icon = "pause", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.key(ref(entityId, "start"), text = c.i18n.t("ui.start"), icon = "play", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.key(ref(entityId, "stop"), text = c.i18n.t("ui.stop"), icon = "stop", heightDp = 56f, modifier = Modifier.horizontalWeight(1f))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.key(ref(entityId, verb, value), text = word, bg = c.color(Vars.o(entityId, verb, i, "bg")), ink = c.color(Vars.o(entityId, verb, i, "ink")), heightDp = 42f)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(c.i18n.t("ui.max", "value" to "${c.i18n.number(max.second, 1)} $unit"), Type.BODY, c.role(Role.DANGER), Weight.MEDIUM, modifier = Modifier.horizontalWeight(1f))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(c.i18n.t("ui.min", "value" to "${c.i18n.number(min.second, 1)} $unit"), Type.BODY, c.role(Role.ACCENT), Weight.MEDIUM)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(c.i18n.weekday(d.time.withZoneSameInstant(zone)), Type.TITLE, ink, Weight.MEDIUM, modifier = Modifier.width(c.u.px(60f)))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(c.text(Vars.e(entityId, "state")), Type.DISPLAY, c.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(c.text(Vars.e(entityId, "title")), Type.HEADLINE, c.role(Role.INK), Weight.SEMI_BOLD, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(c.text(Vars.e(entityId, "value")), Type.DISPLAY, c.role(Role.INK), Weight.NORMAL, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(d.high?.let { "${it.roundToInt()}°" } ?: "", Type.BODY, ink, Weight.SEMI_BOLD, modifier = Modifier.width(c.u.px(40f)))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(d.low?.let { "${it.roundToInt()}°" } ?: "", Type.BODY, soft, modifier = Modifier.width(c.u.px(40f)))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$c.label(d.rain?.let { "$it%" } ?: "", Type.BODY, c.role(Role.ACCENT), modifier = Modifier.width(c.u.px(48f)))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$ctx.bindTileColors(TILE, entityId, Pastel.forDomain(e?.domain), alwaysOn = card in setOf("camera", "map", "energy", "history"))</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$e?.number("wind_speed")?.let { c.i18n.t("ui.wind", "value" to "${it.roundToInt()} ${e.attr("wind_speed_unit") ?: "km/h"}") }</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$flowKeys(entityId, "preset", presets.map { it to it.replace('_', ' ').replaceFirstChar(Char::uppercase) }) { it.attr("preset_mode") }</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$for</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$key(ref(entityId, "locate"), text = i18n.t("ui.locate"), icon = "map-marker", heightDp = 48f, modifier = Modifier.fillMaxWidth())</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$key(ref(entityId, "open"), text = i18n.t("ui.open_door"), icon = "door-open", heightDp = 52f, modifier = Modifier.fillMaxWidth())</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$key(ref(entityId, "play_media", "${item.contentType}|${item.contentId}"), text = item.title, icon = "play-circle-outline", heightDp = 48f, modifier = Modifier.fillMaxWidth())</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$private</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$scope</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$scope.Image(image("cam.card.$entityId", pw, ph), Modifier.size(u.px(w), u.px(h)).clip(rounded(16f)), contentScale = RcContentScale.Fit)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$scope.Image(image("map.card", pw, ph), Modifier.size(u.px(w), u.px(h)).clip(rounded(16f)), contentScale = RcContentScale.Crop)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$structural(entityId) { listOf("hvac_modes", "preset_modes", "fan_modes").joinToString("|") { k -&gt; it?.list(k)?.joinToString() ?: "" } }</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$this@keypad.label(this@keypad.text(Vars.t("e:$entityId", "code")), Type.DISPLAY, this@keypad.role(Role.INK), Weight.MEDIUM, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$this@lockCard.label(this@lockCard.text(Vars.t("e:$entityId", "confirm")), Type.TITLE, this@lockCard.role(Role.WARN), Weight.SEMI_BOLD, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$val</ID>
-    <ID>MaxLineLength:CardRenderer.kt:CardRenderer$val who = if (entityId.startsWith("person.") || entityId.startsWith("device_tracker.")) listOf(entityId) else states.keys.filter { it.startsWith("person.") }</ID>
-    <ID>MaxLineLength:FreeForm.kt:"climate" -&gt; "temperature" to (e?.number("target_temp_step") ?: if (ha.temperatureUnit.contains("F")) 1.0 else 0.5)</ID>
-    <ID>MaxLineLength:FreeForm.kt:"climate" -&gt; ChoiceSet("mode", "hvac_modes", e?.list("hvac_modes").orEmpty(), { i18n.state("climate", it) }, { it.state }, MODE_ICONS)</ID>
-    <ID>MaxLineLength:FreeForm.kt:"divider" -&gt; scope.Box(styled(n, axis, pages, dividerSize(n, axis)).background(paint(n.props["color"] ?: "divider") ?: role(Role.DIVIDER)))</ID>
-    <ID>MaxLineLength:FreeForm.kt:"swatches" -&gt; (props["size"]?.toFloatOrNull() ?: 40f).let { s -&gt; (if (props["show"] == "white") 6 else 8).let { k -&gt; Dims(s * k + 10f * (k - 1), s) } }</ID>
-    <ID>MaxLineLength:FreeForm.kt:"vacuum" -&gt; listOf("start" to "play", "pause" to "pause", "dock" to "home-import-outline", "locate" to "map-marker-outline")</ID>
-    <ID>MaxLineLength:FreeForm.kt:("arm_home" to "shield-home").takeIf { f and 1 != 0 }</ID>
-    <ID>MaxLineLength:FreeForm.kt:Axis.BOX -&gt; scope.Box(Modifier.fillMaxSize(), horizontal = horizontal(h), vertical = vertical(v)) { ctx.node(c, self, Axis.BOX, pages) }</ID>
-    <ID>MaxLineLength:FreeForm.kt:Axis.COLUMN -&gt; scope.Column(m, horizontal = horizontal(alignment), vertical = columnArrangement(arrangement)) { children() }</ID>
-    <ID>MaxLineLength:FreeForm.kt:Axis.ROW -&gt; scope.Row(m, horizontal = rowArrangement(arrangement), vertical = vertical(alignment)) { children() }</ID>
-    <ID>MaxLineLength:FreeForm.kt:Box</ID>
-    <ID>MaxLineLength:FreeForm.kt:Box(c.tap(Modifier.size(c.u.px(sizeDp), c.u.px(sizeDp)).clip(c.rounded(sizeDp / 2f)).background(c.fixed(argb or 0xFF000000.toInt())), if (n.bind != null) ref else null))</ID>
-    <ID>MaxLineLength:FreeForm.kt:ChoiceSet$private</ID>
-    <ID>MaxLineLength:FreeForm.kt:Row</ID>
-    <ID>MaxLineLength:FreeForm.kt:Spec.Companion$s.startsWith("weight:") -&gt; s.removePrefix("weight:").toFloatOrNull()?.takeIf { it &gt; 0f }?.let { Weight(it) } ?: Wrap</ID>
-    <ID>MaxLineLength:FreeForm.kt:appear(n.props["animate"])?.let { (enter, exit) -&gt; m = m.animationSpec(enterAnimation = enter, exitAnimation = exit) }</ID>
-    <ID>MaxLineLength:FreeForm.kt:c</ID>
-    <ID>MaxLineLength:FreeForm.kt:c.graph(c.data.history[id].orEmpty(), (self.w - 2 * pad).coerceAtLeast(1f), (self.h - 2 * pad).coerceAtLeast(1f), line, c.role(Role.INK_SOFT))</ID>
-    <ID>MaxLineLength:FreeForm.kt:c.key(ref, icon = icon, heightDp = sizeDp, widthDp = if (stretch) null else sizeDp, round = !stretch, modifier = if (stretch) Modifier.horizontalWeight(1f) else Modifier)</ID>
-    <ID>MaxLineLength:FreeForm.kt:drawArc(inset.rf, inset.rf, (px - inset).rf, (px - inset).rf, 135f.rf, c.float(nodeLevel(n.id)) * 270f)</ID>
-    <ID>MaxLineLength:FreeForm.kt:drawLine(mid + (sin(a) * mid * inner).toFloat(), mid - (cos(a) * mid * inner).toFloat(), mid + (sin(a) * mid * 0.9f).toFloat(), mid - (cos(a) * mid * 0.9f).toFloat())</ID>
-    <ID>MaxLineLength:FreeForm.kt:drawTextAnchored(c.literal(h.toString()), mid + (sin(a) * mid * 0.6f).toFloat(), mid - (cos(a) * mid * 0.6f).toFloat(), 0f, 0f)</ID>
-    <ID>MaxLineLength:FreeForm.kt:else</ID>
-    <ID>MaxLineLength:FreeForm.kt:for</ID>
-    <ID>MaxLineLength:FreeForm.kt:if</ID>
-    <ID>MaxLineLength:FreeForm.kt:if (domain == "lock") c.label(c.text(Vars.t(n.id, "confirm")), Type.CAPTION, c.role(Role.WARN), Weight.SEMI_BOLD)</ID>
-    <ID>MaxLineLength:FreeForm.kt:if (i &gt; 0 &amp;&amp; gap &gt; 0f) scope.Spacer(if (mine == Axis.ROW) Modifier.width(u.px(gap)) else Modifier.height(u.px(gap)))</ID>
-    <ID>MaxLineLength:FreeForm.kt:if (id != null &amp;&amp; on != null) c.toggleIcon(id, name, on, sizeDp * 0.45f, ink) else c.icon(name, sizeDp * 0.45f, ink)</ID>
-    <ID>MaxLineLength:FreeForm.kt:if (id != null) c.label(c.text(Vars.e(id, "value")), maxOf(sizeDp * 0.16f, Type.CAPTION), c.role(Role.INK), Weight.MEDIUM, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:FreeForm.kt:if (id != null) c.label(c.text(codeVar), Type.VALUE, c.role(Role.INK), Weight.MEDIUM, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:FreeForm.kt:if (n.props["scroll"] == "true") m = if (mine == Axis.ROW) m.horizontalScroll() else if (mine == Axis.COLUMN) m.verticalScroll() else m</ID>
-    <ID>MaxLineLength:FreeForm.kt:if (show == "both") c.label(c.text(Vars.DATE), maxOf(sp * 0.33f, Type.BODY), c.role(Role.INK_SOFT), align = a, lines = 2)</ID>
-    <ID>MaxLineLength:FreeForm.kt:m = m.border(u.px(n.style.border), u.px(n.style.corner), ink, if (n.style.corner &gt; 0f) RcBorderShape.RoundedRectangle else RcBorderShape.Rectangle)</ID>
-    <ID>MaxLineLength:FreeForm.kt:main(c.size.height, { Modifier.verticalWeight(it) }, Modifier.verticalWeight(1f), { Modifier.height(u.px(it)) }).fillMaxWidth()</ID>
-    <ID>MaxLineLength:FreeForm.kt:main(c.size.width, { Modifier.horizontalWeight(it) }, Modifier.horizontalWeight(1f), { Modifier.width(u.px(it)) }).fillMaxHeight()</ID>
-    <ID>MaxLineLength:FreeForm.kt:paint { color(colour); style(RcPaintStyle.Stroke); strokeWidth(width); strokeCap(RcStrokeCap.Round) }</ID>
-    <ID>MaxLineLength:FreeForm.kt:picture(PictureSlot(slot, if (camera) "/api/camera_proxy/$id" else "attr:$id:entity_picture", w, h, if (camera) 10 else 0, crop = !fit))</ID>
-    <ID>MaxLineLength:FreeForm.kt:scope</ID>
-    <ID>MaxLineLength:FreeForm.kt:this@choicesNode.choiceRow(n.id, "c", shown.map { it to set.word(it) }, { ActionRef(n.id, set.verb, it) }, h, set.icons)</ID>
-    <ID>MaxLineLength:FreeForm.kt:this@freeForm.node(root, this@freeForm.resolve(root, Dims(wDp, hDp), Axis.BOX, Dims(wDp, hDp)), Axis.BOX, pages)</ID>
-    <ID>MaxLineLength:FreeForm.kt:val</ID>
-    <ID>MaxLineLength:FreeForm.kt:val (min, max) = if (domain in setOf("number", "input_number")) (e?.number("min") ?: 0.0) to (e?.number("max") ?: 100.0) else 0.0 to 100.0</ID>
-    <ID>MaxLineLength:FreeForm.kt:val (v, h) = (alignment ?: "top-start").split('-').let { if (it.size == 2) it[0] to it[1] else it[0] to it[0] }</ID>
-    <ID>MaxLineLength:FreeForm.kt:val caption = n.props["caption"]?.takeIf { it.isNotBlank() }?.let { if (it == "@name") id?.let { e -&gt; text(Vars.e(e, "name")) } else literal(it) }</ID>
-    <ID>MaxLineLength:FreeForm.kt:val fixed = kids.filter { weightOf(it) == 0f }.sumOf { main(resolve(it, inner, axis, Dims(0f, 0f))).toDouble() }.toFloat()</ID>
-    <ID>MaxLineLength:FreeForm.kt:val hours = when (n.props["numbers"]) { "all" -&gt; 1..12; "quarters" -&gt; listOf(3, 6, 9, 12); else -&gt; emptyList() }</ID>
-    <ID>MaxLineLength:FreeForm.kt:val icon = n.props["icon"]?.takeIf { it.isNotEmpty() } ?: id?.let { states[it]?.attr("icon") } ?: domain?.let { Catalogue.of(it)?.icon }</ID>
-    <ID>MaxLineLength:FreeForm.kt:val m = sized(n, axis).let { if (n.size.width == "wrap" &amp;&amp; n.size.height == "wrap") it.size(u.px(self.w), u.px(self.h)) else it }</ID>
-    <ID>MaxLineLength:FreeForm.kt:val m = styled(n, axis, pages, base).let { if (n.style.padding == 0f) it.padding(u.px(12f), 0f, u.px(12f), 0f) else it }</ID>
-    <ID>MaxLineLength:FreeForm.kt:val name = n.props["icon"]?.takeIf { it.isNotEmpty() } ?: id?.let { states[it]?.attr("icon") } ?: domain?.let { Catalogue.of(it)?.icon } ?: "gesture-tap"</ID>
-    <ID>MaxLineLength:FreeForm.kt:val named = if (t.effectiveKind() == "nav" &amp;&amp; t.name == null) t.copy(name = t.options["page"]?.let(pages.title)) else t</ID>
-    <ID>MaxLineLength:FreeForm.kt:val self = if (pinH || pinW) content(n).let { Dims(if (pinW) minOf(it.w, given.w) else given.w, if (pinH) minOf(it.h, given.h) else given.h) } else given</ID>
-    <ID>MaxLineLength:FreeForm.kt:val verb = when (domain) { "light" -&gt; "brightness"; "fan" -&gt; "percentage"; "cover" -&gt; "position"; "media_player" -&gt; "volume"; else -&gt; "value" }</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$"root"</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$.</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$Node</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$Node("bar", "progress", size = NodeSize("fill", "wrap"), bind = NodeBinding("sensor.kitchen_temperature"), props = mapOf("min" to "0", "max" to "40"))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$Node("chart", "graph", size = NodeSize("fill", "dp:100"), bind = NodeBinding("sensor.kitchen_temperature"), props = mapOf("hours" to "12"))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$Node("go", "button", props = mapOf("text" to "Page two", "icon" to "arrow-right"), tap = TapAction(TapType.PAGE, page = "two"))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$Node("lamp", "iconbutton", bind = NodeBinding("light.table_lamp"), props = mapOf("iconOn" to "lightbulb-on"))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$Node("onlyOn", "text", bind = NodeBinding("light.table_lamp"), props = mapOf("showWhen" to "on", "animate" to "up"))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$Node("ring", "gauge", bind = NodeBinding("light.living_room"), props = mapOf("size" to "120", "caption" to "@name"))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$Node("sw", "switch", bind = NodeBinding("light.kitchen"), props = listOfNotNull(place?.let { "place" to it }).toMap())</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$Node("ticker", "text", size = NodeSize("dp:120", "wrap"), props = mapOf("text" to "A long line that glides along", "marquee" to "true"))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$Node("title", "text", props = mapOf("text" to "Hello", "fontSize" to "28", "weight" to "700", "color" to "accent"))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$Node("wash", "choices", size = NodeSize("fill", "wrap"), bind = NodeBinding("input_select.washing_program"))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$assertEquals("123", (data["code"] as kotlinx.serialization.json.JsonPrimitive).content, "the code typed on the keypad goes with the arm")</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$assertEquals(1, right.count { it == BoxLayout.END to BoxLayout.TOP } - plain.count { it == BoxLayout.END to BoxLayout.TOP })</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$assertEquals(14, ops(parse(ScreenRenderer.render(screen(dials), tablet, input()).bytes).operations).count { it is DrawTextAnchored })</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$assertEquals(Vars.GONE.toString(), off["e.light.table_lamp.on"]?.value, "the text bound with showWhen=on is hidden")</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$assertTrue(doc.ctx.predicted.keys.any { it.startsWith("heat|temperature|+") }, "predicted: ${doc.ctx.predicted.keys}")</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$fun</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$if (withIcon) Node("$id.head", "row", children = listOf(Node("$id.i", "icon"), Node("$id.t", "text", props = mapOf("fontSize" to "16")))) else Node("$id.t", "text", props = mapOf("fontSize" to "16"))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$p.copy(tiles = emptyList(), root = Node("root.${p.id}", "row", size = NodeSize("fill", "fill"), children = cards))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$private fun ops: List&lt;Operation&gt;</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$private fun parse</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$private fun screen</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$val at20 = doc.vars(states + ("sensor.kitchen_temperature" to states.getValue("sensor.kitchen_temperature").with("20")))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$val at99 = doc.vars(states + ("sensor.kitchen_temperature" to states.getValue("sensor.kitchen_temperature").with("99")))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$val clash = Node("a", "column", children = listOf(Node("x", "tile", tile = Tile("dup", kind = "clock")), Node("dup", "text", bind = NodeBinding("light.kitchen"))))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$val half = doc.vars(states + ("light.living_room" to lamp.with("on", mapOf("brightness" to kotlinx.serialization.json.JsonPrimitive(128)))))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$val row = Node("row", "row", size = NodeSize("fill", "wrap"), props = mapOf("gap" to "12"), children = listOf(card("a", true), card("b", false)))</ID>
-    <ID>MaxLineLength:FreeFormTest.kt:FreeFormTest$val slides = all.filterIsInstance&lt;Component&gt;().map { it.mAnimationSpec }.filter { it.enterAnimation == AnimationSpec.ANIMATION.SLIDE_TOP }</ID>
-    <ID>MaxLineLength:Home.kt:Row</ID>
-    <ID>MaxLineLength:Home.kt:VarValue.string(Vars.t(tileId, "ev.meta"), listOfNotNull(next?.calendar, next?.location).filter { it.isNotBlank() }.joinToString(" · "))</ID>
-    <ID>MaxLineLength:Home.kt:fun</ID>
-    <ID>MaxLineLength:Home.kt:scope</ID>
-    <ID>MaxLineLength:NestingProbeTest.kt:NestingProbeTest$assertEquals(emptyList(), names(bytes), "if this fails, alpha20's loss is fixed and DocContext.build may go back to one pass")</ID>
-    <ID>MaxLineLength:NestingProbeTest.kt:NestingProbeTest$val</ID>
-    <ID>MaxLineLength:RenderTest.kt:RenderTest$assertContains(parse(doc.bytes).getNamedVariables(NamedVariable.STRING_TYPE).toList(), "USER:e.light.living_room.name")</ID>
-    <ID>MaxLineLength:RenderTest.kt:RenderTest$assertEquals(page.tiles.map { it.id }.sorted(), placed.map { it.tile.id }.sorted(), "tiles dropped from ${page.id}")</ID>
-    <ID>MaxLineLength:RenderTest.kt:RenderTest$assertFalse(doc.stale(states + ("light.table_lamp" to lamp.with("on"))), "a state change is a value, not a rebuild")</ID>
-    <ID>MaxLineLength:RenderTest.kt:RenderTest$assertTrue(doc.bytes.asList().windowed(4).any { it == bytes.asList() }, "the light page colour is in the document")</ID>
-    <ID>MaxLineLength:RenderTest.kt:RenderTest$core.getNamedVariables(NamedVariable.INT_TYPE)</ID>
-    <ID>MaxLineLength:RenderTest.kt:RenderTest$private fun input</ID>
-    <ID>MaxLineLength:RenderTest.kt:RenderTest$private fun parse</ID>
-    <ID>MaxLineLength:RenderTest.kt:RenderTest$val doc = AlertRenderer.render(Alert("Doorbell", "Someone is at the door", camera = "camera.front_door", buttons = listOf(AlertButton("Open"))), tablet, input())</ID>
-    <ID>MaxLineLength:RenderTest.kt:RenderTest$val doc = ScreenRenderer.render(screen, tablet, input(runBlocking { RenderDataRepository(ha).forScreen(screen) }))</ID>
-    <ID>MaxLineLength:RenderTest.kt:RenderTest$val ids = ha.states.value.keys.filter { Catalogue.of(it.substringBefore('.'))?.card?.let { c -&gt; c != "none" } == true }</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:RenderedDoc$for (b in ctx.bindings) for (v in runCatching { b.compute(states) }.getOrDefault(emptyList())) if (ctx.declares(v.name)) out[v.name] = v</ID>
+    <ID>CyclomaticComplexMethod:EntityTile.kt:internal fun DocContext.entityTile</ID>
+    <ID>CyclomaticComplexMethod:FreeForm.kt:internal fun DocContext.node</ID>
+    <ID>CyclomaticComplexMethod:FreeFormControls.kt:internal fun DocContext.stepperNode</ID>
+    <ID>CyclomaticComplexMethod:FreeFormLayout.kt:internal fun DocContext.container</ID>
+    <ID>CyclomaticComplexMethod:FreeFormMedia.kt:internal fun DocContext.iconButtonNode</ID>
+    <ID>CyclomaticComplexMethod:FreeFormMetrics.kt:internal fun Node.natural: Dims</ID>
+    <ID>CyclomaticComplexMethod:FreeFormNodes.kt:internal fun DocContext.badgeNode</ID>
+    <ID>CyclomaticComplexMethod:FreeFormNodes.kt:internal fun DocContext.buttonNode</ID>
+    <ID>CyclomaticComplexMethod:FreeFormNodes.kt:internal fun DocContext.textNode</ID>
+    <ID>CyclomaticComplexMethod:InfoCards.kt:internal fun DocContext.weatherCard</ID>
+    <ID>CyclomaticComplexMethod:SpecialtyTiles.kt:fun DocContext.energyFlow</ID>
+    <ID>CyclomaticComplexMethod:ThermostatBind.kt:internal fun DocContext.bindThermostat</ID>
+    <ID>CyclomaticComplexMethod:TileBox.kt:fun tapRef: ActionRef?</ID>
+    <ID>LargeClass:FreeFormTest.kt:FreeFormTest</ID>
+    <ID>LongMethod:Alerts.kt:AlertRenderer$fun render: RenderedDoc</ID>
+    <ID>LongMethod:CardRenderer.kt:CardRenderer$fun render: RenderedDoc</ID>
+    <ID>LongMethod:ClimateCards.kt:internal fun DocContext.climateCard</ID>
+    <ID>LongMethod:ClimateCards.kt:internal fun DocContext.climateDualSetpoint</ID>
+    <ID>LongMethod:DemoHome.kt:DemoHome$@Suppress("CyclomaticComplexMethod") override suspend fun command: JsonElement?</ID>
+    <ID>LongMethod:EntityTile.kt:internal fun DocContext.entityTile</ID>
+    <ID>LongMethod:FreeFormBlocks.kt:private fun DocContext.mediaBarNode</ID>
+    <ID>LongMethod:FreeFormControls.kt:internal fun DocContext.stepperNode</ID>
+    <ID>LongMethod:FreeFormLayout.kt:internal fun DocContext.container</ID>
+    <ID>LongMethod:FreeFormMedia.kt:@Suppress("CyclomaticComplexMethod") internal fun DocContext.dialNode</ID>
+    <ID>LongMethod:FreeFormMedia.kt:internal fun DocContext.analogNode</ID>
+    <ID>LongMethod:FreeFormMedia.kt:internal fun DocContext.gaugeNode</ID>
+    <ID>LongMethod:InfoCards.kt:internal fun DocContext.weatherCard</ID>
+    <ID>LongMethod:MediaCards.kt:internal fun DocContext.mediaCard</ID>
+    <ID>LongMethod:ScreenRenderer.kt:ScreenRenderer$private fun DocContext.navBar</ID>
+    <ID>LongMethod:SpecialtyTiles.kt:fun DocContext.energyFlow</ID>
+    <ID>LongMethod:SpecialtyTiles.kt:internal fun DocContext.climateTile</ID>
+    <ID>LongMethod:SpecialtyTiles.kt:internal fun DocContext.mediaTile</ID>
+    <ID>LongMethod:SpecialtyTiles.kt:internal fun DocContext.personTile</ID>
+    <ID>LongMethod:SpecialtyTiles.kt:internal fun DocContext.weatherTile</ID>
+    <ID>LongMethod:ThermostatBind.kt:internal fun DocContext.bindThermostat</ID>
+    <ID>LongMethod:WeatherPanel.kt:fun DocContext.weatherPanel</ID>
+    <ID>MaxLineLength:EntityTile.kt:internal</ID>
+    <ID>MaxLineLength:FreeFormControls.kt:ChoiceSet$internal</ID>
+    <ID>MaxLineLength:FreeFormControls.kt:val verb = when (domain) { "light" -&gt; "brightness"; "fan" -&gt; "percentage"; "cover" -&gt; "position"; "media_player" -&gt; "volume"; else -&gt; "value" }</ID>
+    <ID>MaxLineLength:FreeFormMedia.kt:val inner = if (i % Metrics.ANALOG_QUARTER_STEP == 0) Metrics.ANALOG_TICK_INNER_MAJOR else Metrics.ANALOG_TICK_INNER_MINOR</ID>
+    <ID>MaxLineLength:FreeFormMetrics.kt:/** About the size [node]'s content takes: a leaf's natural size, a container's children laid end to end, plus padding. */</ID>
+    <ID>MaxLineLength:InfoCards.kt:(width - CardChrome.MEDIA_CTRL_DP - CardChrome.WEATHER_ICON_ROW_DP - CardChrome.PANEL_CORNER_DP - CardChrome.FLOW_KEY_H_DP - CardChrome.CLOSE_KEY_DP - CardChrome.CLOSE_KEY_DP - CardChrome.SECTION_GAP_DP)</ID>
+    <ID>MaxLineLength:Present.kt:Present$fun</ID>
+    <ID>MaxLineLength:Present.kt:Present$private</ID>
     <ID>MaxLineLength:ScreenRenderer.kt:RenderedDoc$fun</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$Modifier.width(c.u.px(minOf(350f, spec.widthDp * 0.42f))).fillMaxHeight().background(c.role(Role.HEADER_DARK))</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$c.key(ActionRef("_", "back", home.toString()), icon = "arrow-left", heightDp = 34f, widthDp = 34f, round = true)</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$c.label(title.uppercase(c.i18n.locale), 10f, c.role(Role.INK), align = RcTextAlign.Center, modifier = Modifier.width(c.u.px(wDp - 4f)))</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$c.navButton(p.title, p.icon ?: if (i == home) "home" else "view-dashboard", buttonW, barH, i == current, ActionRef("_", "page", i.toString()))</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$freeForm(root, 0f, spec.topBar, spec.widthDp, contentH, pageIndex) { id -&gt; screen.pages.firstOrNull { it.id == id }?.title }</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$horizontal = if (count &gt; 2) RcRowHorizontalPositioning.SpaceBetween else RcRowHorizontalPositioning.SpaceEvenly</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$scope</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$this@page</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$val</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer$val named = if (t.effectiveKind() == "nav" &amp;&amp; t.name == null) t.copy(name = screen.pages.firstOrNull { it.id == t.options["page"] }?.title) else t</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Pastel.PURPLE to 0xFF8E6CC9</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Pastel.PURPLE to 0xFFB39DDB</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Pastel.PURPLE to 0xFFC599FF</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Pastel.YELLOW to 0xFFE0A800</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Pastel.YELLOW to 0xFFFFC94D</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Pastel.YELLOW to 0xFFFFE600</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.ACCENT to 0xFF0F9E84</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.ACCENT to 0xFF14E1BA</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.ACCENT_DARK to 0xFF00C8A4</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.HEADER to 0xFF000000</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.HEADER to 0xFF494949</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.HEADER to 0xFFFFFFFF</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.HOME to 0xFF0F9E84</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.HOME to 0xFF14E1BA</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.INK_FAINT to 0xFF5C5C5C</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.INK_FAINT to 0xFF9E9E9E</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.INK_FAINT to 0xFFB5B5B8</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.NAV_LINE to 0xFF03DAC5</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.NAV_LINE to 0xFF0F9E84</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.NAV_LINE to 0xFFFFFFFF</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.PAGE to 0xFF000000</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.PAGE to 0xFF494949</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$Role.PAGE to 0xFFEDEBE7</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$private</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$require(roles.size == Role.entries.size &amp;&amp; pastels.size == Pastel.entries.size) { "a built-in theme names every colour" }</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$return Palette(IntArray(Role.entries.size) { roles.getValue(Role.entries[it]).toInt() }, IntArray(Pastel.entries.size) { pastels.getValue(Pastel.entries[it]).toInt() })</ID>
-    <ID>MaxLineLength:Themes.kt:Themes$val pastels = theme.pastels.mapNotNull { (k, v) -&gt; Pastel.of(k)?.let { p -&gt; parse(v)?.let { p to it } } }.toMap()</ID>
-    <ID>MaxLineLength:ThemesTest.kt:ThemesTest$assertFailsWith&lt;BadRequestException&gt; { ThemeValidator.validate(Theme("mine", "Mine", base = "mine"), emptyList()) }</ID>
-    <ID>MaxLineLength:ThemesTest.kt:ThemesTest$assertFailsWith&lt;BadRequestException&gt; { ThemeValidator.validate(Theme("mine", "Mine", roles = mapOf("card" to "blue")), emptyList()) }</ID>
-    <ID>MaxLineLength:ThemesTest.kt:ThemesTest$val mine = Theme("mine", "Mine", base = "light", roles = mapOf("card" to "#123456", "nope" to "#FFFFFF"), pastels = mapOf("teal" to "#80FF0000"))</ID>
-    <ID>MaxLineLength:ThemesTest.kt:ThemesTest$val offenders = dir.listFiles()!!.filter { it.name != "Themes.kt" &amp;&amp; it.name.endsWith(".kt") &amp;&amp; hex.containsMatchIn(it.readText()) }</ID>
-    <ID>MaxLineLength:ThemesTest.kt:ThemesTest$val ok = ThemeValidator.validate(Theme("mine", " ", roles = mapOf("CARD" to "#abcdef", "nope" to "#000000")), emptyList())</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:Box</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:Column</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:Row</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:VarValue.string(Vars.t(tileId, "action"), action?.let { actionWord(it) } ?: i18n.state("climate", e?.state ?: "off"))</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:VarValue.string(Vars.t(tileId, "current"), e?.number("current_temperature")?.let { i18n.number(it, unit) + "°" } ?: "–")</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:VarValue.string(Vars.t(tileId, "humidity"), e?.number("current_humidity")?.let { i18n.percent(it.toInt()) } ?: "–")</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:c.key(ActionRef(tile.id, "temperature", "+$step"), icon = "plus", heightDp = 64f * k, widthDp = 64f * k, round = true)</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:c.key(ActionRef(tile.id, "temperature", "-$step"), icon = "minus", heightDp = 64f * k, widthDp = 64f * k, round = true)</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:horizontal = androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning.Center</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:i18n.t("state.$action").takeUnless { it == "state.$action" } ?: action.replace('_', ' ').replaceFirstChar { it.titlecase(i18n.locale) }</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:i18n.t("state.$mode").takeUnless { it == "state.$mode" } ?: mode.replace('_', ' ').replaceFirstChar { it.titlecase(i18n.locale) }</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:if</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:listOf(s?.list("hvac_modes")?.joinToString() ?: "", s?.list("fan_modes")?.joinToString() ?: "", (s?.number("current_humidity") != null).toString()).joinToString("|")</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:scope</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:val modes = e?.list("hvac_modes").orEmpty().sortedBy { MODE_ORDER.indexOf(it).let { i -&gt; if (i &lt; 0) MODE_ORDER.size else i } }.take(5)</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:val sweep = target?.let { (((it - lo) / (hi - lo).coerceAtLeast(1.0)).coerceIn(0.0, 1.0) * 360.0).toFloat() } ?: 0f</ID>
-    <ID>MaxLineLength:Tiles.kt:"person", "device_tracker" -&gt; if (asMap) ctx.mapTile(tile, body, named) else ctx.personTile(tile, body, e)</ID>
-    <ID>MaxLineLength:Tiles.kt:"sensor" -&gt; if (tile.options["graph"] == "true" &amp;&amp; body.h &gt;= 120f) ctx.historyTile(tile, body, named) else ctx.entityTile(tile, body, spec, e, named)</ID>
-    <ID>MaxLineLength:Tiles.kt:(listOfNotNull(tile.entityId) + tile.options["people"].orEmpty().split(',').map { it.trim() }.filter { it.isNotEmpty() })</ID>
-    <ID>MaxLineLength:Tiles.kt:/** Solar, the grid and the battery around the house, with the power of each, as Home Assistant's energy settings name them. */</ID>
-    <ID>MaxLineLength:Tiles.kt:/** Whether the tile is a page of its own (the home panel, a full weather or climate tile), drawn without a card from edge to edge. */</ID>
-    <ID>MaxLineLength:Tiles.kt:ActionRef(tile.id, verb, if (v % 1.0 == 0.0) v.toInt().toString() else "%.1f".format(java.util.Locale.ROOT, v))</ID>
-    <ID>MaxLineLength:Tiles.kt:Box</ID>
-    <ID>MaxLineLength:Tiles.kt:Box(Modifier.fillMaxWidth().height(ctx.u.px(HEADER_LINE)).background(ctx.color(Vars.t(tile.id, "line"))))</ID>
-    <ID>MaxLineLength:Tiles.kt:Image(c.image("cam.$id.${tile.id}", w, h), Modifier.fillMaxSize(), contentScale = if (tile.options["fit"] == "whole") RcContentScale.Fit else RcContentScale.Crop)</ID>
-    <ID>MaxLineLength:Tiles.kt:Image(c.image("fav.${tile.id}", w, h), Modifier.fillMaxSize(), contentScale = RcContentScale.Crop, alpha = 0.45f)</ID>
-    <ID>MaxLineLength:Tiles.kt:Row</ID>
-    <ID>MaxLineLength:Tiles.kt:TileBox$data</ID>
-    <ID>MaxLineLength:Tiles.kt:c</ID>
-    <ID>MaxLineLength:Tiles.kt:c.choiceRow(tile.id, "mode", modes.take(4).map { it to c.i18n.state("climate", it) }, { ActionRef(tile.id, "mode", it) }, 40f, MODE_ICONS)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.graph(points, box.w - 28f, (box.h - if (named) 90f else 70f).coerceAtLeast(30f), c.color(Vars.t(tile.id, "icon")), ink2)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.key(ActionRef(tile.id, "next"), icon = "skip-next", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.key(ActionRef(tile.id, "previous"), icon = "skip-previous", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.key(ActionRef(tile.id, "temperature", "+$step"), icon = "plus", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.key(ActionRef(tile.id, "temperature", "+$step"), icon = "plus", heightDp = 48f, widthDp = 48f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.key(ActionRef(tile.id, "temperature", "-$step"), icon = "minus", heightDp = 44f, widthDp = 44f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.key(ActionRef(tile.id, "temperature", "-$step"), icon = "minus", heightDp = 48f, widthDp = 48f, round = true, bg = c.color(Vars.t(tile.id, "fill")), ink = ink)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.label(c.i18n.t(if (key == "battery") "ui.battery_source" else if (key == "home") "ui.house" else "ui.$key"), Type.CAPTION, ink2, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.label(c.i18n.weekday(d.time.withZoneSameInstant(zone)), Type.CAPTION, ink2, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.label(c.text(Vars.e(id, "title")), if (big) Type.TITLE + 2f else Type.BODY, ink, Weight.SEMI_BOLD, lines = if (big) 2 else 1)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.label(c.text(Vars.e(id, "value")), Type.VALUE + 4f, ink, Weight.MEDIUM, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.label(c.text(Vars.t(tile.id, "where")), Type.BODY, c.role(Role.ACCENT_SOFT), Weight.SEMI_BOLD, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.label(listOfNotNull(d.high?.let { "${it.roundToInt()}°" }, d.low?.let { "${it.roundToInt()}°" }).joinToString(" "), Type.CAPTION, ink, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:Tiles.kt:c.label(tile.name ?: c.i18n.t("ui.people_home", "count" to who.count { c.states[it]?.state == "home" }), Type.CAPTION + 1f, c.role(Role.INK), Weight.SEMI_BOLD)</ID>
-    <ID>MaxLineLength:Tiles.kt:VarValue.int(Vars.e(id, "notplaying"), if (s?.state == "playing") Vars.GONE else Vars.VISIBLE)</ID>
-    <ID>MaxLineLength:Tiles.kt:VarValue.int(Vars.e(id, "playing"), if (s?.state == "playing") Vars.VISIBLE else Vars.GONE)</ID>
-    <ID>MaxLineLength:Tiles.kt:VarValue.string(Vars.e(id, "artist"), listOfNotNull(s?.attr("media_artist"), s?.attr("media_album_name")).joinToString(" · ").ifEmpty { i18n.state("media_player", s?.state ?: "off") })</ID>
-    <ID>MaxLineLength:Tiles.kt:fun</ID>
-    <ID>MaxLineLength:Tiles.kt:fun px</ID>
-    <ID>MaxLineLength:Tiles.kt:if (bigValue &amp;&amp; state != null) c.label(state, if (box.h &gt;= 150f) Type.VALUE else Type.HEADLINE, ink, Weight.MEDIUM)</ID>
-    <ID>MaxLineLength:Tiles.kt:if (entity.isNotEmpty()) c.label(c.text(Vars.e(entity, "state")), if (compact) Type.CAPTION - 1f else Type.CAPTION, c.role(Role.KEY_ON_INK), Weight.SEMI_BOLD, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:Tiles.kt:if (name != null) c.label(name, Type.BODY + if (box.h &gt;= 150f) 2f else 0f, ink, Weight.SEMI_BOLD, lines = if (state == null || bigValue) 2 else 1)</ID>
-    <ID>MaxLineLength:Tiles.kt:if (name != null) this@entityTile.label(name, Type.DISPLAY * 0.8f, ink, Weight.SEMI_BOLD, align = RcTextAlign.Center)</ID>
-    <ID>MaxLineLength:Tiles.kt:if (named) c.label(tile.name ?: tile.options["title"] ?: "", Type.BODY + 1f, ink, Weight.SEMI_BOLD, lines = 2)</ID>
-    <ID>MaxLineLength:Tiles.kt:if (state != null) this@entityTile.label(state, if (bigValue) Type.HEADLINE else Type.BODY, ink2, if (bigValue) Weight.MEDIUM else Weight.NORMAL)</ID>
-    <ID>MaxLineLength:Tiles.kt:picture(PictureSlot("cam.$id.${tile.id}", "/api/camera_proxy/$id", w, h, every, crop = tile.options["fit"] != "whole"))</ID>
-    <ID>MaxLineLength:Tiles.kt:private</ID>
-    <ID>MaxLineLength:Tiles.kt:scope</ID>
-    <ID>MaxLineLength:Tiles.kt:scope.Image(image(slot, px, px), Modifier.size(u.px(sizeDp), u.px(sizeDp)).clip(rounded(sizeDp / 2f)), contentScale = RcContentScale.Crop)</ID>
-    <ID>MaxLineLength:Tiles.kt:this@navTile.icon(tile.icon ?: "arrow-right-circle", if (named) 32f else minOf(56f, box.h * 0.45f), color(Vars.t(tile.id, "icon")))</ID>
-    <ID>MaxLineLength:Tiles.kt:tile.effectiveKind() == "nav" -&gt; tile.options["page"]?.let(pageIndex)?.let { ActionRef("_", "page", it.toString()) }</ID>
-    <ID>MaxLineLength:Tiles.kt:val (min, max) = if (tile.domain in setOf("number", "input_number")) (e?.number("min") ?: 0.0) to (e?.number("max") ?: 100.0) else 0.0 to 100.0</ID>
-    <ID>MaxLineLength:Tiles.kt:val m = Modifier.size(u.px(box.w), u.px(box.h)).clip(rounded(10f)).background(role(Role.CARD_EDGE)).padding(u.px(CARD_EDGE))</ID>
-    <ID>MaxLineLength:Tiles.kt:val spots = mapOf("solar" to (cx to r + 16f), "grid" to (r + 14f to cy), "battery" to (wDp - r - 14f to cy), "home" to (cx to hDp - r - 26f))</ID>
-    <ID>MaxLineLength:Tiles.kt:val tint = when (key) { "solar" -&gt; Pastel.YELLOW; "grid" -&gt; Pastel.BLUE; "battery" -&gt; Pastel.GREEN; else -&gt; Pastel.GREY }</ID>
-    <ID>MaxLineLength:Tiles.kt:val verb = when (tile.domain) { "light" -&gt; "brightness"; "fan" -&gt; "percentage"; "cover" -&gt; "position"; "media_player" -&gt; "volume"; else -&gt; "value" }</ID>
-    <ID>MaxLineLength:WeatherPanel.kt:"humidity" -&gt; it.number(key)?.let { v -&gt; i18n.t("ui.humidity", "value" to i18n.percent(v.roundToInt())) }</ID>
-    <ID>MaxLineLength:WeatherPanel.kt:"wind_speed" -&gt; measure(it, key, "wind_speed_unit", "km/h")?.let { v -&gt; i18n.t("ui.wind", "value" to v) }</ID>
-    <ID>MaxLineLength:WeatherPanel.kt:Column</ID>
-    <ID>MaxLineLength:WeatherPanel.kt:Row</ID>
-    <ID>MaxLineLength:WeatherPanel.kt:c.label(c.i18n.fullWeekday(d.time.withZoneSameInstant(zone)), small(16f, k), ink, align = RcTextAlign.Center)</ID>
-    <ID>TooManyFunctions:CardRenderer.kt:CardRenderer</ID>
-    <ID>TooManyFunctions:FreeForm.kt:tech.shaffersoftworks.remotescreens.server.render.FreeForm.kt</ID>
-    <ID>TooManyFunctions:Tiles.kt:tech.shaffersoftworks.remotescreens.server.render.Tiles.kt</ID>
+    <ID>MaxLineLength:ScreenRenderer.kt:RenderedDoc$val entities: Set&lt;String&gt; = (docContext.bindings.mapNotNull { it.entityId } + docContext.structure.map { it.first }).toSet()</ID>
+    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer.NavStyle$/** How navigation buttons look: icon, word or both, [layoutScale] against the default bar, the current page's fill. */</ID>
+    <ID>MaxLineLength:SessionLifecycle.kt:SessionLifecycle$host.screenId = layoutRepository.layout.value.players.firstOrNull { it.deviceId == host.hello.deviceId }?.screenId</ID>
+    <ID>MaxLineLength:SpecialtyTiles.kt:/** Solar, the grid and the battery around the house, with the power of each, as Home Assistant's energy settings name them. */</ID>
+    <ID>MaxLineLength:SpecialtyTiles.kt:fun</ID>
+    <ID>MaxLineLength:SpecialtyTiles.kt:fun px</ID>
+    <ID>MaxLineLength:SpecialtyTiles.kt:val tint = when (key) { "solar" -&gt; Pastel.YELLOW; "grid" -&gt; Pastel.BLUE; "battery" -&gt; Pastel.GREEN; else -&gt; Pastel.GREY }</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:val fanW = if (fans.isEmpty()) 0f else ThermostatMetrics.FAN_BUTTON_WIDTH_DP * layoutScale + ThermostatMetrics.MODE_ROW_GAP_DP * layoutScale</ID>
+    <ID>MaxLineLength:TileBox.kt:/** Whether the tile is a page of its own (the home panel, a full weather or climate tile), drawn without a card from edge to edge. */</ID>
+    <ID>MaxLineLength:TileBox.kt:TileBox$data</ID>
+    <ID>MaxLineLength:TileChrome.kt:entityId != null &amp;&amp; entityState != null &amp;&amp; spec != null &amp;&amp; spec.toggle &amp;&amp; (spec.domain != "cover" &amp;&amp; spec.domain != "lock")</ID>
+    <ID>MaxLineLength:TileChrome.kt:internal</ID>
   </CurrentIssues>
 </SmellBaseline>

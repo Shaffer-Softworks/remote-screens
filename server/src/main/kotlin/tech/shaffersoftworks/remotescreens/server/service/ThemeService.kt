@@ -13,7 +13,10 @@ class ThemeService(private val layoutRepository: LayoutRepository) {
     fun allThemes(): List<ResolvedTheme> = Themes.all(layoutRepository.layout.value.themes)
 
     fun saveTheme(themeId: String, theme: Theme): ResolvedTheme {
-        val validated = ThemeValidator.validate(theme.copy(id = themeId), layoutRepository.layout.value.themes)
+        val validated = ThemeValidator.validate(
+            theme.copy(id = themeId),
+            layoutRepository.layout.value.themes,
+        )
         layoutRepository.update { layout ->
             val themes = if (layout.themes.any { it.id == themeId }) {
                 layout.themes.map { if (it.id == themeId) validated else it }
@@ -26,7 +29,13 @@ class ThemeService(private val layoutRepository: LayoutRepository) {
     }
 
     fun deleteTheme(themeId: String) {
-        if (Themes.isBuiltin(themeId)) throw BadRequestException("A built-in theme cannot be deleted")
-        layoutRepository.update { layout -> layout.copy(themes = layout.themes.filterNot { it.id == themeId }) }
+        if (Themes.isBuiltin(
+                themeId,
+            )) {
+            throw BadRequestException("A built-in theme cannot be deleted")
+        }
+        layoutRepository.update { layout -> layout.copy(
+            themes = layout.themes.filterNot { it.id == themeId },
+        ) }
     }
 }

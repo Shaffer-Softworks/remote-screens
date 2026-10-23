@@ -62,5 +62,22 @@
   "ui.adjust_temperature": "Regola la temperatura",
   "ui.current_temp": "Temp. attuale",
   "ui.current_humidity": "Umidità attuale",
-  "ui.fan": "Ventola"
+  "ui.fan": "Ventola",
+  "ui.fan_mode": "Modalità ventola",
+  "ui.oscillate": "Oscillazione",
+  "ui.direction": "Direzione",
+  "ui.forward": "Avanti",
+  "ui.reverse": "Indietro",
+  "ui.target_humidity": "Umidità obiettivo",
+  "ui.swing": "Swing",
+  "ui.low": "Basso",
+  "ui.high": "Alto",
+  "ui.no_todos": "Nessuna attività aperta",
+  "ui.cancel": "Annulla",
+  "ui.finish": "Termina",
+  "ui.reset": "Reimposta",
+  "ui.tone": "Tono",
+  "ui.empty_text": "(vuoto)",
+  "ui.datetime_hint": "Modifica questo helper in Home Assistant",
+  "ui.temperature_outside_now": "Temperatura esterna ora"
 }

@@ -1,0 +1,18 @@
+domain: siren
+name: Siren
+icon: bullhorn-outline
+icon_on: bullhorn
+toggle: true
+on_states: [on]
+tap: toggle
+card: siren
+sizes: [1x1, 2x1]
+actions:
+  toggle: {service: siren.toggle}
+  on: {service: siren.turn_on}
+  off: {service: siren.turn_off}
+  tone: {service: siren.turn_on, data: {tone: $arg}}
+predict:
+  toggle: {state: "!"}
+  on: {state: "on"}
+  off: {state: "off"}

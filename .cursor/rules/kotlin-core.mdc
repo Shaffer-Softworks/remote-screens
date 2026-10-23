@@ -1,0 +1,23 @@
+---
+description: Apply when writing or refactoring any Kotlin files (*.kt, *.kts)
+globs: ["*.kt", "*.kts"]
+alwaysApply: true
+---
+# Kotlin Core Development Standards
+
+## Basic Coding Principles
+- Use English for all code, variable naming, and documentation.
+- Always declare explicit types for public/internal function parameters and return values.
+- Avoid using `Any`. Create concrete domain models or sealed classes/interfaces instead.
+- Start function names with a verb (e.g., `fetchUserData`, `calculateTotal`).
+- Use boolean variables prefixed with state verbs (e.g., `isLoading`, `hasError`, `canDelete`).
+
+## Architecture & Code Style
+- Use PascalCase for classes, objects, interfaces, and Composable functions.
+- Use camelCase for methods, variables, and properties.
+- Eliminate magic numbers; extract values into clear `const val` companion properties or build config constants.
+
+## Coroutines & Threading
+- Prefer Kotlin coroutines and `Flow`/`StateFlow` for asynchronous logic and reactive state propagation.
+- Never block the Main thread. Always swap contexts safely via `withContext(Dispatchers.IO)` for heavy operations or I/O.
+- Always provide structure to scopes; inject a `CoroutineDispatcher` or utilize custom scopes bound to lifecycle objects rather than hardcoding global scopes (`GlobalScope`).

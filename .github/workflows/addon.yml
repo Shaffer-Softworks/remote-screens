@@ -4,33 +4,99 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 0.1.14, no v prefix). Files on main need not match yet."
+        required: true
+        type: string
 
 permissions:
   contents: read
 
+# Branch protection blocks bot commits on main, so workflow_dispatch tags and builds from the
+# version input (stamping VERSION/config only in the runner), then opens a PR to sync those
+# files on main. GITHUB_TOKEN tag pushes do not start a second run; a manual v* tag push still
+# builds via the push path alone.
 jobs:
+  tag:
+    name: Create release tag
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Create tag
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -eu
+          version="${INPUT_VERSION#v}"
+          # Digits and [A-Za-z0-9.-] only — no '/' (breaks sed/paths) or other shell metacharacters.
+          echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.+-][0-9A-Za-z.-]+)*$' \
+            || { echo "Invalid version: $INPUT_VERSION (expected e.g. 0.1.14)"; exit 1; }
+          tag="v$version"
+          head=$(git rev-parse HEAD)
+          git fetch origin "refs/tags/$tag:refs/tags/$tag" 2>/dev/null || true
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            existing=$(git rev-parse "refs/tags/$tag^{}")
+            if [ "$existing" = "$head" ]; then
+              echo "Tag $tag already points at $(git rev-parse --short HEAD); continuing with the release build."
+              exit 0
+            fi
+            echo "Tag $tag already exists at a different commit"; exit 1
+          fi
+          git tag "$tag"
+          git push origin "$tag"
+          echo "Created $tag on $(git rev-parse --short HEAD); continuing with the release build."
+
   package:
     name: Player app and add-on files
+    needs: [tag]
+    if: |
+      always() && !cancelled() && (
+        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+        (github.event_name == 'workflow_dispatch' && needs.tag.result == 'success')
+      )
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Version
         id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          version=$(cat addon/VERSION)
-          grep -q "^version: \"$version\"$" addon/config.yaml || { echo "addon/config.yaml is not $version"; exit 1; }
-          if [ "${GITHUB_REF_TYPE}" = tag ] && [ "${GITHUB_REF_NAME}" != "v$version" ]; then
-            echo "Tag ${GITHUB_REF_NAME} does not match addon/VERSION $version"; exit 1
+          set -eu
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            version="${INPUT_VERSION#v}"
+            tag="v$version"
+          else
+            tag="${GITHUB_REF_NAME}"
+            version="${tag#v}"
           fi
+          echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.+-][0-9A-Za-z.-]+)*$' \
+            || { echo "Invalid version: $version"; exit 1; }
+          # Stamp for this build only; main is updated via the version-sync PR after release.
+          printf '%s\n' "$version" > addon/VERSION
+          sed -i "s|^version: \".*\"$|version: \"$version\"|" addon/config.yaml
+          grep -q "^version: \"$version\"$" addon/config.yaml \
+            || { echo "Failed to stamp addon/config.yaml to $version"; exit 1; }
+          echo "Stamped addon/VERSION and config.yaml to $version for this build."
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v6
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -45,18 +111,18 @@ jobs:
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/player.jks"
             export PLAYER_KEYSTORE="$RUNNER_TEMP/player.jks"
-          elif [ "${GITHUB_REF_TYPE}" = tag ]; then
+          else
             echo "A release needs the PLAYER_KEYSTORE_* secrets: tablets only update to an app signed with the same key"; exit 1
           fi
           ./gradlew :player:assembleRelease
           cp player/build/outputs/apk/release/player-release.apk remote-screens.apk
       - name: Add-on files
         run: tools/package_addon.sh remote-screens.apk
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: addon-dist
           path: addon/dist/
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: apk
           path: remote-screens.apk
@@ -76,7 +142,9 @@ jobs:
           - arch: aarch64
             platform: linux/arm64
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.package.outputs.tag }}
       - uses: actions/download-artifact@v8
         with:
           name: addon-dist
@@ -95,7 +163,7 @@ jobs:
         with:
           context: addon
           platforms: ${{ matrix.platform }}
-          push: ${{ github.ref_type == 'tag' }}
+          push: true
           build-args: |
             BUILD_ARCH=${{ matrix.arch }}
             BUILD_VERSION=${{ needs.package.outputs.version }}
@@ -108,19 +176,122 @@ jobs:
   release:
     name: GitHub release
     needs: [package, image]
-    if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.package.outputs.tag }}
       - uses: actions/download-artifact@v8
         with:
           name: apk
       - name: Release with the player app
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.package.outputs.tag }}
+          VERSION: ${{ needs.package.outputs.version }}
         run: |
-          notes=$(awk '/^## /{n++} n==1 && !/^## /' addon/CHANGELOG.md)
-          gh release create "$GITHUB_REF_NAME" remote-screens.apk --title "$GITHUB_REF_NAME" --notes "$notes" \
-            || gh release upload "$GITHUB_REF_NAME" remote-screens.apk --clobber
+          set -eu
+          if grep -q "^## ${VERSION}$" addon/CHANGELOG.md; then
+            notes=$(awk '/^## /{n++} n==1 && !/^## /' addon/CHANGELOG.md)
+            gh release create "$TAG" remote-screens.apk --title "$TAG" --notes "$notes" \
+              || gh release upload "$TAG" remote-screens.apk --clobber
+          else
+            gh release create "$TAG" remote-screens.apk --title "$TAG" --generate-notes \
+              || gh release upload "$TAG" remote-screens.apk --clobber
+          fi
+
+  version-pr:
+    name: Version sync PR
+    needs: [package, release]
+    if: needs.release.result == 'success'
+    # Publish already succeeded; a blocked sync PR should not fail the release run.
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Open PR to sync version files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.package.outputs.version }}
+          TAG: ${{ needs.package.outputs.tag }}
+        run: |
+          set -eu
+          current=$(cat addon/VERSION)
+          if [ "$current" = "$VERSION" ] && grep -q "^version: \"$VERSION\"$" addon/config.yaml; then
+            echo "main already has $VERSION; no sync PR needed."
+            exit 0
+          fi
+
+          branch="chore/sync-version-$VERSION"
+          git checkout -B "$branch" origin/main
+
+          printf '%s\n' "$VERSION" > addon/VERSION
+          sed -i "s|^version: \".*\"$|version: \"$VERSION\"|" addon/config.yaml
+          if [ ! -f addon/CHANGELOG.md ] || ! grep -q "^## ${VERSION}$" addon/CHANGELOG.md; then
+            rest=""
+            if [ -f addon/CHANGELOG.md ]; then
+              # Drop the leading "# Changelog" heading from the existing file.
+              rest=$(tail -n +2 addon/CHANGELOG.md | sed -e '1{/^$/d;}')
+            fi
+            {
+              echo "# Changelog"
+              echo
+              echo "## $VERSION"
+              echo
+              echo "- See the [$TAG](https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG) release notes; replace this line with curated notes before merging."
+              echo
+              if [ -n "$rest" ]; then
+                printf '%s\n' "$rest"
+              fi
+            } > addon/CHANGELOG.md.new
+            mv addon/CHANGELOG.md.new addon/CHANGELOG.md
+          fi
+
+          if git diff --quiet; then
+            echo "No file changes after stamp; nothing to open."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add addon/VERSION addon/config.yaml addon/CHANGELOG.md
+          git commit -m "chore(release): sync $VERSION on main"
+          git push -u origin "HEAD:$branch" --force-with-lease
+
+          body=$(printf '%s\n' \
+            "## Summary" \
+            "- Sets \`addon/VERSION\` and \`addon/config.yaml\` to **${VERSION}** so main matches tag \`${TAG}\`." \
+            "- Adds a changelog stub if one was missing (edit before merge if you want curated notes)." \
+            "" \
+            "Opened automatically after the Release workflow finished building \`${TAG}\`." \
+            "" \
+            "## Test plan" \
+            "- [ ] Confirm version files match \`${VERSION}\`" \
+            "- [ ] Replace the changelog stub with real notes if needed" \
+            "- [ ] Merge so Supervisor / the repo stay in sync with the published add-on")
+
+          if gh pr view "$branch" --json number --jq .number >/dev/null 2>&1; then
+            echo "PR for $branch already exists; branch updated."
+            gh pr edit "$branch" --body "$body"
+            gh pr view "$branch" --json url --jq .url
+            exit 0
+          fi
+
+          if gh pr create --base main --head "$branch" \
+            --title "chore(release): sync $VERSION on main" \
+            --body "$body"; then
+            exit 0
+          fi
+
+          echo "::warning::Could not open the version sync PR (often: repo setting 'Allow GitHub Actions to create and approve pull requests' is off)."
+          echo "Branch pushed: $branch"
+          echo "Open manually: https://github.com/${GITHUB_REPOSITORY}/compare/main...${branch}?expand=1"
+          exit 1

@@ -1,7 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.service
 
 import tech.shaffersoftworks.remotescreens.server.data.layout.LayoutRepository
-import tech.shaffersoftworks.remotescreens.server.routes.model.CreateScreenRequest
 import tech.shaffersoftworks.remotescreens.server.service.validation.ScreenValidator
 import tech.shaffersoftworks.remotescreens.shared.DeviceSize
 import tech.shaffersoftworks.remotescreens.shared.Grid
@@ -76,7 +75,13 @@ class ScreenService(private val layoutRepository: LayoutRepository) {
         layoutRepository.update { layout ->
             layout.copy(
                 screens = layout.screens.filterNot { it.id == screenId },
-                players = layout.players.map { if (it.screenId == screenId) it.copy(screenId = null) else it },
+                players = layout.players.map { if (it.screenId == screenId) {
+                    it.copy(
+                        screenId = null,
+                    )
+                } else {
+                    it
+                } },
             )
         }
     }
@@ -86,7 +91,13 @@ class ScreenService(private val layoutRepository: LayoutRepository) {
         layoutRepository.update { layout ->
             layout.copy(
                 screens = layout.screens.map { screen ->
-                    if (screen.id == screenId) screen.copy(settings = change(screen.settings).validated()) else screen
+                    if (screen.id == screenId) {
+                        screen.copy(
+                            settings = change(screen.settings).validated(),
+                        )
+                    } else {
+                        screen
+                    }
                 },
             )
         }
@@ -97,7 +108,9 @@ class ScreenService(private val layoutRepository: LayoutRepository) {
         if (!exists(screenId)) return false
         updateSettings(screenId) { current ->
             val json = LayoutRepository.JSON
-            val merged = JsonObject(json.encodeToJsonElement(ScreenSettings.serializer(), current).jsonObject + patch)
+            val merged = JsonObject(
+                json.encodeToJsonElement(ScreenSettings.serializer(), current).jsonObject + patch,
+            )
             json.decodeFromJsonElement(ScreenSettings.serializer(), merged)
         }
         return true

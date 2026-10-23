@@ -1,0 +1,19 @@
+domain: timer
+name: Timer
+icon: timer-outline
+icon_on: timer
+toggle: true
+on_states: [active, paused]
+tap: card
+card: timer
+sizes: [1x1, 2x1, 2x2]
+actions:
+  start: {service: timer.start}
+  pause: {service: timer.pause}
+  cancel: {service: timer.cancel}
+  finish: {service: timer.finish}
+predict:
+  start: {state: "active"}
+  pause: {state: "paused"}
+  cancel: {state: "idle"}
+  finish: {state: "idle"}

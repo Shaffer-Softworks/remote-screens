@@ -11,7 +11,17 @@ export interface Pastel {
 }
 
 /** Pastel keys are stored in layouts: never rename one. */
-export const PASTEL_KEYS = ['yellow', 'orange', 'red', 'pink', 'purple', 'blue', 'teal', 'green', 'grey'] as const
+export const PASTEL_KEYS = [
+  'yellow',
+  'orange',
+  'red',
+  'pink',
+  'purple',
+  'blue',
+  'teal',
+  'green',
+  'grey',
+] as const
 
 const BY_DOMAIN: Record<string, string> = {
   light: 'yellow',
@@ -42,20 +52,47 @@ export function setThemes(list: ResolvedTheme[]): void {
 
 /** Theme [id], or the default for an id nobody knows (as the add-on resolves it). */
 export function themeById(id: string | undefined): ResolvedTheme | undefined {
-  return themes.value.find((t) => t.id === id) ?? themes.value.find((t) => t.id === DEFAULT_THEME) ?? themes.value[0]
+  return (
+    themes.value.find(theme => theme.id === id) ??
+    themes.value.find(theme => theme.id === DEFAULT_THEME) ??
+    themes.value[0]
+  )
 }
 
 export const activeTheme = computed(() => themeById(activeThemeId.value))
 
 /** The pastels of the active theme, kept in place so templates and lists of keys can use it directly. */
-export const PASTELS: Pastel[] = reactive(PASTEL_KEYS.map((key) => ({ key, color: '' })))
+export const PASTELS: Pastel[] = reactive(PASTEL_KEYS.map(key => ({ key, color: '' })))
 
 /** The colours offered for a background: the surface roles, then the pastels. */
 export const BACKGROUND_SWATCHES = [
-  'card', 'card_header', 'page', 'header', 'header_dark', 'nav', 'key', 'track', 'accent', 'blue', 'ok', 'warn', 'danger', ...PASTEL_KEYS,
+  'card',
+  'card_header',
+  'page',
+  'header',
+  'header_dark',
+  'nav',
+  'key',
+  'track',
+  'accent',
+  'blue',
+  'ok',
+  'warn',
+  'danger',
+  ...PASTEL_KEYS,
 ]
 /** The colours offered for a line or ink. */
-export const INK_SWATCHES = ['ink', 'ink_soft', 'ink_dim', 'ink_dark', 'accent', 'nav_line', ...PASTEL_KEYS]
+export const INK_SWATCHES = [
+  'ink',
+  'ink_soft',
+  'ink_dim',
+  'ink_dark',
+  'accent',
+  'accent_soft',
+  'accent_dark',
+  'nav_line',
+  ...PASTEL_KEYS,
+]
 
 /** `#AARRGGBB` (the add-on's order) as CSS's `#RRGGBBAA`; `#RRGGBB` as it is. */
 export function cssColor(hex: string | undefined): string | undefined {
@@ -71,20 +108,56 @@ export function isHex(value: string | undefined): value is string {
 }
 
 /** The CSS colour of a role or pastel key or of a hex colour, or undefined for none. */
-export function colorOf(key: string | undefined, theme: ResolvedTheme | undefined = activeTheme.value): string | undefined {
+export function colorOf(
+  key: string | undefined,
+  theme: ResolvedTheme | undefined = activeTheme.value,
+): string | undefined {
   if (isHex(key)) return cssColor(key)
   if (!key || !theme) return undefined
   return cssColor(theme.pastels[key] ?? theme.roles[key])
 }
 
+/** Resolve [value] to a stored hex (`#RRGGBB` or `#AARRGGBB`), or undefined when unknown. */
+function hexOf(value: string | undefined, theme: ResolvedTheme | undefined): string | undefined {
+  const hex = isHex(value)
+    ? value
+    : (value && theme && (theme.pastels[value] ?? theme.roles[value])) || undefined
+  return isHex(hex) ? hex : undefined
+}
+
 /** [value] (a key or hex colour) as `#rrggbb` for a colour input, dropping any alpha; black when it is unknown. */
-export function rgbOf(value: string | undefined, theme: ResolvedTheme | undefined = activeTheme.value): string {
-  const hex = isHex(value) ? value : (value && theme && (theme.pastels[value] ?? theme.roles[value])) || undefined
-  return isHex(hex) ? `#${hex.slice(-6)}`.toLowerCase() : '#000000'
+export function rgbOf(
+  value: string | undefined,
+  theme: ResolvedTheme | undefined = activeTheme.value,
+): string {
+  const hex = hexOf(value, theme)
+  return hex ? `#${hex.slice(-6)}`.toLowerCase() : '#000000'
+}
+
+/** Alpha byte (0–255) of [value]; opaque when it is a 6-digit hex, a theme key without AA, or unknown. */
+export function alphaOf(
+  value: string | undefined,
+  theme: ResolvedTheme | undefined = activeTheme.value,
+): number {
+  const hex = hexOf(value, theme)
+  return hex && hex.length === 9 ? parseInt(hex.slice(1, 3), 16) : 0xff
+}
+
+/** `#RRGGBB` when [alpha] is opaque, else `#AARRGGBB` (the add-on's order). [rgb] may be `#rrggbb` from a colour input. */
+export function packHex(rgb: string, alpha: number = 0xff): string {
+  const body = rgb.replace(/^#/, '').slice(-6).toUpperCase()
+  const alphaByte = Math.min(255, Math.max(0, Math.round(alpha)))
+  return alphaByte === 0xff
+    ? `#${body}`
+    : `#${alphaByte.toString(16).padStart(2, '0').toUpperCase()}${body}`
 }
 
 /** The colour a tile lights up in: its own pastel or hex colour, else its domain's. */
-export function pastel(key: string | undefined, domain: string | undefined, theme: ResolvedTheme | undefined = activeTheme.value): Pastel {
+export function pastel(
+  key: string | undefined,
+  domain: string | undefined,
+  theme: ResolvedTheme | undefined = activeTheme.value,
+): Pastel {
   if (isHex(key)) return { key, color: cssColor(key)! }
   let k = key ?? (domain && BY_DOMAIN[domain]) ?? 'teal'
   if (!(PASTEL_KEYS as readonly string[]).includes(k)) k = 'teal'
@@ -95,18 +168,19 @@ export function pastel(key: string | undefined, domain: string | undefined, them
 export function themeVars(theme: ResolvedTheme | undefined): Record<string, string> {
   const out: Record<string, string> = {}
   if (!theme) return out
-  for (const [k, v] of Object.entries(theme.roles)) out[`--rc-${k.replace(/_/g, '-')}`] = cssColor(v)!
-  for (const [k, v] of Object.entries(theme.pastels)) out[`--rc-p-${k}`] = cssColor(v)!
+  for (const [key, value] of Object.entries(theme.roles))
+    out[`--rc-${key.replace(/_/g, '-')}`] = cssColor(value)!
+  for (const [key, value] of Object.entries(theme.pastels)) out[`--rc-p-${key}`] = cssColor(value)!
   return out
 }
 
 watchEffect(
   () => {
-    const t = activeTheme.value
-    for (const p of PASTELS) p.color = cssColor(t?.pastels[p.key]) ?? ''
+    const theme = activeTheme.value
+    for (const pastel of PASTELS) pastel.color = cssColor(theme?.pastels[pastel.key]) ?? ''
     if (typeof document === 'undefined') return
     const root = document.documentElement.style
-    for (const [k, v] of Object.entries(themeVars(t))) root.setProperty(k, v)
+    for (const [key, value] of Object.entries(themeVars(theme))) root.setProperty(key, value)
   },
   { flush: 'sync' },
 )

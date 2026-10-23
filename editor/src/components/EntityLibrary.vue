@@ -11,56 +11,69 @@ const props = defineProps<{ page: Page }>()
 const emit = defineEmits<{ add: [source: { entityId?: string; kind?: string }] }>()
 
 const query = ref('')
-const onPage = computed(() => new Set(props.page.tiles.map((t) => t.entityId).filter(Boolean)))
+const onPage = computed(() => new Set(props.page.tiles.map(tile => tile.entityId).filter(Boolean)))
 
 /** Tiles that are no entity. History and favourite music are an entity shown another way (see the tile drawer). */
 const KINDS = ['home', 'clock', 'bedside', 'nav', 'energy', 'map']
 
-/** Entity types with a tile; the rest are left out. */
-const supported = (e: EntityInfo) => e.domain in CATALOGUE
-
 const groups = computed(() => {
-  const q = query.value.trim().toLowerCase()
-  const match = (e: EntityInfo) => !q || e.name.toLowerCase().includes(q) || e.entityId.includes(q)
-  const areaName = new Map(state.areas.map((a) => [a.id, a.name]))
+  const needle = query.value.trim().toLowerCase()
+  const match = (entity: EntityInfo) =>
+    !needle || entity.name.toLowerCase().includes(needle) || entity.entityId.includes(needle)
+  const areaName = new Map(state.areas.map(area => [area.id, area.name]))
   const by = new Map<string, EntityInfo[]>()
-  for (const e of state.entities) {
-    if (!supported(e) || !match(e)) continue
-    const key = (e.area && areaName.get(e.area)) || 'No area'
-    by.set(key, [...(by.get(key) ?? []), e])
+  for (const entity of state.entities) {
+    if (!match(entity)) continue
+    const key = (entity.area && areaName.get(entity.area)) || 'No area'
+    by.set(key, [...(by.get(key) ?? []), entity])
   }
-  return [...by.entries()].sort(([a], [b]) => (a === 'No area' ? 1 : b === 'No area' ? -1 : a.localeCompare(b)))
+  return [...by.entries()].sort(([areaA], [areaB]) =>
+    areaA === 'No area' ? 1 : areaB === 'No area' ? -1 : areaA.localeCompare(areaB),
+  )
 })
 
 const kinds = computed(() =>
   Object.entries(CATALOGUE)
     .filter(([key]) => KINDS.includes(key))
-    .filter(([, s]) => !query.value || s.name.toLowerCase().includes(query.value.toLowerCase())),
+    .filter(
+      ([, spec]) => !query.value || spec.name.toLowerCase().includes(query.value.toLowerCase()),
+    ),
 )
 
 const open = ref<Record<string, boolean>>({})
-const isOpen = (area: string) => query.value.trim() !== '' || (open.value[area] ?? groups.value.length <= 3)
+const isOpen = (area: string) =>
+  query.value.trim() !== '' || (open.value[area] ?? groups.value.length <= 3)
 
-function drag(e: DragEvent, source: { entityId?: string; kind?: string }): void {
-  const t = newTile(source, 0, 0)
-  dragged.value = { type: 'new', ...source, w: t.full ? 1 : t.w, h: t.full ? 1 : t.h }
-  e.dataTransfer?.setData('text/plain', source.entityId ?? source.kind ?? '')
+function drag(event: DragEvent, source: { entityId?: string; kind?: string }): void {
+  const preview = newTile(source, 0, 0)
+  dragged.value = {
+    type: 'new',
+    ...source,
+    w: preview.full ? 1 : preview.w,
+    h: preview.full ? 1 : preview.h,
+  }
+  event.dataTransfer?.setData('text/plain', source.entityId ?? source.kind ?? '')
 }
 
-function icon(e: EntityInfo): string {
-  return e.icon ?? CATALOGUE[e.domain]?.icon ?? 'help-circle-outline'
+function icon(entity: EntityInfo): string {
+  return entity.icon ?? CATALOGUE[entity.domain]?.icon ?? 'help-circle-outline'
 }
 </script>
 
 <template>
   <div class="library">
-    <input v-model="query" type="search" placeholder="Search entities" aria-label="Search entities" />
+    <input
+      v-model="query"
+      type="search"
+      placeholder="Search entities"
+      aria-label="Search entities"
+    />
     <p class="muted hint">Drag onto the page, or click to add at the first free spot.</p>
 
     <section v-if="kinds.length">
       <h3>Other tiles</h3>
       <button
-        v-for="[key, s] in kinds"
+        v-for="[key, spec] in kinds"
         :key="key"
         class="item"
         draggable="true"
@@ -68,8 +81,8 @@ function icon(e: EntityInfo): string {
         @dragend="dragged = null"
         @click="emit('add', { kind: key })"
       >
-        <MdiIcon :name="s.icon" :size="20" />
-        <span class="grow">{{ s.name }}</span>
+        <MdiIcon :name="spec.icon" :size="20" />
+        <span class="grow">{{ spec.name }}</span>
       </button>
     </section>
 
@@ -81,19 +94,21 @@ function icon(e: EntityInfo): string {
       </button>
       <template v-if="isOpen(area)">
         <button
-          v-for="e in entities"
-          :key="e.entityId"
+          v-for="entity in entities"
+          :key="entity.entityId"
           class="item"
-          :class="{ used: onPage.has(e.entityId) }"
+          :class="{ used: onPage.has(entity.entityId) }"
           draggable="true"
-          :title="e.entityId"
-          @dragstart="drag($event, { entityId: e.entityId })"
+          :title="entity.entityId"
+          @dragstart="drag($event, { entityId: entity.entityId })"
           @dragend="dragged = null"
-          @click="emit('add', { entityId: e.entityId })"
+          @click="emit('add', { entityId: entity.entityId })"
         >
-          <MdiIcon :name="icon(e)" :size="20" />
-          <span class="grow name">{{ e.name }}</span>
-          <span class="muted state">{{ e.unit ? `${e.state} ${e.unit}` : e.state }}</span>
+          <MdiIcon :name="icon(entity)" :size="20" />
+          <span class="grow name">{{ entity.name }}</span>
+          <span class="muted state">{{
+            entity.unit ? `${entity.state} ${entity.unit}` : entity.state
+          }}</span>
         </button>
       </template>
     </section>

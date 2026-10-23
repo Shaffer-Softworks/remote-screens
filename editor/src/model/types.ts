@@ -5,13 +5,15 @@ export interface GridSize {
   rows: number
 }
 
-export type TapType = 'default' | 'toggle' | 'card' | 'action' | 'page' | 'none'
+export type TapType = 'default' | 'toggle' | 'card' | 'action' | 'page' | 'url' | 'event' | 'none'
 
 export interface TapAction {
   type: TapType
   service?: string
   data?: Record<string, unknown>
   page?: string
+  url?: string
+  event?: string
 }
 
 export interface Tile {
@@ -69,8 +71,23 @@ export type NodeType =
   | 'keys'
   | 'swatches'
   | 'keypad'
+  | 'dial'
+  | 'countdown'
+  | 'qr'
+  | 'markdown'
+  | 'tabs'
+  | 'timerkeys'
+  | 'todolist'
+  | 'events'
+  | 'mediabar'
+  | 'forecast'
+  | 'presence'
+  | 'led'
+  | 'thermostat'
+  | 'weather'
+  | 'nextevent'
 
-export const CONTAINERS: readonly NodeType[] = ['column', 'row', 'box', 'flow']
+export const CONTAINERS: readonly NodeType[] = ['column', 'row', 'box', 'flow', 'tabs']
 
 /** `wrap`, `fill`, `dp:N` or `weight:N`, as in Compose. */
 export type SizeSpec = string
@@ -87,7 +104,15 @@ export interface NodeStyle {
   /** An outline this many dp wide; absent or 0 for none. */
   border?: number
   borderColor?: string
+  /** One side's padding in dp; absent for `padding`. */
+  paddingStart?: number
+  paddingTop?: number
+  paddingEnd?: number
+  paddingBottom?: number
 }
+
+export const PADDING_SIDES = ['paddingStart', 'paddingTop', 'paddingEnd', 'paddingBottom'] as const
+export type PaddingSide = (typeof PADDING_SIDES)[number]
 
 export type BindFormat = 'state' | 'value' | 'name' | 'attribute'
 
@@ -120,6 +145,8 @@ export interface ScreenSettings {
   standbyMinutes: number
   standbyBrightness: number
   standbyScreenOff?: boolean
+  wakeOnProximity?: boolean
+  wakeOnFace?: boolean
   nightStart?: string
   nightEnd?: string
   nightBrightness: number
@@ -167,6 +194,10 @@ export interface TopBar {
   date?: boolean
   temperatureEntity?: string
   people: boolean
+  /** The tablet's Wi‑Fi signal; absent is off. */
+  wifi?: boolean
+  /** The tablet's battery level; absent is off. */
+  battery?: boolean
   /** dp; absent is the default. */
   height?: number
   /** The clock block's share of the width in percent; absent is the default. */
@@ -280,8 +311,8 @@ export interface Info {
 }
 
 export function domainOf(tile: Pick<Tile, 'entityId'>): string | undefined {
-  const d = tile.entityId?.split('.')[0]
-  return d || undefined
+  const domain = tile.entityId?.split('.')[0]
+  return domain || undefined
 }
 
 export function kindOf(tile: Pick<Tile, 'entityId' | 'kind'>): string {

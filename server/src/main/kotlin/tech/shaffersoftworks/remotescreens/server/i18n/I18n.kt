@@ -52,11 +52,17 @@ class I18n(
     }
 
     /** "75 %" in German and French, "75%" in English: the locale's own percent pattern. */
-    fun percent(value: Int): String = NumberFormat.getPercentInstance(locale).format(value / PERCENT)
+    fun percent(value: Int): String = NumberFormat.getPercentInstance(
+        locale,
+    ).format(value / PERCENT)
 
-    fun time(time: ZonedDateTime): String = time.format(pattern(if (is24Hour) "HH:mm" else "h:mm a", locale))
+    fun time(time: ZonedDateTime): String = time.format(
+        pattern(if (is24Hour) "HH:mm" else "h:mm a", locale),
+    )
 
-    fun date(time: ZonedDateTime): String = time.format(pattern("EEEE d MMMM", locale)).capitalized(locale)
+    fun date(time: ZonedDateTime): String = time.format(
+        pattern("EEEE d MMMM", locale),
+    ).capitalized(locale)
 
     /** "24 MAY 2024". */
     fun day(time: ZonedDateTime): String =
@@ -64,7 +70,9 @@ class I18n(
 
     fun weekday(time: ZonedDateTime): String = time.format(pattern("EEE", locale))
 
-    fun fullWeekday(time: ZonedDateTime): String = time.format(pattern("EEEE", locale)).capitalized(locale)
+    fun fullWeekday(time: ZonedDateTime): String = time.format(
+        pattern("EEEE", locale),
+    ).capitalized(locale)
 
     fun shortDate(time: ZonedDateTime): String =
         time.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale))
@@ -75,14 +83,27 @@ class I18n(
         val ENGLISH: Map<String, String> by lazy { load("en") }
 
         fun load(language: String): Map<String, String> {
-            val stream = I18n::class.java.getResourceAsStream("/translations/$language.json") ?: return emptyMap()
-            val translations = Json.parseToJsonElement(stream.bufferedReader().readText()).jsonObject
+            val stream = I18n::class.java.getResourceAsStream(
+                "/translations/$language.json",
+            ) ?: return emptyMap()
+            val translations = Json.parseToJsonElement(
+                stream.bufferedReader().readText(),
+            ).jsonObject
             return translations.mapValues { (it.value as JsonPrimitive).content }
         }
 
         /** 24 hours unless the language's own time format has AM/PM. */
         fun default24h(language: String): Boolean {
-            val afternoon = ZonedDateTime.of(PROBE_YEAR, 1, 1, PROBE_AFTERNOON_HOUR, 0, 0, 0, ZoneId.of("UTC"))
+            val afternoon = ZonedDateTime.of(
+                PROBE_YEAR,
+                1,
+                1,
+                PROBE_AFTERNOON_HOUR,
+                0,
+                0,
+                0,
+                ZoneId.of("UTC"),
+            )
             val formatted = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
                 .withLocale(Locale.forLanguageTag(language))
                 .format(afternoon)
@@ -98,6 +119,9 @@ class I18n(
     }
 }
 
-private fun pattern(pattern: String, locale: Locale): DateTimeFormatter = DateTimeFormatter.ofPattern(pattern, locale)
+private fun pattern(pattern: String, locale: Locale): DateTimeFormatter = DateTimeFormatter.ofPattern(
+    pattern,
+    locale,
+)
 
 private fun String.capitalized(locale: Locale): String = replaceFirstChar { it.titlecase(locale) }

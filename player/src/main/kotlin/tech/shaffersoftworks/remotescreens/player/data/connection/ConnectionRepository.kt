@@ -44,8 +44,14 @@ class ConnectionRepository @Inject constructor(
     private val _server = MutableStateFlow<String?>(null)
     val server: StateFlow<String?> = _server.asStateFlow()
 
+    /** Failed connect attempts since the last successful session; resets on CONNECTED. */
+    private val _consecutiveFailures = MutableStateFlow(0)
+    val consecutiveFailures: StateFlow<Int> = _consecutiveFailures.asStateFlow()
+
     /** Every message from the add-on, in order. Collecting suspends the socket, so nothing is dropped. */
-    private val _messages = MutableSharedFlow<ServerMessage>(extraBufferCapacity = MESSAGE_BUFFER_CAPACITY)
+    private val _messages = MutableSharedFlow<ServerMessage>(
+        extraBufferCapacity = MESSAGE_BUFFER_CAPACITY,
+    )
     val messages: SharedFlow<ServerMessage> = _messages.asSharedFlow()
 
     @Volatile
@@ -53,25 +59,27 @@ class ConnectionRepository @Inject constructor(
     private var connectionJob: Job? = null
     private var helloProvider: (suspend () -> PlayerMessage.Hello)? = null
 
-    /** Connects to [server], replacing any connection. [hello] is asked again on every (re)connect. */
-    fun connect(server: String, hello: suspend () -> PlayerMessage.Hello) {
+    /** Connects to [server], replacing any connection. [buildHello] is asked again on every (re)connect. */
+    fun connect(server: String, buildHello: suspend () -> PlayerMessage.Hello) {
         _server.value = server
-        helloProvider = hello
+        helloProvider = buildHello
+        _consecutiveFailures.value = 0
         connectionJob?.cancel()
-        connectionJob = ioScope.launch { runConnectionLoop(server, hello) }
+        connectionJob = ioScope.launch { runConnectionLoop(server, buildHello) }
     }
 
     /** Says hello again, as after the screen turned: the add-on builds the documents for the new size. */
     fun reconnect() {
         val currentServer = _server.value ?: return
-        val hello = helloProvider ?: return
-        connect(currentServer, hello)
+        val buildHello = helloProvider ?: return
+        connect(currentServer, buildHello)
     }
 
     fun disconnect() {
         connectionJob?.cancel()
         connectionJob = null
         helloProvider = null
+        _consecutiveFailures.value = 0
         _status.value = ConnectionStatus.IDLE
     }
 
@@ -81,18 +89,20 @@ class ConnectionRepository @Inject constructor(
             .onFailure { error -> Timber.w(error, "Could not send %s", message::class.simpleName) }
     }
 
-    private suspend fun runConnectionLoop(server: String, hello: suspend () -> PlayerMessage.Hello) {
+    private suspend fun runConnectionLoop(server: String, buildHello: suspend () -> PlayerMessage.Hello) {
         var backoffMs = INITIAL_BACKOFF_MS
         while (currentCoroutineContext().isActive) {
             _status.value = ConnectionStatus.CONNECTING
             try {
                 httpClient.webSocket("ws://$server/player") {
                     session = this
-                    send(Frame.Text(Protocol.encode(hello())))
+                    send(Frame.Text(Protocol.encode(buildHello())))
                     _status.value = ConnectionStatus.CONNECTED
+                    _consecutiveFailures.value = 0
                     backoffMs = INITIAL_BACKOFF_MS
                     for (frame in incoming) {
-                        val message = (frame as? Frame.Text)?.let { Protocol.decodeServer(it.readText()) }
+                        val textFrame = frame as? Frame.Text ?: continue
+                        val message = Protocol.decodeServer(textFrame.readText())
                         if (message != null) _messages.emit(message)
                     }
                 }
@@ -103,7 +113,9 @@ class ConnectionRepository @Inject constructor(
             } finally {
                 session = null
             }
+            if (!currentCoroutineContext().isActive) break
             _status.value = ConnectionStatus.DISCONNECTED
+            _consecutiveFailures.value += 1
             delay(backoffMs)
             backoffMs = min(backoffMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS)
         }

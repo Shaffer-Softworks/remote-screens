@@ -6,7 +6,7 @@ import tech.shaffersoftworks.remotescreens.server.player.PlayerHub
 import tech.shaffersoftworks.remotescreens.server.render.Alert
 import tech.shaffersoftworks.remotescreens.server.render.Icons
 import tech.shaffersoftworks.remotescreens.server.routes.model.AdoptPlayerRequest
-import tech.shaffersoftworks.remotescreens.server.routes.model.CreateScreenRequest
+import tech.shaffersoftworks.remotescreens.server.service.CreateScreenRequest
 import tech.shaffersoftworks.remotescreens.server.routes.model.EnrollmentRequest
 import tech.shaffersoftworks.remotescreens.server.routes.model.ErrorResponse
 import tech.shaffersoftworks.remotescreens.server.routes.model.RenamePlayerRequest
@@ -51,8 +51,12 @@ fun Route.editorRoutes(dependencies: ServerDependencies) {
             call.respond(HttpStatusCode.NoContent)
         }
         get("/grid") {
-            val width = call.request.queryParameters["w"]?.toFloatOrNull() ?: throw BadRequestException("w")
-            val height = call.request.queryParameters["h"]?.toFloatOrNull() ?: throw BadRequestException("h")
+            val width = call.request.queryParameters["w"]?.toFloatOrNull() ?: throw BadRequestException(
+                "w",
+            )
+            val height = call.request.queryParameters["h"]?.toFloatOrNull() ?: throw BadRequestException(
+                "h",
+            )
             call.respond(Grid.suggest(width, height))
         }
     }
@@ -82,7 +86,10 @@ private fun Route.screenRoutes(screenService: ScreenService) {
         call.respond(screenService.updatePreferences(call.receive<Preferences>()))
     }
     post("/screens") {
-        call.respond(HttpStatusCode.Created, screenService.createScreen(call.receive<CreateScreenRequest>()))
+        call.respond(
+            HttpStatusCode.Created,
+            screenService.createScreen(call.receive<CreateScreenRequest>()),
+        )
     }
     put("/screens/{id}") {
         val screenId = call.parameters.getOrFail("id")
@@ -121,7 +128,11 @@ private fun Route.playerManagementRoutes(playerHub: PlayerHub, playerApkReposito
     route("/players/{id}") {
         post("/adopt") {
             val request = call.receive<AdoptPlayerRequest>()
-            val isAdopted = playerHub.adopt(call.parameters.getOrFail("id"), request.screenId, request.name)
+            val isAdopted = playerHub.adopt(
+                call.parameters.getOrFail("id"),
+                request.screenId,
+                request.name,
+            )
             call.respond(if (isAdopted) HttpStatusCode.NoContent else HttpStatusCode.NotFound)
         }
         patch {

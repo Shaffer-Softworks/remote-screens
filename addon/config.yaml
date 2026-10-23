@@ -1,15 +1,15 @@
 name: Remote Screens
-version: "0.1.2"
+version: "0.1.27"
 slug: remote_screens
 description: Home Assistant screens on Android tablets, drawn with Remote Compose
-url: https://github.com/sickkick/remote-screens
+url: https://github.com/Shaffer-Softworks/remote-screens
 arch:
   - aarch64
   - amd64
 init: false
 startup: application
 boot: auto
-image: ghcr.io/sickkick/remote-screens-{arch}
+image: ghcr.io/shaffer-softworks/remote-screens-{arch}
 ingress: true
 # 0: the Supervisor picks a free port, since on the host network 8099 is often taken.
 ingress_port: 0

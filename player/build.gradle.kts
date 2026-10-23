@@ -35,7 +35,12 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
             // Tablets only take an update signed with the key they were installed with, so releases need the same
             // key every time. Without PLAYER_KEYSTORE the debug key keeps `assembleRelease` working locally.
             signingConfig = signingConfigs.getByName(if (keystore != null) "release" else "debug")
@@ -65,6 +70,10 @@ kotlin {
     jvmToolchain(21)
 }
 
+detekt {
+    baseline.set(file("detekt-baseline.xml"))
+}
+
 dependencies {
     implementation(project(":shared"))
 
@@ -72,6 +81,21 @@ dependencies {
     implementation(libs.remote.core)
     implementation(libs.remote.player.core)
     implementation(libs.remote.player.view)
+
+    // Cameras' live video
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.exoplayer.hls)
+    implementation(libs.media3.ui)
+
+    // Interactive map cards (osmdroid, same stack as RPI)
+    implementation(libs.osm.android)
+    implementation(libs.osm.compose)
+
+    // Front-camera face wake
+    implementation(libs.camera.core)
+    implementation(libs.camera.camera2)
+    implementation(libs.camera.lifecycle)
+    implementation(libs.mlkit.face.detection)
 
     // AndroidX
     implementation(libs.androidx.core)

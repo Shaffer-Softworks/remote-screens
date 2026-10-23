@@ -2,29 +2,39 @@
 import { computed, ref, watch } from 'vue'
 import { api } from '../api'
 import { PASTEL_KEYS, cssColor, themeById, themeVars, themes } from '../model/palette'
+import { PASTELS_INTRO, THEME_ROLE_SECTIONS } from '../model/themeRoles'
 import type { ResolvedTheme, Theme } from '../model/types'
 import { attempt, refreshThemes, state, toast } from '../store'
+import ColorInput from './ColorInput.vue'
 import MdiIcon from './MdiIcon.vue'
 
 const emit = defineEmits<{ close: [] }>()
 
-const builtins = computed(() => themes.value.filter((t) => t.builtin))
+const builtins = computed(() => themes.value.filter(theme => theme.builtin))
 const selectedId = ref(themes.value[0]?.id ?? '')
-const selected = computed(() => themes.value.find((t) => t.id === selectedId.value))
+const selected = computed(() => themes.value.find(theme => theme.id === selectedId.value))
 
 /** The custom theme being edited: its own colours over its base, as stored. */
 const draft = ref<Theme | null>(null)
-const stored = computed(() => (selected.value && !selected.value.builtin ? JSON.stringify(toTheme(selected.value)) : ''))
+const stored = computed(() =>
+  selected.value && !selected.value.builtin ? JSON.stringify(toTheme(selected.value)) : '',
+)
 const dirty = computed(() => draft.value !== null && JSON.stringify(draft.value) !== stored.value)
 
-function toTheme(t: ResolvedTheme): Theme {
-  return { id: t.id, name: t.name, base: t.base, roles: { ...t.overrides.roles }, pastels: { ...t.overrides.pastels } }
+function toTheme(resolved: ResolvedTheme): Theme {
+  return {
+    id: resolved.id,
+    name: resolved.name,
+    base: resolved.base,
+    roles: { ...resolved.overrides.roles },
+    pastels: { ...resolved.overrides.pastels },
+  }
 }
 
 watch(
   selected,
-  (t) => {
-    draft.value = t && !t.builtin ? toTheme(t) : null
+  theme => {
+    draft.value = theme && !theme.builtin ? toTheme(theme) : null
   },
   { immediate: true },
 )
@@ -36,27 +46,38 @@ function pick(id: string): void {
 
 /** The colours drawn: the draft's over its base, or the selected built-in's. */
 const shown = computed<ResolvedTheme | undefined>(() => {
-  const d = draft.value
-  if (!d) return selected.value
-  const base = themeById(d.base)
+  const draftTheme = draft.value
+  if (!draftTheme) return selected.value
+  const base = themeById(draftTheme.base)
   if (!base) return selected.value
-  return { ...base, id: d.id, name: d.name, builtin: false, roles: { ...base.roles, ...d.roles }, pastels: { ...base.pastels, ...d.pastels } }
+  return {
+    ...base,
+    id: draftTheme.id,
+    name: draftTheme.name,
+    builtin: false,
+    roles: { ...base.roles, ...draftTheme.roles },
+    pastels: { ...base.pastels, ...draftTheme.pastels },
+  }
 })
 
-const roleKeys = computed(() => Object.keys(shown.value?.roles ?? {}))
-const label = (k: string) => (k === 'card_edge' ? 'card edge (tile border)' : k.replace(/_/g, ' '))
+/** Sections whose roles exist on the shown theme (skip unknown keys). */
+const roleSections = computed(() => {
+  const roles = shown.value?.roles ?? {}
+  return THEME_ROLE_SECTIONS.map(section => ({
+    ...section,
+    roles: section.roles.filter(role => role.key in roles),
+  })).filter(section => section.roles.length > 0)
+})
 
-/** A colour input takes `#RRGGBB`: the add-on's `#AARRGGBB` loses its alpha here and keeps it when set. */
-const rgb = (hex: string | undefined) => (hex && hex.length === 9 ? `#${hex.slice(3)}` : (hex ?? '#000000'))
+const pastelLabel = (key: string) => key.replace(/_/g, ' ')
 
 function setColour(kind: 'roles' | 'pastels', key: string, value: string): void {
-  const d = draft.value
-  if (!d) return
-  const was = shown.value?.[kind][key] ?? ''
-  const hex = (was.length === 9 ? `#${was.slice(1, 3)}${value.slice(1)}` : value).toUpperCase()
-  const base = themeById(d.base)?.[kind][key]
-  if (base === hex) delete d[kind][key]
-  else d[kind][key] = hex
+  const draftTheme = draft.value
+  if (!draftTheme) return
+  const hex = value.toUpperCase()
+  const base = themeById(draftTheme.base)?.[kind][key]
+  if (base === hex) delete draftTheme[kind][key]
+  else draftTheme[kind][key] = hex
 }
 
 function reset(kind: 'roles' | 'pastels', key: string): void {
@@ -64,23 +85,30 @@ function reset(kind: 'roles' | 'pastels', key: string): void {
 }
 
 function usedBy(id: string): string[] {
-  return (state.layout?.screens ?? []).filter((s) => s.settings.theme === id || s.settings.darkTheme === id).map((s) => s.name)
+  return (state.layout?.screens ?? [])
+    .filter(screen => screen.settings.theme === id || screen.settings.darkTheme === id)
+    .map(screen => screen.name)
 }
 
 function newId(name: string): string {
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'theme'
-  const taken = new Set(themes.value.map((t) => t.id))
+  const slug =
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 30) || 'theme'
+  const taken = new Set(themes.value.map(theme => theme.id))
   let id = slug
   for (let i = 2; taken.has(id); i++) id = `${slug}-${i}`
   return id
 }
 
-async function duplicate(t: ResolvedTheme): Promise<void> {
+async function duplicate(source: ResolvedTheme): Promise<void> {
   if (dirty.value && !confirm('Leave this theme without saving?')) return
-  const name = `${t.name} copy`
-  const copy: Theme = t.builtin
-    ? { id: newId(name), name, base: t.id, roles: {}, pastels: {} }
-    : { ...toTheme(t), id: newId(name), name }
+  const name = `${source.name} copy`
+  const copy: Theme = source.builtin
+    ? { id: newId(name), name, base: source.id, roles: {}, pastels: {} }
+    : { ...toTheme(source), id: newId(name), name }
   const saved = await attempt(() => api.saveTheme(copy))
   if (!saved) return
   await refreshThemes()
@@ -88,19 +116,19 @@ async function duplicate(t: ResolvedTheme): Promise<void> {
 }
 
 async function save(): Promise<void> {
-  const d = draft.value
-  if (!d) return
-  const saved = await attempt(() => api.saveTheme(JSON.parse(JSON.stringify(d))))
+  const draftTheme = draft.value
+  if (!draftTheme) return
+  const saved = await attempt(() => api.saveTheme(JSON.parse(JSON.stringify(draftTheme))))
   if (!saved) return
   await refreshThemes()
   toast('Theme saved and sent')
 }
 
-async function remove(t: ResolvedTheme): Promise<void> {
-  const users = usedBy(t.id)
+async function remove(theme: ResolvedTheme): Promise<void> {
+  const users = usedBy(theme.id)
   const warning = users.length ? `\n\n${users.join(', ')} will go back to RPI dark.` : ''
-  if (!confirm(`Delete the theme “${t.name}”?${warning}`)) return
-  const deleted = await attempt(() => api.deleteTheme(t.id).then(() => true))
+  if (!confirm(`Delete the theme “${theme.name}”?${warning}`)) return
+  const deleted = await attempt(() => api.deleteTheme(theme.id).then(() => true))
   if (!deleted) return
   await refreshThemes()
   selectedId.value = themes.value[0]?.id ?? ''
@@ -112,29 +140,49 @@ const vars = computed(() => themeVars(shown.value))
 <template>
   <div class="page">
     <header class="row">
-      <button class="icon" title="Back to screens" @click="emit('close')"><MdiIcon name="arrow-left" /></button>
+      <button class="icon" title="Back to screens" @click="emit('close')">
+        <MdiIcon name="arrow-left" />
+      </button>
       <MdiIcon name="palette-outline" :size="28" />
       <h1 class="grow">Themes</h1>
     </header>
     <p class="muted intro">
-      A screen wears one theme by day and another in dark mode and at night (pick them in the screen's settings). Duplicate a
-      theme to make your own; its colours are laid over the theme it was made from.
+      A screen wears one theme by day and another in dark mode and at night (pick them in the
+      screen's settings). Duplicate a theme to make your own; its colours are laid over the theme it
+      was made from. Each role below names where that colour lands on the tablet.
     </p>
 
     <div class="layout">
       <aside class="card list">
-        <div v-for="t in themes" :key="t.id" class="item" :class="{ active: t.id === selectedId }" @click="pick(t.id)">
+        <div
+          v-for="theme in themes"
+          :key="theme.id"
+          class="item"
+          :class="{ active: theme.id === selectedId }"
+          @click="pick(theme.id)"
+        >
           <span class="chips">
-            <i :style="{ background: cssColor(t.roles.page) }" />
-            <i :style="{ background: cssColor(t.roles.card) }" />
-            <i :style="{ background: cssColor(t.roles.accent) }" />
+            <i :style="{ background: cssColor(theme.roles.page) }" />
+            <i :style="{ background: cssColor(theme.roles.card) }" />
+            <i :style="{ background: cssColor(theme.roles.accent) }" />
           </span>
           <span class="grow">
-            {{ t.name }}
-            <small class="muted">{{ t.builtin ? 'Built-in' : `From ${themeById(t.base)?.name ?? t.base}` }}</small>
+            {{ theme.name }}
+            <small class="muted">{{
+              theme.builtin ? 'Built-in' : `From ${themeById(theme.base)?.name ?? theme.base}`
+            }}</small>
           </span>
-          <button class="icon quiet" title="Duplicate" @click.stop="duplicate(t)"><MdiIcon name="content-copy" :size="16" /></button>
-          <button v-if="!t.builtin" class="icon quiet" title="Delete" @click.stop="remove(t)"><MdiIcon name="delete-outline" :size="16" /></button>
+          <button class="icon quiet" title="Duplicate" @click.stop="duplicate(theme)">
+            <MdiIcon name="content-copy" :size="16" />
+          </button>
+          <button
+            v-if="!theme.builtin"
+            class="icon quiet"
+            title="Delete"
+            @click.stop="remove(theme)"
+          >
+            <MdiIcon name="delete-outline" :size="16" />
+          </button>
         </div>
       </aside>
 
@@ -152,50 +200,134 @@ const vars = computed(() => themeVars(shown.value))
           </template>
           <template v-else>
             <h2 class="grow">{{ shown.name }}</h2>
-            <button class="primary" @click="duplicate(shown)"><MdiIcon name="content-copy" :size="16" /> Duplicate to edit</button>
+            <button class="primary" @click="duplicate(shown)">
+              <MdiIcon name="content-copy" :size="16" /> Duplicate to edit
+            </button>
           </template>
         </div>
-        <p v-if="usedBy(shown.id).length" class="muted">Worn by {{ usedBy(shown.id).join(', ') }}</p>
+        <p v-if="usedBy(shown.id).length" class="muted">
+          Worn by {{ usedBy(shown.id).join(', ') }}
+        </p>
 
-        <div class="preview" :style="vars">
-          <div class="pv-top"><span class="pv-when">12:34</span><span class="grow" /><span class="pv-blue">14°</span></div>
-          <div class="pv-body">
-            <div class="pv-card">
-              <div class="pv-head">Ceiling light</div>
-              <i class="pv-line" :style="{ background: 'var(--rc-p-yellow)' }" />
-              <div class="pv-in"><MdiIcon name="lightbulb" :size="26" :style="{ color: 'var(--rc-p-yellow)' }" /><span class="grow" />On</div>
+        <div class="preview-wrap">
+          <div class="preview" :style="vars">
+            <div class="pv-top">
+              <span class="pv-when">12:34</span>
+              <span class="grow" />
+              <MdiIcon name="battery" :size="14" class="pv-stat" />
+              <span class="pv-blue">14°</span>
             </div>
-            <div class="pv-card">
-              <div class="pv-head">Fan</div>
-              <i class="pv-line" />
-              <div class="pv-in"><MdiIcon name="fan" :size="26" class="pv-dim" /><span class="grow" /><span class="pv-soft">Off</span></div>
+            <div class="pv-body">
+              <div class="pv-card">
+                <div class="pv-head">Ceiling light</div>
+                <i class="pv-line on" />
+                <div class="pv-in">
+                  <MdiIcon
+                    name="lightbulb"
+                    :size="26"
+                    :style="{ color: 'var(--rc-p-yellow)' }"
+                  /><span class="grow" />On
+                </div>
+              </div>
+              <div class="pv-card">
+                <div class="pv-head">Fan</div>
+                <i class="pv-line" />
+                <div class="pv-in">
+                  <MdiIcon name="fan" :size="26" class="pv-dim" /><span class="grow" /><span
+                    class="pv-soft"
+                    >Off</span
+                  >
+                </div>
+              </div>
+              <div class="pv-card pv-keys">
+                <span class="pv-key on">Heat</span><span class="pv-key">Cool</span>
+                <span class="pv-track"><i /></span>
+                <div class="pv-badges">
+                  <span class="pv-badge warn">Heat</span>
+                  <span class="pv-badge danger">Alert</span>
+                </div>
+              </div>
+              <div class="pv-home">
+                <span class="pv-home-label">Home</span>
+                <div class="pv-home-strip">
+                  <span class="pv-person">Alex</span>
+                  <span class="pv-person">Sam</span>
+                </div>
+              </div>
             </div>
-            <div class="pv-card pv-keys">
-              <span class="pv-key on">Heat</span><span class="pv-key">Cool</span>
-              <span class="pv-track"><i /></span>
+            <div class="pv-scrim" aria-hidden="true">
+              <span class="pv-scrim-card">Card</span>
+            </div>
+            <div class="pv-nav">
+              <span class="on"><MdiIcon name="home" :size="18" /></span
+              ><span><MdiIcon name="view-dashboard" :size="18" /></span
+              ><span><MdiIcon name="cog" :size="18" /></span>
             </div>
           </div>
-          <div class="pv-nav"><span class="on"><MdiIcon name="home" :size="18" /></span><span><MdiIcon name="view-dashboard" :size="18" /></span><span><MdiIcon name="cog" :size="18" /></span></div>
+          <div class="pv-bands">
+            <span>Header</span>
+            <span>Cards</span>
+            <span>Nav</span>
+          </div>
         </div>
 
         <h3>Pastels</h3>
+        <p class="muted hint">{{ PASTELS_INTRO }}</p>
         <div class="colours">
-          <label v-for="k in PASTEL_KEYS" :key="k" class="colour" :class="{ own: draft && draft.pastels[k] }">
-            <input type="color" :value="rgb(shown.pastels[k])" :disabled="!draft" @input="setColour('pastels', k, ($event.target as HTMLInputElement).value)" />
-            <span class="grow">{{ label(k) }}</span>
-            <button v-if="draft && draft.pastels[k]" class="icon quiet" title="Back to the base's" @click.prevent="reset('pastels', k)"><MdiIcon name="restore" :size="14" /></button>
-          </label>
+          <div
+            v-for="k in PASTEL_KEYS"
+            :key="k"
+            class="colour"
+            :class="{ own: draft && draft.pastels[k] }"
+          >
+            <ColorInput
+              :model-value="shown.pastels[k]"
+              :disabled="!draft"
+              @update:model-value="setColour('pastels', k, $event!)"
+            />
+            <span class="grow">
+              <span class="colour-title">{{ pastelLabel(k) }}</span>
+            </span>
+            <button
+              v-if="draft && draft.pastels[k]"
+              class="icon quiet"
+              title="Back to the base's"
+              @click="reset('pastels', k)"
+            >
+              <MdiIcon name="restore" :size="14" />
+            </button>
+          </div>
         </div>
 
-        <h3>Roles</h3>
-        <p class="muted hint">Card edge is every tile's border; a tile can override it with its own border colour.</p>
-        <div class="colours">
-          <label v-for="k in roleKeys" :key="k" class="colour" :class="{ own: draft && draft.roles[k] }">
-            <input type="color" :value="rgb(shown.roles[k])" :disabled="!draft" @input="setColour('roles', k, ($event.target as HTMLInputElement).value)" />
-            <span class="grow">{{ label(k) }}</span>
-            <button v-if="draft && draft.roles[k]" class="icon quiet" title="Back to the base's" @click.prevent="reset('roles', k)"><MdiIcon name="restore" :size="14" /></button>
-          </label>
-        </div>
+        <template v-for="section in roleSections" :key="section.id">
+          <h3>{{ section.title }}</h3>
+          <div class="colours">
+            <div
+              v-for="role in section.roles"
+              :key="role.key"
+              class="colour"
+              :class="{ own: draft && draft.roles[role.key] }"
+            >
+              <ColorInput
+                :model-value="shown.roles[role.key]"
+                :disabled="!draft"
+                @update:model-value="setColour('roles', role.key, $event!)"
+              />
+              <span class="grow">
+                <span class="colour-title">{{ role.title }}</span>
+                <small class="muted colour-applies">{{ role.applies }}</small>
+              </span>
+              <button
+                v-if="draft && draft.roles[role.key]"
+                class="icon quiet"
+                title="Back to the base's"
+                @click="reset('roles', role.key)"
+              >
+                <MdiIcon name="restore" :size="14" />
+              </button>
+            </div>
+          </div>
+        </template>
       </section>
     </div>
   </div>
@@ -285,45 +417,72 @@ const vars = computed(() => themeVars(shown.value))
 
 .colours {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 6px;
 }
 
 .colour {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  padding: 4px 6px;
+  padding: 6px;
   border-radius: 8px;
-  text-transform: capitalize;
 }
 
 .colour.own {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
-  font-weight: 500;
 }
 
-.colour input {
-  width: 34px;
-  height: 26px;
-  padding: 0 2px;
-  flex: none;
+.colour-title {
+  display: block;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.colour.own .colour-title {
+  font-weight: 600;
+}
+
+.colour-applies {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.35;
+  text-transform: none;
+}
+
+.colour :deep(.color-input) {
+  flex: 0 0 auto;
+  margin-top: 2px;
 }
 
 /* The preview, drawn in the theme's colours. */
+.preview-wrap {
+  margin: 6px;
+}
+
 .preview {
+  position: relative;
   border-radius: 14px;
   overflow: hidden;
   background: var(--rc-page);
   color: var(--rc-ink);
   box-shadow: 0 0 0 6px #1d1d1f;
-  margin: 6px;
   font-size: 13px;
+}
+
+.pv-bands {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 10px 0;
+  font-size: 11px;
+  color: var(--muted, #888);
 }
 
 .pv-top {
   display: flex;
   align-items: center;
+  gap: 8px;
   height: 34px;
   padding-right: 12px;
   background: var(--rc-header);
@@ -335,6 +494,10 @@ const vars = computed(() => themeVars(shown.value))
   align-items: center;
   padding: 0 18px;
   background: var(--rc-header-dark);
+}
+
+.pv-stat {
+  color: var(--rc-accent-soft);
 }
 
 .pv-blue {
@@ -365,7 +528,11 @@ const vars = computed(() => themeVars(shown.value))
 
 .pv-line {
   height: 3px;
-  background: var(--rc-card-header);
+  background: var(--rc-accent-soft);
+}
+
+.pv-line.on {
+  background: var(--rc-p-yellow);
 }
 
 .pv-in {
@@ -415,11 +582,89 @@ const vars = computed(() => themeVars(shown.value))
   background: var(--rc-accent);
 }
 
+.pv-badges {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.pv-badge {
+  flex: 1;
+  padding: 3px 0;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--rc-key-on);
+  color: var(--rc-key-on-ink);
+}
+
+.pv-badge.warn {
+  background: var(--rc-warn);
+  color: var(--rc-key-on-ink);
+}
+
+.pv-badge.danger {
+  background: var(--rc-danger);
+  color: var(--rc-ink);
+}
+
+.pv-home {
+  grid-column: 1 / -1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--rc-home);
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pv-home-label {
+  padding: 6px 10px 2px;
+  font-size: 11px;
+  color: var(--rc-ink);
+}
+
+.pv-home-strip {
+  display: flex;
+  gap: 12px;
+  padding: 6px 10px;
+  background: var(--rc-home-strip);
+}
+
+.pv-person {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rc-ink-dark);
+}
+
+.pv-scrim {
+  position: absolute;
+  inset: 34px 0 38px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 10px;
+  pointer-events: none;
+  background: linear-gradient(135deg, transparent 55%, var(--rc-scrim) 55%);
+}
+
+.pv-scrim-card {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--rc-card);
+  border: 1px solid var(--rc-card-edge);
+  font-size: 11px;
+  color: var(--rc-ink);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 35%);
+}
+
 .pv-nav {
   display: flex;
   justify-content: space-evenly;
   border-top: 2px solid var(--rc-nav-line);
   background: var(--rc-nav);
+  color: var(--rc-ink);
 }
 
 .pv-nav span {
@@ -431,5 +676,6 @@ const vars = computed(() => themeVars(shown.value))
 
 .pv-nav span.on {
   background: var(--rc-nav-on);
+  color: var(--rc-ink);
 }
 </style>

@@ -16,6 +16,7 @@ import tech.shaffersoftworks.remotescreens.server.player.PlayerHub
 import tech.shaffersoftworks.remotescreens.server.player.PlayerSessionContext
 import tech.shaffersoftworks.remotescreens.server.player.ScreenClock
 import tech.shaffersoftworks.remotescreens.server.player.action.ActionRouter
+import tech.shaffersoftworks.remotescreens.server.service.CameraStreamService
 import tech.shaffersoftworks.remotescreens.server.service.EnrollmentService
 import tech.shaffersoftworks.remotescreens.server.service.HomeAssistantCatalogService
 import tech.shaffersoftworks.remotescreens.server.service.ScreenService
@@ -48,10 +49,16 @@ class ServerDependencies(
     private val renderDataRepository = RenderDataRepository(homeAssistant)
     private val pictureRepository = PictureRepository(homeAssistant, httpClient, config.mapTileUrl)
     private val languageRepository = LanguageRepository(homeAssistant, layoutRepository)
+    private val actionRouter = ActionRouter(
+        homeAssistant,
+        { languageRepository.current() },
+        renderDataRepository,
+    )
 
     val screenService = ScreenService(layoutRepository)
     val themeService = ThemeService(layoutRepository)
     val homeAssistantCatalogService = HomeAssistantCatalogService(homeAssistant)
+    val cameraStreamService = CameraStreamService(homeAssistant)
     val enrollmentService = EnrollmentService(
         playerApkRepository = playerApkRepository,
         playerPort = config.playerPort,
@@ -66,11 +73,13 @@ class ServerDependencies(
             screenService = screenService,
             renderDataRepository = renderDataRepository,
             pictureRepository = pictureRepository,
+            cameraStreamService = cameraStreamService,
             languageRepository = languageRepository,
             playerApkRepository = playerApkRepository,
-            actionRouter = ActionRouter(homeAssistant) { languageRepository.current() },
+            actionRouter = actionRouter,
             screenClock = ScreenClock(homeAssistant, languageRepository),
             scope = scope,
+            mapTileUrl = config.mapTileUrl,
         ),
     )
 

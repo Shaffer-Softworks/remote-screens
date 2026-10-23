@@ -2,6 +2,7 @@ package tech.shaffersoftworks.remotescreens.server.player.action
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.ActionSpec
@@ -13,14 +14,20 @@ import tech.shaffersoftworks.remotescreens.shared.TypeSpec
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
 
 private const val MAX_CODE_LENGTH = 12
 private const val ENTITY_TILE_PREFIX = "e:"
 
 /** Turns a tap on a document into a Home Assistant service call, and foresees the state it will lead to. */
-class ActionRouter(private val homeAssistant: HomeAssistant, private val i18n: () -> I18n) {
+class ActionRouter(
+    private val homeAssistant: HomeAssistant,
+    private val i18n: () -> I18n,
+    private val renderData: RenderDataRepository? = null,
+) {
     private val logger = LoggerFactory.getLogger(ActionRouter::class.java)
 
     fun target(ref: ActionRef, screen: Screen?): TapTarget? = when {
@@ -48,10 +55,18 @@ class ActionRouter(private val homeAssistant: HomeAssistant, private val i18n: (
         val verb = resolveVerb(ref.verb, target, entity)
         return try {
             when (verb) {
-                "card" -> TapOutcome.Card(target.entityId, if (ref.arg == "history") "history" else target.kind)
+                "card" -> TapOutcome.Card(
+                    target.entityId,
+                    if (ref.arg == "history") "history" else target.kind,
+                )
                 "run" -> runTileAction(target)
                 "favourite" -> playFavourite(target)
+                "event" -> fireEvent(ref.arg, target)
                 "code_digit", "code_back", "code_clear" -> typeCode(verb, ref.arg, target, memory)
+                "browse_type", "listen_mode", "primary_tab", "load_more",
+                "clear_queue", "play_uri", "enqueue_uri",
+                "volume_up", "volume_down",
+                -> handleMusic(verb, ref, target)
                 else -> callService(verb, ref, target, entity, memory, nowMs)
             }
         } catch (cancellation: CancellationException) {
@@ -69,10 +84,22 @@ class ActionRouter(private val homeAssistant: HomeAssistant, private val i18n: (
     /** The state Home Assistant will most likely report once [ref] is done, or null when it cannot be told. */
     fun foresee(ref: ActionRef, target: TapTarget?, entity: EntityState): EntityState? {
         val spec = target?.spec ?: Catalogue.of(entity.domain)
-        val verb = resolveVerb(ref.verb, target ?: TapTarget("", entity.entityId, entity.domain, null), entity)
+        val verb = resolveVerb(
+            ref.verb,
+            target ?: TapTarget("", entity.entityId, entity.domain, null),
+            entity,
+        )
         val prediction = spec?.predict?.get(verb) ?: return null
         val action = spec.actions[verb]
-        val arg = if (action != null) ServiceDataBuilder.resolveArg(action, ref.arg, entity) else ref.arg
+        val arg = if (action != null) {
+            ServiceDataBuilder.resolveArg(
+                action,
+                ref.arg,
+                entity,
+            )
+        } else {
+            ref.arg
+        }
         val attributes = prediction.attributes.mapValues { (_, value) ->
             if (ServiceDataBuilder.isArgExpression(value)) {
                 ServiceDataBuilder.argValue(value, arg)
@@ -108,16 +135,102 @@ class ActionRouter(private val homeAssistant: HomeAssistant, private val i18n: (
         memory: TapMemory,
         nowMs: Long,
     ): TapOutcome {
-        val action = target.spec?.actions?.get(verb)
+        val spec = if (target.kind == "music") Catalogue.of("media_player") else target.spec
+        val action = spec?.actions?.get(verb)
         val entityId = target.entityId
         if (action == null || entityId == null) return TapOutcome.Ignored
         return confirmationNeeded(action, verb, target, memory, nowMs) ?: run {
             val code = memory.codes.remove(entityId)
             val data = ServiceDataBuilder.build(action, verb, ref.arg, entity, code)
             val (domain, service) = action.service.split('.', limit = 2)
-            homeAssistant.callService(domain, service, JsonObject(data + ("entity_id" to JsonPrimitive(entityId))))
+            homeAssistant.callService(
+                domain,
+                service,
+                JsonObject(data + ("entity_id" to JsonPrimitive(entityId))),
+            )
             TapOutcome.Done
         }
+    }
+
+    private suspend fun handleMusic(verb: String, ref: ActionRef, target: TapTarget): TapOutcome {
+        val tileId = target.tileId
+        val entityId = target.entityId
+        val repo = renderData
+        return if (entityId == null || repo == null) {
+            TapOutcome.Ignored
+        } else {
+            musicVerb(verb, ref, target, tileId, entityId, repo)
+        }
+    }
+
+    private suspend fun musicVerb(
+        verb: String,
+        ref: ActionRef,
+        target: TapTarget,
+        tileId: String,
+        entityId: String,
+        repo: RenderDataRepository,
+    ): TapOutcome = when (verb) {
+        "browse_type" -> {
+            repo.musicUi.setBrowseType(tileId, ref.arg)
+            TapOutcome.Rebuild
+        }
+        "listen_mode" -> {
+            repo.musicUi.setListenMode(tileId, ref.arg)
+            TapOutcome.Rebuild
+        }
+        "primary_tab" -> {
+            repo.musicUi.setPrimarySection(tileId, ref.arg)
+            TapOutcome.Rebuild
+        }
+        "load_more" -> musicLoadMore(repo, target, tileId, entityId)
+        "clear_queue" -> {
+            repo.music.clearPlaylist(entityId)
+            repo.invalidateMusic(playerEntityId = entityId)
+            TapOutcome.Rebuild
+        }
+        "play_uri" -> musicPlayUri(repo, entityId, ref.arg, enqueue = "play")
+        "enqueue_uri" -> musicPlayUri(repo, entityId, ref.arg, enqueue = "add")
+        "volume_up" -> musicVolume(entityId, "volume_up")
+        "volume_down" -> musicVolume(entityId, "volume_down")
+        else -> TapOutcome.Ignored
+    }
+
+    private suspend fun musicLoadMore(
+        repo: RenderDataRepository,
+        target: TapTarget,
+        tileId: String,
+        entityId: String,
+    ): TapOutcome {
+        val configEntryId = target.tile?.options?.get("config_entry_id")
+            ?: repo.music.configEntryIdForEntity(entityId)
+        if (configEntryId == null) return TapOutcome.Failed("No Music Assistant config entry")
+        repo.loadMoreBrowse(tileId, configEntryId)
+        return TapOutcome.Rebuild
+    }
+
+    private suspend fun musicPlayUri(
+        repo: RenderDataRepository,
+        entityId: String,
+        uri: String,
+        enqueue: String,
+    ): TapOutcome {
+        val ok = repo.music.playMediaUri(entityId, uri, enqueue = enqueue)
+        if (!ok) {
+            val message = if (enqueue == "add") "Could not add to queue" else "Could not start playback"
+            return TapOutcome.Failed(message)
+        }
+        repo.invalidateMusic(playerEntityId = entityId)
+        return TapOutcome.Rebuild
+    }
+
+    private suspend fun musicVolume(entityId: String, service: String): TapOutcome {
+        homeAssistant.callService(
+            "media_player",
+            service,
+            buildJsonObject { put("entity_id", entityId) },
+        )
+        return TapOutcome.Done
     }
 
     /** For an action that asks to be confirmed: the prompt on the first tap, null on a second tap in time. */
@@ -142,14 +255,17 @@ class ActionRouter(private val homeAssistant: HomeAssistant, private val i18n: (
     }
 
     private suspend fun runTileAction(target: TapTarget): TapOutcome {
-        val tap = target.tile?.let { tile -> listOf(tile.tap, tile.hold).firstOrNull { it.type == TapType.ACTION } }
+        val tap = target.tile?.let { tile -> listOf(
+            tile.tap,
+            tile.hold,
+        ).firstOrNull { it.type == TapType.ACTION } }
         val service = tap?.service
         val serviceParts = service?.split('.', limit = 2)
         return when {
             serviceParts == null -> TapOutcome.Ignored
             serviceParts.size != 2 -> TapOutcome.Failed("Bad service $service")
             else -> {
-                val data = (tap?.data ?: JsonObject(emptyMap())).toMutableMap()
+                val data = (tap.data ?: JsonObject(emptyMap())).toMutableMap()
                 if ("entity_id" !in data && target.entityId != null) {
                     data["entity_id"] = JsonPrimitive(target.entityId)
                 }
@@ -170,6 +286,24 @@ class ActionRouter(private val homeAssistant: HomeAssistant, private val i18n: (
             "media_content_type" to JsonPrimitive(options["content_type"] ?: "music"),
         )
         homeAssistant.callService("media_player", "play_media", JsonObject(data))
+        return TapOutcome.Done
+    }
+
+    private suspend fun fireEvent(eventType: String, target: TapTarget): TapOutcome {
+        if (eventType.isBlank()) return TapOutcome.Ignored
+        homeAssistant.command(
+            "fire_event",
+            buildJsonObject {
+                put("event_type", eventType)
+                put(
+                    "event_data",
+                    buildJsonObject {
+                        target.entityId?.let { put("entity_id", it) }
+                        put("source", "remote_screens")
+                    },
+                )
+            },
+        )
         return TapOutcome.Done
     }
 

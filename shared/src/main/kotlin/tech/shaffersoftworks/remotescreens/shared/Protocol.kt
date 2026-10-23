@@ -16,6 +16,15 @@ object Protocol {
     const val INGRESS_PORT = 8099
     const val MDNS_TYPE = "_remotescreens._tcp.local."
 
+    /** A player that can play [ServerMessage.Video]. Only it is sent one, so no camera streams for one that can't. */
+    const val CAPABILITY_VIDEO = "video"
+
+    /** A player that can show an interactive [ServerMessage.LiveMap] over a map card. Others get a still bitmap. */
+    const val CAPABILITY_MAP = "map"
+
+    /** A player that can show a native Music Assistant search overlay ([ServerMessage.LiveSearch]). */
+    const val CAPABILITY_MUSIC_SEARCH = "music_search"
+
     val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = false
@@ -23,8 +32,14 @@ object Protocol {
         explicitNulls = false
     }
 
-    fun encode(msg: ServerMessage): String = json.encodeToString(ServerMessage.serializer(), msg)
-    fun encode(msg: PlayerMessage): String = json.encodeToString(PlayerMessage.serializer(), msg)
+    fun encode(message: ServerMessage): String = json.encodeToString(
+        ServerMessage.serializer(),
+        message,
+    )
+    fun encode(message: PlayerMessage): String = json.encodeToString(
+        PlayerMessage.serializer(),
+        message,
+    )
     fun decodeServer(text: String): ServerMessage? =
         runCatching { json.decodeFromString(ServerMessage.serializer(), text) }.getOrNull()
 
@@ -55,11 +70,15 @@ data class VarValue(val name: String, val type: VarType, val value: String) {
         private const val HEX_RADIX = 16
         private const val ARGB_HEX_DIGITS = 8
 
-        fun string(name: String, v: String) = VarValue(name, VarType.STRING, v)
-        fun int(name: String, v: Int) = VarValue(name, VarType.INT, v.toString())
-        fun float(name: String, v: Float) = VarValue(name, VarType.FLOAT, v.toString())
+        fun string(name: String, value: String) = VarValue(name, VarType.STRING, value)
+        fun int(name: String, value: Int) = VarValue(name, VarType.INT, value.toString())
+        fun float(name: String, value: Float) = VarValue(name, VarType.FLOAT, value.toString())
         fun color(name: String, argb: Int) =
-            VarValue(name, VarType.COLOR, argb.toUInt().toString(HEX_RADIX).padStart(ARGB_HEX_DIGITS, '0'))
+            VarValue(
+                name,
+                VarType.COLOR,
+                argb.toUInt().toString(HEX_RADIX).padStart(ARGB_HEX_DIGITS, '0'),
+            )
     }
 
     fun asInt(): Int = value.toIntOrNull() ?: 0
@@ -78,10 +97,10 @@ data class ActionRef(val tile: String, val verb: String, val arg: String = "") {
     val local: Boolean get() = tile == "_" && verb in LOCAL_VERBS
 
     companion object {
-        val LOCAL_VERBS = setOf("page", "next", "prev", "back", "close", "noop", "settings")
+        val LOCAL_VERBS = setOf("page", "next", "prev", "back", "close", "noop", "settings", "set", "url")
 
-        fun decode(s: String?): ActionRef? {
-            val parts = s?.split('|', limit = 3) ?: return null
+        fun decode(encoded: String?): ActionRef? {
+            val parts = encoded?.split('|', limit = 3) ?: return null
             val isValid = parts.size >= 2 && parts[0].isNotEmpty() && parts[1].isNotEmpty()
             return if (isValid) ActionRef(parts[0], parts[1], parts.getOrElse(2) { "" }) else null
         }
@@ -105,10 +124,18 @@ sealed interface PlayerMessage {
         val darkSystem: Boolean = false,
     ) : PlayerMessage
 
-    /** A tap, from [ActionRef.encode]. */
+    /**
+     * A tap, from [ActionRef.encode].
+     * [page] is the page the tablet is on when it taps, so a rebuild can bake that page in (older players omit it).
+     */
     @Serializable
     @SerialName("action")
-    data class Action(val slot: Slot, val rev: Int, val metadata: String) : PlayerMessage
+    data class Action(
+        val slot: Slot,
+        val rev: Int,
+        val metadata: String,
+        val page: Int? = null,
+    ) : PlayerMessage
 
     @Serializable
     @SerialName("page")
@@ -126,9 +153,32 @@ sealed interface PlayerMessage {
         val page: Int,
         val battery: Int? = null,
         val charging: Boolean? = null,
+        /** Wi‑Fi signal level 0–4, or null when not connected / unknown. */
+        val wifi: Int? = null,
         /** `off`, `pinned` (screen pinning) or `locked` (lock task as the device owner); null from older players. */
         val kiosk: String? = null,
     ) : PlayerMessage
+
+    /**
+     * The video over [componentId] of document [rev] in [slot] stopped, so the add-on can start the camera's stream
+     * again. [httpCode] is the add-on's answer when it was an error, such as 404 once Home Assistant ended the stream.
+     */
+    @Serializable
+    @SerialName("video_failed")
+    data class VideoFailed(
+        val slot: Slot,
+        val rev: Int,
+        val componentId: Int,
+        val httpCode: Int? = null,
+    ) : PlayerMessage
+
+    /**
+     * A search query typed in the Music Assistant overlay for [tileId]. The add-on answers with
+     * [ServerMessage.SearchResults].
+     */
+    @Serializable
+    @SerialName("search_query")
+    data class SearchQuery(val tileId: String, val query: String) : PlayerMessage
 
     @Serializable
     @SerialName("ping")
@@ -148,6 +198,8 @@ sealed interface ServerMessage {
         val pairingCode: String? = null,
         val features: List<String> = emptyList(),
         val serverVersion: String = "",
+        /** Home Assistant's time zone id, so analog clocks match the digital time the add-on sends. */
+        val timeZone: String? = null,
     ) : ServerMessage
 
     /** A whole Remote Compose document, base64. [predictions] maps an action's metadata to what it will change. */
@@ -175,6 +227,68 @@ sealed interface ServerMessage {
     @Serializable
     @SerialName("bitmap")
     data class Bitmap(val name: String, val data: String) : ServerMessage
+
+    /**
+     * A camera's live video, played over the component with id [componentId] in document [rev] of [slot], where a
+     * spinner or still shows until it plays. [path] is on the add-on's player port and wants the player's token.
+     * [crop] fills the box and cuts the edges off; else the whole picture fits inside it.
+     * Only for players with [Protocol.CAPABILITY_VIDEO]; it ends when the document goes.
+     */
+    @Serializable
+    @SerialName("video")
+    data class Video(
+        val slot: Slot,
+        val rev: Int,
+        val componentId: Int,
+        val path: String,
+        val crop: Boolean,
+    ) : ServerMessage
+
+    /**
+     * An interactive OpenStreetMap over the component with id [componentId] in document [rev] of [slot].
+     * [tileUrl] has `{z}`, `{x}` and `{y}` (the add-on's `map_tiles`). [markers] are people (or trackers) to pin.
+     * Only for players with [Protocol.CAPABILITY_MAP]; it ends when the document goes.
+     * Named [LiveMap] (not Map) so it does not clash with `kotlin.collections.Map` in this file.
+     */
+    @Serializable
+    @SerialName("map")
+    data class LiveMap(
+        val slot: Slot,
+        val rev: Int,
+        val componentId: Int,
+        val tileUrl: String,
+        val dark: Boolean,
+        val markers: List<MapMarker> = emptyList(),
+    ) : ServerMessage
+
+    /**
+     * A native Music Assistant search field over the component with [componentId] in document [rev] of [slot].
+     * Only for players with [Protocol.CAPABILITY_MUSIC_SEARCH]; it ends when the document goes.
+     */
+    @Serializable
+    @SerialName("live_search")
+    data class LiveSearch(
+        val slot: Slot,
+        val rev: Int,
+        val componentId: Int,
+        val tileId: String,
+        val playerEntityId: String,
+        /** Document pixels of the search slot. The player places the field here when the component has no size. */
+        val x: Int = 0,
+        val y: Int = 0,
+        val width: Int = 0,
+        val height: Int = 0,
+        /** Page the field belongs to. Older servers omit it; the player then keeps the field up. */
+        val page: Int = -1,
+    ) : ServerMessage
+
+    /** Rows for an open [LiveSearch] after [PlayerMessage.SearchQuery]. */
+    @Serializable
+    @SerialName("search_results")
+    data class SearchResults(
+        val tileId: String,
+        val rows: List<MusicSearchRow> = emptyList(),
+    ) : ServerMessage
 
     @Serializable
     @SerialName("settings")
@@ -209,3 +323,21 @@ sealed interface ServerMessage {
     @SerialName("pong")
     data object Pong : ServerMessage
 }
+
+/** A pin on [ServerMessage.LiveMap]. [picture] is a named bitmap the add-on already sent, or null for initials. */
+@Serializable
+data class MapMarker(
+    val latitude: Double,
+    val longitude: Double,
+    val label: String,
+    val picture: String? = null,
+)
+
+/** One hit in [ServerMessage.SearchResults]. */
+@Serializable
+data class MusicSearchRow(
+    val title: String,
+    val subtitle: String? = null,
+    val uri: String,
+    val imagePathOrUrl: String? = null,
+)

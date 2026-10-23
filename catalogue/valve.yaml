@@ -1,0 +1,21 @@
+domain: valve
+name: Valve
+icon: pipe-valve
+icon_on: pipe-valve
+toggle: true
+on_states: [open, opening]
+tap: toggle
+card: valve
+controls: [position]
+sizes: [1x1, 2x1, 2x2]
+actions:
+  toggle: {service: valve.toggle}
+  open: {service: valve.open_valve}
+  close: {service: valve.close_valve}
+  stop: {service: valve.stop_valve}
+  position: {service: valve.set_valve_position, data: {position: $arg}, relative: current_position}
+predict:
+  toggle: {state: "!"}
+  open: {state: "open"}
+  close: {state: "closed"}
+  position: {attributes: {current_position: $arg}}

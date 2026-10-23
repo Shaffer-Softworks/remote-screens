@@ -5,6 +5,9 @@ Remote Screens turns Android tablets into Home Assistant wall screens. You lay o
 to the tablets, which show it with the Remote Screens app. Taps come back to the add-on, which calls Home
 Assistant. The tablets never talk to Home Assistant themselves, and need no token.
 
+The full guide (editor, free-form components, architecture, troubleshooting) is on the
+[GitHub Wiki](https://github.com/Shaffer-Softworks/remote-screens/wiki).
+
 ## Getting started
 
 1. Start the add-on and open **Remote Screens** in the sidebar.
@@ -32,6 +35,35 @@ address of your Home Assistant host with port 8100.
   screen, then on the tablet open the app's settings and choose **Allow turning the screen off in standby** (Android
   asks to activate Remote Screens as a device admin). A screen that is off does not wake on a touch: press the power
   button, or call `remote_screens.wake` from Home Assistant.
+
+## Waking from standby
+
+Besides a touch (when the panel is only dimmed) or the power button, a screen can wake from:
+
+1. **Home Assistant** — call `remote_screens.wake` (or fire `remote_screens_wake`). This is the reliable way to wake
+   when someone enters the room: use a PIR, mmWave, ultrasonic, or occupancy `binary_sensor` in an automation.
+2. **Proximity** (optional) — tick **Wake on proximity** for the screen. Uses the tablet's proximity sensor when it
+   has one. On many tablets that is only a few centimetres, so it is not a substitute for a room sensor. Ignored if
+   there is no sensor. Can keep **Turn the screen off in standby**.
+3. **Face** (optional) — tick **Wake on face**. Uses the front camera and on-device face detection while the screen is
+   asleep. The tablet asks for camera permission; Android shows its privacy indicator while the camera runs. Needs a
+   front camera and is skipped on low-RAM (Android Go) tablets. When face wake is active, standby keeps a black screen
+   instead of turning the panel fully off (so the camera can keep running). Proximity and face can both be on at once;
+   each wakes the screen on its own.
+
+Example: wake screens when a hallway motion sensor trips.
+
+```yaml
+automation:
+  - alias: Wake screens on motion
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.hallway_motion
+        to: "on"
+    actions:
+      - action: remote_screens.wake
+      # Or pick devices under screens, or fire event: remote_screens_wake
+```
 
 ## Kiosk lock
 
@@ -87,15 +119,31 @@ To give an enrolled tablet back its normal use, unlock it (turn Kiosk lock off, 
 and choose **Stop managing this tablet**. The app can then be uninstalled like any other. A factory reset does the
 same.
 
+## Top bar
+
+Per screen, the top bar can show the clock, date, outdoor temperature, people home count, Wi‑Fi signal and
+battery level. Turn each on in the editor under the screen’s settings.
+
 ## Tiles
 
 Every tile follows its entity live. A tap does the obvious thing for its type (toggle a light, open a cover's
 card); a long press opens the card with everything else (brightness and colour, modes, the media library,
 history). The editor lets you change the tap and the long press to: toggle, open the card, run a service, go to a
-page, or nothing.
+page, open a URL on the tablet, fire a Home Assistant event, or nothing.
 
 Tiles that are not an entity: clock, bedside clock, page navigation, history graph, energy flow, map, and a
-favourite (a playlist on a player).
+favourite (a playlist on a player). Dedicated domain tiles cover the usual Home Assistant domains (lights,
+covers, climate, media, cameras, calendars, timers, humidifiers, and more); entities without a dedicated tile
+still appear in the library as a generic on/off tile (`homeassistant.toggle`).
+
+The **map card** (person, device tracker, or the map tile's detail) is an interactive OpenStreetMap on current
+players: pinch to zoom and drag to pan. Older players still get a still image drawn by the add-on. Grid map tiles
+stay as still images.
+
+Besides the grid, a page can be **free-form**: convert it in the page settings, then drag components from the
+palette (columns, rows, dials, tabs, markdown, QR codes, thermostat, weather, and the rest). Bound components
+can use `showWhen` and `animate`. The wiki’s **Free-form components** page lists every type and its props. The
+demo screen includes a Compose page that shows several of them.
 
 A page can be hidden: it has no page dot and is only reached from a navigation tile, with a Back key.
 
@@ -106,8 +154,9 @@ screen's settings, pick its **Theme** and its **Dark theme**; the dark theme is 
 **Dark at night**, during the night hours. The editor's Day / Dark switch previews both.
 
 To make your own, open **Themes** on the editor's home page, duplicate any theme and change its colours. Each
-colour you leave alone follows the theme it was made from. Saving sends the change to every tablet wearing it;
-deleting it puts those screens back on RPI dark.
+colour you leave alone follows the theme it was made from. The Themes page groups roles (chrome, surfaces, ink,
+accents, keys, and so on) and says where each colour lands on the tablet; the preview above the list shows the
+main bands. Saving sends the change to every tablet wearing it; deleting it puts those screens back on RPI dark.
 
 ## Languages
 
@@ -119,9 +168,9 @@ English in other languages.
 ## Settings from Home Assistant
 
 The **Remote Screens** integration (installed with HACS) adds, for each screen, entities for brightness, dark
-mode, standby, night mode, swipe, back-to-home and the page shown, and the services
-`remote_screens.show_alert`, `remote_screens.open_page`, `remote_screens.wake` and `remote_screens.close`. The
-add-on announces itself, so Home Assistant offers to set the integration up.
+mode, standby, night mode, swipe, back-to-home, the page shown, kiosk lock, and wake-on-proximity /
+wake-on-face, and the services `remote_screens.show_alert`, `remote_screens.open_page`, `remote_screens.wake`
+and `remote_screens.close`. The add-on announces itself, so Home Assistant offers to set the integration up.
 
 Alerts can also come from an event, without the integration. In a script or automation:
 
@@ -170,4 +219,4 @@ token is stored as a hash only. To remove a tablet, use **Forget** in the editor
 
 | Option | What |
 | ------ | ---- |
-| `map_tiles` | Where map tiles come from, as a URL with `{z}`, `{x}` and `{y}`. Empty is OpenStreetMap, whose tile servers ask for light use: the add-on caches tiles and only fetches what a map shows. With many tablets, or for another map style, use a tile provider you have a key for. |
+| `map_tiles` | Where map tiles come from, as a URL with `{z}`, `{x}` and `{y}`. Empty is OpenStreetMap, whose tile servers ask for light use: the add-on caches tiles for still map images on the grid (and on older players). Interactive map cards on current players fetch tiles on the tablet using the same URL. With many tablets, or for another map style, use a tile provider you have a key for. |

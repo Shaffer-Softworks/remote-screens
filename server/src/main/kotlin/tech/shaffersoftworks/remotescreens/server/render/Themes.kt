@@ -3,8 +3,17 @@ package tech.shaffersoftworks.remotescreens.server.render
 import tech.shaffersoftworks.remotescreens.shared.Theme
 import kotlinx.serialization.Serializable
 
+private const val OPAQUE_ALPHA = 0xFF
+private const val OPAQUE_ARGB_PREFIX = 0xFF000000L
+private const val RGB_MASK = 0xFFFFFF
+private const val ARGB_MASK = 0xFFFFFFFFL
+private const val HEX_RGB_LENGTH = 7
+private const val ALPHA_SHIFT = 24
+private const val HEX_RADIX = 16
+
 /**
- * The built-in themes and the custom ones laid over them. The only file that holds hex colours (see `ThemeTest`).
+ * The built-in themes and the custom ones laid over them.
+ * Hex colour values live in Color.kt (see [ThemesTest]).
  */
 object Themes {
     const val DEFAULT = "rpi"
@@ -12,47 +21,114 @@ object Themes {
     /** The RPI wall panel's dark greys, teal and blue. */
     val RPI: Palette = palette(
         roles = mapOf(
-            Role.PAGE to 0xFF494949, Role.CARD to 0xFF333333, Role.CARD_HEADER to 0xFF494949, Role.CARD_EDGE to 0xFF000000,
-            Role.HEADER to 0xFF494949, Role.HEADER_DARK to 0xFF2F2E2E, Role.NAV to 0xFF2F2E2E, Role.NAV_ON to 0xFF14E1BA,
-            Role.NAV_LINE to 0xFF03DAC5, Role.INK to 0xFFFFFFFF, Role.INK_SOFT to 0xFFCACACA, Role.INK_DIM to 0xFF939393,
-            Role.INK_FAINT to 0xFF5C5C5C, Role.INK_DARK to 0xFF000000, Role.DIVIDER to 0xFF4A4A4A, Role.TRACK to 0xFF1B1B1B,
-            Role.ACCENT to 0xFF14E1BA, Role.ACCENT_DARK to 0xFF1DA48C, Role.ACCENT_SOFT to 0xFF03DAC5, Role.BLUE to 0xFF0986DB,
-            Role.HOME to 0xFF14E1BA, Role.HOME_STRIP to 0xFFFFFFFF, Role.WEATHER_TITLE to 0xFFFFBB33, Role.STRIP to 0xFF3B3B3B,
-            Role.OK to 0xFF289907, Role.WARN to 0xFFF57C00, Role.DANGER to 0xFFA21C1C, Role.SCRIM to 0xCC000000,
-            Role.KEY to 0xFF5C5C5C, Role.KEY_ON to 0xFF14E1BA, Role.KEY_ON_INK to 0xFF2F2E2E,
+            Role.PAGE to Rpi.Page,
+            Role.CARD to Rpi.Card,
+            Role.CARD_HEADER to Rpi.CardHeader,
+            Role.CARD_EDGE to Rpi.CardEdge,
+            Role.HEADER to Rpi.Header,
+            Role.HEADER_DARK to Rpi.HeaderDark,
+            Role.NAV to Rpi.Nav,
+            Role.NAV_ON to Rpi.NavOn,
+            Role.NAV_LINE to Rpi.NavLine,
+            Role.INK to Rpi.Ink,
+            Role.INK_SOFT to Rpi.InkSoft,
+            Role.INK_DIM to Rpi.InkDim,
+            Role.INK_FAINT to Rpi.InkFaint,
+            Role.INK_DARK to Rpi.InkDark,
+            Role.DIVIDER to Rpi.Divider,
+            Role.TRACK to Rpi.Track,
+            Role.ACCENT to Rpi.Accent,
+            Role.ACCENT_DARK to Rpi.AccentDark,
+            Role.ACCENT_SOFT to Rpi.AccentSoft,
+            Role.BLUE to Rpi.Blue,
+            Role.HOME to Rpi.Home,
+            Role.HOME_STRIP to Rpi.HomeStrip,
+            Role.WEATHER_TITLE to Rpi.WeatherTitle,
+            Role.STRIP to Rpi.Strip,
+            Role.OK to Rpi.Ok,
+            Role.WARN to Rpi.Warn,
+            Role.DANGER to Rpi.Danger,
+            Role.SCRIM to Rpi.Scrim,
+            Role.KEY to Rpi.Key,
+            Role.KEY_ON to Rpi.KeyOn,
+            Role.KEY_ON_INK to Rpi.KeyOnInk,
         ),
         pastels = mapOf(
-            Pastel.YELLOW to 0xFFFFC94D, Pastel.ORANGE to 0xFFFF9800, Pastel.RED to 0xFFFF6E6E, Pastel.PINK to 0xFFF48FB1,
-            Pastel.PURPLE to 0xFFB39DDB, Pastel.BLUE to 0xFF0986DB, Pastel.TEAL to 0xFF14E1BA, Pastel.GREEN to 0xFF5CCB5F,
-            Pastel.GREY to 0xFFCACACA,
+            Pastel.YELLOW to Rpi.PastelYellow,
+            Pastel.ORANGE to Rpi.PastelOrange,
+            Pastel.RED to Rpi.PastelRed,
+            Pastel.PINK to Rpi.PastelPink,
+            Pastel.PURPLE to Rpi.PastelPurple,
+            Pastel.BLUE to Rpi.PastelBlue,
+            Pastel.TEAL to Rpi.PastelTeal,
+            Pastel.GREEN to Rpi.PastelGreen,
+            Pastel.GREY to Rpi.PastelGrey,
         ),
     )
 
     /** Warm light greys and white cards with dark ink; deeper accents so they read on white. */
     val LIGHT: Palette = RPI.over(
         roles = mapOf(
-            Role.PAGE to 0xFFEDEBE7, Role.CARD to 0xFFFFFFFF, Role.CARD_HEADER to 0xFFF2F1EE, Role.CARD_EDGE to 0xFFD6D4CF,
-            Role.HEADER to 0xFFFFFFFF, Role.HEADER_DARK to 0xFFE3E1DC, Role.NAV to 0xFFFFFFFF, Role.NAV_ON to 0xFF0F9E84,
-            Role.NAV_LINE to 0xFF0F9E84, Role.INK to 0xFF1D1D1F, Role.INK_SOFT to 0xFF4A4A50, Role.INK_DIM to 0xFF75757A,
-            Role.INK_FAINT to 0xFFB5B5B8, Role.INK_DARK to 0xFFFFFFFF, Role.DIVIDER to 0xFFDDDBD6, Role.TRACK to 0xFFE4E2DD,
-            Role.ACCENT to 0xFF0F9E84, Role.ACCENT_DARK to 0xFF0B7F6A, Role.ACCENT_SOFT to 0xFF12A891, Role.BLUE to 0xFF0A6FC2,
-            Role.HOME to 0xFF0F9E84, Role.HOME_STRIP to 0xFF1D1D1F, Role.WEATHER_TITLE to 0xFFC77700, Role.STRIP to 0xFFE9E7E2,
-            Role.OK to 0xFF2E8B0F, Role.WARN to 0xFFD96A00, Role.DANGER to 0xFFB3261E, Role.SCRIM to 0x99000000,
-            Role.KEY to 0xFFE6E4DF, Role.KEY_ON to 0xFF0F9E84, Role.KEY_ON_INK to 0xFF1D1D1F,
+            Role.PAGE to Light.Page,
+            Role.CARD to Light.Card,
+            Role.CARD_HEADER to Light.CardHeader,
+            Role.CARD_EDGE to Light.CardEdge,
+            Role.HEADER to Light.Header,
+            Role.HEADER_DARK to Light.HeaderDark,
+            Role.NAV to Light.Nav,
+            Role.NAV_ON to Light.NavOn,
+            Role.NAV_LINE to Light.NavLine,
+            Role.INK to Light.Ink,
+            Role.INK_SOFT to Light.InkSoft,
+            Role.INK_DIM to Light.InkDim,
+            Role.INK_FAINT to Light.InkFaint,
+            Role.INK_DARK to Light.InkDark,
+            Role.DIVIDER to Light.Divider,
+            Role.TRACK to Light.Track,
+            Role.ACCENT to Light.Accent,
+            Role.ACCENT_DARK to Light.AccentDark,
+            Role.ACCENT_SOFT to Light.AccentSoft,
+            Role.BLUE to Light.Blue,
+            Role.HOME to Light.Home,
+            Role.HOME_STRIP to Light.HomeStrip,
+            Role.WEATHER_TITLE to Light.WeatherTitle,
+            Role.STRIP to Light.Strip,
+            Role.OK to Light.Ok,
+            Role.WARN to Light.Warn,
+            Role.DANGER to Light.Danger,
+            Role.SCRIM to Light.Scrim,
+            Role.KEY to Light.Key,
+            Role.KEY_ON to Light.KeyOn,
+            Role.KEY_ON_INK to Light.KeyOnInk,
         ),
         pastels = mapOf(
-            Pastel.YELLOW to 0xFFE0A800, Pastel.ORANGE to 0xFFF08000, Pastel.RED to 0xFFE5484D, Pastel.PINK to 0xFFD9578A,
-            Pastel.PURPLE to 0xFF8E6CC9, Pastel.BLUE to 0xFF0A6FC2, Pastel.TEAL to 0xFF0F9E84, Pastel.GREEN to 0xFF3BA33F,
-            Pastel.GREY to 0xFF8A8A8F,
+            Pastel.YELLOW to Light.PastelYellow,
+            Pastel.ORANGE to Light.PastelOrange,
+            Pastel.RED to Light.PastelRed,
+            Pastel.PINK to Light.PastelPink,
+            Pastel.PURPLE to Light.PastelPurple,
+            Pastel.BLUE to Light.PastelBlue,
+            Pastel.TEAL to Light.PastelTeal,
+            Pastel.GREEN to Light.PastelGreen,
+            Pastel.GREY to Light.PastelGrey,
         ),
     )
 
     /** RPI on true black, so an OLED panel lights only what is drawn. */
     val OLED: Palette = RPI.over(
         roles = mapOf(
-            Role.PAGE to 0xFF000000, Role.CARD to 0xFF0E0E0E, Role.CARD_HEADER to 0xFF1A1A1A, Role.CARD_EDGE to 0xFF000000,
-            Role.HEADER to 0xFF000000, Role.HEADER_DARK to 0xFF000000, Role.NAV to 0xFF000000, Role.DIVIDER to 0xFF262626,
-            Role.TRACK to 0xFF141414, Role.STRIP to 0xFF121212, Role.KEY to 0xFF262626, Role.INK_FAINT to 0xFF4A4A4A,
+            Role.PAGE to Oled.Page,
+            Role.CARD to Oled.Card,
+            Role.CARD_HEADER to Oled.CardHeader,
+            Role.CARD_EDGE to Oled.CardEdge,
+            Role.HEADER to Oled.Header,
+            Role.HEADER_DARK to Oled.HeaderDark,
+            Role.NAV to Oled.Nav,
+            Role.DIVIDER to Oled.Divider,
+            Role.TRACK to Oled.Track,
+            Role.STRIP to Oled.Strip,
+            Role.KEY to Oled.Key,
+            Role.INK_FAINT to Oled.InkFaint,
         ),
         pastels = emptyMap(),
     )
@@ -60,18 +136,43 @@ object Themes {
     /** Black and white with saturated accents, for reading across a room. */
     val CONTRAST: Palette = RPI.over(
         roles = mapOf(
-            Role.PAGE to 0xFF000000, Role.CARD to 0xFF000000, Role.CARD_HEADER to 0xFF1F1F1F, Role.CARD_EDGE to 0xFFFFFFFF,
-            Role.HEADER to 0xFF000000, Role.HEADER_DARK to 0xFF000000, Role.NAV to 0xFF000000, Role.NAV_ON to 0xFF005FCC,
-            Role.NAV_LINE to 0xFFFFFFFF, Role.INK to 0xFFFFFFFF, Role.INK_SOFT to 0xFFFFFFFF, Role.INK_DIM to 0xFFE0E0E0,
-            Role.INK_FAINT to 0xFF9E9E9E, Role.DIVIDER to 0xFFFFFFFF, Role.TRACK to 0xFF333333, Role.ACCENT to 0xFF00FFD0,
-            Role.ACCENT_DARK to 0xFF00C8A4, Role.ACCENT_SOFT to 0xFF00FFD0, Role.BLUE to 0xFF4DB2FF, Role.HOME to 0xFF00FFD0,
-            Role.OK to 0xFF4CFF4C, Role.WARN to 0xFFFF9F1A, Role.DANGER to 0xFFFF4D4D, Role.KEY to 0xFF3A3A3A,
-            Role.KEY_ON to 0xFFFFE600, Role.KEY_ON_INK to 0xFF000000,
+            Role.PAGE to Contrast.Page,
+            Role.CARD to Contrast.Card,
+            Role.CARD_HEADER to Contrast.CardHeader,
+            Role.CARD_EDGE to Contrast.CardEdge,
+            Role.HEADER to Contrast.Header,
+            Role.HEADER_DARK to Contrast.HeaderDark,
+            Role.NAV to Contrast.Nav,
+            Role.NAV_ON to Contrast.NavOn,
+            Role.NAV_LINE to Contrast.NavLine,
+            Role.INK to Contrast.Ink,
+            Role.INK_SOFT to Contrast.InkSoft,
+            Role.INK_DIM to Contrast.InkDim,
+            Role.INK_FAINT to Contrast.InkFaint,
+            Role.DIVIDER to Contrast.Divider,
+            Role.TRACK to Contrast.Track,
+            Role.ACCENT to Contrast.Accent,
+            Role.ACCENT_DARK to Contrast.AccentDark,
+            Role.ACCENT_SOFT to Contrast.AccentSoft,
+            Role.BLUE to Contrast.Blue,
+            Role.HOME to Contrast.Home,
+            Role.OK to Contrast.Ok,
+            Role.WARN to Contrast.Warn,
+            Role.DANGER to Contrast.Danger,
+            Role.KEY to Contrast.Key,
+            Role.KEY_ON to Contrast.KeyOn,
+            Role.KEY_ON_INK to Contrast.KeyOnInk,
         ),
         pastels = mapOf(
-            Pastel.YELLOW to 0xFFFFE600, Pastel.ORANGE to 0xFFFF9F1A, Pastel.RED to 0xFFFF4D4D, Pastel.PINK to 0xFFFF66B3,
-            Pastel.PURPLE to 0xFFC599FF, Pastel.BLUE to 0xFF4DB2FF, Pastel.TEAL to 0xFF00FFD0, Pastel.GREEN to 0xFF4CFF4C,
-            Pastel.GREY to 0xFFFFFFFF,
+            Pastel.YELLOW to Contrast.PastelYellow,
+            Pastel.ORANGE to Contrast.PastelOrange,
+            Pastel.RED to Contrast.PastelRed,
+            Pastel.PINK to Contrast.PastelPink,
+            Pastel.PURPLE to Contrast.PastelPurple,
+            Pastel.BLUE to Contrast.PastelBlue,
+            Pastel.TEAL to Contrast.PastelTeal,
+            Pastel.GREEN to Contrast.PastelGreen,
+            Pastel.GREY to Contrast.PastelGrey,
         ),
     )
 
@@ -91,8 +192,12 @@ object Themes {
 
     private fun over(theme: Theme): Palette {
         val base = BUILTIN[theme.base]?.second ?: RPI
-        val roles = theme.roles.mapNotNull { (k, v) -> Role.of(k)?.let { r -> parse(v)?.let { r to it } } }.toMap()
-        val pastels = theme.pastels.mapNotNull { (k, v) -> Pastel.of(k)?.let { p -> parse(v)?.let { p to it } } }.toMap()
+        val roles = theme.roles.mapNotNull { (k, v) -> Role.of(
+            k,
+        )?.let { r -> parse(v)?.let { r to it } } }.toMap()
+        val pastels = theme.pastels.mapNotNull { (k, v) -> Pastel.of(
+            k,
+        )?.let { p -> parse(v)?.let { p to it } } }.toMap()
         return base.with(roles, pastels)
     }
 
@@ -101,36 +206,52 @@ object Themes {
         BUILTIN.map { (id, v) -> resolved(id, v.first, id, true, v.second, Theme(id, v.first)) } +
             custom.map { resolved(it.id, it.name, it.base, false, over(it), it) }
 
-    private fun resolved(id: String, name: String, base: String, builtin: Boolean, p: Palette, own: Theme) = ResolvedTheme(
+    private fun resolved(
+        id: String,
+        name: String,
+        base: String,
+        builtin: Boolean,
+        palette: Palette,
+        own: Theme,
+    ): ResolvedTheme = ResolvedTheme(
         id = id,
         name = name,
         base = base,
         builtin = builtin,
-        dark = p.dark,
-        roles = Role.entries.associate { it.key to hex(p[it]) },
-        pastels = Pastel.entries.associate { it.key to hex(p[it]) },
+        dark = palette.dark,
+        roles = Role.entries.associate { it.key to hex(palette[it]) },
+        pastels = Pastel.entries.associate { it.key to hex(palette[it]) },
         overrides = Overrides(own.roles, own.pastels),
     )
 
     /** `#RRGGBB` or `#AARRGGBB` to ARGB, or null for anything else. */
     fun parse(hex: String): Int? {
         if (!Theme.HEX.matches(hex)) return null
-        val v = hex.substring(1).toLong(16)
-        return (if (hex.length == 7) v or 0xFF000000 else v).toInt()
+        val value = hex.substring(1).toLong(HEX_RADIX)
+        return (if (hex.length == HEX_RGB_LENGTH) value or OPAQUE_ARGB_PREFIX else value).toInt()
     }
 
     fun hex(argb: Int): String {
-        val a = (argb ushr 24) and 0xFF
-        return if (a == 0xFF) "#%06X".format(argb and 0xFFFFFF) else "#%08X".format(argb.toLong() and 0xFFFFFFFF)
+        val alpha = (argb ushr ALPHA_SHIFT) and OPAQUE_ALPHA
+        return if (alpha == OPAQUE_ALPHA) {
+            "#%06X".format(argb and RGB_MASK)
+        } else {
+            "#%08X".format(argb.toLong() and ARGB_MASK)
+        }
     }
 
-    private fun palette(roles: Map<Role, Long>, pastels: Map<Pastel, Long>): Palette {
-        require(roles.size == Role.entries.size && pastels.size == Pastel.entries.size) { "a built-in theme names every colour" }
-        return Palette(IntArray(Role.entries.size) { roles.getValue(Role.entries[it]).toInt() }, IntArray(Pastel.entries.size) { pastels.getValue(Pastel.entries[it]).toInt() })
+    private fun palette(roles: Map<Role, Int>, pastels: Map<Pastel, Int>): Palette {
+        require(
+            roles.size == Role.entries.size && pastels.size == Pastel.entries.size,
+        ) { "a built-in theme names every colour" }
+        return Palette(
+            IntArray(Role.entries.size) { roles.getValue(Role.entries[it]) },
+            IntArray(Pastel.entries.size) { pastels.getValue(Pastel.entries[it]) },
+        )
     }
 
-    private fun Palette.over(roles: Map<Role, Long>, pastels: Map<Pastel, Long>): Palette =
-        with(roles.mapValues { it.value.toInt() }, pastels.mapValues { it.value.toInt() })
+    private fun Palette.over(roles: Map<Role, Int>, pastels: Map<Pastel, Int>): Palette =
+        with(roles, pastels)
 }
 
 @Serializable

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.wifi.WifiManager
 import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
@@ -13,6 +14,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val PERCENT = 100
+private const val WIFI_LEVELS = 5
 
 data class BatteryStatus(val levelPercent: Int?, val isCharging: Boolean?)
 
@@ -21,6 +23,10 @@ data class BatteryStatus(val levelPercent: Int?, val isCharging: Boolean?)
 class DeviceRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
+    private val wifiManager = context.applicationContext.getSystemService(
+        Context.WIFI_SERVICE,
+    ) as WifiManager
+
     val deviceName: String = "${Build.MANUFACTURER} ${Build.MODEL}".trim()
 
     val model: String = Build.MODEL
@@ -37,7 +43,10 @@ class DeviceRepository @Inject constructor(
         }
 
     fun batteryStatus(): BatteryStatus {
-        val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val batteryIntent = context.registerReceiver(
+            null,
+            IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+        )
             ?: return BatteryStatus(levelPercent = null, isCharging = null)
         val level = batteryIntent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
         val scale = batteryIntent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
@@ -46,9 +55,21 @@ class DeviceRepository @Inject constructor(
         return BatteryStatus(levelPercent, isCharging)
     }
 
+    /** Wi‑Fi signal as 0–4 bars, or null when Wi‑Fi is off / not associated. */
+    fun wifiLevel(): Int? {
+        @Suppress("DEPRECATION")
+        val wifiConnectionInfo =
+            wifiManager.takeIf { it.isWifiEnabled }?.connectionInfo?.takeIf { it.networkId != -1 }
+        @Suppress("DEPRECATION")
+        return wifiConnectionInfo?.let { WifiManager.calculateSignalLevel(it.rssi, WIFI_LEVELS) }
+    }
+
     fun isHomeApp(): Boolean {
         val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
-        val homeActivity = context.packageManager.resolveActivity(homeIntent, PackageManager.MATCH_DEFAULT_ONLY)
+        val homeActivity = context.packageManager.resolveActivity(
+            homeIntent,
+            PackageManager.MATCH_DEFAULT_ONLY,
+        )
         return homeActivity?.activityInfo?.packageName == context.packageName
     }
 
@@ -64,5 +85,7 @@ class DeviceRepository @Inject constructor(
 
     /** Doze cuts the network and ignores wake locks on an unplugged tablet, so standby could not be woken. */
     fun isIgnoringBatteryOptimizations(): Boolean =
-        context.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(context.packageName)
+        context.getSystemService(
+            PowerManager::class.java,
+        ).isIgnoringBatteryOptimizations(context.packageName)
 }

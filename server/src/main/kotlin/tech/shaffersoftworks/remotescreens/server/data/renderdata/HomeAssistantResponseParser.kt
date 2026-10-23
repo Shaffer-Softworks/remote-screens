@@ -1,8 +1,5 @@
 package tech.shaffersoftworks.remotescreens.server.data.renderdata
 
-import tech.shaffersoftworks.remotescreens.server.render.BrowseItem
-import tech.shaffersoftworks.remotescreens.server.render.EnergyPrefs
-import tech.shaffersoftworks.remotescreens.server.render.Forecast
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -27,7 +24,10 @@ internal object HomeAssistantResponseParser {
     fun history(result: Any?, entityId: String): List<HistoryPoint> {
         val rows = (result as? JsonObject)?.get(entityId) as? JsonArray
         val isBinary = entityId.startsWith("binary_sensor.")
-        return rows.orEmpty().mapNotNull { (it as? JsonObject)?.let { row -> historyPoint(row, isBinary) } }
+        return rows.orEmpty().mapNotNull { (it as? JsonObject)?.let { row -> historyPoint(
+            row,
+            isBinary,
+        ) } }
     }
 
     fun energy(preferences: JsonObject): EnergyPrefs {
@@ -35,7 +35,9 @@ internal object HomeAssistantResponseParser {
         fun rateOf(type: String) = sources.firstOrNull { it.text("type") == type }?.powerSensor()
         val devices = (preferences["device_consumption"] as? JsonArray).orEmpty()
             .mapNotNull { it as? JsonObject }
-            .mapNotNull { device -> device.powerSensor()?.let { sensor -> (device.text("name") ?: sensor) to sensor } }
+            .mapNotNull { device -> device.powerSensor()?.let { sensor -> (device.text(
+                "name",
+            ) ?: sensor) to sensor } }
         return EnergyPrefs(rateOf("solar"), rateOf("grid"), rateOf("battery"), devices)
     }
 
@@ -43,6 +45,23 @@ internal object HomeAssistantResponseParser {
     fun library(result: Any?): List<BrowseItem> =
         ((result as? JsonObject)?.get("children") as? JsonArray).orEmpty()
             .mapNotNull { (it as? JsonObject)?.let(::browseItem) }
+
+    /** Incomplete items from `todo.get_items` for [entityId]. */
+    fun todos(result: Any?, entityId: String): List<TodoItem> {
+        val response = (result as? JsonObject)?.let { it["response"] as? JsonObject ?: it }
+        val items = (response?.get(entityId) as? JsonObject)?.get("items") as? JsonArray
+        return items.orEmpty().mapNotNull { (it as? JsonObject)?.let(::todoItem) }
+    }
+
+    private fun todoItem(item: JsonObject): TodoItem? {
+        val status = item.text("status")
+        val summary = item.text("summary")
+        return when {
+            status != null && status != "needs_action" -> null
+            summary == null -> null
+            else -> TodoItem(uid = item.text("uid") ?: summary, summary = summary)
+        }
+    }
 
     private fun forecast(forecast: JsonObject): Forecast? {
         val time = forecast.text("datetime")

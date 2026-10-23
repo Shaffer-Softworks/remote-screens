@@ -19,12 +19,16 @@ fun UpdateDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         text = { Text(stringResource(R.string.update_ready, versionName)) },
-        confirmButton = { TextButton(onClick = onInstall) { Text(stringResource(R.string.install)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.later)) } },
+        confirmButton = { TextButton(
+            onClick = onInstall,
+        ) { Text(stringResource(R.string.install)) } },
+        dismissButton = { TextButton(
+            onClick = onDismiss,
+        ) { Text(stringResource(R.string.later)) } },
     )
 }
 
-@Preview
+@Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun UpdateDialogPreview() {
     RemoteScreensTheme { UpdateDialog(versionName = "0.1.3", onInstall = {}, onDismiss = {}) }

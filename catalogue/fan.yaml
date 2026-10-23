@@ -11,6 +11,12 @@ sizes: [1x1, 2x1, 1x2, 2x2, full]
 actions:
   toggle: {service: fan.toggle}
   percentage: {service: fan.set_percentage, data: {percentage: $arg}, relative: percentage}
+  oscillate: {service: fan.oscillate, data: {oscillating: $arg}}
+  direction: {service: fan.set_direction, data: {direction: $arg}}
+  preset: {service: fan.set_preset_mode, data: {preset_mode: $arg}}
 predict:
   toggle: {state: "!"}
   percentage: {state: "on", attributes: {percentage: $arg}}
+  oscillate: {attributes: {oscillating: $arg}}
+  direction: {attributes: {direction: $arg}}
+  preset: {attributes: {preset_mode: $arg}}

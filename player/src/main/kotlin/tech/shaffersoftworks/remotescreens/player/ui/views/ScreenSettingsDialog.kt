@@ -43,6 +43,8 @@ fun ScreenSettingsDialog(
     canOfferSelfStart: Boolean,
     canOfferScreenOff: Boolean,
     canOfferUnrestrictedBattery: Boolean,
+    canOfferCameraPermission: Boolean = false,
+    wakeOnFaceUnavailableNote: Int? = null,
     kioskAction: KioskAction?,
     canRemoveDeviceOwner: Boolean,
     onBrightnessPreview: (Int) -> Unit,
@@ -53,12 +55,15 @@ fun ScreenSettingsDialog(
     onAllowSelfStart: () -> Unit,
     onAllowScreenOff: () -> Unit,
     onAllowUnrestrictedBattery: () -> Unit,
+    onAllowCameraPermission: () -> Unit = {},
     onUnlockKiosk: () -> Unit,
     onLockKioskAgain: () -> Unit,
     onRemoveDeviceOwner: () -> Unit,
 ) {
     var brightnessPercent by remember(settings) {
-        mutableFloatStateOf(settings.brightness.coerceIn(MIN_BRIGHTNESS_PERCENT, MAX_BRIGHTNESS_PERCENT).toFloat())
+        mutableFloatStateOf(
+            settings.brightness.coerceIn(MIN_BRIGHTNESS_PERCENT, MAX_BRIGHTNESS_PERCENT).toFloat(),
+        )
     }
     var isDarkMode by remember(settings) { mutableStateOf(settings.darkMode) }
     var standbyChoiceIndex by remember(settings) {
@@ -92,7 +97,10 @@ fun ScreenSettingsDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(stringResource(R.string.dark_mode))
-                    Switch(checked = isDarkMode, onCheckedChange = { isDarkMode = it })
+                    Switch(
+                        checked = isDarkMode,
+                        onCheckedChange = { enabled -> isDarkMode = enabled },
+                    )
                 }
                 Text(stringResource(R.string.standby, standbyLabel(standbyMinutes)))
                 Slider(
@@ -105,18 +113,35 @@ fun ScreenSettingsDialog(
                     text = stringResource(R.string.server, server ?: "—"),
                     style = MaterialTheme.typography.bodySmall,
                 )
-                TextButton(onClick = onChangeServer) { Text(stringResource(R.string.change_server)) }
+                TextButton(
+                    onClick = onChangeServer,
+                ) { Text(stringResource(R.string.change_server)) }
                 TextButton(onClick = onForget) { Text(stringResource(R.string.forget)) }
                 if (canOfferSelfStart) {
-                    TextButton(onClick = onAllowSelfStart) { Text(stringResource(R.string.allow_self_start)) }
+                    TextButton(
+                        onClick = onAllowSelfStart,
+                    ) { Text(stringResource(R.string.allow_self_start)) }
                 }
                 if (canOfferScreenOff) {
-                    TextButton(onClick = onAllowScreenOff) { Text(stringResource(R.string.allow_screen_off)) }
+                    TextButton(
+                        onClick = onAllowScreenOff,
+                    ) { Text(stringResource(R.string.allow_screen_off)) }
                 }
                 if (canOfferUnrestrictedBattery) {
                     TextButton(onClick = onAllowUnrestrictedBattery) {
                         Text(stringResource(R.string.allow_unrestricted_battery))
                     }
+                }
+                if (canOfferCameraPermission) {
+                    TextButton(onClick = onAllowCameraPermission) {
+                        Text(stringResource(R.string.allow_camera_for_face_wake))
+                    }
+                }
+                wakeOnFaceUnavailableNote?.let { noteRes ->
+                    Text(
+                        text = stringResource(noteRes),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
                 when (kioskAction) {
                     KioskAction.UNLOCK -> TextButton(onClick = onUnlockKiosk) {
@@ -135,7 +160,9 @@ fun ScreenSettingsDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(brightnessPercent.roundToInt(), isDarkMode, standbyMinutes) }) {
+            TextButton(
+                onClick = { onConfirm(brightnessPercent.roundToInt(), isDarkMode, standbyMinutes) },
+            ) {
                 Text(stringResource(R.string.ok))
             }
         },
@@ -147,19 +174,29 @@ fun ScreenSettingsDialog(
 
 @Composable
 private fun standbyLabel(standbyMinutes: Int): String =
-    if (standbyMinutes == 0) stringResource(R.string.never) else stringResource(R.string.minutes, standbyMinutes)
+    if (standbyMinutes == 0) {
+        stringResource(
+            R.string.never,
+        )
+    } else {
+        stringResource(R.string.minutes, standbyMinutes)
+    }
 
 @Composable
 fun ForgetScreenDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         text = { Text(stringResource(R.string.forget_body)) },
-        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.forget)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+        confirmButton = { TextButton(
+            onClick = onConfirm,
+        ) { Text(stringResource(R.string.forget)) } },
+        dismissButton = { TextButton(
+            onClick = onDismiss,
+        ) { Text(stringResource(R.string.cancel)) } },
     )
 }
 
-@Preview
+@Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun ScreenSettingsDialogPreview() {
     RemoteScreensTheme {
@@ -169,6 +206,7 @@ private fun ScreenSettingsDialogPreview() {
             canOfferSelfStart = true,
             canOfferScreenOff = true,
             canOfferUnrestrictedBattery = true,
+            canOfferCameraPermission = true,
             kioskAction = KioskAction.UNLOCK,
             canRemoveDeviceOwner = false,
             onBrightnessPreview = {},
@@ -179,9 +217,48 @@ private fun ScreenSettingsDialogPreview() {
             onAllowSelfStart = {},
             onAllowScreenOff = {},
             onAllowUnrestrictedBattery = {},
+            onAllowCameraPermission = {},
             onUnlockKiosk = {},
             onLockKioskAgain = {},
             onRemoveDeviceOwner = {},
         )
+    }
+}
+
+@Preview(name = "Lock again", widthDp = 800, heightDp = 480)
+@Composable
+private fun ScreenSettingsDialogLockAgainPreview() {
+    RemoteScreensTheme {
+        ScreenSettingsDialog(
+            settings = ScreenSettings(),
+            server = null,
+            canOfferSelfStart = false,
+            canOfferScreenOff = false,
+            canOfferUnrestrictedBattery = false,
+            canOfferCameraPermission = false,
+            wakeOnFaceUnavailableNote = R.string.face_wake_low_ram,
+            kioskAction = KioskAction.LOCK_AGAIN,
+            canRemoveDeviceOwner = true,
+            onBrightnessPreview = {},
+            onConfirm = { _, _, _ -> },
+            onDismiss = {},
+            onChangeServer = {},
+            onForget = {},
+            onAllowSelfStart = {},
+            onAllowScreenOff = {},
+            onAllowUnrestrictedBattery = {},
+            onAllowCameraPermission = {},
+            onUnlockKiosk = {},
+            onLockKioskAgain = {},
+            onRemoveDeviceOwner = {},
+        )
+    }
+}
+
+@Preview(widthDp = 800, heightDp = 480)
+@Composable
+private fun ForgetScreenDialogPreview() {
+    RemoteScreensTheme {
+        ForgetScreenDialog(onConfirm = {}, onDismiss = {})
     }
 }
