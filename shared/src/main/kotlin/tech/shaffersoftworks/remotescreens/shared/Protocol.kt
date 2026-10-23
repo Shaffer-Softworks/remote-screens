@@ -25,6 +25,9 @@ object Protocol {
     /** A player that can show a native Music Assistant search overlay ([ServerMessage.LiveSearch]). */
     const val CAPABILITY_MUSIC_SEARCH = "music_search"
 
+    /** A player that can show the native calendar create and delete dialogs ([ServerMessage.CalendarDialog]). */
+    const val CAPABILITY_CALENDAR_DIALOGS = "calendar_dialogs"
+
     val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = false
@@ -180,6 +183,31 @@ sealed interface PlayerMessage {
     @SerialName("search_query")
     data class SearchQuery(val tileId: String, val query: String) : PlayerMessage
 
+    /** Create an event from the native calendar dialog. Dates are `yyyy-MM-dd`; times are `HH:mm` when not all-day. */
+    @Serializable
+    @SerialName("calendar_create")
+    data class CalendarCreate(
+        val tileId: String,
+        val entityId: String,
+        val summary: String,
+        val location: String? = null,
+        val allDay: Boolean = false,
+        val startDate: String,
+        val startTime: String? = null,
+        val endDate: String,
+        val endTime: String? = null,
+    ) : PlayerMessage
+
+    /** Delete the event the native calendar dialog confirmed. */
+    @Serializable
+    @SerialName("calendar_delete")
+    data class CalendarDelete(
+        val tileId: String,
+        val entityId: String,
+        val uid: String,
+        val recurrenceId: String? = null,
+    ) : PlayerMessage
+
     @Serializable
     @SerialName("ping")
     data object Ping : PlayerMessage
@@ -322,6 +350,44 @@ sealed interface ServerMessage {
     @Serializable
     @SerialName("pong")
     data object Pong : ServerMessage
+
+    /**
+     * Opens, updates, or closes the native calendar dialog.
+     * [mode] is `create`, `delete`, `error` (leave it open), or `close`.
+     */
+    @Serializable
+    @SerialName("calendar_dialog")
+    data class CalendarDialog(
+        val mode: String,
+        val tileId: String,
+        val calendars: List<CalendarChoice> = emptyList(),
+        val event: CalendarDeleteTarget? = null,
+        val error: String? = null,
+    ) : ServerMessage
+}
+
+/** A calendar the create dialog can write to. */
+@Serializable
+data class CalendarChoice(
+    val entityId: String,
+    val name: String,
+)
+
+/** The event a delete dialog is confirming. */
+@Serializable
+data class CalendarDeleteTarget(
+    val entityId: String,
+    val uid: String,
+    val recurrenceId: String? = null,
+    val summary: String,
+)
+
+/** [ServerMessage.CalendarDialog.mode] values. */
+object CalendarDialogMode {
+    const val CREATE = "create"
+    const val DELETE = "delete"
+    const val ERROR = "error"
+    const val CLOSE = "close"
 }
 
 /** A pin on [ServerMessage.LiveMap]. [picture] is a named bitmap the add-on already sent, or null for initials. */

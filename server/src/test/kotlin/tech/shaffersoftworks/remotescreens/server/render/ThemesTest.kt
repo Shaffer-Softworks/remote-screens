@@ -99,7 +99,7 @@ class ThemesTest {
         // Theme ARGB values live in Color.kt as `0xAARRGGBB.toInt()` (exempt). Bare 8-digit
         // hex is only for parse masks in Themes.kt.
         val hexInventory = setOf("Themes.kt")
-        val offenders = dir.listFiles()!!.filter {
+        val offenders = checkNotNull(dir.listFiles()).filter {
             it.name !in hexInventory && it.name.endsWith(
                 ".kt",
             ) && hex.containsMatchIn(it.readText())

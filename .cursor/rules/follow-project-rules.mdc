@@ -7,9 +7,17 @@ alwaysApply: true
 
 A file-scoped rule is not in the prompt until a matching file is already open, so a new file is written before its rule attaches. Before editing, and again before you finish, read every rule below whose files you touched. `ProjectRuleIndexTest` fails when a file in `.cursor/rules/` is missing from this list.
 
+## The build already checks
+
+- `kotlin-detekt-ktlint-rpi-style.mdc`, `kotlin-magic-numbers-detekt.mdc`, and `kotlin-detekt-top-level-property-naming.mdc`: `./gradlew :<module>:detekt` in CI.
+- `composable-preview.mdc`: `ComposablePreviewRuleTest` in `:player:testDebugUnitTest`. A UI `@Composable` under `player/**/ui` needs a same-file `@Preview` that calls it. Each preview is private, `widthDp = 800` and `heightDp = 480` unless `name` is set, and wrapped in `RemoteScreensTheme`.
+- `kotlin-core.mdc` (`GlobalScope`) and the no-XML-layout line in `jetpack-compose.mdc` and `android-architecture.mdc`: the same player test.
+- `editor-preview-first-layout.mdc`: `editor/src/model/editorShell.test.ts` in `npm test`.
+- `editor-naming-variables.mdc` and `vue3-composition-api-cursorrules-prompt-file.mdc`: `npm run lint` in CI.
+
 ## Kotlin
 
-Any `*.kt` or `*.kts`: read `kotlin-core.mdc`, `kotlin-naming-variables.mdc`, `kotlin-magic-numbers-detekt.mdc`, `kotlin-detekt-top-level-property-naming.mdc`, and `kotlin-detekt-ktlint-rpi-style.mdc`. Finish with `./gradlew :<module>:detekt`.
+Any `*.kt` or `*.kts`: read `kotlin-core.mdc`, `kotlin-naming-variables.mdc`, `kotlin-magic-numbers-detekt.mdc`, `kotlin-detekt-top-level-property-naming.mdc`, and `kotlin-detekt-ktlint-rpi-style.mdc`.
 
 `*Screen.kt`, `*Component.kt`, `*Composable.kt`, and `ui/**/*.kt`: also `jetpack-compose.mdc` and `composable-preview.mdc`.
 
@@ -17,7 +25,7 @@ Any `*.kt` or `*.kts`: read `kotlin-core.mdc`, `kotlin-naming-variables.mdc`, `k
 
 ## Editor
 
-Any `editor/**` Vue or TypeScript: read `vue3-composition-api-cursorrules-prompt-file.mdc` and `editor-naming-variables.mdc`. The screen-editor shell also uses `editor-preview-first-layout.mdc`. Finish with `cd editor && npm run lint` and `npm test`.
+Any `editor/**` Vue or TypeScript: read `vue3-composition-api-cursorrules-prompt-file.mdc` and `editor-naming-variables.mdc`. The screen-editor shell also uses `editor-preview-first-layout.mdc`.
 
 ## Context rules
 

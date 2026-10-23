@@ -1,6 +1,9 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote
 
 import android.graphics.Bitmap
+import tech.shaffersoftworks.remotescreens.shared.CalendarChoice
+import tech.shaffersoftworks.remotescreens.shared.CalendarDeleteTarget
+import tech.shaffersoftworks.remotescreens.shared.CalendarDialogMode
 import tech.shaffersoftworks.remotescreens.shared.MapMarker
 import tech.shaffersoftworks.remotescreens.shared.MusicSearchRow
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
@@ -85,6 +88,8 @@ data class RemoteScreenState(
     val swipePages: List<Int> = listOf(0),
     /** Home Assistant's time zone for analog clocks; null keeps the tablet's zone. */
     val timeZone: String? = null,
+    /** Native create or delete dialog for the calendar page. */
+    val calendarDialog: CalendarDialogState? = null,
 ) {
     val hasMainDocument: Boolean get() = Slot.MAIN in documents
 
@@ -156,6 +161,38 @@ data class RemoteScreenState(
             for (document in documents.values) document.predictions.putAll(message.predictions)
         }
         return copy(values = values + message.vars.associateBy(VarValue::name))
+    }
+
+    fun withCalendarDialog(message: ServerMessage.CalendarDialog): RemoteScreenState = when (message.mode) {
+        CalendarDialogMode.CLOSE -> copy(calendarDialog = null)
+        CalendarDialogMode.ERROR -> {
+            val current = calendarDialog ?: CalendarDialogState(
+                mode = CalendarDialogMode.CREATE,
+                tileId = message.tileId,
+            )
+            copy(calendarDialog = current.copy(error = message.error, isMutating = false))
+        }
+        CalendarDialogMode.DELETE -> copy(
+            calendarDialog = CalendarDialogState(
+                mode = CalendarDialogMode.DELETE,
+                tileId = message.tileId,
+                event = message.event,
+            ),
+        )
+        else -> copy(
+            calendarDialog = CalendarDialogState(
+                mode = CalendarDialogMode.CREATE,
+                tileId = message.tileId,
+                calendars = message.calendars,
+                error = message.error,
+            ),
+        )
+    }
+
+    fun withCalendarMutating(isMutating: Boolean): RemoteScreenState {
+        val current = calendarDialog ?: return this
+        val error = if (isMutating) null else current.error
+        return copy(calendarDialog = current.copy(isMutating = isMutating, error = error))
     }
 
     fun withTimeZone(timeZone: String?): RemoteScreenState =
@@ -231,5 +268,16 @@ data class RemoteScreenState(
             maps = emptyMap(),
             searches = emptyMap(),
             localInts = emptyMap(),
+            calendarDialog = null,
         )
 }
+
+/** The native calendar dialog the add-on asked the tablet to show. */
+data class CalendarDialogState(
+    val mode: String,
+    val tileId: String,
+    val calendars: List<CalendarChoice> = emptyList(),
+    val event: CalendarDeleteTarget? = null,
+    val error: String? = null,
+    val isMutating: Boolean = false,
+)

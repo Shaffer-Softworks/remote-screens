@@ -578,13 +578,13 @@ class FreeFormTest {
                 "sensor.kitchen_temperature",
             ).with("20")),
         )
-        assertEquals(0.5f, at20[nodeLevel("bar")]?.value?.toFloat()!!, 0.001f)
+        assertEquals(0.5f, checkNotNull(at20[nodeLevel("bar")]?.value?.toFloat()), 0.001f)
         val at99 = doc.vars(
             states + ("sensor.kitchen_temperature" to states.getValue(
                 "sensor.kitchen_temperature",
             ).with("99")),
         )
-        assertEquals(1f, at99[nodeLevel("bar")]?.value?.toFloat()!!, 0.001f)
+        assertEquals(1f, checkNotNull(at99[nodeLevel("bar")]?.value?.toFloat()), 0.001f)
     }
 
     @Test
@@ -608,7 +608,7 @@ class FreeFormTest {
                 mapOf("brightness" to kotlinx.serialization.json.JsonPrimitive(128)),
             )),
         )
-        assertEquals(0.5f, half[nodeLevel("ring")]?.value?.toFloat()!!, 0.01f)
+        assertEquals(0.5f, checkNotNull(half[nodeLevel("ring")]?.value?.toFloat()), 0.01f)
         val off = doc.vars(
             states + ("light.table_lamp" to states.getValue("light.table_lamp").with("off")),
         )

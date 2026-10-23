@@ -466,9 +466,9 @@ private fun DocContext.bindMediaBar(node: Node, id: String) {
 
 private fun formatMediaTime(seconds: Double): String {
     val total = seconds.roundToInt().coerceAtLeast(0)
-    val m = total / BlockMetrics.MEDIA_SECONDS_PER_MINUTE
-    val s = total % BlockMetrics.MEDIA_SECONDS_PER_MINUTE
-    return "$m:${s.toString().padStart(BlockMetrics.MEDIA_TIME_PAD, '0')}"
+    val minutes = total / BlockMetrics.MEDIA_SECONDS_PER_MINUTE
+    val seconds = total % BlockMetrics.MEDIA_SECONDS_PER_MINUTE
+    return "$minutes:${seconds.toString().padStart(BlockMetrics.MEDIA_TIME_PAD, '0')}"
 }
 
 /** Daily forecast chips for a weather entity. */

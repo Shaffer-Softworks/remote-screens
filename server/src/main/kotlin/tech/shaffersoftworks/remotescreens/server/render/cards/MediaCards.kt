@@ -39,23 +39,23 @@ internal fun DocContext.mediaCard(entityId: String, entityState: EntityState?, w
     val px = units.px(art).toInt()
     picture(PictureSlot("art.card.$entityId", "attr:$entityId:entity_picture", px, px, 0))
     bind(entityId) { states ->
-        val s = states[entityId]
+        val current = states[entityId]
         listOf(
-            VarValue.string(Vars.entity(entityId, "title"), s?.attr("media_title") ?: ""),
+            VarValue.string(Vars.entity(entityId, "title"), current?.attr("media_title") ?: ""),
             VarValue.string(
                 Vars.entity(entityId, "artist"),
                 listOfNotNull(
-                    s?.attr("media_artist"),
-                    s?.attr("media_album_name"),
+                    current?.attr("media_artist"),
+                    current?.attr("media_album_name"),
                 ).joinToString(" · "),
             ),
             VarValue.int(
                 Vars.entity(entityId, "playing"),
-                if (s?.state == "playing") Vars.VISIBLE else Vars.GONE,
+                if (current?.state == "playing") Vars.VISIBLE else Vars.GONE,
             ),
             VarValue.int(
                 Vars.entity(entityId, "notplaying"),
-                if (s?.state == "playing") Vars.GONE else Vars.VISIBLE,
+                if (current?.state == "playing") Vars.GONE else Vars.VISIBLE,
             ),
         )
     }

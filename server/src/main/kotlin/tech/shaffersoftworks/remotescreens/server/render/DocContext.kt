@@ -32,6 +32,8 @@ class DocContext(
     val states: Map<String, EntityState>,
     val homeAssistantConfig: HomeAssistantConfig,
     val data: RenderData,
+    /** When false, the calendar page hides the add button and the hold-to-delete hint. */
+    val supportsCalendarDialogs: Boolean = false,
 ) {
     lateinit var scope: RcScope
 
@@ -143,8 +145,8 @@ class DocContext(
     }
 
     fun meta(ref: ActionRef): RcText {
-        val s = ref.encode()
-        return declare(metas, s, { meta(ref) }) { scope.remoteText(s) }
+        val encoded = ref.encode()
+        return declare(metas, encoded, { meta(ref) }) { scope.remoteText(encoded) }
     }
 
     fun bind(entityId: String?, compute: (Map<String, EntityState>) -> List<VarValue>) {
@@ -196,7 +198,7 @@ class DocContext(
             val docContext = newContext()
             val bytes = Rc.document(widthPx, heightPx, description) {
                 docContext.scope = this
-                for (d in dry.declarations) d(docContext)
+                for (declaration in dry.declarations) declaration(docContext)
                 content(docContext)
             }
             return bytes to docContext

@@ -41,6 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 import tech.shaffersoftworks.remotescreens.shared.MusicSearchRow
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -285,95 +286,109 @@ private fun SearchRow(
 @Preview(name = "Empty", widthDp = 400, heightDp = 780)
 @Composable
 private fun SearchContentEmptyPreview() {
-    SearchPreviewBackdrop {
-        SearchContent(
-            search = previewSlotSearch(),
-            rows = emptyList(),
-            isLoading = false,
-            onQuery = {},
-            onPlay = {},
-            onEnqueue = {},
-        )
+    RemoteScreensTheme {
+        SearchPreviewBackdrop {
+            SearchContent(
+                search = previewSlotSearch(),
+                rows = emptyList(),
+                isLoading = false,
+                onQuery = {},
+                onPlay = {},
+                onEnqueue = {},
+            )
+        }
     }
 }
 
 @Preview(name = "Loading", widthDp = 400, heightDp = 780)
 @Composable
 private fun SearchContentLoadingPreview() {
-    SearchPreviewBackdrop {
-        SearchContent(
-            search = previewSlotSearch(),
-            rows = emptyList(),
-            isLoading = true,
-            onQuery = {},
-            onPlay = {},
-            onEnqueue = {},
-            initialText = PREVIEW_QUERY,
-        )
+    RemoteScreensTheme {
+        SearchPreviewBackdrop {
+            SearchContent(
+                search = previewSlotSearch(),
+                rows = emptyList(),
+                isLoading = true,
+                onQuery = {},
+                onPlay = {},
+                onEnqueue = {},
+                initialText = PREVIEW_QUERY,
+            )
+        }
     }
 }
 
 @Preview(name = "No results", widthDp = 400, heightDp = 780)
 @Composable
 private fun SearchContentNoResultsPreview() {
-    SearchPreviewBackdrop {
-        SearchContent(
-            search = previewSlotSearch(),
-            rows = emptyList(),
-            isLoading = false,
-            onQuery = {},
-            onPlay = {},
-            onEnqueue = {},
-            initialText = PREVIEW_QUERY,
-        )
+    RemoteScreensTheme {
+        SearchPreviewBackdrop {
+            SearchContent(
+                search = previewSlotSearch(),
+                rows = emptyList(),
+                isLoading = false,
+                onQuery = {},
+                onPlay = {},
+                onEnqueue = {},
+                initialText = PREVIEW_QUERY,
+            )
+        }
     }
 }
 
 @Preview(name = "Results", widthDp = 400, heightDp = 780)
 @Composable
 private fun SearchContentResultsPreview() {
-    SearchPreviewBackdrop {
-        SearchContent(
-            search = previewSlotSearch(),
-            rows = PREVIEW_SEARCH_ROWS,
-            isLoading = false,
-            onQuery = {},
-            onPlay = {},
-            onEnqueue = {},
-            initialText = PREVIEW_QUERY,
-        )
+    RemoteScreensTheme {
+        SearchPreviewBackdrop {
+            SearchContent(
+                search = previewSlotSearch(),
+                rows = PREVIEW_SEARCH_ROWS,
+                isLoading = false,
+                onQuery = {},
+                onPlay = {},
+                onEnqueue = {},
+                initialText = PREVIEW_QUERY,
+            )
+        }
     }
 }
 
 @Preview(name = "Row", widthDp = 400, heightDp = 780)
 @Composable
 private fun SearchRowPreview() {
-    SearchPreviewBackdrop {
-        SearchRow(
-            row = PREVIEW_SEARCH_ROWS.first(),
-            onPlay = {},
-            onEnqueue = {},
-        )
+    RemoteScreensTheme {
+        SearchPreviewBackdrop {
+            SearchRow(
+                row = PREVIEW_SEARCH_ROWS.first(),
+                onPlay = {},
+                onEnqueue = {},
+            )
+        }
     }
 }
 
 @Preview(name = "Row, title only", widthDp = 400, heightDp = 780)
 @Composable
 private fun SearchRowTitleOnlyPreview() {
-    SearchPreviewBackdrop {
-        SearchRow(
-            row = PREVIEW_SEARCH_ROWS.last(),
-            onPlay = {},
-            onEnqueue = {},
-        )
+    RemoteScreensTheme {
+        SearchPreviewBackdrop {
+            SearchRow(
+                row = PREVIEW_SEARCH_ROWS.last(),
+                onPlay = {},
+                onEnqueue = {},
+            )
+        }
     }
 }
 
 @Preview(name = "Backdrop", widthDp = 400, heightDp = 780)
 @Composable
 private fun SearchPreviewBackdropPreview() {
-    SearchPreviewBackdrop {
-        Text(text = "Search", color = Ink)
+    RemoteScreensTheme {
+        SearchPreviewBackdrop {
+            Text(text = "Search", color = Ink)
+        }
     }
 }
 
