@@ -8,8 +8,8 @@ fun ScreenSettings.isNightAt(time: LocalTime): Boolean {
     val end = parseTimeOrNull(nightEnd)
     return when {
         start == null || end == null -> false
-        start <= end -> time >= start && time < end
-        else -> time >= start || time < end
+        start <= end -> time in start..<end
+        else -> time !in end..<start
     }
 }
 

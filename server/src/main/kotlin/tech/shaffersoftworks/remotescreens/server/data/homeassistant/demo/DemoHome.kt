@@ -227,10 +227,16 @@ class DemoHome : HomeAssistant {
                 null
             }
         }
+        "config/device_registry/list" -> buildJsonArray {
+            for ((id, area) in DEVICE_AREAS) add(buildJsonObject { put("id", id); put("area_id", area) })
+        }
         "config/entity_registry/list_for_display" -> buildJsonObject {
             put("entities", buildJsonArray {
                 for ((entity, area) in ENTITY_AREAS) add(
                     buildJsonObject { put("ei", entity); put("ai", area) },
+                )
+                for ((entity, device) in ENTITY_DEVICES) add(
+                    buildJsonObject { put("ei", entity); put("di", device) },
                 )
             })
         }
@@ -387,6 +393,9 @@ class DemoHome : HomeAssistant {
             "lock.front_door" to "hallway", "camera.front_door" to "hallway", "alarm_control_panel.house" to "hallway",
             "light.garden" to "garden", "weather.home" to "garden",
         )
+        /** Entities that take their area from their device, as most in a real home do. */
+        val ENTITY_DEVICES = listOf("switch.hallway_light" to "hallway_switch")
+        val DEVICE_AREAS = listOf("hallway_switch" to "hallway")
 
         private fun attrs(vararg pairs: Pair<String, Any?>): JsonObject = JsonObject(pairs.associate { (k, v) ->
             k to when (v) {
@@ -461,6 +470,11 @@ class DemoHome : HomeAssistant {
                 "switch.coffee_machine",
                 "off",
                 attrs("friendly_name" to "Coffee machine", "icon" to "mdi:coffee"),
+            ),
+            EntityState(
+                "switch.hallway_light",
+                "on",
+                attrs("friendly_name" to "Hallway light", "icon" to "mdi:ceiling-light"),
             ),
             EntityState("fan.bedroom", "on", attrs(
                 "friendly_name" to "Bedroom fan",
@@ -576,6 +590,7 @@ class DemoHome : HomeAssistant {
                 attrs(
                     "friendly_name" to "Curtains",
                     "current_position" to 70,
+                    "current_tilt_position" to 50,
                     "supported_features" to 15,
                     "device_class" to "curtain",
                 ),

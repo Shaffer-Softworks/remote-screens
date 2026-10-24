@@ -1,6 +1,8 @@
 package tech.shaffersoftworks.remotescreens.server.data.renderdata
 
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmUiState
+import tech.shaffersoftworks.remotescreens.server.data.lights.LightsRoom
+import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiState
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicListRow
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicQueueSnapshot
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
@@ -42,6 +44,10 @@ data class RenderData(
     val agendaNotices: Map<String, String> = emptyMap(),
     /** Chosen zone and open dialog of each full alarm page, keyed by tile id. */
     val alarmUi: Map<String, AlarmUiState> = emptyMap(),
+    /** Home Assistant's areas with their lights, switches and covers, when the screen has a lights page. */
+    val lightsRooms: List<LightsRoom> = emptyList(),
+    /** Chosen room and open light dialog of each lights page, keyed by tile id. */
+    val lightsUi: Map<String, LightsUiState> = emptyMap(),
 )
 
 /** One calendar the agenda can read, and whether Home Assistant allows creating or deleting on it. */

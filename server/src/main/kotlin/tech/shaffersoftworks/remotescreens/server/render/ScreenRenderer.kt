@@ -34,6 +34,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssista
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
 import tech.shaffersoftworks.remotescreens.server.render.widgets.at
+import tech.shaffersoftworks.remotescreens.server.render.panels.lights.lightsDialogLayer
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
@@ -249,6 +250,10 @@ object ScreenRenderer {
             tile(named, box, pageIndex)
         }
         navBar(screen, spec, visible, index, home)
+        for (placement in placed.filter { it.tile.effectiveKind() == "lights" && it.tile.edgeToEdge() }) {
+            val box = tileBox(spec, placement, contentH)
+            at(0f, 0f) { lightsDialogLayer(placement.tile, box, spec.widthDp, spec.heightDp) }
+        }
     }
 
     private fun tileBox(spec: GridSpec, placement: Reflow.Placed, contentH: Float): TileBox {

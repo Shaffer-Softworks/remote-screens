@@ -3,12 +3,14 @@ package tech.shaffersoftworks.remotescreens.server.player.action
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmNotice
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoHome
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoLayout
+import tech.shaffersoftworks.remotescreens.server.data.lights.LightDetailMode
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AGENDA_FIELD_SEPARATOR
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.alarmDotVar
+import tech.shaffersoftworks.remotescreens.server.render.theme.Rpi
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.CalendarDialogMode
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
@@ -18,6 +20,9 @@ import tech.shaffersoftworks.remotescreens.shared.Tile
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -210,6 +215,73 @@ class ActionRouterTest {
         renderData.alarmUi.showNotice("a1", AlarmNotice("Invalid Pin", "Pin Must Be 4 Digits"))
         assertEquals(TapOutcome.Rebuild, alarmTap("a1|alarm_dismiss|", memory))
         assertEquals(null, renderData.alarmUi.state("a1").notice)
+    }
+
+    private val lightsScreen = screen.copy(pages = screen.pages + DemoLayout.lightsPage())
+
+    private fun lightsTap(meta: String) = runBlocking {
+        router.handle(checkNotNull(ActionRef.decode(meta)), lightsScreen, TapMemory(), 0)
+    }
+
+    @Test
+    fun aLightsPageChoosesARoomAndOpensAndClosesALightsDialog() {
+        assertEquals(TapOutcome.Rebuild, lightsTap("li1|lights_room|living_room"))
+        assertEquals("living_room", renderData.lightsUi.state("li1").selectedAreaId)
+        assertEquals(TapOutcome.Rebuild, lightsTap("li1|lights_detail|light.living_room"))
+        assertEquals(TapOutcome.Rebuild, lightsTap("li1|lights_mode|wheel"))
+        assertEquals(TapOutcome.Rebuild, lightsTap("li1|lights_effects|"))
+        val open = renderData.lightsUi.state("li1")
+        assertEquals("light.living_room", open.detailEntityId)
+        assertEquals(LightDetailMode.COLOR_WHEEL, open.detailMode)
+        assertTrue(open.isEffectMenuOpen)
+        assertEquals(TapOutcome.Ignored, lightsTap("li1|lights_mode|sideways"))
+        assertEquals(TapOutcome.Rebuild, lightsTap("li1|lights_dismiss|"))
+        assertEquals(null, renderData.lightsUi.state("li1").detailEntityId)
+        assertEquals(TapOutcome.Rebuild, lightsTap("li1|lights_room|kitchen"))
+        assertEquals("kitchen", renderData.lightsUi.state("li1").selectedAreaId)
+        assertTrue(ha.calls.isEmpty())
+    }
+
+    @Test
+    fun aLightsSwatchAndEffectTurnTheOpenLightOn() {
+        lightsTap("li1|lights_detail|light.living_room")
+        lightsTap("li1|lights_palette|0")
+        val (domain, service, data) = ha.calls.last()
+        assertEquals("light" to "turn_on", domain to service)
+        assertEquals("light.living_room", (data["entity_id"] as JsonPrimitive).content)
+        val swatch = Rpi.LightDetailPalette[0]
+        assertEquals(
+            listOf((swatch shr 16) and 0xFF, (swatch shr 8) and 0xFF, swatch and 0xFF),
+            data.getValue("rgb_color").jsonArray.map { it.jsonPrimitive.int },
+        )
+        assertEquals(0, renderData.lightsUi.state("li1").paletteIndex)
+        lightsTap("li1|lights_effects|")
+        lightsTap("li1|lights_effect|Rainbow")
+        assertEquals("Rainbow", (ha.calls.last().third["effect"] as JsonPrimitive).content)
+        assertTrue(!renderData.lightsUi.state("li1").isEffectMenuOpen, "picking an effect closes the menu")
+    }
+
+    @Test
+    fun theLightDialogSendsColourTemperatureAndRgb() {
+        tap("e:light.living_room|kelvin|3000")
+        assertEquals(3000.0, (ha.calls.last().third["color_temp_kelvin"] as JsonPrimitive).doubleOrNull)
+        tap("e:light.living_room|rgb|255,128,0")
+        val (domain, service, data) = ha.calls.last()
+        assertEquals("light" to "turn_on", domain to service)
+        assertEquals(listOf(255, 128, 0), data.getValue("rgb_color").jsonArray.map { it.jsonPrimitive.int })
+        tap("e:light.living_room|brightness|35")
+        assertEquals(35.0, (ha.calls.last().third["brightness_pct"] as JsonPrimitive).doubleOrNull)
+    }
+
+    @Test
+    fun aLightsPageCoverRowTiltsItsCover() {
+        tap("e:cover.living_room_curtains|open_tilt|")
+        assertEquals("cover" to "open_cover_tilt", ha.calls.last().first to ha.calls.last().second)
+        tap("e:cover.living_room_curtains|close_tilt|")
+        assertEquals("close_cover_tilt", ha.calls.last().second)
+        tap("e:cover.living_room_curtains|tilt|42")
+        assertEquals("set_cover_tilt_position", ha.calls.last().second)
+        assertEquals(42.0, (ha.calls.last().third["tilt_position"] as JsonPrimitive).doubleOrNull)
     }
 
     @Test

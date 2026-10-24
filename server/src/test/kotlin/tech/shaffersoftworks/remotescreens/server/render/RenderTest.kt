@@ -7,6 +7,8 @@ import androidx.compose.remote.core.RemoteComposeBuffer
 import androidx.compose.remote.core.operations.NamedVariable
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmNotice
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmUiState
+import tech.shaffersoftworks.remotescreens.server.data.lights.LightDetailMode
+import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiState
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
@@ -231,6 +233,97 @@ class RenderTest {
         ).flatMap { core.getNamedVariables(it).toList() }.toSet()
         val unread = vars.keys.filter { "USER:$it" !in declared && !it.startsWith("sys.") }
         assertTrue(unread.isEmpty(), "values sent but never declared: $unread")
+    }
+
+    private val lightsScreen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.lightsPage()) }
+
+    private fun renderLights(ui: LightsUiState? = null): Pair<RenderedDoc, String> {
+        val data = runBlocking { RenderDataRepository(ha).forScreen(lightsScreen) }
+        val withUi = if (ui == null) data else data.copy(lightsUi = mapOf("li1" to ui))
+        val doc = ScreenRenderer.render(lightsScreen, tablet, input(withUi))
+        return doc to String(doc.bytes, Charsets.ISO_8859_1)
+    }
+
+    private fun assertEveryValueIsDeclared(doc: RenderedDoc) {
+        val core = parse(doc.bytes)
+        val declared = listOf(
+            NamedVariable.STRING_TYPE,
+            NamedVariable.INT_TYPE,
+            NamedVariable.FLOAT_TYPE,
+            NamedVariable.COLOR_TYPE,
+        ).flatMap { core.getNamedVariables(it).toList() }.toSet()
+        val unread = doc.vars(ha.states.value).keys.filter { "USER:$it" !in declared && !it.startsWith("sys.") }
+        assertTrue(unread.isEmpty(), "values sent but never declared: $unread")
+    }
+
+    @Test
+    fun aFullLightsTileIsTheRpiLightsPage() {
+        val (doc, text) = renderLights()
+        for (word in listOf("LIGHTING CONTROL", "Select a room to see its lights", "Bedroom", "Hallway", "Kitchen")) {
+            assertContains(text, word)
+        }
+        assertContains(text, "li1|lights_room|hallway")
+        assertFalse("li1|card|" in text, "the page itself opens no card")
+        assertFalse("li1|lights_dismiss|" in text, "no dialog until a light is opened")
+        assertEveryValueIsDeclared(doc)
+
+        val states = ha.states.value
+        val vars = doc.vars(states)
+        assertEquals("1 Light is on", vars["t.li1.lightsOn.living_room"]?.value)
+        assertEquals("All lights are off", vars["t.li1.lightsOn.hallway"]?.value, "a switch is not a light")
+        val tableLamp = states.getValue("light.table_lamp")
+        val bothOn = doc.vars(states + (tableLamp.entityId to tableLamp.with("on")))
+        assertEquals("2 Lights are on", bothOn["t.li1.lightsOn.living_room"]?.value)
+        assertTrue("light.table_lamp" in doc.entities, "the count follows the room's lights")
+    }
+
+    @Test
+    fun aChosenLightsRoomListsItsLightsSwitchesAndCovers() {
+        val (living, livingText) = renderLights(LightsUiState(selectedAreaId = "living_room"))
+        for (meta in listOf(
+            "li1|lights_detail|light.living_room",
+            "e:light.living_room|brightness|50",
+            "e:light.table_lamp|off|",
+            "e:cover.living_room_curtains|open_tilt|",
+            "e:cover.living_room_curtains|close_tilt|",
+        )) {
+            assertContains(livingText, meta)
+        }
+        val vars = living.vars(ha.states.value)
+        assertTrue("e.light.table_lamp.lightsOn" in vars)
+        assertFalse("e.media_player.living_room.lightsOn" in vars, "only lights, switches and covers are listed")
+        assertEquals(0.5f, vars["e.cover.living_room_curtains.lightsLevel"]?.value?.toFloat())
+        assertEveryValueIsDeclared(living)
+
+        val (_, hallwayText) = renderLights(LightsUiState(selectedAreaId = "hallway"))
+        assertContains(hallwayText, "Hallway light", message = "a switch takes its device's area")
+        assertContains(hallwayText, "e:switch.hallway_light|off|")
+    }
+
+    @Test
+    fun theLightDialogLoadsInEveryMode() {
+        for (mode in LightDetailMode.entries) {
+            val ui = LightsUiState(
+                selectedAreaId = "living_room",
+                detailEntityId = "light.living_room",
+                detailMode = mode,
+                paletteIndex = 2,
+                isEffectMenuOpen = true,
+            )
+            val (doc, text) = renderLights(ui)
+            assertContains(text, "li1|lights_dismiss|")
+            assertContains(text, "li1|lights_mode|wheel")
+            assertContains(text, "li1|lights_palette|7")
+            assertContains(text, "e:light.living_room|toggle|")
+            when (mode) {
+                LightDetailMode.BRIGHTNESS -> assertContains(text, "e:light.living_room|brightness|100")
+                LightDetailMode.COLOR_TEMPERATURE -> assertContains(text, "e:light.living_room|kelvin|")
+                LightDetailMode.COLOR_WHEEL -> assertContains(text, "e:light.living_room|rgb|")
+                LightDetailMode.POWER -> Unit
+            }
+            assertTrue(doc.docContext.structure.any { it.first == "light.living_room" })
+            assertEveryValueIsDeclared(doc)
+        }
     }
 
     @Test

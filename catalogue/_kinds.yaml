@@ -9,3 +9,4 @@ kinds:
   favourite: {name: Favourite music, icon: playlist-music, sizes: [1x1, 2x1, 2x2], card: none, needs_entity: true}
   music: {name: Music Assistant, icon: music, sizes: [full], card: none, needs_entity: true}
   home: {name: Home panel, icon: home-variant, sizes: [full], card: none}
+  lights: {name: Lights, icon: lightbulb-group, sizes: [full], card: none}

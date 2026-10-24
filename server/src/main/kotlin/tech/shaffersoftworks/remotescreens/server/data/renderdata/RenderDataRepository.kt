@@ -2,6 +2,8 @@ package tech.shaffersoftworks.remotescreens.server.data.renderdata
 
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmUiStore
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
+import tech.shaffersoftworks.remotescreens.server.data.lights.LightsRoomsRepository
+import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiStore
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicAssistantClient
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicListRow
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicQueueSnapshot
@@ -41,6 +43,8 @@ class RenderDataRepository(
     private val musicUiStore: MusicUiStore = MusicUiStore(),
     val calendarAgenda: CalendarAgendaStore = CalendarAgendaStore(homeAssistant),
     val alarmUi: AlarmUiStore = AlarmUiStore(),
+    val lightsUi: LightsUiStore = LightsUiStore(),
+    private val lightsRooms: LightsRoomsRepository = LightsRoomsRepository(homeAssistant),
 ) {
     private val logger = LoggerFactory.getLogger(RenderDataRepository::class.java)
 
@@ -72,6 +76,7 @@ class RenderDataRepository(
         val musicTiles = tiles.filter { it.effectiveKind() == "music" }
         val needsAgenda = tiles.any { it.full && it.effectiveKind() == "calendar" }
         val needsEnergy = tiles.any { it.effectiveKind() == "energy" }
+        val needsLights = tiles.any { it.effectiveKind() == "lights" }
         val historyHours = tiles.firstOrNull { it.effectiveKind() == "history" }
             ?.options?.get("hours")?.toIntOrNull()
             ?: DEFAULT_HISTORY_HOURS
@@ -94,6 +99,8 @@ class RenderDataRepository(
             agenda = agenda,
             agendaNotices = calendarAgenda.notices(),
             alarmUi = alarmUi.snapshot(),
+            lightsRooms = if (needsLights) lightsRooms.rooms() else emptyList(),
+            lightsUi = lightsUi.snapshot(),
         )
     }
 
@@ -195,6 +202,7 @@ class RenderDataRepository(
         configEntryCache.clear()
         energyPreferences = null
         calendarAgenda.clear()
+        lightsRooms.clear()
     }
 
     private data class MusicPayload(

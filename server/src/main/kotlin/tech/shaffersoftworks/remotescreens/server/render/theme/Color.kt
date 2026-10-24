@@ -46,6 +46,53 @@ object Rpi {
     const val AlarmCircle = 0xFF0A1518.toInt()
     const val AlarmChipOn = 0xFF10272A.toInt()
     const val White = 0xFFFFFFFF.toInt()
+    const val Black = 0xFF000000.toInt()
+
+    /** The lights page's slider, switch thumb and default icon tint (RPI's `colorNavHeader`), fixed in every theme. */
+    const val LightsOn = 0xFF01EBC2.toInt()
+    /** Material 3's dark `secondary` and `surfaceVariant`, which RPI's room spinner falls back to. */
+    const val LightsSpinner = 0xFFCCC2DC.toInt()
+    const val LightsSpinnerTrack = 0xFF49454F.toInt()
+
+    /** RPI's `LightControlDetailCard` colours. */
+    const val LightDetailCard = 0xFF1C1C1C.toInt()
+    const val LightDetailSecondary = 0xFF9E9E9E.toInt()
+    const val LightDetailModeBar = 0xFF2E2E2E.toInt()
+    const val LightDetailTrack = 0xFF3D3530.toInt()
+    const val LightDetailAccent = 0xFFFF9800.toInt()
+    const val LightDetailEffect = 0xFF3A3A3A.toInt()
+    val LightDetailPalette = listOf(
+        0xFFFF9800.toInt(),
+        0xFFFFCCBC.toInt(),
+        0xFFFFF8E1.toInt(),
+        0xFFFFFFFF.toInt(),
+        0xFF81D4FA.toInt(),
+        0xFFE1BEE7.toInt(),
+        0xFFF8BBD0.toInt(),
+        0xFFFF8A80.toInt(),
+    )
+    val LightDetailTemperatureChip = intArrayOf(0xFFB3E5FC.toInt(), 0xFFFFF9C4.toInt(), 0xFFFFE0B2.toInt())
+    /** The colour wheel mode chip: white, yellow, red, magenta, blue, cyan from the centre out. */
+    val LightDetailWheelChip = intArrayOf(
+        0xFFFFFFFF.toInt(),
+        0xFFFFFF00.toInt(),
+        0xFFFF0000.toInt(),
+        0xFFFF00FF.toInt(),
+        0xFF0000FF.toInt(),
+        0xFF00FFFF.toInt(),
+    )
+    /** Hues clockwise from 3 o'clock, as RPI's HSV disc: red, yellow, green, cyan, blue, magenta, red. */
+    val LightDetailWheelHues = intArrayOf(
+        0xFFFF0000.toInt(),
+        0xFFFFFF00.toInt(),
+        0xFF00FF00.toInt(),
+        0xFF00FFFF.toInt(),
+        0xFF0000FF.toInt(),
+        0xFFFF00FF.toInt(),
+        0xFFFF0000.toInt(),
+    )
+    /** The disc's centre: white fading out, so saturation grows towards the edge. */
+    val LightDetailWheelCentre = intArrayOf(0xFFFFFFFF.toInt(), 0x00FFFFFF)
 }
 
 /** Warm light greys and white cards with dark ink. */

@@ -108,6 +108,15 @@ const ALARM_ACTIONS = [
   { label: 'Disarm', icon: 'shield-lock-open', danger: true },
 ]
 const ALARM_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'Clear', '0', '⌫']
+/** RPI's lights page (LightsPanel.kt): every Home Assistant area on the left, its lights once one is chosen. */
+const isLightsPanel = (tile: Tile) => kindOf(tile) === 'lights' && tile.full === true
+const LIGHTS_SAMPLE_ROOMS = ['Bedroom', 'Garden', 'Kitchen', 'Living Room']
+const lightsRooms = computed(() => {
+  const names = state.areas
+    .map(area => area.name)
+    .sort((nameA, nameB) => nameA.localeCompare(nameB))
+  return names.length ? names : LIGHTS_SAMPLE_ROOMS
+})
 function alarmZoneLabels(tile: Tile): string[] {
   return [
     'All Zones',
@@ -139,6 +148,7 @@ function place(placement: { tile: Tile; col: number; row: number; w: number; h: 
     isThermostatPanel(placement.tile) ||
     isMusicPanel(placement.tile) ||
     isAlarmPanel(placement.tile) ||
+    isLightsPanel(placement.tile) ||
     isCalendarPanel(placement)
   ) {
     return {
@@ -404,6 +414,7 @@ const highlight = computed(() => {
           'thermostat-panel': isThermostatPanel(placement.tile),
           'music-panel': isMusicPanel(placement.tile),
           'alarm-panel': isAlarmPanel(placement.tile),
+          'lights-panel': isLightsPanel(placement.tile),
           'calendar-panel': isCalendarPanel(placement),
           selected: placement.tile.id === selectedId,
           moved: moved.has(placement.tile.id),
@@ -518,6 +529,19 @@ const highlight = computed(() => {
                 ><i v-for="key in ALARM_KEYS" :key="key">{{ key }}</i></span
               >
             </div>
+          </div>
+        </template>
+        <template v-else-if="isLightsPanel(placement.tile)">
+          <div class="li-rooms">
+            <i class="li-accent" />
+            <span class="li-title">LIGHTING CONTROL</span>
+            <span v-for="roomName in lightsRooms" :key="roomName" class="li-room">{{
+              roomName
+            }}</span>
+          </div>
+          <div class="li-prompt">
+            <MdiIcon name="gesture-tap" :size="64" />
+            <span>Select a room to see its lights</span>
           </div>
         </template>
         <template v-else-if="isThermostatPanel(placement.tile)">
@@ -964,6 +988,60 @@ const highlight = computed(() => {
   background: var(--rc-page);
   border: none;
   border-radius: 0;
+}
+
+.tile.lights-panel {
+  flex-direction: row;
+  align-items: stretch;
+  padding: 0;
+  background: var(--rc-page);
+  border: none;
+  border-radius: 0;
+}
+
+.li-rooms {
+  width: 350px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 28px;
+  overflow: hidden;
+  background: var(--rc-strip);
+}
+
+.li-accent {
+  width: 100px;
+  height: 10px;
+  margin-left: 20px;
+  background: var(--rc-accent-dark);
+}
+
+.li-title {
+  margin: 7px 0 0 20px;
+  font-size: 15px;
+  color: var(--rc-ink);
+}
+
+.li-room {
+  height: 100px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 0 10px 0 20px;
+  font-size: 30px;
+  color: var(--rc-ink);
+}
+
+.li-prompt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 20px;
+  color: var(--rc-ink-dim);
 }
 
 .al-split {

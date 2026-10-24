@@ -1,0 +1,49 @@
+---
+description: RPI lights page — full lights tile kind, HA areas with device inheritance, light/switch/cover rows, RPI light detail dialog (Oct 2026)
+globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/panels/lights/*.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/data/lights/*.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/action/LightsActions.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/action/ServiceDataBuilder.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/tiles/Tiles.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/tiles/TileBox.kt,catalogue/_kinds.yaml,catalogue/light.yaml,catalogue/cover.yaml,editor/src/components/GridMockup.vue,editor/src/components/TileDrawer.vue,editor/src/components/EntityLibrary.vue
+alwaysApply: false
+---
+
+# RPI lights page (Oct 2026)
+
+A 1:1 port of RPI's `LightsScreen.kt`, its row views, and `LightDeviceDetailDialog` / `LightControlDetailCard`. The page is the tile kind `lights` (`catalogue/_kinds.yaml`: `sizes: [full]`, `card: none`, no entity).
+
+## Wiring
+
+- `Tile.edgeToEdge()` (`TileBox.kt`) and `Tiles.kt` dispatch `lights` to `lightsPanel` (`render/panels/lights/LightsPanel.kt`). `hasOwnTaps` drops the page tap and hold, as for calendar and alarm.
+- Rooms: `LightsRoomsRepository` (`data/lights/LightsRooms.kt`) reads `config/area_registry/list`, `config/device_registry/list` and `config/entity_registry/list_for_display`. An entity's area is its own `ai`, else its device's area (most real entities only have `di`). Only `light`, `switch` and `cover` are kept, in state order; rooms sort by name. Cached 60 s, and loaded only when a screen has a `lights` tile (`RenderDataRepository.forScreen`), into `RenderData.lightsRooms`.
+- Per-tile UI state (chosen room, open dialog, its mode, swatch, effect menu) is `LightsUiStore`, held by `RenderDataRepository.lightsUi` and copied into `RenderData.lightsUi`.
+- Sizes are RPI's dp values in `LightsMetrics` / `LightsDialogMetrics`, scaled against 1280 × 650. Fixed colours are `Rpi.Lights*` / `Rpi.LightDetail*` in `Color.kt`; `ThemesTest` rejects hex elsewhere in `render/`.
+- RPI's model helpers (supports brightness / colour temp / rgb / effects, start mode, blackbody colour, "16 minutes ago") are `EntityState` extensions in `LightsBind.kt`.
+
+## Taps
+
+- Row and dialog light changes go through catalogue verbs on `e:<entity>`: `on`/`off`/`toggle`, `brightness` (pct), `kelvin`, `rgb` (`r,g,b`; `ServiceDataBuilder` fills `$arg0`–`$arg2` from the comma-split arg), cover `tilt`, `open_tilt`, `close_tilt`.
+- Page verbs on the tile go to `LightsActions` (kept out of `ActionRouter`, which is at detekt's `TooManyFunctions` limit): `lights_room`, `lights_detail`, `lights_dismiss`, `lights_mode`, `lights_effects`, `lights_palette` and `lights_effect`. All return `Rebuild`. Swatch and effect call `light.turn_on` on `detailEntityId`.
+- Remote Compose has no value-reporting drag, so sliders and the colour wheel are grids of tap steps (20 brightness steps, 21 tilt steps, an 11 × 11 wheel grid clipped to the disc).
+- Switch rows stack two visibility-bound tap targets (on/off) so a tap sends the right verb without a rebuild.
+
+## Deviations from RPI
+
+- Before a room is chosen the right column shows a "Select a room" prompt; RPI leaves it blank.
+- Each room's subtitle shows how many of its `light.*` entities are on ("1 Light is on", "{count} Lights are on", "All lights are off"), as RPI's unfinished `numberOfLightsOn` meant to; RPI passes `""`. It is a `bind(null)` text over the room's lights (each also bound so the document watches them), so it updates without a rebuild.
+- The dialog is not a platform dialog. `ScreenRenderer.page` draws `lightsDialogLayer` with `at(0f, 0f)` **after the nav bar**, so the `Role.SCRIM` backdrop and card cover the whole screen, bars included. Drawn inside the tile it sat under the nav bar and never reached the top bar.
+- The card's scroller has an exact viewport height, `requiredHeightIn(max)` and a `RectShape` clip, as `MusicPanel`'s lists: Remote Compose ignores `verticalWeight` on a scroller and the content paints past the card.
+- The eyedropper is drawn but not wired, as in RPI. The rgb call omits RPI's extra `brightness_pct`.
+- The shared paint carries its shader: call `clearShader()` before a solid fill after a gradient.
+
+## Demo
+
+`DemoHome` answers `config/device_registry/list`. `switch.hallway_light` has only a device (`hallway_switch` → hallway). `cover.living_room_curtains` has `current_tilt_position`. The demo screen is at `MAX_PAGES`, so the page is `DemoLayout.lightsPage()`, added only by tests.
+
+## Verify
+
+```bash
+python3 tools/generate_catalogue.py --check
+./gradlew :server:detekt :server:test \
+  --tests 'tech.shaffersoftworks.remotescreens.server.player.action.ActionRouterTest' \
+  --tests 'tech.shaffersoftworks.remotescreens.server.render.RenderTest'
+cd editor && npm run lint && npm test
+```
+
+Especially `aFullLightsTileIsTheRpiLightsPage`, `aChosenLightsRoomListsItsLightsSwitchesAndCovers`, `theLightDialogLoadsInEveryMode` and `aLightsSwatchAndEffectTurnTheOpenLightOn`.
