@@ -13,3 +13,25 @@ When you add a new panel (a page of its own), add it to "Other tiles" in the sam
 - A panel over an entity (alarm, weather, thermostat, music, calendar) goes in `PANELS`: `name` ("… panel"), `icon`, the entity `domain`, and `kind` only when the panel is a kind of its own over that entity (`music` over `media_player`). Clicking it adds a `full` tile on the first entity of that domain. It is greyed out when Home Assistant has none. The tile drawer changes the entity.
 - The catalogue entry must list `full` in `sizes`.
 - `editor/src/model/otherTiles.test.ts` reads the `edgeToEdge` set in `TileBox.kt` and fails when a kind there is in neither list.
+
+## Full-page adds
+
+- `TileSource` (`types.ts`: `entityId`, `kind`, `full`) is the one shape for a new tile, from the library through `EditorLayoutCanvas`, `EditorCanvasSection`, `GridMockup`, `ScreenEditor.add` and `design.addEntity`. Don't reintroduce inline `{ entityId?, kind? }`.
+- `newTile` picks the `full` size when `source.full` is set and the catalogue allows it, else the first small size. A drag carries `full` on `Dragged` (`drag.ts`), and `GridMockup.drop` passes it on.
+- `ScreenEditor.add` refuses a full tile on a page that already has tiles ("A full-page tile needs a page of its own").
+- On a free-form page, `design.addEntity` ignores `full` and adds the entity as a tile node.
+
+## Verified (Oct 24, 2026)
+
+Deployed to the dev add-on. All five panels appear under "Other tiles" after Lights.
+
+## Gotcha: "No area" after an add-on restart
+
+The editor loads entities and areas once, together, in `store.ts`. `HomeAssistantCatalogService` swallows registry failures (`runCatching`), so a load during or just after an add-on restart can return every entity under "No area". A page refresh fixes it. This is not a code bug, so don't chase it after a deploy.
+
+## Verify
+
+```bash
+cd editor && npm run lint && npm test && npm run build
+./gradlew :shared:test --tests '*ProjectRuleIndexTest'
+```
