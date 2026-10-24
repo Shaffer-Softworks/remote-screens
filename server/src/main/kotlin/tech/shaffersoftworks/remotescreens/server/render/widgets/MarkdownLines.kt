@@ -1,4 +1,4 @@
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.widgets
 
 /** Length of the opening and closing `**` bold markers combined. */
 private const val BOLD_MARKER_LENGTH = 4

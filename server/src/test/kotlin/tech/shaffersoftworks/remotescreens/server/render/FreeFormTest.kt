@@ -24,6 +24,7 @@ import tech.shaffersoftworks.remotescreens.server.player.action.TapOutcome
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
+import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.server.service.validation.ScreenValidator
 import tech.shaffersoftworks.remotescreens.shared.MAX_NODE_DEPTH
 import tech.shaffersoftworks.remotescreens.shared.Node

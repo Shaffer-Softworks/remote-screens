@@ -4,7 +4,7 @@ import tech.shaffersoftworks.remotescreens.server.data.apk.PlayerApkRepository
 import tech.shaffersoftworks.remotescreens.server.di.ServerDependencies
 import tech.shaffersoftworks.remotescreens.server.player.PlayerHub
 import tech.shaffersoftworks.remotescreens.server.render.Alert
-import tech.shaffersoftworks.remotescreens.server.render.Icons
+import tech.shaffersoftworks.remotescreens.server.render.widgets.Icons
 import tech.shaffersoftworks.remotescreens.server.routes.model.AdoptPlayerRequest
 import tech.shaffersoftworks.remotescreens.server.service.CreateScreenRequest
 import tech.shaffersoftworks.remotescreens.server.routes.model.EnrollmentRequest

@@ -1,4 +1,4 @@
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.widgets
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject

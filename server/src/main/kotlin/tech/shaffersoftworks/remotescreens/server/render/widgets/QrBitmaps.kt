@@ -1,4 +1,4 @@
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.widgets
 
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
