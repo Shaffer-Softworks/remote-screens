@@ -1,8 +1,5 @@
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.freeform
 
-import tech.shaffersoftworks.remotescreens.server.render.freeform.content
-import tech.shaffersoftworks.remotescreens.server.render.freeform.nodeVar
-import tech.shaffersoftworks.remotescreens.server.render.freeform.nodeLevel
 
 import androidx.compose.remote.core.CoreDocument
 import androidx.compose.remote.core.Operation
@@ -21,6 +18,10 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoLa
 import tech.shaffersoftworks.remotescreens.server.player.action.ActionRouter
 import tech.shaffersoftworks.remotescreens.server.player.action.TapMemory
 import tech.shaffersoftworks.remotescreens.server.player.action.TapOutcome
+import tech.shaffersoftworks.remotescreens.server.render.Device
+import tech.shaffersoftworks.remotescreens.server.render.RenderInput
+import tech.shaffersoftworks.remotescreens.server.render.ScreenRenderer
+import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.theme.Themes

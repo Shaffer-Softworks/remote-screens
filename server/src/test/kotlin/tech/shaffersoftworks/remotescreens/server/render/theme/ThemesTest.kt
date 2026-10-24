@@ -1,9 +1,6 @@
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.theme
 
 import io.ktor.server.plugins.BadRequestException
-import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
-import tech.shaffersoftworks.remotescreens.server.render.theme.Role
-import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
 import tech.shaffersoftworks.remotescreens.server.service.validation.ThemeValidator
 import tech.shaffersoftworks.remotescreens.shared.Theme
 import java.io.File

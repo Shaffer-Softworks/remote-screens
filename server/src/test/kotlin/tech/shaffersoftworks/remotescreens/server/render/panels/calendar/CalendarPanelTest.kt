@@ -1,4 +1,4 @@
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.panels.calendar
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistantConfig
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoHome
@@ -7,6 +7,9 @@ import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaEvent
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaSnapshot
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
+import tech.shaffersoftworks.remotescreens.server.render.Device
+import tech.shaffersoftworks.remotescreens.server.render.RenderInput
+import tech.shaffersoftworks.remotescreens.server.render.ScreenRenderer
 import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
 import tech.shaffersoftworks.remotescreens.shared.Page
 import tech.shaffersoftworks.remotescreens.shared.Screen
