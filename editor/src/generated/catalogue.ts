@@ -25,7 +25,8 @@ export const CATALOGUE: Record<string, TypeSpec> = {
     "sizes": [
       "1x1",
       "2x1",
-      "2x2"
+      "2x2",
+      "full"
     ],
     "options": [],
     "verbs": [

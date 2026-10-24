@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { ALARM_ZONES_OPTION, parseAlarmZones } from '../model/alarmZones'
 import { dragged } from '../model/drag'
 import {
   NARROW,
@@ -98,6 +99,23 @@ const isWeatherPanel = (tile: Tile) => kindOf(tile) === 'weather' && tile.full =
 const WEATHER_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const isThermostatPanel = (tile: Tile) => kindOf(tile) === 'climate' && tile.full === true
 const isMusicPanel = (tile: Tile) => kindOf(tile) === 'music' && tile.full === true
+/** RPI's alarm page (AlarmPanel.kt): status and zones on the left, the pin keypad on the right. */
+const isAlarmPanel = (tile: Tile) => kindOf(tile) === 'alarm_control_panel' && tile.full === true
+const ALARM_ACTIONS = [
+  { label: 'Arm Home', icon: 'shield-home' },
+  { label: 'Arm Away', icon: 'shield-lock' },
+  { label: 'Night Mode', icon: 'shield-moon' },
+  { label: 'Disarm', icon: 'shield-lock-open', danger: true },
+]
+const ALARM_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'Clear', '0', '⌫']
+function alarmZoneLabels(tile: Tile): string[] {
+  return [
+    'All Zones',
+    ...parseAlarmZones(tile.options[ALARM_ZONES_OPTION]).map(
+      zone => zone.label || (entityById.value.get(zone.entityId)?.name ?? zone.entityId),
+    ),
+  ]
+}
 /** A calendar that owns the page: the Full page size, or a tile that already covers the grid. */
 function isCalendarPanel(placement: { tile: Tile; w: number; h: number }): boolean {
   return (
@@ -120,6 +138,7 @@ function place(placement: { tile: Tile; col: number; row: number; w: number; h: 
     isWeatherPanel(placement.tile) ||
     isThermostatPanel(placement.tile) ||
     isMusicPanel(placement.tile) ||
+    isAlarmPanel(placement.tile) ||
     isCalendarPanel(placement)
   ) {
     return {
@@ -384,6 +403,7 @@ const highlight = computed(() => {
           'weather-panel': isWeatherPanel(placement.tile) || isThermostatPanel(placement.tile),
           'thermostat-panel': isThermostatPanel(placement.tile),
           'music-panel': isMusicPanel(placement.tile),
+          'alarm-panel': isAlarmPanel(placement.tile),
           'calendar-panel': isCalendarPanel(placement),
           selected: placement.tile.id === selectedId,
           moved: moved.has(placement.tile.id),
@@ -462,6 +482,44 @@ const highlight = computed(() => {
             </div>
           </div>
         </template>
+        <template v-else-if="isAlarmPanel(placement.tile)">
+          <div class="al-split">
+            <div class="al-card al-main">
+              <div class="al-status">
+                <span class="al-circle"><MdiIcon name="shield-lock-open" :size="54" /></span>
+                <span class="al-words"
+                  ><strong>Disarmed</strong><span>System not secure</span></span
+                >
+                <i class="al-accent" />
+              </div>
+              <i class="al-divider" />
+              <span class="al-label">Select Zone</span>
+              <span class="al-chips">
+                <i
+                  v-for="(zone, zoneIndex) in alarmZoneLabels(placement.tile)"
+                  :key="zone"
+                  :class="{ on: zoneIndex === 0 }"
+                  >{{ zone }}</i
+                >
+              </span>
+              <span class="al-actions">
+                <i
+                  v-for="action in ALARM_ACTIONS"
+                  :key="action.label"
+                  :class="{ danger: action.danger }"
+                  ><MdiIcon :name="action.icon" :size="18" />{{ action.label }}</i
+                >
+              </span>
+            </div>
+            <div class="al-card al-keypad">
+              <span class="al-label">Enter code</span>
+              <span class="al-dots"><i /><i /><i /><i /></span>
+              <span class="al-keys"
+                ><i v-for="key in ALARM_KEYS" :key="key">{{ key }}</i></span
+              >
+            </div>
+          </div>
+        </template>
         <template v-else-if="isThermostatPanel(placement.tile)">
           <div class="th-top">
             <div class="th-head"><i class="bar th-bar" /><span>ADJUST THE TEMPERATURE</span></div>
@@ -507,10 +565,24 @@ const highlight = computed(() => {
               <circle cx="25" cy="-178" r="14" class="dial-knob heat" stroke-width="4" />
               <circle cx="-175" cy="-45" r="14" class="dial-knob cool" stroke-width="4" />
               <text y="-40" text-anchor="middle" class="dial-ink" font-size="20">Cooling</text>
-              <text x="-36" y="28" text-anchor="middle" class="dial-heat" font-size="34" font-weight="300">
+              <text
+                x="-36"
+                y="28"
+                text-anchor="middle"
+                class="dial-heat"
+                font-size="34"
+                font-weight="300"
+              >
                 18°
               </text>
-              <text x="36" y="28" text-anchor="middle" class="dial-cool" font-size="34" font-weight="300">
+              <text
+                x="36"
+                y="28"
+                text-anchor="middle"
+                class="dial-cool"
+                font-size="34"
+                font-weight="300"
+              >
                 24°
               </text>
             </svg>
@@ -884,6 +956,174 @@ const highlight = computed(() => {
   align-items: stretch;
   padding: 16px;
   background: var(--rc-page);
+}
+
+.tile.alarm-panel {
+  align-items: stretch;
+  padding: 24px 32px;
+  background: var(--rc-page);
+  border: none;
+  border-radius: 0;
+}
+
+.al-split {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 28px;
+}
+
+.al-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--rc-card);
+  color: var(--rc-ink);
+}
+
+.al-main {
+  flex: 1.45;
+}
+
+.al-keypad {
+  flex: 0.85;
+  padding: 28px;
+}
+
+.al-status {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.al-circle {
+  width: 120px;
+  height: 120px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid var(--rc-accent);
+  background: #0a1518;
+  color: #ffffff;
+}
+
+.al-words {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 18px;
+  color: var(--rc-ink-soft);
+}
+
+.al-words strong {
+  font-size: 34px;
+  font-weight: 600;
+  color: var(--rc-accent);
+}
+
+.al-accent {
+  width: 4px;
+  height: 120px;
+  border-radius: 8px;
+  background: var(--rc-accent);
+}
+
+.al-divider {
+  height: 1px;
+  margin: 18px 0 14px;
+  background: var(--rc-divider);
+}
+
+.al-label {
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.al-keypad .al-label {
+  font-size: 22px;
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+.al-chips,
+.al-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.al-chips i,
+.al-actions i,
+.al-keys i {
+  font-style: normal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--rc-key);
+  color: var(--rc-ink);
+}
+
+.al-chips i {
+  min-width: 130px;
+  height: 56px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid var(--rc-divider);
+  font-size: 15px;
+}
+
+.al-chips i.on {
+  border-color: transparent;
+  background: #10272a;
+  color: #ffffff;
+}
+
+.al-actions {
+  margin-top: auto;
+}
+
+.al-actions i {
+  flex: 1 1 40%;
+  gap: 10px;
+  height: 64px;
+  border-radius: 16px;
+  font-size: 16px;
+}
+
+.al-actions i.danger {
+  background: var(--rc-danger);
+  color: #ffffff;
+}
+
+.al-dots {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.al-dots i {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--rc-ink-dim);
+}
+
+.al-keys {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 14px;
+}
+
+.al-keys i {
+  border-radius: 16px;
+  font-size: 22px;
 }
 
 .tile.calendar-panel {

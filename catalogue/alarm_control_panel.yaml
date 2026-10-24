@@ -5,7 +5,7 @@ icon_on: shield-lock
 on_states: [armed_away, armed_home, armed_night, armed_vacation, armed_custom_bypass, triggered]
 tap: card
 card: alarm
-sizes: [1x1, 2x1, 2x2]
+sizes: [1x1, 2x1, 2x2, full]
 actions:
   disarm: {service: alarm_control_panel.alarm_disarm, data: {code: $code}}
   arm_away: {service: alarm_control_panel.alarm_arm_away, data: {code: $code}}

@@ -1,0 +1,48 @@
+---
+description: RPI alarm page — full alarm_control_panel tile, zones option, pin keypad and dots, RPI dialogs, Alarmo open sensors (Oct 2026)
+globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/AlarmPanel.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/AlarmMetrics.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/AlarmZones.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/data/alarm/AlarmUiStore.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/action/AlarmActions.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/action/ActionRouter.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/action/TapOutcome.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/PlayerSession.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/tiles/Tiles.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/tiles/TileBox.kt,catalogue/alarm_control_panel.yaml,editor/src/model/alarmZones.ts,editor/src/components/TileDrawer.vue,editor/src/components/GridMockup.vue
+alwaysApply: false
+---
+
+# RPI alarm page (Oct 2026)
+
+A 1:1 port of RPI's `AlarmScreenV2.kt`, `AlarmViewModel.kt` and `KeypadPanel.kt`. A **full** `alarm_control_panel` tile is the page, as a full climate tile is the thermostat.
+
+## Wiring
+
+- `catalogue/alarm_control_panel.yaml` has `full` in `sizes`. Regenerate with `python3 tools/generate_catalogue.py`.
+- `Tile.edgeToEdge()` (`TileBox.kt`) and `Tiles.kt` dispatch `alarm_control_panel` to `alarmPanel` (`AlarmPanel.kt`). `hasOwnTaps` drops the page tap and hold, as for calendar.
+- Sizes, gaps and font sizes are RPI's dp values in `AlarmMetrics`, scaled against a 1280 × 650 page. The fixed colours (dark circle, chosen chip, white) are `Rpi.AlarmCircle`, `Rpi.AlarmChipOn` and `Rpi.White` in `Color.kt`. `ThemesTest` rejects hex anywhere else in `render/`, comments included.
+- Zones: the tile option `zones` = `entity=Label;entity=Label` (`ALARM_ZONES_OPTION`, `Tile.alarmZones()`). The tile's own entity is always first, as "All Zones". Only other `alarm_control_panel.*` entities are kept. The editor writes it through `editor/src/model/alarmZones.ts` in `TileDrawer.vue`.
+- Per-tile UI state (chosen zone, open dialog) lives in `AlarmUiStore`, held by `RenderDataRepository.alarmUi` and copied into `RenderData.alarmUi` for each render.
+
+## Taps
+
+- Keys reuse the generic code verbs (`code_digit`, `code_clear`, `code_back`) against the **tile's** entity, so `TapMemory.codes` holds the pin. On an alarm page `ActionRouter.typeCode` adds `TapOutcome.Code.extra`: visibility ints for `alarmDotVar(entity, index)` that light the four dots.
+- `alarm_zone`, `alarm_arm` and `alarm_dismiss` go to `AlarmActions`, kept out of `ActionRouter`, which is at detekt's `TooManyFunctions` limit.
+- `alarm_arm` clears the pin, then shows RPI's dialog (`TapOutcome.AlarmNotice`, `PlayerSession` stores it and rebuilds) for an empty pin, a pin that is not 4 digits, or Alarmo `open_sensors` (arming only). Otherwise it calls the catalogue service on the **chosen zone** with `code`.
+- Changing zone or dismissing a dialog returns `Rebuild`. That resets the dots, so the pin is cleared too.
+
+## Deviations from RPI
+
+- "Arming" is steady orange, not blinking. Remote Compose alpha21 writes a `graphicsLayer` modifier its own reader rejects ("invalid attribute index"), which crash-looped the player. Don't use `graphicsLayer`. `RenderTest` loads each alarm state's document to catch this.
+- The secure line reads `arm_mode`, falling back to `state` for panels that are not Alarmo.
+- Open sensors don't block Disarm. RPI blocks every mode.
+- States RPI doesn't name (triggered, pending) show HA's translated state instead of "Disarmed".
+- No 6 dp card shadow.
+
+## Demo
+
+`DemoHome` has `alarm_control_panel.basement`, `.upstairs` and `.garage` with Alarmo attributes. The garage has an open sensor. The demo screen is already at `MAX_PAGES` (9), so the page is `DemoLayout.alarmPage()`, added only by tests.
+
+## Verify
+
+```bash
+python3 tools/generate_catalogue.py --check
+./gradlew :server:detekt :server:test \
+  --tests 'tech.shaffersoftworks.remotescreens.server.player.action.ActionRouterTest' \
+  --tests 'tech.shaffersoftworks.remotescreens.server.render.RenderTest'
+cd editor && npm run lint && npm test
+```
+
+Especially `aFullAlarmTileIsTheRpiAlarmPage`, `anAlarmPageShowsTheChosenZoneAndRpisDialog`, `anAlarmPageArmsTheChosenZoneWithThePin` and `openSensorsStopArmingButNotDisarming`.

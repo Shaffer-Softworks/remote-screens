@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.data.renderdata
 
+import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmUiState
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicListRow
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicQueueSnapshot
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
@@ -39,6 +40,8 @@ data class RenderData(
     val agenda: AgendaSnapshot? = null,
     /** Transient lines under the agenda title, keyed by tile id. */
     val agendaNotices: Map<String, String> = emptyMap(),
+    /** Chosen zone and open dialog of each full alarm page, keyed by tile id. */
+    val alarmUi: Map<String, AlarmUiState> = emptyMap(),
 )
 
 /** One calendar the agenda can read, and whether Home Assistant allows creating or deleting on it. */

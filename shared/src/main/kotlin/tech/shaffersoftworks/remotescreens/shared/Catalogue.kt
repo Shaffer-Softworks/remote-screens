@@ -16,7 +16,7 @@ object Catalogue {
             defaultVerb = null,
             card = "alarm",
             controls = listOf(),
-            sizes = listOf("1x1", "2x1", "2x2"),
+            sizes = listOf("1x1", "2x1", "2x2", "full"),
             options = listOf(),
             actions = mapOf("disarm" to ActionSpec("alarm_control_panel.alarm_disarm", mapOf("code" to "\$code"), false, null), "arm_away" to ActionSpec("alarm_control_panel.alarm_arm_away", mapOf("code" to "\$code"), false, null), "arm_home" to ActionSpec("alarm_control_panel.alarm_arm_home", mapOf("code" to "\$code"), false, null), "arm_night" to ActionSpec("alarm_control_panel.alarm_arm_night", mapOf("code" to "\$code"), false, null), "arm_vacation" to ActionSpec("alarm_control_panel.alarm_arm_vacation", mapOf("code" to "\$code"), false, null)),
             predict = mapOf(),
