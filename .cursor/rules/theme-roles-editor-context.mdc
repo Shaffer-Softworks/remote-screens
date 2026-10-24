@@ -1,6 +1,6 @@
 ---
 description: Themes editor role sections — where each Role lands on the tablet; catalogue + preview conventions
-globs: editor/src/model/themeRoles.ts,editor/src/components/ThemesView.vue,editor/src/model/palette.ts,addon/DOCS.md,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/ThemeModel.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/Themes.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/Color.kt
+globs: editor/src/model/themeRoles.ts,editor/src/components/ThemesView.vue,editor/src/model/palette.ts,addon/DOCS.md,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/theme/ThemeModel.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/theme/Themes.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/theme/Color.kt
 alwaysApply: false
 ---
 

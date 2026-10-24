@@ -1,6 +1,6 @@
 ---
 description: Per-tile border colour over the theme's card_edge role
-globs: shared/src/main/kotlin/**/Layout.kt,server/src/main/kotlin/**/render/tiles/TileChrome.kt,server/src/main/kotlin/**/render/FreeForm.kt,editor/src/components/TileDrawer.vue,editor/src/components/GridMockup.vue,editor/src/model/themeRoles.ts,editor/src/model/types.ts
+globs: shared/src/main/kotlin/**/Layout.kt,server/src/main/kotlin/**/render/tiles/TileChrome.kt,server/src/main/kotlin/**/render/freeform/FreeForm.kt,editor/src/components/TileDrawer.vue,editor/src/components/GridMockup.vue,editor/src/model/themeRoles.ts,editor/src/model/types.ts
 alwaysApply: false
 ---
 

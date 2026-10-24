@@ -1,6 +1,6 @@
 ---
 description: Home-page nav icons grey — thermostat dial gradient stays on the shared Remote Compose paint
-globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/Widgets.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/ThermostatDial.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/ScreenRenderer.kt
+globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/widgets/Widgets.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/panels/thermostat/ThermostatDial.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/ScreenRenderer.kt
 alwaysApply: false
 ---
 

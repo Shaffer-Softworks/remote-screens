@@ -1,6 +1,6 @@
 ---
 description: Free-form page layout parity between the editor (HTML/CSS) and the tablet (Remote Compose), including the wrapped-row fill fix
-globs: server/src/main/kotlin/**/render/freeform/FreeFormLayout.kt,server/src/main/kotlin/**/render/FreeForm.kt,server/src/test/kotlin/**/render/FreeFormTest.kt,editor/src/components/NodeView.vue
+globs: server/src/main/kotlin/**/render/freeform/FreeFormLayout.kt,server/src/main/kotlin/**/render/freeform/FreeForm.kt,server/src/test/kotlin/**/render/freeform/FreeFormTest.kt,editor/src/components/NodeView.vue
 alwaysApply: false
 ---
 
