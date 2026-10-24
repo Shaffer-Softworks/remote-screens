@@ -2,6 +2,7 @@ package tech.shaffersoftworks.remotescreens.server.data.renderdata
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -78,7 +79,10 @@ class CalendarAgendaStore(private val homeAssistant: HomeAssistant) {
     suspend fun snapshot(states: Map<String, EntityState>, zone: ZoneId): AgendaSnapshot {
         cache.get()?.takeIf { it.isFresh() }?.let { return it.value }
         val loaded = runCatching { load(states, zone) }
-            .onFailure { logger.debug("Calendar agenda failed: {}", it.message) }
+            .onFailure { error ->
+                if (error is CancellationException) throw error
+                logger.debug("Calendar agenda failed: {}", error.message)
+            }
             .getOrElse { AgendaSnapshot(errorMessage = it.message ?: AgendaCopy.ERROR) }
         cache.set(Cached(loaded, System.currentTimeMillis()))
         latest = loaded
