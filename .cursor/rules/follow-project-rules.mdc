@@ -31,6 +31,7 @@ Any `editor/**` Vue or TypeScript: read `vue3-composition-api-cursorrules-prompt
 
 Read the rule whose files you are changing. These describe behavior that is already shipped.
 
+- `render-package-layout-context.mdc` — server render subpackages
 - `map-dialog-player-osm-context.mdc` — map dialog
 - `thermostat-component-context.mdc` — thermostat
 - `alarm-panel-context.mdc` — RPI alarm page
