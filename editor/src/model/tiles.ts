@@ -1,7 +1,7 @@
 // What the catalogue says about a tile: its default icon, name, sizes and tap.
 
 import { CATALOGUE, type TypeSpec } from '../generated/catalogue'
-import type { EntityInfo, Tile } from './types'
+import type { EntityInfo, Tile, TileSource } from './types'
 import { domainOf, kindOf } from './types'
 
 export function specOf(tile: Pick<Tile, 'entityId' | 'kind'>): TypeSpec | undefined {
@@ -53,9 +53,9 @@ export function newTileId(): string {
   return `t${Date.now().toString(36)}${seq.toString(36)}`
 }
 
-/** A new tile for an entity or a kind, at the first size the catalogue allows. */
+/** A new tile for an entity or a kind, at the first size the catalogue allows (or full, if asked and allowed). */
 export function newTile(
-  source: { entityId?: string; kind?: string },
+  source: TileSource,
   col: number,
   row: number,
 ): Tile {
@@ -75,7 +75,11 @@ export function newTile(
     hold: { type: 'card' },
     options: {},
   }
-  const first = sizesOf(tile).find(size => !size.full) ?? sizesOf(tile)[0]
+  const sizes = sizesOf(tile)
+  const first =
+    (source.full && sizes.find(size => size.full)) ||
+    sizes.find(size => !size.full) ||
+    sizes[0]
   tile.w = first.w
   tile.h = first.h
   tile.full = first.full || undefined

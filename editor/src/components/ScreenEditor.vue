@@ -8,7 +8,7 @@ import { history } from '../model/history'
 import { DEFAULT_THEME, activeThemeId } from '../model/palette'
 import { fromGrid, newRoot } from '../model/nodes'
 import { newTile } from '../model/tiles'
-import type { Page, Screen, Tile } from '../model/types'
+import type { Page, Screen, Tile, TileSource } from '../model/types'
 import { attempt, dirty, editing, playersOf, save, toast } from '../store'
 import EditorToolbar from './EditorToolbar.vue'
 import EditorLayoutCanvas from './layouts/EditorLayoutCanvas.vue'
@@ -201,7 +201,7 @@ function resize(cols: number, rows: number): void {
 }
 
 function add(
-  source: { entityId?: string; kind?: string },
+  source: TileSource,
   at?: { col: number; row: number },
 ): void {
   const tile = newTile(source, 0, 0)

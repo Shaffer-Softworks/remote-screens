@@ -52,3 +52,4 @@ Read the rule whose files you are changing. These describe behavior that is alre
 - `freeform-weather-nextevent-context.mdc` — weather and next event
 - `ha-weather-icons-context.mdc` — weather icons
 - `editor-sliders-and-theme-preview-context.mdc` — range sliders and Day/Dark preview
+- `editor-other-tiles-context.mdc` — every new full-page panel goes in the library's "Other tiles"

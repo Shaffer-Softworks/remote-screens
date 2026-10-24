@@ -14,7 +14,7 @@ import {
 } from '../model/grid'
 import { colorOf, pastel } from '../model/palette'
 import { iconOf, nameOf, stateOf } from '../model/tiles'
-import type { Page, Screen, Tile } from '../model/types'
+import type { Page, Screen, Tile, TileSource } from '../model/types'
 import { domainOf, kindOf } from '../model/types'
 import { entityById, state } from '../store'
 import MdiIcon from './MdiIcon.vue'
@@ -29,7 +29,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [id: string | null]
   move: [id: string, col: number, row: number]
-  add: [source: { entityId?: string; kind?: string }, at: { col: number; row: number }]
+  add: [source: TileSource, at: { col: number; row: number }]
 }>()
 
 const box = ref<HTMLElement>()
@@ -269,7 +269,7 @@ function drop(col: number, row: number): void {
   else if (drag.type === 'new')
     emit(
       'add',
-      { entityId: drag.entityId, kind: drag.kind },
+      { entityId: drag.entityId, kind: drag.kind, full: drag.full },
       fitsAt(props.page.tiles, props.screen.grid, landing.col, landing.row, drag.w, drag.h)
         ? landing
         : { col, row },

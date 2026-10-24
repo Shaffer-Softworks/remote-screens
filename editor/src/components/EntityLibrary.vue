@@ -2,19 +2,17 @@
 import { computed, ref } from 'vue'
 import { CATALOGUE } from '../generated/catalogue'
 import { dragged } from '../model/drag'
+import { OTHER_TILE_KINDS, PANELS, panelSource } from '../model/otherTiles'
 import { newTile } from '../model/tiles'
-import type { EntityInfo, Page } from '../model/types'
+import type { EntityInfo, Page, TileSource } from '../model/types'
 import { state } from '../store'
 import MdiIcon from './MdiIcon.vue'
 
 const props = defineProps<{ page: Page }>()
-const emit = defineEmits<{ add: [source: { entityId?: string; kind?: string }] }>()
+const emit = defineEmits<{ add: [source: TileSource] }>()
 
 const query = ref('')
 const onPage = computed(() => new Set(props.page.tiles.map(tile => tile.entityId).filter(Boolean)))
-
-/** Tiles that are no entity. History and favourite music are an entity shown another way (see the tile drawer). */
-const KINDS = ['home', 'clock', 'bedside', 'nav', 'energy', 'map', 'lights']
 
 const groups = computed(() => {
   const needle = query.value.trim().toLowerCase()
@@ -32,19 +30,27 @@ const groups = computed(() => {
   )
 })
 
+const matchesQuery = (name: string) =>
+  !query.value || name.toLowerCase().includes(query.value.toLowerCase())
+
 const kinds = computed(() =>
   Object.entries(CATALOGUE)
-    .filter(([key]) => KINDS.includes(key))
-    .filter(
-      ([, spec]) => !query.value || spec.name.toLowerCase().includes(query.value.toLowerCase()),
-    ),
+    .filter(([key]) => OTHER_TILE_KINDS.includes(key))
+    .filter(([, spec]) => matchesQuery(spec.name)),
+)
+
+const panels = computed(() =>
+  PANELS.filter(panel => matchesQuery(panel.name)).map(panel => ({
+    ...panel,
+    source: panelSource(panel, state.entities),
+  })),
 )
 
 const open = ref<Record<string, boolean>>({})
 const isOpen = (area: string) =>
   query.value.trim() !== '' || (open.value[area] ?? groups.value.length <= 3)
 
-function drag(event: DragEvent, source: { entityId?: string; kind?: string }): void {
+function drag(event: DragEvent, source: TileSource): void {
   const preview = newTile(source, 0, 0)
   dragged.value = {
     type: 'new',
@@ -70,7 +76,7 @@ function icon(entity: EntityInfo): string {
     />
     <p class="muted hint">Drag onto the page, or click to add at the first free spot.</p>
 
-    <section v-if="kinds.length">
+    <section v-if="kinds.length || panels.length">
       <h3>Other tiles</h3>
       <button
         v-for="[key, spec] in kinds"
@@ -83,6 +89,24 @@ function icon(entity: EntityInfo): string {
       >
         <MdiIcon :name="spec.icon" :size="20" />
         <span class="grow">{{ spec.name }}</span>
+      </button>
+      <button
+        v-for="panel in panels"
+        :key="panel.name"
+        class="item"
+        :disabled="!panel.source"
+        :draggable="!!panel.source"
+        :title="
+          panel.source
+            ? `A page of its own, on ${panel.source.entityId}`
+            : `No ${panel.domain} entity in Home Assistant`
+        "
+        @dragstart="panel.source && drag($event, panel.source)"
+        @dragend="dragged = null"
+        @click="panel.source && emit('add', panel.source)"
+      >
+        <MdiIcon :name="panel.icon" :size="20" />
+        <span class="grow">{{ panel.name }}</span>
       </button>
     </section>
 
@@ -113,7 +137,9 @@ function icon(entity: EntityInfo): string {
       </template>
     </section>
 
-    <p v-if="groups.length === 0 && kinds.length === 0" class="muted">Nothing matches.</p>
+    <p v-if="groups.length === 0 && kinds.length === 0 && panels.length === 0" class="muted">
+      Nothing matches.
+    </p>
   </div>
 </template>
 
@@ -159,8 +185,13 @@ section {
   cursor: grab;
 }
 
-.item:hover {
+.item:hover:not(:disabled) {
   background: var(--bg);
+}
+
+.item:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .item.used .name::after {
