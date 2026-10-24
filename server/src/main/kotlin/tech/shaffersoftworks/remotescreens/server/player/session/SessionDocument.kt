@@ -12,6 +12,7 @@ import tech.shaffersoftworks.remotescreens.server.render.ScreenRenderer
 import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Slot
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
 import java.util.Base64
@@ -115,7 +116,10 @@ internal class SessionDocument(
     suspend fun rebuild(shown: ShownDocument) {
         val renderedDoc = buildMutex.withLock {
             runCatching { shown.rebuild() }
-                .onFailure { logger.warn("Build failed: {}", it.message, it) }
+                .onFailure { error ->
+                    if (error is CancellationException) throw error
+                    logger.warn("Build failed: {}", error.message, error)
+                }
                 .getOrNull()
         } ?: return
         if (shownDocuments[shown.slot] === shown) show(shown.slot, renderedDoc, shown.rebuild)
