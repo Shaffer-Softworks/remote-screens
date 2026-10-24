@@ -101,5 +101,20 @@
   "ui.alarm_open_sensors_title": "Sensores abertos!",
   "ui.alarm_open_sensors": "Verifique se portas e janelas estão fechadas",
   "ui.alarm_dismiss": "Dispensar",
-  "ui.alarm_confirm": "Confirmar"
+  "ui.alarm_confirm": "Confirmar",
+  "ui.lights_title": "CONTROLO DE ILUMINAÇÃO",
+  "ui.lights_select_room": "Escolha uma divisão para ver as luzes",
+  "ui.lights_off": "Desligada",
+  "ui.lights_effect": "Efeito",
+  "ui.lights_all_off": "Todas as luzes estão desligadas",
+  "ui.lights_one_on": "1 luz ligada",
+  "ui.lights_many_on": "{count} luzes ligadas",
+  "ui.lights_second_ago": "Há 1 segundo",
+  "ui.lights_seconds_ago": "Há {count} segundos",
+  "ui.lights_minute_ago": "Há 1 minuto",
+  "ui.lights_minutes_ago": "Há {count} minutos",
+  "ui.lights_hour_ago": "Há 1 hora",
+  "ui.lights_hours_ago": "Há {count} horas",
+  "ui.lights_day_ago": "Ontem",
+  "ui.lights_days_ago": "Há {count} dias"
 }

@@ -263,4 +263,12 @@ object DemoLayout {
         ),
         icon = "shield-home",
     )
+
+    /** RPI's lights page over every demo area. Added where it is wanted, like [alarmPage]. */
+    fun lightsPage(): Page = Page(
+        "lights",
+        "Lights",
+        listOf(Tile("li1", kind = "lights", full = true)),
+        icon = "lightbulb-group",
+    )
 }

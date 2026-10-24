@@ -101,5 +101,20 @@
   "ui.alarm_open_sensors_title": "Open sensoren!",
   "ui.alarm_open_sensors": "Controleer of ramen en deuren dicht zijn",
   "ui.alarm_dismiss": "Sluiten",
-  "ui.alarm_confirm": "Bevestigen"
+  "ui.alarm_confirm": "Bevestigen",
+  "ui.lights_title": "VERLICHTING",
+  "ui.lights_select_room": "Kies een kamer om de lampen te zien",
+  "ui.lights_off": "Uit",
+  "ui.lights_effect": "Effect",
+  "ui.lights_all_off": "Alle lampen zijn uit",
+  "ui.lights_one_on": "1 lamp is aan",
+  "ui.lights_many_on": "{count} lampen zijn aan",
+  "ui.lights_second_ago": "1 seconde geleden",
+  "ui.lights_seconds_ago": "{count} seconden geleden",
+  "ui.lights_minute_ago": "1 minuut geleden",
+  "ui.lights_minutes_ago": "{count} minuten geleden",
+  "ui.lights_hour_ago": "1 uur geleden",
+  "ui.lights_hours_ago": "{count} uur geleden",
+  "ui.lights_day_ago": "Gisteren",
+  "ui.lights_days_ago": "{count} dagen geleden"
 }

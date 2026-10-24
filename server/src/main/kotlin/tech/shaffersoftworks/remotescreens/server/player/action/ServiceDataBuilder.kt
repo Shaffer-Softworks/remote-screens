@@ -21,6 +21,7 @@ private const val DEFAULT_MAX_VALUE = 100.0
 private const val MAX_WHOLE_NUMBER = 1e9
 private const val ARG_PLACEHOLDER = "\$arg"
 private const val CODE_PLACEHOLDER = "\$code"
+private val ARG_PART = Regex("\\\$arg[0-9]")
 private const val CLIMATE_SET_TEMPERATURE = "climate.set_temperature"
 private const val ATTR_TARGET_TEMP_LOW = "target_temp_low"
 private const val ATTR_TARGET_TEMP_HIGH = "target_temp_high"
@@ -217,6 +218,7 @@ object ServiceDataBuilder {
     private fun fill(template: Any, arg: String, code: String?): JsonElement = when (template) {
         is String -> when {
             template == CODE_PLACEHOLDER -> code?.let { JsonPrimitive(it) } ?: JsonNull
+            ARG_PART.matches(template) -> argPart(template, arg)
             isArgExpression(template) -> argValue(template, arg)
             else -> JsonPrimitive(template)
         }
@@ -233,6 +235,13 @@ object ServiceDataBuilder {
         is Boolean -> JsonPrimitive(template)
         is Number -> JsonPrimitive(template)
         else -> JsonPrimitive(template.toString())
+    }
+
+    /** `$arg1` is the second comma-separated part of the argument, so `255,0,0` fills `[$arg0, $arg1, $arg2]`. */
+    private fun argPart(template: String, arg: String): JsonElement {
+        val part = arg.split(',').getOrNull(template.removePrefix(ARG_PLACEHOLDER).toInt())?.trim()
+            ?: return JsonNull
+        return argValue(ARG_PLACEHOLDER, part)
     }
 
     private fun wholeOrDecimal(value: Double): Number =

@@ -26,7 +26,7 @@ const edgeToEdge = computed(
   () =>
     kindOf(props.tile) === 'home' ||
     (!!props.tile.full &&
-      ['weather', 'climate', 'music', 'calendar', 'alarm_control_panel'].includes(
+      ['weather', 'climate', 'music', 'calendar', 'alarm_control_panel', 'lights'].includes(
         kindOf(props.tile),
       )),
 )

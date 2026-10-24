@@ -1,0 +1,67 @@
+---
+description: RPI lights page — full lights tile kind, HA areas with device inheritance, light/switch/cover rows, lights-on counts, full-screen RPI light detail dialog (Oct 2026)
+globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/panels/lights/*.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/data/lights/*.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/action/LightsActions.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/action/ServiceDataBuilder.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/ScreenRenderer.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/tiles/Tiles.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/tiles/TileBox.kt,catalogue/_kinds.yaml,catalogue/light.yaml,catalogue/cover.yaml,editor/src/components/GridMockup.vue,editor/src/components/TileDrawer.vue,editor/src/components/EntityLibrary.vue
+alwaysApply: false
+---
+
+# RPI lights page (Oct 2026)
+
+A 1:1 port of RPI's `LightsScreen.kt`, its row views, and `LightDeviceDetailDialog` / `LightControlDetailCard`. The page is the tile kind `lights` (`catalogue/_kinds.yaml`: `sizes: [full]`, `card: none`, no entity). Verified on the BLU M8L tablet against the live HA (Oct 24, 2026).
+
+## Wiring
+
+- `Tile.edgeToEdge()` (`TileBox.kt`) and `Tiles.kt` dispatch `lights` to `lightsPanel` (`render/panels/lights/LightsPanel.kt`). `hasOwnTaps` drops the page tap and hold, as for calendar and alarm.
+- Rooms: `LightsRoomsRepository` (`data/lights/LightsRooms.kt`) reads `config/area_registry/list`, `config/device_registry/list` and `config/entity_registry/list_for_display`. An entity's area is its own `ai`, else its device's area (most real entities only have `di`). Only `light`, `switch` and `cover` are kept, in state order; rooms sort by name. Cached 60 s, and loaded only when a screen has a `lights` tile (`RenderDataRepository.forScreen`), into `RenderData.lightsRooms`.
+- Per-tile UI state (chosen room, open dialog, its mode, swatch, effect menu) is `LightsUiStore`, held by `RenderDataRepository.lightsUi` and copied into `RenderData.lightsUi`.
+- Files: `LightsPanel.kt` (page, room list, spinner, prompt, `lightsDialogLayer`), `LightsDeviceRows.kt` (rows, sliders, switches), `LightsDetailDialog.kt` (card, header, mode bar, palette, effects), `LightsDetailControls.kt` (brightness/temperature sliders, colour wheel), `LightsBind.kt` (RPI's `EntityState` helpers: supports brightness / colour temp / rgb / effects, start mode, "16 minutes ago"), `LightsColor.kt` (rgb packing, `r,g,b` arg, blackbody colour), `LightsMetrics.kt`. Detekt caps a file at 20 functions, so keep the split.
+- Sizes are RPI's dp values in `LightsMetrics` / `LightsDialogMetrics`, scaled against 1280 × 650. Fixed colours are `Rpi.Lights*` / `Rpi.LightDetail*` in `Color.kt`; `ThemesTest` rejects hex elsewhere in `render/`.
+
+## Taps
+
+- Row and dialog light changes go through catalogue verbs on `e:<entity>`: `on`/`off`/`toggle`, `brightness` (pct), `kelvin`, `rgb` (`r,g,b`; `ServiceDataBuilder` fills `$arg0`–`$arg2` from the comma-split arg), cover `tilt`, `open_tilt`, `close_tilt`.
+- Page verbs on the tile go to `LightsActions` (kept out of `ActionRouter`, which is at detekt's `TooManyFunctions` limit): `lights_room`, `lights_detail`, `lights_dismiss`, `lights_mode`, `lights_effects`, `lights_palette` and `lights_effect`. All return `Rebuild`. Swatch and effect call `light.turn_on` on `detailEntityId`.
+- Remote Compose has no value-reporting drag, so sliders and the colour wheel are grids of tap steps (20 brightness steps, 21 tilt steps, an 11 × 11 wheel grid clipped to the disc).
+- Switch rows stack two visibility-bound tap targets (on/off) so a tap sends the right verb without a rebuild.
+- Dialog brightness (fill and "NN%") is variable-bound; state, colour mode, rgb, kelvin and effects are `structural` and rebuild the document.
+
+## Room subtitle (lights-on count)
+
+RPI computes `numberOfLightsOn` and the wording, then passes `subText = ""`. Here each room row shows the count of its `light.*` entities that are on: `ui.lights_one_on` ("1 Light is on"), `ui.lights_many_on` ("{count} Lights are on"), `ui.lights_all_off` ("All lights are off"), in `Role.INK_DIM` (RPI's `colorNav`). Switches and covers do not count. `bindLightsOnCount` binds each light with `emptyList()` (so the document watches it) and computes the text in `bind(null)`, as the home panel's people count — it updates without a rebuild. Polish uses "Włączone światła: {count}" because i18n has no plural rules.
+
+## Dialog over the whole screen
+
+- Not a platform dialog. `ScreenRenderer.page` draws tiles, then the nav bar, then `lightsDialogLayer` with `at(0f, 0f)`, so the backdrop and card cover the bars. Drawn inside the tile it sat under the nav bar and never reached the top bar.
+- Backdrop is `role(Role.SCRIM)`. A `fixed(0x99000000)` backdrop did not show on the tablet; use the theme role, as the alarm and entity-card dialogs do.
+- The card scroller has an exact viewport height (`cardH` minus padding), `requiredHeightIn(max)` and a `RectShape` clip, as `MusicPanel`'s lists. Remote Compose ignores `verticalWeight` on a scroller: the content painted past the card from top bar to nav bar. The effect menu is capped the same way.
+- The layout keeps the page's scale (from the tile box) but centres on the screen size.
+
+## Other deviations from RPI
+
+- Before a room is chosen the right column shows a "Select a room" prompt; RPI leaves it blank.
+- The eyedropper is drawn but not wired, as in RPI. The rgb call omits RPI's extra `brightness_pct`.
+- The shared paint carries its shader: call `clearShader()` before a solid fill after a gradient.
+- No `graphicsLayer` (see `alarm-panel-context.mdc`).
+
+## Editor
+
+`GridMockup.vue` draws the page with `state.areas` names (sample names when none) and the select-room prompt. No counts: the editor's entity list only has each entity's own area, not its device's, so most real rooms would wrongly read "All lights are off". `lights` is in `EntityLibrary.vue`'s kind list and `TileDrawer.vue`'s edge-to-edge list.
+
+## Demo
+
+`DemoHome` answers `config/device_registry/list`. `switch.hallway_light` has only a device (`hallway_switch` → hallway). `cover.living_room_curtains` has `current_tilt_position`. The demo screen is at `MAX_PAGES`, so the page is `DemoLayout.lightsPage()`, added only by tests.
+
+## Deploy to the dev add-on
+
+`tools/deploy_ha_dev.sh --no-rebuild` with `HA_SAMBA_PASSWORD` (from HA MCP `ha_get_app core_samba` options; export for the command only, never save it), then HA MCP `ha_manage_app` `rebuild` on `local_remote_screens` and check `ha_get_logs` source `supervisor`. The "local_apps is not a known share" warnings are harmless. Only rebuild when the user asked to deploy.
+
+## Verify
+
+```bash
+python3 tools/generate_catalogue.py --check
+./gradlew :server:detekt :server:test \
+  --tests 'tech.shaffersoftworks.remotescreens.server.player.action.ActionRouterTest' \
+  --tests 'tech.shaffersoftworks.remotescreens.server.render.RenderTest'
+cd editor && npm run lint && npm test
+```
+
+Especially `aFullLightsTileIsTheRpiLightsPage` (includes the counts), `aChosenLightsRoomListsItsLightsSwitchesAndCovers`, `theLightDialogLoadsInEveryMode` and `aLightsSwatchAndEffectTurnTheOpenLightOn`.

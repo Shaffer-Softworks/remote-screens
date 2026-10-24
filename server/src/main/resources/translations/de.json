@@ -101,5 +101,20 @@
   "ui.alarm_open_sensors_title": "Offene Sensoren!",
   "ui.alarm_open_sensors": "Prüfe, ob Fenster und Türen geschlossen sind",
   "ui.alarm_dismiss": "Schließen",
-  "ui.alarm_confirm": "Bestätigen"
+  "ui.alarm_confirm": "Bestätigen",
+  "ui.lights_title": "LICHTSTEUERUNG",
+  "ui.lights_select_room": "Wähle einen Raum, um seine Lichter zu sehen",
+  "ui.lights_off": "Aus",
+  "ui.lights_effect": "Effekt",
+  "ui.lights_all_off": "Alle Lichter sind aus",
+  "ui.lights_one_on": "1 Licht ist an",
+  "ui.lights_many_on": "{count} Lichter sind an",
+  "ui.lights_second_ago": "Vor 1 Sekunde",
+  "ui.lights_seconds_ago": "Vor {count} Sekunden",
+  "ui.lights_minute_ago": "Vor 1 Minute",
+  "ui.lights_minutes_ago": "Vor {count} Minuten",
+  "ui.lights_hour_ago": "Vor 1 Stunde",
+  "ui.lights_hours_ago": "Vor {count} Stunden",
+  "ui.lights_day_ago": "Gestern",
+  "ui.lights_days_ago": "Vor {count} Tagen"
 }

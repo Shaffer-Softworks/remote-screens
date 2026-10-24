@@ -148,5 +148,20 @@
   "ui.alarm_open_sensors_title": "Open Sensors!",
   "ui.alarm_open_sensors": "Check windows and doors are closed",
   "ui.alarm_dismiss": "Dismiss",
-  "ui.alarm_confirm": "Confirm"
+  "ui.alarm_confirm": "Confirm",
+  "ui.lights_title": "LIGHTING CONTROL",
+  "ui.lights_select_room": "Select a room to see its lights",
+  "ui.lights_off": "Off",
+  "ui.lights_effect": "Effect",
+  "ui.lights_all_off": "All lights are off",
+  "ui.lights_one_on": "1 Light is on",
+  "ui.lights_many_on": "{count} Lights are on",
+  "ui.lights_second_ago": "1 second ago",
+  "ui.lights_seconds_ago": "{count} seconds ago",
+  "ui.lights_minute_ago": "1 minute ago",
+  "ui.lights_minutes_ago": "{count} minutes ago",
+  "ui.lights_hour_ago": "1 hour ago",
+  "ui.lights_hours_ago": "{count} hours ago",
+  "ui.lights_day_ago": "Yesterday",
+  "ui.lights_days_ago": "{count} days ago"
 }

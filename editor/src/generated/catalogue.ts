@@ -205,7 +205,9 @@ export const CATALOGUE: Record<string, TypeSpec> = {
       "close",
       "stop",
       "position",
-      "tilt"
+      "tilt",
+      "open_tilt",
+      "close_tilt"
     ],
     "needsEntity": true
   },
@@ -457,6 +459,7 @@ export const CATALOGUE: Record<string, TypeSpec> = {
       "brightness",
       "hue",
       "kelvin",
+      "rgb",
       "effect"
     ],
     "needsEntity": true
@@ -949,6 +952,21 @@ export const CATALOGUE: Record<string, TypeSpec> = {
   "home": {
     "name": "Home panel",
     "icon": "home-variant",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "none",
+    "controls": [],
+    "sizes": [
+      "full"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": false
+  },
+  "lights": {
+    "name": "Lights",
+    "icon": "lightbulb-group",
     "iconOn": null,
     "toggle": false,
     "tap": "card",

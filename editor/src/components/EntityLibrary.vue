@@ -14,7 +14,7 @@ const query = ref('')
 const onPage = computed(() => new Set(props.page.tiles.map(tile => tile.entityId).filter(Boolean)))
 
 /** Tiles that are no entity. History and favourite music are an entity shown another way (see the tile drawer). */
-const KINDS = ['home', 'clock', 'bedside', 'nav', 'energy', 'map']
+const KINDS = ['home', 'clock', 'bedside', 'nav', 'energy', 'map', 'lights']
 
 const groups = computed(() => {
   const needle = query.value.trim().toLowerCase()

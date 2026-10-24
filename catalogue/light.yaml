@@ -15,6 +15,7 @@ actions:
   brightness: {service: light.turn_on, data: {brightness_pct: $arg}, relative: "brightness/2.55"}
   hue: {service: light.turn_on, data: {hs_color: [$arg, 80]}}
   kelvin: {service: light.turn_on, data: {color_temp_kelvin: $arg}}
+  rgb: {service: light.turn_on, data: {rgb_color: [$arg0, $arg1, $arg2]}}
   effect: {service: light.turn_on, data: {effect: $arg}}
 predict:
   toggle: {state: "!"}

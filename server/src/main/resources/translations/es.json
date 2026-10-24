@@ -101,5 +101,20 @@
   "ui.alarm_open_sensors_title": "¡Sensores abiertos!",
   "ui.alarm_open_sensors": "Comprueba que puertas y ventanas estén cerradas",
   "ui.alarm_dismiss": "Descartar",
-  "ui.alarm_confirm": "Confirmar"
+  "ui.alarm_confirm": "Confirmar",
+  "ui.lights_title": "CONTROL DE ILUMINACIÓN",
+  "ui.lights_select_room": "Elige una habitación para ver sus luces",
+  "ui.lights_off": "Apagada",
+  "ui.lights_effect": "Efecto",
+  "ui.lights_all_off": "Todas las luces están apagadas",
+  "ui.lights_one_on": "1 luz encendida",
+  "ui.lights_many_on": "{count} luces encendidas",
+  "ui.lights_second_ago": "Hace 1 segundo",
+  "ui.lights_seconds_ago": "Hace {count} segundos",
+  "ui.lights_minute_ago": "Hace 1 minuto",
+  "ui.lights_minutes_ago": "Hace {count} minutos",
+  "ui.lights_hour_ago": "Hace 1 hora",
+  "ui.lights_hours_ago": "Hace {count} horas",
+  "ui.lights_day_ago": "Ayer",
+  "ui.lights_days_ago": "Hace {count} días"
 }

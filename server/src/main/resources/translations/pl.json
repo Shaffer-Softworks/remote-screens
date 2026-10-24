@@ -101,5 +101,20 @@
   "ui.alarm_open_sensors_title": "Otwarte czujniki!",
   "ui.alarm_open_sensors": "Sprawdź, czy okna i drzwi są zamknięte",
   "ui.alarm_dismiss": "Odrzuć",
-  "ui.alarm_confirm": "Potwierdź"
+  "ui.alarm_confirm": "Potwierdź",
+  "ui.lights_title": "STEROWANIE OŚWIETLENIEM",
+  "ui.lights_select_room": "Wybierz pokój, aby zobaczyć jego światła",
+  "ui.lights_off": "Wył.",
+  "ui.lights_effect": "Efekt",
+  "ui.lights_all_off": "Wszystkie światła są wyłączone",
+  "ui.lights_one_on": "1 światło włączone",
+  "ui.lights_many_on": "Włączone światła: {count}",
+  "ui.lights_second_ago": "1 sekundę temu",
+  "ui.lights_seconds_ago": "{count} s temu",
+  "ui.lights_minute_ago": "1 minutę temu",
+  "ui.lights_minutes_ago": "{count} min temu",
+  "ui.lights_hour_ago": "1 godzinę temu",
+  "ui.lights_hours_ago": "{count} godz. temu",
+  "ui.lights_day_ago": "Wczoraj",
+  "ui.lights_days_ago": "{count} dni temu"
 }

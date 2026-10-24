@@ -14,6 +14,7 @@ import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
 import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.calendarPanel
 import tech.shaffersoftworks.remotescreens.server.render.panels.home.homeTile
+import tech.shaffersoftworks.remotescreens.server.render.panels.lights.lightsPanel
 import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.server.render.panels.music.musicPanel
@@ -57,7 +58,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
     }
 
     if (kind == "home" || box.edge) {
-        val hasOwnTaps = kind == "calendar" || kind == "alarm_control_panel"
+        val hasOwnTaps = kind in setOf("calendar", "alarm_control_panel", "lights")
         val pageTap = if (hasOwnTaps) null else tapRef
         val pageHold = if (hasOwnTaps) null else holdRef
         at(
@@ -70,6 +71,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
                 "music" -> this@tile.musicPanel(tile, box)
                 "calendar" -> this@tile.calendarPanel(tile, box)
                 "alarm_control_panel" -> this@tile.alarmPanel(tile, box)
+                "lights" -> this@tile.lightsPanel(tile, box)
                 else -> this@tile.weatherPanel(tile, box)
             }
         } }
