@@ -1,0 +1,46 @@
+---
+description: Server render package layout — which subpackage a renderer file belongs in, and how to move files (Oct 2026)
+globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/**/*.kt,server/src/test/kotlin/tech/shaffersoftworks/remotescreens/server/render/**/*.kt
+alwaysApply: false
+---
+
+# Server render package layout (Oct 2026)
+
+`server/.../render/` is split by feature. Put a new file in the package that matches what it draws, not at the root.
+
+| Package | Holds |
+|---|---|
+| `render` | Document core only: `ScreenRenderer`, `DocContext`, `Rc`, `Vars`, `Present`, `HaRenderFlags`, `Alerts` |
+| `render.theme` | `Color` (`Rpi`, `Light`, `Oled`, `Contrast`), `ThemeModel` (`Role`, `Pastel`, `Palette`, `Units`), `Themes` |
+| `render.widgets` | Shared building blocks: `Widgets` (`Type`, `Weight`, `label`, `key`, `icon`, `gap`, ...), `Controls`, `Icons`, `HaWeatherIcons`, `QrBitmaps`, `MarkdownLines` |
+| `render.panels.<feature>` | Full-page tiles: `alarm`, `calendar`, `music`, `thermostat`, `weather`, `home`. Each keeps its `*Panel`, `*Bind`, `*Metrics` together |
+| `render.freeform` | Free-form renderer: `FreeForm`, `FreeFormBlocks`, `FreeFormNodes`, `FreeFormLayout`, `FreeFormMedia`, ... |
+| `render.cards` | Card dialogs (`CardRenderer`, `*Cards`) |
+| `render.tiles` | Grid tiles and dispatch (`Tiles` calls the `panels.*` entry points) |
+
+Tests mirror the package: `CalendarPanelTest` is in `render.panels.calendar`, `ThemesTest` in `render.theme`, `FreeFormTest` in `render.freeform`. `RenderTest` stays at the root.
+
+## Rules
+
+- Detekt `InvalidPackageDeclaration` is active: the folder and the `package` line must match.
+- `theme` imports nothing from the other subpackages; keep it that way. `widgets` never imports `panels`, `tiles` or `cards`.
+- Known cross-links, not layering: panels take `tiles.TileBox` (Home also uses `tiles.bindWhere` and `tiles.photo`, Weather uses `cards.CardChrome`), and `widgets` and `ThermostatDial` use `freeform.paint`.
+- A new panel gets its own `panels/<feature>/` folder. A metrics object only one panel uses stays in that panel's folder.
+- `ThemesTest` still rejects hex colours anywhere under `render/`; new fixed colours go in `theme/Color.kt`.
+
+## Moving files
+
+1. `git mv` so history follows, then change the `package` line.
+2. Add imports to files that used the moved symbols without one before (same old package), and rewrite `import ...render.X` to the new package.
+3. `./gradlew :server:detekt --auto-correct` removes unused imports (`NoUnusedImports` is auto-correcting; `ImportOrdering` is off).
+4. Update `globs:` and path mentions in `.cursor/rules/*.mdc`, `docs/REMOTE_COMPOSE.md`, and editor comments that cite server paths.
+5. The detekt baseline keys on file name only, so moves don't need a baseline regeneration.
+
+## Verify
+
+```bash
+./gradlew :server:compileTestKotlin :server:test :server:detekt
+./gradlew :shared:test --tests '*ProjectRuleIndexTest*'
+```
+
+If `compileTestKotlin` reports unrelated unresolved references right after a move, it is stale incremental state; rerun with `--rerun-tasks`.
