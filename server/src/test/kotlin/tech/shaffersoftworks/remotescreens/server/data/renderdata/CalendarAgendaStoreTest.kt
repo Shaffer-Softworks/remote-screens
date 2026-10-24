@@ -1,10 +1,16 @@
 package tech.shaffersoftworks.remotescreens.server.data.renderdata
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoHome
 import tech.shaffersoftworks.remotescreens.server.player.action.AgendaMutation
 import tech.shaffersoftworks.remotescreens.server.player.action.CalendarMutations
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import java.time.ZoneOffset
@@ -67,5 +73,36 @@ class CalendarAgendaStoreTest {
         assertEquals("calendar.family", payload.getValue("entity_id").jsonPrimitive.contentOrNull)
         assertEquals("demo-dentist", payload.getValue("uid").jsonPrimitive.contentOrNull)
         assertEquals("r1", payload.getValue("recurrence_id").jsonPrimitive.contentOrNull)
+    }
+
+    @Test
+    fun aStatePulseDuringAgendaLoadDoesNotStoreTheCancellation() = runBlocking {
+        withTimeout(PROBE_TIMEOUT_MS) {
+            val home = HangingCalendarList()
+            val store = CalendarAgendaStore(home)
+            val pulses = MutableStateFlow(0)
+            val job = launch {
+                pulses.collectLatest {
+                    store.snapshot(home.states.value, ZoneOffset.UTC)
+                }
+            }
+            delay(PULSE_GAP_MS)
+            pulses.value = 1
+            delay(PULSE_GAP_MS)
+            assertEquals(null, store.latest.errorMessage)
+            job.cancel()
+        }
+    }
+}
+
+private const val PULSE_GAP_MS = 200L
+private const val PROBE_TIMEOUT_MS = 5_000L
+private const val HANG_MS = 60_000L
+
+/** Holds the calendar list request open so a newer state pulse can cancel it. */
+private class HangingCalendarList(private val inner: DemoHome = DemoHome()) : HomeAssistant by inner {
+    override suspend fun fetch(path: String): ByteArray? {
+        if (isCalendarListPath(path)) delay(HANG_MS)
+        return inner.fetch(path)
     }
 }
