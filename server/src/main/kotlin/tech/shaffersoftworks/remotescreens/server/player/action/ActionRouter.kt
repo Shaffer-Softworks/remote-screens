@@ -7,6 +7,11 @@ import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaCopy
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaSnapshot
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
+import tech.shaffersoftworks.remotescreens.server.render.ALARM_PIN_LENGTH
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.alarmDotVar
+import tech.shaffersoftworks.remotescreens.server.render.isAlarmPage
+import tech.shaffersoftworks.remotescreens.shared.VarValue
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.CalendarDialogMode
 import tech.shaffersoftworks.remotescreens.shared.ActionSpec
@@ -33,6 +38,7 @@ class ActionRouter(
     private val renderData: RenderDataRepository? = null,
 ) {
     private val logger = LoggerFactory.getLogger(ActionRouter::class.java)
+    private val alarmActions = AlarmActions(homeAssistant, i18n, renderData)
 
     fun target(ref: ActionRef, screen: Screen?): TapTarget? = when {
         ref.tile.startsWith(ENTITY_TILE_PREFIX) -> {
@@ -87,6 +93,7 @@ class ActionRouter(
         "favourite" -> playFavourite(target)
         "event" -> fireEvent(ref.arg, target)
         "code_digit", "code_back", "code_clear" -> typeCode(verb, ref.arg, target, memory)
+        "alarm_arm", "alarm_zone", "alarm_dismiss" -> alarmActions.handle(verb, ref.arg, target, memory)
         "browse_type", "listen_mode", "primary_tab", "load_more",
         "clear_queue", "play_uri", "enqueue_uri",
         "volume_up", "volume_down",
@@ -364,7 +371,14 @@ class ActionRouter(
             else -> ""
         }
         memory.codes[entityId] = next
-        return TapOutcome.Code("t.e:$entityId.code", "•".repeat(next.length))
+        val dots = if (target.tile?.isAlarmPage() == true) {
+            (0 until ALARM_PIN_LENGTH).map { index ->
+                VarValue.int(alarmDotVar(entityId, index), if (index < next.length) Vars.VISIBLE else Vars.GONE)
+            }
+        } else {
+            emptyList()
+        }
+        return TapOutcome.Code("t.e:$entityId.code", "•".repeat(next.length), dots)
     }
 
     companion object {

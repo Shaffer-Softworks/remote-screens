@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import type { AlarmZone } from '../model/alarmZones'
+import { ALARM_ZONES_OPTION, formatAlarmZones, parseAlarmZones } from '../model/alarmZones'
 import { firstFree, fitsAt } from '../model/grid'
 import { INK_SWATCHES, PASTEL_KEYS, pastel } from '../model/palette'
 import { iconOf, nameOf, newTileId, sizesOf, specOf } from '../model/tiles'
@@ -23,8 +25,56 @@ const others = computed(() => props.page.tiles.filter(tile => tile.id !== props.
 const edgeToEdge = computed(
   () =>
     kindOf(props.tile) === 'home' ||
-    (!!props.tile.full && ['weather', 'climate', 'music', 'calendar'].includes(kindOf(props.tile))),
+    (!!props.tile.full &&
+      ['weather', 'climate', 'music', 'calendar', 'alarm_control_panel'].includes(
+        kindOf(props.tile),
+      )),
 )
+
+// A full alarm tile is RPI's alarm page: its own entity is All Zones, then the zones listed here.
+const isAlarmPage = computed(
+  () => !!props.tile.full && kindOf(props.tile) === 'alarm_control_panel',
+)
+const alarmZones = computed(() => parseAlarmZones(props.tile.options[ALARM_ZONES_OPTION]))
+const alarmPanels = computed(() =>
+  state.entities.filter(
+    panel => panel.domain === 'alarm_control_panel' && panel.entityId !== props.tile.entityId,
+  ),
+)
+const unusedAlarmPanels = computed(() =>
+  alarmPanels.value.filter(
+    panel => !alarmZones.value.some(zone => zone.entityId === panel.entityId),
+  ),
+)
+
+function writeAlarmZones(zones: AlarmZone[]): void {
+  const text = formatAlarmZones(zones)
+  if (text) props.tile.options[ALARM_ZONES_OPTION] = text
+  else delete props.tile.options[ALARM_ZONES_OPTION]
+}
+
+function setAlarmZone(zoneIndex: number, change: Partial<AlarmZone>): void {
+  writeAlarmZones(
+    alarmZones.value.map((zone, index) => (index === zoneIndex ? { ...zone, ...change } : zone)),
+  )
+}
+
+function addAlarmZone(): void {
+  const panel = unusedAlarmPanels.value[0]
+  if (!panel) return toast('Every alarm panel is already a zone')
+  writeAlarmZones([...alarmZones.value, { entityId: panel.entityId, label: '' }])
+}
+
+function removeAlarmZone(zoneIndex: number): void {
+  writeAlarmZones(alarmZones.value.filter((_, index) => index !== zoneIndex))
+}
+
+const panelsForZone = (zone: AlarmZone) =>
+  alarmPanels.value.filter(
+    panel =>
+      panel.entityId === zone.entityId ||
+      !alarmZones.value.some(other => other.entityId === panel.entityId),
+  )
 
 /** An entity may be shown another way: a sensor as a graph, a player as its favourite music. */
 const SHOW_AS: Record<string, { kind: string; label: string }[]> = {
@@ -277,6 +327,39 @@ const pageTitle = (id: string) => props.screen.pages.find(page => page.id === id
       </select>
     </label>
 
+    <div v-if="isAlarmPage" class="field">
+      <span class="label">Zones</span>
+      <span>
+        {{ entity?.name ?? tile.entityId }} is All Zones. Add other alarm panels, such as Alarmo
+        areas, to arm them one at a time.
+      </span>
+      <div v-for="(zone, zoneIndex) in alarmZones" :key="zone.entityId" class="row zone">
+        <select
+          :value="zone.entityId"
+          @change="
+            setAlarmZone(zoneIndex, { entityId: ($event.target as HTMLSelectElement).value })
+          "
+        >
+          <option
+            v-for="panel in panelsForZone(zone)"
+            :key="panel.entityId"
+            :value="panel.entityId"
+          >
+            {{ panel.name }}
+          </option>
+        </select>
+        <input
+          :value="zone.label"
+          :placeholder="entityById.get(zone.entityId)?.name ?? 'Label'"
+          @change="setAlarmZone(zoneIndex, { label: ($event.target as HTMLInputElement).value })"
+        />
+        <button class="icon" title="Remove the zone" @click="removeAlarmZone(zoneIndex)">
+          <MdiIcon name="close" :size="16" />
+        </button>
+      </div>
+      <button :disabled="!unusedAlarmPanels.length" @click="addAlarmZone">Add a zone</button>
+    </div>
+
     <div v-if="spec?.options.length" class="field">
       <span class="label">Options</span>
       <label v-for="o in spec.options" :key="o" class="check">
@@ -329,6 +412,20 @@ const pageTitle = (id: string) => props.screen.pages.find(page => page.id === id
 
 .wrap {
   flex-wrap: wrap;
+}
+
+.zone > select {
+  flex: 1;
+  min-width: 0;
+}
+
+.zone > input {
+  width: 110px;
+}
+
+.zone > :is(input, select) {
+  color: var(--ink);
+  font-size: 14px;
 }
 
 .check {

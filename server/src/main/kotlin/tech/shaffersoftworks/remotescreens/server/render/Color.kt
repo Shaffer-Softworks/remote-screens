@@ -42,6 +42,10 @@ object Rpi {
     const val PastelTeal = 0xFF14E1BA.toInt()
     const val PastelGreen = 0xFF5CCB5F.toInt()
     const val PastelGrey = 0xFFCACACA.toInt()
+    /** The alarm page's dark circle behind the lock and its chosen zone chip, fixed in every theme as on RPI. */
+    const val AlarmCircle = 0xFF0A1518.toInt()
+    const val AlarmChipOn = 0xFF10272A.toInt()
+    const val White = 0xFFFFFFFF.toInt()
 }
 
 /** Warm light greys and white cards with dark ink. */

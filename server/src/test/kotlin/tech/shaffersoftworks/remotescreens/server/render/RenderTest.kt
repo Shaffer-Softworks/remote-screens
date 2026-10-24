@@ -5,6 +5,8 @@ import tech.shaffersoftworks.remotescreens.server.render.cards.CardRenderer
 import androidx.compose.remote.core.CoreDocument
 import androidx.compose.remote.core.RemoteComposeBuffer
 import androidx.compose.remote.core.operations.NamedVariable
+import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmNotice
+import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmUiState
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
@@ -187,6 +189,88 @@ class RenderTest {
         assertTrue("c1|temperature_high|-0.5" in doc.docContext.predicted)
         assertTrue("c1|fan|on" in doc.docContext.predicted)
         assertEquals("Auto", vars["t.c1.fan"]?.value)
+    }
+
+    @Test
+    fun aFullAlarmTileIsTheRpiAlarmPage() {
+        val screen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.alarmPage()) }
+        val doc = ScreenRenderer.render(screen, tablet, input())
+        val text = String(doc.bytes, Charsets.ISO_8859_1)
+        for (word in listOf("Disarmed", "System not secure", "Select Zone", "All Zones", "Garage", "Enter code")) {
+            assertContains(text, word)
+        }
+        for (meta in listOf(
+            "a1|alarm_zone|alarm_control_panel.garage",
+            "a1|alarm_arm|arm_night",
+            "a1|alarm_arm|disarm",
+            "a1|code_digit|7",
+            "a1|code_back|",
+        )) {
+            assertContains(text, meta)
+        }
+        assertFalse("a1|alarm_dismiss|" in text, "no dialog until an arm is refused")
+        assertFalse("a1|card|" in text, "the page itself does not open the alarm card")
+        val vars = doc.vars(ha.states.value)
+        for (index in 0 until ALARM_PIN_LENGTH) {
+            assertEquals(Vars.GONE.toString(), vars[alarmDotVar("alarm_control_panel.house", index)]?.value)
+        }
+        assertTrue(doc.docContext.structure.any { it.first == "alarm_control_panel.house" })
+
+        val core = parse(doc.bytes)
+        val declared = listOf(
+            NamedVariable.STRING_TYPE,
+            NamedVariable.INT_TYPE,
+            NamedVariable.FLOAT_TYPE,
+            NamedVariable.COLOR_TYPE,
+        ).flatMap { core.getNamedVariables(it).toList() }.toSet()
+        val unread = vars.keys.filter { "USER:$it" !in declared && !it.startsWith("sys.") }
+        assertTrue(unread.isEmpty(), "values sent but never declared: $unread")
+    }
+
+    @Test
+    fun anAlarmPageShowsTheChosenZoneAndRpisDialog() {
+        val screen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.alarmPage()) }
+        val ui = AlarmUiState(
+            selectedZone = "alarm_control_panel.garage",
+            notice = AlarmNotice("Invalid Pin", "Pin Must Be 4 Digits"),
+        )
+        val doc = ScreenRenderer.render(screen, tablet, input(RenderData(alarmUi = mapOf("a1" to ui))))
+        val text = String(doc.bytes, Charsets.ISO_8859_1)
+        assertContains(text, "a1|alarm_dismiss|")
+        assertContains(text, "Pin Must Be 4 Digits")
+        parse(doc.bytes)
+        assertTrue(doc.docContext.structure.any { it.first == "alarm_control_panel.garage" })
+    }
+
+    @Test
+    fun anArmedAlarmPageIsSecureAndEveryStateLoads() {
+        val screen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.alarmPage()) }
+        val states = ha.states.value
+        val house = states.getValue("alarm_control_panel.house")
+        fun renderAs(state: String): String {
+            val input = RenderInput(
+                states + (house.entityId to house.with(state)),
+                i18n,
+                ha.config.value,
+                RenderData(),
+                Themes.RPI,
+            )
+            return String(ScreenRenderer.render(screen, tablet, input).bytes, Charsets.ISO_8859_1)
+        }
+        val armedText = renderAs("armed_away")
+        assertContains(armedText, "Armed Away")
+        assertContains(armedText, "System secure")
+        assertContains(renderAs("arming"), "Arming")
+        for (state in listOf("arming", "armed_away", "disarmed", "triggered")) {
+            val input = RenderInput(
+                states + (house.entityId to house.with(state)),
+                i18n,
+                ha.config.value,
+                RenderData(),
+                Themes.RPI,
+            )
+            parse(ScreenRenderer.render(screen, tablet, input).bytes)
+        }
     }
 
     @Test

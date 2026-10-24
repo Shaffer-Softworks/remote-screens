@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.player
 
+import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmNotice
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.player.action.ActionRouter
 import tech.shaffersoftworks.remotescreens.server.player.action.AgendaMutation
@@ -221,7 +222,7 @@ class PlayerSession(
                 }
             }
             is TapOutcome.Code -> send(
-                ServerMessage.Vars(listOf(VarValue.string(outcome.varName, outcome.shown))),
+                ServerMessage.Vars(listOf(VarValue.string(outcome.varName, outcome.shown)) + outcome.extra),
             )
             is TapOutcome.Failed -> {
                 send(ServerMessage.Toast(outcome.message))
@@ -237,6 +238,13 @@ class PlayerSession(
             }
             is TapOutcome.OpenCalendar -> send(calendarDialog(outcome))
             is TapOutcome.AgendaNotice -> publishAgendaNotice(outcome.tileId, outcome.message)
+            is TapOutcome.AlarmNotice -> {
+                context.renderDataRepository.alarmUi.showNotice(
+                    outcome.tileId,
+                    AlarmNotice(outcome.title, outcome.message),
+                )
+                shownDocuments[Slot.MAIN]?.let { main -> documents.rebuild(main) }
+            }
             TapOutcome.Ignored -> Unit
         }
         jobs.removeAll { !it.isActive }

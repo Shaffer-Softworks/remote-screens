@@ -1,11 +1,14 @@
 package tech.shaffersoftworks.remotescreens.server.player.action
 
+import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmNotice
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoHome
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoLayout
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AGENDA_FIELD_SEPARATOR
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.alarmDotVar
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.CalendarDialogMode
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
@@ -125,6 +128,88 @@ class ActionRouterTest {
         assertEquals(TapOutcome.Code("t.e:alarm_control_panel.house.code", "•••"), shown)
         tap("e:alarm_control_panel.house|arm_away|", memory)
         assertEquals("123", (ha.calls.last().third["code"] as JsonPrimitive).content)
+    }
+
+    private val alarmScreen = screen.copy(pages = screen.pages + DemoLayout.alarmPage())
+
+    private fun alarmTap(meta: String, memory: TapMemory) = runBlocking {
+        router.handle(checkNotNull(ActionRef.decode(meta)), alarmScreen, memory, 0)
+    }
+
+    private fun typePin(pin: String, memory: TapMemory) {
+        for (digit in pin) alarmTap("a1|code_digit|$digit", memory)
+    }
+
+    @Test
+    fun anAlarmPageAsksForAPinFirst() {
+        val outcome = alarmTap("a1|alarm_arm|arm_away", TapMemory())
+        assertEquals(TapOutcome.AlarmNotice("a1", "Set Pin First", "You Must Set A Pin First"), outcome)
+        assertTrue(ha.calls.isEmpty())
+    }
+
+    @Test
+    fun anAlarmPinMustBeFourDigits() {
+        val memory = TapMemory()
+        typePin("123", memory)
+        val outcome = alarmTap("a1|alarm_arm|arm_home", memory)
+        assertEquals(TapOutcome.AlarmNotice("a1", "Invalid Pin", "Pin Must Be 4 Digits"), outcome)
+        assertTrue("alarm_control_panel.house" !in memory.codes, "the pin is cleared")
+        assertTrue(ha.calls.isEmpty())
+    }
+
+    @Test
+    fun alarmPageKeysLightThePinDots() {
+        val memory = TapMemory()
+        alarmTap("a1|code_digit|4", memory)
+        val shown = assertIs<TapOutcome.Code>(alarmTap("a1|code_digit|2", memory))
+        assertEquals(
+            listOf(Vars.VISIBLE, Vars.VISIBLE, Vars.GONE, Vars.GONE).map { it.toString() },
+            shown.extra.map { it.value },
+        )
+        assertEquals(alarmDotVar("alarm_control_panel.house", 0), shown.extra.first().name)
+    }
+
+    @Test
+    fun anAlarmPageArmsTheChosenZoneWithThePin() {
+        val memory = TapMemory()
+        typePin("12", memory)
+        assertEquals(TapOutcome.Rebuild, alarmTap("a1|alarm_zone|alarm_control_panel.basement", memory))
+        assertEquals("alarm_control_panel.basement", renderData.alarmUi.state("a1").selectedZone)
+        assertTrue("alarm_control_panel.house" !in memory.codes, "changing zone clears the pin")
+        typePin("1234", memory)
+        assertEquals(TapOutcome.Done, alarmTap("a1|alarm_arm|arm_home", memory))
+        val (domain, service, data) = ha.calls.last()
+        assertEquals("alarm_control_panel" to "alarm_arm_home", domain to service)
+        assertEquals("alarm_control_panel.basement", (data["entity_id"] as JsonPrimitive).content)
+        assertEquals("1234", (data["code"] as JsonPrimitive).content)
+        val basement = ha.states.value.getValue("alarm_control_panel.basement")
+        assertEquals("armed_home", basement.state)
+        assertEquals("armed_home", basement.attr("arm_mode"))
+    }
+
+    @Test
+    fun openSensorsStopArmingButNotDisarming() {
+        val memory = TapMemory()
+        alarmTap("a1|alarm_zone|alarm_control_panel.garage", memory)
+        typePin("1234", memory)
+        val refused = alarmTap("a1|alarm_arm|arm_away", memory)
+        assertEquals(
+            TapOutcome.AlarmNotice("a1", "Open Sensors!", "Check windows and doors are closed"),
+            refused,
+        )
+        assertTrue(ha.calls.isEmpty())
+        typePin("1234", memory)
+        assertEquals(TapOutcome.Done, alarmTap("a1|alarm_arm|disarm", memory))
+        assertEquals("alarm_disarm", ha.calls.last().second)
+    }
+
+    @Test
+    fun anAlarmPageOnlyChoosesItsOwnZonesAndDismissesItsDialog() {
+        val memory = TapMemory()
+        assertEquals(TapOutcome.Ignored, alarmTap("a1|alarm_zone|lock.front_door", memory))
+        renderData.alarmUi.showNotice("a1", AlarmNotice("Invalid Pin", "Pin Must Be 4 Digits"))
+        assertEquals(TapOutcome.Rebuild, alarmTap("a1|alarm_dismiss|", memory))
+        assertEquals(null, renderData.alarmUi.state("a1").notice)
     }
 
     @Test

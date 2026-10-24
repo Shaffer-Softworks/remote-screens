@@ -30,6 +30,12 @@ internal class DemoServiceHandlers(
         }
     }
 
+    /** Alarmo panels report the mode in `arm_mode` as well as the state; keep both in step. */
+    private fun ServiceCall.armAlarm(state: String) {
+        val attrs = if ("arm_mode" in current.attributes) mapOf("arm_mode" to JsonPrimitive(state)) else emptyMap()
+        set(entityId, state, attrs)
+    }
+
     private fun ServiceCall.setPosition() {
         num("position")?.let { position ->
             set(
@@ -157,10 +163,10 @@ internal class DemoServiceHandlers(
         "pause" to { it.stopActivity() },
         "cancel" to { it.stopActivity() },
         "finish" to { set(it.entityId, "idle", emptyMap()) },
-        "alarm_disarm" to { set(it.entityId, "disarmed", emptyMap()) },
-        "alarm_arm_away" to { set(it.entityId, "armed_away", emptyMap()) },
-        "alarm_arm_home" to { set(it.entityId, "armed_home", emptyMap()) },
-        "alarm_arm_night" to { set(it.entityId, "armed_night", emptyMap()) },
+        "alarm_disarm" to { it.armAlarm("disarmed") },
+        "alarm_arm_away" to { it.armAlarm("armed_away") },
+        "alarm_arm_home" to { it.armAlarm("armed_home") },
+        "alarm_arm_night" to { it.armAlarm("armed_night") },
         "set_percentage" to {
             it.num("percentage")?.let { percentage ->
                 set(

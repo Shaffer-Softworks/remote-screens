@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -397,6 +398,19 @@ class DemoHome : HomeAssistant {
             }
         })
 
+        /** An Alarmo area panel: `arm_mode` beside the state, and `open_sensors` null unless one is open. */
+        private fun alarmoZone(entityId: String, name: String, openSensor: String? = null): EntityState {
+            val base = attrs(
+                "friendly_name" to name,
+                "code_format" to "number",
+                "supported_features" to 7,
+                "arm_mode" to "disarmed",
+                "delay" to 0,
+            )
+            val sensors = openSensor?.let { JsonObject(mapOf(it to JsonPrimitive("on"))) } ?: JsonNull
+            return EntityState(entityId, "disarmed", JsonObject(base + ("open_sensors" to sensors)))
+        }
+
         @Suppress("LongMethod")
         fun initialStates(): List<EntityState> = listOf(
             EntityState(
@@ -640,6 +654,9 @@ class DemoHome : HomeAssistant {
                     "supported_features" to 63,
                 ),
             ),
+            alarmoZone("alarm_control_panel.basement", "Basement alarm"),
+            alarmoZone("alarm_control_panel.upstairs", "Upstairs alarm"),
+            alarmoZone("alarm_control_panel.garage", "Garage alarm", openSensor = "binary_sensor.garage_side_door"),
             EntityState(
                 "input_select.washing_program",
                 "Cotton eco",
