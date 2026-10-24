@@ -4,7 +4,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.player.PlayerSessionContext
 import tech.shaffersoftworks.remotescreens.server.render.Alert
 import tech.shaffersoftworks.remotescreens.server.render.Device
-import tech.shaffersoftworks.remotescreens.server.render.Palette
+import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import tech.shaffersoftworks.remotescreens.shared.Screen

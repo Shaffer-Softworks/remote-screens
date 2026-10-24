@@ -1,6 +1,6 @@
 ---
 description: Free-form weather + nextevent leaf layout — RPI home stack (top-aligned), HA icons, day/meta ink
-globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/FreeFormBlocks.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/Home.kt,editor/src/components/NodeView.vue,editor/src/model/nodes.ts
+globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/freeform/FreeFormBlocks.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/panels/home/Home.kt,editor/src/components/NodeView.vue,editor/src/model/nodes.ts
 alwaysApply: false
 ---
 

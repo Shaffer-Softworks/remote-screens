@@ -3,7 +3,7 @@
 
 package tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo
 
-import tech.shaffersoftworks.remotescreens.server.render.ALARM_ZONES_OPTION
+import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.ALARM_ZONES_OPTION
 import tech.shaffersoftworks.remotescreens.shared.GridSize
 import tech.shaffersoftworks.remotescreens.shared.Node
 import tech.shaffersoftworks.remotescreens.shared.NodeBinding

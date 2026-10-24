@@ -2,6 +2,12 @@
 
 package tech.shaffersoftworks.remotescreens.server.render
 
+import tech.shaffersoftworks.remotescreens.server.render.freeform.freeForm
+import tech.shaffersoftworks.remotescreens.server.render.freeform.paint
+import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
+import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
+import tech.shaffersoftworks.remotescreens.server.render.theme.Units
 import tech.shaffersoftworks.remotescreens.server.render.tiles.edgeToEdge
 
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
@@ -25,6 +31,13 @@ import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistantConfig
+import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
+import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
+import tech.shaffersoftworks.remotescreens.server.render.widgets.at
+import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
+import tech.shaffersoftworks.remotescreens.server.render.widgets.key
+import tech.shaffersoftworks.remotescreens.server.render.widgets.label
+import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Grid

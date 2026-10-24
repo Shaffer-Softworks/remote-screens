@@ -1,8 +1,8 @@
 package tech.shaffersoftworks.remotescreens.server.service.validation
 
-import tech.shaffersoftworks.remotescreens.server.render.Pastel
-import tech.shaffersoftworks.remotescreens.server.render.Role
-import tech.shaffersoftworks.remotescreens.server.render.Themes
+import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
+import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
 import tech.shaffersoftworks.remotescreens.shared.Theme
 import io.ktor.server.plugins.BadRequestException
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // One component of a free-form page drawn with HTML, as near to the add-on's Remote Compose output as a browser
-// gets (server/.../render/FreeForm.kt): rows and columns are flexboxes, a box stacks its children in one cell.
+// gets (server/.../render/freeform/FreeForm.kt): rows and columns are flexboxes, a box stacks its children in one cell.
 import QRCode from 'qrcode'
 import { computed, inject, ref, watchEffect, type CSSProperties } from 'vue'
 import { CATALOGUE } from '../generated/catalogue'

@@ -5,23 +5,20 @@ package tech.shaffersoftworks.remotescreens.server.render.freeform
 import tech.shaffersoftworks.remotescreens.server.render.tiles.MODE_ICONS
 
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
-import tech.shaffersoftworks.remotescreens.server.render.Pages
-import tech.shaffersoftworks.remotescreens.server.render.Pastel
-import tech.shaffersoftworks.remotescreens.server.render.Role
-import tech.shaffersoftworks.remotescreens.server.render.Type
+import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
+import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.Weight
-import tech.shaffersoftworks.remotescreens.server.render.accent
+import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
 import tech.shaffersoftworks.remotescreens.server.render.bindChoices
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
-import tech.shaffersoftworks.remotescreens.server.render.choiceRow
-import tech.shaffersoftworks.remotescreens.server.render.icon
-import tech.shaffersoftworks.remotescreens.server.render.key
-import tech.shaffersoftworks.remotescreens.server.render.label
-import tech.shaffersoftworks.remotescreens.server.render.levelBar
-import tech.shaffersoftworks.remotescreens.server.render.rounded
-import tech.shaffersoftworks.remotescreens.server.render.styled
+import tech.shaffersoftworks.remotescreens.server.render.widgets.choiceRow
+import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
+import tech.shaffersoftworks.remotescreens.server.render.widgets.key
+import tech.shaffersoftworks.remotescreens.server.render.widgets.label
+import tech.shaffersoftworks.remotescreens.server.render.widgets.levelBar
+import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning

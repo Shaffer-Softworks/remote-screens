@@ -1,6 +1,6 @@
 ---
 description: Free-form typography props (fontSize, weight, align) in editor Attributes + server FreeForm + NodeView preview
-globs: editor/src/components/TypographyFields.vue,editor/src/components/AttributesPanel.vue,editor/src/components/NodeView.vue,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/freeform/FreeFormNodes.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/freeform/FreeFormMedia.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/Widgets.kt,shared/src/main/kotlin/tech/shaffersoftworks/remotescreens/shared/Layout.kt
+globs: editor/src/components/TypographyFields.vue,editor/src/components/AttributesPanel.vue,editor/src/components/NodeView.vue,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/freeform/FreeFormNodes.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/freeform/FreeFormMedia.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/widgets/Widgets.kt,shared/src/main/kotlin/tech/shaffersoftworks/remotescreens/shared/Layout.kt
 alwaysApply: false
 ---
 

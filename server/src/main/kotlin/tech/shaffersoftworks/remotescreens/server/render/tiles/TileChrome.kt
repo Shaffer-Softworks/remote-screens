@@ -5,12 +5,12 @@ package tech.shaffersoftworks.remotescreens.server.render.tiles
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.HaRenderFlags
 import tech.shaffersoftworks.remotescreens.server.render.Present
-import tech.shaffersoftworks.remotescreens.server.render.Role
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.icon
-import tech.shaffersoftworks.remotescreens.server.render.label
-import tech.shaffersoftworks.remotescreens.server.render.paint
-import tech.shaffersoftworks.remotescreens.server.render.toggleIcon
+import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
+import tech.shaffersoftworks.remotescreens.server.render.widgets.label
+import tech.shaffersoftworks.remotescreens.server.render.freeform.paint
+import tech.shaffersoftworks.remotescreens.server.render.widgets.toggleIcon
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.Catalogue

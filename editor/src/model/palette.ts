@@ -1,4 +1,4 @@
-// The screen's colours, from the add-on's themes (GET /themes, server/.../render/Themes.kt): the colour of each role
+// The screen's colours, from the add-on's themes (GET /themes, server/.../render/theme/Themes.kt): the colour of each role
 // (`card`, `ink_soft`) and of each pastel a tile lights up in when it is on. Previews draw in the active theme, which
 // the screen editor picks; the colours are also set as CSS variables (`--rc-card`, `--rc-p-teal`) for stylesheets.
 

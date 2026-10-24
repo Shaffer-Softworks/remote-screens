@@ -1,8 +1,8 @@
 package tech.shaffersoftworks.remotescreens.server.service
 
 import tech.shaffersoftworks.remotescreens.server.data.layout.LayoutRepository
-import tech.shaffersoftworks.remotescreens.server.render.ResolvedTheme
-import tech.shaffersoftworks.remotescreens.server.render.Themes
+import tech.shaffersoftworks.remotescreens.server.render.theme.ResolvedTheme
+import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
 import tech.shaffersoftworks.remotescreens.server.service.validation.ThemeValidator
 import tech.shaffersoftworks.remotescreens.shared.Theme
 import io.ktor.server.plugins.BadRequestException

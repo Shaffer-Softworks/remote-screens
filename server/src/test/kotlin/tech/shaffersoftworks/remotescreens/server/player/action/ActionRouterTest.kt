@@ -8,7 +8,7 @@ import tech.shaffersoftworks.remotescreens.server.data.renderdata.AGENDA_FIELD_S
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.alarmDotVar
+import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.alarmDotVar
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.CalendarDialogMode
 import tech.shaffersoftworks.remotescreens.shared.Catalogue

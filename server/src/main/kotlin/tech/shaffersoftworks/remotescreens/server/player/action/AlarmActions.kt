@@ -3,10 +3,10 @@ package tech.shaffersoftworks.remotescreens.server.player.action
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
-import tech.shaffersoftworks.remotescreens.server.render.ALARM_PIN_LENGTH
-import tech.shaffersoftworks.remotescreens.server.render.alarmZones
-import tech.shaffersoftworks.remotescreens.server.render.hasOpenSensors
-import tech.shaffersoftworks.remotescreens.server.render.selectedZone
+import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.ALARM_PIN_LENGTH
+import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.alarmZones
+import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.hasOpenSensors
+import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.selectedZone
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Tile
 import kotlinx.serialization.json.JsonObject

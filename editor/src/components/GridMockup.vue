@@ -77,7 +77,7 @@ function rect(col: number, row: number, w: number, h: number) {
   }
 }
 
-// As the add-on draws them (server/.../render/Tiles.kt and ScreenRenderer.kt).
+// As the add-on draws them (server/.../render/tiles/Tiles.kt and ScreenRenderer.kt).
 const CARD_EDGE = 2
 const NO_HEADER = ['clock', 'bedside', 'energy', 'person', 'device_tracker']
 const ALWAYS_LIT = ['scene', 'script', 'button', 'input_button', 'nav', 'favourite']

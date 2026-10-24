@@ -4,7 +4,7 @@ import tech.shaffersoftworks.remotescreens.server.config.ServerConfig
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
-import tech.shaffersoftworks.remotescreens.server.render.QrBitmaps
+import tech.shaffersoftworks.remotescreens.server.render.widgets.QrBitmaps
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.header

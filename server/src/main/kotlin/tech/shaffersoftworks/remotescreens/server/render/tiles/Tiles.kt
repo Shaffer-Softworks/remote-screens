@@ -3,22 +3,22 @@
 package tech.shaffersoftworks.remotescreens.server.render.tiles
 
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
-import tech.shaffersoftworks.remotescreens.server.render.Pastel
-import tech.shaffersoftworks.remotescreens.server.render.Role
-import tech.shaffersoftworks.remotescreens.server.render.Type
+import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
+import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.accent
-import tech.shaffersoftworks.remotescreens.server.render.alarmPanel
-import tech.shaffersoftworks.remotescreens.server.render.at
+import tech.shaffersoftworks.remotescreens.server.render.freeform.accent
+import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.alarmPanel
+import tech.shaffersoftworks.remotescreens.server.render.widgets.at
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
-import tech.shaffersoftworks.remotescreens.server.render.calendarPanel
-import tech.shaffersoftworks.remotescreens.server.render.homeTile
-import tech.shaffersoftworks.remotescreens.server.render.rounded
-import tech.shaffersoftworks.remotescreens.server.render.tap
-import tech.shaffersoftworks.remotescreens.server.render.musicPanel
-import tech.shaffersoftworks.remotescreens.server.render.thermostatPanel
-import tech.shaffersoftworks.remotescreens.server.render.weatherPanel
+import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.calendarPanel
+import tech.shaffersoftworks.remotescreens.server.render.panels.home.homeTile
+import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
+import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
+import tech.shaffersoftworks.remotescreens.server.render.panels.music.musicPanel
+import tech.shaffersoftworks.remotescreens.server.render.panels.thermostat.thermostatPanel
+import tech.shaffersoftworks.remotescreens.server.render.panels.weather.weatherPanel
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning

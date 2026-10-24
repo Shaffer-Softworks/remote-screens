@@ -3,18 +3,18 @@
 package tech.shaffersoftworks.remotescreens.server.render.cards
 
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
-import tech.shaffersoftworks.remotescreens.server.render.Role
-import tech.shaffersoftworks.remotescreens.server.render.Type
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
+import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.Weight
-import tech.shaffersoftworks.remotescreens.server.render.gap
-import tech.shaffersoftworks.remotescreens.server.render.icon
-import tech.shaffersoftworks.remotescreens.server.render.key
-import tech.shaffersoftworks.remotescreens.server.render.label
+import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
+import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
+import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
+import tech.shaffersoftworks.remotescreens.server.render.widgets.key
+import tech.shaffersoftworks.remotescreens.server.render.widgets.label
 import tech.shaffersoftworks.remotescreens.server.render.liveMap
-import tech.shaffersoftworks.remotescreens.server.render.rounded
-import tech.shaffersoftworks.remotescreens.server.render.spinner
-import tech.shaffersoftworks.remotescreens.server.render.tap
+import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spinner
+import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import androidx.compose.remote.creation.dsl.Modifier
