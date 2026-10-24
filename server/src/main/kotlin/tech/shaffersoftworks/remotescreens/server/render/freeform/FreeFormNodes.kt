@@ -4,7 +4,6 @@ package tech.shaffersoftworks.remotescreens.server.render.freeform
 
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Icons
-import tech.shaffersoftworks.remotescreens.server.render.Pages
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.Present
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
@@ -16,10 +15,7 @@ import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.initials
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
-import tech.shaffersoftworks.remotescreens.server.render.paint
 import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
-import tech.shaffersoftworks.remotescreens.server.render.sized
-import tech.shaffersoftworks.remotescreens.server.render.styled
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
 import tech.shaffersoftworks.remotescreens.server.render.tiles.graph
 import tech.shaffersoftworks.remotescreens.server.render.tiles.photo

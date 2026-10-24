@@ -7,7 +7,7 @@ import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.accent
+import tech.shaffersoftworks.remotescreens.server.render.freeform.accent
 import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.alarmPanel
 import tech.shaffersoftworks.remotescreens.server.render.widgets.at
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity

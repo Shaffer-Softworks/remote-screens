@@ -15,7 +15,7 @@ import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.isToday
 import tech.shaffersoftworks.remotescreens.server.render.widgets.weatherStateIcon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
-import tech.shaffersoftworks.remotescreens.server.render.paint
+import tech.shaffersoftworks.remotescreens.server.render.freeform.paint
 import tech.shaffersoftworks.remotescreens.server.render.tiles.graph
 
 import androidx.compose.remote.creation.dsl.Modifier

@@ -1,40 +1,10 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.freeform
 
-import tech.shaffersoftworks.remotescreens.server.render.freeform.resolve
-
-import tech.shaffersoftworks.remotescreens.server.render.freeform.Axis
-import tech.shaffersoftworks.remotescreens.server.render.freeform.Dims
-import tech.shaffersoftworks.remotescreens.server.render.freeform.Spec
-import tech.shaffersoftworks.remotescreens.server.render.freeform.analogNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.avatarNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.badgeNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.buttonNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.choicesNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.clockNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.container
-import tech.shaffersoftworks.remotescreens.server.render.freeform.countdownNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.dialNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.dividerSize
-import tech.shaffersoftworks.remotescreens.server.render.freeform.gaugeNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.graphNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.iconButtonNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.iconNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.imageNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.keypadNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.keysNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.markdownNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.progressNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.qrNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.sliderNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.spacerSize
-import tech.shaffersoftworks.remotescreens.server.render.freeform.stepperNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.swatchesNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.switchNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.tabsNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.textNode
-import tech.shaffersoftworks.remotescreens.server.render.freeform.tileNode
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.theme.Themes

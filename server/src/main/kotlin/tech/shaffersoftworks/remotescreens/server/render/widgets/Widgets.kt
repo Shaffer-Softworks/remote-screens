@@ -28,7 +28,7 @@ import androidx.compose.remote.creation.modifiers.RoundedRectShape
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Present
 import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.paint
+import tech.shaffersoftworks.remotescreens.server.render.freeform.paint
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 

@@ -4,7 +4,6 @@ package tech.shaffersoftworks.remotescreens.server.render.freeform
 
 import tech.shaffersoftworks.remotescreens.server.render.widgets.MarkdownLines
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
-import tech.shaffersoftworks.remotescreens.server.render.blockNatural
 
 import tech.shaffersoftworks.remotescreens.shared.Node
 
