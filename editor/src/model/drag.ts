@@ -4,7 +4,7 @@ import { shallowRef } from 'vue'
 
 export type Dragged =
   | { type: 'tile'; id: string; w: number; h: number; grabCol: number; grabRow: number }
-  | { type: 'new'; entityId?: string; kind?: string; w: number; h: number }
+  | { type: 'new'; entityId?: string; kind?: string; full?: boolean; w: number; h: number }
   /** A component from the palette of a free-form page. */
   | { type: 'component'; component: string }
   /** A component already on a free-form page. */

@@ -1,0 +1,15 @@
+---
+description: Every new full-page panel goes in the editor library's "Other tiles"
+globs: editor/src/components/EntityLibrary.vue,editor/src/model/otherTiles.ts,server/src/main/kotlin/**/render/tiles/TileBox.kt,server/src/main/kotlin/**/render/panels/**,catalogue/_kinds.yaml
+alwaysApply: false
+---
+
+# "Other tiles" in the Add tiles library
+
+When you add a new panel (a page of its own), add it to "Other tiles" in the same change.
+
+- The list is `editor/src/model/otherTiles.ts`, drawn by `EntityLibrary.vue`.
+- A panel with no entity (home, bedside, lights) is a catalogue kind in `catalogue/_kinds.yaml`: add its key to `OTHER_TILE_KINDS`.
+- A panel over an entity (alarm, weather, thermostat, music, calendar) goes in `PANELS`: `name` ("… panel"), `icon`, the entity `domain`, and `kind` only when the panel is a kind of its own over that entity (`music` over `media_player`). Clicking it adds a `full` tile on the first entity of that domain. It is greyed out when Home Assistant has none. The tile drawer changes the entity.
+- The catalogue entry must list `full` in `sizes`.
+- `editor/src/model/otherTiles.test.ts` reads the `edgeToEdge` set in `TileBox.kt` and fails when a kind there is in neither list.

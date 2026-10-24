@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Page, Screen } from '../../model/types'
+import type { Page, Screen, TileSource } from '../../model/types'
 import CodeView from '../CodeView.vue'
 import DesignCanvas from '../DesignCanvas.vue'
 import GridMockup from '../GridMockup.vue'
@@ -30,7 +30,7 @@ const emit = defineEmits<{
   'update:view': [value: 'design' | 'split' | 'code']
   'update:selectedId': [id: string | null]
   move: [id: string, col: number, row: number]
-  add: [source: { entityId?: string; kind?: string }, at?: { col: number; row: number }]
+  add: [source: TileSource, at?: { col: number; row: number }]
 }>()
 
 function onMove(id: string, col: number, row: number): void {
@@ -38,7 +38,7 @@ function onMove(id: string, col: number, row: number): void {
 }
 
 function onAdd(
-  source: { entityId?: string; kind?: string },
+  source: TileSource,
   at?: { col: number; row: number },
 ): void {
   emit('add', source, at)

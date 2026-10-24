@@ -34,6 +34,13 @@ export interface Tile {
   options: Record<string, string>
 }
 
+/** What a new tile is made from: an entity, a kind, or both. `full` asks for the whole page. */
+export interface TileSource {
+  entityId?: string
+  kind?: string
+  full?: boolean
+}
+
 export interface Page {
   id: string
   title: string

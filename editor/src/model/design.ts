@@ -20,7 +20,7 @@ import {
   type Where,
 } from './nodes'
 import { newTile } from './tiles'
-import type { Node, Page } from './types'
+import type { Node, Page, TileSource } from './types'
 
 export interface DesignContext {
   root: ComputedRef<Node | undefined>
@@ -34,7 +34,7 @@ export interface DesignContext {
   add(node: Node): void
   /** Adds the palette's component [id] after the selection. */
   addComponent(id: string): void
-  addEntity(source: { entityId?: string; kind?: string }): void
+  addEntity(source: TileSource): void
   removeSelected(): void
   duplicateSelected(): void
   wrapSelected(type: 'column' | 'row' | 'box' | 'flow'): void

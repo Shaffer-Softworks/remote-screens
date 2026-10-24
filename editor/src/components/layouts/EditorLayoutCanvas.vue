@@ -2,7 +2,7 @@
 import { computed, inject } from 'vue'
 import { DESIGN } from '../../model/design'
 import { componentOf, parentOf } from '../../model/nodes'
-import type { Node, Page, Screen, Tile } from '../../model/types'
+import type { Node, Page, Screen, Tile, TileSource } from '../../model/types'
 import AttributesPanel from '../AttributesPanel.vue'
 import ComponentPalette from '../ComponentPalette.vue'
 import ComponentTree from '../ComponentTree.vue'
@@ -35,7 +35,7 @@ const emit = defineEmits<{
   'update:pageId': [id: string]
   'update:railTool': [value: RailTool | null]
   move: [id: string, col: number, row: number]
-  add: [source: { entityId?: string; kind?: string }, at?: { col: number; row: number }]
+  add: [source: TileSource, at?: { col: number; row: number }]
   deletePage: []
   convert: []
   removeTile: [id: string]
@@ -103,7 +103,7 @@ function clearSelection(): void {
   design?.select(null)
 }
 
-function onLibraryAdd(source: { entityId?: string; kind?: string }): void {
+function onLibraryAdd(source: TileSource): void {
   if (props.free && design) design.addEntity(source)
   else emit('add', source)
 }

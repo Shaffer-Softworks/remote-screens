@@ -44,7 +44,7 @@ RPI computes `numberOfLightsOn` and the wording, then passes `subText = ""`. Her
 
 ## Editor
 
-`GridMockup.vue` draws the page with `state.areas` names (sample names when none) and the select-room prompt. No counts: the editor's entity list only has each entity's own area, not its device's, so most real rooms would wrongly read "All lights are off". `lights` is in `EntityLibrary.vue`'s kind list and `TileDrawer.vue`'s edge-to-edge list.
+`GridMockup.vue` draws the page with `state.areas` names (sample names when none) and the select-room prompt. No counts: the editor's entity list only has each entity's own area, not its device's, so most real rooms would wrongly read "All lights are off". `lights` is in `OTHER_TILE_KINDS` (`editor/src/model/otherTiles.ts`) and `TileDrawer.vue`'s edge-to-edge list.
 
 ## Demo
 
