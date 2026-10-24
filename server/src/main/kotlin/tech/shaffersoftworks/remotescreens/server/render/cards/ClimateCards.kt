@@ -10,7 +10,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
 import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
-import tech.shaffersoftworks.remotescreens.server.render.usesDualSetpoint
+import tech.shaffersoftworks.remotescreens.server.render.panels.thermostat.usesDualSetpoint
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning

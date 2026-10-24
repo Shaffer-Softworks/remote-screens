@@ -2,6 +2,10 @@
 
 package tech.shaffersoftworks.remotescreens.server.render
 
+import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.calendarEvent
+import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.isToday
+import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.nextCalendarEvent
+import tech.shaffersoftworks.remotescreens.server.render.panels.thermostat.thermostatPanel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.tiles.bindWhere

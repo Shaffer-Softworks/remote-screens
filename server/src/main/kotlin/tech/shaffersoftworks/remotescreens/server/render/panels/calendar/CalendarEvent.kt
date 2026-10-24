@@ -1,4 +1,4 @@
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.panels.calendar
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import java.time.LocalDate

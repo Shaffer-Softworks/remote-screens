@@ -1,11 +1,12 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.panels.calendar
 
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AGENDA_FIELD_SEPARATOR
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaCopy
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaEvent
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaSnapshot
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning

@@ -1,4 +1,4 @@
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.panels.alarm
 
 /** Layout metrics of the alarm page, in dp and sp as RPI's `AlarmScreenV2` and `KeypadPanel` draw them. */
 internal object AlarmMetrics {

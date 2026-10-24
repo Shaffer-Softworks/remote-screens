@@ -5,7 +5,7 @@ package tech.shaffersoftworks.remotescreens.server.render.tiles
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
-import tech.shaffersoftworks.remotescreens.server.render.ThermostatMetrics
+import tech.shaffersoftworks.remotescreens.server.render.panels.thermostat.ThermostatMetrics
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
@@ -13,13 +13,13 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.at
 import tech.shaffersoftworks.remotescreens.server.render.bindChoices
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
-import tech.shaffersoftworks.remotescreens.server.render.calendarEvent
+import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.calendarEvent
 import tech.shaffersoftworks.remotescreens.server.render.widgets.choiceRow
 import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.initials
 import tech.shaffersoftworks.remotescreens.server.render.widgets.weatherStateIcon
-import tech.shaffersoftworks.remotescreens.server.render.isToday
+import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.isToday
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
 import tech.shaffersoftworks.remotescreens.server.render.paint

@@ -1,10 +1,12 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.panels.alarm
 
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmNotice
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmUiState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.theme.Rpi
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
@@ -34,7 +36,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.shared.VarValue
-import tech.shaffersoftworks.remotescreens.server.render.AlarmMetrics as M
+import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.AlarmMetrics as M
 
 /** An arm or disarm button under the zones: the catalogue verb it sends, its word, and its icon. */
 private data class AlarmAction(val verb: String, val labelKey: String, val icon: String, val isDanger: Boolean = false)

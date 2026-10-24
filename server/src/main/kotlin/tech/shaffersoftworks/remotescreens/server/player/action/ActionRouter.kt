@@ -7,10 +7,10 @@ import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaCopy
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaSnapshot
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
-import tech.shaffersoftworks.remotescreens.server.render.ALARM_PIN_LENGTH
+import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.ALARM_PIN_LENGTH
 import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.alarmDotVar
-import tech.shaffersoftworks.remotescreens.server.render.isAlarmPage
+import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.alarmDotVar
+import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.isAlarmPage
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.CalendarDialogMode

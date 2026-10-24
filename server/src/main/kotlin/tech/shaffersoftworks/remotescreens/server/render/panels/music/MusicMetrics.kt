@@ -1,4 +1,4 @@
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.panels.music
 
 /** Layout metrics for the Music Assistant full page (RPI MusicAssistantScreen proportions). */
 internal object MusicMetrics {

@@ -1,6 +1,6 @@
 @file:Suppress("RestrictedApi")
 
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.panels.thermostat
 
 /** Layout and drawing metrics for the thermostat panel (RPI dial proportions). */
 internal object ThermostatMetrics {

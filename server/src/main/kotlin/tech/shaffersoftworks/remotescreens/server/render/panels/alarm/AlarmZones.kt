@@ -1,6 +1,7 @@
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.panels.alarm
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
+import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.shared.Tile
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
