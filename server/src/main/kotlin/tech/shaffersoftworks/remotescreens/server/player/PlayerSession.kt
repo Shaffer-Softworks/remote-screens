@@ -15,9 +15,9 @@ import tech.shaffersoftworks.remotescreens.server.player.session.ShownDocument
 import tech.shaffersoftworks.remotescreens.server.render.Alert
 import tech.shaffersoftworks.remotescreens.server.render.AlertButton
 import tech.shaffersoftworks.remotescreens.server.render.Device
-import tech.shaffersoftworks.remotescreens.server.render.Palette
+import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
 import tech.shaffersoftworks.remotescreens.server.render.Rc
-import tech.shaffersoftworks.remotescreens.server.render.Themes
+import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.CalendarChoice

@@ -5,9 +5,9 @@ package tech.shaffersoftworks.remotescreens.server.render.freeform
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Icons
 import tech.shaffersoftworks.remotescreens.server.render.Pages
-import tech.shaffersoftworks.remotescreens.server.render.Pastel
+import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.Present
-import tech.shaffersoftworks.remotescreens.server.render.Role
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.Type
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.Weight

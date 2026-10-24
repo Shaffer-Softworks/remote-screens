@@ -1,4 +1,4 @@
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.theme
 
 import tech.shaffersoftworks.remotescreens.shared.Theme
 import kotlinx.serialization.Serializable

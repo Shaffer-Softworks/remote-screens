@@ -1,4 +1,4 @@
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.theme
 
 /** RPI wall panel dark greys, teal and blue (built-in document theme; see [Themes]). */
 object Rpi {

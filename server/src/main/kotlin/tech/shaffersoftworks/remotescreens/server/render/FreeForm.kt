@@ -35,6 +35,9 @@ import tech.shaffersoftworks.remotescreens.server.render.freeform.switchNode
 import tech.shaffersoftworks.remotescreens.server.render.freeform.tabsNode
 import tech.shaffersoftworks.remotescreens.server.render.freeform.textNode
 import tech.shaffersoftworks.remotescreens.server.render.freeform.tileNode
+import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
+import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
 import tech.shaffersoftworks.remotescreens.server.render.tiles.tapRef
 
 import androidx.compose.remote.core.operations.layout.animation.AnimationSpec

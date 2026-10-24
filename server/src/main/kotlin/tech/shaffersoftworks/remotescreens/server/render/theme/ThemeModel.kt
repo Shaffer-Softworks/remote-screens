@@ -1,4 +1,4 @@
-package tech.shaffersoftworks.remotescreens.server.render
+package tech.shaffersoftworks.remotescreens.server.render.theme
 
 /**
  * The colours of the screens, by what they are for. Code asks for a role, never for a hex value; the values come from

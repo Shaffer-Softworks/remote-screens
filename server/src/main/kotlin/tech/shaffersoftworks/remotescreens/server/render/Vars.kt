@@ -1,6 +1,8 @@
 package tech.shaffersoftworks.remotescreens.server.render
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
+import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 
 /**

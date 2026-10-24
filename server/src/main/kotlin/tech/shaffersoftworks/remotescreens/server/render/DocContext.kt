@@ -14,6 +14,10 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssista
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
+import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
+import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
+import tech.shaffersoftworks.remotescreens.server.render.theme.Units
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.awt.image.BufferedImage

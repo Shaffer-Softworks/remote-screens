@@ -2,6 +2,10 @@
 
 package tech.shaffersoftworks.remotescreens.server.render
 
+import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
+import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
+import tech.shaffersoftworks.remotescreens.server.render.theme.Units
 import tech.shaffersoftworks.remotescreens.server.render.tiles.edgeToEdge
 
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox

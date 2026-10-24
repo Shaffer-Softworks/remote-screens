@@ -8,8 +8,8 @@ import tech.shaffersoftworks.remotescreens.server.render.cards.KELVINS
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.MarkdownLines
 import tech.shaffersoftworks.remotescreens.server.render.Pages
-import tech.shaffersoftworks.remotescreens.server.render.Pastel
-import tech.shaffersoftworks.remotescreens.server.render.Role
+import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.Type
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.Weight
