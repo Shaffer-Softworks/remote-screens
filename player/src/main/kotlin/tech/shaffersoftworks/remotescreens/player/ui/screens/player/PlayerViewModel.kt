@@ -13,6 +13,8 @@ import tech.shaffersoftworks.remotescreens.player.data.device.DisplayInfo
 import tech.shaffersoftworks.remotescreens.player.data.device.FaceWakeMonitor
 import tech.shaffersoftworks.remotescreens.player.data.device.ProximityWakeMonitor
 import tech.shaffersoftworks.remotescreens.player.data.device.ScreenPowerRepository
+import tech.shaffersoftworks.remotescreens.player.data.device.telemetry.LocationAccuracy
+import tech.shaffersoftworks.remotescreens.player.data.device.telemetry.TelemetryReporter
 import tech.shaffersoftworks.remotescreens.player.data.discovery.DiscoveryRepository
 import tech.shaffersoftworks.remotescreens.player.data.image.ImageDecoder
 import tech.shaffersoftworks.remotescreens.player.data.kiosk.KioskManager
@@ -49,6 +51,7 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.time.LocalTime
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val MILLISECONDS_PER_SECOND = 1_000L
 private val CLOSE_METADATA = ActionRef("_", "close").encode()
@@ -71,6 +74,7 @@ private val PLAYER_CAPABILITIES =
         Protocol.CAPABILITY_MAP,
         Protocol.CAPABILITY_MUSIC_SEARCH,
         Protocol.CAPABILITY_CALENDAR_DIALOGS,
+        Protocol.CAPABILITY_TELEMETRY,
     )
 
 /**
@@ -91,6 +95,8 @@ class PlayerViewModel @Inject constructor(
     private val faceWakeMonitor: FaceWakeMonitor,
     private val kioskManager: KioskManager,
     private val imageDecoder: ImageDecoder,
+    private val telemetryReporter: TelemetryReporter,
+    private val locationAccuracy: LocationAccuracy,
 ) : ViewModel() {
 
     data class ViewState(
@@ -146,6 +152,12 @@ class PlayerViewModel @Inject constructor(
 
     private var displayInfo: DisplayInfo? = null
     private var isPaired = false
+
+    /** The add-on accepts [PlayerMessage.Telemetry] and this tablet is paired to one of its screens. */
+    private var isTelemetryAccepted = false
+
+    /** Location accuracy is offered once per launch, after the location permission is in hand. */
+    private var hasOfferedLocationAccuracy = false
     private var discoveryJob: Job? = null
     private var standbyJob: Job? = null
     private var backToHomeJob: Job? = null
@@ -164,6 +176,7 @@ class PlayerViewModel @Inject constructor(
     override fun onCleared() {
         proximityWakeMonitor.stop()
         faceWakeMonitor.stop()
+        telemetryReporter.stop()
         connectionRepository.disconnect()
     }
 
@@ -282,6 +295,15 @@ class PlayerViewModel @Inject constructor(
         )
     }
 
+    private fun updateTelemetry() {
+        val settings = _viewState.value.screenSettings
+        telemetryReporter.update(
+            scope = viewModelScope,
+            isEnabled = isTelemetryAccepted && settings.reportTelemetry,
+            wantsLocation = settings.shareLocation,
+        ) { message -> connectionRepository.send(message) }
+    }
+
     // endregion
 
     // region Messages from the add-on
@@ -326,6 +348,8 @@ class PlayerViewModel @Inject constructor(
         welcome.token?.let { token -> preferencesRepository.setPairing(token, welcome.screenName) }
         val pairingCode = welcome.pairingCode
         isPaired = pairingCode == null
+        isTelemetryAccepted = isPaired && Protocol.CAPABILITY_TELEMETRY in welcome.features
+        updateTelemetry()
         if (pairingCode != null) {
             if (welcome.token == null && preferencesRepository.token.first() != null) preferencesRepository.forget()
             val groupedCode = pairingCode.chunked(PAIRING_CODE_GROUP_SIZE).joinToString(" ")
@@ -689,6 +713,23 @@ class PlayerViewModel @Inject constructor(
         updateWakeMonitors()
     }
 
+    fun onLocationPermissionResult(granted: Boolean) {
+        if (!granted) {
+            _events.trySend(PlayerEvent.ShowMessageResource(R.string.location_permission_denied))
+        }
+        updateTelemetry()
+        if (granted) offerLocationAccuracy()
+    }
+
+    /** The location-accuracy prompt closed. Put the kiosk allow-list back, then take a fix if it was turned on. */
+    fun onLocationAccuracyResult(isEnabled: Boolean) {
+        kioskManager.setLocationAccuracyDialogAllowed(false)
+        if (!isEnabled) {
+            _events.trySend(PlayerEvent.ShowMessageResource(R.string.location_accuracy_denied))
+        }
+        updateTelemetry()
+    }
+
     /** The window is shown again. After standby turned the screen off, that means the power button was pressed. */
     fun onResumed() {
         _viewState.update { it.copy(
@@ -734,10 +775,39 @@ class PlayerViewModel @Inject constructor(
         if (settings.wakeOnFace && !previousSettings.wakeOnFace && !faceWakeMonitor.hasCameraPermission()) {
             viewModelScope.launch { _events.send(PlayerEvent.RequestCameraPermission) }
         }
+        onTelemetrySettings(settings, previousSettings)
         if (settings.kiosk != _viewState.value.isKioskEnabled) {
             viewModelScope.launch { preferencesRepository.setKioskEnabled(settings.kiosk) }
         }
     }
+
+    private fun onTelemetrySettings(settings: ScreenSettings, previousSettings: ScreenSettings) {
+        val hasTelemetryChanged = settings.reportTelemetry != previousSettings.reportTelemetry ||
+            settings.shareLocation != previousSettings.shareLocation
+        if (hasTelemetryChanged) updateTelemetry()
+        if (isLocationWanted(settings) && !isLocationWanted(previousSettings)) {
+            locationAccuracy.enableLocationServices()
+            if (telemetryReporter.hasLocationPermission()) {
+                offerLocationAccuracy()
+            } else {
+                viewModelScope.launch { _events.send(PlayerEvent.RequestLocationPermission) }
+            }
+        }
+    }
+
+    /** Asks once per launch. Android shows its own confirm button; a locked kiosk lets that screen through. */
+    private fun offerLocationAccuracy() {
+        if (hasOfferedLocationAccuracy || !isLocationWanted(_viewState.value.screenSettings)) return
+        if (!telemetryReporter.hasLocationPermission()) return
+        hasOfferedLocationAccuracy = true
+        viewModelScope.launch {
+            val sender = locationAccuracy.findAccuracyPrompt() ?: return@launch
+            kioskManager.setLocationAccuracyDialogAllowed(true)
+            _events.send(PlayerEvent.RequestLocationAccuracy(sender))
+        }
+    }
+
+    private fun isLocationWanted(settings: ScreenSettings): Boolean = settings.reportTelemetry && settings.shareLocation
 
     private fun observeNightSchedule() {
         viewModelScope.launch {
@@ -745,7 +815,7 @@ class PlayerViewModel @Inject constructor(
                 _viewState.update { it.copy(
                     isNight = it.screenSettings.isNightAt(LocalTime.now()),
                 ) }
-                delay(NIGHT_CHECK_INTERVAL_MS)
+                delay(NIGHT_CHECK_INTERVAL_MS.milliseconds)
             }
         }
     }
@@ -846,6 +916,7 @@ class PlayerViewModel @Inject constructor(
                     canOfferCameraPermission = !isKioskLocked &&
                         currentState.screenSettings.wakeOnFace &&
                         !faceWakeMonitor.hasCameraPermission(),
+                    canOfferLocationPermission = !isKioskLocked && canOfferLocationPermission(),
                     wakeOnFaceUnavailableNote = wakeOnFaceUnavailableNote(
                         currentState.screenSettings.wakeOnFace,
                     ),
@@ -922,6 +993,14 @@ class PlayerViewModel @Inject constructor(
     fun onAllowCameraPermissionRequested() {
         onSettingsDismissed()
         viewModelScope.launch { _events.send(PlayerEvent.RequestCameraPermission) }
+    }
+
+    private fun canOfferLocationPermission(): Boolean =
+        isLocationWanted(_viewState.value.screenSettings) && !telemetryReporter.hasLocationPermission()
+
+    fun onAllowLocationPermissionRequested() {
+        onSettingsDismissed()
+        viewModelScope.launch { _events.send(PlayerEvent.RequestLocationPermission) }
     }
 
     @StringRes

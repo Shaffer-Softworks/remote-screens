@@ -172,6 +172,32 @@ mode, standby, night mode, swipe, back-to-home, the page shown, kiosk lock, and 
 wake-on-face, and the services `remote_screens.show_alert`, `remote_screens.open_page`, `remote_screens.wake`
 and `remote_screens.close`. The add-on announces itself, so Home Assistant offers to set the integration up.
 
+### Tablet sensors
+
+Each tablet is also a device of its own, shown under the screen it plays. Entities appear once the tablet reports
+them, and only for the hardware it has:
+
+- **Sensors:** illuminance, pressure, ambient temperature, humidity, orientation and last motion.
+- **Binary sensors:** online, charging, awake, moving (held on for a minute after the tablet is moved or knocked)
+  and proximity.
+- **Diagnostics:** battery level, temperature and health, Wi‑Fi network and signal, storage free, memory
+  available, Android and app version, kiosk mode and the time of the last report. Battery power and voltage,
+  charger, battery cycles, BSSID, IP address, link speed, frequency, uptime and security patch are there too,
+  disabled until you enable them.
+- **Location:** a `device_tracker` for each tablet, only when **Share tablet location** is on.
+
+Two switches per screen control this: **Report tablet sensors** (on by default) and **Share tablet location**
+(off by default). The editor has the same checkboxes under **Tablet sensors**. Tablets report every minute, and at
+once when the light changes a lot, something comes near, the tablet moves, or its location changes. Home Assistant
+polls every 30 seconds.
+
+Location needs Android's location permission. The tablet asks for it when sharing is turned on, or from its
+settings (long press the top bar). Without it, the Wi‑Fi network name is hidden too, as Android only gives it
+to apps with location permission. A managed tablet also turns location services on, then asks once to turn on
+Location accuracy, which is what finds it indoors. A new position is reported at most every 5 minutes, after
+moving 50 m.
+Tablets need a player app with tablet sensors; older players only report battery, charging and kiosk mode.
+
 Alerts can also come from an event, without the integration. In a script or automation:
 
 ```yaml

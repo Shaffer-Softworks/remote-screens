@@ -28,6 +28,7 @@ from .const import (
     CONF_API_KEY,
     DOMAIN,
     LEVELS,
+    MANUFACTURER,
     SERVICE_CLOSE,
     SERVICE_OPEN_PAGE,
     SERVICE_SHOW_ALERT,
@@ -35,7 +36,16 @@ from .const import (
 )
 from .coordinator import RemoteScreensConfigEntry, RemoteScreensCoordinator
 
-PLATFORMS = [Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.SWITCH, Platform.TEXT, Platform.TIME]
+PLATFORMS = [
+    Platform.BINARY_SENSOR,
+    Platform.DEVICE_TRACKER,
+    Platform.NUMBER,
+    Platform.SELECT,
+    Platform.SENSOR,
+    Platform.SWITCH,
+    Platform.TEXT,
+    Platform.TIME,
+]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -70,19 +80,25 @@ TARGETS_SCHEMA = vol.Schema({SCREENS: vol.All(cv.ensure_list, [cv.string])})
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """The services, which reach whichever add-on is set up."""
 
-    def client() -> RemoteScreensClient:
+    def client_coordinator() -> RemoteScreensCoordinator:
         entries = hass.config_entries.async_loaded_entries(DOMAIN)
         if not entries:
             raise ServiceValidationError(translation_domain=DOMAIN, translation_key="not_loaded")
-        return entries[0].runtime_data.client
+        return entries[0].runtime_data
+
+    def client() -> RemoteScreensClient:
+        return client_coordinator().client
 
     def targets(call: ServiceCall) -> list[str]:
-        """Screen ids from the screen devices chosen; none is every screen."""
+        """Screen ids from the screen devices chosen, or the screen a chosen tablet shows; none is every screen."""
         registry = dr.async_get(hass)
         ids: list[str] = []
         for device_id in call.data[ATTR_SCREENS]:
             device = registry.async_get(device_id)
             screen = next((i for d, i in device.identifiers if d == DOMAIN), None) if device else None
+            if screen is not None and screen.startswith("player_"):
+                player = client_coordinator().players.get(screen.removeprefix("player_")) or {}
+                screen = player.get("screenId")
             if screen is None:
                 raise ServiceValidationError(
                     translation_domain=DOMAIN, translation_key="unknown_screen", translation_placeholders={"id": device_id}
@@ -126,6 +142,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: RemoteScreensConfigEntry
     coordinator = RemoteScreensCoordinator(hass, entry, client)
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
+
+    def register_screens() -> None:
+        """Screen devices exist before any tablet entity names one as the device it is shown under."""
+        registry = dr.async_get(hass)
+        for screen in coordinator.data.values():
+            registry.async_get_or_create(
+                config_entry_id=entry.entry_id,
+                identifiers={(DOMAIN, screen["id"])},
+                name=screen["name"],
+                manufacturer=MANUFACTURER,
+                model="Screen",
+            )
+
+    register_screens()
+    entry.async_on_unload(coordinator.async_add_listener(register_screens))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
@@ -137,5 +168,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: RemoteScreensConfigEntr
 async def async_remove_config_entry_device(
     hass: HomeAssistant, entry: RemoteScreensConfigEntry, device: dr.DeviceEntry
 ) -> bool:
-    """A screen deleted in the editor can be removed; one that still exists comes back on the next poll."""
-    return not any(d == DOMAIN and i in entry.runtime_data.data for d, i in device.identifiers)
+    """A screen or tablet deleted in the editor can be removed; one that still exists comes back on the next poll."""
+    coordinator = entry.runtime_data
+    return not any(
+        d == DOMAIN and (i in coordinator.data or i.removeprefix("player_") in coordinator.players)
+        for d, i in device.identifiers
+    )

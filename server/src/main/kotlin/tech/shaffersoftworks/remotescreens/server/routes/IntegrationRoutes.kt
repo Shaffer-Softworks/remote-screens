@@ -30,6 +30,9 @@ fun Route.integrationRoutes(screenService: ScreenService, playerHub: PlayerHub) 
         }
         call.respond(screens)
     }
+    get("/players") {
+        call.respond(playerHub.status())
+    }
     post("/screens/{id}/settings") {
         val isPatched = screenService.patchSettings(
             call.parameters.getOrFail("id"),

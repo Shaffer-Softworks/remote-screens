@@ -176,6 +176,23 @@ class KioskManager @Inject constructor(
         }
     }
 
+    /**
+     * The location-accuracy prompt is a Play Services screen. Lock task would block it, so that package is allowed
+     * only while the prompt is up.
+     */
+    fun setLocationAccuracyDialogAllowed(isAllowed: Boolean) {
+        if (!isDeviceOwner() || lockTaskState() != KioskState.LOCKED) return
+        val packages = if (isAllowed) {
+            arrayOf(context.packageName, GOOGLE_PLAY_SERVICES_PACKAGE)
+        } else {
+            arrayOf(context.packageName)
+        }
+        runCatching { devicePolicyManager.setLockTaskPackages(adminComponent, packages) }
+            .onFailure { exception ->
+                Timber.w(exception, "Could not update lock task packages for location accuracy")
+            }
+    }
+
     private fun setUserRestriction(restriction: String, isDisallowed: Boolean) {
         if (isDisallowed) {
             devicePolicyManager.addUserRestriction(adminComponent, restriction)
@@ -206,6 +223,7 @@ class KioskManager @Inject constructor(
     companion object {
         /** The admin extra the add-on's enrollment code puts its `host:port` in. */
         private const val EXTRA_SERVER = "server"
+        private const val GOOGLE_PLAY_SERVICES_PACKAGE = "com.google.android.gms"
 
         fun mainActivityIntent(context: Context): Intent = Intent(
             context,

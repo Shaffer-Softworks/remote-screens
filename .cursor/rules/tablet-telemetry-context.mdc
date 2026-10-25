@@ -1,0 +1,59 @@
+---
+description: Tablet sensors, diagnostics and GPS as Home Assistant entities — player telemetry, add-on /integration/players, per-tablet HA devices (Oct 2026)
+globs: shared/src/main/kotlin/tech/shaffersoftworks/remotescreens/shared/DeviceTelemetry.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/data/device/telemetry/*.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/di/TelemetryModule.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/PlayerViewModel.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/PlayerScreen.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/views/ScreenSettingsDialog.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/PlayerStatus.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/routes/IntegrationRoutes.kt,custom_components/remote_screens/sensor.py,custom_components/remote_screens/binary_sensor.py,custom_components/remote_screens/device_tracker.py,custom_components/remote_screens/entity.py,custom_components/remote_screens/coordinator.py
+alwaysApply: false
+---
+
+# Tablet sensors and GPS in Home Assistant (Oct 2026)
+
+Each tablet is its own HA device with environment sensors, RPI-style diagnostics, motion and an opt-in `device_tracker`. RPI (`StudioProjects/RPI`, `data/ha/sensors/*Sensor.kt`) was the reference for which diagnostics to read. RPI sends them through the mobile_app webhook; here they go over the player WebSocket to the add-on, and the integration polls them.
+
+## Wire
+
+- `Protocol.CAPABILITY_TELEMETRY` (`telemetry`): the player lists it in `Hello.capabilities`; the add-on lists it in `PlayerSession.FEATURES`. The player only reports when `Welcome.features` has it **and** it is paired.
+- `PlayerMessage.Telemetry(telemetry: DeviceTelemetry)` (`shared/.../DeviceTelemetry.kt`). Every group is optional: `hardware`, `battery`, `network`, `system`, `environment`, `motion`, `location`. `hardware` (`TelemetryHardware`) lists the sensors the tablet has; HA only creates hardware-backed entities for those.
+- `ScreenSettings.reportTelemetry` (default **true**) and `shareLocation` (default **false**). HA switches `report_telemetry` / `share_location`; editor checkboxes under **Tablet sensors** in `ScreenPanel.vue` (`reportTelemetry` absent means on).
+
+## Player (`data/device/telemetry/`)
+
+- `TelemetrySource` (interface, bound in `di/TelemetryModule.kt`) → `DeviceTelemetrySource` composes `DiagnosticsReader` (battery, Wi-Fi, storage, memory, versions), `EnvironmentSensorMonitor` (light, pressure, ambient temperature, humidity, proximity), `MotionMonitor` (accelerometer minus low-pass gravity, plus significant-motion trigger; `isMoving` latched 60 s) and `LocationMonitor` (platform `LocationManager`: fused on API 31+, else network, else GPS; 5 min / 50 m). Positions do not use Play Services.
+- `TelemetryReporter.update(scope, isEnabled, wantsLocation, send)`: a report at once, then every `REPORT_INTERVAL_MS` (60 s), plus on `changes` (light ±20 % and ≥ 5 lx, proximity flip, motion start, new fix), folded to one per `MIN_REPORT_GAP_MS` (5 s). Snapshots run on the IO dispatcher. Location needs the setting **and** the permission. Each report recomputes that from `wantsLocation && hasLocationPermission()` and calls `LocationMonitor.start()` again while the fix is still null. Do not freeze the share flag for the life of the job: granting permission in Android settings must start sharing without a reconnect. `LocationMonitor` asks for one fix immediately (`getCurrentLocation`, or `requestSingleUpdate` before API 30) because a wall tablet may never move the 50 m that later updates wait for.
+- `PlayerViewModel.updateTelemetry()` runs on Welcome, on `reportTelemetry`/`shareLocation` changes, and on the location permission result. Turning location on without permission sends `PlayerEvent.RequestLocationPermission`. The settings dialog offers "Allow location for Home Assistant" only while the kiosk is unlocked (`canOfferLocationPermission`); lock task blocks the system settings screens. The permission dialog itself still fires on the rising edge of sharing.
+- Manifest: coarse + fine location (no background location; the player is a foreground kiosk), `uses-feature required=false` for location and each sensor. SSID/BSSID need location permission on Android 8+, so a real Wi-Fi name in HA is proof the permission is granted.
+
+## Location accuracy
+
+- Indoor wall tablets often return no fix from GPS alone. Android's **Location accuracy** (Google Location Accuracy: Wi-Fi and cell) is a separate switch from the app permission and from the device location master switch.
+- `LocationAccuracy` / `GoogleLocationAccuracy` (`play-services-location`, bound in `TelemetryModule`): when sharing turns on, a device owner calls `DevicePolicyManager.setLocationEnabled(true)` (API 30+). That does not turn Location accuracy on. There is no device-owner API for it; `content://com.google.settings/partner` (`network_location_opt_in`) needs `WRITE_GSETTINGS`.
+- After permission is granted, once per process, `findAccuracyPrompt()` uses `SettingsClient.checkLocationSettings` (`PRIORITY_HIGH_ACCURACY`, `setAlwaysShow(true)`). A `ResolvableApiException` becomes `PlayerEvent.RequestLocationAccuracy`. Already-on accuracy returns null and shows nothing. Declining toasts `location_accuracy_denied`. Call `findAccuracyPrompt()` from the main thread.
+- A locked kiosk would block that Play Services screen. `KioskManager.setLocationAccuracyDialogAllowed(true)` adds `com.google.android.gms` to the lock-task packages only while the prompt is up, then restores the player package. `onLocationAccuracyResult` always restores the list.
+
+## Add-on
+
+- `PlayerSession.telemetry` / `telemetryAt` hold the last report (memory only; gone when the tablet disconnects). `PlayerStatus` adds `charging`, `wifi`, `telemetry`, `telemetryAt`.
+- `GET /integration/players` returns every `PlayerStatus`, including tablets with no screen. `/integration/screens` is unchanged.
+
+## Integration
+
+- `coordinator.data` is still screens by id; `coordinator.players` is tablets by device id. An add-on without `/players` (404 → `RemoteScreensNotFoundError`) falls back to the players embedded in screens.
+- Tablet device: identifier `(DOMAIN, "player_<deviceId>")`, `via_device` the screen. `__init__` registers screen devices before platforms load so `via_device` always exists. Service targets map a tablet device to its `screenId`.
+- `RemoteScreensTabletEntity` is unavailable while the tablet is offline, except the `online` binary sensor.
+- Entities are added once a tablet is online and reports telemetry (battery, kiosk, online, charging and awake also work for older players). The `device_tracker` is created only after `telemetry.location` exists, on the tablet device (not the screen). It shows on the Map once it has a state.
+- Names and enum states in `strings.json`; copy it to `translations/en.json`.
+
+## Gotchas
+
+- Motion relies on the 60 s latch because HA polls every 30 s. A real-time push (`remote_screens_tablet_moved` event) is out of scope for now.
+- `BatteryManager.BATTERY_PLUGGED_DOCK` is API 33; `DiagnosticsReader` uses its value (8) as a constant. Cycle count reads `android.os.extra.CYCLE_COUNT` on API 34+.
+- `TelemetryReporter` restarts only when the effective location sharing changes, so repeated `Settings` messages do not reset the schedule. The share flag is still recomputed on every report.
+- A null `location` group with a visible Wi-Fi SSID means permission is granted and sharing may be on, but Android has not returned a fix. Check Location accuracy before changing `LocationMonitor`.
+
+## Verify
+
+```bash
+./gradlew :shared:test --tests '*TelemetryProtocolTest' \
+  :server:test --tests '*IntegrationPlayersRouteTest' \
+  :player:testDebugUnitTest --tests '*TelemetryReporterTest' --tests '*PlayerViewModelTest' \
+  :shared:detekt :server:detekt :player:detekt :player:lintDebug
+python -m pytest -q tests/integration/test_tablets.py
+```

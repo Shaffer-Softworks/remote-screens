@@ -23,6 +23,7 @@ import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.CalendarChoice
 import tech.shaffersoftworks.remotescreens.shared.CalendarDeleteTarget
 import tech.shaffersoftworks.remotescreens.shared.CalendarDialogMode
+import tech.shaffersoftworks.remotescreens.shared.DeviceTelemetry
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import tech.shaffersoftworks.remotescreens.shared.Protocol
 import tech.shaffersoftworks.remotescreens.shared.Screen
@@ -42,6 +43,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * One connected player: the documents it shows in each [Slot], kept up to date by sending only the values that
@@ -84,6 +86,12 @@ class PlayerSession(
     var wifi: Int? = null
         private set
     var kiosk: String? = null
+        private set
+    /** The sensors and diagnostics last reported, for Home Assistant; null until the player sends any. */
+    var telemetry: DeviceTelemetry? = null
+        private set
+    /** Epoch milliseconds when [telemetry] arrived. */
+    var telemetryAt: Long? = null
         private set
 
     private var themeId = Themes.DEFAULT
@@ -178,6 +186,10 @@ class PlayerSession(
                 wifi = message.wifi
                 kiosk = message.kiosk
                 sendVars(deviceVars())
+            }
+            is PlayerMessage.Telemetry -> {
+                telemetry = message.telemetry
+                telemetryAt = System.currentTimeMillis()
             }
             is PlayerMessage.SettingsChanged ->
                 screenId?.let { id -> context.screenService.updateSettings(
@@ -304,7 +316,7 @@ class PlayerSession(
         val main = shownDocuments[Slot.MAIN]
         if (main != null) documents.rebuild(main)
         jobs += context.scope.launch {
-            delay(AGENDA_NOTICE_MS)
+            delay(AGENDA_NOTICE_MS.milliseconds)
             if (agendas.notice(tileId) == message) {
                 agendas.setNotice(tileId, null)
                 val shown = shownDocuments[Slot.MAIN]
@@ -428,6 +440,7 @@ class PlayerSession(
             Protocol.CAPABILITY_MAP,
             Protocol.CAPABILITY_MUSIC_SEARCH,
             Protocol.CAPABILITY_CALENDAR_DIALOGS,
+            Protocol.CAPABILITY_TELEMETRY,
         )
         const val RESYNC_MS = 3000L
         const val AGENDA_NOTICE_MS = 4_000L

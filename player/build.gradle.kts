@@ -97,6 +97,9 @@ dependencies {
     implementation(libs.camera.lifecycle)
     implementation(libs.mlkit.face.detection)
 
+    // Turns on Android's Location accuracy setting. Positions still come from LocationManager.
+    implementation(libs.play.services.location)
+
     // AndroidX
     implementation(libs.androidx.core)
     implementation(libs.androidx.activity.compose)

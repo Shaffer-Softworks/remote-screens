@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -90,6 +91,7 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
         onAllowScreenOff = viewModel::onAllowScreenOffRequested,
         onAllowUnrestrictedBattery = viewModel::onAllowUnrestrictedBatteryRequested,
         onAllowCameraPermission = viewModel::onAllowCameraPermissionRequested,
+        onAllowLocationPermission = viewModel::onAllowLocationPermissionRequested,
         onUnlockKiosk = viewModel::onUnlockKioskRequested,
         onLockKioskAgain = viewModel::onLockKioskAgainRequested,
         onRemoveDeviceOwner = viewModel::onRemoveDeviceOwnerRequested,
@@ -206,6 +208,7 @@ private fun PlayerDialogs(
     onAllowScreenOff: () -> Unit = {},
     onAllowUnrestrictedBattery: () -> Unit = {},
     onAllowCameraPermission: () -> Unit = {},
+    onAllowLocationPermission: () -> Unit = {},
     onUnlockKiosk: () -> Unit = {},
     onLockKioskAgain: () -> Unit = {},
     onRemoveDeviceOwner: () -> Unit = {},
@@ -241,6 +244,7 @@ private fun PlayerDialogs(
                 canOfferScreenOff = settingsDialog.canOfferScreenOff,
                 canOfferUnrestrictedBattery = settingsDialog.canOfferUnrestrictedBattery,
                 canOfferCameraPermission = settingsDialog.canOfferCameraPermission,
+                canOfferLocationPermission = settingsDialog.canOfferLocationPermission,
                 wakeOnFaceUnavailableNote = settingsDialog.wakeOnFaceUnavailableNote,
                 kioskAction = settingsDialog.kioskAction,
                 canRemoveDeviceOwner = settingsDialog.canRemoveDeviceOwner,
@@ -253,6 +257,7 @@ private fun PlayerDialogs(
                 onAllowScreenOff = onAllowScreenOff,
                 onAllowUnrestrictedBattery = onAllowUnrestrictedBattery,
                 onAllowCameraPermission = onAllowCameraPermission,
+                onAllowLocationPermission = onAllowLocationPermission,
                 onUnlockKiosk = onUnlockKiosk,
                 onLockKioskAgain = onLockKioskAgain,
                 onRemoveDeviceOwner = onRemoveDeviceOwner,
@@ -304,12 +309,35 @@ private fun PlayerEvents(viewModel: PlayerViewModel) {
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted -> viewModel.onCameraPermissionResult(granted) }
-    LaunchedEffect(viewModel, lifecycleOwner, cameraPermissionLauncher) {
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { grants -> viewModel.onLocationPermissionResult(grants.values.any { it }) }
+    val locationAccuracyLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult(),
+    ) { result -> viewModel.onLocationAccuracyResult(result.resultCode == Activity.RESULT_OK) }
+    LaunchedEffect(
+        viewModel,
+        lifecycleOwner,
+        cameraPermissionLauncher,
+        locationPermissionLauncher,
+        locationAccuracyLauncher,
+    ) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
             viewModel.events.collect { event ->
                 when (event) {
                     PlayerEvent.RequestCameraPermission ->
                         cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                    PlayerEvent.RequestLocationPermission -> locationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                        ),
+                    )
+                    is PlayerEvent.RequestLocationAccuracy -> runCatching {
+                        locationAccuracyLauncher.launch(
+                            IntentSenderRequest.Builder(event.intentSender).build(),
+                        )
+                    }.onFailure { viewModel.onLocationAccuracyResult(false) }
                     else -> handleEvent(context, activity, event)
                 }
             }
@@ -351,7 +379,8 @@ private fun handleEvent(context: Context, activity: Activity?, event: PlayerEven
         PlayerEvent.RequestUnrestrictedBattery -> context.startActivity(
             unrestrictedBatteryIntent(context),
         )
-        PlayerEvent.RequestCameraPermission -> Unit
+        PlayerEvent.RequestCameraPermission, PlayerEvent.RequestLocationPermission -> Unit
+        is PlayerEvent.RequestLocationAccuracy -> Unit
         // Pinning comes back when the activity resumes after the confirmation.
         PlayerEvent.StopScreenPinning -> activity?.stopLockTask()
         PlayerEvent.ReapplyKiosk -> activity?.let { foregroundActivity ->
@@ -430,6 +459,7 @@ private fun PlayerDialogsSettingsPreview() {
                     canOfferScreenOff = true,
                     canOfferUnrestrictedBattery = true,
                     canOfferCameraPermission = true,
+                    canOfferLocationPermission = true,
                     kioskAction = KioskAction.UNLOCK,
                 ),
             ),

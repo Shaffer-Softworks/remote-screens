@@ -2,6 +2,7 @@ package tech.shaffersoftworks.remotescreens.server.player
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import tech.shaffersoftworks.remotescreens.shared.DeviceTelemetry
 
 /** What the editor and the integration show about a player. */
 @Serializable
@@ -20,4 +21,11 @@ data class PlayerStatus(
     val battery: Int?,
     /** `off`, `pinned` or `locked`, as the player reports it; null while offline or from older players. */
     val kiosk: String? = null,
+    @SerialName("charging") val isCharging: Boolean? = null,
+    /** Wi‑Fi signal level 0–4, or null when unknown. */
+    val wifi: Int? = null,
+    /** Sensors and diagnostics while the player is online and reports them. */
+    val telemetry: DeviceTelemetry? = null,
+    /** Epoch milliseconds of the last [telemetry]. */
+    val telemetryAt: Long? = null,
 )

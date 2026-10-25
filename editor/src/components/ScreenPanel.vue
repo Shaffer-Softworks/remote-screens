@@ -300,6 +300,34 @@ function pin(e: Event): string | null {
       black screen instead of turning the panel fully off. Can be used together with proximity.
     </p>
 
+    <h3>Tablet sensors</h3>
+    <label class="check">
+      <input
+        :checked="screen.settings.reportTelemetry !== false"
+        type="checkbox"
+        @change="screen.settings.reportTelemetry = ($event.target as HTMLInputElement).checked"
+      />
+      Report tablet sensors to Home Assistant
+    </label>
+    <p class="note muted">
+      Each tablet becomes its own device in Home Assistant, with battery, Wi‑Fi, storage and memory
+      diagnostics, and light, pressure, temperature, humidity, proximity and motion when it has
+      those sensors.
+    </p>
+    <label class="check">
+      <input
+        :checked="!!screen.settings.shareLocation"
+        :disabled="screen.settings.reportTelemetry === false"
+        type="checkbox"
+        @change="screen.settings.shareLocation = ($event.target as HTMLInputElement).checked"
+      />
+      Share tablet location
+    </label>
+    <p class="note muted">
+      Adds a device tracker for each tablet. The tablet asks for location permission, and reports a
+      new position at most every 5 minutes, after moving 50 m.
+    </p>
+
     <h3>Night</h3>
     <label class="check"><input v-model="night" type="checkbox" /> Night mode</label>
     <template v-if="night">

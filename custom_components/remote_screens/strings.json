@@ -30,7 +30,64 @@
   },
   "entity": {
     "binary_sensor": {
-      "connected": { "name": "Connected" }
+      "connected": { "name": "Connected" },
+      "online": { "name": "Online" },
+      "charging": { "name": "Charging" },
+      "awake": { "name": "Awake" },
+      "moving": { "name": "Moving" },
+      "proximity": { "name": "Proximity" }
+    },
+    "device_tracker": {
+      "location": { "name": "Location" }
+    },
+    "sensor": {
+      "illuminance": { "name": "Illuminance" },
+      "pressure": { "name": "Pressure" },
+      "ambient_temperature": { "name": "Ambient temperature" },
+      "humidity": { "name": "Humidity" },
+      "orientation": {
+        "name": "Orientation",
+        "state": { "portrait": "Portrait", "landscape": "Landscape" }
+      },
+      "last_motion": { "name": "Last motion" },
+      "battery": { "name": "Battery" },
+      "battery_temperature": { "name": "Battery temperature" },
+      "battery_health": {
+        "name": "Battery health",
+        "state": {
+          "good": "Good",
+          "overheat": "Overheat",
+          "dead": "Dead",
+          "over_voltage": "Over voltage",
+          "cold": "Cold",
+          "failure": "Failure",
+          "unknown": "Unknown"
+        }
+      },
+      "battery_power": { "name": "Battery power" },
+      "battery_voltage": { "name": "Battery voltage" },
+      "charger_type": {
+        "name": "Charger",
+        "state": { "ac": "AC", "usb": "USB", "wireless": "Wireless", "dock": "Dock", "none": "None" }
+      },
+      "battery_cycles": { "name": "Battery cycles" },
+      "wifi_ssid": { "name": "Wi-Fi network" },
+      "wifi_signal": { "name": "Wi-Fi signal" },
+      "wifi_bssid": { "name": "Wi-Fi BSSID" },
+      "ip_address": { "name": "IP address" },
+      "wifi_link_speed": { "name": "Wi-Fi link speed" },
+      "wifi_frequency": { "name": "Wi-Fi frequency" },
+      "storage_free": { "name": "Storage free" },
+      "memory_available": { "name": "Memory available" },
+      "uptime": { "name": "Uptime" },
+      "android_version": { "name": "Android version" },
+      "security_patch": { "name": "Security patch" },
+      "app_version": { "name": "App version" },
+      "kiosk_mode": {
+        "name": "Kiosk",
+        "state": { "off": "Off", "pinned": "Pinned", "locked": "Locked" }
+      },
+      "last_report": { "name": "Last report" }
     },
     "number": {
       "brightness": { "name": "Brightness" },
@@ -49,7 +106,9 @@
       "standby_screen_off": { "name": "Screen off in standby" },
       "wake_on_proximity": { "name": "Wake on proximity" },
       "wake_on_face": { "name": "Wake on face" },
-      "kiosk": { "name": "Kiosk lock" }
+      "kiosk": { "name": "Kiosk lock" },
+      "report_telemetry": { "name": "Report tablet sensors" },
+      "share_location": { "name": "Share tablet location" }
     },
     "text": {
       "kiosk_pin": { "name": "Kiosk PIN" }

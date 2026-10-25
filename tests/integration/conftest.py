@@ -46,6 +46,41 @@ SCREENS = [
     }
 ]
 
+PLAYERS = [
+    {
+        **SCREENS[0]["players"][0],
+        "kiosk": "locked",
+        "charging": True,
+        "telemetry": {
+            "hardware": ["light", "proximity", "accelerometer"],
+            "battery": {"health": "good", "temperatureC": 31.5, "voltageMv": 4200, "currentMa": 1000},
+            "network": {"ssid": "HomeNet", "rssiDbm": -54},
+            "system": {
+                "storageFreeBytes": 11_200_000_000,
+                "osVersion": "14",
+                "appVersionName": "1.4.0",
+                "manufacturer": "Google",
+                "model": "Pixel Tablet",
+            },
+            "environment": {"illuminanceLux": 182.0, "isNear": False},
+            "motion": {"isMoving": True, "orientation": "landscape", "lastMotionAt": 1_700_000_000_000},
+        },
+        "telemetryAt": 1_700_000_000_000,
+    },
+    {
+        "deviceId": "spare",
+        "name": "Spare tablet",
+        "screenId": None,
+        "online": False,
+        "widthDp": 800,
+        "heightDp": 480,
+        "appVersion": 1,
+        "lastSeen": 0,
+        "awake": False,
+        "page": 0,
+    },
+]
+
 ENTRY_DATA = {"host": "127.0.0.1", "port": 8100, CONF_API_KEY: "key"}
 
 
@@ -63,14 +98,19 @@ def client() -> Generator[AsyncMock]:
     ):
         c = cls.return_value
         screens = deepcopy(SCREENS)
+        c.players_data = deepcopy(PLAYERS)
 
         async def get():
             return deepcopy(screens)
+
+        async def get_players():
+            return deepcopy(c.players_data)
 
         async def set_settings(screen_id, patch):
             next(s for s in screens if s["id"] == screen_id)["settings"].update(patch)
 
         c.screens.side_effect = get
+        c.players.side_effect = get_players
         c.set_settings.side_effect = set_settings
         yield c
 
