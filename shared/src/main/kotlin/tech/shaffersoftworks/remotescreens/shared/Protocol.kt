@@ -270,6 +270,8 @@ sealed interface ServerMessage {
         val componentId: Int,
         val path: String,
         val crop: Boolean,
+        /** Page of the main document the video belongs to; it stops on the others. Older servers omit it (-1). */
+        val page: Int = -1,
     ) : ServerMessage
 
     /**

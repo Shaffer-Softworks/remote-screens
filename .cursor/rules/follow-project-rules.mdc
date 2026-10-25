@@ -36,6 +36,7 @@ Read the rule whose files you are changing. These describe behavior that is alre
 - `thermostat-component-context.mdc` — thermostat
 - `alarm-panel-context.mdc` — RPI alarm page
 - `lights-panel-context.mdc` — RPI lights page and light dialog
+- `cameras-panel-context.mdc` — RPI cameras page
 - `configurable-bars-context.mdc` — top bar and nav bar sizes
 - `standby-wake-sources-context.mdc` — wake sources
 - `standby-screen-off-context.mdc` — standby countdown and screen off

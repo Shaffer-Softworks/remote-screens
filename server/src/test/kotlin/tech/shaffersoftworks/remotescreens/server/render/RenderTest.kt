@@ -7,6 +7,7 @@ import androidx.compose.remote.core.RemoteComposeBuffer
 import androidx.compose.remote.core.operations.NamedVariable
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmNotice
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmUiState
+import tech.shaffersoftworks.remotescreens.server.data.cameras.CamerasUiState
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightDetailMode
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiState
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
@@ -244,6 +245,18 @@ class RenderTest {
         return doc to String(doc.bytes, Charsets.ISO_8859_1)
     }
 
+    /** The cameras page sits second, with pages after it, so a video's page is not just the last one drawn. */
+    private val camerasScreen = DemoLayout.screen().let {
+        it.copy(pages = it.pages.take(1) + DemoLayout.camerasPage() + it.pages.drop(1))
+    }
+
+    private fun renderCameras(ui: CamerasUiState? = null): Pair<RenderedDoc, String> {
+        val data = runBlocking { RenderDataRepository(ha).forScreen(camerasScreen) }
+        val withUi = if (ui == null) data else data.copy(camerasUi = mapOf("cm1" to ui))
+        val doc = ScreenRenderer.render(camerasScreen, tablet, input(withUi))
+        return doc to String(doc.bytes, Charsets.ISO_8859_1)
+    }
+
     private fun assertEveryValueIsDeclared(doc: RenderedDoc) {
         val core = parse(doc.bytes)
         val declared = listOf(
@@ -254,6 +267,32 @@ class RenderTest {
         ).flatMap { core.getNamedVariables(it).toList() }.toSet()
         val unread = doc.vars(ha.states.value).keys.filter { "USER:$it" !in declared && !it.startsWith("sys.") }
         assertTrue(unread.isEmpty(), "values sent but never declared: $unread")
+    }
+
+    @Test
+    fun aFullCamerasTileIsTheRpiCamerasPage() {
+        val (doc, text) = renderCameras()
+        for (word in listOf("CAMERAS", "Front Door", "Driveway camera")) assertContains(text, word)
+        assertContains(text, "cm1|cameras_select|camera.front_door")
+        assertContains(text, "cm1|cameras_select|camera.driveway")
+        assertFalse("cm1|card|" in text, "the page itself opens no card")
+        assertTrue(doc.docContext.videos.isEmpty(), "nothing plays until a camera is chosen")
+        assertTrue(doc.docContext.pictures.any { it.name == "cam.list.camera.front_door" })
+        assertEveryValueIsDeclared(doc)
+    }
+
+    @Test
+    fun aChosenCameraPlaysItsLiveVideoOverASpinner() {
+        val (doc, text) = renderCameras(CamerasUiState(selectedCamera = "camera.driveway"))
+        val video = doc.docContext.videos.single()
+        assertEquals("camera.driveway", video.entityId)
+        assertFalse(video.crop, "the stream is fitted like the camera card's")
+        assertEquals(1, video.page, "the video belongs to the cameras page")
+        assertTrue(doc.docContext.declares("e.camera.driveway.cam_waiting"))
+        assertTrue(doc.docContext.declares("e.camera.driveway.cam_still"))
+        assertTrue(doc.docContext.pictures.any { it.name == "cam.card.camera.driveway" })
+        assertContains(text, "Driveway camera")
+        assertEveryValueIsDeclared(doc)
     }
 
     @Test

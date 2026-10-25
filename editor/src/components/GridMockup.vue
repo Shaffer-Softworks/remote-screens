@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ALARM_ZONES_OPTION, parseAlarmZones } from '../model/alarmZones'
+import { CAMERAS_OPTION, parseCameraList } from '../model/cameraList'
 import { dragged } from '../model/drag'
 import {
   NARROW,
@@ -117,6 +118,13 @@ const lightsRooms = computed(() => {
     .sort((nameA, nameB) => nameA.localeCompare(nameB))
   return names.length ? names : LIGHTS_SAMPLE_ROOMS
 })
+/** RPI's cameras page (CamerasPanel.kt): the tile's cameras in a list on the left, the chosen one's video on the right. */
+const isCamerasPanel = (tile: Tile) => kindOf(tile) === 'cameras' && tile.full === true
+function cameraNames(tile: Tile): string[] {
+  return parseCameraList(tile.options[CAMERAS_OPTION]).map(
+    camera => camera.label || (entityById.value.get(camera.entityId)?.name ?? camera.entityId),
+  )
+}
 function alarmZoneLabels(tile: Tile): string[] {
   return [
     'All Zones',
@@ -415,6 +423,7 @@ const highlight = computed(() => {
           'music-panel': isMusicPanel(placement.tile),
           'alarm-panel': isAlarmPanel(placement.tile),
           'lights-panel': isLightsPanel(placement.tile),
+          'cameras-panel': isCamerasPanel(placement.tile),
           'calendar-panel': isCalendarPanel(placement),
           selected: placement.tile.id === selectedId,
           moved: moved.has(placement.tile.id),
@@ -543,6 +552,21 @@ const highlight = computed(() => {
             <MdiIcon name="gesture-tap" :size="64" />
             <span>Select a room to see its lights</span>
           </div>
+        </template>
+        <template v-else-if="isCamerasPanel(placement.tile)">
+          <div class="cm-list">
+            <i class="cm-accent" />
+            <span class="cm-title">CAMERAS</span>
+            <span
+              v-for="cameraName in cameraNames(placement.tile)"
+              :key="cameraName"
+              class="cm-row"
+            >
+              <MdiIcon name="cctv" :size="48" />
+              <span class="cm-bar">{{ cameraName }}</span>
+            </span>
+          </div>
+          <div class="cm-pane" />
         </template>
         <template v-else-if="isThermostatPanel(placement.tile)">
           <div class="th-top">
@@ -1042,6 +1066,68 @@ const highlight = computed(() => {
   gap: 16px;
   font-size: 20px;
   color: var(--rc-ink-dim);
+}
+
+.tile.cameras-panel {
+  flex-direction: row;
+  align-items: stretch;
+  padding: 0;
+  background: var(--rc-page);
+  border: none;
+  border-radius: 0;
+}
+
+.cm-list {
+  width: 350px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px 20px 0;
+  overflow: hidden;
+  background: var(--rc-strip);
+}
+
+.cm-accent {
+  width: 100px;
+  height: 10px;
+  margin-bottom: -10px;
+  background: var(--rc-accent-dark);
+}
+
+.cm-title {
+  margin: -10px 0 -10px;
+  font-size: 15px;
+  color: var(--rc-ink);
+}
+
+.cm-row {
+  position: relative;
+  height: 180px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rc-ink-dim);
+  background: var(--rc-track);
+}
+
+.cm-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding-left: 5px;
+  font-size: 12px;
+  color: var(--rc-ink);
+  background: color-mix(in srgb, var(--rc-accent-dark) 50%, transparent);
+}
+
+.cm-pane {
+  flex: 1;
 }
 
 .al-split {

@@ -4,6 +4,7 @@
 package tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo
 
 import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.ALARM_ZONES_OPTION
+import tech.shaffersoftworks.remotescreens.server.render.panels.cameras.CAMERAS_OPTION
 import tech.shaffersoftworks.remotescreens.shared.GridSize
 import tech.shaffersoftworks.remotescreens.shared.Node
 import tech.shaffersoftworks.remotescreens.shared.NodeBinding
@@ -270,5 +271,20 @@ object DemoLayout {
         "Lights",
         listOf(Tile("li1", kind = "lights", full = true)),
         icon = "lightbulb-group",
+    )
+
+    /** RPI's cameras page over the demo cameras. Added where it is wanted, like [alarmPage]. */
+    fun camerasPage(): Page = Page(
+        "cameras",
+        "Cameras",
+        listOf(
+            Tile(
+                "cm1",
+                kind = "cameras",
+                full = true,
+                options = mapOf(CAMERAS_OPTION to "camera.front_door=Front Door;camera.driveway"),
+            ),
+        ),
+        icon = "cctv",
     )
 }

@@ -4,7 +4,7 @@
 import type { EntityInfo, TileSource } from './types'
 
 /** Tiles that are no entity. History and favourite music are an entity shown another way (see the tile drawer). */
-export const OTHER_TILE_KINDS = ['home', 'clock', 'bedside', 'nav', 'energy', 'map', 'lights']
+export const OTHER_TILE_KINDS = ['home', 'clock', 'bedside', 'nav', 'energy', 'map', 'lights', 'cameras']
 
 export interface PanelSpec {
   name: string

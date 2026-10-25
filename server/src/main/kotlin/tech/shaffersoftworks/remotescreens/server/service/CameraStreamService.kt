@@ -102,10 +102,13 @@ class CameraStreamService(
         if (tokens.computeIfPresent(
                 token,
             ) { _, _ -> now() } == null || !STREAM_FILE.matches(file)) {
+            logger.info("Refused stream file {}: unknown token or not a stream file", file)
             return null
         }
         val suffix = if (query.isEmpty()) "" else "?$query"
-        return homeAssistant.stream("/api/hls/$token/$file$suffix", onBody)
+        val status = homeAssistant.stream("/api/hls/$token/$file$suffix", onBody)
+        if (status !in SUCCESS_STATUSES) logger.info("Home Assistant answered {} for stream file {}", status, file)
+        return status
     }
 
     private fun forgetIdle() {
@@ -124,5 +127,6 @@ class CameraStreamService(
     companion object {
         /** Where the player port serves streams: `/stream/hls/<token>/<file>`. */
         const val PLAYER_PATH = "/stream/hls"
+        private val SUCCESS_STATUSES = 200..299
     }
 }

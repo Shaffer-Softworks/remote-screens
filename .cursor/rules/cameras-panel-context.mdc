@@ -1,0 +1,79 @@
+---
+description: RPI cameras page — full cameras tile kind, camera list chosen in the editor, live HLS video for the tapped camera (Oct 2026)
+globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/panels/cameras/*.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/data/cameras/*.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/action/CamerasActions.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/action/ActionRouter.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/tiles/Tiles.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/tiles/TileBox.kt,catalogue/_kinds.yaml,editor/src/model/cameraList.ts,editor/src/components/GridMockup.vue,editor/src/components/TileDrawer.vue
+alwaysApply: false
+---
+
+# RPI cameras page (Oct 2026)
+
+A 1:1 port of RPI's `CamerasScreen.kt` with `CameraListItemView.kt` and the right pane of `Media3PlayerView.kt` (RPI repo `Shaffer-Softworks/RPI`, private). RPI has no `CameraScreen.kt`; `OfficeCameraScreen.kt` (segmented buttons over a 400dp card) is not ported. The page is the tile kind `cameras` (`catalogue/_kinds.yaml`: `sizes: [full]`, `card: none`, no entity).
+
+## Wiring
+
+- `Tile.edgeToEdge()` (`TileBox.kt`) and `Tiles.kt` dispatch `cameras` to `camerasPanel` (`render/panels/cameras/CamerasPanel.kt`). `hasOwnTaps` drops the page tap and hold, as for lights.
+- Files: `CamerasPanel.kt` (page, list, rows, video box), `CamerasList.kt` (the option parser, `Tile.cameraEntries()`, `selectedCamera`, `displayName`), `CamerasMetrics.kt` (RPI's dp and sp, scaled against 1280 x 650).
+- Colours are theme roles, not new fixed colours: `Role.PAGE` (`colorBackground3`), `Role.STRIP` (`listBackground`), `Role.ACCENT_DARK` (`cardview_light_background`, the bar and the half-alpha row bar), `Role.INK`. `ThemesTest` rejects hex anywhere else in `render/`.
+- Per-tile UI state (the chosen camera) is `CamerasUiStore`, held by `RenderDataRepository.camerasUi` and copied into `RenderData.camerasUi`.
+
+## Which cameras
+
+RPI lists only Frigate cameras (`client_id: frigate`). Here the editor chooses: the tile option `cameras` = `camera.a=Label;camera.b` (`CAMERAS_OPTION`, `Tile.cameraEntries()`). Only `camera.*` entities are kept, in order, and an empty label means the entity's friendly name. The editor writes it through `editor/src/model/cameraList.ts` in `TileDrawer.vue`.
+
+## Taps and video
+
+- `cameras_select` goes to `CamerasActions` (kept out of `ActionRouter`, which is at detekt's `TooManyFunctions` limit). It stores the camera, only when the tile lists it, and returns `Rebuild`.
+- Nothing is chosen at first and the right pane is blank, as RPI's is. After a tap the pane shows the camera's name and a `liveVideo(entityId, crop = false)` box with `componentId`. `SessionDocument.show` already sends `ServerMessage.Video` for every entry in `docContext.videos`. The player used to play video for a card or alert only (`topOverlay`), so the page's video never started; `RemoteScreenState.playingVideo` now falls back to `Slot.MAIN` when no overlay is shown. A card or alert opened over the page takes the one decoder, and the page's video resumes when it closes. The main document holds every page and the tablet changes page locally, so the video carries its page (`LiveVideo.page` from `DocContext.renderingPage`, `ServerMessage.Video.page`, `SlotVideo.page`): `playingVideo` returns null for a MAIN video on any other page, so it stops the moment the tablet leaves the page and starts again on return. An older add-on sends no page (-1) and the video then keeps playing until the next document. A tablet running an older player shows the spinner forever, so install the matching APK.
+- The box reuses the camera card's still fallback: `e.<id>.cam_waiting` (spinner, starts visible) and `e.<id>.cam_still` (starts gone), and the picture `cam.card.<id>`. `showCameraStillFallback` flips them when the stream fails. See `camera-dialog-live-video-context.mdc`.
+- Row thumbnails are `cam.list.<id>` pictures (`/api/camera_proxy/<id>`, cropped), sent once per build.
+
+## Deploying player changes
+
+`tools/package_addon.sh` (and so `deploy_ha_dev.sh`) builds the server jar but only copies a player APK you pass in; with none it reuses whatever is in `addon/dist/apk`. After a player change run `./gradlew :player:assembleRelease` (signed with the debug key when `PLAYER_KEYSTORE` is unset), then `tools/deploy_ha_dev.sh --no-rebuild player/build/outputs/apk/release/player-release.apk`, `adb install -r` the same file, and rebuild the add-on. Compare `md5sum` of the installed base.apk with the file, and its build time with your last edit, before trusting a test.
+
+## Testing on the dev tablet (verified 2026-10-24)
+
+- Tablet over USB (`adb devices`; M8L 2022). Its clock is an hour behind the add-on's (EST vs EDT), so compare times with that in mind. The UI is 1280 x 800 landscape; `adb exec-out screencap -p` returns it scaled by 0.8, so multiply screenshot pixels by 1.25 for `adb shell input tap`. Nav icons sit at y 744; Home x 70, the last page icon x 1066 (cameras was page 7 on this layout), the first list row about (160, 240).
+- Routine: tap the cameras page, tap a row, wait about 9 s, screenshot; tap Home, screenshot after 0.8 s (no video must show); tap the cameras page again (the chosen camera plays again). Selection survives page changes (`CamerasUiStore`) but not an add-on restart.
+- The first start after choosing a camera can show the spinner for 5 to 10 s while Home Assistant starts the HLS stream, then plays.
+
+## Cameras and streams on this install
+
+- Several cameras share a room: `camera.backyard_camera` (Frigate), `camera.generic_backyard` ("Backyard Live", generic RTSP sub-stream) and `camera.generic_backgate`. The page lists only the cameras added to the tile; the editor picker offers every `camera.*` entity and swaps the entity on an existing row, so add one row per camera and label each.
+- An early HTTP 404 from `/stream/hls/...` on the backyard cameras (`Video of … keeps stopping (HTTP 404)`) was not a broken RTSP source: the same cameras played once the stream had warmed up. Home Assistant returns 404 while its stream worker is idle or starting.
+- `CameraStreamService.relay` logs at info when it refuses a file (unknown token or not a stream file) and when Home Assistant answers a non-2xx for a stream file, so a failing request names its file and status in the add-on log (`ha_get_logs(source=supervisor, slug=local_remote_screens)`).
+- Camera credentials live in Home Assistant's config entries. Do not read or probe them from the repo or a script, and never write them into rules or code.
+
+## Open items
+
+- `addon/VERSION` is not bumped, so other tablets are not offered the page-aware player.
+- No warm-up of the chosen camera's stream before the tap (see Deviations).
+- Nothing from the cameras work is committed.
+
+## Deviations from RPI
+
+- The video fills the pane under the name, fitted (`crop = false`). RPI's `PlayerView` uses `RESIZE_MODE_FILL`.
+- RPI's `PlayerViewModel` refresh on HTTP 404 is not ported; `CameraStreamService` and `SessionMedia.restartVideo` already restart a stream.
+- RPI's thumbnails use a hard-coded Home Assistant URL; here the add-on fetches them through Home Assistant's proxy.
+- The row image is 290dp wide and the row height tall, centred. RPI sizes it 290 x 290 and lets it overflow.
+- The page has no warm-up on tap: `sendVideo` asks for the HLS path as soon as the rebuilt document is shown.
+- No `graphicsLayer` (see `alarm-panel-context.mdc`).
+
+## Editor
+
+`GridMockup.vue` draws the list with the chosen cameras' names (a camera icon on each row) and a blank right pane. `cameras` is in `OTHER_TILE_KINDS` (`editor/src/model/otherTiles.ts`) and `TileDrawer.vue`'s edge-to-edge list.
+
+## Demo
+
+`DemoHome` has `camera.front_door` and `camera.driveway` (no video, so the box falls back to the still). The demo screen is at `MAX_PAGES`, so the page is `DemoLayout.camerasPage()`, added only by tests.
+
+## Verify
+
+```bash
+python3 tools/generate_catalogue.py --check
+./gradlew :server:detekt :server:test \
+  --tests 'tech.shaffersoftworks.remotescreens.server.player.action.ActionRouterTest' \
+  --tests 'tech.shaffersoftworks.remotescreens.server.render.RenderTest'
+cd editor && npm run lint && npm test
+```
+
+Especially `aFullCamerasTileIsTheRpiCamerasPage`, `aChosenCameraPlaysItsLiveVideoOverASpinner` and `aCamerasPageChoosesOnlyACameraItLists`.

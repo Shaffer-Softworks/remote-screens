@@ -116,5 +116,6 @@
   "ui.lights_hour_ago": "1 ora fa",
   "ui.lights_hours_ago": "{count} ore fa",
   "ui.lights_day_ago": "Ieri",
-  "ui.lights_days_ago": "{count} giorni fa"
+  "ui.lights_days_ago": "{count} giorni fa",
+  "ui.cameras_title": "TELECAMERE"
 }

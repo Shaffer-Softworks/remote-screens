@@ -172,6 +172,53 @@ class RemoteScreenStateTest {
     }
 
     @Test
+    fun `a page's own video plays until a card opens over it and comes back when it closes`() {
+        val page = RemoteScreenState()
+            .withDocument(overlay(Slot.MAIN, rev = 1), documentBytes)
+            .withVideo(Slot.MAIN, video(rev = 1))
+        assertEquals(Slot.MAIN to video(rev = 1), page.playingVideo)
+
+        val withCard = page
+            .withDocument(overlay(Slot.OVERLAY, rev = 2), documentBytes)
+            .withVideo(Slot.OVERLAY, video(rev = 2))
+        assertEquals(Slot.OVERLAY to video(rev = 2), withCard.playingVideo)
+        assertEquals(Slot.MAIN to video(rev = 1), withCard.closed(Slot.OVERLAY).playingVideo)
+
+        val cardWithoutVideo = page.withDocument(overlay(Slot.OVERLAY, rev = 2), documentBytes)
+        assertNull(cardWithoutVideo.playingVideo)
+    }
+
+    @Test
+    fun `a page's own video stops at once on another page and plays again on return`() {
+        val onCamerasPage = RemoteScreenState()
+            .withDocument(
+                ServerMessage.Document(slot = Slot.MAIN, rev = 1, data = "", pageCount = 3),
+                documentBytes,
+            )
+            .withVideo(Slot.MAIN, video(rev = 1).copy(page = 2))
+            .withPage(2)
+        assertEquals(Slot.MAIN to video(rev = 1).copy(page = 2), onCamerasPage.playingVideo)
+
+        val onHome = onCamerasPage.withPage(0)
+        assertNull(onHome.playingVideo)
+        assertEquals(1, onHome.videos.size)
+        assertEquals(Slot.MAIN to video(rev = 1).copy(page = 2), onHome.withPage(2).playingVideo)
+    }
+
+    @Test
+    fun `a video from an add-on that names no page plays on every page`() {
+        val state = RemoteScreenState()
+            .withDocument(
+                ServerMessage.Document(slot = Slot.MAIN, rev = 1, data = "", pageCount = 3),
+                documentBytes,
+            )
+            .withVideo(Slot.MAIN, video(rev = 1))
+            .withPage(1)
+
+        assertEquals(Slot.MAIN to video(rev = 1), state.playingVideo)
+    }
+
+    @Test
     fun `a video for a document that is gone is dropped`() {
         val state = RemoteScreenState()
             .withDocument(overlay(Slot.OVERLAY, rev = 3), documentBytes)

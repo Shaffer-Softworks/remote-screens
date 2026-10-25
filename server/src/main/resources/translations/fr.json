@@ -116,5 +116,6 @@
   "ui.lights_hour_ago": "Il y a 1 heure",
   "ui.lights_hours_ago": "Il y a {count} heures",
   "ui.lights_day_ago": "Hier",
-  "ui.lights_days_ago": "Il y a {count} jours"
+  "ui.lights_days_ago": "Il y a {count} jours",
+  "ui.cameras_title": "CAMÉRAS"
 }

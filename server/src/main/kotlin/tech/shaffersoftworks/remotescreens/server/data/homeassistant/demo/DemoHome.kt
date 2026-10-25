@@ -661,6 +661,14 @@ class DemoHome : HomeAssistant {
                 ),
             ),
             EntityState(
+                "camera.driveway",
+                "idle",
+                attrs(
+                    "friendly_name" to "Driveway camera",
+                    "entity_picture" to "/api/camera_proxy/camera.driveway",
+                ),
+            ),
+            EntityState(
                 "alarm_control_panel.house",
                 "disarmed",
                 attrs(

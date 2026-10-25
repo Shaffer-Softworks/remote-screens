@@ -804,6 +804,23 @@ object Catalogue {
             predict = mapOf(),
             needsEntity = false,
         ),
+        "cameras" to TypeSpec(
+            domain = "cameras",
+            name = "Cameras",
+            icon = "cctv",
+            iconOn = null,
+            toggle = false,
+            onStates = listOf(),
+            tap = "card",
+            defaultVerb = null,
+            card = "none",
+            controls = listOf(),
+            sizes = listOf("full"),
+            options = listOf(),
+            actions = mapOf(),
+            predict = mapOf(),
+            needsEntity = false,
+        ),
     )
 
     fun of(kind: String?): TypeSpec? = types[kind]
