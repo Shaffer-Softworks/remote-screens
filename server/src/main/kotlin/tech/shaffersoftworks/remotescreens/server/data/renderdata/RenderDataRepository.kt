@@ -2,6 +2,7 @@ package tech.shaffersoftworks.remotescreens.server.data.renderdata
 
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmUiStore
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
+import tech.shaffersoftworks.remotescreens.server.data.cameras.CamerasUiStore
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsRoomsRepository
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiStore
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicAssistantClient
@@ -44,6 +45,7 @@ class RenderDataRepository(
     val calendarAgenda: CalendarAgendaStore = CalendarAgendaStore(homeAssistant),
     val alarmUi: AlarmUiStore = AlarmUiStore(),
     val lightsUi: LightsUiStore = LightsUiStore(),
+    val camerasUi: CamerasUiStore = CamerasUiStore(),
     private val lightsRooms: LightsRoomsRepository = LightsRoomsRepository(homeAssistant),
 ) {
     private val logger = LoggerFactory.getLogger(RenderDataRepository::class.java)
@@ -101,6 +103,7 @@ class RenderDataRepository(
             alarmUi = alarmUi.snapshot(),
             lightsRooms = if (needsLights) lightsRooms.rooms() else emptyList(),
             lightsUi = lightsUi.snapshot(),
+            camerasUi = camerasUi.snapshot(),
         )
     }
 

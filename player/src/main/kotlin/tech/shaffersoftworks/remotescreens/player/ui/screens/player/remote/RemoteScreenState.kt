@@ -31,6 +31,8 @@ data class SlotVideo(
     val url: String,
     val token: String,
     val crop: Boolean,
+    /** Page of the main document the video belongs to. Negative means an older add-on that did not say. */
+    val page: Int = -1,
 )
 
 /**
@@ -103,12 +105,16 @@ data class RemoteScreenState(
             else -> null
         }
 
-    /** The video to play: only the topmost card's or alert's, as a tablet may decode one stream at a time. */
+    /**
+     * The video to play: only the topmost document's, as a tablet may decode one stream at a time. That is the
+     * topmost card's or alert's, or the page's own (a cameras page) when none is shown and the tablet is on that page.
+     */
     val playingVideo: Pair<Slot, SlotVideo>?
         get() {
-            val slot = topOverlay ?: return null
+            val slot = topOverlay ?: Slot.MAIN
             return videos[slot]
                 ?.takeIf { video -> video.revision == documents[slot]?.revision }
+                ?.takeIf { video -> slot != Slot.MAIN || video.page < 0 || video.page == page }
                 ?.let { video -> slot to video }
         }
 

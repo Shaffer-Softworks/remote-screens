@@ -2,6 +2,8 @@
 import { computed, ref, watch } from 'vue'
 import type { AlarmZone } from '../model/alarmZones'
 import { ALARM_ZONES_OPTION, formatAlarmZones, parseAlarmZones } from '../model/alarmZones'
+import type { CameraEntry } from '../model/cameraList'
+import { CAMERAS_OPTION, formatCameraList, parseCameraList } from '../model/cameraList'
 import { firstFree, fitsAt } from '../model/grid'
 import { INK_SWATCHES, PASTEL_KEYS, pastel } from '../model/palette'
 import { iconOf, nameOf, newTileId, sizesOf, specOf } from '../model/tiles'
@@ -26,9 +28,15 @@ const edgeToEdge = computed(
   () =>
     kindOf(props.tile) === 'home' ||
     (!!props.tile.full &&
-      ['weather', 'climate', 'music', 'calendar', 'alarm_control_panel', 'lights'].includes(
-        kindOf(props.tile),
-      )),
+      [
+        'weather',
+        'climate',
+        'music',
+        'calendar',
+        'alarm_control_panel',
+        'lights',
+        'cameras',
+      ].includes(kindOf(props.tile))),
 )
 
 // A full alarm tile is RPI's alarm page: its own entity is All Zones, then the zones listed here.
@@ -74,6 +82,47 @@ const panelsForZone = (zone: AlarmZone) =>
     panel =>
       panel.entityId === zone.entityId ||
       !alarmZones.value.some(other => other.entityId === panel.entityId),
+  )
+
+// A full cameras tile is RPI's cameras page: it lists the cameras chosen here, and plays the one tapped.
+const isCamerasPage = computed(() => !!props.tile.full && kindOf(props.tile) === 'cameras')
+const cameraEntries = computed(() => parseCameraList(props.tile.options[CAMERAS_OPTION]))
+const cameraEntities = computed(() => state.entities.filter(camera => camera.domain === 'camera'))
+const unusedCameras = computed(() =>
+  cameraEntities.value.filter(
+    camera => !cameraEntries.value.some(entry => entry.entityId === camera.entityId),
+  ),
+)
+
+function writeCameraEntries(cameras: CameraEntry[]): void {
+  const text = formatCameraList(cameras)
+  if (text) props.tile.options[CAMERAS_OPTION] = text
+  else delete props.tile.options[CAMERAS_OPTION]
+}
+
+function setCameraEntry(cameraIndex: number, change: Partial<CameraEntry>): void {
+  writeCameraEntries(
+    cameraEntries.value.map((entry, index) =>
+      index === cameraIndex ? { ...entry, ...change } : entry,
+    ),
+  )
+}
+
+function addCameraEntry(): void {
+  const camera = unusedCameras.value[0]
+  if (!camera) return toast('Every camera is already on the page')
+  writeCameraEntries([...cameraEntries.value, { entityId: camera.entityId, label: '' }])
+}
+
+function removeCameraEntry(cameraIndex: number): void {
+  writeCameraEntries(cameraEntries.value.filter((_, index) => index !== cameraIndex))
+}
+
+const camerasForEntry = (entry: CameraEntry) =>
+  cameraEntities.value.filter(
+    camera =>
+      camera.entityId === entry.entityId ||
+      !cameraEntries.value.some(other => other.entityId === camera.entityId),
   )
 
 /** An entity may be shown another way: a sensor as a graph, a player as its favourite music. */
@@ -358,6 +407,38 @@ const pageTitle = (id: string) => props.screen.pages.find(page => page.id === id
         </button>
       </div>
       <button :disabled="!unusedAlarmPanels.length" @click="addAlarmZone">Add a zone</button>
+    </div>
+
+    <div v-if="isCamerasPage" class="field">
+      <span class="label">Cameras</span>
+      <span>Choose the cameras the page lists. Tapping one plays its live stream.</span>
+      <div v-for="(entry, cameraIndex) in cameraEntries" :key="entry.entityId" class="row zone">
+        <select
+          :value="entry.entityId"
+          @change="
+            setCameraEntry(cameraIndex, { entityId: ($event.target as HTMLSelectElement).value })
+          "
+        >
+          <option
+            v-for="camera in camerasForEntry(entry)"
+            :key="camera.entityId"
+            :value="camera.entityId"
+          >
+            {{ camera.name }}
+          </option>
+        </select>
+        <input
+          :value="entry.label"
+          :placeholder="entityById.get(entry.entityId)?.name ?? 'Label'"
+          @change="
+            setCameraEntry(cameraIndex, { label: ($event.target as HTMLInputElement).value })
+          "
+        />
+        <button class="icon" title="Remove the camera" @click="removeCameraEntry(cameraIndex)">
+          <MdiIcon name="close" :size="16" />
+        </button>
+      </div>
+      <button :disabled="!unusedCameras.length" @click="addCameraEntry">Add a camera</button>
     </div>
 
     <div v-if="spec?.options.length" class="field">

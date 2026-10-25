@@ -9,9 +9,17 @@ import tech.shaffersoftworks.remotescreens.shared.TypeSpec
 /** Where a tile sits, in dp. An [edge] tile fills the page from edge to edge, without the grid's margins. */
 data class TileBox(val x: Float, val y: Float, val w: Float, val h: Float, val cols: Int, val rows: Int, val full: Boolean, val edge: Boolean = false)
 
-/** Whether the tile is a page of its own (the home panel, or a full weather, climate, alarm or lights tile). */
-fun Tile.edgeToEdge(): Boolean =
-    full && effectiveKind() in setOf("home", "weather", "climate", "music", "calendar", "alarm_control_panel", "lights")
+/** Whether the tile is a page of its own: the home panel, or a full tile of a kind that draws a whole page. */
+fun Tile.edgeToEdge(): Boolean = full && effectiveKind() in setOf(
+    "home",
+    "weather",
+    "climate",
+    "music",
+    "calendar",
+    "alarm_control_panel",
+    "lights",
+    "cameras",
+)
 
 /** What a tap (or a hold) on a tile sends. */
 fun tapRef(tile: Tile, action: TapAction, spec: TypeSpec?, pageIndex: (String) -> Int?, hold: Boolean): ActionRef? {

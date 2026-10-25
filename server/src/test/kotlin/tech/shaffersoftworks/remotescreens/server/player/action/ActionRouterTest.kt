@@ -223,6 +223,23 @@ class ActionRouterTest {
         router.handle(checkNotNull(ActionRef.decode(meta)), lightsScreen, TapMemory(), 0)
     }
 
+    private val camerasScreen = screen.copy(pages = screen.pages + DemoLayout.camerasPage())
+
+    private fun camerasTap(meta: String) = runBlocking {
+        router.handle(checkNotNull(ActionRef.decode(meta)), camerasScreen, TapMemory(), 0)
+    }
+
+    @Test
+    fun aCamerasPageChoosesOnlyACameraItLists() {
+        assertEquals(null, renderData.camerasUi.state("cm1").selectedCamera)
+        assertEquals(TapOutcome.Rebuild, camerasTap("cm1|cameras_select|camera.driveway"))
+        assertEquals("camera.driveway", renderData.camerasUi.state("cm1").selectedCamera)
+        assertEquals(TapOutcome.Ignored, camerasTap("cm1|cameras_select|camera.garage"))
+        assertEquals(TapOutcome.Ignored, camerasTap("cm1|cameras_select|lock.front_door"))
+        assertEquals("camera.driveway", renderData.camerasUi.state("cm1").selectedCamera)
+        assertTrue(ha.calls.isEmpty())
+    }
+
     @Test
     fun aLightsPageChoosesARoomAndOpensAndClosesALightsDialog() {
         assertEquals(TapOutcome.Rebuild, lightsTap("li1|lights_room|living_room"))

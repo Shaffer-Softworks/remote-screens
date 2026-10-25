@@ -978,5 +978,20 @@ export const CATALOGUE: Record<string, TypeSpec> = {
     "options": [],
     "verbs": [],
     "needsEntity": false
+  },
+  "cameras": {
+    "name": "Cameras",
+    "icon": "cctv",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "none",
+    "controls": [],
+    "sizes": [
+      "full"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": false
   }
 }

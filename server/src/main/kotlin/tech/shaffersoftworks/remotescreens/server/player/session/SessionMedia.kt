@@ -42,7 +42,7 @@ internal class SessionMedia(
                 return@launch
             }
             host.send(
-                ServerMessage.Video(shown.slot, shown.revision, video.componentId, path, video.crop),
+                ServerMessage.Video(shown.slot, shown.revision, video.componentId, path, video.crop, video.page),
             )
         }
     }

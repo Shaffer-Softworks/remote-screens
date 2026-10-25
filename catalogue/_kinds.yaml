@@ -10,3 +10,4 @@ kinds:
   music: {name: Music Assistant, icon: music, sizes: [full], card: none, needs_entity: true}
   home: {name: Home panel, icon: home-variant, sizes: [full], card: none}
   lights: {name: Lights, icon: lightbulb-group, sizes: [full], card: none}
+  cameras: {name: Cameras, icon: cctv, sizes: [full], card: none}

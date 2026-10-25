@@ -116,5 +116,6 @@
   "ui.lights_hour_ago": "1 uur geleden",
   "ui.lights_hours_ago": "{count} uur geleden",
   "ui.lights_day_ago": "Gisteren",
-  "ui.lights_days_ago": "{count} dagen geleden"
+  "ui.lights_days_ago": "{count} dagen geleden",
+  "ui.cameras_title": "CAMERA'S"
 }

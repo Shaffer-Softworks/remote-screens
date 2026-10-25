@@ -382,6 +382,7 @@ class PlayerViewModel @Inject constructor(
             "http://$server${message.path}",
             token,
             message.crop,
+            message.page,
         )
         updateRemoteScreen { it.withVideo(message.slot, video) }
     }
