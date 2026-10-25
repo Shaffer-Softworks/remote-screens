@@ -30,6 +30,9 @@
     <string name="allow_screen_off">Allow turning the screen off in standby</string>
     <string name="allow_camera_for_face_wake">Allow camera for wake on face</string>
     <string name="camera_permission_denied">Camera permission is needed to wake on face.</string>
+    <string name="allow_location_sharing">Allow location for Home Assistant</string>
+    <string name="location_permission_denied">Location permission is needed to share this tablet\'s location.</string>
+    <string name="location_accuracy_denied">Location accuracy is off, so this tablet may not get a position indoors.</string>
     <string name="face_wake_no_camera">This tablet has no front camera, so wake on face does nothing. Use proximity or a Home Assistant motion sensor with Wake.</string>
     <string name="face_wake_low_ram">This tablet is low on RAM, so wake on face is skipped. Use proximity or a Home Assistant motion sensor with Wake.</string>
     <string name="allow_unrestricted_battery">Stay connected while the screen is off</string>

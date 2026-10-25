@@ -29,5 +29,6 @@ alwaysApply: false
 ## Gotchas
 
 - The PIN is plain text in HA state and history and on the LAN WebSocket. It is a deterrent, not a secret.
-- Tablets are only offered an APK with a higher `versionCode`. A same-version deploy does not reach them.
+- The location-accuracy prompt is a Play Services screen. `setLocationAccuracyDialogAllowed(true)` adds `com.google.android.gms` to the lock-task packages only while that prompt is showing, then puts the list back to the player. See `tablet-telemetry-context.mdc`. It does not run when the kiosk is only pinned.
+- Tablets are only offered an APK with a higher `versionCode`, signed with the same key. A same-version deploy does not reach them. Local `assembleRelease` without `PLAYER_KEYSTORE` is debug-signed. `tools/deploy_ha_dev.sh` reuses `player/build/outputs/apk/release/player-release.apk` or a leftover `addon/dist` APK copied to `/tmp/rs-deploy`; `version.json` is then written from `addon/VERSION` and can name a new version for an old APK. Delete those APKs before packaging a new player.
 - The player application id is `tech.shaffersoftworks.remotescreens.player`. The admin component string lives in `EnrollmentService` and the adb script; a tablet enrolled under an older id needs a factory reset and a new enrollment.

@@ -311,6 +311,10 @@ data class ScreenSettings(
     val kiosk: Boolean = false,
     /** The digits that unlock the kiosk on the tablet; null leaves unlocking to Home Assistant. */
     val kioskPin: String? = null,
+    /** Tablets showing the screen report their sensors and diagnostics to Home Assistant. */
+    val reportTelemetry: Boolean = true,
+    /** Tablets showing the screen also report their location; needs [reportTelemetry] and location permission. */
+    val shareLocation: Boolean = false,
 ) {
     fun validated(): ScreenSettings = copy(
         kioskPin = kioskPin?.takeIf { KIOSK_PIN.matches(it) },

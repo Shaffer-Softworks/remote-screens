@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.31
+
+- When a tablet is allowed to share its location, a managed tablet turns location services on and asks once to turn on Location accuracy.
+
+## 0.1.30
+
+- A tablet that is allowed to share its location reports a fix as soon as permission is granted, without waiting until it moves.
+
+## 0.1.29
+
+- Each tablet is its own Home Assistant device, with environment sensors, diagnostics, motion and an opt-in GPS tracker.
+- Screen settings: **Report tablet sensors** (on by default) and **Share tablet location** (off by default).
+
 ## 0.1.19
 
 - See the [v0.1.19](https://github.com/Shaffer-Softworks/remote-screens/releases/tag/v0.1.19) release notes; replace this line with curated notes before merging.

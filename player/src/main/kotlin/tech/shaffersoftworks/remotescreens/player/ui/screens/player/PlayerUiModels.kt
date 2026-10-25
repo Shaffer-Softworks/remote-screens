@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player
 
+import android.content.IntentSender
 import androidx.annotation.StringRes
 
 /** The full-screen panel shown while there is nothing to draw yet. */
@@ -22,6 +23,8 @@ data class SettingsDialogState(
     val canOfferUnrestrictedBattery: Boolean = false,
     /** Whether to offer the camera permission face wake needs. */
     val canOfferCameraPermission: Boolean = false,
+    /** Whether to offer the location permission that sharing the tablet's location needs. */
+    val canOfferLocationPermission: Boolean = false,
     /** One-shot note when face wake is on but this tablet cannot run it. */
     @StringRes val wakeOnFaceUnavailableNote: Int? = null,
     /** What the kiosk button does; null hides it (no kiosk, or locked without the PIN entered). */
@@ -45,6 +48,10 @@ sealed interface PlayerEvent {
     data object OpenScreenOffAdminSettings : PlayerEvent
     data object RequestUnrestrictedBattery : PlayerEvent
     data object RequestCameraPermission : PlayerEvent
+    data object RequestLocationPermission : PlayerEvent
+
+    /** Android's one-tap prompt that turns Location accuracy on. */
+    data class RequestLocationAccuracy(val intentSender: IntentSender) : PlayerEvent
 
     /** Screen pinning would hide the screen where Android asks to confirm an update. */
     data object StopScreenPinning : PlayerEvent

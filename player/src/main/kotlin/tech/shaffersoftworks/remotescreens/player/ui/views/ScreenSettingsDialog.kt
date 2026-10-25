@@ -44,6 +44,7 @@ fun ScreenSettingsDialog(
     canOfferScreenOff: Boolean,
     canOfferUnrestrictedBattery: Boolean,
     canOfferCameraPermission: Boolean = false,
+    canOfferLocationPermission: Boolean = false,
     wakeOnFaceUnavailableNote: Int? = null,
     kioskAction: KioskAction?,
     canRemoveDeviceOwner: Boolean,
@@ -56,6 +57,7 @@ fun ScreenSettingsDialog(
     onAllowScreenOff: () -> Unit,
     onAllowUnrestrictedBattery: () -> Unit,
     onAllowCameraPermission: () -> Unit = {},
+    onAllowLocationPermission: () -> Unit = {},
     onUnlockKiosk: () -> Unit,
     onLockKioskAgain: () -> Unit,
     onRemoveDeviceOwner: () -> Unit,
@@ -137,6 +139,11 @@ fun ScreenSettingsDialog(
                         Text(stringResource(R.string.allow_camera_for_face_wake))
                     }
                 }
+                if (canOfferLocationPermission) {
+                    TextButton(onClick = onAllowLocationPermission) {
+                        Text(stringResource(R.string.allow_location_sharing))
+                    }
+                }
                 wakeOnFaceUnavailableNote?.let { noteRes ->
                     Text(
                         text = stringResource(noteRes),
@@ -207,6 +214,7 @@ private fun ScreenSettingsDialogPreview() {
             canOfferScreenOff = true,
             canOfferUnrestrictedBattery = true,
             canOfferCameraPermission = true,
+            canOfferLocationPermission = true,
             kioskAction = KioskAction.UNLOCK,
             canRemoveDeviceOwner = false,
             onBrightnessPreview = {},

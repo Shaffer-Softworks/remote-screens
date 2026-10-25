@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player
 
+import android.content.IntentSender
 import androidx.lifecycle.SavedStateHandle
 import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionRepository
 import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionStatus
@@ -9,6 +10,8 @@ import tech.shaffersoftworks.remotescreens.player.data.device.DisplayInfo
 import tech.shaffersoftworks.remotescreens.player.data.device.FaceWakeMonitor
 import tech.shaffersoftworks.remotescreens.player.data.device.ProximityWakeMonitor
 import tech.shaffersoftworks.remotescreens.player.data.device.ScreenPowerRepository
+import tech.shaffersoftworks.remotescreens.player.data.device.telemetry.LocationAccuracy
+import tech.shaffersoftworks.remotescreens.player.data.device.telemetry.TelemetryReporter
 import tech.shaffersoftworks.remotescreens.player.data.discovery.DiscoveryRepository
 import tech.shaffersoftworks.remotescreens.player.data.image.ImageDecoder
 import tech.shaffersoftworks.remotescreens.player.data.kiosk.KioskManager
@@ -17,6 +20,7 @@ import tech.shaffersoftworks.remotescreens.player.data.preferences.PlayerPrefere
 import tech.shaffersoftworks.remotescreens.player.data.update.UpdateRepository
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
+import tech.shaffersoftworks.remotescreens.shared.Protocol
 import tech.shaffersoftworks.remotescreens.shared.ScreenSettings
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Slot
@@ -90,6 +94,11 @@ class PlayerViewModelTest {
         on { isLowRamDevice() } doReturn false
     }
 
+    private val telemetryReporter: TelemetryReporter = mock {
+        on { hasLocationPermission() } doReturn false
+    }
+    private val locationAccuracy: LocationAccuracy = mock()
+
     private lateinit var viewModel: PlayerViewModel
 
     @Before
@@ -107,6 +116,8 @@ class PlayerViewModelTest {
             faceWakeMonitor = faceWakeMonitor,
             kioskManager = kioskManager,
             imageDecoder = mock<ImageDecoder>(),
+            telemetryReporter = telemetryReporter,
+            locationAccuracy = locationAccuracy,
         )
     }
 
@@ -189,6 +200,36 @@ class PlayerViewModelTest {
             InfoPanelState.Connecting("10.0.0.5:8100"),
             viewModel.viewState.value.infoPanel,
         )
+    }
+
+    @Test
+    fun `telemetry is reported only to a paired add-on that accepts it`() {
+        receive(ServerMessage.Welcome(pairingCode = "123456", features = listOf(Protocol.CAPABILITY_TELEMETRY)))
+        verify(telemetryReporter).update(any(), eq(false), eq(false), any())
+
+        receive(ServerMessage.Welcome(features = listOf(Protocol.CAPABILITY_TELEMETRY)))
+        verify(telemetryReporter).update(any(), eq(true), eq(false), any())
+    }
+
+    @Test
+    fun `turning location sharing on updates the reporter`() {
+        receive(ServerMessage.Settings(ScreenSettings(shareLocation = true)))
+
+        verify(telemetryReporter).update(any(), any(), eq(true), any())
+        verify(locationAccuracy).enableLocationServices()
+        verify(kioskManager, never()).setLocationAccuracyDialogAllowed(true)
+    }
+
+    @Test
+    fun `location accuracy is offered once permission is already granted`() {
+        val sender = mock<IntentSender>()
+        whenever(telemetryReporter.hasLocationPermission()).thenReturn(true)
+        whenever { locationAccuracy.findAccuracyPrompt() } doReturn sender
+
+        receive(ServerMessage.Settings(ScreenSettings(shareLocation = true)))
+
+        verify(locationAccuracy).enableLocationServices()
+        verify(kioskManager).setLocationAccuracyDialogAllowed(true)
     }
 
     @Test

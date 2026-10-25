@@ -17,7 +17,33 @@
       "standby_screen_off": { "default": "mdi:monitor-off" },
       "wake_on_proximity": { "default": "mdi:account-arrow-left" },
       "wake_on_face": { "default": "mdi:face-recognition" },
-      "kiosk": { "default": "mdi:lock" }
+      "kiosk": { "default": "mdi:lock" },
+      "report_telemetry": { "default": "mdi:tablet-dashboard" },
+      "share_location": { "default": "mdi:map-marker-radius" }
+    },
+    "binary_sensor": {
+      "awake": { "default": "mdi:monitor-shimmer", "state": { "off": "mdi:monitor-off" } }
+    },
+    "device_tracker": {
+      "location": { "default": "mdi:tablet" }
+    },
+    "sensor": {
+      "orientation": { "default": "mdi:phone-rotate-landscape" },
+      "last_motion": { "default": "mdi:motion-sensor" },
+      "battery_health": { "default": "mdi:battery-heart-variant" },
+      "charger_type": { "default": "mdi:power-plug" },
+      "battery_cycles": { "default": "mdi:battery-sync" },
+      "wifi_ssid": { "default": "mdi:wifi" },
+      "wifi_bssid": { "default": "mdi:access-point-network" },
+      "ip_address": { "default": "mdi:ip-network" },
+      "storage_free": { "default": "mdi:harddisk" },
+      "memory_available": { "default": "mdi:memory" },
+      "uptime": { "default": "mdi:timer-outline" },
+      "android_version": { "default": "mdi:android" },
+      "security_patch": { "default": "mdi:shield-check" },
+      "app_version": { "default": "mdi:application-cog" },
+      "kiosk_mode": { "default": "mdi:lock" },
+      "last_report": { "default": "mdi:clock-check-outline" }
     },
     "text": {
       "kiosk_pin": { "default": "mdi:form-textbox-password" }

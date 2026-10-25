@@ -18,6 +18,10 @@ class RemoteScreensAuthError(RemoteScreensError):
     """The add-on refused the API key."""
 
 
+class RemoteScreensNotFoundError(RemoteScreensError):
+    """The add-on has no such path, such as an older add-on without `/players`."""
+
+
 class RemoteScreensClient:
     """Talks to one Remote Screens add-on."""
 
@@ -29,6 +33,10 @@ class RemoteScreensClient:
     async def screens(self) -> list[dict[str, Any]]:
         """Every screen with its settings, page titles and players."""
         return await self._request("GET", "/screens")
+
+    async def players(self) -> list[dict[str, Any]]:
+        """Every tablet, with or without a screen, and its sensors while it is online."""
+        return await self._request("GET", "/players")
 
     async def set_settings(self, screen_id: str, patch: dict[str, Any]) -> None:
         """Changes some of a screen's settings; the rest stay as they are."""
@@ -54,7 +62,7 @@ class RemoteScreensClient:
                 if r.status in (401, 403):
                     raise RemoteScreensAuthError("The add-on refused the API key")
                 if r.status == 404:
-                    raise RemoteScreensError(f"Not found: {path}")
+                    raise RemoteScreensNotFoundError(f"Not found: {path}")
                 if r.status >= 400:
                     raise RemoteScreensError(f"{r.status}: {(await r.text())[:200]}")
                 if r.status == 204 or r.content_length == 0:

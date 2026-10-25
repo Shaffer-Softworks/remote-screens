@@ -131,6 +131,10 @@ class PlayerHub(
             page = session?.page ?: 0,
             battery = session?.battery,
             kiosk = session?.kiosk,
+            isCharging = session?.charging,
+            wifi = session?.wifi,
+            telemetry = session?.telemetry,
+            telemetryAt = session?.telemetryAt,
         )
     }
 

@@ -28,6 +28,9 @@ object Protocol {
     /** A player that can show the native calendar create and delete dialogs ([ServerMessage.CalendarDialog]). */
     const val CAPABILITY_CALENDAR_DIALOGS = "calendar_dialogs"
 
+    /** A player that reports its sensors and diagnostics ([PlayerMessage.Telemetry]) once the add-on accepts them. */
+    const val CAPABILITY_TELEMETRY = "telemetry"
+
     val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = false
@@ -161,6 +164,14 @@ sealed interface PlayerMessage {
         /** `off`, `pinned` (screen pinning) or `locked` (lock task as the device owner); null from older players. */
         val kiosk: String? = null,
     ) : PlayerMessage
+
+    /**
+     * The tablet's sensors and diagnostics, for Home Assistant. Sent only to an add-on that lists
+     * [Protocol.CAPABILITY_TELEMETRY] in its features, while [ScreenSettings.reportTelemetry] is on.
+     */
+    @Serializable
+    @SerialName("telemetry")
+    data class Telemetry(val telemetry: DeviceTelemetry) : PlayerMessage
 
     /**
      * The video over [componentId] of document [rev] in [slot] stopped, so the add-on can start the camera's stream

@@ -169,6 +169,10 @@ export interface ScreenSettings {
   kiosk?: boolean
   /** 4 to 8 digits that unlock the kiosk on the tablet. */
   kioskPin?: string | null
+  /** Tablets report their sensors and diagnostics to Home Assistant; absent is on. */
+  reportTelemetry?: boolean
+  /** Tablets also report their location; absent is off. */
+  shareLocation?: boolean
 }
 
 /** A custom theme as stored: hex colours laid over a built-in [base]. */
@@ -273,6 +277,11 @@ export interface PlayerStatus {
   battery?: number
   /** `off`, `pinned` or `locked`. */
   kiosk?: string
+  charging?: boolean
+  /** Wi‑Fi signal level 0–4. */
+  wifi?: number
+  /** Epoch milliseconds of the last sensor report. */
+  telemetryAt?: number
 }
 
 /** Asks for a QR enrollment code. The Wi-Fi password only goes into the code. */
