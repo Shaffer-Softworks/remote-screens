@@ -93,18 +93,19 @@ fun DocContext.tap(modifier: Modifier, ref: ActionRef?, hold: ActionRef? = null)
 
 fun DocContext.icon(name: String?, sizeDp: Float, color: RcColor, visible: RcInteger? = null) {
     val px = units.px(sizeDp)
-    val iconPath = path(name)
+    // Pixel coordinates, not a canvas scale of the 24-grid. On Android 8 the scale is a bitmap stretch.
+    val iconPath = path(name, scale = px / ICON_VIEWPORT)
     var modifier = Modifier.size(px, px)
     if (visible != null) modifier = modifier.visibility(visible)
     scope.Canvas(modifier) {
         save {
-            scale(px / ICON_VIEWPORT, px / ICON_VIEWPORT)
             // Paint is shared for the whole document. The dial's gradient stays installed
             // until cleared, so icons drawn later (nav, modes) fill with it and look grey.
             paint {
                 clearShader()
                 color(color)
                 alpha(1f)
+                antiAlias(true)
                 style(RcPaintStyle.Fill)
             }
             drawPath(iconPath)
@@ -128,15 +129,18 @@ fun DocContext.weatherStateIcon(
         return
     }
     val px = units.px(sizeDp)
-    val layers = pieces.map { piece -> path(rawSvg = piece.path) to fixed(HaWeatherIcons.color(piece.layer)) }
+    val pathScale = px / HaWeatherIcons.VIEWPORT
+    val layers = pieces.map { piece ->
+        path(rawSvg = piece.path, scale = pathScale) to fixed(HaWeatherIcons.color(piece.layer))
+    }
     scope.Canvas(Modifier.size(px, px)) {
         save {
-            scale(px / HaWeatherIcons.VIEWPORT, px / HaWeatherIcons.VIEWPORT)
             for ((iconPath, color) in layers) {
                 paint {
                     clearShader()
                     color(color)
                     alpha(1f)
+                    antiAlias(true)
                     style(RcPaintStyle.Fill)
                 }
                 drawPath(iconPath)

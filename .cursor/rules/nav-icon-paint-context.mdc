@@ -1,6 +1,6 @@
 ---
 description: Home-page nav icons grey — thermostat dial gradient stays on the shared Remote Compose paint
-globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/widgets/Widgets.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/panels/thermostat/ThermostatDial.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/ScreenRenderer.kt
+globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/widgets/Widgets.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/Rc.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/DocContext.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/panels/thermostat/ThermostatDial.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/ScreenRenderer.kt
 alwaysApply: false
 ---
 
@@ -18,7 +18,8 @@ On the home page (thermostat card) the nav icons look charcoal/grey. On page 2 t
 
 ## Fix
 
-- `Widgets.icon` and `weatherStateIcon`: `clearShader()`, then `color`, `alpha(1f)`, and `Fill`, before `drawPath`.
+- `Widgets.icon` and `weatherStateIcon`: `clearShader()`, then `color`, `alpha(1f)`, `antiAlias(true)`, and `Fill`, before `drawPath`.
+- Icon paths are stored in pixels (`path(..., scale = px / viewport)`). Do not `scale()` the canvas over the 24×24 (or 17×17) grid. On the office keypad (Android 8.1) that scale rasterises the grid and stretches the bitmap, so a tile icon is soft. Nav icons are small enough that the stretch is easy to miss.
 - Every solid paint in `ThermostatDial` after the gradient: `clearShader()`, so the ring, ticks, arcs, and knobs stay real colors and the shader does not leak.
 - Nav icon and label stay `Role.INK`. Never `KEY_ON_INK` — that charcoal reads grey on the teal pill.
 

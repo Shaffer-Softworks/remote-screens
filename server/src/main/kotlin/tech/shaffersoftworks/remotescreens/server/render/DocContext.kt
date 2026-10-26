@@ -146,10 +146,14 @@ class DocContext(
 
     /**
      * MDI icon [icon], or raw SVG [rawSvg] (HA weather layers). Exactly one should be set.
+     * [scale] writes the path in pixels (see [Rc.path]).
      */
-    fun path(icon: String? = null, rawSvg: String? = null): RcPath {
+    fun path(icon: String? = null, rawSvg: String? = null, scale: Float = 1f): RcPath {
         val svg = rawSvg ?: Icons.path(icon)
-        return declare(paths, svg, { path(icon, rawSvg) }) { scope.remotePathData(Rc.path(svg)) }
+        val key = "${scale.toRawBits()}:$svg"
+        return declare(paths, key, { path(icon, rawSvg, scale) }) {
+            scope.remotePathData(Rc.path(svg, scale))
+        }
     }
 
     fun meta(ref: ActionRef): RcText {
