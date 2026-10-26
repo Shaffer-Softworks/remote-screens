@@ -107,7 +107,7 @@ private fun componentBounds(player: RemoteComposePlayer, componentId: Int): Rect
     return windowBounds ?: fromSemantic
 }
 
-private fun remoteContextOf(player: RemoteComposePlayer): RemoteContext? = runCatching {
+internal fun remoteContextOf(player: RemoteComposePlayer): RemoteContext? = runCatching {
     RemoteComposePlayer::class.java.getDeclaredMethod("getRemoteContext").run {
         isAccessible = true
         invoke(player) as RemoteContext

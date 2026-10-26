@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { api } from '../api'
 import MdiIcon from './MdiIcon.vue'
 
-const props = defineProps<{ modelValue?: string; placeholder: string }>()
+const props = defineProps<{
+  modelValue?: string
+  placeholder: string
+  /** Icon drawn for the default, when it is not the placeholder words (an entity's own icon). */
+  preview?: string
+}>()
 const emit = defineEmits<{ 'update:modelValue': [value: string | undefined] }>()
 
 const query = ref('')
@@ -24,13 +29,16 @@ function pick(name: string | undefined): void {
   open.value = false
   query.value = ''
 }
+
+/** The glyph for a blank value: the resolved default, else the placeholder when that is itself an icon. */
+const displayedIcon = computed(() => props.modelValue ?? props.preview ?? props.placeholder)
 </script>
 
 <template>
   <div class="picker">
     <div class="row">
-      <button class="current" :title="props.modelValue ?? props.placeholder" @click="open = !open">
-        <MdiIcon :name="props.modelValue ?? props.placeholder" :size="22" />
+      <button class="current" :title="displayedIcon" @click="open = !open">
+        <MdiIcon :name="displayedIcon" :size="22" />
         <span class="grow">{{ props.modelValue ?? `Default (${props.placeholder})` }}</span>
       </button>
       <button v-if="props.modelValue" class="icon" title="Use the default" @click="pick(undefined)">

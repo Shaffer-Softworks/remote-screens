@@ -14,11 +14,11 @@ import androidx.compose.remote.creation.dsl.fillMaxHeight
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.height
-import androidx.compose.remote.creation.dsl.horizontalScroll
+import tech.shaffersoftworks.remotescreens.server.render.keptHorizontalScroll
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
-import androidx.compose.remote.creation.dsl.verticalScroll
+import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.shared.Node
@@ -128,9 +128,9 @@ internal fun DocContext.container(node: Node, given: Dims, axis: Axis, pages: Pa
     var modifier = styled(node, axis, pages, base)
     if (node.props["scroll"] == "true") {
         modifier = if (mine == Axis.ROW) {
-            modifier.horizontalScroll()
+            modifier.keptHorizontalScroll("freeform.${node.id}")
         } else if (mine == Axis.COLUMN) {
-            modifier.verticalScroll()
+            modifier.keptVerticalScroll("freeform.${node.id}")
         } else {
             modifier
         }

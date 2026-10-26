@@ -31,7 +31,7 @@ import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.requiredHeightIn
 import androidx.compose.remote.creation.dsl.size
-import androidx.compose.remote.creation.dsl.verticalScroll
+import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import androidx.compose.remote.creation.dsl.width
 import androidx.compose.remote.creation.modifiers.RectShape
 import tech.shaffersoftworks.remotescreens.server.render.panels.lights.LightsMetrics as M
@@ -129,7 +129,7 @@ private fun DocContext.roomsColumn(
         if (rooms.isEmpty()) {
             doc.roomsSpinner(layout)
         } else {
-            Column(doc.scrollingList(layout.pageH)) {
+            Column(doc.scrollingList("lights.$tileId.rooms", layout.pageH)) {
                 Spacer(Modifier.height(doc.units.px(headerH)))
                 rooms.forEachIndexed { index, room ->
                     if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.ROOM_GAP_DP))))
@@ -247,7 +247,7 @@ private fun DocContext.devicesColumn(tileId: String, room: LightsRoom?, layout: 
         val headerH = layout.devicesHeaderHeight()
         val devices = room.entityIds.filter { it in doc.states }
         Box(Modifier.fillMaxWidth().height(doc.units.px(layout.devicesBodyHeight()))) {
-            Column(doc.scrollingList(layout.devicesBodyHeight())) {
+            Column(doc.scrollingList("lights.$tileId.devices", layout.devicesBodyHeight())) {
                 Spacer(Modifier.height(doc.units.px(headerH)))
                 devices.forEachIndexed { index, entityId ->
                     if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.DEVICE_GAP_DP))))
@@ -280,13 +280,13 @@ private fun DocContext.devicesColumn(tileId: String, room: LightsRoom?, layout: 
  * The list's viewport. Weight on a scroller is ignored, so the height is exact, capped, and clipped, as the light
  * dialog and the music lists are.
  */
-private fun DocContext.scrollingList(heightDp: Float): Modifier {
+private fun DocContext.scrollingList(name: String, heightDp: Float): Modifier {
     val viewport = units.px(heightDp)
     return Modifier.fillMaxWidth()
         .height(viewport)
         .requiredHeightIn(max = viewport)
         .clip(RectShape(0f, 0f, 0f, 0f))
-        .verticalScroll()
+        .keptVerticalScroll(name)
 }
 
 private fun DocContext.selectRoomPrompt(layout: LightsLayout) {

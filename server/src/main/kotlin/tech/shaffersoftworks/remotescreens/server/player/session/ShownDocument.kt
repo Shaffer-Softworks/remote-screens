@@ -7,8 +7,8 @@ import tech.shaffersoftworks.remotescreens.shared.VarValue
 /** A document shown in [slot], with what was last sent for it. */
 internal class ShownDocument(
     val slot: Slot,
-    val renderedDoc: RenderedDoc,
-    val rebuild: suspend () -> RenderedDoc?,
+    var renderedDoc: RenderedDoc,
+    var rebuild: suspend () -> RenderedDoc?,
 ) {
     var revision = 0
     var sentVars: Map<String, VarValue> = emptyMap()

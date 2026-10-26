@@ -20,7 +20,7 @@ import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
-import androidx.compose.remote.creation.dsl.verticalScroll
+import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
@@ -164,7 +164,7 @@ private fun DocContext.agendaList(tileId: String, events: List<AgendaEvent>, zon
         val label = agendaDay(event, zone)
         grouped[label] = grouped[label].orEmpty() + event
     }
-    scope.Column(Modifier.fillMaxWidth().verticalWeight(1f).verticalScroll()) {
+    scope.Column(Modifier.fillMaxWidth().verticalWeight(1f).keptVerticalScroll("calendar.$tileId")) {
         val doc = this@agendaList
         var shown = 0
         for ((label, dayEvents) in grouped) {

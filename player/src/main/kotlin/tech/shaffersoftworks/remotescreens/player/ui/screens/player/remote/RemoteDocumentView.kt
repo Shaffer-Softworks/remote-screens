@@ -44,6 +44,8 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
     private var appliedTimeZone: String? = null
     /** After a MAIN rebuild into the back buffer, swap once PAGE has been drawn off-screen. */
     private var pendingMainSwap: SlotDocument? = null
+    /** Scroll offsets copied off the document a rebuild is about to replace. */
+    private var pendingMainScroll: List<DocumentScroll.Mark> = emptyList()
     /** First MAIN document: draw once at alpha 0 so PAGE sticks before it is shown. */
     private var pendingMainFirstReveal: SlotDocument? = null
     private var mainSwapPosted = false
@@ -188,6 +190,8 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
                     mainSwapPosted = false
                     return@post
                 }
+                DocumentScroll.restore(newFront, pendingMainScroll)
+                pendingMainScroll = emptyList()
                 newFront.alpha = 1f
                 oldFront.visibility = View.GONE
                 oldFront.alpha = 1f
@@ -241,6 +245,7 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
             loadedDocuments.clear()
             pendingMainSwap = null
             pendingMainFirstReveal = null
+            pendingMainScroll = emptyList()
             mainSwapPosted = false
             mainFirstPosted = false
             appliedTimeZone = state.timeZone
@@ -248,43 +253,55 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
         val newlyLoaded = mutableSetOf<Slot>()
         for ((slot, document) in state.documents) {
             if (loadedDocuments[slot] === document) continue
-            val hadMain = slot == Slot.MAIN && Slot.MAIN in loadedDocuments
-            // Rebuilds load under the current page. Alpha 0 still draws, so PAGE can stick before reveal.
-            val target = if (hadMain) mainInactive() else player(slot)
-            if (hadMain) {
-                val front = player(Slot.MAIN)
-                removeView(target)
-                addView(target, indexOfChild(front).coerceAtLeast(0))
-            }
-            target.alpha = 0f
-            target.visibility = View.INVISIBLE
-            // Load with Home Assistant's zone so analog hands match the digital TIME/DATE vars.
-            // Each document needs its own clock: CalendarSystemClock's calendar is not thread-safe.
-            target.setDocument(
-                RemoteDocument(ByteArrayInputStream(document.bytes), clockFor(state.timeZone)),
-            )
-            // Action listeners belong to the loaded document, so each new document needs its own.
-            target.addIdActionListener { _, metadata ->
-                if (metadata != null) onAction(slot, document.revision, metadata)
-            }
-            for (value in state.values.values) target.applyValue(value)
-            for ((name, bitmap) in state.bitmaps) target.setUserLocalBitmap(name, bitmap)
-            // PAGE after vars: must stick before the buffer is revealed.
-            if (slot == Slot.MAIN) {
-                target.setUserLocalInt(PAGE_VARIABLE, state.page)
-                appliedPage = state.page
-                if (hadMain) {
-                    pendingMainSwap = document
-                    pendingMainFirstReveal = null
-                } else {
-                    pendingMainFirstReveal = document
-                    pendingMainSwap = null
-                }
-            }
-            loadedDocuments[slot] = document
+            loadSlot(state, slot, document)
             newlyLoaded += slot
         }
         return newlyLoaded
+    }
+
+    /** Loads [document] into [slot], keeping list positions from the document it replaces. */
+    private fun loadSlot(state: RemoteScreenState, slot: Slot, document: SlotDocument) {
+        val hadMain = slot == Slot.MAIN && Slot.MAIN in loadedDocuments
+        val marks = when {
+            slot !in loadedDocuments -> emptyList()
+            slot == Slot.MAIN -> DocumentScroll.capture(player(Slot.MAIN))
+            else -> DocumentScroll.capture(player(slot))
+        }
+        if (slot == Slot.MAIN) pendingMainScroll = marks
+        // Rebuilds load under the current page. Alpha 0 still draws, so PAGE can stick before reveal.
+        val target = if (hadMain) mainInactive() else player(slot)
+        if (hadMain) {
+            val front = player(Slot.MAIN)
+            removeView(target)
+            addView(target, indexOfChild(front).coerceAtLeast(0))
+        }
+        target.alpha = 0f
+        target.visibility = View.INVISIBLE
+        // Load with Home Assistant's zone so analog hands match the digital TIME/DATE vars.
+        // Each document needs its own clock: CalendarSystemClock's calendar is not thread-safe.
+        target.setDocument(
+            RemoteDocument(ByteArrayInputStream(document.bytes), clockFor(state.timeZone)),
+        )
+        if (marks.isNotEmpty()) DocumentScroll.restore(target, marks)
+        // Action listeners belong to the loaded document, so each new document needs its own.
+        target.addIdActionListener { _, metadata ->
+            if (metadata != null) onAction(slot, document.revision, metadata)
+        }
+        for (value in state.values.values) target.applyValue(value)
+        for ((name, bitmap) in state.bitmaps) target.setUserLocalBitmap(name, bitmap)
+        // PAGE after vars: must stick before the buffer is revealed.
+        if (slot == Slot.MAIN) {
+            target.setUserLocalInt(PAGE_VARIABLE, state.page)
+            appliedPage = state.page
+            if (hadMain) {
+                pendingMainSwap = document
+                pendingMainFirstReveal = null
+            } else {
+                pendingMainFirstReveal = document
+                pendingMainSwap = null
+            }
+        }
+        loadedDocuments[slot] = document
     }
 
     private fun clockFor(timeZone: String?): RemoteClock {

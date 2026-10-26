@@ -31,7 +31,7 @@ import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.requiredHeightIn
 import androidx.compose.remote.creation.dsl.size
-import androidx.compose.remote.creation.dsl.verticalScroll
+import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import androidx.compose.remote.creation.dsl.width
 import androidx.compose.remote.creation.modifiers.RectShape
 import tech.shaffersoftworks.remotescreens.server.render.panels.lights.LightsDialogMetrics as D
@@ -80,7 +80,7 @@ internal fun DocContext.lightDetailDialog(
                     .height(viewportH)
                     .requiredHeightIn(max = viewportH)
                     .clip(RectShape(0f, 0f, 0f, 0f))
-                    .verticalScroll(),
+                    .keptVerticalScroll("lights.$tileId.detail"),
                 horizontal = RcHorizontalPositioning.Center,
             ) {
                 doc.detailHeader(roomName, entityState.name, dismiss, layout)
@@ -302,7 +302,9 @@ private fun DocContext.effectMenu(tileId: String, effects: List<String>, current
     val padH = units.px(layout.dp(D.MENU_ITEM_PAD_H_DP))
     scope.Column(
         Modifier.fillMaxWidth().height(units.px(menuH)).requiredHeightIn(max = units.px(menuH))
-            .clip(rounded(layout.dp(D.MENU_CORNER_DP))).background(fixed(Rpi.LightDetailModeBar)).verticalScroll(),
+            .clip(rounded(layout.dp(D.MENU_CORNER_DP)))
+            .background(fixed(Rpi.LightDetailModeBar))
+            .keptVerticalScroll("lights.$tileId.effects"),
     ) {
         val doc = this@effectMenu
         for (effect in effects) {
