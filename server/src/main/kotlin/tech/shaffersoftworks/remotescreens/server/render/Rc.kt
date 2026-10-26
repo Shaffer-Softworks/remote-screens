@@ -26,7 +26,7 @@ object Rc {
 
     /**
      * AndroidX operations plus the experimental ones: long press (`MODIFIER_MULTI_CLICK`) and `Flow` are still only
-     * there in alpha21. The player reads the same profile from the header.
+     * there in alpha22. The player reads the same profile from the header.
      */
     const val PROFILES = RcProfiles.PROFILE_ANDROIDX or RcProfiles.PROFILE_EXPERIMENTAL
 
@@ -47,7 +47,7 @@ object Rc {
             RemoteComposeWriter.HTag(Header.DOC_PROFILES, PROFILES),
         ) { content() }
 
-    /** The player capability that says it reads documents [compress]ed (alpha21 players do). */
+    /** The player capability that says it reads documents [compress]ed (alpha22 players do). */
     const val DEFLATE = "deflate"
 
     /** [document] with everything after its header deflated, for players with the [DEFLATE] capability. */

@@ -87,4 +87,13 @@ internal object AlarmMetrics {
     const val ARMING_ALPHA = 0x9A
     const val ALPHA_SHIFT = 24
     const val RGB_MASK = 0xFFFFFF
+
+    /**
+     * RPI `BlinkingText(durationMillis = 3000)` spends a quarter of that fading one way, then reverse.
+     * The full fade out and back in is half of 3000ms.
+     */
+    const val ARMING_CYCLE_SEC = 1.5f
+
+    /** Two halves of the cycle, so the fade is fully on at the ends and gone in the middle. */
+    const val ARMING_WAVE_SPAN = 2f
 }

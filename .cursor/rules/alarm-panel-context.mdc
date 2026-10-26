@@ -25,7 +25,7 @@ A 1:1 port of RPI's `AlarmScreenV2.kt`, `AlarmViewModel.kt` and `KeypadPanel.kt`
 
 ## Deviations from RPI
 
-- "Arming" is steady orange, not blinking. Remote Compose alpha21 writes a `graphicsLayer` modifier its own reader rejects ("invalid attribute index"), which crash-looped the player. Don't use `graphicsLayer`. `RenderTest` loads each alarm state's document to catch this.
+- "Arming" fades out and back in orange, matching RPI `BlinkingText(durationMillis = 3000)`: a 1.5s triangle on `continuousSeconds`, peak colour warn at `ARMING_ALPHA`. Pass the fade as `graphicsLayer { alpha = fade.toFloat() }`. `alpha(RcFloat)` is counted in the modifier and then skipped on write, so the reader throws "invalid attribute index" and the player crash-loops. `RenderTest` loads each alarm state's document.
 - The secure line reads `arm_mode`, falling back to `state` for panels that are not Alarmo.
 - Open sensors don't block Disarm. RPI blocks every mode.
 - States RPI doesn't name (triggered, pending) show HA's translated state instead of "Disarmed".

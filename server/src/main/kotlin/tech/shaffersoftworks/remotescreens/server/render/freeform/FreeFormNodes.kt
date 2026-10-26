@@ -206,7 +206,7 @@ internal fun DocContext.imageNode(node: Node, self: Dims, axis: Axis, pages: Pag
             crop = !fit,
         ),
     )
-    // Put taps on a Box: Image drops onClick in the document (alpha21), so a camera never opened its card.
+    // Put taps on a Box: Image drops onClick in the document (alpha22), so a camera never opened its card.
     scope.Box(modifier) {
         Image(
             this@imageNode.image(slot, w, h),

@@ -13,6 +13,7 @@ import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcColor
+import androidx.compose.remote.creation.dsl.RcFloat
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcTextAlign
@@ -21,6 +22,7 @@ import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.fillMaxWidth
+import androidx.compose.remote.creation.dsl.graphicsLayer
 import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
@@ -189,12 +191,32 @@ private fun DocContext.statusWord(state: String?, layout: AlarmLayout) {
     }
     val sizeSp = layout.sp(M.STATUS_SP)
     if (state == "arming") {
-        // Steady, not RPI's blink: alpha21's player cannot read a graphicsLayer modifier.
-        val orange = (M.ARMING_ALPHA shl M.ALPHA_SHIFT) or (Role.WARN.argb and M.RGB_MASK)
-        label(word, sizeSp, fixed(orange))
+        armingLabel(word, sizeSp)
     } else {
         label(word, sizeSp, role(Role.INK), Weight.BOLD)
     }
+}
+
+/**
+ * Orange warn text whose alpha falls to 0 and returns, on the same clock as RPI's blink.
+ * The fade has to be the expression's id as a float. `alpha(RcFloat)` is counted in the modifier and then
+ * skipped on write, and the reader throws "invalid attribute index".
+ */
+private fun DocContext.armingLabel(word: String, sizeSp: Float) {
+    val orange = (M.ARMING_ALPHA shl M.ALPHA_SHIFT) or (Role.WARN.argb and M.RGB_MASK)
+    val fade = armingFade().toFloat()
+    label(
+        word,
+        sizeSp,
+        fixed(orange),
+        modifier = Modifier.graphicsLayer { alpha = fade },
+    )
+}
+
+/** A triangle on the continuous clock: 1 at the ends of [AlarmMetrics.ARMING_CYCLE_SEC], 0 in the middle. */
+private fun DocContext.armingFade(): RcFloat {
+    val phase = scope.continuousSeconds() % M.ARMING_CYCLE_SEC / M.ARMING_CYCLE_SEC
+    return scope.abs(phase * M.ARMING_WAVE_SPAN - 1f)
 }
 
 /** RPI reads Alarmo's `arm_mode`: secure in any armed mode, blank while arming, otherwise not secure. */
