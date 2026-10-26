@@ -27,6 +27,22 @@ The page matches RPI's `IntercomScreen`, `StationView` and `ButtonViewV2` on a w
 
 That side-by-side page is used when the tile is at least 720dp wide and the scale against 1280×650 is at least 0.65 (`IntercomLayout`, mirrored by `editor/src/model/intercomLayout.ts`). A phone, or a landscape page shorter than that, stacks the same column as a header and scrolls the station list under it. The two keys stay on one row and shrink to the width. Captions stay 12sp only while the key is tall enough; on a smaller key they shrink with it. The editor mockup uses the same switch (`intercom-compact`, and `intercom-narrow` under 600dp).
 
+The stacked header's height is capped with `requiredHeightIn`. A plain `height` stretches to the page, which centres Mute and Hang Up and covers the stations. The list is the full page behind that header, with a leading spacer, and the header is drawn after it so a scroll cannot cover the keys. Only the side column centres the keys; the header packs them under the title.
+
+## These screens (checked Oct 26, 2026)
+
+The player measures the whole window (`currentWindowMetrics` / density). These panels are 240 dpi, so a landscape tablet is shorter in dp than the 1280×650 reference and stacks. Do not put the side column back on them: at that height the keys would shrink to about 0.59. Stacked, Mute and Hang Up stay 150×50 and a station name still has room beside Call.
+
+| Screen | Pixels | Content under the default bars | Layout |
+| --- | --- | --- | --- |
+| BLU M8L landscape (`4070306023037966`) | 1280×800 | 853×383 dp | Header 156 dp, one full station row, the next starts under it |
+| BLU M8L portrait | 800×1280 | 533×739 dp | Same header, several rows. Width is under 600 dp, so the nav bar is the compact 66 dp |
+| Office keypad (`10.11.0.52`, px30, portrait) | 750×1334 | 500×775 dp | Same header, several rows. Call still leaves about 230 dp for the name |
+
+`IntercomPanelTest.landscapePortraitAndTheKeypadEachShowTheKeysAndAStation` and `editor/src/model/intercomLayout.test.ts` lock those three sizes. A 1280×650 page, and 1024×450, stay side by side.
+
+On 8766 that afternoon the roster was the BLU (`station-bc3c86df-8e73-44d1-b502-36637279b58d`, "BLU M8L 2022") and the keypad (`station-2d49e681-4193-4f35-89f6-04b23f1a5db5`, "Office keypad"). The header fix is in the server renderer only. It is not on the tablets until `tools/deploy_ha_dev.sh` and a rebuild of `local_remote_screens`.
+
 Call state is on the player session (`PlayerSession.intercomReport`), not in `RenderDataRepository`. A station joining or leaving rebuilds the document. Mute, the status line, Online / In Call / Connected, and which key icon is showing update as document variables (`ic.status`, `ic.r{n}.status`, `ic.mic.on`, `ic.mic.off`, `ic.hang.live`, `ic.hang.idle`). A roster must not put the status back to Online after No answer, Call failed or Call ended. Only Connecting… and Online, while idle, are replaced.
 
 A tablet registers only when its screen contains the tile. `ServerMessage.IntercomConfig` says so, sent with settings. The tablet opens `ws://<the host it uses for port 8100>:8766/webrtc`. Its client id is `station-` plus the full device id. Its display name is the tablet's name, or `Not Set` when that name is blank. Renaming re-registers.

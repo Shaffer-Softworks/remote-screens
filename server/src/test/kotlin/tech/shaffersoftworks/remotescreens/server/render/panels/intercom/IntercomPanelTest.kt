@@ -15,6 +15,22 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+/** BLU M8L content under the default bars: 1280×800 px and 800×1280 px at 240 dpi. */
+private const val TABLET_DENSITY = 1.5f
+private const val LANDSCAPE_SCREEN_W = 853
+private const val LANDSCAPE_SCREEN_H = 533
+private const val LANDSCAPE_CONTENT_W = 853f
+private const val LANDSCAPE_CONTENT_H = 383f
+private const val PORTRAIT_SCREEN_W = 533
+private const val PORTRAIT_SCREEN_H = 853
+private const val PORTRAIT_CONTENT_W = 533f
+private const val PORTRAIT_CONTENT_H = 739f
+
+/** Office keypad, 750×1334 px at 240 dpi, under the compact bars. */
+private const val KEYPAD_CONTENT_W = 500f
+private const val KEYPAD_CONTENT_H = 775f
+private const val STATION_NAME_MIN_DP = 72f
+
 class IntercomPanelTest {
     private val ha = DemoHome()
     private val i18n = I18n("en", I18n.load("en"), emptyMap(), true)
@@ -83,6 +99,39 @@ class IntercomPanelTest {
     }
 
     @Test
+    fun aTabletKeepsAHeaderAndRoomForStationsInBothOrientations() {
+        // BLU M8L, 1280×800 px at 240 dpi, under the default bars. The header must stay a band.
+        val landscape = IntercomLayout.of(LANDSCAPE_CONTENT_W, LANDSCAPE_CONTENT_H, statusLines = 1)
+        assertStackedBand(landscape)
+
+        // The same tablet turned portrait, and a 750×1334 px wall panel, are narrower than the side column.
+        val portrait = IntercomLayout.of(PORTRAIT_CONTENT_W, PORTRAIT_CONTENT_H, statusLines = 1)
+        assertStackedBand(portrait)
+        assertContains(
+            render(stations(), Device(LANDSCAPE_SCREEN_W, LANDSCAPE_SCREEN_H, TABLET_DENSITY)),
+            "Living Room",
+        )
+        assertContains(
+            render(stations(), Device(PORTRAIT_SCREEN_W, PORTRAIT_SCREEN_H, TABLET_DENSITY)),
+            "Kitchen",
+        )
+    }
+
+    @Test
+    fun landscapePortraitAndTheKeypadEachShowTheKeysAndAStation() {
+        val screens = listOf(
+            IntercomLayout.of(LANDSCAPE_CONTENT_W, LANDSCAPE_CONTENT_H, statusLines = 1),
+            IntercomLayout.of(PORTRAIT_CONTENT_W, PORTRAIT_CONTENT_H, statusLines = 1),
+            IntercomLayout.of(KEYPAD_CONTENT_W, KEYPAD_CONTENT_H, statusLines = 1),
+        )
+        for (layout in screens) {
+            assertStackedBand(layout)
+            assertTrue(stationRoom(layout) >= layout.dp(IntercomMetrics.ROW_H_DP), "no full station row")
+            assertTrue(nameRoom(layout) >= STATION_NAME_MIN_DP, "the name is squeezed beside Call")
+        }
+    }
+
+    @Test
     fun anOlderTabletIsToldToUpdateAndGetsNoCallButtons() {
         val text = render(IntercomView.from(null, supportsCalls = false, i18n))
 
@@ -108,6 +157,27 @@ class IntercomPanelTest {
             IntercomStation("station-kitchen", "Kitchen", inCall = true),
         ),
     )
+
+    private fun assertStackedBand(layout: IntercomLayout) {
+        assertTrue(layout.isStacked)
+        assertTrue(layout.listH > layout.headerH, "header ${layout.headerH} leaves ${layout.listH} for stations")
+        assertTrue(layout.listH >= layout.dp(IntercomMetrics.ROW_H_DP))
+        assertKeysFit(layout, layout.pageW)
+    }
+
+    /** Height left under the header after the list's own top and bottom insets. */
+    private fun stationRoom(layout: IntercomLayout): Float =
+        layout.listH - layout.dp(IntercomMetrics.LIST_TOP_DP) - layout.dp(IntercomMetrics.LIST_BOTTOM_DP)
+
+    /** Width left for the station name once the icon and the Call key are placed. */
+    private fun nameRoom(layout: IntercomLayout): Float {
+        val chrome = layout.dp(
+            IntercomMetrics.LIST_START_DP + IntercomMetrics.LIST_END_DP +
+                IntercomMetrics.ROW_PAD_DP * 2f + IntercomMetrics.ROW_INSET_DP * 3f +
+                IntercomMetrics.ROW_ICON_DP,
+        )
+        return layout.pageW - chrome - layout.keyW
+    }
 
     private fun assertKeysFit(layout: IntercomLayout, pageW: Float) {
         val pair = layout.keyW * 2f + layout.dp(IntercomMetrics.BUTTON_GAP_DP) +
