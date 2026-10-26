@@ -33,8 +33,9 @@ class HeaderConditionIconTest {
             topBar = TopBar(temperatureEntity = "weather.home", people = false),
         )
         val weatherDoc = ScreenRenderer.render(screen, tablet, input())
+        val diskX = partlyCloudyDiskX(tablet.density)
         assertTrue(
-            contains(weatherDoc.bytes, floatBytes(PARTLY_CLOUDY_DISK_X)),
+            contains(weatherDoc.bytes, floatBytes(diskX)),
             "the partly cloudy sun disk is drawn",
         )
         assertTrue(
@@ -52,7 +53,7 @@ class HeaderConditionIconTest {
             input(),
         )
         assertFalse(
-            contains(sensorDoc.bytes, floatBytes(PARTLY_CLOUDY_DISK_X)),
+            contains(sensorDoc.bytes, floatBytes(diskX)),
             "a temperature sensor keeps the thermometer",
         )
         assertFalse(sensorDoc.docContext.structure.any { it.first == "sensor.outdoor_temperature" })
@@ -65,8 +66,15 @@ class HeaderConditionIconTest {
 
     private fun floatBytes(value: Float): List<Byte> = colorBytes(java.lang.Float.floatToRawIntBits(value))
 
+    /** Header weather icons are stored in pixels, so the 17-grid x is scaled like the renderer. */
+    private fun partlyCloudyDiskX(density: Float): Float =
+        PARTLY_CLOUDY_DISK_GRID_X * (HEADER_ICON_DP * density / HaWeatherIcons.VIEWPORT)
+
     companion object {
         /** First x of the partly-cloudy sun disk in `ha-weather-paths.json`. */
-        private const val PARTLY_CLOUDY_DISK_X = 14.981f
+        private const val PARTLY_CLOUDY_DISK_GRID_X = 14.981f
+
+        /** Same 26 dp as the header stat icon when the top bar is the default height. */
+        private const val HEADER_ICON_DP = 26f
     }
 }

@@ -56,12 +56,15 @@ object Rc {
     /**
      * A path from `M`, `L`, `C` and `Z` with absolute coordinates, as `tools/generate_icons.py` writes them.
      * The library's own parser reads neither relative commands nor `V`, so icons never go through it.
+     *
+     * [scale] multiplies every coordinate. Icons are authored on a small grid; scaling them with the canvas
+     * makes the player rasterise that grid and stretch the bitmap. Scaling the coordinates keeps the path sharp.
      */
-    fun path(commands: String): RemotePathBase {
+    fun path(commands: String, scale: Float = 1f): RemotePathBase {
         val remotePath = RemotePathBase()
         val tokens = commands.split(' ')
         var i = 0
-        fun nextNumber() = tokens[i++].toFloat()
+        fun nextNumber() = tokens[i++].toFloat() * scale
         while (i < tokens.size) {
             when (tokens[i++]) {
                 "M" -> remotePath.moveTo(nextNumber(), nextNumber())
