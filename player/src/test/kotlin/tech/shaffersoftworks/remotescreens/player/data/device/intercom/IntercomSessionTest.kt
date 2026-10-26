@@ -116,6 +116,24 @@ class IntercomSessionTest {
     }
 
     @Test
+    fun aRebuiltScreenGetsTheRosterAgain() = runTest {
+        val harness = harness()
+        harness.start()
+        harness.registered()
+        runCurrent()
+        val reportsBefore = harness.reports.size
+
+        harness.session.publishAgain()
+        runCurrent()
+
+        assertTrue(harness.reports.size > reportsBefore)
+        val report = harness.reports.last()
+        assertEquals("Online", report.status)
+        assertEquals(listOf("station-kitchen"), report.stations.map { it.clientId })
+        harness.stop()
+    }
+
+    @Test
     fun beingReplacedRegistersAgain() = runTest {
         val harness = harness()
         harness.start()

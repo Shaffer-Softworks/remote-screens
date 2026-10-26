@@ -26,10 +26,11 @@ internal class IntercomSession(
     private val audio: WebRtcAudio,
     private val scope: CoroutineScope,
     private val registration: IntercomRegistration,
-    private val onReport: (PlayerMessage.IntercomReport) -> Unit,
+    onReport: (PlayerMessage.IntercomReport) -> Unit,
     private val onWake: () -> Unit,
     private val delayFor: suspend (Long) -> Unit = { delay(it) },
 ) {
+    private var reportListener: (PlayerMessage.IntercomReport) -> Unit = onReport
     private val clientId = registration.clientId
     private val sendMutex = Mutex()
     private val names = HashMap<String, String>()
@@ -53,6 +54,16 @@ internal class IntercomSession(
         timeoutJob?.cancel()
         job?.cancel()
         audio.stop()
+    }
+
+    /** Point later roster updates at the listener from the latest connection to the add-on. */
+    fun attachReport(listener: (PlayerMessage.IntercomReport) -> Unit) {
+        reportListener = listener
+    }
+
+    /** Send the current status and stations again. A rebuilt screen stays on Connecting until this arrives. */
+    fun publishAgain() {
+        scope.launch { publish() }
     }
 
     fun command(verb: String, targetId: String) {
@@ -211,7 +222,7 @@ internal class IntercomSession(
 
     private fun publish() {
         val connectedId = peerId.takeIf { phase == Phase.LIVE }
-        onReport(
+        reportListener(
             PlayerMessage.IntercomReport(
                 status = status,
                 muted = isMuted,

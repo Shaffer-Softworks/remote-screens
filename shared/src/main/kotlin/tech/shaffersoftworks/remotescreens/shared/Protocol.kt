@@ -15,7 +15,7 @@ object Protocol {
     const val PORT = 8100
     const val INGRESS_PORT = 8099
 
-    /** Intercom signaling. The standalone signaling add-on keeps 8765. */
+    /** Intercom signaling for this add-on. The WebRTC signaling server app is a separate system and keeps 8765. */
     const val INTERCOM_PORT = 8766
     const val MDNS_TYPE = "_remotescreens._tcp.local."
 
