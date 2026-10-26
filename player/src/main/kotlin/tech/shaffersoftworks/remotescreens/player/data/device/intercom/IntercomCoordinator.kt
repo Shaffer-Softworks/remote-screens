@@ -33,7 +33,12 @@ class IntercomCoordinator @Inject constructor(
         onWake: () -> Unit,
     ) {
         val next = "$url|$clientId|$displayName"
-        if (session != null && signature == next) return
+        val current = session
+        if (current != null && signature == next) {
+            current.attachReport(onReport)
+            current.publishAgain()
+            return
+        }
         stop()
         signature = next
         val opened = IntercomSession(

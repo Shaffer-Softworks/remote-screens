@@ -13,6 +13,7 @@ import {
   spec,
   topBarHeight,
 } from '../model/grid'
+import { intercomStacks } from '../model/intercomLayout'
 import { colorOf, pastel } from '../model/palette'
 import { iconOf, nameOf, stateOf } from '../model/tiles'
 import type { Page, Screen, Tile, TileSource } from '../model/types'
@@ -121,6 +122,12 @@ const lightsRooms = computed(() => {
 /** RPI's cameras page (CamerasPanel.kt): the tile's cameras in a list on the left, the chosen one's video on the right. */
 const isCamerasPanel = (tile: Tile) => kindOf(tile) === 'cameras' && tile.full === true
 const isIntercomPanel = (tile: Tile) => kindOf(tile) === 'intercom' && tile.full === true
+const intercomPage = computed(() => ({
+  w: props.device.w,
+  h: props.device.h - gridLayout.value.topBar - gridLayout.value.navBar,
+}))
+const intercomIsStacked = computed(() => intercomStacks(intercomPage.value.w, intercomPage.value.h))
+const intercomIsNarrow = computed(() => intercomPage.value.w < NARROW)
 function cameraNames(tile: Tile): string[] {
   return parseCameraList(tile.options[CAMERAS_OPTION]).map(
     camera => camera.label || (entityById.value.get(camera.entityId)?.name ?? camera.entityId),
@@ -426,6 +433,8 @@ const highlight = computed(() => {
           'lights-panel': isLightsPanel(placement.tile),
           'cameras-panel': isCamerasPanel(placement.tile),
           'intercom-panel': isIntercomPanel(placement.tile),
+          'intercom-compact': isIntercomPanel(placement.tile) && intercomIsStacked,
+          'intercom-narrow': isIntercomPanel(placement.tile) && intercomIsNarrow,
           'calendar-panel': isCalendarPanel(placement),
           selected: placement.tile.id === selectedId,
           moved: moved.has(placement.tile.id),
@@ -1227,6 +1236,50 @@ const highlight = computed(() => {
 
 .ic-mic {
   color: #00ff00;
+}
+
+.tile.intercom-panel.intercom-compact {
+  flex-direction: column;
+}
+
+.tile.intercom-panel.intercom-compact .ic-side {
+  width: 100%;
+  flex: none;
+  padding-bottom: 8px;
+}
+
+.tile.intercom-panel.intercom-compact .ic-center {
+  flex: none;
+}
+
+.tile.intercom-panel.intercom-compact .ic-stations {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-top: 12px;
+}
+
+.tile.intercom-panel.intercom-narrow .ic-actions {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 12px;
+}
+
+.tile.intercom-panel.intercom-narrow .ic-button {
+  width: calc(50% - 12px);
+  height: 44px;
+  font-size: 13px;
+}
+
+.tile.intercom-panel.intercom-narrow .ic-button.ic-call {
+  width: auto;
+  min-width: 72px;
+  height: 48px;
+}
+
+.tile.intercom-panel.intercom-narrow .ic-station {
+  height: auto;
+  min-height: 72px;
 }
 
 .cm-list {
