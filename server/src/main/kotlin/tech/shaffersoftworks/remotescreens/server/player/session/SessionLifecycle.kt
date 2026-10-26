@@ -1,6 +1,7 @@
 package tech.shaffersoftworks.remotescreens.server.player.session
 
 import tech.shaffersoftworks.remotescreens.server.player.PlayerTokens
+import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.hasIntercomTile
 import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
 import tech.shaffersoftworks.remotescreens.shared.PlayerRecord
 import tech.shaffersoftworks.remotescreens.shared.Screen
@@ -103,7 +104,7 @@ internal class SessionLifecycle(
 
     suspend fun begin(screen: Screen) {
         applyTheme(screen.settings)
-        host.send(ServerMessage.Settings(screen.settings))
+        sendChrome(screen)
         documents.showMain(screen)
         context.playerApkRepository.current()
             ?.takeIf { it.versionCode > host.hello.appVersion }
@@ -131,7 +132,7 @@ internal class SessionLifecycle(
         if (screen == null) return
         val main = shownDocuments[Slot.MAIN]
         applyTheme(screen.settings)
-        host.send(ServerMessage.Settings(screen.settings))
+        sendChrome(screen)
         if (main != null) documents.rebuild(main) else documents.showMain(screen)
     }
 
@@ -154,8 +155,25 @@ internal class SessionLifecycle(
 
     suspend fun showWithSettings(screen: Screen) {
         applyTheme(screen.settings)
-        host.send(ServerMessage.Settings(screen.settings))
+        sendChrome(screen)
         documents.showMain(screen)
+    }
+
+    private suspend fun sendChrome(screen: Screen) {
+        host.send(ServerMessage.Settings(screen.settings))
+        host.send(intercomConfig(screen))
+    }
+
+    private fun intercomConfig(screen: Screen): ServerMessage.IntercomConfig {
+        val name = layoutRepository.layout.value.players
+            .firstOrNull { it.deviceId == host.hello.deviceId }
+            ?.name
+            ?.takeIf { it.isNotBlank() }
+            ?: NOT_SET
+        return ServerMessage.IntercomConfig(
+            enabled = host.supportsIntercom && screen.hasIntercomTile(),
+            displayName = name,
+        )
     }
 
     suspend fun closeAll() {
@@ -167,5 +185,6 @@ internal class SessionLifecycle(
 
     companion object {
         const val PREVIEW_MS = 5 * 60_000L
+        const val NOT_SET = "Not Set"
     }
 }

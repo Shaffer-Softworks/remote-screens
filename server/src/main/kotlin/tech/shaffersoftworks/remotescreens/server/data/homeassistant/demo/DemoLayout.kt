@@ -287,4 +287,12 @@ object DemoLayout {
         ),
         icon = "cctv",
     )
+
+    /** RPI's intercom page. Added where it is wanted, like [camerasPage]. */
+    fun intercomPage(): Page = Page(
+        "intercom",
+        "Intercom",
+        listOf(Tile("ic1", kind = "intercom", full = true)),
+        icon = "phone",
+    )
 }

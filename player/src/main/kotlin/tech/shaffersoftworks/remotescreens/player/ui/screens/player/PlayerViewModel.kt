@@ -13,6 +13,9 @@ import tech.shaffersoftworks.remotescreens.player.data.device.DisplayInfo
 import tech.shaffersoftworks.remotescreens.player.data.device.FaceWakeMonitor
 import tech.shaffersoftworks.remotescreens.player.data.device.ProximityWakeMonitor
 import tech.shaffersoftworks.remotescreens.player.data.device.ScreenPowerRepository
+import tech.shaffersoftworks.remotescreens.player.data.device.intercom.IntercomCoordinator
+import tech.shaffersoftworks.remotescreens.player.data.device.intercom.intercomClientId
+import tech.shaffersoftworks.remotescreens.player.data.device.intercom.intercomSignalingUrl
 import tech.shaffersoftworks.remotescreens.player.data.device.telemetry.LocationAccuracy
 import tech.shaffersoftworks.remotescreens.player.data.device.telemetry.TelemetryReporter
 import tech.shaffersoftworks.remotescreens.player.data.discovery.DiscoveryRepository
@@ -75,6 +78,7 @@ private val PLAYER_CAPABILITIES =
         Protocol.CAPABILITY_MUSIC_SEARCH,
         Protocol.CAPABILITY_CALENDAR_DIALOGS,
         Protocol.CAPABILITY_TELEMETRY,
+        Protocol.CAPABILITY_INTERCOM,
     )
 
 /**
@@ -97,6 +101,7 @@ class PlayerViewModel @Inject constructor(
     private val imageDecoder: ImageDecoder,
     private val telemetryReporter: TelemetryReporter,
     private val locationAccuracy: LocationAccuracy,
+    private val intercomCoordinator: IntercomCoordinator,
 ) : ViewModel() {
 
     data class ViewState(
@@ -120,6 +125,8 @@ class PlayerViewModel @Inject constructor(
         val isKioskPinDialogVisible: Boolean = false,
         /** Battery optimization may cut the connection while the screen is off; checked again on every resume. */
         val isBatteryRestricted: Boolean = false,
+        /** A call is up, so this tablet's camera video and music stay quiet until it ends. */
+        val isIntercomCall: Boolean = false,
     ) {
         private val scheduledBrightnessPercent: Int
             get() = when {
@@ -338,6 +345,8 @@ class PlayerViewModel @Inject constructor(
             is ServerMessage.LiveSearch -> onLiveSearch(message)
             is ServerMessage.SearchResults -> onSearchResults(message)
             is ServerMessage.CalendarDialog -> updateRemoteScreen { it.withCalendarDialog(message) }
+            is ServerMessage.IntercomConfig -> onIntercomConfig(message)
+            is ServerMessage.IntercomCommand -> intercomCoordinator.command(message.verb, message.clientId)
             ServerMessage.Pong -> Unit
         }
     }
@@ -719,6 +728,45 @@ class PlayerViewModel @Inject constructor(
         }
         updateTelemetry()
         if (granted) offerLocationAccuracy()
+    }
+
+    fun onMicrophonePermissionResult(granted: Boolean) {
+        if (!granted) {
+            _events.trySend(PlayerEvent.ShowMessageResource(R.string.microphone_permission_denied))
+            return
+        }
+        viewModelScope.launch { startIntercom() }
+    }
+
+    private var intercomConfig: ServerMessage.IntercomConfig? = null
+
+    private fun onIntercomConfig(config: ServerMessage.IntercomConfig) {
+        intercomConfig = config
+        viewModelScope.launch { startIntercom() }
+    }
+
+    private suspend fun startIntercom() {
+        val config = intercomConfig
+        val server = connectionRepository.server.value
+        when {
+            config == null || server == null -> Unit
+            !config.enabled -> {
+                intercomCoordinator.stop()
+                _viewState.update { it.copy(isIntercomCall = false) }
+            }
+            !intercomCoordinator.hasMicrophone() -> _events.send(PlayerEvent.RequestMicrophonePermission)
+            else -> intercomCoordinator.start(
+                scope = viewModelScope,
+                url = intercomSignalingUrl(server),
+                clientId = intercomClientId(preferencesRepository.deviceId()),
+                displayName = config.displayName,
+                onReport = { report ->
+                    _viewState.update { it.copy(isIntercomCall = report.busy) }
+                    viewModelScope.launch { connectionRepository.send(report) }
+                },
+                onWake = { onUserInteraction() },
+            )
+        }
     }
 
     /** The location-accuracy prompt closed. Put the kiosk allow-list back, then take a fix if it was turned on. */

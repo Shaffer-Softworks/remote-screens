@@ -1,0 +1,43 @@
+---
+description: Tablet intercom page, the add-on's signaling hub on port 8766, and calling from Home Assistant (Oct 2026)
+globs: shared/src/main/kotlin/tech/shaffersoftworks/remotescreens/shared/Protocol.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/intercom/**/*.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/panels/intercom/**/*.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/action/IntercomActions.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/data/device/intercom/**/*.kt,editor/src/model/intercomCall.ts,editor/src/components/IntercomDesk.vue,custom_components/remote_screens/intercom.py,custom_components/remote_screens/frontend/intercom-card.js
+alwaysApply: false
+---
+
+# Tablet intercom (Oct 2026)
+
+A full `intercom` tile is a page of stations, Mute and Hang up, in the editor's Other tiles. A call is WebRTC audio directly between the two ends. The add-on only tells them who is online and forwards the offer, answer and network candidates. There is no STUN or TURN server, so a browser that is not on the tablet's network (a phone away from home, or Home Assistant through Nabu Casa) can open the page and the call will not connect.
+
+## Signaling
+
+The hub is in-process (`server/.../intercom/SignalingHub.kt`), shared by two listeners in `Application.kt`:
+
+- `0.0.0.0:8766` WebSocket `/webrtc` for tablets, plus `GET /api/clients`. Published in `addon/config.yaml`.
+- The ingress (editor) server's WebSocket `/webrtc`, for the Remote Screens panel. A page served by ingress cannot open port 8766.
+
+The standalone signaling add-on keeps port 8765. RPI tablets stay on `ws://ha.shafferco.com:8765/webrtc` until that URL is changed to 8766. Messages match that add-on: `register`, `registered`, `offer`, `answer`, `candidate`, `hangup`, `unavailable`, `getClients`, `clientsList`, `heartbeat`, `replaced`, `error`, and app-level `ping` / `pong`.
+
+Both stations are marked in a call only when the target is online and not already in a call. Offline gets `unavailable` reason `offline` and stays on the roster as Online. Busy gets reason `busy`. `getClients` answers only the station that asked. The same `clientId` registering again gets `replaced` and the old socket is closed. A session idle for 90s is closed. An unknown session gets `{"type":"error","message":"not_registered"}`. A WebSocket ping goes out about every 30s, and a JSON `{"type":"ping","ts":…}` every 25s. `pong` only touches `lastActivity`.
+
+## The page
+
+`Tile.edgeToEdge()` and the tile dispatch send `intercom` to `render/panels/intercom/`. Taps `intercom_call`, `intercom_hangup` and `intercom_mute` go to `IntercomActions`, then `ServerMessage.IntercomCommand` back to that tablet only. They do not call Home Assistant.
+
+The page matches RPI's `IntercomScreen`: grey column, centred status, dark Mute and Hang Up keys with icons, and a card per station. Call state is on the player session (`PlayerSession.intercomReport`), not in `RenderDataRepository`. A station joining or leaving rebuilds the document. Mute, the status line, Online / In Call / Connected, and which key icon is showing update as document variables (`ic.status`, `ic.r{n}.status`, `ic.mic.on`, `ic.mic.off`, `ic.hang.live`, `ic.hang.idle`).
+
+A tablet registers only when its screen contains the tile. `ServerMessage.IntercomConfig` says so, sent with settings. The tablet opens `ws://<the host it uses for port 8100>:8766/webrtc`. Its client id is `station-` plus the full device id. Its display name is the tablet's name, or `Not Set` when that name is blank. Renaming re-registers.
+
+An incoming offer is answered automatically, including the glare case where the lower client id wins, and wakes the screen. It does not change page. Hang up, a busy reply, a 30s timeout and a failed connection all send hangup, so the roster does not stick on In Call. While a call holds audio focus, this tablet's camera video stays off (`ViewState.isIntercomCall`).
+
+An older player that did not advertise capability `intercom` still shows the page, with the status line telling you to update the tablet app. The add-on does not send it call commands.
+
+The editor mockup is static (Living Room online, Kitchen in a call). It does not open a signaling socket.
+
+## Calling from Home Assistant
+
+A browser is another station. It registers as `ha-` plus a new id per open page.
+
+- **Remote Screens panel.** The toolbar's Intercom button opens `IntercomDesk.vue`. Its socket is the ingress `/webrtc` route, same origin as the editor. The layout rail is still Add / Tree / Page / Screen; Intercom is not a rail tool. The panel's display name is "Home Assistant".
+- **Any dashboard.** `custom:remote-screens-intercom`, served from `custom_components/remote_screens/frontend/` and registered in `async_setup`. With no options it lists the online stations. A `station` option pins one display name, so a card can be "Call Kitchen". The card's page cannot open port 8766, so `intercom.py` opens one WebSocket to `ws://<the add-on host>:8766/webrtc` per card session and forwards the frames over the Home Assistant WebSocket. The browser never sees 8766. The card's display name is the signed-in user.
+
+The browser asks for the microphone when a call starts, and still answers if that request fails, so the tablet can be heard. Candidates that arrive before the description is ready are kept and applied after it. The tablet names its peer before it builds the offer, so its own address is sent. The tablet answers on its own, so Call plays on that tablet's speaker.

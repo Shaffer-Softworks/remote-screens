@@ -18,6 +18,7 @@ import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.theme.Units
+import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.IntercomView
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Icons
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.VarValue
@@ -39,6 +40,8 @@ class DocContext(
     val data: RenderData,
     /** When false, the calendar page hides the add button and the hold-to-delete hint. */
     val supportsCalendarDialogs: Boolean = false,
+    /** The intercom page for this tablet. Null on a document that has no intercom tile. */
+    val intercom: IntercomView? = null,
 ) {
     lateinit var scope: RcScope
 

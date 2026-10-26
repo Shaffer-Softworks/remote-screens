@@ -37,6 +37,7 @@ Read the rule whose files you are changing. These describe behavior that is alre
 - `alarm-panel-context.mdc` — RPI alarm page
 - `lights-panel-context.mdc` — RPI lights page and light dialog
 - `cameras-panel-context.mdc` — RPI cameras page
+- `intercom-panel-context.mdc` — tablet intercom page, signaling on port 8766, and Home Assistant callers
 - `tablet-telemetry-context.mdc` — tablet sensors, diagnostics and GPS in Home Assistant
 - `configurable-bars-context.mdc` — top bar and nav bar sizes
 - `standby-wake-sources-context.mdc` — wake sources

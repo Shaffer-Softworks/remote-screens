@@ -37,6 +37,11 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            // x86 libraries are for emulators. A tablet update is read into memory, and WebRTC for every ABI
+            // pushed that file past the heap limit, so the player died while installing it.
+            ndk {
+                abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -99,6 +104,9 @@ dependencies {
 
     // Turns on Android's Location accuracy setting. Positions still come from LocationManager.
     implementation(libs.play.services.location)
+
+    // Intercom calls. Audio only; the page's signaling stays on the add-on.
+    implementation(libs.stream.webrtc)
 
     // AndroidX
     implementation(libs.androidx.core)

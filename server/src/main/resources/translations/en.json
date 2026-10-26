@@ -164,5 +164,14 @@
   "ui.lights_hours_ago": "{count} hours ago",
   "ui.lights_day_ago": "Yesterday",
   "ui.lights_days_ago": "{count} days ago",
-  "ui.cameras_title": "CAMERAS"
+  "ui.cameras_title": "CAMERAS",
+  "ui.intercom_title": "INTERCOM",
+  "ui.intercom_mute": "Mute",
+  "ui.intercom_hangup": "Hang Up",
+  "ui.intercom_call": "Call",
+  "ui.intercom_update": "Update the tablet app to use the intercom",
+  "ui.intercom_connecting": "Connecting…",
+  "ui.intercom_online": "Online",
+  "ui.intercom_in_call": "In Call",
+  "ui.intercom_connected": "Connected"
 }

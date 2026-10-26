@@ -50,6 +50,8 @@ sealed interface PlayerEvent {
     data object RequestCameraPermission : PlayerEvent
     data object RequestLocationPermission : PlayerEvent
 
+    data object RequestMicrophonePermission : PlayerEvent
+
     /** Android's one-tap prompt that turns Location accuracy on. */
     data class RequestLocationAccuracy(val intentSender: IntentSender) : PlayerEvent
 

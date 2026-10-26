@@ -35,6 +35,7 @@ from .const import (
     SERVICE_WAKE,
 )
 from .coordinator import RemoteScreensConfigEntry, RemoteScreensCoordinator
+from .intercom import async_setup_intercom
 
 PLATFORMS = [
     Platform.BINARY_SENSOR,
@@ -132,6 +133,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.services.async_register(DOMAIN, SERVICE_OPEN_PAGE, open_page, OPEN_PAGE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_WAKE, wake, TARGETS_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_CLOSE, close, TARGETS_SCHEMA)
+    await async_setup_intercom(hass)
     return True
 
 

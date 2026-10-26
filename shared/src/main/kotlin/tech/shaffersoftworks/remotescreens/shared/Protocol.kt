@@ -14,6 +14,9 @@ object Protocol {
     const val VERSION = 1
     const val PORT = 8100
     const val INGRESS_PORT = 8099
+
+    /** Intercom signaling. The standalone signaling add-on keeps 8765. */
+    const val INTERCOM_PORT = 8766
     const val MDNS_TYPE = "_remotescreens._tcp.local."
 
     /** A player that can play [ServerMessage.Video]. Only it is sent one, so no camera streams for one that can't. */
@@ -30,6 +33,9 @@ object Protocol {
 
     /** A player that reports its sensors and diagnostics ([PlayerMessage.Telemetry]) once the add-on accepts them. */
     const val CAPABILITY_TELEMETRY = "telemetry"
+
+    /** A player that can place and answer an intercom call ([ServerMessage.IntercomCommand]). */
+    const val CAPABILITY_INTERCOM = "intercom"
 
     val json = Json {
         ignoreUnknownKeys = true
@@ -219,10 +225,31 @@ sealed interface PlayerMessage {
         val recurrenceId: String? = null,
     ) : PlayerMessage
 
+    /** The tablet's intercom: the status line, whether the mic is muted, and the other stations. */
+    @Serializable
+    @SerialName("intercom_report")
+    data class IntercomReport(
+        val status: String,
+        val muted: Boolean = false,
+        /** True while this tablet is calling, answering, or in a call, so every Call button hides. */
+        val busy: Boolean = false,
+        /** The station this tablet is connected to, once audio is up. */
+        val connectedId: String? = null,
+        val stations: List<IntercomStation> = emptyList(),
+    ) : PlayerMessage
+
     @Serializable
     @SerialName("ping")
     data object Ping : PlayerMessage
 }
+
+/** One other intercom station, as the signaling roster reported it. */
+@Serializable
+data class IntercomStation(
+    val clientId: String,
+    val displayName: String,
+    val inCall: Boolean = false,
+)
 
 @Serializable
 sealed interface ServerMessage {
@@ -363,6 +390,28 @@ sealed interface ServerMessage {
     @Serializable
     @SerialName("pong")
     data object Pong : ServerMessage
+
+    /**
+     * Whether this tablet should join intercom signaling, and the name other stations see.
+     * Sent with [Settings] whenever the screen changes. [enabled] is false when the screen has no intercom page.
+     */
+    @Serializable
+    @SerialName("intercom_config")
+    data class IntercomConfig(
+        val enabled: Boolean,
+        val displayName: String,
+    ) : ServerMessage
+
+    /**
+     * A tap on this tablet's intercom page. [verb] is `call`, `hangup`, or `mute`.
+     * [clientId] is the station to call; hang up and mute leave it empty.
+     */
+    @Serializable
+    @SerialName("intercom_command")
+    data class IntercomCommand(
+        val verb: String,
+        val clientId: String = "",
+    ) : ServerMessage
 
     /**
      * Opens, updates, or closes the native calendar dialog.

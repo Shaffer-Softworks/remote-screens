@@ -15,6 +15,8 @@ import tech.shaffersoftworks.remotescreens.server.player.session.ShownDocument
 import tech.shaffersoftworks.remotescreens.server.render.Alert
 import tech.shaffersoftworks.remotescreens.server.render.AlertButton
 import tech.shaffersoftworks.remotescreens.server.render.Device
+import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.IntercomVars
+import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.IntercomView
 import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
 import tech.shaffersoftworks.remotescreens.server.render.Rc
 import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
@@ -68,6 +70,7 @@ class PlayerSession(
     private val supportsMap = Protocol.CAPABILITY_MAP in hello.capabilities
     private val supportsMusicSearch = Protocol.CAPABILITY_MUSIC_SEARCH in hello.capabilities
     private val supportsCalendarDialogs = Protocol.CAPABILITY_CALENDAR_DIALOGS in hello.capabilities
+    private val supportsIntercom = Protocol.CAPABILITY_INTERCOM in hello.capabilities
     private val tapMemory = TapMemory()
 
     var pairingCode: String? = null
@@ -92,6 +95,9 @@ class PlayerSession(
         private set
     /** Epoch milliseconds when [telemetry] arrived. */
     var telemetryAt: Long? = null
+        private set
+    /** The intercom snapshot last reported by this tablet. */
+    var intercomReport: PlayerMessage.IntercomReport? = null
         private set
 
     private var themeId = Themes.DEFAULT
@@ -154,6 +160,23 @@ class PlayerSession(
 
     suspend fun sendConnected() = sendVars(listOf(connectedVar()))
 
+    private suspend fun applyIntercom(report: PlayerMessage.IntercomReport) {
+        val previousIds = intercomReport?.stations?.map { it.clientId }
+        intercomReport = report
+        val main = shownDocuments[Slot.MAIN] ?: return
+        if (previousIds != report.stations.map { it.clientId }) {
+            documents.rebuild(main)
+        } else {
+            sendVars(IntercomVars.values(intercomView(), context.languageRepository.current()))
+        }
+    }
+
+    private fun intercomView() = IntercomView.from(
+        intercomReport,
+        supportsIntercom,
+        context.languageRepository.current(),
+    )
+
     /** Once a second: rebuilds documents that refresh on a timer, and sends pictures that are due. */
     suspend fun tick(states: Map<String, EntityState>) {
         if (!isAwake) return
@@ -200,6 +223,7 @@ class PlayerSession(
             is PlayerMessage.SearchQuery -> media.runSearchQuery(message.tileId, message.query)
             is PlayerMessage.CalendarCreate -> createCalendarEvent(message)
             is PlayerMessage.CalendarDelete -> deleteCalendarEvent(message)
+            is PlayerMessage.IntercomReport -> applyIntercom(message)
             is PlayerMessage.Hello -> Unit
         }
     }
@@ -223,6 +247,7 @@ class PlayerSession(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private suspend fun handleOutcome(outcome: TapOutcome) {
         when (outcome) {
             is TapOutcome.Card -> documents.openCard(outcome.entityId, outcome.kind)
@@ -256,6 +281,9 @@ class PlayerSession(
                     AlarmNotice(outcome.title, outcome.message),
                 )
                 shownDocuments[Slot.MAIN]?.let { main -> documents.rebuild(main) }
+            }
+            is TapOutcome.Intercom -> if (supportsIntercom) {
+                send(ServerMessage.IntercomCommand(outcome.verb, outcome.clientId))
             }
             TapOutcome.Ignored -> Unit
         }
@@ -389,6 +417,8 @@ class PlayerSession(
         override val supportsMap get() = this@PlayerSession.supportsMap
         override val supportsMusicSearch get() = this@PlayerSession.supportsMusicSearch
         override val supportsCalendarDialogs get() = this@PlayerSession.supportsCalendarDialogs
+        override val supportsIntercom get() = this@PlayerSession.supportsIntercom
+        override val intercomView get() = this@PlayerSession.intercomView()
         override val buildMutex get() = this@PlayerSession.buildMutex
         override val shownDocuments get() = this@PlayerSession.shownDocuments
         override val jobs get() = this@PlayerSession.jobs
@@ -441,6 +471,7 @@ class PlayerSession(
             Protocol.CAPABILITY_MUSIC_SEARCH,
             Protocol.CAPABILITY_CALENDAR_DIALOGS,
             Protocol.CAPABILITY_TELEMETRY,
+            Protocol.CAPABILITY_INTERCOM,
         )
         const val RESYNC_MS = 3000L
         const val AGENDA_NOTICE_MS = 4_000L

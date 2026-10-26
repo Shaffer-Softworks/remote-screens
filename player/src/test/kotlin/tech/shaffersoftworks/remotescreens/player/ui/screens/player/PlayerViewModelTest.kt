@@ -118,6 +118,7 @@ class PlayerViewModelTest {
             imageDecoder = mock<ImageDecoder>(),
             telemetryReporter = telemetryReporter,
             locationAccuracy = locationAccuracy,
+            intercomCoordinator = mock(),
         )
     }
 

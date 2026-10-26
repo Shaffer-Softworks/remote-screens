@@ -12,6 +12,7 @@ import type { Page, Screen, Tile, TileSource } from '../model/types'
 import { attempt, dirty, editing, playersOf, save, toast } from '../store'
 import EditorToolbar from './EditorToolbar.vue'
 import EditorLayoutCanvas from './layouts/EditorLayoutCanvas.vue'
+import IntercomDesk from './IntercomDesk.vue'
 
 const emit = defineEmits<{ close: [] }>()
 
@@ -270,6 +271,7 @@ function deletePage(): void {
 }
 
 const previewOn = ref('')
+const intercomOpen = ref(false)
 async function preview(): Promise<void> {
   const id = previewOn.value || playersOf(screen.value.id).find(player => player.online)?.deviceId
   if (!id) return toast('No tablet is online to preview on')
@@ -300,6 +302,7 @@ const online = computed(() => playersOf(screen.value.id).filter(player => player
       :online="online"
       :preview-on="previewOn"
       :dirty="dirty"
+      :intercom-open="intercomOpen"
       @close="emit('close')"
       @undo="undo"
       @redo="redo"
@@ -313,9 +316,12 @@ const online = computed(() => playersOf(screen.value.id).filter(player => player
       @update:preview-on="previewOn = $event"
       @preview="preview"
       @save="save"
+      @toggle-intercom="intercomOpen = !intercomOpen"
     />
 
+    <IntercomDesk v-if="intercomOpen" />
     <EditorLayoutCanvas
+      v-else
       :screen="screen"
       :page="page"
       :free="free"

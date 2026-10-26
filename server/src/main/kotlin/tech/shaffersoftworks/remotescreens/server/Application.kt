@@ -11,6 +11,8 @@ import tech.shaffersoftworks.remotescreens.server.plugins.configureSerialization
 import tech.shaffersoftworks.remotescreens.server.routes.editorRoutes
 import tech.shaffersoftworks.remotescreens.server.routes.integrationRoutes
 import tech.shaffersoftworks.remotescreens.server.routes.playerRoutes
+import tech.shaffersoftworks.remotescreens.server.intercom.SignalingService
+import tech.shaffersoftworks.remotescreens.server.intercom.signalingRoutes
 import io.ktor.client.HttpClient
 import io.ktor.http.CacheControl
 import io.ktor.http.ContentType
@@ -40,6 +42,8 @@ private const val HTTP_CLIENT_TIMEOUT_MS = 15_000L
 private const val SHUTDOWN_GRACE_PERIOD_MS = 500L
 private const val SHUTDOWN_TIMEOUT_MS = 2_000L
 private const val WEBSOCKET_PING_SECONDS = 20
+private const val INTERCOM_PING_SECONDS = 30
+private const val INTERCOM_MAX_FRAME_BYTES = 1L * 1024 * 1024
 private const val MAX_WEBSOCKET_FRAME_BYTES = 32L * 1024 * 1024
 private const val ONE_YEAR_SECONDS = 31_536_000
 
@@ -73,14 +77,19 @@ fun main() {
     val playerServer = embeddedServer(CIO, host = "0.0.0.0", port = config.playerPort) {
         playerModule(dependencies)
     }
+    val intercomServer = embeddedServer(CIO, host = "0.0.0.0", port = config.intercomPort) {
+        intercomModule(dependencies.signaling)
+    }
     Runtime.getRuntime().addShutdownHook(
         Thread {
             mdnsAdvertiser.stop()
             editorServer.stop(SHUTDOWN_GRACE_PERIOD_MS, SHUTDOWN_TIMEOUT_MS)
             playerServer.stop(SHUTDOWN_GRACE_PERIOD_MS, SHUTDOWN_TIMEOUT_MS)
+            intercomServer.stop(SHUTDOWN_GRACE_PERIOD_MS, SHUTDOWN_TIMEOUT_MS)
         },
     )
     editorServer.start(wait = false)
+    intercomServer.start(wait = false)
     playerServer.start(wait = true)
 }
 
@@ -102,9 +111,14 @@ private fun describeMode(config: ServerConfig): String = when {
 fun Application.editorModule(dependencies: ServerDependencies) {
     configureSerialization()
     configureErrorHandling()
+    install(WebSockets) {
+        pingPeriod = INTERCOM_PING_SECONDS.seconds
+        maxFrameSize = INTERCOM_MAX_FRAME_BYTES
+    }
     val config = dependencies.config
     routing {
         install(OnlyIngress) { isEnforced = config.isSupervisor }
+        signalingRoutes(dependencies.signaling)
         editorRoutes(dependencies)
         val staticDir = config.staticDir
         if (staticDir != null) {
@@ -137,6 +151,15 @@ private fun Route.serveEditor(staticDir: File) {
             }
         }
     }
+}
+
+/** Intercom signaling for tablets. The panel uses the same hub through [editorModule]. */
+fun Application.intercomModule(signaling: SignalingService) {
+    install(WebSockets) {
+        pingPeriod = INTERCOM_PING_SECONDS.seconds
+        maxFrameSize = INTERCOM_MAX_FRAME_BYTES
+    }
+    routing { signalingRoutes(signaling) }
 }
 
 /** Tablets and the integration, on the network. */

@@ -120,6 +120,7 @@ const lightsRooms = computed(() => {
 })
 /** RPI's cameras page (CamerasPanel.kt): the tile's cameras in a list on the left, the chosen one's video on the right. */
 const isCamerasPanel = (tile: Tile) => kindOf(tile) === 'cameras' && tile.full === true
+const isIntercomPanel = (tile: Tile) => kindOf(tile) === 'intercom' && tile.full === true
 function cameraNames(tile: Tile): string[] {
   return parseCameraList(tile.options[CAMERAS_OPTION]).map(
     camera => camera.label || (entityById.value.get(camera.entityId)?.name ?? camera.entityId),
@@ -424,6 +425,7 @@ const highlight = computed(() => {
           'alarm-panel': isAlarmPanel(placement.tile),
           'lights-panel': isLightsPanel(placement.tile),
           'cameras-panel': isCamerasPanel(placement.tile),
+          'intercom-panel': isIntercomPanel(placement.tile),
           'calendar-panel': isCalendarPanel(placement),
           selected: placement.tile.id === selectedId,
           moved: moved.has(placement.tile.id),
@@ -567,6 +569,35 @@ const highlight = computed(() => {
             </span>
           </div>
           <div class="cm-pane" />
+        </template>
+        <template v-else-if="isIntercomPanel(placement.tile)">
+          <div class="ic-side">
+            <i class="ic-accent" />
+            <span class="ic-title">INTERCOM</span>
+            <div class="ic-center">
+              <span class="ic-status">Online</span>
+              <span class="ic-actions">
+                <span class="ic-button"
+                  ><MdiIcon name="microphone-outline" :size="28" class="ic-mic" />Mute</span
+                >
+                <span class="ic-button"
+                  ><MdiIcon name="phone-outline" :size="28" />Hang Up</span
+                >
+              </span>
+            </div>
+          </div>
+          <div class="ic-stations">
+            <span class="ic-station">
+              <MdiIcon name="account-tie-voice-outline" :size="32" />
+              <span class="ic-who"><span>Living Room</span><small>Online</small></span>
+              <span class="ic-button ic-call"><MdiIcon name="phone-outline" :size="28" />Call</span>
+            </span>
+            <span class="ic-station">
+              <MdiIcon name="account-tie-voice-outline" :size="32" />
+              <span class="ic-who"><span>Kitchen</span><small>In Call</small></span>
+              <span class="ic-button ic-call"><MdiIcon name="phone-outline" :size="28" />Call</span>
+            </span>
+          </div>
         </template>
         <template v-else-if="isThermostatPanel(placement.tile)">
           <div class="th-top">
@@ -1075,6 +1106,124 @@ const highlight = computed(() => {
   background: var(--rc-page);
   border: none;
   border-radius: 0;
+}
+
+.tile.intercom-panel {
+  flex-direction: row;
+  align-items: stretch;
+  padding: 0;
+  background: #494949;
+  border: none;
+  border-radius: 0;
+  color: #fff;
+}
+
+.ic-side {
+  width: 350px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 0 0;
+  background: #3b3b3b;
+}
+
+.ic-accent {
+  width: 120px;
+  height: 10px;
+  margin-left: 20px;
+  background: #1da48c;
+}
+
+.ic-title {
+  margin: 10px 0 0 20px;
+  font-size: 15px;
+  color: #fff;
+}
+
+.ic-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.ic-status {
+  color: #fff;
+  font-size: 20px;
+}
+
+.ic-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.ic-stations {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 28px 15px 15px;
+}
+
+.ic-station {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100px;
+  padding: 8px 10px;
+  background: #2f2e2e;
+  color: #fff;
+  border: 1px solid #000;
+  border-radius: 8px;
+  font-size: 18px;
+  box-sizing: border-box;
+}
+
+.ic-station::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: #1da48c;
+}
+
+.ic-who {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ic-station small {
+  color: #fff;
+  font-size: 14px;
+}
+
+.ic-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 150px;
+  height: 50px;
+  background: #444;
+  color: #fff;
+  border: 1px solid #000;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.ic-button.ic-call {
+  height: 60px;
+}
+
+.ic-mic {
+  color: #00ff00;
 }
 
 .cm-list {

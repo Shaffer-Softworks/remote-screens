@@ -28,3 +28,7 @@
     void <init>();
 }
 -keep,allowshrinking interface com.google.firebase.components.ComponentRegistrar
+
+# WebRTC (intercom). stream-webrtc-android does not ship the keep rules a release build needs.
+-keep class org.webrtc.** { *; }
+-dontwarn org.webrtc.**

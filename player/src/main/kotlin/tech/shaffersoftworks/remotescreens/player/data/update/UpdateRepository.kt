@@ -9,10 +9,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import tech.shaffersoftworks.remotescreens.player.di.IoDispatcher
 import tech.shaffersoftworks.remotescreens.player.receiver.InstallReceiver
 import io.ktor.client.HttpClient
-import io.ktor.client.request.get
+import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.isSuccess
-import io.ktor.utils.io.jvm.javaio.toInputStream
+import io.ktor.utils.io.jvm.javaio.copyTo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -44,17 +44,19 @@ class UpdateRepository @Inject constructor(
         withContext(ioDispatcher) {
             val apkFile = File(context.cacheDir, UPDATE_FILE_PATH).apply { parentFile?.mkdirs() }
             try {
-                val response = httpClient.get("http://$server$path?token=$token")
-                if (!response.status.isSuccess()) return@withContext false
-                response.bodyAsChannel().toInputStream().use { apkInputStream ->
-                    apkFile.outputStream().use { apkOutputStream -> apkInputStream.copyTo(
-                        apkOutputStream,
-                    ) }
+                val wrote = httpClient.prepareGet("http://$server$path?token=$token").execute { response ->
+                    if (!response.status.isSuccess()) return@execute false
+                    apkFile.outputStream().use { output -> response.bodyAsChannel().copyTo(output) }
+                    true
                 }
+                if (!wrote) return@withContext false
                 commitInstallSession(apkFile, silent)
                 true
             } catch (cancellation: CancellationException) {
                 throw cancellation
+            } catch (outOfMemory: OutOfMemoryError) {
+                Timber.w(outOfMemory, "Update failed: out of memory")
+                false
             } catch (@Suppress("TooGenericExceptionCaught") error: Exception) {
                 Timber.w("Update failed: %s", error.message)
                 false

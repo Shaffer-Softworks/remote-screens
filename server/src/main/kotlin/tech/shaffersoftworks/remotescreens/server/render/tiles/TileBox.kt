@@ -19,6 +19,7 @@ fun Tile.edgeToEdge(): Boolean = full && effectiveKind() in setOf(
     "alarm_control_panel",
     "lights",
     "cameras",
+    "intercom",
 )
 
 /** What a tap (or a hold) on a tile sends. */
