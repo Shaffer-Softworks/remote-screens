@@ -1,6 +1,6 @@
 ---
 description: Tablet intercom page, the add-on's signaling hub on port 8766, and calling from Home Assistant (Oct 2026)
-globs: shared/src/main/kotlin/tech/shaffersoftworks/remotescreens/shared/Protocol.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/intercom/**/*.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/panels/intercom/**/*.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/action/IntercomActions.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/data/device/intercom/**/*.kt,editor/src/model/intercomCall.ts,editor/src/components/IntercomDesk.vue,custom_components/remote_screens/intercom.py,custom_components/remote_screens/frontend/intercom-card.js
+globs: shared/src/main/kotlin/tech/shaffersoftworks/remotescreens/shared/Protocol.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/intercom/**/*.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/panels/intercom/**/*.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/action/IntercomActions.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/data/device/intercom/**/*.kt,editor/src/model/intercomCall.ts,editor/src/components/IntercomDesk.vue,custom_components/remote_screens/__init__.py,custom_components/remote_screens/const.py,custom_components/remote_screens/intercom.py,custom_components/remote_screens/frontend/intercom-card.js
 alwaysApply: false
 ---
 
@@ -23,7 +23,9 @@ Both stations are marked in a call only when the target is online and not alread
 
 `Tile.edgeToEdge()` and the tile dispatch send `intercom` to `render/panels/intercom/`. Taps `intercom_call`, `intercom_hangup` and `intercom_mute` go to `IntercomActions`, then `ServerMessage.IntercomCommand` back to that tablet only. They do not call Home Assistant.
 
-The page matches RPI's `IntercomScreen`: grey column, centred status, dark Mute and Hang Up keys with icons, and a card per station. Call state is on the player session (`PlayerSession.intercomReport`), not in `RenderDataRepository`. A station joining or leaving rebuilds the document. Mute, the status line, Online / In Call / Connected, and which key icon is showing update as document variables (`ic.status`, `ic.r{n}.status`, `ic.mic.on`, `ic.mic.off`, `ic.hang.live`, `ic.hang.idle`).
+The page matches RPI's `IntercomScreen`, `StationView` and `ButtonViewV2`. Colours are `IntercomPaint` (page `#494949`, column `#3B3B3B`, card `#2F2E2E`, accent `#1DA48C`, key `#444444`), not theme roles, so Day, Dark and OLED do not recolour it. The left column is 350dp: accent bar, INTERCOM, then the status and the two keys centred. Mute and Hang Up are side by side, 150×50, dark fill, 1dp black border. The glyph is 32dp so the caption still fits; RPI asks for 50dp, which covers the caption. Hang Up stays fully drawn while idle (RPI fades it until the call is connected). The English caption is "Hang Up". Each station is a 100dp card with an 8dp inset, the person icon, name, status, a Call key, and a 1dp accent line on the bottom. Call stays visible and has no action while this tablet is busy or that station is in a call.
+
+Call state is on the player session (`PlayerSession.intercomReport`), not in `RenderDataRepository`. A station joining or leaving rebuilds the document. Mute, the status line, Online / In Call / Connected, and which key icon is showing update as document variables (`ic.status`, `ic.r{n}.status`, `ic.mic.on`, `ic.mic.off`, `ic.hang.live`, `ic.hang.idle`). A roster must not put the status back to Online after No answer, Call failed or Call ended. Only Connecting… and Online, while idle, are replaced.
 
 A tablet registers only when its screen contains the tile. `ServerMessage.IntercomConfig` says so, sent with settings. The tablet opens `ws://<the host it uses for port 8100>:8766/webrtc`. Its client id is `station-` plus the full device id. Its display name is the tablet's name, or `Not Set` when that name is blank. Renaming re-registers.
 
@@ -40,4 +42,23 @@ A browser is another station. It registers as `ha-` plus a new id per open page.
 - **Remote Screens panel.** The toolbar's Intercom button opens `IntercomDesk.vue`. Its socket is the ingress `/webrtc` route, same origin as the editor. The layout rail is still Add / Tree / Page / Screen; Intercom is not a rail tool. The panel's display name is "Home Assistant".
 - **Any dashboard.** `custom:remote-screens-intercom`, served from `custom_components/remote_screens/frontend/` and registered in `async_setup`. With no options it lists the online stations. A `station` option pins one display name, so a card can be "Call Kitchen". The card's page cannot open port 8766, so `intercom.py` opens one WebSocket to `ws://<the add-on host>:8766/webrtc` per card session and forwards the frames over the Home Assistant WebSocket. The browser never sees 8766. The card's display name is the signed-in user.
 
-The browser asks for the microphone when a call starts, and still answers if that request fails, so the tablet can be heard. Candidates that arrive before the description is ready are kept and applied after it. The tablet names its peer before it builds the offer, so its own address is sent. The tablet answers on its own, so Call plays on that tablet's speaker.
+The browser asks for the microphone when a call starts, and still answers if that request fails, so the tablet can be heard. The tablet answers on its own, so Call plays on that tablet's speaker.
+
+## A call that sits on Calling
+
+Verified 2026-10-25 on the USB tablet (M8L 2022, `adb` serial `4070306023037966`, device `bc3c86df-8e73-44d1-b502-36637279b58d`, LAN `10.11.0.89`). Its clock is EST, an hour behind the add-on. A call that never connects stays on Calling for 30s (`CALL_TIMEOUT_MS`) and then hangs up. That is the timeout, not a frozen UI.
+
+Two mistakes caused it:
+
+- `SessionAudioListener` drops a candidate when `peerId` is still null. Host candidates fire during `createOffer` / `acceptOffer`. `placeCall` and `onOffer` must set `peerId` before starting audio. With no STUN server those host addresses are the only ones the browser can use. Chrome's own candidates are `.local` mDNS names, which the tablet often cannot resolve.
+- The browser's `getUserMedia` throws on plain HTTP (`http://10.11.0.17:8123` is not a secure context) and also when an incoming offer is not a click. `IntercomBrowser` and the Lovelace card must still answer, with a recvonly audio transceiver when there is no microphone. An exception that sends no answer leaves the tablet on Calling for the full 30s.
+
+Candidates that arrive before `setRemoteDescription` are queued (`AndroidWebRtcAudio`, `rememberCandidate` in `intercomCall.ts` and the card) and applied after it. The browser waits up to 1.5s for ICE gathering and puts those candidates in the offer or answer, and does not trickle until that message has been sent. `crypto.randomUUID()` throws on the same HTTP page and blanks `IntercomDesk` during setup; ids use `crypto.getRandomValues`. The signaling URL appends `webrtc` under the page directory. `new URL('webrtc', href)` drops the ingress token when the path has no trailing slash.
+
+On plain HTTP the computer can hear the tablet. Talking back needs a microphone, which the browser only allows on HTTPS. Same-LAN host candidates are enough once both sides exchange them. A phone off the LAN, or Home Assistant through Nabu Casa, still will not connect.
+
+## The integration must import
+
+`intercom.py` imports `CONF_HOST` from `homeassistant.const`, as `__init__.py` and `config_flow.py` do. It is not defined in `const.py`. Importing it from `.const` raises `ImportError` while the component loads, and the config entry stays `not_loaded`. Home Assistant caches that failed import until a core restart. Reloading the config entry does not clear it. `async_setup` (which calls `async_setup_intercom`) does not run again on a config-entry reload.
+
+`intercom.py` and `frontend/intercom-card.js` live on the Samba `config` share (`config/custom_components/remote_screens/`), not in the add-on image. The panel's script is the editor bundle inside the add-on, so a panel change needs `tools/deploy_ha_dev.sh --no-rebuild` and a rebuild of `local_remote_screens`. Refresh the Home Assistant page after that rebuild. The store add-on `032995b0_remote_screens` stays stopped. Player changes need `./gradlew :player:assembleRelease` first (the script reuses an existing APK) and `adb install -r` on this tablet. The release APK is ARM only. The same `addon/VERSION` does not offer that APK to other tablets.
