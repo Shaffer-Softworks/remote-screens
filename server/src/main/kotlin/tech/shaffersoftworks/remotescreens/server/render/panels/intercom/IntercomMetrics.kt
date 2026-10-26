@@ -11,11 +11,10 @@ internal object IntercomMetrics {
     const val SMALL_LABEL_MIN_SP = 12f
 
     /**
-     * Side by side only while the 350dp column and a station row still fit, and the keys stay at least
-     * [SIDE_BY_SIDE_MIN_SCALE] of their RPI size. Narrower or shorter pages stack the keys on top.
+     * RPI draws the column at these dp values. A page that cannot hold the column and a named station
+     * stacks the keys on top instead of shrinking them.
      */
-    const val SIDE_BY_SIDE_MIN_W = 720f
-    const val SIDE_BY_SIDE_MIN_SCALE = 0.65f
+    const val STATION_NAME_MIN_DP = 72f
     const val STACK_SCALE_MIN = 0.45f
     const val STACK_SCALE_MAX = 1f
     const val LABEL_OF_BUTTON = 0.4f
@@ -58,7 +57,7 @@ internal object IntercomMetrics {
     const val ROW_STATUS_SP = 14f
     const val CALL_H_DP = 60f
 
-    /** The stacked header on a narrow or short page: the same pieces as the side column, in a band. */
+    /** The stacked header when the side column does not fit: the same pieces, in a band. */
     const val STACK_TOP_DP = 12f
     const val STACK_BOTTOM_DP = 12f
     const val STACK_SIDE_DP = 16f
@@ -67,6 +66,11 @@ internal object IntercomMetrics {
     const val STACKED_WIDTH_DP = STACK_SIDE_DP * 2f + BUTTON_W_DP * 2f + BUTTON_GAP_DP
     const val LIST_MIN_W_DP =
         LIST_START_DP + LIST_END_DP + ROW_PAD_DP * 2f + ROW_INSET_DP * 3f + ROW_ICON_DP + BUTTON_W_DP
+
+    /** Top padding, accent, title, one status line, and the two keys in the side column. */
+    const val COLUMN_BODY_DP =
+        COLUMN_TOP_DP + ACCENT_H_DP + TITLE_GAP_DP + TITLE_LINE_DP +
+            STATUS_LINE_DP + BUTTON_TOP_DP + BUTTON_H_DP
 }
 
 /** Colours from RPI's theme and `ButtonViewV2`: page, column, card, accent, and the dark keys. */

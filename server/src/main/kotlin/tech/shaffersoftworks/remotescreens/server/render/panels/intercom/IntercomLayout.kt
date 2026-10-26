@@ -3,8 +3,8 @@ package tech.shaffersoftworks.remotescreens.server.render.panels.intercom
 /**
  * The page's scale, and its size in dp.
  *
- * A wide landscape page keeps RPI's side column. A narrow or short page stacks that column as a header
- * so Mute, Hang Up and the station cards stay inside the screen.
+ * RPI's `IntercomScreen` keeps a 350dp column at full size. A page that cannot hold that column and a
+ * station name stacks the column as a header, which is the keypad page.
  */
 internal class IntercomLayout private constructor(
     val scale: Float,
@@ -43,26 +43,27 @@ internal class IntercomLayout private constructor(
 
     companion object {
         fun of(pageW: Float, pageH: Float, statusLines: Int): IntercomLayout {
-            val stacked = !sideBySide(pageW, pageH)
+            val stacked = !sideBySide(pageW, pageH, statusLines)
             val headerBody = headerBody(statusLines)
             val scale = if (stacked) stackScale(pageW, pageH, headerBody) else sideScale(pageW, pageH)
             val headerH = if (stacked) (headerBody * scale).coerceAtMost(pageH) else 0f
             return IntercomLayout(scale, pageW, pageH, stacked, headerH)
         }
 
-        private fun sideBySide(pageW: Float, pageH: Float): Boolean {
-            val scale = minOf(pageW / IntercomMetrics.BASE_W, pageH / IntercomMetrics.BASE_H)
+        private fun sideBySide(pageW: Float, pageH: Float, statusLines: Int): Boolean {
+            val scale = sideScale(pageW, pageH)
             val column = IntercomMetrics.COLUMN_W_DP * scale
             val keys = (IntercomMetrics.BUTTON_W_DP * 2f + IntercomMetrics.BUTTON_GAP_DP) * scale
-            val listW = pageW - column
-            val wide = pageW >= IntercomMetrics.SIDE_BY_SIDE_MIN_W &&
-                scale >= IntercomMetrics.SIDE_BY_SIDE_MIN_SCALE
-            return wide && column >= keys && listW >= IntercomMetrics.LIST_MIN_W_DP * scale
+            val listMin = (IntercomMetrics.LIST_MIN_W_DP + IntercomMetrics.STATION_NAME_MIN_DP) * scale
+            val extraLines = (statusLines - 1).coerceAtLeast(0)
+            val minH = (IntercomMetrics.COLUMN_BODY_DP + IntercomMetrics.STATUS_LINE_DP * extraLines) * scale
+            return pageW - column >= listMin && column >= keys && pageH >= minH
         }
 
+        /** RPI does not shrink the column. Scale up only when the page is larger than 1280×650. */
         private fun sideScale(pageW: Float, pageH: Float): Float =
             minOf(pageW / IntercomMetrics.BASE_W, pageH / IntercomMetrics.BASE_H)
-                .coerceIn(0f, IntercomMetrics.LAYOUT_SCALE_MAX)
+                .coerceIn(1f, IntercomMetrics.LAYOUT_SCALE_MAX)
 
         private fun stackScale(pageW: Float, pageH: Float, header: Float): Float {
             val widthScale = pageW / IntercomMetrics.STACKED_WIDTH_DP
