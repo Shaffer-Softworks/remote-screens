@@ -22,6 +22,7 @@ alwaysApply: false
 ## Renderer (`ScreenRenderer.kt`)
 
 - Top bar scale `k = (spec.topBar / Grid.TOP_BAR).coerceIn(0.7, 2)` multiplies the header text, the icons, the Back key (capped at `topBar - 6`) and the spacers. The date shows only when `date` is on and the screen is at least `Grid.NARROW` wide.
+- A weather temperature entity draws `weatherStateIcon` for its current condition (the weather page’s coloured sun, cloud and rain). The condition is structural, so a change rebuilds the document. A temperature sensor keeps the blue thermometer.
 - Bottom bar scale is the bar height against that width's default bar, so the defaults draw as before. `navArrangement()` picks the row arrangement. `fill` makes each button `width / count` wide; the other layouts use square buttons.
 - `GridMockup.vue` repeats this sizing. Change the renderer and the mockup together. Sliders need `v-range` (see `editor-sliders-and-theme-preview-context.mdc`).
 

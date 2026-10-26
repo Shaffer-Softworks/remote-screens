@@ -40,6 +40,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
+import tech.shaffersoftworks.remotescreens.server.render.widgets.weatherStateIcon
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Grid
@@ -352,8 +353,21 @@ object ScreenRenderer {
 
     /** Outdoor temperature, people at home, Wi‑Fi and battery on the right of the header. */
     private fun DocContext.topBarTrailing(bar: TopBar, headerSp: Float, layoutScale: Float, ink: RcColor) {
-        if (bar.temperatureEntity != null) {
-            topBarStat("thermometer", Vars.TEMP, headerSp, layoutScale, ink, role(Role.BLUE))
+        val temperatureEntity = bar.temperatureEntity
+        if (temperatureEntity != null) {
+            val entityState = states[temperatureEntity]
+            if (entityState?.domain == "weather") {
+                weatherStateIcon(
+                    entityState.state,
+                    STAT_ICON_DP * layoutScale,
+                    fallbackColor = ink,
+                )
+                scope.Spacer(Modifier.width(units.px(STAT_ICON_GAP_DP * layoutScale)))
+                label(text(Vars.TEMP), headerSp, ink)
+                scope.Spacer(Modifier.width(units.px(STAT_GAP_DP * layoutScale)))
+            } else {
+                topBarStat("thermometer", Vars.TEMP, headerSp, layoutScale, ink, role(Role.BLUE))
+            }
         }
         if (bar.people) topBarStat("home-account", Vars.PEOPLE, headerSp, layoutScale, ink)
         if (bar.wifi) topBarStat("wifi", Vars.WIFI, headerSp, layoutScale, ink)
@@ -545,6 +559,9 @@ object ScreenRenderer {
     /** The clock, the outdoor temperature and who is home: values every page shows. */
     private fun DocContext.bindSystem(screen: Screen) {
         val tempEntity = screen.topBar.temperatureEntity
+        if (tempEntity != null && states[tempEntity]?.domain == "weather") {
+            structural(tempEntity) { it?.state ?: "" }
+        }
         bind(tempEntity) { states ->
             val entityState = tempEntity?.let { states[it] }
             val text = when {
