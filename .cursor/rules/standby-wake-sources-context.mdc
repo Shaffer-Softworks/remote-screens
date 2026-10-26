@@ -27,7 +27,7 @@ alwaysApply: false
 - **Android lint:** `ImageProxy.image` is `@ExperimentalGetImage`. Kotlin `@OptIn` alone fails `:player:lintDebug`. Use `@SuppressLint("UnsafeOptInUsageError")` on `analyze` (class-level marker leaks into `PlayerViewModel`).
 - **Low-RAM / no front camera:** leave setting stored; do not start monitor; optional one-shot note in tablet settings (`face_wake_low_ram` / `face_wake_no_camera`).
 - **Privacy / power:** privacy indicator while camera runs in standby; keep tablet plugged in.
-- **ProximityWakeMonitor:** no `CoroutineScope` needed (sync SensorManager). Face may later use a scoped start/stop job; not required for proximity.
+- **ProximityWakeMonitor:** no `CoroutineScope` needed (sync SensorManager). Face may later use a scoped start/stop job; not required for proximity. Near/far goes through `ProximityScale` (PX30 reports `0` far / `1` near against a 9 cm range).
 - **Cursor trailer:** commits can get `Co-authored-by: Cursor`; strip with `git commit-tree` + `--force-with-lease` on the feature branch only (user must approve rewrite). Prefer merge from `main` over rebase on shared PR branches.
 
 ## Verify

@@ -26,6 +26,7 @@ class ProximityWakeMonitor @Inject constructor(
     private var onNear: (() -> Unit)? = null
     private var lastNearAtMs = 0L
     private var isListening = false
+    private val proximityScale = ProximityScale()
 
     fun isUsable(): Boolean = proximitySensor != null
 
@@ -56,7 +57,8 @@ class ProximityWakeMonitor @Inject constructor(
             val sensor = proximitySensor ?: return
             val distance = event.values.firstOrNull()
             val now = android.os.SystemClock.elapsedRealtime()
-            val isNear = distance != null && distance < sensor.maximumRange
+            val isNear = distance != null &&
+                proximityScale.isNear(distance, sensor.maximumRange, sensor.resolution)
             val isDebounced = now - lastNearAtMs >= NEAR_DEBOUNCE_MS
             if (isNear && isDebounced) {
                 lastNearAtMs = now

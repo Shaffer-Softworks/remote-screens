@@ -47,6 +47,7 @@ Each tablet is its own HA device with environment sensors, RPI-style diagnostics
 - `BatteryManager.BATTERY_PLUGGED_DOCK` is API 33; `DiagnosticsReader` uses its value (8) as a constant. Cycle count reads `android.os.extra.CYCLE_COUNT` on API 34+.
 - `TelemetryReporter` restarts only when the effective location sharing changes, so repeated `Settings` messages do not reset the schedule. The share flag is still recomputed on every report.
 - A null `location` group with a visible Wi-Fi SSID means permission is granted and sharing may be on, but Android has not returned a fix. Check Location accuracy before changing `LocationMonitor`.
+- Proximity on the PX30 office keypad (STK3A5X, `sensors.rk30board.so`) advertises a 9 cm binary range but emits `0` for far and `1` for near. `ProximityScale` reads that index; `distance < maximumRange` stays on forever. A 9 cm sensor that actually reports 9 cm for far is left on the Android comparison after that sample.
 
 ## Verify
 
