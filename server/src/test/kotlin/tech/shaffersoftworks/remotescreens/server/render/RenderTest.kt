@@ -15,6 +15,7 @@ import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepo
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoHome
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoLayout
+import tech.shaffersoftworks.remotescreens.server.render.HaRenderFlags
 import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.ALARM_PIN_LENGTH
 import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.alarmDotVar
 import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
@@ -26,6 +27,8 @@ import tech.shaffersoftworks.remotescreens.shared.NavBar
 import tech.shaffersoftworks.remotescreens.shared.Reflow
 import tech.shaffersoftworks.remotescreens.shared.VarType
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
 import java.io.ByteArrayInputStream
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -478,6 +481,40 @@ class RenderTest {
             onLiving.bytes.toList(),
             "initial page is baked into the document so a rebuild does not flash home",
         )
+    }
+
+    @Test
+    fun aTiltOnlyBlindCardSlidesItsPosition() {
+        val shade = cardDocument("cover.living_room_curtains")
+        val shadeText = String(shade.bytes, Charsets.ISO_8859_1)
+        assertContains(shadeText, "e:cover.living_room_curtains|position|")
+        assertFalse("e:cover.living_room_curtains|tilt|" in shadeText)
+
+        ha.set(
+            "cover.living_room_curtains",
+            "closed",
+            mapOf(
+                "supported_features" to JsonPrimitive(
+                    HaRenderFlags.COVER_OPEN_TILT_FLAG or HaRenderFlags.COVER_CLOSE_TILT_FLAG or
+                        HaRenderFlags.COVER_STOP_TILT_FLAG or HaRenderFlags.COVER_TILT_POSITION_FLAG,
+                ),
+                "current_position" to JsonNull,
+                "current_tilt_position" to JsonPrimitive(91),
+            ),
+        )
+        val tilt = cardDocument("cover.living_room_curtains")
+        val tiltText = String(tilt.bytes, Charsets.ISO_8859_1)
+        assertContains(tiltText, "Position")
+        assertContains(tiltText, "e:cover.living_room_curtains|tilt|")
+        assertFalse("e:cover.living_room_curtains|position|" in tiltText)
+        assertTrue(tilt.docContext.predicted.keys.any { it.startsWith("e:cover.living_room_curtains|tilt|") })
+        val shown = tilt.vars(ha.states.value)["e.cover.living_room_curtains.tilt"]?.value?.toFloat()
+        assertEquals(0.91f, assertNotNull(shown), 0.001f)
+    }
+
+    private fun cardDocument(entityId: String): RenderedDoc {
+        val data = runBlocking { RenderDataRepository(ha).forCard(entityId, null) }
+        return CardRenderer.render(entityId, null, tablet, input(data))
     }
 
     @Test

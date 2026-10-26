@@ -3,6 +3,7 @@
 package tech.shaffersoftworks.remotescreens.server.render.tiles
 
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.HaRenderFlags
 import tech.shaffersoftworks.remotescreens.server.render.Present
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
@@ -42,9 +43,10 @@ internal fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, en
     val hasLevel = entityId != null && box.w >= C.TALL_HEIGHT_DP && entityState != null && when (tile.domain) {
         "light" -> entityState.list("supported_color_modes").any { it != "onoff" }
         "fan" -> entityState.supports(C.FAN_PERCENTAGE_FLAG)
-        "cover", "valve" -> entityState.supports(
-            C.COVER_POSITION_FLAG,
-        ) || entityState.number("current_position") != null
+        "cover", "valve" -> entityState.supports(C.COVER_POSITION_FLAG) ||
+            entityState.number("current_position") != null ||
+            entityState.supports(HaRenderFlags.COVER_TILT_POSITION_FLAG) ||
+            entityState.number("current_tilt_position") != null
         "humidifier", "water_heater" -> true
         "number", "input_number", "media_player" -> true
         else -> false
@@ -153,7 +155,13 @@ internal fun DocContext.entityTileLevelBar(tile: Tile, entityId: String, entityS
     val verb = when (tile.domain) {
         "light" -> "brightness"
         "fan" -> "percentage"
-        "cover" -> "position"
+        "cover" -> if (
+            entityState.supports(C.COVER_POSITION_FLAG) || entityState.number("current_position") != null
+        ) {
+            "position"
+        } else {
+            "tilt"
+        }
         "media_player" -> "volume"
         else -> "value"
     }
@@ -176,7 +184,7 @@ internal fun DocContext.entityTileLevelBar(tile: Tile, entityId: String, entityS
         trackRole = Role.TRACK,
     ) { step ->
         val value = minValue + (maxValue - minValue) * step / C.LEVEL_STEPS.toDouble()
-        ActionRef(
+        val action = ActionRef(
             tile.id,
             verb,
             if (value % 1.0 == 0.0) {
@@ -188,6 +196,8 @@ internal fun DocContext.entityTileLevelBar(tile: Tile, entityId: String, entityS
                 )
             },
         )
+        predict(action, entityId)
+        action
     }
 }
 

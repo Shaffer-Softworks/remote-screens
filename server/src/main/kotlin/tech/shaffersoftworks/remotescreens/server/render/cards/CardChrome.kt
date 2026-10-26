@@ -74,7 +74,7 @@ internal object CardChrome {
     const val FAN_DIRECTION_FLAG = 4
     const val CLIMATE_TEMP_RANGE_FLAG = 2
     const val COVER_POSITION_FLAG = HaRenderFlags.COVER_POSITION_FLAG
-    const val COVER_TILT_FLAG = 128
+    const val COVER_TILT_FLAG = HaRenderFlags.COVER_TILT_POSITION_FLAG
     const val DEFAULT_HUMIDITY_MIN = 0.0
     const val DEFAULT_HUMIDITY_MAX = 100.0
     const val DEFAULT_HUMIDITY_STEP = 5.0
@@ -233,7 +233,7 @@ internal fun DocContext.bar(
         },
     ) { step ->
         val value = min + (max - min) * step / CardChrome.LEVEL_STEPS.toDouble()
-        ref(
+        val action = ref(
             entityId,
             verb,
             if (value % 1.0 == 0.0) {
@@ -245,6 +245,8 @@ internal fun DocContext.bar(
                 )
             },
         )
+        predict(action, entityId)
+        action
     }
 }
 

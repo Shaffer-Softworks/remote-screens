@@ -207,7 +207,8 @@ export const CATALOGUE: Record<string, TypeSpec> = {
       "position",
       "tilt",
       "open_tilt",
-      "close_tilt"
+      "close_tilt",
+      "stop_tilt"
     ],
     "needsEntity": true
   },

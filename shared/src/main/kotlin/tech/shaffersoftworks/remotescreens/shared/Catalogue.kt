@@ -154,8 +154,8 @@ object Catalogue {
             controls = listOf("position"),
             sizes = listOf("1x1", "2x1", "1x2", "2x2", "full"),
             options = listOf(),
-            actions = mapOf("toggle" to ActionSpec("cover.toggle", mapOf(), false, null), "open" to ActionSpec("cover.open_cover", mapOf(), false, null), "close" to ActionSpec("cover.close_cover", mapOf(), false, null), "stop" to ActionSpec("cover.stop_cover", mapOf(), false, null), "position" to ActionSpec("cover.set_cover_position", mapOf("position" to "\$arg"), false, "current_position"), "tilt" to ActionSpec("cover.set_cover_tilt_position", mapOf("tilt_position" to "\$arg"), false, null), "open_tilt" to ActionSpec("cover.open_cover_tilt", mapOf(), false, null), "close_tilt" to ActionSpec("cover.close_cover_tilt", mapOf(), false, null)),
-            predict = mapOf("position" to PredictSpec(null, mapOf("current_position" to "\$arg"))),
+            actions = mapOf("toggle" to ActionSpec("cover.toggle", mapOf(), false, null), "open" to ActionSpec("cover.open_cover", mapOf(), false, null), "close" to ActionSpec("cover.close_cover", mapOf(), false, null), "stop" to ActionSpec("cover.stop_cover", mapOf(), false, null), "position" to ActionSpec("cover.set_cover_position", mapOf("position" to "\$arg"), false, "current_position"), "tilt" to ActionSpec("cover.set_cover_tilt_position", mapOf("tilt_position" to "\$arg"), false, null), "open_tilt" to ActionSpec("cover.open_cover_tilt", mapOf(), false, null), "close_tilt" to ActionSpec("cover.close_cover_tilt", mapOf(), false, null), "stop_tilt" to ActionSpec("cover.stop_cover_tilt", mapOf(), false, null)),
+            predict = mapOf("position" to PredictSpec(null, mapOf("current_position" to "\$arg")), "tilt" to PredictSpec(null, mapOf("current_tilt_position" to "\$arg"))),
             needsEntity = true,
         ),
         "device_tracker" to TypeSpec(

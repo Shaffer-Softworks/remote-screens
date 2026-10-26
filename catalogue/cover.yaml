@@ -17,5 +17,7 @@ actions:
   tilt: {service: cover.set_cover_tilt_position, data: {tilt_position: $arg}}
   open_tilt: {service: cover.open_cover_tilt}
   close_tilt: {service: cover.close_cover_tilt}
+  stop_tilt: {service: cover.stop_cover_tilt}
 predict:
   position: {attributes: {current_position: $arg}}
+  tilt: {attributes: {current_tilt_position: $arg}}

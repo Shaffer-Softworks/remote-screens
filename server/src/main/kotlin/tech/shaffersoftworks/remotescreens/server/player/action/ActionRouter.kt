@@ -8,6 +8,7 @@ import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaSnapshot
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.ALARM_PIN_LENGTH
+import tech.shaffersoftworks.remotescreens.server.render.HaRenderFlags
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.alarmDotVar
 import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.isAlarmPage
@@ -155,6 +156,15 @@ class ActionRouter(
 
     private fun resolveVerb(verb: String, target: TapTarget, entity: EntityState?): String = when {
         target.kind == "lock" && verb == "toggle" -> if (entity?.state == "locked") "unlock" else "lock"
+        // cover.toggle needs open and close. A tilt-only blind (slats, no shade travel) rejects it.
+        target.kind == "cover" && verb == "toggle" &&
+            entity?.supports(HaRenderFlags.COVER_OPEN_FLAG) != true &&
+            entity?.supports(HaRenderFlags.COVER_CLOSE_FLAG) != true &&
+            (
+                entity?.supports(HaRenderFlags.COVER_OPEN_TILT_FLAG) == true ||
+                    entity?.supports(HaRenderFlags.COVER_CLOSE_TILT_FLAG) == true
+                ) ->
+            if (entity.state == "open" || entity.state == "opening") "close_tilt" else "open_tilt"
         else -> verb
     }
 

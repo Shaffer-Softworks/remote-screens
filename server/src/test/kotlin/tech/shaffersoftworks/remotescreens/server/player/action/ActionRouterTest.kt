@@ -8,6 +8,7 @@ import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AGENDA_FIELD_SEPARATOR
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
+import tech.shaffersoftworks.remotescreens.server.render.HaRenderFlags
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.alarmDotVar
 import tech.shaffersoftworks.remotescreens.server.render.theme.Rpi
@@ -29,6 +30,9 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class ActionRouterTest {
+    private val tiltOnlyCoverFeatures =
+        HaRenderFlags.COVER_OPEN_TILT_FLAG or HaRenderFlags.COVER_CLOSE_TILT_FLAG or
+            HaRenderFlags.COVER_STOP_TILT_FLAG or HaRenderFlags.COVER_TILT_POSITION_FLAG
     private val ha = DemoHome()
     private val renderData = RenderDataRepository(ha)
     private val router = ActionRouter(ha, { I18n("en", I18n.load("en"), emptyMap(), true) }, renderData)
@@ -44,6 +48,35 @@ class ActionRouterTest {
     fun aToggleTileTogglesItsEntity() {
         assertEquals(TapOutcome.Done, tap("t2|toggle|"))
         assertEquals("on", ha.states.value["light.table_lamp"]?.state)
+    }
+
+    @Test
+    fun aShadeCoverToggleStaysAToggle() {
+        assertEquals(TapOutcome.Done, tap("r1|toggle|"))
+        assertEquals("toggle", ha.calls.last().second)
+    }
+
+    @Test
+    fun aTiltOnlyCoverToggleOpensTheSlats() {
+        ha.set(
+            "cover.living_room_curtains",
+            "closed",
+            mapOf("supported_features" to JsonPrimitive(tiltOnlyCoverFeatures)),
+        )
+        assertEquals(TapOutcome.Done, tap("r1|toggle|"))
+        val (domain, service, _) = ha.calls.last()
+        assertEquals("cover" to "open_cover_tilt", domain to service)
+    }
+
+    @Test
+    fun aTiltOnlyCoverThatIsOpenClosesTheSlats() {
+        ha.set(
+            "cover.living_room_curtains",
+            "open",
+            mapOf("supported_features" to JsonPrimitive(tiltOnlyCoverFeatures)),
+        )
+        assertEquals(TapOutcome.Done, tap("r1|toggle|"))
+        assertEquals("close_cover_tilt", ha.calls.last().second)
     }
 
     @Test
