@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.33
+
+- Full-page lights, cameras, and alarm panels, including the alarm PIN keypad.
+- Each tablet is its own Home Assistant device, with environment sensors, diagnostics, motion, and an opt-in GPS tracker. A managed tablet can turn location services on and ask once for Location accuracy.
+- An Intercom page calls another tablet on the local network. The add-on signals the call on port 8766. The Remote Screens panel and a dashboard card can join the same call.
+- Screens can be imported from a JSON file and exported back out of the editor.
+
 ## 0.1.32
 
 - An Intercom page calls another tablet on the local network. The add-on signals the call on port 8766. The Remote Screens panel and a dashboard card can join the same call. The existing signaling add-on stays on 8765.
