@@ -14,6 +14,7 @@ import type {
   Screen,
   Theme,
 } from './model/types'
+import type { ScreenFile } from './model/screenFile'
 
 export class ApiError extends Error {}
 
@@ -43,6 +44,7 @@ export const api = {
   preferences: (prefs: Preferences) => call<Preferences>('PUT', 'preferences', prefs),
   createScreen: (name: string, size?: { widthDp: number; heightDp: number }, grid?: GridSize) =>
     call<Screen>('POST', 'screens', { name, grid, ...size }),
+  importScreen: (file: ScreenFile) => call<Screen>('POST', 'screens/import', file),
   saveScreen: (screen: Screen) =>
     call<Screen>('PUT', `screens/${encodeURIComponent(screen.id)}`, screen),
   deleteScreen: (id: string) => call<void>('DELETE', `screens/${encodeURIComponent(id)}`),

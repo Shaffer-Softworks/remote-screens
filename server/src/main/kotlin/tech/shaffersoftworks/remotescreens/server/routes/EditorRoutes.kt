@@ -6,14 +6,15 @@ import tech.shaffersoftworks.remotescreens.server.player.PlayerHub
 import tech.shaffersoftworks.remotescreens.server.render.Alert
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Icons
 import tech.shaffersoftworks.remotescreens.server.routes.model.AdoptPlayerRequest
-import tech.shaffersoftworks.remotescreens.server.service.CreateScreenRequest
 import tech.shaffersoftworks.remotescreens.server.routes.model.EnrollmentRequest
 import tech.shaffersoftworks.remotescreens.server.routes.model.ErrorResponse
 import tech.shaffersoftworks.remotescreens.server.routes.model.RenamePlayerRequest
 import tech.shaffersoftworks.remotescreens.server.routes.model.ServerInfoResponse
+import tech.shaffersoftworks.remotescreens.server.service.CreateScreenRequest
 import tech.shaffersoftworks.remotescreens.server.service.EnrollmentService
 import tech.shaffersoftworks.remotescreens.server.service.EnrollmentUnavailableException
 import tech.shaffersoftworks.remotescreens.server.service.HomeAssistantCatalogService
+import tech.shaffersoftworks.remotescreens.server.service.ScreenFile
 import tech.shaffersoftworks.remotescreens.server.service.ScreenService
 import tech.shaffersoftworks.remotescreens.server.service.ThemeService
 import tech.shaffersoftworks.remotescreens.server.service.validation.ScreenValidator
@@ -89,6 +90,12 @@ private fun Route.screenRoutes(screenService: ScreenService) {
         call.respond(
             HttpStatusCode.Created,
             screenService.createScreen(call.receive<CreateScreenRequest>()),
+        )
+    }
+    post("/screens/import") {
+        call.respond(
+            HttpStatusCode.Created,
+            screenService.importScreen(call.receive<ScreenFile>()),
         )
     }
     put("/screens/{id}") {
