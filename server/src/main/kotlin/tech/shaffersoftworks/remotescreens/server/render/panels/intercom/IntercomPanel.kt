@@ -18,7 +18,7 @@ import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.requiredHeightIn
 import androidx.compose.remote.creation.dsl.size
-import androidx.compose.remote.creation.dsl.verticalScroll
+import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
 import androidx.compose.remote.creation.modifiers.RectShape
@@ -182,9 +182,10 @@ private fun DocContext.stationList(tileId: String, view: IntercomView, layout: I
         Modifier.fillMaxWidth().height(viewport).requiredHeightIn(max = viewport)
             .padding(start, 0f, end, bottom)
             .clip(RectShape(0f, 0f, 0f, 0f))
-            .verticalScroll()
+            .keptVerticalScroll("intercom.$tileId")
     } else {
-        Modifier.horizontalWeight(1f).fillMaxHeight().verticalScroll().padding(start, top, end, bottom)
+        Modifier.horizontalWeight(1f).fillMaxHeight().keptVerticalScroll("intercom.$tileId")
+            .padding(start, top, end, bottom)
     }
     scope.Column(scroll) {
         val doc = this@stationList

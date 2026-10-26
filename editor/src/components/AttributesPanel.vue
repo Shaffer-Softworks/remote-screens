@@ -240,6 +240,18 @@ function bindTo(id: string): void {
       delete currentNode.value.props.text
   }
 }
+
+const boundEntity = computed(() => {
+  const entityId = currentNode.value.bind?.entityId
+  return entityId ? entityById.value.get(entityId) : undefined
+})
+
+/** What a blank Icon draws: the entity's icon from Home Assistant, else the domain's. */
+const entityIcon = computed((): string => {
+  if (boundEntity.value?.icon) return boundEntity.value.icon
+  const domain = currentNode.value.bind?.entityId.split('.')[0]
+  return (domain && CATALOGUE[domain]?.icon) || 'help-circle-outline'
+})
 const FORMATS: { value: BindFormat; label: string }[] = [
   { value: 'state', label: 'State, in words' },
   { value: 'value', label: 'Value with unit' },
@@ -643,6 +655,7 @@ const typeIcon = computed(() =>
           <IconPicker
             :model-value="currentProps.icon"
             placeholder="from the entity"
+            :preview="entityIcon"
             @update:model-value="setProp('icon', $event)"
           />
         </div>
@@ -651,6 +664,7 @@ const typeIcon = computed(() =>
           <IconPicker
             :model-value="currentProps.iconOn"
             placeholder="same"
+            :preview="currentProps.icon || entityIcon"
             @update:model-value="setProp('iconOn', $event)"
           />
         </div>
@@ -768,6 +782,7 @@ const typeIcon = computed(() =>
           <IconPicker
             :model-value="currentProps.icon"
             :placeholder="currentNode.bind ? 'from the entity' : 'none'"
+            :preview="currentNode.bind ? entityIcon : undefined"
             @update:model-value="setProp('icon', $event)"
           />
         </div>
@@ -1150,6 +1165,7 @@ const typeIcon = computed(() =>
           <IconPicker
             :model-value="currentProps.icon"
             :placeholder="currentNode.bind ? 'from the entity' : 'gesture-tap'"
+            :preview="currentNode.bind ? entityIcon : undefined"
             @update:model-value="setProp('icon', $event)"
           />
         </div>
@@ -1158,6 +1174,7 @@ const typeIcon = computed(() =>
           <IconPicker
             :model-value="currentProps.iconOn"
             placeholder="same"
+            :preview="currentProps.icon || entityIcon"
             @update:model-value="setProp('iconOn', $event)"
           />
         </div>

@@ -27,7 +27,7 @@ import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
-import androidx.compose.remote.creation.dsl.verticalScroll
+import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.visibility
 import androidx.compose.remote.creation.dsl.width
@@ -92,7 +92,12 @@ private fun DocContext.cameraList(tileId: String, cameras: List<CameraEntry>, la
             modifier = Modifier.padding(doc.units.px(layout.dp(M.TITLE_START_DP)), 0f, 0f, 0f),
         )
         val pad = doc.units.px(layout.dp(M.LIST_PAD_DP))
-        Column(Modifier.fillMaxWidth().verticalWeight(1f).verticalScroll().padding(pad, pad, pad, pad)) {
+        Column(
+            Modifier.fillMaxWidth()
+                .verticalWeight(1f)
+                .keptVerticalScroll("cameras.$tileId")
+                .padding(pad, pad, pad, pad),
+        ) {
             cameras.forEachIndexed { index, camera ->
                 if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.ITEM_GAP_DP))))
                 doc.cameraRow(tileId, camera, layout)

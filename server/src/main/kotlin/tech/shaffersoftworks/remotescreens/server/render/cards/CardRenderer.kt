@@ -24,7 +24,7 @@ import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
-import androidx.compose.remote.creation.dsl.verticalScroll
+import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import androidx.compose.remote.creation.dsl.verticalWeight
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
@@ -82,7 +82,7 @@ object CardRenderer {
                 ) {
                     docContext.header(entityId, card)
                     docContext.gap(CardChrome.SECTION_GAP_DP)
-                    Column(Modifier.fillMaxWidth().verticalWeight(1f).verticalScroll()) {
+                    Column(Modifier.fillMaxWidth().verticalWeight(1f).keptVerticalScroll("card.$entityId")) {
                         val body = panelW - CardChrome.CLOSE_KEY_DP
                         when (card) {
                             "light" -> docContext.lightCard(entityId, entityState, body)

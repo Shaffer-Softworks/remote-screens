@@ -61,6 +61,20 @@ internal class SessionDocument(
         timeoutSeconds: Int = 0,
     ) {
         val states = homeAssistant.states.value
+        val previous = shownDocuments[slot]
+        if (previous != null && previous.renderedDoc.bytes.contentEquals(renderedDoc.bytes)) {
+            previous.renderedDoc = renderedDoc
+            previous.rebuild = rebuild
+            val vars = renderedDoc.vars(states)
+            val changed = vars.values.filter { previous.sentVars[it.name] != it }
+            previous.sentVars = vars
+            if (changed.isNotEmpty()) {
+                host.send(ServerMessage.Vars(changed, renderedDoc.predictions(states, host::foresee)))
+            }
+            media.sendPictures(previous, states, isForced = false)
+            for (map in renderedDoc.docContext.maps) media.sendMap(previous, map, states)
+            return
+        }
         val shown = ShownDocument(
             slot,
             renderedDoc,

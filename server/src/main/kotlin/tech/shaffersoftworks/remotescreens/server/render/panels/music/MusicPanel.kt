@@ -23,12 +23,12 @@ import androidx.compose.remote.creation.dsl.componentId
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.modifiers.RectShape
 import androidx.compose.remote.creation.dsl.height
-import androidx.compose.remote.creation.dsl.horizontalScroll
+import tech.shaffersoftworks.remotescreens.server.render.keptHorizontalScroll
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.requiredHeightIn
 import androidx.compose.remote.creation.dsl.size
-import androidx.compose.remote.creation.dsl.verticalScroll
+import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.visibility
 import androidx.compose.remote.creation.dsl.width
@@ -304,7 +304,7 @@ private fun DocContext.nowPlayingTransport(tileId: String, entityId: String) {
     val hit = MusicMetrics.TRANSPORT_DP
     val glyph = MusicMetrics.TRANSPORT_ICON_DP
     scope.Row(
-        Modifier.fillMaxWidth().horizontalScroll(),
+        Modifier.fillMaxWidth().keptHorizontalScroll("music.$tileId.transport"),
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@nowPlayingTransport
@@ -350,7 +350,10 @@ private fun DocContext.browseCard(layout: MusicPanelLayout, modifier: Modifier) 
         val ui = layout.ui
         doc.label("Browse", Type.TITLE, doc.role(Role.INK), Weight.SEMI_BOLD)
         doc.gap(MusicMetrics.BROWSE_TITLE_GAP_DP)
-        Row(Modifier.fillMaxWidth().horizontalScroll(), vertical = RcVerticalPositioning.Center) {
+        Row(
+            Modifier.fillMaxWidth().keptHorizontalScroll("music.${layout.tileId}.types"),
+            vertical = RcVerticalPositioning.Center,
+        ) {
             MusicUiState.BROWSE_TYPES.forEachIndexed { index, type ->
                 if (index > 0) Spacer(Modifier.width(doc.units.px(MusicMetrics.CHIP_GAP_DP)))
                 val selected = ui.browseMediaType == type
@@ -371,7 +374,7 @@ private fun DocContext.browseCard(layout: MusicPanelLayout, modifier: Modifier) 
                 .height(doc.units.px(layout.browseListDp))
                 .requiredHeightIn(max = doc.units.px(layout.browseListDp))
                 .clip(RectShape(0f, 0f, 0f, 0f))
-                .verticalScroll(),
+                .keptVerticalScroll("music.${layout.tileId}.browse"),
         ) {
             if (!layout.configured) {
                 doc.label("Bind a Music Assistant player on this tile.", Type.BODY, doc.role(Role.INK_SOFT))
@@ -499,7 +502,7 @@ private fun DocContext.queueSection(
                 .height(doc.units.px(listHeightDp))
                 .requiredHeightIn(max = doc.units.px(listHeightDp))
                 .clip(RectShape(0f, 0f, 0f, 0f))
-                .verticalScroll(),
+                .keptVerticalScroll("music.$tileId.queue"),
         ) {
             when {
                 !configured -> doc.label(
