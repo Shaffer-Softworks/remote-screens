@@ -21,6 +21,9 @@ The full guide (editor, free-form components, architecture, troubleshooting) is 
 6. Open the screen in the editor: add pages, drag entities from the library onto the grid, and press
    **Save & send**. **Preview on device** shows your changes on a tablet without saving them.
 
+**Export** on a screen downloads that screen as a file. **Import** adds the file as a new screen, and
+**Duplicate** makes the same copy without a file. Tablets stay on the original screen.
+
 If the app does not find the add-on (mDNS blocked between VLANs, for example), tap **Enter address** and give the
 address of your Home Assistant host with port 8100.
 

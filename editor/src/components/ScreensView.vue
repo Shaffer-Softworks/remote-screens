@@ -3,8 +3,9 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { api } from '../api'
 import { DENSITIES, PRESETS, clampDp, toDp } from '../model/devices'
 import { reflow, suggest } from '../model/grid'
+import { isScreenFile, screenFile, screenFileName, type ScreenFile } from '../model/screenFile'
 import type { PlayerStatus, Screen } from '../model/types'
-import { attempt, playersOf, refreshLayout, state, toast } from '../store'
+import { attempt, playersOf, refreshLayout, refreshThemes, state, toast } from '../store'
 import EnrollTabletPanel from './EnrollTabletPanel.vue'
 import MdiIcon from './MdiIcon.vue'
 
@@ -66,6 +67,58 @@ async function remove(screen: Screen): Promise<void> {
   if (!confirm(`Delete ${screen.name}? Its tablets go back to waiting.`)) return
   await attempt(() => api.deleteScreen(screen.id))
   await refreshLayout()
+}
+
+const fileInput = ref<HTMLInputElement | null>(null)
+
+function chooseFile(): void {
+  const input = fileInput.value
+  if (!input) return
+  input.value = ''
+  input.click()
+}
+
+async function importChosen(event: Event): Promise<void> {
+  const input = event.target
+  if (!(input instanceof HTMLInputElement)) return
+  const chosen = input.files?.[0]
+  input.value = ''
+  if (!chosen) return
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(await chosen.text())
+  } catch {
+    toast('That file is not a screen')
+    return
+  }
+  if (!isScreenFile(parsed)) {
+    toast('That file is not a screen')
+    return
+  }
+  await addCopy(parsed)
+}
+
+async function duplicate(screen: Screen): Promise<void> {
+  await addCopy(screenFile(screen, state.layout?.themes ?? []))
+}
+
+function exportScreen(screen: Screen): void {
+  const file = screenFile(screen, state.layout?.themes ?? [])
+  const blob = new Blob([`${JSON.stringify(file, null, 2)}\n`], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${screenFileName(screen.name)}.json`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+async function addCopy(file: ScreenFile): Promise<void> {
+  const created = await attempt(() => api.importScreen(file))
+  if (!created) return
+  await refreshLayout()
+  await refreshThemes()
+  emit('edit', created)
 }
 
 const assign = ref<Record<string, string>>({})
@@ -209,7 +262,15 @@ function preview(screen: Screen) {
           <h3>Screens</h3>
           <p class="muted hint">What the tablets display. Click one to edit its pages and tiles.</p>
         </div>
+        <button title="Add a screen from a file" @click="chooseFile">Import</button>
         <button class="primary" @click="creating = !creating">+ New screen</button>
+        <input
+          ref="fileInput"
+          class="file"
+          type="file"
+          accept=".json,application/json"
+          @change="importChosen"
+        />
       </div>
 
       <div v-if="creating" class="card create">
@@ -268,7 +329,13 @@ function preview(screen: Screen) {
 
           <div class="row">
             <h2 class="grow">{{ s.name }}</h2>
-            <button class="icon quiet" title="Delete screen" @click.stop="remove(s)">
+            <button class="icon quiet" title="Duplicate screen" @click.stop="duplicate(s)">
+              <MdiIcon name="content-copy" :size="18" />
+            </button>
+            <button class="icon quiet" title="Export screen" @click.stop="exportScreen(s)">
+              <MdiIcon name="download" :size="18" />
+            </button>
+            <button class="icon quiet remove" title="Delete screen" @click.stop="remove(s)">
               <MdiIcon name="delete-outline" :size="18" />
             </button>
           </div>
@@ -566,7 +633,15 @@ button.quiet {
 }
 
 .screen button.quiet:hover {
+  color: var(--ink);
+}
+
+.screen button.remove:hover {
   color: var(--danger);
+}
+
+.file {
+  display: none;
 }
 
 .tablets {
