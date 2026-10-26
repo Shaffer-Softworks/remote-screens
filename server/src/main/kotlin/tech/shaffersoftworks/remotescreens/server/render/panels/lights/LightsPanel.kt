@@ -22,16 +22,18 @@ import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcPaintStyle
 import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.background
+import androidx.compose.remote.creation.dsl.clip
 import androidx.compose.remote.creation.dsl.fillMaxHeight
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
+import androidx.compose.remote.creation.dsl.requiredHeightIn
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.verticalScroll
-import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
+import androidx.compose.remote.creation.modifiers.RectShape
 import tech.shaffersoftworks.remotescreens.server.render.panels.lights.LightsMetrics as M
 
 private const val KEY_LIGHTS_ON_PREFIX = "lightsOn."
@@ -46,6 +48,34 @@ internal class LightsLayout(val scale: Float, val pageW: Float, val pageH: Float
     /** The room list's width, and what RPI's padded device column has left of the page. */
     val roomsW: Float get() = dp(M.ROOMS_W_DP)
     val devicesW: Float get() = pageW - roomsW - 2 * dp(M.DEVICES_PAD_DP)
+
+    /** A single line, matching [M.LINE_HEIGHT_RATIO], so a list viewport can leave that line above it. */
+    fun line(sp: Float): Float = dp(sp * M.LINE_HEIGHT_RATIO)
+
+    /** Accent, title, and the top inset. The list's first row starts here, so scroll 0 is unchanged. */
+    fun roomsHeaderHeight(): Float =
+        dp(M.COLUMN_TOP_DP + M.ACCENT_BAR_H_DP + M.TITLE_GAP_DP) + line(M.TITLE_SP)
+
+    /**
+     * Empty space above a centered room name. The title plate covers it: the name is drawn in the middle of a
+     * 100dp row, and that gap is the same colour as the title, so a scrolled name otherwise sits against it.
+     */
+    fun roomNameTopInset(): Float {
+        val content = dp(M.ROOM_SP + M.ROOM_SUB_GAP_DP + M.ROOM_SUB_SP)
+        return ((dp(M.ROOM_H_DP) - content) / 2f).coerceAtLeast(0f)
+    }
+
+    /** [roomsHeaderHeight] plus the empty top of a room row, so a scrolled name cannot reach the title. */
+    fun roomsPlateHeight(): Float = roomsHeaderHeight() + roomNameTopInset()
+
+    /** The room name and the gap under it. The device list's first row starts here. */
+    fun devicesHeaderHeight(): Float = line(M.ROOM_TITLE_SP) + dp(M.TITLE_GAP_DP)
+
+    /** [devicesHeaderHeight] plus the padding above a device name, which the name plate covers. */
+    fun devicesPlateHeight(): Float = devicesHeaderHeight() + dp(M.ROW_HEADER_TOP_DP)
+
+    /** The device column inside its padding. The list fills this and the name is drawn over its top. */
+    fun devicesBodyHeight(): Float = (pageH - dp(M.COLUMN_TOP_DP + M.DEVICES_PAD_DP)).coerceAtLeast(0f)
 }
 
 /**
@@ -82,18 +112,42 @@ fun DocContext.lightsDialogLayer(tile: Tile, box: TileBox, screenW: Float, scree
 private fun pageScale(box: TileBox): Float =
     minOf(box.w / M.BASE_W, box.h / M.BASE_H).coerceIn(M.LAYOUT_SCALE_MIN, M.LAYOUT_SCALE_MAX)
 
-/** The grey list: RPI's teal bar, "LIGHTING CONTROL", and a row per area, or a spinner until there are any. */
+/**
+ * The grey list: RPI's teal bar, "LIGHTING CONTROL", and a row per area, or a spinner until there are any.
+ * The title is drawn after the list. A scroll translates rows above the list, and that clip does not keep them
+ * there, so an opaque title covers whatever slides under it.
+ */
 private fun DocContext.roomsColumn(
     tileId: String,
     rooms: List<LightsRoom>,
     selected: LightsRoom?,
     layout: LightsLayout,
 ) {
-    scope.Column(
-        Modifier.width(units.px(layout.roomsW)).fillMaxHeight().background(role(Role.STRIP))
-            .padding(0f, units.px(layout.dp(M.COLUMN_TOP_DP)), 0f, 0f),
-    ) {
+    val headerH = layout.roomsHeaderHeight()
+    scope.Box(Modifier.width(units.px(layout.roomsW)).fillMaxHeight().background(role(Role.STRIP))) {
         val doc = this@roomsColumn
+        if (rooms.isEmpty()) {
+            doc.roomsSpinner(layout)
+        } else {
+            Column(doc.scrollingList(layout.pageH)) {
+                Spacer(Modifier.height(doc.units.px(headerH)))
+                rooms.forEachIndexed { index, room ->
+                    if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.ROOM_GAP_DP))))
+                    doc.roomRow(tileId, room, room == selected, layout)
+                }
+            }
+        }
+        doc.roomsHeader(layout, layout.roomsPlateHeight())
+    }
+}
+
+/** The accent and "LIGHTING CONTROL", opaque, so a scrolled row cannot show through them. */
+private fun DocContext.roomsHeader(layout: LightsLayout, headerH: Float) {
+    scope.Column(
+        Modifier.fillMaxWidth().height(units.px(headerH)).background(role(Role.STRIP)),
+    ) {
+        val doc = this@roomsHeader
+        Spacer(Modifier.height(doc.units.px(layout.dp(M.COLUMN_TOP_DP))))
         Row {
             Spacer(Modifier.width(doc.units.px(layout.dp(M.ACCENT_BAR_START_DP))))
             Box(
@@ -108,18 +162,9 @@ private fun DocContext.roomsColumn(
             doc.i18n.t("ui.lights_title"),
             layout.sp(M.TITLE_SP),
             doc.role(Role.INK),
-            modifier = Modifier.padding(doc.units.px(layout.dp(M.TITLE_START_DP)), 0f, 0f, 0f),
+            modifier = Modifier.padding(doc.units.px(layout.dp(M.TITLE_START_DP)), 0f, 0f, 0f)
+                .height(doc.units.px(layout.line(M.TITLE_SP))),
         )
-        if (rooms.isEmpty()) {
-            doc.roomsSpinner(layout)
-        } else {
-            Column(Modifier.fillMaxWidth().verticalWeight(1f).verticalScroll()) {
-                rooms.forEachIndexed { index, room ->
-                    if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.ROOM_GAP_DP))))
-                    doc.roomRow(tileId, room, room == selected, layout)
-                }
-            }
-        }
     }
 }
 
@@ -199,26 +244,49 @@ private fun DocContext.devicesColumn(tileId: String, room: LightsRoom?, layout: 
             doc.selectRoomPrompt(layout)
             return@Column
         }
-        doc.label(
-            room.name,
-            layout.sp(M.ROOM_TITLE_SP),
-            doc.role(Role.INK),
-            modifier = Modifier.padding(doc.units.px(layout.dp(M.ROOM_TITLE_START_DP)), 0f, 0f, 0f),
-        )
-        Spacer(Modifier.height(doc.units.px(layout.dp(M.TITLE_GAP_DP))))
+        val headerH = layout.devicesHeaderHeight()
         val devices = room.entityIds.filter { it in doc.states }
-        Column(Modifier.fillMaxWidth().verticalWeight(1f).verticalScroll()) {
-            devices.forEachIndexed { index, entityId ->
-                if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.DEVICE_GAP_DP))))
-                doc.deviceRow(tileId, entityId, layout)
-                Box(
-                    Modifier.fillMaxWidth()
-                        .height(doc.units.px(maxOf(layout.dp(M.DIVIDER_DP), M.DIVIDER_DP)))
-                        .background(doc.role(Role.ACCENT_DARK)),
+        Box(Modifier.fillMaxWidth().height(doc.units.px(layout.devicesBodyHeight()))) {
+            Column(doc.scrollingList(layout.devicesBodyHeight())) {
+                Spacer(Modifier.height(doc.units.px(headerH)))
+                devices.forEachIndexed { index, entityId ->
+                    if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.DEVICE_GAP_DP))))
+                    doc.deviceRow(tileId, entityId, layout)
+                    Box(
+                        Modifier.fillMaxWidth()
+                            .height(doc.units.px(maxOf(layout.dp(M.DIVIDER_DP), M.DIVIDER_DP)))
+                            .background(doc.role(Role.ACCENT_DARK)),
+                    )
+                }
+            }
+            Column(
+                Modifier.fillMaxWidth()
+                    .height(doc.units.px(layout.devicesPlateHeight()))
+                    .background(doc.role(Role.PAGE)),
+            ) {
+                doc.label(
+                    room.name,
+                    layout.sp(M.ROOM_TITLE_SP),
+                    doc.role(Role.INK),
+                    modifier = Modifier.padding(doc.units.px(layout.dp(M.ROOM_TITLE_START_DP)), 0f, 0f, 0f)
+                        .height(doc.units.px(layout.line(M.ROOM_TITLE_SP))),
                 )
             }
         }
     }
+}
+
+/**
+ * The list's viewport. Weight on a scroller is ignored, so the height is exact, capped, and clipped, as the light
+ * dialog and the music lists are.
+ */
+private fun DocContext.scrollingList(heightDp: Float): Modifier {
+    val viewport = units.px(heightDp)
+    return Modifier.fillMaxWidth()
+        .height(viewport)
+        .requiredHeightIn(max = viewport)
+        .clip(RectShape(0f, 0f, 0f, 0f))
+        .verticalScroll()
 }
 
 private fun DocContext.selectRoomPrompt(layout: LightsLayout) {
