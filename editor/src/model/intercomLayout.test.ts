@@ -12,4 +12,10 @@ describe('intercom page layout', () => {
     expect(intercomStacks(800, 330)).toBe(true)
     expect(intercomStacks(480, 200)).toBe(true)
   })
+
+  it('stacks the BLU tablet in both orientations and the keypad', () => {
+    expect(intercomStacks(853, 383)).toBe(true)
+    expect(intercomStacks(533, 739)).toBe(true)
+    expect(intercomStacks(500, 775)).toBe(true)
+  })
 })
