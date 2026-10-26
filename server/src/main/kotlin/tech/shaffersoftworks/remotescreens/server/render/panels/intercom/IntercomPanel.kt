@@ -16,10 +16,12 @@ import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
+import androidx.compose.remote.creation.dsl.requiredHeightIn
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.verticalScroll
 import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
+import androidx.compose.remote.creation.modifiers.RectShape
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
@@ -57,19 +59,25 @@ private fun DocContext.widePage(tileId: String, view: IntercomView, layout: Inte
 }
 
 private fun DocContext.stackedPage(tileId: String, view: IntercomView, layout: IntercomLayout) {
-    scope.Column(Modifier.fillMaxSize().background(fixed(IntercomPaint.PAGE))) {
+    // The list is the full page. The header is drawn after it, so a scroll cannot cover the keys.
+    scope.Box(Modifier.fillMaxSize().background(fixed(IntercomPaint.PAGE))) {
         val doc = this@stackedPage
-        doc.stackedHeader(tileId, view, layout)
         doc.stationList(tileId, view, layout)
+        doc.stackedHeader(tileId, view, layout)
     }
 }
 
-/** The side column drawn across the top: accent, title, status, then Mute and Hang Up. */
+/**
+ * The side column drawn across the top: accent, title, status, then Mute and Hang Up.
+ * A plain height stretches to the page, which centres the keys and hides the stations. The cap is what keeps this band.
+ */
 private fun DocContext.stackedHeader(tileId: String, view: IntercomView, layout: IntercomLayout) {
     val top = units.px(layout.dp(M.STACK_TOP_DP))
     val bottom = units.px(layout.dp(M.STACK_BOTTOM_DP))
+    val band = units.px(layout.headerH)
     scope.Column(
-        Modifier.fillMaxWidth().height(units.px(layout.headerH)).background(fixed(IntercomPaint.COLUMN))
+        Modifier.fillMaxWidth().height(band).requiredHeightIn(max = band)
+            .background(fixed(IntercomPaint.COLUMN))
             .padding(0f, top, 0f, bottom),
     ) {
         val doc = this@stackedHeader
@@ -81,7 +89,7 @@ private fun DocContext.stackedHeader(tileId: String, view: IntercomView, layout:
             doc.fixed(IntercomPaint.INK),
             modifier = Modifier.padding(doc.units.px(layout.dp(M.TITLE_START_DP)), 0f, 0f, 0f),
         )
-        doc.statusAndKeys(tileId, view, layout)
+        doc.statusAndKeys(tileId, view, layout, center = false)
     }
 }
 
@@ -100,15 +108,22 @@ private fun DocContext.sideColumn(tileId: String, view: IntercomView, layout: In
             doc.fixed(IntercomPaint.INK),
             modifier = Modifier.padding(doc.units.px(layout.dp(M.TITLE_START_DP)), 0f, 0f, 0f),
         )
-        doc.statusAndKeys(tileId, view, layout)
+        doc.statusAndKeys(tileId, view, layout, center = true)
     }
 }
 
-private fun DocContext.statusAndKeys(tileId: String, view: IntercomView, layout: IntercomLayout) {
+private fun DocContext.statusAndKeys(
+    tileId: String,
+    view: IntercomView,
+    layout: IntercomLayout,
+    center: Boolean,
+) {
+    val modifier = if (center) Modifier.verticalWeight(1f).fillMaxWidth() else Modifier.fillMaxWidth()
+    val vertical = if (center) RcColumnVerticalPositioning.Center else RcColumnVerticalPositioning.Top
     scope.Column(
-        Modifier.verticalWeight(1f).fillMaxWidth(),
+        modifier,
         horizontal = RcHorizontalPositioning.Center,
-        vertical = RcColumnVerticalPositioning.Center,
+        vertical = vertical,
     ) {
         val doc = this@statusAndKeys
         doc.statusLine(view, layout)
@@ -163,12 +178,19 @@ private fun DocContext.stationList(tileId: String, view: IntercomView, layout: I
     val end = units.px(layout.dp(M.LIST_END_DP))
     val bottom = units.px(layout.dp(M.LIST_BOTTOM_DP))
     val scroll = if (layout.isStacked) {
-        Modifier.fillMaxWidth().height(units.px(layout.listH))
+        val viewport = units.px(layout.pageH)
+        Modifier.fillMaxWidth().height(viewport).requiredHeightIn(max = viewport)
+            .padding(start, 0f, end, bottom)
+            .clip(RectShape(0f, 0f, 0f, 0f))
+            .verticalScroll()
     } else {
-        Modifier.horizontalWeight(1f).fillMaxHeight()
+        Modifier.horizontalWeight(1f).fillMaxHeight().verticalScroll().padding(start, top, end, bottom)
     }
-    scope.Column(scroll.verticalScroll().padding(start, top, end, bottom)) {
+    scope.Column(scroll) {
         val doc = this@stationList
+        if (layout.isStacked) {
+            Spacer(Modifier.height(doc.units.px(layout.headerH) + top))
+        }
         view.stations.forEachIndexed { index, station ->
             if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.ROW_GAP_DP))))
             doc.stationCard(tileId, view, station, index, layout)
