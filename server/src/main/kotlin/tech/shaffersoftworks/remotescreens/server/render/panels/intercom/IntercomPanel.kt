@@ -36,7 +36,7 @@ import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.Interco
 
 /**
  * RPI's `IntercomScreen`: a left column with the status and the Mute / Hang Up keys, and one card per station.
- * A narrow or short page stacks that column as a header so the keys and the cards stay on screen.
+ * A page too narrow for that column stacks it as a header so the keys and the cards stay on screen.
  * An older tablet still gets the page, with a status line asking for an app update and no call actions.
  */
 fun DocContext.intercomPanel(tile: Tile, box: TileBox) {
@@ -268,9 +268,12 @@ private fun DocContext.muteKey(tileId: String, view: IntercomView, layout: Inter
     }
 }
 
+/**
+ * The tap stays on the key while the page is idle. A call only updates variables, so a tap baked in
+ * once the tablet is busy never reaches it. The player ignores Hang Up when there is no peer.
+ */
 private fun DocContext.hangupKey(tileId: String, view: IntercomView, layout: IntercomLayout) {
-    val canHangUp = view.supportsCalls && (view.isBusy || view.connectedId != null)
-    val action = if (canHangUp) ActionRef(tileId, "intercom_hangup") else null
+    val action = if (view.supportsCalls) ActionRef(tileId, "intercom_hangup") else null
     controlKey(i18n.t("ui.intercom_hangup"), layout, M.BUTTON_H_DP, action) {
         hangupGlyph(view, layout)
     }

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.35
+
+- Hang Up on the intercom ends the call.
+- A landscape tablet keeps the side column. Portrait and the keypad keep the stacked header.
+
 ## 0.1.34
 
 - See the [v0.1.34](https://github.com/Shaffer-Softworks/remote-screens/releases/tag/v0.1.34) release notes; replace this line with curated notes before merging.
