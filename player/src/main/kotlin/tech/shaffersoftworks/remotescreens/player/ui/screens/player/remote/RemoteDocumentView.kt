@@ -128,11 +128,16 @@ class RemoteDocumentView(context: Context) : SwipeFrame(context) {
             val pendingFirst = slot == Slot.MAIN && pendingMainFirstReveal != null
             if (pendingMain || pendingFirst) continue
             val isShown = slot in state.documents
-            player(slot).visibility = when {
+            val slotPlayer = player(slot)
+            slotPlayer.visibility = when {
                 isShown -> View.VISIBLE
                 slot == Slot.MAIN -> View.INVISIBLE
                 else -> View.GONE
             }
+            // A card loads at alpha 0 so its values land before the first frame. Left there, the
+            // full-screen player is invisible and still takes every tap, so the page looks normal
+            // and ignores touches. The main page stays at 0 until its own reveal.
+            if (isShown && slot != Slot.MAIN) slotPlayer.alpha = 1f
         }
         if (pendingMainSwap == null) mainInactive().visibility = View.GONE
     }

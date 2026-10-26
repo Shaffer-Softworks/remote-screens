@@ -138,7 +138,10 @@ object Present {
         } else {
             0f
         }
-        "cover" -> entityState.number("current_position")?.toFloat()?.div(PERCENT)
+        "cover" -> (
+            entityState.number("current_position")
+                ?: entityState.number("current_tilt_position")
+            )?.toFloat()?.div(PERCENT)
         "fan" -> if (on) (entityState.number("percentage")?.toFloat() ?: PERCENT) / PERCENT else 0f
         "humidifier" -> {
             val humidity = entityState.number("humidity") ?: return null
@@ -172,10 +175,15 @@ object Present {
                 ?.takeIf { on }
                 ?.let { i18n.percent(((level ?: 0f) * PERCENT).roundToInt()) }
                 ?: word
-            "cover" -> entityState.number("current_position")
-                ?.takeIf { entityState.state == "open" }
-                ?.let { i18n.percent(it.roundToInt()) }
-                ?: word
+            "cover" -> {
+                val shade = entityState.number("current_position")
+                val tilt = entityState.number("current_tilt_position")
+                when {
+                    shade != null && entityState.state == "open" -> i18n.percent(shade.roundToInt())
+                    shade == null && tilt != null -> i18n.percent(tilt.roundToInt())
+                    else -> word
+                }
+            }
             "fan" -> entityState.number(
                 "percentage",
             )?.takeIf { on }?.let { i18n.percent(it.roundToInt()) } ?: word
