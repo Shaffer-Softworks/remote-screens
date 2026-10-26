@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import tech.shaffersoftworks.remotescreens.player.data.device.ProximityScale
 import tech.shaffersoftworks.remotescreens.shared.EnvironmentTelemetry
 import tech.shaffersoftworks.remotescreens.shared.TelemetryHardware
 import timber.log.Timber
@@ -58,6 +59,7 @@ class EnvironmentSensorMonitor @Inject constructor(
 
     private var announcedLux: Float? = null
     private var isListening = false
+    private val proximityScale = ProximityScale()
 
     val hardware: List<String>
         get() = listOfNotNull(
@@ -97,8 +99,8 @@ class EnvironmentSensorMonitor @Inject constructor(
         }
     }
 
-    private fun onProximity(distance: Float, maximumRange: Float) {
-        val isNear = distance < maximumRange
+    private fun onProximity(distance: Float, maximumRange: Float, resolution: Float) {
+        val isNear = proximityScale.isNear(distance, maximumRange, resolution)
         val wasNear = _readings.value.isNear
         _readings.update { it.copy(isNear = isNear) }
         if (wasNear != null && wasNear != isNear) _changes.tryEmit(Unit)
@@ -114,7 +116,11 @@ class EnvironmentSensorMonitor @Inject constructor(
                 Sensor.TYPE_PRESSURE -> _readings.update { it.copy(pressureHpa = value) }
                 Sensor.TYPE_AMBIENT_TEMPERATURE -> _readings.update { it.copy(temperatureC = value) }
                 Sensor.TYPE_RELATIVE_HUMIDITY -> _readings.update { it.copy(humidityPercent = value) }
-                Sensor.TYPE_PROXIMITY -> onProximity(value, event.sensor.maximumRange)
+                Sensor.TYPE_PROXIMITY -> onProximity(
+                    value,
+                    event.sensor.maximumRange,
+                    event.sensor.resolution,
+                )
             }
         }
     }
