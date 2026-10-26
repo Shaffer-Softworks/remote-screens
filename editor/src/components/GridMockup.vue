@@ -1066,11 +1066,14 @@ const highlight = computed(() => {
 .li-rooms {
   width: 350px;
   flex: none;
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 3px;
   padding-top: 28px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: var(--rc-strip);
 }
 

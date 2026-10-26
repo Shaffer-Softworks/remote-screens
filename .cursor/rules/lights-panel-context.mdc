@@ -35,6 +35,20 @@ RPI computes `numberOfLightsOn` and the wording, then passes `subText = ""`. Her
 - The card scroller has an exact viewport height (`cardH` minus padding), `requiredHeightIn(max)` and a `RectShape` clip, as `MusicPanel`'s lists. Remote Compose ignores `verticalWeight` on a scroller: the content painted past the card from top bar to nav bar. The effect menu is capped the same way.
 - The layout keeps the page's scale (from the tile box) but centres on the screen size.
 
+## Room and device lists (scroll, Oct 26 2026)
+
+The lists do scroll. "Sometimes it won't" was a drag that started on a row drawn past the list: that hit the nav bar and changed page. Verified on the BLU M8L (1280×800).
+
+Remote Compose translates a `verticalScroll` column's children and its `clip(RectShape)` does not keep them inside the viewport. `verticalWeight` on a scroller is ignored. An exact height, `requiredHeightIn(max)` and the clip are still required, and they are not enough: after that alone, "Master Bedroom" still painted through "LIGHTING CONTROL".
+
+Draw the title after the scroller as a later sibling of the same `Box` (`roomsHeader` on `Role.STRIP`, the device name plate on `Role.PAGE`). A `Box` paints later children on top, so the opaque plate covers rows that slide under it. The list's leading spacer is only the title block (`roomsHeaderHeight` / `devicesHeaderHeight`) so at scroll 0 the first row still starts under the title.
+
+The plate is taller than that spacer (`roomsPlateHeight`, `devicesPlateHeight`). A room name is vertically centered in its 100dp row and a device name has `ROW_HEADER_TOP_DP` above it. That empty band is the same colour as the title, so a scrolled name sits against the title even when the title glyphs are covered. The extra height is `roomNameTopInset()` (half of `ROOM_H` minus the name, the gap and the subtitle) and `ROW_HEADER_TOP_DP` for devices. Do not add that inset to the spacer: the first row would move down.
+
+A plate edge cannot hide a subtitle laid out below its name without also covering the first row at rest. At the end of the list, "All lights are off" can sit under the title with its room name already under the plate. A device switch can sit under the room name the same way. Leave that. Making the plate taller than the spacer covers the first row and the subtitle still peeks once the name has passed the edge.
+
+The editor room list (`.li-rooms`) needs `height: 100%`, `min-height: 0` and `overflow-y: auto`. `overflow: hidden` never scrolled.
+
 ## Other deviations from RPI
 
 - Before a room is chosen the right column shows a "Select a room" prompt; RPI leaves it blank.
