@@ -117,5 +117,14 @@
   "ui.lights_hours_ago": "{count} uur geleden",
   "ui.lights_day_ago": "Gisteren",
   "ui.lights_days_ago": "{count} dagen geleden",
-  "ui.cameras_title": "CAMERA'S"
+  "ui.cameras_title": "CAMERA'S",
+  "ui.intercom_title": "INTERCOM",
+  "ui.intercom_mute": "Dempen",
+  "ui.intercom_hangup": "Ophangen",
+  "ui.intercom_call": "Bellen",
+  "ui.intercom_update": "Werk de tablet-app bij om de intercom te gebruiken",
+  "ui.intercom_connecting": "Verbinden…",
+  "ui.intercom_online": "Online",
+  "ui.intercom_in_call": "In gesprek",
+  "ui.intercom_connected": "Verbonden"
 }

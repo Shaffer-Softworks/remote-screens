@@ -26,6 +26,7 @@ defineProps<{
   online: { deviceId: string; name: string }[]
   previewOn: string
   dirty: boolean
+  intercomOpen: boolean
 }>()
 
 const emit = defineEmits<{
@@ -42,6 +43,7 @@ const emit = defineEmits<{
   'update:previewOn': [value: string]
   preview: []
   save: []
+  toggleIntercom: []
 }>()
 
 const CUSTOM = 'custom'
@@ -171,6 +173,13 @@ const CUSTOM = 'custom'
         @click="emit('preview')"
       >
         Preview
+      </button>
+      <button
+        :class="{ active: intercomOpen }"
+        title="Call a tablet from this browser"
+        @click="emit('toggleIntercom')"
+      >
+        Intercom
       </button>
       <button class="primary" :disabled="!dirty" @click="emit('save')">Save</button>
     </span>

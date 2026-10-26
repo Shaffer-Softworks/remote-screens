@@ -21,6 +21,7 @@ import tech.shaffersoftworks.remotescreens.server.service.EnrollmentService
 import tech.shaffersoftworks.remotescreens.server.service.HomeAssistantCatalogService
 import tech.shaffersoftworks.remotescreens.server.service.ScreenService
 import tech.shaffersoftworks.remotescreens.server.service.ThemeService
+import tech.shaffersoftworks.remotescreens.server.intercom.SignalingService
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -64,6 +65,7 @@ class ServerDependencies(
         playerPort = config.playerPort,
         defaultHost = { siteLocalAddress()?.hostAddress },
     )
+    val signaling = SignalingService(scope)
 
     val playerHub = PlayerHub(
         PlayerSessionContext(
@@ -89,6 +91,7 @@ class ServerDependencies(
             layoutRepository.update { it.copy(screens = listOf(DemoLayout.screen())) }
         }
         playerHub.start()
+        signaling.start()
         scope.launch {
             homeAssistant.isConnected.collect { isConnected ->
                 if (isConnected) languageRepository.loadHomeAssistantWords()

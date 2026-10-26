@@ -137,7 +137,7 @@ private fun PlayerScreenContent(
         RemoteScreen(
             state = viewState.remoteScreen,
             isSwipeEnabled = viewState.isSwipeEnabled,
-            isVideoAllowed = viewState.isAwake,
+            isVideoAllowed = viewState.isAwake && !viewState.isIntercomCall,
             onAction = onDocumentAction,
             onSwipe = onSwipe,
             onVideoFailed = onVideoFailed,
@@ -312,6 +312,9 @@ private fun PlayerEvents(viewModel: PlayerViewModel) {
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { grants -> viewModel.onLocationPermissionResult(grants.values.any { it }) }
+    val microphonePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted -> viewModel.onMicrophonePermissionResult(granted) }
     val locationAccuracyLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
     ) { result -> viewModel.onLocationAccuracyResult(result.resultCode == Activity.RESULT_OK) }
@@ -320,6 +323,7 @@ private fun PlayerEvents(viewModel: PlayerViewModel) {
         lifecycleOwner,
         cameraPermissionLauncher,
         locationPermissionLauncher,
+        microphonePermissionLauncher,
         locationAccuracyLauncher,
     ) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -333,6 +337,8 @@ private fun PlayerEvents(viewModel: PlayerViewModel) {
                             Manifest.permission.ACCESS_COARSE_LOCATION,
                         ),
                     )
+                    PlayerEvent.RequestMicrophonePermission ->
+                        microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                     is PlayerEvent.RequestLocationAccuracy -> runCatching {
                         locationAccuracyLauncher.launch(
                             IntentSenderRequest.Builder(event.intentSender).build(),
@@ -379,7 +385,10 @@ private fun handleEvent(context: Context, activity: Activity?, event: PlayerEven
         PlayerEvent.RequestUnrestrictedBattery -> context.startActivity(
             unrestrictedBatteryIntent(context),
         )
-        PlayerEvent.RequestCameraPermission, PlayerEvent.RequestLocationPermission -> Unit
+        PlayerEvent.RequestCameraPermission,
+        PlayerEvent.RequestLocationPermission,
+        PlayerEvent.RequestMicrophonePermission,
+        -> Unit
         is PlayerEvent.RequestLocationAccuracy -> Unit
         // Pinning comes back when the activity resumes after the confirmation.
         PlayerEvent.StopScreenPinning -> activity?.stopLockTask()

@@ -11,6 +11,7 @@ MANUFACTURER: Final = "Remote Screens"
 CONF_API_KEY: Final = "api_key"
 DEFAULT_HOST: Final = "127.0.0.1"
 DEFAULT_PORT: Final = 8100
+INTERCOM_PORT: Final = 8766
 
 SCAN_INTERVAL: Final = timedelta(seconds=30)
 

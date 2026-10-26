@@ -1,6 +1,7 @@
 {
   "domain": "remote_screens",
   "name": "Remote Screens",
+  "after_dependencies": ["http"],
   "codeowners": ["@sickkick"],
   "config_flow": true,
   "dependencies": [],

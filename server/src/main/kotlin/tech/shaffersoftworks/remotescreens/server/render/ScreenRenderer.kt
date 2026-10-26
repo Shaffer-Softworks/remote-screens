@@ -8,6 +8,7 @@ import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
 import tech.shaffersoftworks.remotescreens.server.render.theme.Units
+import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.IntercomView
 import tech.shaffersoftworks.remotescreens.server.render.tiles.edgeToEdge
 
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
@@ -129,6 +130,7 @@ class RenderInput(
     val data: RenderData,
     val palette: Palette = Themes.RPI,
     val supportsCalendarDialogs: Boolean = false,
+    val intercom: IntercomView? = null,
 ) {
     fun context(device: Device) = DocContext(
         Units(device.density),
@@ -138,6 +140,7 @@ class RenderInput(
         homeAssistantConfig,
         data,
         supportsCalendarDialogs,
+        intercom,
     )
 }
 

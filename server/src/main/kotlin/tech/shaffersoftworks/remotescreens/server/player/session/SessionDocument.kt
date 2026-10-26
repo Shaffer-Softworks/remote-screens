@@ -5,6 +5,8 @@ import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
 import tech.shaffersoftworks.remotescreens.server.render.Alert
 import tech.shaffersoftworks.remotescreens.server.render.AlertRenderer
 import tech.shaffersoftworks.remotescreens.server.render.cards.CardRenderer
+import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.IntercomVars
+import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.hasIntercomTile
 import tech.shaffersoftworks.remotescreens.server.render.Rc
 import tech.shaffersoftworks.remotescreens.server.render.RenderInput
 import tech.shaffersoftworks.remotescreens.server.render.RenderedDoc
@@ -35,6 +37,7 @@ internal class SessionDocument(
         data = renderData,
         palette = host.palette,
         supportsCalendarDialogs = host.supportsCalendarDialogs,
+        intercom = host.intercomView,
     )
 
     suspend fun renderScreen(screen: Screen): RenderedDoc =
@@ -66,7 +69,13 @@ internal class SessionDocument(
         val vars = renderedDoc.vars(states)
         shown.sentVars = vars
         shownDocuments[slot] = shown
-        val allVars = vars.values + context.screenClock.clockVars() + host.connectedVar() + host.deviceVars()
+        val intercomVars = if (slot == Slot.MAIN && host.screen()?.hasIntercomTile() == true) {
+            IntercomVars.values(host.intercomView, context.languageRepository.current())
+        } else {
+            emptyList()
+        }
+        val allVars = vars.values + context.screenClock.clockVars() + host.connectedVar() + host.deviceVars() +
+            intercomVars
         val bytes = if (host.supportsDeflate) Rc.compress(renderedDoc.bytes) else renderedDoc.bytes
         host.send(
             ServerMessage.Document(

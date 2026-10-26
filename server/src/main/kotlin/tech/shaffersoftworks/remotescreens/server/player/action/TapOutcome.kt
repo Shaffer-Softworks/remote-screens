@@ -37,4 +37,7 @@ sealed interface TapOutcome {
 
     /** Show RPI's dialog with [title] and [message] over the alarm page of [tileId] until it is dismissed. */
     data class AlarmNotice(val tileId: String, val title: String, val message: String) : TapOutcome
+
+    /** Tell this tablet to call, hang up, or mute. [clientId] is the station to call. */
+    data class Intercom(val verb: String, val clientId: String) : TapOutcome
 }

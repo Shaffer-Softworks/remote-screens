@@ -100,6 +100,7 @@ class ActionRouter(
         "lights_effects", "lights_effect",
         -> lightsActions.handle(verb, ref.arg, target)
         "cameras_select" -> camerasActions.handle(ref.arg, target)
+        "intercom_call", "intercom_hangup", "intercom_mute" -> IntercomActions.handle(verb, ref.arg)
         "browse_type", "listen_mode", "primary_tab", "load_more",
         "clear_queue", "play_uri", "enqueue_uri",
         "volume_up", "volume_down",

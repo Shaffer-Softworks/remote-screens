@@ -1,5 +1,5 @@
 name: Remote Screens
-version: "0.1.31"
+version: "0.1.32"
 slug: remote_screens
 description: Home Assistant screens on Android tablets, drawn with Remote Compose
 url: https://github.com/Shaffer-Softworks/remote-screens
@@ -27,5 +27,7 @@ schema:
   map_tiles: str?
 ports:
   8100/tcp: 8100
+  8766/tcp: 8766
 ports_description:
   8100/tcp: Tablets (players) connect here
+  8766/tcp: Intercom signaling (tablets)

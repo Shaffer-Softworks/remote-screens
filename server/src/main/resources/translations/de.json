@@ -117,5 +117,14 @@
   "ui.lights_hours_ago": "Vor {count} Stunden",
   "ui.lights_day_ago": "Gestern",
   "ui.lights_days_ago": "Vor {count} Tagen",
-  "ui.cameras_title": "KAMERAS"
+  "ui.cameras_title": "KAMERAS",
+  "ui.intercom_title": "INTERCOM",
+  "ui.intercom_mute": "Stumm",
+  "ui.intercom_hangup": "Auflegen",
+  "ui.intercom_call": "Anrufen",
+  "ui.intercom_update": "Aktualisiere die Tablet-App, um die Gegensprechanlage zu nutzen",
+  "ui.intercom_connecting": "Verbinden…",
+  "ui.intercom_online": "Online",
+  "ui.intercom_in_call": "Im Gespräch",
+  "ui.intercom_connected": "Verbunden"
 }

@@ -821,6 +821,23 @@ object Catalogue {
             predict = mapOf(),
             needsEntity = false,
         ),
+        "intercom" to TypeSpec(
+            domain = "intercom",
+            name = "Intercom",
+            icon = "phone",
+            iconOn = null,
+            toggle = false,
+            onStates = listOf(),
+            tap = "card",
+            defaultVerb = null,
+            card = "none",
+            controls = listOf(),
+            sizes = listOf("full"),
+            options = listOf(),
+            actions = mapOf(),
+            predict = mapOf(),
+            needsEntity = false,
+        ),
     )
 
     fun of(kind: String?): TypeSpec? = types[kind]

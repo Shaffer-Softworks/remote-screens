@@ -6,7 +6,13 @@ export default defineConfig({
   base: './',
   plugins: [vue()],
   server: {
-    proxy: { '/api': process.env.REMOTE_SCREENS_URL ?? 'http://localhost:18099' },
+    proxy: {
+      '/api': process.env.REMOTE_SCREENS_URL ?? 'http://localhost:18099',
+      '/webrtc': {
+        target: process.env.REMOTE_SCREENS_URL ?? 'http://localhost:18099',
+        ws: true,
+      },
+    },
   },
   test: {
     include: ['src/**/*.test.ts'],

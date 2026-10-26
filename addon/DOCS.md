@@ -232,9 +232,18 @@ A tablet enrolled as a kiosk has to be factory reset and enrolled again.
 | Port | What |
 | ---- | ---- |
 | 8100 | Tablets connect here (WebSocket), and the integration's API |
+| 8766 | Intercom signaling for Remote Screens tablets. The standalone signaling add-on keeps 8765 |
 | (free port) | The editor, through ingress only; the Supervisor picks a free port so it never clashes |
 
 The add-on uses the host network so tablets can find it over mDNS (`_remotescreens._tcp`).
+
+## Intercom
+
+A full **Intercom** tile, from the editor's Other tiles, is a page of stations. A tablet joins the call list only while that page is on its screen. Call starts the audio; the other tablet answers on its own. Mute turns off this tablet's microphone, and Hang up ends the call.
+
+The same call can be placed from the **Intercom** button in the Remote Screens panel, or from a `custom:remote-screens-intercom` card on any dashboard. A card with no options lists the stations that are online. Set its `station` option to a tablet's name, such as `Kitchen`, to pin that one.
+
+Audio travels directly between the two ends, on the local network. A phone away from home, or Home Assistant opened through Nabu Casa, can open the page and the card, and the call will not connect. There is no relay. The standalone signaling add-on is unchanged and keeps port 8765 for the tablets that still point at it.
 
 ## Data
 

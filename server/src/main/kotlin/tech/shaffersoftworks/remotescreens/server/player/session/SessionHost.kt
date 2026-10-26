@@ -4,6 +4,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.player.PlayerSessionContext
 import tech.shaffersoftworks.remotescreens.server.render.Alert
 import tech.shaffersoftworks.remotescreens.server.render.Device
+import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.IntercomView
 import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
@@ -28,6 +29,8 @@ internal interface SessionHost {
     val supportsMap: Boolean
     val supportsMusicSearch: Boolean
     val supportsCalendarDialogs: Boolean
+    val supportsIntercom: Boolean
+    val intercomView: IntercomView
     val buildMutex: Mutex
     val shownDocuments: ConcurrentHashMap<Slot, ShownDocument>
     val jobs: MutableList<Job>

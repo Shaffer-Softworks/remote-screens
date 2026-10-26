@@ -33,6 +33,7 @@ data class ServerConfig(
     val ingressHost: String,
     val ingressPort: Int,
     val playerPort: Int,
+    val intercomPort: Int = Protocol.INTERCOM_PORT,
     val hostname: String,
     val version: String,
     /** Map tile URL with `{z}`, `{x}` and `{y}`. */
@@ -61,6 +62,7 @@ data class ServerConfig(
                 ingressHost = if (isSupervisor) ALL_INTERFACES else env["REMOTE_SCREENS_BIND"] ?: LOOPBACK,
                 ingressPort = env.intOrNull("REMOTE_SCREENS_INGRESS_PORT") ?: Protocol.INGRESS_PORT,
                 playerPort = env.intOrNull("REMOTE_SCREENS_PLAYER_PORT") ?: Protocol.PORT,
+                intercomPort = env.intOrNull("REMOTE_SCREENS_INTERCOM_PORT") ?: Protocol.INTERCOM_PORT,
                 hostname = env["HOSTNAME"] ?: "localhost",
                 version = implementationVersion(),
                 mapTileUrl = mapTileUrlOrDefault(

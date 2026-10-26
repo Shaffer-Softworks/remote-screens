@@ -117,5 +117,14 @@
   "ui.lights_hours_ago": "{count} ore fa",
   "ui.lights_day_ago": "Ieri",
   "ui.lights_days_ago": "{count} giorni fa",
-  "ui.cameras_title": "TELECAMERE"
+  "ui.cameras_title": "TELECAMERE",
+  "ui.intercom_title": "INTERFONO",
+  "ui.intercom_mute": "Muto",
+  "ui.intercom_hangup": "Riaggancia",
+  "ui.intercom_call": "Chiama",
+  "ui.intercom_update": "Aggiorna l'app del tablet per usare l'interfono",
+  "ui.intercom_connecting": "Connessione…",
+  "ui.intercom_online": "Online",
+  "ui.intercom_in_call": "In chiamata",
+  "ui.intercom_connected": "Connesso"
 }

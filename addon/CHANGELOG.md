@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.32
+
+- An Intercom page calls another tablet on the local network. The add-on signals the call on port 8766. The Remote Screens panel and a dashboard card can join the same call. The existing signaling add-on stays on 8765.
+
 ## 0.1.31
 
 - When a tablet is allowed to share its location, a managed tablet turns location services on and asks once to turn on Location accuracy.
