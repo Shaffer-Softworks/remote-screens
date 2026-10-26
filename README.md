@@ -127,7 +127,7 @@ In the Android emulator, start the player with
 The player's application ID was `dev.remotescreens.player` before; Android treats the renamed app as a different
 one, so uninstall the old build first (kiosk tablets need a factory reset and a new enrollment).
 
-[docs/REMOTE_COMPOSE.md](docs/REMOTE_COMPOSE.md) lists what we learned about Remote Compose `1.0.0-alpha21`
+[docs/REMOTE_COMPOSE.md](docs/REMOTE_COMPOSE.md) lists what we learned about Remote Compose `1.0.0-alpha22`
 and the workarounds the code relies on. Architecture notes are on the
 [wiki](https://github.com/Shaffer-Softworks/remote-screens/wiki/Architecture).
 

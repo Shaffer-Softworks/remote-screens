@@ -188,8 +188,8 @@ class DocContext(
     companion object {
         /**
          * Builds a document twice. Variables, colours, paths and texts declared inside a layout component are lost
-         * when the player reads the document (alpha20 and alpha21), so a first pass finds what [content] declares and
-         * the second declares all of it at the top before laying anything out.
+         * when the player reads the document (alpha20 through alpha22), so a first pass finds what [content]
+         * declares and the second declares all of it at the top before laying anything out.
          */
         fun build(
             widthPx: Int,

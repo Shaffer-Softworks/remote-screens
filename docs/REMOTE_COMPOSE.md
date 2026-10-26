@@ -1,6 +1,6 @@
 # Remote Compose: what this project leans on
 
-Remote Screens builds its screens with `androidx.compose.remote` **1.0.0-alpha21**. The library is alpha, so this
+Remote Screens builds its screens with `androidx.compose.remote` **1.0.0-alpha22**. The library is alpha, so this
 page records the parts of its API we depend on, what the phase 0 spike proved, and the workarounds. When the
 library is upgraded, check each item here.
 
@@ -12,9 +12,9 @@ All creation calls go through `server/.../render/Rc.kt` and the tile renderers; 
 - `remote-creation-jvm` brings `JvmRcPlatformServices`, so the add-on builds documents without Android.
 - The profile is `PROFILE_ANDROIDX | PROFILE_EXPERIMENTAL` at `CoreDocument.DOCUMENT_API_LEVEL`, with a plain
   `RemoteComposeWriter` as the factory, and the same value in the `DOC_PROFILES` header. Long press
-  (`MODIFIER_MULTI_CLICK`, operation 83) and `Flow` are still experimental in alpha21; without the flag the writer
+  (`MODIFIER_MULTI_CLICK`, operation 83) and `Flow` are still experimental in alpha22; without the flag the writer
   throws "Operation 83 is not supported for this version".
-- **`drawTextOnCircle` can't be used.** alpha21 adds it to the DSL, but operation 57 is in no profile's table, so
+- **`drawTextOnCircle` can't be used.** alpha21 adds it to the DSL, but operation 57 is still in no profile's table, so
   the writer throws "Operation 57 is not supported for this version" and our player could not read it anyway.
   Clock numbers and gauge captions use `drawTextAnchored` (pan 0, 0 centres the text on the point).
 - Texts for canvas operations (`drawTextAnchored` takes an `RcText`, not a string) are declared through
@@ -40,21 +40,21 @@ All creation calls go through `server/.../render/Rc.kt` and the tile renderers; 
 - The player overrides it with `setUserLocalString/Int/Color("<name>", value)`; the player adds the `USER:` prefix.
 - An override is sticky until cleared, so the document never sets these itself: every change of a named
   variable comes from the add-on (a state change) or the player (a prediction, a page change).
-- `remoteThemedColor(Int, Int)` still passes the colours as ids in alpha21. Don't use it; the add-on picks the
+- `remoteThemedColor(Int, Int)` still passes the colours as ids in alpha22. Don't use it; the add-on picks the
   colour of the screen's theme itself and sends it as a named colour.
 - So a theme is the add-on's, not the document's: `PlayerHub` resolves the screen's theme (or its dark theme, in
   dark mode and at night) to a `Palette` (`render/theme/Themes.kt`), and `DocContext` draws fixed colours and computes
   live colours from it. Switching theme rebuilds the document; there is no in-document theme switch.
 
-## Compression (alpha21)
+## Compression (since alpha21)
 
 - A document whose header has `COMPRESS = COMPRESSION_DEFLATE` has everything after the header deflated, and
-  alpha21's `RemoteComposeBuffer` inflates it on read. Older players can't read one.
+  alpha22's `RemoteComposeBuffer` inflates it on read. Older players can't read one.
 - So the add-on builds documents uncompressed and `PlayerHub` deflates each with `Rc.compress`
   (`Header.compressDocument`) only for a player whose hello lists the `deflate` capability. Documents shrink to
   well under half.
 
-## Show and hide animations (alpha21)
+## Show and hide animations (since alpha21)
 
 - `Modifier.animationSpec(enterAnimation, exitAnimation)` on a component makes the player animate its visibility
   changes (fade, or slide from a side). Free-form components with `showWhen` get one; `animate` picks which.
@@ -64,9 +64,9 @@ All creation calls go through `server/.../render/Rc.kt` and the tile renderers; 
 - `Modifier.onClick { hostAction(id, metadataText) }` reaches the player's `addIdActionListener { id, metadata -> }`.
 - The metadata is a static text `tile|verb|arg` (`ActionRef` in `shared`). A slider is a row of steps, each its
   own action with its value, rather than a drag with a dynamic value. Free-form dials use the same stepped taps;
-  continuous drag value reporting is still unavailable in alpha21.
+  continuous drag value reporting is still unavailable in alpha22.
 - `addIdActionListener` can only be added after a document is set, so the player adds it on every new document.
-- **`Image` drops `onClick`.** Putting the click on the `Image` itself writes no click modifier in alpha21. Free-form
+- **`Image` drops `onClick`.** Putting the click on the `Image` itself writes no click modifier in alpha22. Free-form
   camera (and other) images wrap the bitmap in a `Box` that carries the tap, so a tap still opens the card.
 - **`Text` clicks go on a `Box` too.** A click modifier can sit on `Text`/`CoreText` in the document and still miss
   taps on device; free-form text wraps the label in a `Box` that carries the tap, same as images.
