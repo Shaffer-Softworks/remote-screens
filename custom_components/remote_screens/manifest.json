@@ -3,6 +3,7 @@
   "name": "Remote Screens",
   "codeowners": ["@sickkick"],
   "config_flow": true,
+  "after_dependencies": ["http"],
   "dependencies": [],
   "documentation": "https://github.com/Shaffer-Softworks/remote-screens/wiki",
   "integration_type": "hub",

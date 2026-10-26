@@ -40,11 +40,15 @@ async def async_setup_intercom(hass: HomeAssistant) -> None:
     """Register the card and the commands that carry its signaling."""
     websocket_api.async_register_command(hass, _subscribe)
     websocket_api.async_register_command(hass, _send)
+    http = hass.http
+    if http is None:
+        _LOGGER.debug("The intercom card waits until the http component is set up")
+        return
     card = Path(__file__).parent / "frontend" / "intercom-card.js"
     try:
-        await hass.http.async_register_static_paths([StaticPathConfig(CARD_URL, str(card), False)])
+        await http.async_register_static_paths([StaticPathConfig(CARD_URL, str(card), False)])
     except AttributeError:
-        hass.http.register_static_path(CARD_URL, str(card), cache_headers=False)
+        http.register_static_path(CARD_URL, str(card), cache_headers=False)
     try:
         from homeassistant.components.frontend import add_extra_js_url
     except ImportError:
