@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.36
+
+- See the [v0.1.36](https://github.com/Shaffer-Softworks/remote-screens/releases/tag/v0.1.36) release notes; replace this line with curated notes before merging.
+
 ## 0.1.35
 
 - Hang Up on the intercom ends the call.
