@@ -19,6 +19,7 @@ import { iconOf, nameOf, stateOf } from '../model/tiles'
 import type { Page, Screen, Tile, TileSource } from '../model/types'
 import { domainOf, kindOf } from '../model/types'
 import { entityById, state } from '../store'
+import HaWeatherIcon from './HaWeatherIcon.vue'
 import MdiIcon from './MdiIcon.vue'
 
 const props = defineProps<{
@@ -249,6 +250,11 @@ const nav = computed(() => {
 })
 const people = computed(() => state.entities.filter(entity => entity.domain === 'person'))
 const weather = computed(() => state.entities.find(entity => entity.domain === 'weather'))
+const headerWeather = computed(() => {
+  const entityId = props.screen.topBar.temperatureEntity
+  const entity = entityId ? entityById.value.get(entityId) : undefined
+  return entity?.domain === 'weather' ? entity : undefined
+})
 
 // Dropping: the hovered cell is where the dragged tile's grabbed cell lands.
 const hover = ref<{ col: number; row: number; ok: boolean } | null>(null)
@@ -380,8 +386,13 @@ const highlight = computed(() => {
             <span>{{ page.title }}</span>
           </template>
         </div>
-        <span v-if="screen.topBar.temperatureEntity" class="stat"
-          ><MdiIcon name="thermometer" :size="26 * top.barScale" class="blue" />14°</span
+        <span v-if="screen.topBar.temperatureEntity" class="stat">
+          <HaWeatherIcon
+            v-if="headerWeather"
+            :condition="headerWeather.state"
+            :size="26 * top.barScale"
+          />
+          <MdiIcon v-else name="thermometer" :size="26 * top.barScale" class="blue" />14°</span
         >
         <span v-if="screen.topBar.people" class="stat"
           ><MdiIcon name="home-account" :size="26 * top.barScale" class="teal" />{{
