@@ -15,7 +15,7 @@ The hub is in-process (`server/.../intercom/SignalingHub.kt`), shared by two lis
 - `0.0.0.0:8766` WebSocket `/webrtc` for tablets, plus `GET /api/clients`. Published in `addon/config.yaml`.
 - The ingress (editor) server's WebSocket `/webrtc`, for the Remote Screens panel. A page served by ingress cannot open port 8766.
 
-The standalone signaling add-on keeps port 8765. RPI tablets stay on `ws://ha.shafferco.com:8765/webrtc` until that URL is changed to 8766. Messages match that add-on: `register`, `registered`, `offer`, `answer`, `candidate`, `hangup`, `unavailable`, `getClients`, `clientsList`, `heartbeat`, `replaced`, `error`, and app-level `ping` / `pong`.
+Remote Screens does not open a socket to the WebRTC signaling server app. That app keeps port 8765 for the RPI tablets on `ws://ha.shafferco.com:8765/webrtc`. The message names match (`register`, `registered`, `offer`, `answer`, `candidate`, `hangup`, `unavailable`, `getClients`, `clientsList`, `heartbeat`, `replaced`, `error`, and app-level `ping` / `pong`), and the two rosters stay separate.
 
 Both stations are marked in a call only when the target is online and not already in a call. Offline gets `unavailable` reason `offline` and stays on the roster as Online. Busy gets reason `busy`. `getClients` answers only the station that asked. The same `clientId` registering again gets `replaced` and the old socket is closed. A session idle for 90s is closed. An unknown session gets `{"type":"error","message":"not_registered"}`. A WebSocket ping goes out about every 30s, and a JSON `{"type":"ping","ts":…}` every 25s. `pong` only touches `lastActivity`.
 
@@ -30,6 +30,8 @@ That side-by-side page is used when the tile is at least 720dp wide and the scal
 Call state is on the player session (`PlayerSession.intercomReport`), not in `RenderDataRepository`. A station joining or leaving rebuilds the document. Mute, the status line, Online / In Call / Connected, and which key icon is showing update as document variables (`ic.status`, `ic.r{n}.status`, `ic.mic.on`, `ic.mic.off`, `ic.hang.live`, `ic.hang.idle`). A roster must not put the status back to Online after No answer, Call failed or Call ended. Only Connecting… and Online, while idle, are replaced.
 
 A tablet registers only when its screen contains the tile. `ServerMessage.IntercomConfig` says so, sent with settings. The tablet opens `ws://<the host it uses for port 8100>:8766/webrtc`. Its client id is `station-` plus the full device id. Its display name is the tablet's name, or `Not Set` when that name is blank. Renaming re-registers.
+
+The page is drawn before that registration. Its status starts as Connecting…. The tablet sends `intercom_report` when it is registered. A later reconnect builds a new document and sends `IntercomConfig` again; the signaling socket is often still up, so the tablet must publish that report again. Otherwise the page stays on Connecting… with an empty station list even though `/api/clients` already shows it.
 
 An incoming offer is answered automatically, including the glare case where the lower client id wins, and wakes the screen. It does not change page. Hang up, a busy reply, a 30s timeout and a failed connection all send hangup, so the roster does not stick on In Call. While a call holds audio focus, this tablet's camera video stays off (`ViewState.isIntercomCall`).
 
