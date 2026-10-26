@@ -34,20 +34,56 @@ import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.Interco
 
 /**
  * RPI's `IntercomScreen`: a left column with the status and the Mute / Hang Up keys, and one card per station.
+ * A narrow or short page stacks that column as a header so the keys and the cards stay on screen.
  * An older tablet still gets the page, with a status line asking for an app update and no call actions.
  */
 fun DocContext.intercomPanel(tile: Tile, box: TileBox) {
     val view = intercom ?: IntercomView.from(null, supportsCalls = false, i18n)
-    val layout = IntercomLayout(pageScale(box), box.w, box.h)
-    scope.Row(Modifier.fillMaxSize().background(fixed(IntercomPaint.PAGE))) {
-        val doc = this@intercomPanel
-        doc.sideColumn(tile.id, view, layout)
-        doc.stationList(tile.id, view, layout)
+    val statusLines = if (view.supportsCalls) 1 else M.UPDATE_STATUS_LINES
+    val layout = IntercomLayout.of(box.w, box.h, statusLines)
+    if (layout.isStacked) {
+        stackedPage(tile.id, view, layout)
+    } else {
+        widePage(tile.id, view, layout)
     }
 }
 
-private fun pageScale(box: TileBox): Float =
-    minOf(box.w / M.BASE_W, box.h / M.BASE_H).coerceIn(M.LAYOUT_SCALE_MIN, M.LAYOUT_SCALE_MAX)
+private fun DocContext.widePage(tileId: String, view: IntercomView, layout: IntercomLayout) {
+    scope.Row(Modifier.fillMaxSize().background(fixed(IntercomPaint.PAGE))) {
+        val doc = this@widePage
+        doc.sideColumn(tileId, view, layout)
+        doc.stationList(tileId, view, layout)
+    }
+}
+
+private fun DocContext.stackedPage(tileId: String, view: IntercomView, layout: IntercomLayout) {
+    scope.Column(Modifier.fillMaxSize().background(fixed(IntercomPaint.PAGE))) {
+        val doc = this@stackedPage
+        doc.stackedHeader(tileId, view, layout)
+        doc.stationList(tileId, view, layout)
+    }
+}
+
+/** The side column drawn across the top: accent, title, status, then Mute and Hang Up. */
+private fun DocContext.stackedHeader(tileId: String, view: IntercomView, layout: IntercomLayout) {
+    val top = units.px(layout.dp(M.STACK_TOP_DP))
+    val bottom = units.px(layout.dp(M.STACK_BOTTOM_DP))
+    scope.Column(
+        Modifier.fillMaxWidth().height(units.px(layout.headerH)).background(fixed(IntercomPaint.COLUMN))
+            .padding(0f, top, 0f, bottom),
+    ) {
+        val doc = this@stackedHeader
+        doc.accentBar(layout)
+        Spacer(Modifier.height(doc.units.px(layout.dp(M.TITLE_GAP_DP))))
+        doc.label(
+            doc.i18n.t("ui.intercom_title"),
+            layout.sp(M.TITLE_SP),
+            doc.fixed(IntercomPaint.INK),
+            modifier = Modifier.padding(doc.units.px(layout.dp(M.TITLE_START_DP)), 0f, 0f, 0f),
+        )
+        doc.statusAndKeys(tileId, view, layout)
+    }
+}
 
 /** The grey column: the accent, "INTERCOM", then the status and the two keys centred under it. */
 private fun DocContext.sideColumn(tileId: String, view: IntercomView, layout: IntercomLayout) {
@@ -126,9 +162,12 @@ private fun DocContext.stationList(tileId: String, view: IntercomView, layout: I
     val top = units.px(layout.dp(M.LIST_TOP_DP))
     val end = units.px(layout.dp(M.LIST_END_DP))
     val bottom = units.px(layout.dp(M.LIST_BOTTOM_DP))
-    scope.Column(
-        Modifier.horizontalWeight(1f).fillMaxHeight().verticalScroll().padding(start, top, end, bottom),
-    ) {
+    val scroll = if (layout.isStacked) {
+        Modifier.fillMaxWidth().height(units.px(layout.listH))
+    } else {
+        Modifier.horizontalWeight(1f).fillMaxHeight()
+    }
+    scope.Column(scroll.verticalScroll().padding(start, top, end, bottom)) {
         val doc = this@stationList
         view.stations.forEachIndexed { index, station ->
             if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.ROW_GAP_DP))))
@@ -271,7 +310,7 @@ private fun DocContext.controlKey(
 ) {
     val corner = layout.dp(M.BUTTON_CORNER_DP)
     val box = tap(
-        Modifier.width(units.px(layout.dp(M.BUTTON_W_DP))).height(units.px(layout.dp(heightDp)))
+        Modifier.width(units.px(layout.keyW)).height(units.px(layout.dp(heightDp)))
             .clip(rounded(corner))
             .background(fixed(IntercomPaint.BUTTON))
             .border(
