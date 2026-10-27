@@ -7,6 +7,8 @@ import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.VarValue
+import java.time.Instant
+import java.time.OffsetDateTime
 import kotlin.math.roundToInt
 
 /** Now-playing vars and transport predictions for a Music Assistant tile. */
@@ -60,11 +62,34 @@ internal fun DocContext.bindMusicNowPlaying(tileId: String, entityId: String) {
 }
 
 /**
- * Home Assistant's `state_changed` carries `media_position` while the player is playing.
- * RPI's `MusicAssistantViewModel` copies that attribute from `newState`; we do the same.
+ * RPI's `NowPlayingTrackTime` re-anchors on the last `media_position` snapshot and adds
+ * elapsed time while the player is playing. Home Assistant does not publish that attribute
+ * on a timer; it sends `media_position` plus `media_position_updated_at` on start, pause,
+ * seek, or track change. A later live `state_changed` also refreshes the timestamp, so
+ * elapsed since that stamp is ~0 and this does not double-count.
  */
-internal fun EntityState?.mediaPosition(): Double? =
-    this?.number("media_position") ?: this?.attr("media_position")?.toDoubleOrNull()
+internal fun EntityState?.mediaPosition(now: Instant = Instant.now()): Double? {
+    val reported = this?.number("media_position") ?: this?.attr("media_position")?.toDoubleOrNull()
+    val updatedAt = this?.mediaPositionUpdatedAt()
+    val elapsedSeconds = if (this?.state == Playhead.PLAYING && reported != null && updatedAt != null) {
+        (now.toEpochMilli() - updatedAt.toEpochMilli()).coerceAtLeast(0L) / Playhead.MS_PER_SECOND
+    } else {
+        0.0
+    }
+    val raw = reported?.plus(elapsedSeconds)
+    val duration = this?.number("media_duration")
+    return if (raw != null && duration != null && duration > 0.0) {
+        minOf(raw, duration)
+    } else {
+        raw
+    }
+}
+
+private fun EntityState.mediaPositionUpdatedAt(): Instant? {
+    val stamp = attr("media_position_updated_at") ?: return null
+    return runCatching { OffsetDateTime.parse(stamp).toInstant() }.getOrNull()
+        ?: runCatching { Instant.parse(stamp) }.getOrNull()
+}
 
 internal fun mediaProgress(position: Double?, duration: Double?): Float {
     if (position == null || duration == null || duration <= 0.0) return 0f
@@ -76,4 +101,9 @@ internal fun formatMusicTime(seconds: Double): String {
     val minutes = total / MusicMetrics.SECONDS_PER_MINUTE
     val secs = total % MusicMetrics.SECONDS_PER_MINUTE
     return "$minutes:${secs.toString().padStart(2, '0')}"
+}
+
+private object Playhead {
+    const val PLAYING = "playing"
+    const val MS_PER_SECOND = 1000.0
 }

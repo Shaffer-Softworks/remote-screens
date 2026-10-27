@@ -1,19 +1,21 @@
 ---
-description: RPI music page playhead — HA websocket media_position while playing, applied as pos/progress vars
+description: RPI music page playhead — snapshot media_position plus elapsed since media_position_updated_at
 globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/panels/music/*.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/freeform/FreeFormBlocks.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/PlayerHub.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/PlayerSession.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/session/SessionDocument.kt
 alwaysApply: false
 ---
 
 # RPI music playhead (Oct 2026)
 
-RPI's `MusicAssistantViewModel` collects Home Assistant `state_changed` and copies `newState` (including `mediaPosition`) onto the now-playing row. Music Assistant and other players publish `media_position` on that websocket while the track plays. Use that attribute. Do not add elapsed time on top of it — that double-counts a live position.
+RPI's `MusicAssistantViewModel` copies Home Assistant `newState` (including `mediaPosition`) onto the now-playing row. That attribute is a **snapshot**. RPI's `NowPlayingTrackTime` (`MusicAssistantScreen.kt`) re-anchors on it and adds elapsed realtime while `mediaState == playing`. Home Assistant does not publish `media_position` on a timer — only on start, pause, seek, or track change, together with `media_position_updated_at`.
+
+Do the same math. Reading the raw attribute each second leaves the bar frozen. Adding elapsed on top of a later live `state_changed` does **not** double-count: that event also refreshes `media_position_updated_at`, so elapsed since the stamp is ~0.
 
 ## Wiring
 
-- `mediaPosition()` / `mediaProgress()` (`MusicBind.kt`) read `media_position` and `media_duration` from the entity state the websocket just wrote.
-- `bindMusicNowPlaying` (full music tile) and `bindMediaBar` (free-form now-playing bar) bind `pos`, `dur`, and `progress` from those values.
-- `PlayerHub` debounces `homeAssistant.states`, then `conflate().collect` so `session.refresh` finishes. `collectLatest` cancelled a slow refresh (pictures, a rebuild) and dropped later documents' vars — the bar never moved even though HA had sent a new position.
-- `PlayerSession.tick` still calls `SessionDocument.tickProgress` once a second and sends only the vars that changed. That is a var update, not a document rebuild — a timed `refreshEvery` on the music tile flashes home (see `session-document-rebuild-context.mdc`).
+- `mediaPosition()` (`MusicBind.kt`) reads `media_position`, and while playing adds seconds since `media_position_updated_at` (capped at `media_duration`). Paused stays on the snapshot. No timestamp → snapshot only (demo player).
+- `bindMusicNowPlaying` (full music tile) and `bindMediaBar` (free-form now-playing bar) bind `pos`, `dur`, and `progress` from that helper.
+- `PlayerHub` debounces `homeAssistant.states`, then `conflate().collect` so `session.refresh` finishes. `collectLatest` cancelled a slow refresh and dropped later vars.
+- `PlayerSession.tick` calls `SessionDocument.tickProgress` once a second so interpolated `pos` / `progress` are sent. That is a var update, not a document rebuild — a timed `refreshEvery` on the music tile flashes home (see `session-document-rebuild-context.mdc`).
 
 ## Layout (already shipped)
 

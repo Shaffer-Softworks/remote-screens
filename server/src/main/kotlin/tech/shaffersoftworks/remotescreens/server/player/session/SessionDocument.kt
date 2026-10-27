@@ -137,8 +137,9 @@ internal class SessionDocument(
     }
 
     /**
-     * Pushes `pos` / `progress` from the latest Home Assistant `media_position` (sent on
-     * `state_changed` while the player is playing). A var update, not a rebuild.
+     * Recomputes `pos` / `progress` from the last `media_position` snapshot plus elapsed
+     * time since `media_position_updated_at` (RPI `NowPlayingTrackTime`). A var update,
+     * not a rebuild — Home Assistant does not publish that attribute on a timer.
      */
     suspend fun tickProgress(states: Map<String, EntityState>) {
         for (shown in shownDocuments.values.toList()) {
