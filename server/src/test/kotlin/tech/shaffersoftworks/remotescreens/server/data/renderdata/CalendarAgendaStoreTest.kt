@@ -18,6 +18,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 class CalendarAgendaStoreTest {
     private val ha = DemoHome()
@@ -77,7 +78,7 @@ class CalendarAgendaStoreTest {
 
     @Test
     fun aStatePulseDuringAgendaLoadDoesNotStoreTheCancellation() = runBlocking {
-        withTimeout(PROBE_TIMEOUT_MS) {
+        withTimeout(PROBE_TIMEOUT_MS.milliseconds) {
             val home = HangingCalendarList()
             val store = CalendarAgendaStore(home)
             val pulses = MutableStateFlow(0)
@@ -86,9 +87,9 @@ class CalendarAgendaStoreTest {
                     store.snapshot(home.states.value, ZoneOffset.UTC)
                 }
             }
-            delay(PULSE_GAP_MS)
+            delay(PULSE_GAP_MS.milliseconds)
             pulses.value = 1
-            delay(PULSE_GAP_MS)
+            delay(PULSE_GAP_MS.milliseconds)
             assertEquals(null, store.latest.errorMessage)
             job.cancel()
         }
@@ -102,7 +103,7 @@ private const val HANG_MS = 60_000L
 /** Holds the calendar list request open so a newer state pulse can cancel it. */
 private class HangingCalendarList(private val inner: DemoHome = DemoHome()) : HomeAssistant by inner {
     override suspend fun fetch(path: String): ByteArray? {
-        if (isCalendarListPath(path)) delay(HANG_MS)
+        if (isCalendarListPath(path)) delay(HANG_MS.milliseconds)
         return inner.fetch(path)
     }
 }

@@ -11,13 +11,21 @@ import android.os.Build
 import android.os.Looper
 import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
+import tech.shaffersoftworks.remotescreens.player.di.MainDispatcher
 import tech.shaffersoftworks.remotescreens.shared.LocationTelemetry
 import tech.shaffersoftworks.remotescreens.shared.TelemetryHardware
 import timber.log.Timber
@@ -35,8 +43,12 @@ private const val MIN_UPDATE_DISTANCE_M = 50f
 @Singleton
 class LocationMonitor @Inject constructor(
     @ApplicationContext private val context: Context,
+    @MainDispatcher mainDispatcher: CoroutineDispatcher,
 ) {
     private val locationManager = context.getSystemService(LocationManager::class.java)
+    private val scope = CoroutineScope(SupervisorJob() + mainDispatcher)
+    private var listenJob: Job? = null
+    private var updatesListener: LocationListener? = null
 
     private val _location = MutableStateFlow<LocationTelemetry?>(null)
     val location: StateFlow<LocationTelemetry?> = _location.asStateFlow()
@@ -48,8 +60,6 @@ class LocationMonitor @Inject constructor(
 
     /** A new fix arrived. */
     val changes: SharedFlow<Unit> = _changes.asSharedFlow()
-
-    private var isListening = false
 
     val hardware: List<String>
         get() = listOfNotNull(
@@ -67,13 +77,44 @@ class LocationMonitor @Inject constructor(
     fun start() {
         val manager = locationManager
         if (manager == null || !hasPermission()) return
-        val provider = chooseProvider(manager) ?: run {
+        val provider = chooseProvider(manager)
+        if (provider == null) {
             Timber.d("Location: no provider enabled")
             return
         }
+        if (listenJob?.isActive != true) {
+            listenJob = scope.launch { listen(manager, provider) }
+        } else {
+            requestAnotherFix(manager, provider)
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun requestAnotherFix(manager: LocationManager, provider: String) {
+        val listener = updatesListener
+        if (_location.value != null || listener == null) return
         try {
-            if (!isListening) {
-                bestLastKnown(manager)?.let(::onLocation)
+            requestCurrentFix(manager, provider, listener)
+        } catch (error: SecurityException) {
+            Timber.w(error, "Location permission was revoked")
+        }
+    }
+
+    fun stop() {
+        listenJob?.cancel()
+        listenJob = null
+        _location.value = null
+    }
+
+    @SuppressLint("MissingPermission")
+    private suspend fun listen(manager: LocationManager, provider: String) {
+        callbackFlow {
+            val fixes = this
+            val listener = LocationListener { location -> fixes.trySend(readingOf(location)) }
+            updatesListener = listener
+            try {
+                bestLastKnown(manager)?.let { fixes.trySend(readingOf(it)) }
+                // These LocationManager methods require a Looper. There is no Executor overload here.
                 manager.requestLocationUpdates(
                     provider,
                     MIN_UPDATE_INTERVAL_MS,
@@ -81,21 +122,17 @@ class LocationMonitor @Inject constructor(
                     listener,
                     Looper.getMainLooper(),
                 )
-                isListening = true
                 Timber.d("Location started with %s", provider)
+                // A wall tablet may never move 50 m, and the cached fix is often empty the first time
+                // this app is allowed to read location. Ask for one position now, and again until one arrives.
+                if (_location.value == null) requestCurrentFix(manager, provider, listener)
+                awaitClose { unregister(manager, listener) }
+            } catch (error: SecurityException) {
+                Timber.w(error, "Location permission was revoked")
+                unregister(manager, listener)
+                close()
             }
-            // A wall tablet may never move 50 m, and the cached fix is often empty the first time
-            // this app is allowed to read location. Ask for one position now, and again until one arrives.
-            if (_location.value == null) requestCurrentFix(manager, provider)
-        } catch (e: SecurityException) {
-            Timber.w(e, "Location permission was revoked")
-        }
-    }
-
-    fun stop() {
-        if (isListening) locationManager?.removeUpdates(listener)
-        isListening = false
-        _location.value = null
+        }.collect { reading -> publish(reading) }
     }
 
     @SuppressLint("MissingPermission")
@@ -106,16 +143,21 @@ class LocationMonitor @Inject constructor(
 
     @Suppress("DEPRECATION")
     @SuppressLint("MissingPermission")
-    private fun requestCurrentFix(manager: LocationManager, provider: String) {
+    private fun requestCurrentFix(manager: LocationManager, provider: String, listener: LocationListener) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             manager.getCurrentLocation(
                 provider,
                 null,
                 ContextCompat.getMainExecutor(context),
-            ) { location -> if (location != null) onLocation(location) }
+            ) { location -> if (location != null) publish(readingOf(location)) }
         } else {
             manager.requestSingleUpdate(provider, listener, Looper.getMainLooper())
         }
+    }
+
+    private fun unregister(manager: LocationManager, listener: LocationListener) {
+        manager.removeUpdates(listener)
+        if (updatesListener === listener) updatesListener = null
     }
 
     private fun enabledProviders(manager: LocationManager): List<String> = listOfNotNull(
@@ -130,16 +172,16 @@ class LocationMonitor @Inject constructor(
 
     private fun chooseProvider(manager: LocationManager): String? = enabledProviders(manager).firstOrNull()
 
-    private fun onLocation(location: Location) {
-        _location.value = LocationTelemetry(
-            latitude = location.latitude,
-            longitude = location.longitude,
-            accuracyM = location.accuracy.takeIf { location.hasAccuracy() },
-            altitudeM = location.altitude.takeIf { location.hasAltitude() },
-            fixedAt = location.time,
-        )
+    private fun readingOf(location: Location): LocationTelemetry = LocationTelemetry(
+        latitude = location.latitude,
+        longitude = location.longitude,
+        accuracyM = location.accuracy.takeIf { location.hasAccuracy() },
+        altitudeM = location.altitude.takeIf { location.hasAltitude() },
+        fixedAt = location.time,
+    )
+
+    private fun publish(reading: LocationTelemetry) {
+        _location.value = reading
         _changes.tryEmit(Unit)
     }
-
-    private val listener = LocationListener { location -> onLocation(location) }
 }

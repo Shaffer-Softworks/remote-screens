@@ -30,9 +30,27 @@ fun Activity.hideSystemBars() {
 fun Activity.showOverLockScreen() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
         setShowWhenLocked(true)
+        setTurnScreenOn(true)
     } else {
         @Suppress("DEPRECATION")
-        window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+        window.addFlags(
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON,
+        )
+    }
+}
+
+/**
+ * Ask the window to turn the panel on again. [setTurnScreenOn] only fires on a rising edge, so a
+ * wake after [android.app.admin.DevicePolicyManager.lockNow] has to clear it and set it once more.
+ */
+fun Activity.requestScreenOn() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+        setTurnScreenOn(false)
+        setTurnScreenOn(true)
+    } else {
+        @Suppress("DEPRECATION")
+        window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
     }
 }
 

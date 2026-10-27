@@ -1,0 +1,29 @@
+---
+description: Coroutine and Flow timeouts take a Duration, not a Long of milliseconds.
+globs: ["*.kt", "*.kts"]
+alwaysApply: true
+---
+
+# Duration, not a legacy Long
+
+`delay`, `withTimeout`, `withTimeoutOrNull`, `debounce`, `sample`, and `timeout` each have a `kotlin.time.Duration` overload. Pass that. The Long milliseconds overload is the one Android Studio flags as "Legacy Long overload can be converted to Duration".
+
+Pass a `Duration`. Import `kotlin.time.Duration.Companion.milliseconds` (or `.seconds`).
+
+```kotlin
+delay(PREVIEW_MS.milliseconds)
+withTimeout(COMMAND_TIMEOUT_MS.milliseconds) { response.await() }
+states.debounce(STATE_DEBOUNCE_MS.milliseconds)
+```
+
+Leave the Long overload unused:
+
+```kotlin
+delay(PREVIEW_MS)
+withTimeout(COMMAND_TIMEOUT_MS) { response.await() }
+states.debounce(STATE_DEBOUNCE_MS)
+```
+
+Import `kotlin.time.Duration.Companion.milliseconds` (or `.seconds`). A computed count converts the same way: `delay((minutes * MILLISECONDS_PER_MINUTE).milliseconds)`.
+
+A file-top timeout that is itself a `Duration` is a `val`, not a `const val`, and its name is still `UPPER_SNAKE` (`kotlin-detekt-top-level-property-naming.mdc`). A `Long` constant named `*_MS` may stay; convert it at the call.

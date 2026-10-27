@@ -1,0 +1,35 @@
+---
+description: Listener callbacks use callbackFlow or a CoroutineScope. Do not use android.os.Handler.
+globs: ["*.kt", "*.kts"]
+alwaysApply: true
+---
+
+# Coroutines, not Handler
+
+Move work and receive callbacks with a `CoroutineScope` or `callbackFlow`. Do not add `android.os.Handler`, `HandlerThread`, `post`, or `postDelayed`.
+
+## Listener APIs
+
+A sensor, broadcast, or other register/unregister callback is a `callbackFlow`. Register inside the flow. Unregister in `awaitClose`. Collect it on `viewModelScope`, `lifecycleScope`, or an injected scope (`SupervisorJob()` plus an injected `CoroutineDispatcher`). Do not use `GlobalScope`.
+
+```kotlin
+scope.launch {
+    callbackFlow {
+        val listener = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent) {
+                event.values.firstOrNull()?.let { trySend(it) }
+            }
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+        }
+        sensorManager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+        awaitClose { sensorManager.unregisterListener(listener) }
+    }.collect { distance -> onDistance(distance) }
+}
+```
+
+Delay with `delay`. Switch threads with `withContext`. RPI's `ProximitySensor` is the reference (`callbackFlow` plus a scope).
+
+## Names that are not this
+
+- Compose `BackHandler` is the system back callback.
+- A platform method whose signature requires a `Looper` (older `LocationManager.requestLocationUpdates`) may receive `Looper.getMainLooper()` as that argument. Prefer an `Executor` overload when the platform has one. Do not wrap that call in a `Handler`.

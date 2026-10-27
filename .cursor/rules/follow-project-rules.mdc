@@ -17,7 +17,7 @@ A file-scoped rule is not in the prompt until a matching file is already open, s
 
 ## Kotlin
 
-Any `*.kt` or `*.kts`: read `kotlin-core.mdc`, `kotlin-naming-variables.mdc`, `kotlin-magic-numbers-detekt.mdc`, `kotlin-detekt-top-level-property-naming.mdc`, and `kotlin-detekt-ktlint-rpi-style.mdc`.
+Any `*.kt` or `*.kts`: read `kotlin-core.mdc`, `kotlin-coroutines-not-handler.mdc`, `kotlin-duration-not-long.mdc`, `kotlin-naming-variables.mdc`, `kotlin-magic-numbers-detekt.mdc`, `kotlin-detekt-top-level-property-naming.mdc`, and `kotlin-detekt-ktlint-rpi-style.mdc`.
 
 `*Screen.kt`, `*Component.kt`, `*Composable.kt`, and `ui/**/*.kt`: also `jetpack-compose.mdc` and `composable-preview.mdc`.
 

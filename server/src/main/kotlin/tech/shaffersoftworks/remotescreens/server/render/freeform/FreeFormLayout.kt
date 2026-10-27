@@ -10,10 +10,14 @@ import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
+import androidx.compose.remote.creation.dsl.clip
 import androidx.compose.remote.creation.dsl.fillMaxHeight
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.height
+import androidx.compose.remote.creation.dsl.requiredHeightIn
+import androidx.compose.remote.creation.dsl.requiredWidthIn
+import androidx.compose.remote.creation.modifiers.RectShape
 import tech.shaffersoftworks.remotescreens.server.render.keptHorizontalScroll
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
@@ -127,10 +131,20 @@ internal fun DocContext.container(node: Node, given: Dims, axis: Axis, pages: Pa
     if (pinW) base = base.width(units.px(self.w))
     var modifier = styled(node, axis, pages, base)
     if (node.props["scroll"] == "true") {
+        // Weight and fillMaxHeight are ignored on a scroller, so the list never moves and its children
+        // paint through the header. An exact viewport, a max, and a clip are what make the drag take.
         modifier = if (mine == Axis.ROW) {
-            modifier.keptHorizontalScroll("freeform.${node.id}")
+            val viewport = units.px(self.w)
+            modifier.width(viewport)
+                .requiredWidthIn(max = viewport)
+                .clip(RectShape(0f, 0f, 0f, 0f))
+                .keptHorizontalScroll("freeform.${node.id}")
         } else if (mine == Axis.COLUMN) {
-            modifier.keptVerticalScroll("freeform.${node.id}")
+            val viewport = units.px(self.h)
+            modifier.height(viewport)
+                .requiredHeightIn(max = viewport)
+                .clip(RectShape(0f, 0f, 0f, 0f))
+                .keptVerticalScroll("freeform.${node.id}")
         } else {
             modifier
         }

@@ -11,14 +11,14 @@ alwaysApply: false
 - Opt-in screen settings (default **off**): `wakeOnProximity`, `wakeOnFace` on `ScreenSettings` in `Layout.kt`.
 - Surfaces: editor Standby checkboxes (`ScreenPanel.vue`), HA switches `wake_on_proximity` / `wake_on_face`, player camera-permission offer in settings when face is on.
 - **HA wake** (unchanged protocol): `remote_screens.wake` / event `remote_screens_wake` → `PlayerHub.wake` → `ServerMessage.Wake` → `onUserInteraction()`. Primary path for room-scale PIR / mmWave / ultrasonic / occupancy (no standard Android ultrasonic API).
-- **Proximity:** `ProximityWakeMonitor` — `Sensor.TYPE_PROXIMITY` while asleep, debounce near; soft no-op if missing. No runtime permission. Phone-style range is often only a few cm.
+- **Proximity:** `ProximityWakeMonitor` — `Sensor.TYPE_PROXIMITY` (wake-up sensor when the device has one) whenever `wakeOnProximity` is on, including while the screen is awake. A near sample while awake restarts the standby clock. Debounce near; soft no-op if missing. No runtime permission. Phone-style range is often only a few cm. The PX30 sensor is on-change and a near pulse is often under a second, so the listener must already be registered before `lockNow()` or that edge is gone and standing in front of the panel does not repeat it.
 - **Face:** `FaceWakeMonitor` — CameraX front `ImageAnalysis` + ML Kit Face Detection (`PERFORMANCE_MODE_FAST`, no landmarks/contours, ~320×240, `KEEP_ONLY_LATEST`, ~2 fps). `isUsable()` = camera permission + `FEATURE_CAMERA_FRONT` + not `ActivityManager.isLowRamDevice()`. Soft no-op otherwise. Manifest: `CAMERA`, front camera `required=false`.
 - **Both independent:** if both settings are on and usable, **both** monitors run. Face is not blocked by proximity.
 - **Screen power:** when face wake is actively usable, skip `ScreenPowerRepository.turnScreenOff()` / `lockNow()` (camera often dies with panel off) — software blackout instead. Proximity-only may keep `standbyScreenOff`. Docs in `addon/DOCS.md`.
 
 ## Wiring
 
-- `PlayerViewModel.updateWakeMonitors()` on sleep/wake/settings/permission result; stop both on wake / `onCleared`.
+- `PlayerViewModel.updateWakeMonitors()` on sleep/wake/settings/permission result. Proximity stays registered across wake. Face stops on wake / `onCleared`. Listeners are updated before the panel is locked.
 - `PlayerScreen` requests `CAMERA` via `PlayerEvent.RequestCameraPermission`.
 - Dependencies: CameraX + `mlkit-face-detection` in `libs.versions.toml` / `player/build.gradle.kts`.
 
@@ -27,7 +27,7 @@ alwaysApply: false
 - **Android lint:** `ImageProxy.image` is `@ExperimentalGetImage`. Kotlin `@OptIn` alone fails `:player:lintDebug`. Use `@SuppressLint("UnsafeOptInUsageError")` on `analyze` (class-level marker leaks into `PlayerViewModel`).
 - **Low-RAM / no front camera:** leave setting stored; do not start monitor; optional one-shot note in tablet settings (`face_wake_low_ram` / `face_wake_no_camera`).
 - **Privacy / power:** privacy indicator while camera runs in standby; keep tablet plugged in.
-- **ProximityWakeMonitor:** no `CoroutineScope` needed (sync SensorManager). Face may later use a scoped start/stop job; not required for proximity. Near/far goes through `ProximityScale` (PX30 reports `0` far / `1` near against a 9 cm range).
+- **ProximityWakeMonitor:** a `callbackFlow` collected on the main dispatcher, as RPI's `ProximitySensor` (`data/ha/sensors/ProximitySensor.kt`). Cancelling the collection unregisters the sensor. Near/far goes through `ProximityScale` (PX30 reports `0` far / `1` near against a 9 cm range). RPI's `distance < maximumRange` stays on for both of those readings. `turnScreenOn` holds a `FULL_WAKE_LOCK` with `ACQUIRE_CAUSES_WAKEUP` and `ON_AFTER_RELEASE`, and the activity calls `setTurnScreenOn` again, because a one-shot bright wake lock does not bring this panel back after `lockNow`. A later near or touch calls `turnScreenOn` again when `PowerManager.isInteractive` is still false.
 - **Cursor trailer:** commits can get `Co-authored-by: Cursor`; strip with `git commit-tree` + `--force-with-lease` on the feature branch only (user must approve rewrite). Prefer merge from `main` over rebase on shared PR branches.
 
 ## Verify

@@ -21,3 +21,5 @@ alwaysApply: true
 - Prefer Kotlin coroutines and `Flow`/`StateFlow` for asynchronous logic and reactive state propagation.
 - Never block the Main thread. Always swap contexts safely via `withContext(Dispatchers.IO)` for heavy operations or I/O.
 - Always provide structure to scopes; inject a `CoroutineDispatcher` or utilize custom scopes bound to lifecycle objects rather than hardcoding global scopes (`GlobalScope`).
+- Receive callbacks with `callbackFlow` or that scope. Do not use `android.os.Handler`. See `kotlin-coroutines-not-handler.mdc`.
+- Pass a `Duration` to `delay`, `withTimeout`, `debounce`, `sample`, and `timeout`. Do not use the Long milliseconds overload. See `kotlin-duration-not-long.mdc`.
