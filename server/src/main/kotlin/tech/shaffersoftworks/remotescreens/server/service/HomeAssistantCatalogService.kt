@@ -30,11 +30,14 @@ class HomeAssistantCatalogService(private val homeAssistant: HomeAssistant) {
             homeAssistant.command("config/entity_registry/list_for_display") as? JsonObject
         }.getOrNull()
         val areaByEntity = HashMap<String, String>()
+        val iconByEntity = HashMap<String, String>()
         val hiddenEntities = HashSet<String>()
         (registry?.get("entities") as? JsonArray).orEmpty().forEach { element ->
             val entry = element as? JsonObject ?: return@forEach
             val entityId = entry.text("ei") ?: return@forEach
             entry.text("ai")?.let { areaByEntity[entityId] = it }
+            // `ic` is the icon set on the entity in Home Assistant. State often omits it.
+            entry.text("ic")?.let { iconByEntity[entityId] = it }
             if (entry["hb"] != null || entry["ec"] != null) hiddenEntities += entityId
         }
         return homeAssistant.states.value.values
@@ -46,8 +49,9 @@ class HomeAssistantCatalogService(private val homeAssistant: HomeAssistant) {
                     state = entity.state,
                     domain = entity.domain,
                     area = areaByEntity[entity.entityId],
-                    icon = entity.attr("icon"),
+                    icon = entity.attr("icon") ?: iconByEntity[entity.entityId],
                     unit = entity.attr("unit_of_measurement"),
+                    rgb = entity.readRgbHex(),
                 )
             }
             .sortedBy { it.name.lowercase() }

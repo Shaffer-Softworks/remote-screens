@@ -1,6 +1,7 @@
 package tech.shaffersoftworks.remotescreens.server.service
 
 import tech.shaffersoftworks.remotescreens.server.data.layout.LayoutRepository
+import tech.shaffersoftworks.remotescreens.server.data.pictures.BackgroundStore
 import tech.shaffersoftworks.remotescreens.server.service.validation.ScreenValidator
 import tech.shaffersoftworks.remotescreens.server.service.validation.ThemeValidator
 import tech.shaffersoftworks.remotescreens.shared.DeviceSize
@@ -24,7 +25,10 @@ private const val COPY_NAME_SUFFIX = " copy"
 private const val MAX_COPY_NAME_ATTEMPTS = 1000
 
 /** The screens, their settings and the editor's preferences, as the editor and the integration change them. */
-class ScreenService(private val layoutRepository: LayoutRepository) {
+class ScreenService(
+    private val layoutRepository: LayoutRepository,
+    private val backgroundStore: BackgroundStore,
+) {
 
     /** The layout without token hashes; the editor only needs to know whether a player has one. */
     fun redactedLayout(): LayoutData {
@@ -81,6 +85,7 @@ class ScreenService(private val layoutRepository: LayoutRepository) {
                 file.screen.copy(
                     id = newScreenId(),
                     name = uniqueName(file.screen.name, layout.screens.map { it.name }.toSet()),
+                    pages = file.screen.pages.map { page -> page.copy(backgroundImage = null) },
                 ),
             )
             val themes = themesToStore(layout.themes, file.themes)
@@ -97,6 +102,7 @@ class ScreenService(private val layoutRepository: LayoutRepository) {
         layoutRepository.update { layout ->
             layout.copy(screens = layout.screens.map { if (it.id == screenId) validated else it })
         }
+        backgroundStore.deleteUnreferenced(screenId, validated.pages)
         return validated
     }
 
@@ -114,6 +120,7 @@ class ScreenService(private val layoutRepository: LayoutRepository) {
                 } },
             )
         }
+        backgroundStore.deleteScreen(screenId)
     }
 
     /** Applies settings from a player or from Home Assistant (the integration's entities) to a screen. */

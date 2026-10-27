@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { api } from '../api'
 import type { Page, Screen } from '../model/types'
+import { attempt } from '../store'
 import IconPicker from './IconPicker.vue'
 import MdiIcon from './MdiIcon.vue'
 
@@ -23,6 +25,29 @@ function shift(by: number): void {
   ;[pages[i], pages[targetIndex]] = [pages[targetIndex], pages[i]]
 }
 
+const backgroundUrl = computed(() => {
+  const token = props.page.backgroundImage
+  if (!token) return ''
+  const screenId = encodeURIComponent(props.screen.id)
+  const pageId = encodeURIComponent(props.page.id)
+  return `api/screens/${screenId}/pages/${pageId}/background?v=${encodeURIComponent(token)}`
+})
+
+async function chooseBackground(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  const saved = await attempt(() =>
+    api.uploadPageBackground(props.screen.id, props.page.id, file),
+  )
+  if (saved) props.page.backgroundImage = saved.backgroundImage
+}
+
+function removeBackground(): void {
+  delete props.page.backgroundImage
+}
+
 const isHome = computed({
   get: () => props.screen.homePage === props.page.id,
   set: on => {
@@ -37,6 +62,21 @@ const isHome = computed({
     <div v-if="!page.hidden" class="field">
       <span class="label">Navigation bar icon</span>
       <IconPicker v-model="page.icon" :placeholder="isHome ? 'home' : 'view-dashboard'" />
+    </div>
+    <div class="field">
+      <span class="label">Background image</span>
+      <p class="muted note">
+        A JPEG or PNG behind this page. The bars stay on top. Exporting the screen does not include
+        the file.
+      </p>
+      <img v-if="page.backgroundImage" class="shot" :src="backgroundUrl" alt="" />
+      <div class="add-row">
+        <label class="file">
+          {{ page.backgroundImage ? 'Replace' : 'Choose image' }}
+          <input type="file" accept="image/jpeg,image/png" @change="chooseBackground" />
+        </label>
+        <button v-if="page.backgroundImage" type="button" @click="removeBackground">Remove</button>
+      </div>
     </div>
     <label class="check"
       ><input v-model="isHome" type="checkbox" :disabled="isHome" /> Home page</label
@@ -131,10 +171,36 @@ const isHome = computed({
   gap: 8px;
 }
 
-.add-row > button {
+.add-row > button,
+.file {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   color: var(--ink);
+}
+
+.file {
+  position: relative;
+  overflow: hidden;
+  align-self: flex-start;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.file input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.shot {
+  width: 100%;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--bg);
 }
 </style>

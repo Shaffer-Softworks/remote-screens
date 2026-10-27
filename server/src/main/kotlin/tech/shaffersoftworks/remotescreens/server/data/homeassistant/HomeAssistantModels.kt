@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.data.homeassistant
 
+import kotlin.math.roundToInt
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -56,10 +57,31 @@ data class EntityState(
 
     fun numericState(): Double? = state.toDoubleOrNull()
 
+    /** Home Assistant's `rgb_color` as opaque ARGB, or null when the entity reports none. */
+    fun readRgb(): Int? {
+        val channels = list("rgb_color").mapNotNull { it.toDoubleOrNull()?.roundToInt() }
+        if (channels.size < RGB_CHANNELS) return null
+        val red = channels[0].coerceIn(0, CHANNEL_MAX)
+        val green = channels[1].coerceIn(0, CHANNEL_MAX)
+        val blue = channels[2].coerceIn(0, CHANNEL_MAX)
+        return (OPAQUE_ALPHA shl ALPHA_SHIFT) or (red shl RED_SHIFT) or (green shl GREEN_SHIFT) or blue
+    }
+
+    /** [readRgb] as `#RRGGBB`, for the editor. */
+    fun readRgbHex(): String? = readRgb()?.let { "#%06X".format(it and RGB_MASK) }
+
     /** This entity with another state and some attributes replaced, as Home Assistant would report it. */
     fun with(state: String = this.state, attrs: Map<String, JsonElement> = emptyMap()): EntityState =
         copy(state = state, attributes = JsonObject(attributes + attrs))
 }
+
+private const val RGB_CHANNELS = 3
+private const val CHANNEL_MAX = 255
+private const val RED_SHIFT = 16
+private const val GREEN_SHIFT = 8
+private const val OPAQUE_ALPHA = 0xFF
+private const val ALPHA_SHIFT = 24
+private const val RGB_MASK = 0xFFFFFF
 
 /** One demo service invocation: target entity, service name, and payload. */
 data class ServiceCall(

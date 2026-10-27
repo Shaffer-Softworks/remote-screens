@@ -35,6 +35,14 @@ const emit = defineEmits<{
   add: [source: TileSource, at: { col: number; row: number }]
 }>()
 
+const wallpaper = computed(() => {
+  const token = props.page.backgroundImage
+  if (!token) return undefined
+  const screenId = encodeURIComponent(props.screen.id)
+  const pageId = encodeURIComponent(props.page.id)
+  return `url("api/screens/${screenId}/pages/${pageId}/background?v=${encodeURIComponent(token)}")`
+})
+
 const box = ref<HTMLElement>()
 const room = ref({ w: 800, h: 500 })
 let observer: ResizeObserver | undefined
@@ -374,7 +382,14 @@ const highlight = computed(() => {
     <div
       class="device"
       :class="{ dropping: dragged !== null }"
-      :style="{ width: `${device.w}px`, height: `${device.h}px`, transform: `scale(${scale})` }"
+      :style="{
+        width: `${device.w}px`,
+        height: `${device.h}px`,
+        transform: `scale(${scale})`,
+        backgroundImage: wallpaper,
+        backgroundSize: wallpaper ? 'cover' : undefined,
+        backgroundPosition: wallpaper ? 'center' : undefined,
+      }"
       @click.self="emit('select', null)"
       @dragleave.self="hover = null"
     >

@@ -99,6 +99,11 @@ data class Page(
     val icon: String? = null,
     /** A free-form page: a tree of components laid out like Compose. When set, [tiles] are not drawn. */
     val root: Node? = null,
+    /**
+     * Timestamp token of a JPEG or PNG stored beside the layout, drawn behind this page.
+     * Null keeps the theme's page colour. A screen export does not include the file.
+     */
+    val backgroundImage: String? = null,
 ) {
     /** The grid's tiles, or the tiles a free-form page holds and the components it can be tapped through. */
     fun allTiles(): List<Tile> = root?.walk()?.mapNotNull { it.asTile() }?.toList() ?: tiles
@@ -120,7 +125,8 @@ object NodeTypes {
 
 /**
  * One component of a free-form page. Sizes are `wrap`, `fill`, `dp:N` or `weight:N`, as in Compose.
- * Props by type: `text` (text, fontSize, weight, align, color, lines), `icon` (icon, iconOn, size, color),
+ * Props by type: `text` (text, fontSize, weight, align, color, lines),
+ * `icon` (icon, iconOn, size, color; bound also colorOff and colorOn; while on, `rgb_color` unless colorOn is set),
  * `button` (text, icon, color, ink, fontSize, weight), containers (arrangement, alignment, gap), `slider` (steps),
  * `image` (fit), `clock` (show: time, date or both; fontSize, weight, color, align),
  * `badge` (text, icon, color, fontSize, weight), `avatar` (text, size),

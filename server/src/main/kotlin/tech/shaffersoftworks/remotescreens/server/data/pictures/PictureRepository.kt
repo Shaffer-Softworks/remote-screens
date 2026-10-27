@@ -30,6 +30,7 @@ class PictureRepository(
     private val homeAssistant: HomeAssistant,
     private val httpClient: HttpClient,
     private val tileUrl: String = ServerConfig.OPENSTREETMAP_TILE_URL,
+    private val backgroundStore: BackgroundStore? = null,
 ) {
     private val logger = LoggerFactory.getLogger(PictureRepository::class.java)
     private val tileCache = ConcurrentHashMap<String, BufferedImage>()
@@ -37,6 +38,7 @@ class PictureRepository(
 
     /** What the picture currently comes from: when it changes, the picture is sent again. */
     fun sourceKey(slot: PictureSlot, states: Map<String, EntityState>): String? = when {
+        slot.source.startsWith(BackgroundStore.FILE_PREFIX) -> backgroundStore?.sourceKey(slot.source)
         slot.source.startsWith(ATTRIBUTE_SOURCE_PREFIX) -> {
             val (_, entityId, attribute) = slot.source.split(':', limit = 3)
             states[entityId]?.attr(attribute)
@@ -56,6 +58,8 @@ class PictureRepository(
     /** The picture of [slot] at its size, as JPEG or (when round) PNG; null when it cannot be had. */
     suspend fun load(slot: PictureSlot, states: Map<String, EntityState>): ByteArray? = runCatching {
         val image = when {
+            slot.source.startsWith(BackgroundStore.FILE_PREFIX) ->
+                backgroundStore?.resolve(slot.source)?.let { ImageIO.read(it) }
             slot.source.startsWith(MAP_SOURCE_PREFIX) -> {
                 val style = slot.source.removePrefix(MAP_SOURCE_PREFIX).substringBefore(':')
                 val people = mapEntityIds(slot).mapNotNull { states[it] }

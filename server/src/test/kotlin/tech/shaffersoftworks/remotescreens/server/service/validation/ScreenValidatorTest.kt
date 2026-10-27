@@ -3,6 +3,7 @@ package tech.shaffersoftworks.remotescreens.server.service.validation
 import tech.shaffersoftworks.remotescreens.shared.DeviceSize
 import tech.shaffersoftworks.remotescreens.shared.LayoutData
 import tech.shaffersoftworks.remotescreens.shared.NavBar
+import tech.shaffersoftworks.remotescreens.shared.Page
 import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.TopBar
 import kotlinx.serialization.json.Json
@@ -52,6 +53,18 @@ class ScreenValidatorTest {
         assertEquals(2, ScreenValidator.orientationOf(DeviceSize(1280, 800)))
         assertEquals(0, ScreenValidator.orientationOf(DeviceSize(480, 480)))
         assertEquals(0, ScreenValidator.orientationOf(null))
+    }
+
+    @Test
+    fun aBackgroundTokenMustBeDigits() {
+        val kept = ScreenValidator.validate(
+            Screen("s", "Wall", pages = listOf(Page("home", "Home", backgroundImage = "1700000000000"))),
+        )
+        assertEquals("1700000000000", kept.pages.single().backgroundImage)
+        val dropped = ScreenValidator.validate(
+            Screen("s", "Wall", pages = listOf(Page("home", "Home", backgroundImage = "../secret"))),
+        )
+        assertNull(dropped.pages.single().backgroundImage)
     }
 
     @Test

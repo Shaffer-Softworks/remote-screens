@@ -10,6 +10,9 @@ import androidx.compose.remote.core.operations.layout.Container
 import androidx.compose.remote.core.operations.layout.animation.AnimationSpec
 import androidx.compose.remote.core.operations.layout.managers.BoxLayout
 import io.ktor.server.plugins.BadRequestException
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
@@ -48,6 +51,10 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+
+private const val ORANGE_RED = 255
+private const val ORANGE_GREEN = 128
+private const val ORANGE_BLUE = 0
 
 class FreeFormTest {
     private val ha = DemoHome()
@@ -492,6 +499,64 @@ class FreeFormTest {
         )
         assertEquals(Pastel.YELLOW.argb, on["t.bulb.icon"]?.asColor())
         assertEquals(Role.INK_DIM.argb, off["t.bulb.icon"]?.asColor())
+    }
+
+    @Test
+    fun aBoundIconUsesItsOwnOffAndOnColours() {
+        val root = Node(
+            "root",
+            "column",
+            children = listOf(
+                Node(
+                    "lamp",
+                    "icon",
+                    bind = NodeBinding("light.table_lamp"),
+                    props = mapOf("colorOff" to "blue", "colorOn" to "danger"),
+                ),
+            ),
+        )
+        val doc = ScreenRenderer.render(screen(root), tablet, input())
+        val states = ha.states.value
+        val on = doc.vars(
+            states + ("light.table_lamp" to states.getValue("light.table_lamp").with("on")),
+        )
+        val off = doc.vars(
+            states + ("light.table_lamp" to states.getValue("light.table_lamp").with("off")),
+        )
+        assertEquals(Themes.RPI[Role.DANGER], on["t.lamp.icon"]?.asColor())
+        assertEquals(Themes.RPI[Pastel.BLUE], off["t.lamp.icon"]?.asColor())
+    }
+
+    @Test
+    fun aBoundIconUsesTheEntityRgbWhileOn() {
+        val root = Node(
+            "root",
+            "column",
+            children = listOf(
+                Node("lamp", "icon", bind = NodeBinding("light.living_room")),
+                Node(
+                    "picked",
+                    "icon",
+                    bind = NodeBinding("light.living_room"),
+                    props = mapOf("colorOn" to "danger"),
+                ),
+            ),
+        )
+        val doc = ScreenRenderer.render(screen(root), tablet, input())
+        val states = ha.states.value
+        val coloured = states.getValue("light.living_room").with(
+            state = "on",
+            attrs = mapOf("rgb_color" to buildJsonArray {
+                add(JsonPrimitive(ORANGE_RED))
+                add(JsonPrimitive(ORANGE_GREEN))
+                add(JsonPrimitive(ORANGE_BLUE))
+            }),
+        )
+        val on = doc.vars(states + ("light.living_room" to coloured))
+        val off = doc.vars(states + ("light.living_room" to coloured.with("off")))
+        assertEquals(coloured.readRgb(), on["t.lamp.icon"]?.asColor())
+        assertEquals(Role.INK_DIM.argb, off["t.lamp.icon"]?.asColor())
+        assertEquals(Themes.RPI[Role.DANGER], on["t.picked.icon"]?.asColor())
     }
 
     @Test

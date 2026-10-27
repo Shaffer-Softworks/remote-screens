@@ -12,7 +12,6 @@ import kotlin.math.roundToInt
 private val RGB_CAPABLE_MODES = setOf("rgb", "rgbw", "rgbww", "hs", "xy")
 private const val EFFECT_FEATURE = 4
 private const val ROW_ICON_FALLBACK = "toggle-switch"
-private const val RGB_CHANNELS = 3
 private const val SECONDS_PER_MINUTE = 60L
 private const val SECONDS_PER_HOUR = 3600L
 private const val SECONDS_PER_DAY = 86_400L
@@ -41,11 +40,7 @@ internal fun EntityState?.isRowOn(): Boolean = when (this?.domain) {
 }
 
 /** The light's `rgb_color` as opaque ARGB, or null when it reports none. */
-internal fun EntityState.rgbColor(): Int? {
-    val channels = list("rgb_color").mapNotNull { it.toDoubleOrNull()?.roundToInt() }
-    if (channels.size < RGB_CHANNELS) return null
-    return rgb(channels[0], channels[1], channels[2])
-}
+internal fun EntityState.rgbColor(): Int? = readRgb()
 
 /** RPI's `selectedColor`: the light's colour, else its teal. */
 internal fun EntityState?.selectedColor(): Int = this?.rgbColor() ?: Rpi.LightsOn

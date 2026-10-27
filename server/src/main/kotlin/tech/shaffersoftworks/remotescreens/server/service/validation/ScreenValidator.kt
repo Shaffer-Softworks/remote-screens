@@ -17,6 +17,8 @@ object ScreenValidator {
     const val MAX_SCREEN_NAME_LENGTH = 60
     const val DEFAULT_SCREEN_NAME = "Screen"
     private const val MAX_PAGE_TITLE_LENGTH = 40
+    private const val MAX_BACKGROUND_TOKEN_LENGTH = 20
+    private val BACKGROUND_TOKEN = Regex("^[0-9]{1,$MAX_BACKGROUND_TOKEN_LENGTH}$")
 
     /** Values of [tech.shaffersoftworks.remotescreens.shared.ScreenSettings.orientation]. */
     const val ORIENTATION_FOLLOW_DEVICE = 0
@@ -96,6 +98,7 @@ object ScreenValidator {
 
     private fun clampPage(page: Page, cols: Int, rows: Int): Page = page.copy(
         title = page.title.take(MAX_PAGE_TITLE_LENGTH),
+        backgroundImage = page.backgroundImage?.takeIf { BACKGROUND_TOKEN.matches(it) },
         tiles = page.tiles.map { tile ->
             tile.copy(
                 w = tile.w.coerceIn(1, cols),

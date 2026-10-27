@@ -14,8 +14,11 @@ import tech.shaffersoftworks.remotescreens.server.render.tiles.edgeToEdge
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
 import tech.shaffersoftworks.remotescreens.server.render.tiles.tile
 
+import tech.shaffersoftworks.remotescreens.server.data.pictures.BackgroundStore
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
 import androidx.compose.remote.creation.dsl.Modifier
+import androidx.compose.remote.creation.dsl.RcContentScale
 import androidx.compose.remote.creation.dsl.RcColor
 import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
@@ -27,6 +30,7 @@ import androidx.compose.remote.creation.dsl.fillMaxHeight
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.horizontalWeight
+import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
@@ -207,6 +211,7 @@ object ScreenRenderer {
         renderingPage = index
         if (showBar) topBar(screen, page, spec, back = page.hidden, home = home)
         val contentH = spec.heightDp - spec.topBar - spec.navBar
+        pageBackground(screen, page, spec, contentH)
         val root = page.root
         if (root != null) {
             freeForm(
@@ -257,6 +262,32 @@ object ScreenRenderer {
         for (placement in placed.filter { it.tile.effectiveKind() == "lights" && it.tile.edgeToEdge() }) {
             val box = tileBox(spec, placement, contentH)
             at(0f, 0f) { lightsDialogLayer(placement.tile, box, spec.widthDp, spec.heightDp) }
+        }
+    }
+
+    /** The page's photo, cropped to the area between the bars. Cards and full-page panels paint over it. */
+    private fun DocContext.pageBackground(screen: Screen, page: Page, spec: GridSpec, contentH: Float) {
+        val token = page.backgroundImage
+        val source = token?.let { BackgroundStore.pictureSource(screen.id, page.id, it) }
+        if (source != null) {
+            val widthPx = units.px(spec.widthDp).toInt().coerceAtLeast(1)
+            val heightPx = units.px(contentH).toInt().coerceAtLeast(1)
+            val slot = "bg.${page.id}"
+            picture(
+                PictureSlot(slot, source, widthPx, heightPx, refreshSeconds = 0, crop = true),
+            )
+            scope.Box(
+                Modifier.fillMaxSize().padding(0f, units.px(spec.topBar), 0f, 0f),
+            ) {
+                Image(
+                    this@pageBackground.image(slot, widthPx, heightPx),
+                    Modifier.size(
+                        this@pageBackground.units.px(spec.widthDp),
+                        this@pageBackground.units.px(contentH),
+                    ),
+                    contentScale = RcContentScale.Crop,
+                )
+            }
         }
     }
 
