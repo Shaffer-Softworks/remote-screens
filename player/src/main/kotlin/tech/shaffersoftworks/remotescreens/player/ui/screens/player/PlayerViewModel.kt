@@ -1043,7 +1043,7 @@ class PlayerViewModel @Inject constructor(
     fun onForgetConfirmed() {
         onSettingsDismissed()
         viewModelScope.launch {
-            preferencesRepository.forget()
+            preferencesRepository.forget(resetDeviceId = true)
             updateRemoteScreen { it.cleared() }
             connectionRepository.reconnect()
         }

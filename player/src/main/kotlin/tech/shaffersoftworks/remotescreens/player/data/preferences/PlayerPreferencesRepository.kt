@@ -37,7 +37,7 @@ class PlayerPreferencesRepository @Inject constructor(
     val isBatteryPromptPending: Flow<Boolean> =
         dataStore.data.map { preferences -> preferences[BATTERY_PROMPT_PENDING_KEY] ?: false }
 
-    /** A random id made on first use and kept for good, so the add-on knows this screen again. */
+    /** A random id kept until the user forgets the pairing, so the add-on knows this screen again. */
     suspend fun deviceId(): String {
         val updatedPreferences = dataStore.edit { preferences ->
             if (preferences[DEVICE_ID_KEY] == null) preferences[DEVICE_ID_KEY] = UUID.randomUUID().toString()
@@ -79,10 +79,15 @@ class PlayerPreferencesRepository @Inject constructor(
         dataStore.edit { preferences -> preferences[BATTERY_PROMPT_PENDING_KEY] = isPending }
     }
 
-    suspend fun forget() {
+    /**
+     * Clear the pairing. A local reset also needs a fresh identity: the server may still require the old
+     * identity's token. Keep the identity when acknowledging a server-initiated removal on the current session.
+     */
+    suspend fun forget(resetDeviceId: Boolean = false) {
         dataStore.edit { preferences ->
             preferences.remove(TOKEN_KEY)
             preferences.remove(SCREEN_NAME_KEY)
+            if (resetDeviceId) preferences[DEVICE_ID_KEY] = UUID.randomUUID().toString()
         }
     }
 

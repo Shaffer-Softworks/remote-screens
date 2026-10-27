@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -158,6 +159,20 @@ class PlayerViewModelTest {
         runCurrent()
 
         verify(connectionRepository).connect(eq("10.0.0.5:8100"), any())
+    }
+
+    @Test
+    fun `forget resets identity before reconnecting and clears the old screen`() {
+        receive(mainDocument())
+
+        viewModel.onForgetConfirmed()
+        runCurrent()
+
+        inOrder(preferencesRepository, connectionRepository) {
+            runBlocking { verify(preferencesRepository).forget(resetDeviceId = true) }
+            verify(connectionRepository).reconnect()
+        }
+        assertFalse(viewModel.viewState.value.remoteScreen.hasMainDocument)
     }
 
     @Test
