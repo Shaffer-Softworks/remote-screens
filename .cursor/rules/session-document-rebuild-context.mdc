@@ -13,6 +13,7 @@ Structural entity changes rebuild the Remote Compose document; variable updates 
 - `ScreenRenderer.render(..., initialPage = …)` — bake the tablet’s current page into `Vars.PAGE` so a rebuild does not open on home before the player restores page.
 - Player: hide / keep prior frame while the new document swaps (`RemoteDocumentView`).
 - Prefer vars for live values. Timed `refreshEvery` on media (etc.) caused home flashes — only use when the document tree itself must change (forecast lists, to-do rows).
+- Music playhead: Home Assistant's `state_changed` carries `media_position` while a track plays (RPI's `MusicAssistantViewModel` copies `newState`). Bind that attribute. `PlayerHub` applies each debounced snapshot (`conflate` + `collect`, so a slow refresh is not cancelled). `tickProgress` sends only the changed `pos` / `progress` vars — no rebuild.
 
 ## Helpers
 
@@ -24,5 +25,5 @@ Structural entity changes rebuild the Remote Compose document; variable updates 
 One document holds every page. Replacing it used to start every `verticalScroll` / `horizontalScroll` at the top, so a thermostat state change or a calendar timer jumped the lights lists (and every other list) even though the chosen room stayed.
 
 - `keptVerticalScroll` / `keptHorizontalScroll` (`ScrollKeep.kt`) put a stable component id on each scroller. Ids are `0x60_0000` plus a hash of a name (`lights.<tile>.rooms`, `calendar.<tile>`, `freeform.<node>`, …), above video (`0x5C`), map (`0x5D`) and search (`0x5E`).
-- The player copies those offsets onto the new document (`DocumentScroll.kt`) before the swap is shown. The position float is what paint reads; the touch expression would otherwise write 0 back until the next drag.
+- The player copies those offsets onto the new document (`DocumentScroll.kt`) before the swap is shown. The position float is what paint reads; the touch expression would otherwise write 0 back until the next drag. The remaining travel (`mMaxScrollY` / `mMaxScrollX`, and the touch expression's max) is copied with it. Restoring the offset alone leaves a later drag clamped, so the list randomly stops after a rebuild.
 - When the new bytes match the document already on screen, `SessionDocument.show` keeps that document and only sends changed vars and pictures. The revision stays, so taps still match.

@@ -46,6 +46,11 @@ internal fun Screen.intercomPageIndexes(): List<Int> =
 
 internal fun Screen.hasIntercomTile(): Boolean = intercomPageIndexes().isNotEmpty()
 
+private const val NO_INTERCOM_PAGE = -1
+
+/** The first page that holds the intercom tile, or -1 when this screen has none. */
+internal fun Screen.intercomPage(): Int = intercomPageIndexes().firstOrNull() ?: NO_INTERCOM_PAGE
+
 /** Names of the variables a call updates without rebuilding the page. */
 internal object IntercomVars {
     const val STATUS = "ic.status"

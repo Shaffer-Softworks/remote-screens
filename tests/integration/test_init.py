@@ -25,7 +25,7 @@ async def test_a_screen_gets_its_entities(hass: HomeAssistant, client: AsyncMock
     await setup(hass, entry)
     assert hass.states.get("number.living_room_brightness").state == "80"
     assert hass.states.get("switch.living_room_dark_mode").state == "off"
-    assert hass.states.get("switch.living_room_swipe_between_pages").state == "on"
+    assert hass.states.get("switch.living_room_dark_at_night").state == "on"
     assert hass.states.get("time.living_room_night_starts").state == "unknown"
     page = hass.states.get("select.living_room_page")
     assert page.state == "Rooms"

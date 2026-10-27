@@ -9,6 +9,8 @@ import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.calendarEvent
 import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.isToday
 import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.nextCalendarEvent
+import tech.shaffersoftworks.remotescreens.server.render.panels.music.mediaPosition
+import tech.shaffersoftworks.remotescreens.server.render.panels.music.mediaProgress
 import tech.shaffersoftworks.remotescreens.server.render.panels.thermostat.thermostatPanel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
@@ -451,13 +453,9 @@ private fun DocContext.bindMediaBar(node: Node, id: String) {
             entityState?.attr("media_album_name"),
         ).joinToString(" · ").ifEmpty { i18n.state("media_player", entityState?.state ?: "off") }
         val playing = entityState?.state == "playing"
-        val position = entityState?.number("media_position")
         val duration = entityState?.number("media_duration")
-        val progress = if (position != null && duration != null && duration > 0) {
-            (position / duration).toFloat().coerceIn(0f, 1f)
-        } else {
-            0f
-        }
+        val position = entityState.mediaPosition()
+        val progress = mediaProgress(position, duration)
         listOf(
             VarValue.string(
                 Vars.entity(id, "title"),

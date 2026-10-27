@@ -6,6 +6,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.view.View
+import android.widget.FrameLayout
 import androidx.compose.remote.core.CalendarSystemClock
 import androidx.compose.remote.core.RemoteClock
 import androidx.compose.remote.player.core.RemoteDocument
@@ -28,7 +29,7 @@ const val PAGE_VARIABLE = "page"
  * blanks to the theme page colour or flashes home until PAGE sticks.
  */
 @SuppressLint("ViewConstructor")
-class RemoteDocumentView(context: Context) : SwipeFrame(context) {
+class RemoteDocumentView(context: Context) : FrameLayout(context) {
     private val players: Map<Slot, RemoteComposePlayer> = Slot.entries.associateWith { RemoteComposePlayer(
         context,
     ) }

@@ -18,6 +18,7 @@ import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.verticalScroll
 import androidx.compose.remote.creation.profile.Profile
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.ByteArrayInputStream
 
@@ -28,19 +29,20 @@ class DocumentScrollTest {
         val primed = parse(scrollDocument())
         DocumentScroll.restore(
             primed,
-            listOf(DocumentScroll.Mark(LIST_ID, isVertical = true, offset = SCROLLED)),
+            listOf(DocumentScroll.Mark(LIST_ID, isVertical = true, offset = SCROLLED, max = RANGE)),
         ) { _, value ->
             written += value
         }
-        assertEquals(listOf(-SCROLLED), written)
-        assertEquals(
-            listOf(DocumentScroll.Mark(LIST_ID, isVertical = true, offset = SCROLLED)),
-            DocumentScroll.capture(primed),
-        )
+        assertTrue(written.contains(-SCROLLED))
+        val captured = DocumentScroll.capture(primed).single()
+        assertEquals(LIST_ID, captured.componentId)
+        assertEquals(SCROLLED, captured.offset, 0f)
+        assertEquals(RANGE, captured.max, 0f)
 
         val fresh = parse(scrollDocument())
-        DocumentScroll.restore(fresh, DocumentScroll.capture(primed)) { _, _ -> }
+        DocumentScroll.restore(fresh, listOf(captured)) { _, _ -> }
         assertEquals(SCROLLED, scrollers(fresh).single().scrollY, 0f)
+        assertEquals(RANGE, DocumentScroll.capture(fresh).single().max, 0f)
     }
 
     private fun parse(bytes: ByteArray): Component {
@@ -93,6 +95,7 @@ class DocumentScrollTest {
         const val TALL = 4
         const val LIST_ID = 0x60_1000
         const val SCROLLED = -180f
+        const val RANGE = 240f
         const val PROFILES = RcProfiles.PROFILE_ANDROIDX or RcProfiles.PROFILE_EXPERIMENTAL
 
         val profile: Profile = Profile(

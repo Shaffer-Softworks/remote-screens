@@ -108,7 +108,6 @@ class PlayerViewModel @Inject constructor(
         val infoPanel: InfoPanelState? = null,
         val remoteScreen: RemoteScreenState = RemoteScreenState(),
         val screenSettings: ScreenSettings = ScreenSettings(),
-        val isSwipeEnabled: Boolean = true,
         val isAwake: Boolean = true,
         val isNight: Boolean = false,
         /** The brightness being tried in the settings dialog, until it closes. */
@@ -596,13 +595,6 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    fun onSwipe(isNext: Boolean) {
-        val remoteScreen = _viewState.value.remoteScreen
-        if (remoteScreen.isOverlayShown) return
-        val targetPage = if (isNext) remoteScreen.nextSwipePage else remoteScreen.previousSwipePage
-        targetPage?.let(::showPage)
-    }
-
     /** Back closes a card first, then goes home. */
     fun onBack() {
         if (closeTopOverlay()) return
@@ -833,7 +825,6 @@ class PlayerViewModel @Inject constructor(
         _viewState.update {
             it.copy(
                 screenSettings = settings,
-                isSwipeEnabled = settings.swipe,
                 isNight = settings.isNightAt(LocalTime.now()),
             )
         }

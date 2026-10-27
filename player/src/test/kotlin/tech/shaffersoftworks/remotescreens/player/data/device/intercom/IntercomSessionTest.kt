@@ -102,6 +102,27 @@ class IntercomSessionTest {
     }
 
     @Test
+    fun hangingUpStaysOnCallEndedWhenThePeerConnectionCloses() = runTest {
+        val harness = harness()
+        harness.start()
+        harness.registered()
+        harness.session.command("call", "station-kitchen")
+        runCurrent()
+        harness.audio.connect()
+        runCurrent()
+        harness.session.command("hangup", "")
+        runCurrent()
+
+        assertEquals("Call ended", harness.reports.last().status)
+        assertFalse(harness.reports.last().busy)
+        assertTrue(harness.link.sent.any { it.contains(""""type":"hangup"""") })
+        harness.audio.fail()
+        runCurrent()
+        assertEquals("Call ended", harness.reports.last().status)
+        harness.stop()
+    }
+
+    @Test
     fun aCallThatNobodyAnswersHangsUp() = runTest {
         val harness = harness()
         harness.start()
@@ -230,10 +251,14 @@ class IntercomSessionTest {
         override fun setMuted(isMuted: Boolean) = Unit
 
         override fun stop() {
+            if (!isStarted) return
             isStarted = false
+            listener.onFailed()
         }
 
         fun connect() = listener.onConnected()
+
+        fun fail() = listener.onFailed()
     }
 
     private companion object {

@@ -21,9 +21,8 @@ internal class WebRtcPeerObserver(
             PeerConnection.IceConnectionState.CONNECTED,
             PeerConnection.IceConnectionState.COMPLETED,
             -> listener().onConnected()
-            PeerConnection.IceConnectionState.FAILED,
-            PeerConnection.IceConnectionState.CLOSED,
-            -> listener().onFailed()
+            // CLOSED is how a hangup ends the connection. Only FAILED is a call that broke.
+            PeerConnection.IceConnectionState.FAILED -> listener().onFailed()
             else -> Unit
         }
     }

@@ -231,9 +231,6 @@ function pin(e: Event): string | null {
     <label class="check"
       ><input v-model="screen.settings.darkMode" type="checkbox" /> Dark mode</label
     >
-    <label class="check"
-      ><input v-model="screen.settings.swipe" type="checkbox" /> Swipe between pages</label
-    >
     <label class="field">
       Orientation
       <select v-model.number="screen.settings.orientation">

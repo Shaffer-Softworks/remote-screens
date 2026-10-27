@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -70,7 +71,6 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
         viewState = viewState,
         onUserInteraction = viewModel::onUserInteraction,
         onDocumentAction = viewModel::onDocumentAction,
-        onSwipe = viewModel::onSwipe,
         onVideoFailed = viewModel::onVideoFailed,
         onSearchQuery = viewModel::onSearchQuery,
         onSearchPlay = viewModel::onSearchPlay,
@@ -112,7 +112,6 @@ private fun PlayerScreenContent(
     viewState: PlayerViewModel.ViewState,
     onUserInteraction: () -> Unit = {},
     onDocumentAction: (Slot, Int, String) -> Unit = { _, _, _ -> },
-    onSwipe: (Boolean) -> Unit = {},
     onVideoFailed: (Slot, SlotVideo, Int?) -> Unit = { _, _, _ -> },
     onSearchQuery: (String, String) -> Unit = { _, _ -> },
     onSearchPlay: (String, String) -> Unit = { _, _ -> },
@@ -136,10 +135,8 @@ private fun PlayerScreenContent(
     ) {
         RemoteScreen(
             state = viewState.remoteScreen,
-            isSwipeEnabled = viewState.isSwipeEnabled,
             isVideoAllowed = viewState.isAwake && !viewState.isIntercomCall,
             onAction = onDocumentAction,
-            onSwipe = onSwipe,
             onVideoFailed = onVideoFailed,
             onSearchQuery = onSearchQuery,
             onSearchPlay = onSearchPlay,
@@ -168,10 +165,8 @@ private fun PlayerScreenContent(
 @Composable
 private fun RemoteScreen(
     state: RemoteScreenState,
-    isSwipeEnabled: Boolean,
     isVideoAllowed: Boolean,
     onAction: (Slot, Int, String) -> Unit,
-    onSwipe: (Boolean) -> Unit,
     onVideoFailed: (Slot, SlotVideo, Int?) -> Unit,
     onSearchQuery: (String, String) -> Unit,
     onSearchPlay: (String, String) -> Unit,
@@ -182,12 +177,10 @@ private fun RemoteScreen(
         modifier = Modifier.fillMaxSize(),
         update = { remoteDocumentView ->
             remoteDocumentView.onAction = onAction
-            remoteDocumentView.onSwipe = onSwipe
             remoteDocumentView.onVideoFailed = onVideoFailed
             remoteDocumentView.onSearchQuery = onSearchQuery
             remoteDocumentView.onSearchPlay = onSearchPlay
             remoteDocumentView.onSearchEnqueue = onSearchEnqueue
-            remoteDocumentView.isSwipeEnabled = isSwipeEnabled
             remoteDocumentView.isVideoAllowed = isVideoAllowed
             remoteDocumentView.render(state)
         },
@@ -306,39 +299,53 @@ private fun PlayerEvents(viewModel: PlayerViewModel) {
     val context = LocalContext.current
     val activity = LocalActivity.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val prompts = remember { PermissionPrompts() }
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
-    ) { granted -> viewModel.onCameraPermissionResult(granted) }
+    ) { granted ->
+        viewModel.onCameraPermissionResult(granted)
+        prompts.finished()
+    }
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
-    ) { grants -> viewModel.onLocationPermissionResult(grants.values.any { it }) }
+    ) { grants ->
+        viewModel.onLocationPermissionResult(grants.values.any { it })
+        prompts.finished()
+    }
     val microphonePermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
-    ) { granted -> viewModel.onMicrophonePermissionResult(granted) }
+    ) { granted ->
+        viewModel.onMicrophonePermissionResult(granted)
+        prompts.finished()
+    }
     val locationAccuracyLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
     ) { result -> viewModel.onLocationAccuracyResult(result.resultCode == Activity.RESULT_OK) }
+    prompts.show = { prompt ->
+        when (prompt) {
+            PermissionPrompt.Camera -> cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            PermissionPrompt.Microphone ->
+                microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            PermissionPrompt.Location -> locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                ),
+            )
+        }
+    }
     LaunchedEffect(
         viewModel,
         lifecycleOwner,
-        cameraPermissionLauncher,
-        locationPermissionLauncher,
-        microphonePermissionLauncher,
+        prompts,
         locationAccuracyLauncher,
     ) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
             viewModel.events.collect { event ->
                 when (event) {
-                    PlayerEvent.RequestCameraPermission ->
-                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                    PlayerEvent.RequestLocationPermission -> locationPermissionLauncher.launch(
-                        arrayOf(
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION,
-                        ),
-                    )
-                    PlayerEvent.RequestMicrophonePermission ->
-                        microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    PlayerEvent.RequestCameraPermission -> prompts.request(PermissionPrompt.Camera)
+                    PlayerEvent.RequestLocationPermission -> prompts.request(PermissionPrompt.Location)
+                    PlayerEvent.RequestMicrophonePermission -> prompts.request(PermissionPrompt.Microphone)
                     is PlayerEvent.RequestLocationAccuracy -> runCatching {
                         locationAccuracyLauncher.launch(
                             IntentSenderRequest.Builder(event.intentSender).build(),
@@ -444,10 +451,8 @@ private fun RemoteScreenPreview() {
     RemoteScreensTheme {
         RemoteScreen(
             state = RemoteScreenState(),
-            isSwipeEnabled = true,
             isVideoAllowed = true,
             onAction = { _, _, _ -> },
-            onSwipe = {},
             onVideoFailed = { _, _, _ -> },
             onSearchQuery = { _, _ -> },
             onSearchPlay = { _, _ -> },

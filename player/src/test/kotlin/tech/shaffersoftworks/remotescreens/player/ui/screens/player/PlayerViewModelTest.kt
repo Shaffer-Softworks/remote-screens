@@ -10,10 +10,10 @@ import tech.shaffersoftworks.remotescreens.player.data.device.DisplayInfo
 import tech.shaffersoftworks.remotescreens.player.data.device.FaceWakeMonitor
 import tech.shaffersoftworks.remotescreens.player.data.device.ProximityWakeMonitor
 import tech.shaffersoftworks.remotescreens.player.data.device.ScreenPowerRepository
+import tech.shaffersoftworks.remotescreens.player.data.device.intercom.IntercomCoordinator
 import tech.shaffersoftworks.remotescreens.player.data.device.telemetry.LocationAccuracy
 import tech.shaffersoftworks.remotescreens.player.data.device.telemetry.TelemetryReporter
 import tech.shaffersoftworks.remotescreens.player.data.discovery.DiscoveryRepository
-import tech.shaffersoftworks.remotescreens.player.data.device.intercom.IntercomCoordinator
 import tech.shaffersoftworks.remotescreens.player.data.image.ImageDecoder
 import tech.shaffersoftworks.remotescreens.player.data.kiosk.KioskManager
 import tech.shaffersoftworks.remotescreens.player.data.kiosk.KioskState
@@ -75,6 +75,7 @@ class PlayerViewModelTest {
         on { server } doReturn flowOf("10.0.0.5:8100")
         on { token } doReturn flowOf("token")
         on { screenName } doReturn flowOf("Kitchen")
+        on { deviceId() } doReturn "tablet-1"
         on { isKioskEnabled } doReturn isKioskEnabled
         on { isKioskSuppressed } doReturn isKioskSuppressed
     }
@@ -297,16 +298,6 @@ class PlayerViewModelTest {
         assertEquals(2, viewModel.viewState.value.remoteScreen.page)
 
         viewModel.onBack()
-        assertEquals(0, viewModel.viewState.value.remoteScreen.page)
-    }
-
-    @Test
-    fun `swipes are ignored while a card is open`() {
-        receive(mainDocument())
-        receive(ServerMessage.Document(slot = Slot.OVERLAY, rev = 1, data = "AAAA"))
-
-        viewModel.onSwipe(isNext = true)
-
         assertEquals(0, viewModel.viewState.value.remoteScreen.page)
     }
 
