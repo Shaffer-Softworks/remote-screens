@@ -116,6 +116,7 @@ class ComposablePreviewRuleTest {
             "stringResource",
             "painterResource",
             "colorResource",
+            "PermissionPrompts",
         )
 
         fun isPreview(function: SourceFunction): Boolean = "@Preview" in function.annotations

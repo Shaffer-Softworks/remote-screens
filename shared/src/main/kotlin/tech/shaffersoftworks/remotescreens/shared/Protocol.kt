@@ -394,13 +394,20 @@ sealed interface ServerMessage {
     /**
      * Whether this tablet should join intercom signaling, and the name other stations see.
      * Sent with [Settings] whenever the screen changes. [enabled] is false when the screen has no intercom page.
+     * [page] is that page. The player checks the microphone when the tablet opens it, then joins.
      */
     @Serializable
     @SerialName("intercom_config")
     data class IntercomConfig(
         val enabled: Boolean,
         val displayName: String,
-    ) : ServerMessage
+        val page: Int = NO_PAGE,
+    ) : ServerMessage {
+        companion object {
+            /** This screen has no intercom page. */
+            const val NO_PAGE = -1
+        }
+    }
 
     /**
      * A tap on this tablet's intercom page. [verb] is `call`, `hangup`, or `mute`.

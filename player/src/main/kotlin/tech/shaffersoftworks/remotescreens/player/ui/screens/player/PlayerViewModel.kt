@@ -108,7 +108,6 @@ class PlayerViewModel @Inject constructor(
         val infoPanel: InfoPanelState? = null,
         val remoteScreen: RemoteScreenState = RemoteScreenState(),
         val screenSettings: ScreenSettings = ScreenSettings(),
-        val isSwipeEnabled: Boolean = true,
         val isAwake: Boolean = true,
         val isNight: Boolean = false,
         /** The brightness being tried in the settings dialog, until it closes. */
@@ -596,13 +595,6 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    fun onSwipe(isNext: Boolean) {
-        val remoteScreen = _viewState.value.remoteScreen
-        if (remoteScreen.isOverlayShown) return
-        val targetPage = if (isNext) remoteScreen.nextSwipePage else remoteScreen.previousSwipePage
-        targetPage?.let(::showPage)
-    }
-
     /** Back closes a card first, then goes home. */
     fun onBack() {
         if (closeTopOverlay()) return
@@ -611,9 +603,14 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun showPage(index: Int) {
+        val wasOnIntercom = isOnIntercomPage()
         updateRemoteScreen { it.withPage(index) }
         send(PlayerMessage.PageShown(_viewState.value.remoteScreen.page))
         sendDeviceState()
+        when {
+            isOnIntercomPage() && !wasOnIntercom -> enterIntercomPage()
+            wasOnIntercom && !isOnIntercomPage() -> hasCheckedIntercomMicrophone = false
+        }
     }
 
     /** Closes [slot], and tells the add-on so it stops rebuilding the document and sending it again. */
@@ -736,31 +733,65 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun onMicrophonePermissionResult(granted: Boolean) {
+        isAwaitingMicrophone = false
+        if (!isOnIntercomPage()) return
+        hasCheckedIntercomMicrophone = true
         if (!granted) {
             _events.trySend(PlayerEvent.ShowMessageResource(R.string.microphone_permission_denied))
-            return
         }
         viewModelScope.launch { startIntercom() }
     }
 
     private var intercomConfig: ServerMessage.IntercomConfig? = null
 
+    /** True after this visit to the intercom page has asked for the microphone, or already had it. */
+    private var hasCheckedIntercomMicrophone = false
+    private var isAwaitingMicrophone = false
+
     private fun onIntercomConfig(config: ServerMessage.IntercomConfig) {
         intercomConfig = config
-        viewModelScope.launch { startIntercom() }
+        if (!config.enabled) {
+            intercomCoordinator.stop()
+            _viewState.update { it.copy(isIntercomCall = false) }
+            hasCheckedIntercomMicrophone = false
+            isAwaitingMicrophone = false
+            return
+        }
+        if (isOnIntercomPage()) enterIntercomPage()
+    }
+
+    private fun isOnIntercomPage(): Boolean {
+        val config = intercomConfig
+        val isAnyPage = config?.page == ServerMessage.IntercomConfig.NO_PAGE
+        return config?.enabled == true && (isAnyPage || _viewState.value.remoteScreen.page == config.page)
+    }
+
+    /** The intercom page just opened, or its config arrived while that page was already showing. */
+    private fun enterIntercomPage() {
+        viewModelScope.launch { checkMicrophoneThenStart() }
+    }
+
+    /**
+     * Check the microphone, then join signaling. A missing permission is asked once per visit.
+     * The socket still opens if the prompt is denied, so the page does not stay on Connecting….
+     */
+    private suspend fun checkMicrophoneThenStart() {
+        if (!isOnIntercomPage() || connectionRepository.server.value == null) return
+        if (!intercomCoordinator.hasMicrophone() && !hasCheckedIntercomMicrophone) {
+            if (!isAwaitingMicrophone) {
+                isAwaitingMicrophone = true
+                _events.send(PlayerEvent.RequestMicrophonePermission)
+            }
+            return
+        }
+        startIntercom()
     }
 
     private suspend fun startIntercom() {
         val config = intercomConfig
         val server = connectionRepository.server.value
-        when {
-            config == null || server == null -> Unit
-            !config.enabled -> {
-                intercomCoordinator.stop()
-                _viewState.update { it.copy(isIntercomCall = false) }
-            }
-            !intercomCoordinator.hasMicrophone() -> _events.send(PlayerEvent.RequestMicrophonePermission)
-            else -> intercomCoordinator.start(
+        if (config != null && server != null && isOnIntercomPage()) {
+            intercomCoordinator.start(
                 scope = viewModelScope,
                 url = intercomSignalingUrl(server),
                 clientId = intercomClientId(preferencesRepository.deviceId()),
@@ -808,7 +839,6 @@ class PlayerViewModel @Inject constructor(
         _viewState.update {
             it.copy(
                 screenSettings = settings,
-                isSwipeEnabled = settings.swipe,
                 isNight = settings.isNightAt(LocalTime.now()),
             )
         }

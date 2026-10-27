@@ -173,7 +173,7 @@ English in other languages.
 ## Settings from Home Assistant
 
 The **Remote Screens** integration (installed with HACS) adds, for each screen, entities for brightness, dark
-mode, standby, night mode, swipe, back-to-home, the page shown, kiosk lock, and wake-on-proximity /
+mode, standby, night mode, back-to-home, the page shown, kiosk lock, and wake-on-proximity /
 wake-on-face, and the services `remote_screens.show_alert`, `remote_screens.open_page`, `remote_screens.wake`
 and `remote_screens.close`. The add-on announces itself, so Home Assistant offers to set the integration up.
 

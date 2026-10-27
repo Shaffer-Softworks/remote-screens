@@ -1,0 +1,20 @@
+---
+description: RPI music page playhead — HA websocket media_position while playing, applied as pos/progress vars
+globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/panels/music/*.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/freeform/FreeFormBlocks.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/PlayerHub.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/PlayerSession.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/session/SessionDocument.kt
+alwaysApply: false
+---
+
+# RPI music playhead (Oct 2026)
+
+RPI's `MusicAssistantViewModel` collects Home Assistant `state_changed` and copies `newState` (including `mediaPosition`) onto the now-playing row. Music Assistant and other players publish `media_position` on that websocket while the track plays. Use that attribute. Do not add elapsed time on top of it — that double-counts a live position.
+
+## Wiring
+
+- `mediaPosition()` / `mediaProgress()` (`MusicBind.kt`) read `media_position` and `media_duration` from the entity state the websocket just wrote.
+- `bindMusicNowPlaying` (full music tile) and `bindMediaBar` (free-form now-playing bar) bind `pos`, `dur`, and `progress` from those values.
+- `PlayerHub` debounces `homeAssistant.states`, then `conflate().collect` so `session.refresh` finishes. `collectLatest` cancelled a slow refresh (pictures, a rebuild) and dropped later documents' vars — the bar never moved even though HA had sent a new position.
+- `PlayerSession.tick` still calls `SessionDocument.tickProgress` once a second and sends only the vars that changed. That is a var update, not a document rebuild — a timed `refreshEvery` on the music tile flashes home (see `session-document-rebuild-context.mdc`).
+
+## Layout (already shipped)
+
+`nowPlayingProgress` (`MusicPanel.kt`) is RPI's `NowPlayingTrackTime` row: elapsed left, duration right, full-width `levelBar` under. Seek still uses `media_duration * step / PROGRESS_STEPS`.

@@ -156,6 +156,14 @@ class IntercomPanelTest {
         assertTrue(IntercomVars.values(IntercomView.from(null, supportsCalls = false, i18n), i18n).isEmpty())
     }
 
+    @Test
+    fun theIntercomPageIndexPointsAtThePageWithTheTile() {
+        val index = screen.intercomPage()
+
+        assertTrue(index >= 0)
+        assertEquals("intercom", screen.pages[index].allTiles().first().effectiveKind())
+    }
+
     private fun render(view: IntercomView, device: Device = tablet): String {
         val input = RenderInput(ha.states.value, i18n, ha.config.value, RenderData(), intercom = view)
         return String(ScreenRenderer.render(screen, device, input).bytes, Charset.forName("ISO-8859-1"))

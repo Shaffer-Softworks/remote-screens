@@ -77,7 +77,7 @@ All creation calls go through `server/.../render/Rc.kt` and the tile renderers; 
 ## Pages
 
 - One `StateLayout` driven by the named integer `USER:page` holds every page of a screen. The player changes the
-  page with `setUserLocalInt("page", i)`, from a page dot (a local host action) or a swipe it detects itself.
+  page with `setUserLocalInt("page", i)`, from a page dot or the navigation bar.
 
 ## Pictures
 

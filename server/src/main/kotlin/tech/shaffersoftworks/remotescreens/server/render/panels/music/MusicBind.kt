@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.render.panels.music
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Present
 import tech.shaffersoftworks.remotescreens.server.render.Vars
@@ -19,13 +20,9 @@ internal fun DocContext.bindMusicNowPlaying(tileId: String, entityId: String) {
             i18n.state("media_player", entityState?.state ?: "off")
         }
         val playing = entityState?.state == "playing"
-        val position = entityState?.number("media_position")
         val duration = entityState?.number("media_duration")
-        val progress = if (position != null && duration != null && duration > 0) {
-            (position / duration).toFloat().coerceIn(0f, 1f)
-        } else {
-            0f
-        }
+        val position = entityState.mediaPosition()
+        val progress = mediaProgress(position, duration)
         listOf(
             VarValue.string(
                 Vars.entity(entityId, "title"),
@@ -60,6 +57,18 @@ internal fun DocContext.bindMusicNowPlaying(tileId: String, entityId: String) {
     predict(ActionRef(tileId, "play_pause"), entityId)
     predict(ActionRef(tileId, "volume"), entityId)
     predict(ActionRef(tileId, "seek"), entityId)
+}
+
+/**
+ * Home Assistant's `state_changed` carries `media_position` while the player is playing.
+ * RPI's `MusicAssistantViewModel` copies that attribute from `newState`; we do the same.
+ */
+internal fun EntityState?.mediaPosition(): Double? =
+    this?.number("media_position") ?: this?.attr("media_position")?.toDoubleOrNull()
+
+internal fun mediaProgress(position: Double?, duration: Double?): Float {
+    if (position == null || duration == null || duration <= 0.0) return 0f
+    return (position / duration).toFloat().coerceIn(0f, 1f)
 }
 
 internal fun formatMusicTime(seconds: Double): String {
