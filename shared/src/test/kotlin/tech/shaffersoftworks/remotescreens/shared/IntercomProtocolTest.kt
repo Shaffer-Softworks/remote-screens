@@ -31,11 +31,22 @@ class IntercomProtocolTest {
 
     @Test
     fun intercomConfigAndCommandRoundTrip() {
-        val config = ServerMessage.IntercomConfig(enabled = true, displayName = "Living Room")
+        val config = ServerMessage.IntercomConfig(
+            enabled = true,
+            displayName = "Living Room",
+            pageIndexes = listOf(2),
+        )
         val command = ServerMessage.IntercomCommand(verb = "call", clientId = "station-kitchen")
 
         assertEquals(config, Protocol.decodeServer(Protocol.encode(config)))
         assertEquals(command, Protocol.decodeServer(Protocol.encode(command)))
+    }
+
+    @Test
+    fun anEmptyIntercomPageListStaysOffTheWire() {
+        val encoded = Protocol.encode(ServerMessage.IntercomConfig(enabled = false, displayName = "Kitchen"))
+
+        assertFalse(encoded.contains("pageIndexes"))
     }
 
     @Test

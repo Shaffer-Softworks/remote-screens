@@ -110,6 +110,9 @@ data class ActionRef(val tile: String, val verb: String, val arg: String = "") {
 
     companion object {
         val LOCAL_VERBS = setOf("page", "next", "prev", "back", "close", "noop", "settings", "set", "url")
+        const val VERB_RUN = "run"
+        const val ARG_TAP = "tap"
+        const val ARG_HOLD = "hold"
 
         fun decode(encoded: String?): ActionRef? {
             val parts = encoded?.split('|', limit = 3) ?: return null
@@ -394,12 +397,15 @@ sealed interface ServerMessage {
     /**
      * Whether this tablet should join intercom signaling, and the name other stations see.
      * Sent with [Settings] whenever the screen changes. [enabled] is false when the screen has no intercom page.
+     * [pageIndexes] are the document pages that hold the tile, so a tablet that is not the device owner can ask
+     * for the microphone again when one of those pages opens.
      */
     @Serializable
     @SerialName("intercom_config")
     data class IntercomConfig(
         val enabled: Boolean,
         val displayName: String,
+        val pageIndexes: List<Int> = emptyList(),
     ) : ServerMessage
 
     /**

@@ -37,7 +37,7 @@ fun tapRef(tile: Tile, action: TapAction, spec: TypeSpec?, pageIndex: (String) -
         TapType.NONE -> null
         TapType.TOGGLE -> ActionRef(tile.id, "toggle")
         TapType.CARD -> card()
-        TapType.ACTION -> ActionRef(tile.id, "run")
+        TapType.ACTION -> ActionRef(tile.id, ActionRef.VERB_RUN, if (hold) ActionRef.ARG_HOLD else ActionRef.ARG_TAP)
         TapType.PAGE -> action.page?.let(pageIndex)?.let { ActionRef("_", "page", it.toString()) }
         TapType.URL -> action.url?.takeIf { it.isNotBlank() }?.let { ActionRef("_", "url", it) }
         TapType.EVENT -> action.event?.takeIf { it.isNotBlank() }?.let { ActionRef(

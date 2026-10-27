@@ -14,6 +14,8 @@ class PlayerApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         initializeLogging()
+        // Before the player connects, so intercom and sensors do not wait on a permission dialog.
+        kioskManager.grantRuntimePermissions()
         // A process restarted after a crash opens no activity, so nothing would lock the kiosk again.
         kioskManager.relaunchKioskIfUnlocked(reason = "process_start")
     }

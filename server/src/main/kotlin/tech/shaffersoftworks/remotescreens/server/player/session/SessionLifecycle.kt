@@ -1,7 +1,7 @@
 package tech.shaffersoftworks.remotescreens.server.player.session
 
-import tech.shaffersoftworks.remotescreens.server.player.PlayerTokens
-import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.hasIntercomTile
+import tech.shaffersoftworks.remotescreens.server.player.PlayerAuth
+import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.intercomPageIndexes
 import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
 import tech.shaffersoftworks.remotescreens.shared.PlayerRecord
 import tech.shaffersoftworks.remotescreens.shared.Screen
@@ -24,25 +24,26 @@ internal class SessionLifecycle(
     /** Greets the player: with its screen when it is adopted and its token matches, else with a pairing code. */
     suspend fun welcome() {
         val record = layoutRepository.layout.value.players.firstOrNull { it.deviceId == host.hello.deviceId }
-        val token = host.hello.token
-        val isTrusted = record?.tokenHash != null && token != null && PlayerTokens.hash(
-            token,
-        ) == record.tokenHash
+        val isTrusted = PlayerAuth.isTrusted(host.hello.token, record?.tokenHash)
+        if (record?.tokenHash != null && !isTrusted) {
+            // Leave the stored screen and token alone; the hub refuses this Hello.
+            return
+        }
         layoutRepository.update { layout ->
             val updated = (record ?: PlayerRecord(host.hello.deviceId, host.hello.deviceName)).copy(
                 widthDp = host.hello.widthDp,
                 heightDp = host.hello.heightDp,
                 appVersion = host.hello.appVersion,
                 lastSeen = System.currentTimeMillis(),
-                screenId = if (isTrusted) record.screenId else null,
-                tokenHash = if (isTrusted) record.tokenHash else null,
+                screenId = if (isTrusted) record?.screenId else null,
+                tokenHash = if (isTrusted) record?.tokenHash else null,
             )
             layout.copy(
                 players = layout.players.filterNot { it.deviceId == host.hello.deviceId } + updated,
             )
         }
         val screen = if (isTrusted) {
-            layoutRepository.layout.value.screens.firstOrNull { it.id == record.screenId }
+            layoutRepository.layout.value.screens.firstOrNull { it.id == record?.screenId }
         } else {
             null
         }
@@ -171,9 +172,11 @@ internal class SessionLifecycle(
             ?.name
             ?.takeIf { it.isNotBlank() }
             ?: NOT_SET
+        val pageIndexes = screen.intercomPageIndexes()
         return ServerMessage.IntercomConfig(
-            enabled = host.supportsIntercom && screen.hasIntercomTile(),
+            enabled = host.supportsIntercom && pageIndexes.isNotEmpty(),
             displayName = name,
+            pageIndexes = pageIndexes,
         )
     }
 

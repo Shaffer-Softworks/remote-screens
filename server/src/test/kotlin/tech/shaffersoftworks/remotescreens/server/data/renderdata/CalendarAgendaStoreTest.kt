@@ -35,7 +35,8 @@ class CalendarAgendaStoreTest {
 
     @Test
     fun createSendsTheRpiServiceBody() = runBlocking {
-        val result = CalendarMutations(ha, CalendarAgendaStore(ha)).create(
+        val agendas = loadedAgenda()
+        val result = CalendarMutations(ha, agendas).create(
             PlayerMessage.CalendarCreate(
                 tileId = "cal",
                 entityId = "calendar.family",
@@ -60,7 +61,8 @@ class CalendarAgendaStoreTest {
 
     @Test
     fun deleteSendsTheCalendarEventCommand() = runBlocking {
-        val result = CalendarMutations(ha, CalendarAgendaStore(ha)).delete(
+        val agendas = loadedAgenda()
+        val result = CalendarMutations(ha, agendas).delete(
             PlayerMessage.CalendarDelete(
                 tileId = "cal",
                 entityId = "calendar.family",
@@ -74,6 +76,52 @@ class CalendarAgendaStoreTest {
         assertEquals("calendar.family", payload.getValue("entity_id").jsonPrimitive.contentOrNull)
         assertEquals("demo-dentist", payload.getValue("uid").jsonPrimitive.contentOrNull)
         assertEquals("r1", payload.getValue("recurrence_id").jsonPrimitive.contentOrNull)
+    }
+
+    @Test
+    fun createRejectsACalendarThatCannotBeWritten() = runBlocking {
+        val agendas = loadedAgenda()
+        val mutations = CalendarMutations(ha, agendas)
+        val unknown = mutations.create(
+            PlayerMessage.CalendarCreate(
+                tileId = "cal",
+                entityId = "calendar.unknown",
+                summary = "Nope",
+                startDate = "2026-07-15",
+                endDate = "2026-07-15",
+            ),
+        )
+        val holidays = mutations.create(
+            PlayerMessage.CalendarCreate(
+                tileId = "cal",
+                entityId = "calendar.holidays",
+                summary = "Nope",
+                startDate = "2026-07-15",
+                endDate = "2026-07-15",
+            ),
+        )
+        assertIs<AgendaMutation.Rejected>(unknown)
+        assertIs<AgendaMutation.Rejected>(holidays)
+        assertTrue(ha.calls.none { it.first == "calendar" })
+    }
+
+    @Test
+    fun deleteRejectsACalendarThatCannotBeDeleted() = runBlocking {
+        val result = CalendarMutations(ha, loadedAgenda()).delete(
+            PlayerMessage.CalendarDelete(
+                tileId = "cal",
+                entityId = "calendar.holidays",
+                uid = "demo-holiday",
+            ),
+        )
+        assertIs<AgendaMutation.Rejected>(result)
+        assertTrue(ha.commands.none { it.first == "calendar/event/delete" })
+    }
+
+    private suspend fun loadedAgenda(): CalendarAgendaStore {
+        val agendas = CalendarAgendaStore(ha)
+        agendas.snapshot(ha.states.value, ZoneOffset.UTC)
+        return agendas
     }
 
     @Test

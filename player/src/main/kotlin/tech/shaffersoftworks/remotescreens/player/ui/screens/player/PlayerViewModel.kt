@@ -614,6 +614,9 @@ class PlayerViewModel @Inject constructor(
         updateRemoteScreen { it.withPage(index) }
         send(PlayerMessage.PageShown(_viewState.value.remoteScreen.page))
         sendDeviceState()
+        if (isIntercomPage(index)) {
+            viewModelScope.launch { requestMicrophoneIfNeeded() }
+        }
     }
 
     /** Closes [slot], and tells the add-on so it stops rebuilding the document and sending it again. */
@@ -736,6 +739,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun onMicrophonePermissionResult(granted: Boolean) {
+        isMicrophonePromptOpen = false
         if (!granted) {
             _events.trySend(PlayerEvent.ShowMessageResource(R.string.microphone_permission_denied))
             return
@@ -744,10 +748,31 @@ class PlayerViewModel @Inject constructor(
     }
 
     private var intercomConfig: ServerMessage.IntercomConfig? = null
+    private var isMicrophonePromptOpen = false
 
     private fun onIntercomConfig(config: ServerMessage.IntercomConfig) {
         intercomConfig = config
         viewModelScope.launch { startIntercom() }
+    }
+
+    private fun isIntercomPage(index: Int): Boolean {
+        val config = intercomConfig ?: return false
+        return config.enabled && index in config.pageIndexes
+    }
+
+    /**
+     * A device-owner kiosk already granted the microphone. Everyone else is asked at connect and again on the
+     * intercom page, but only while Android has not granted it.
+     */
+    private suspend fun requestMicrophoneIfNeeded() {
+        if (kioskManager.isDeviceOwner() ||
+            intercomCoordinator.hasMicrophone() ||
+            isMicrophonePromptOpen
+        ) {
+            return
+        }
+        isMicrophonePromptOpen = true
+        _events.send(PlayerEvent.RequestMicrophonePermission)
     }
 
     private suspend fun startIntercom() {
@@ -759,7 +784,7 @@ class PlayerViewModel @Inject constructor(
                 intercomCoordinator.stop()
                 _viewState.update { it.copy(isIntercomCall = false) }
             }
-            !intercomCoordinator.hasMicrophone() -> _events.send(PlayerEvent.RequestMicrophonePermission)
+            !intercomCoordinator.hasMicrophone() -> requestMicrophoneIfNeeded()
             else -> intercomCoordinator.start(
                 scope = viewModelScope,
                 url = intercomSignalingUrl(server),

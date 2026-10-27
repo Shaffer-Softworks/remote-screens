@@ -13,6 +13,7 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.ktor.server.websocket.WebSockets
 import io.ktor.websocket.Frame
+import io.ktor.websocket.readText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -20,6 +21,7 @@ import kotlinx.coroutines.delay
 import kotlinx.serialization.builtins.ListSerializer
 import tech.shaffersoftworks.remotescreens.server.config.ServerConfig
 import tech.shaffersoftworks.remotescreens.server.di.ServerDependencies
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoHome
 import tech.shaffersoftworks.remotescreens.server.player.PlayerStatus
 import tech.shaffersoftworks.remotescreens.server.player.PlayerTokens
 import tech.shaffersoftworks.remotescreens.server.plugins.ApiJson
@@ -32,6 +34,7 @@ import tech.shaffersoftworks.remotescreens.shared.LocationTelemetry
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import tech.shaffersoftworks.remotescreens.shared.PlayerRecord
 import tech.shaffersoftworks.remotescreens.shared.Protocol
+import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -138,4 +141,75 @@ class IntegrationPlayersRouteTest {
             assertNull(players(client).first { it.deviceId == "spare" }.telemetry)
         }
     }
+
+    @Test
+    fun invalidCredentialsDoNotEraseAPairedTablet() = withRoutes { client ->
+        client.webSocket("/player") {
+            send(Frame.Text(Protocol.encode(hello(deviceId = "tablet", token = "wrong"))))
+        }
+
+        val record = dependencies.layoutRepository.layout.value.players.first { it.deviceId == "tablet" }
+        assertEquals("home", record.screenId)
+        assertEquals(PlayerTokens.hash(TABLET_TOKEN), record.tokenHash)
+        assertTrue(players(client).none { it.deviceId == "tablet" && it.isOnline })
+    }
+
+    @Test
+    fun invalidCredentialsDoNotDisplaceAnActiveSession() = withRoutes { client ->
+        client.webSocket("/player") {
+            send(Frame.Text(Protocol.encode(hello(deviceId = "tablet", token = TABLET_TOKEN))))
+            incoming.receive()
+            var reported = players(client).first { it.deviceId == "tablet" }
+            var attempts = 0
+            while (!reported.isOnline && attempts++ < POLL_ATTEMPTS) {
+                delay(POLL_DELAY_MS.milliseconds)
+                reported = players(client).first { it.deviceId == "tablet" }
+            }
+            assertTrue(reported.isOnline)
+
+            client.webSocket("/player") {
+                send(Frame.Text(Protocol.encode(hello(deviceId = "tablet", token = "wrong"))))
+            }
+
+            assertTrue(players(client).first { it.deviceId == "tablet" }.isOnline)
+            send(Frame.Text(Protocol.encode(PlayerMessage.Ping)))
+            val pong = incoming.receive() as Frame.Text
+            assertEquals(ServerMessage.Pong, Protocol.decodeServer(pong.readText()))
+        }
+    }
+
+    @Test
+    fun anUnpairedClientCannotCreateCalendarEvents() = withRoutes { client ->
+        val home = dependencies.homeAssistant as DemoHome
+        val callsBefore = home.calls.size
+        client.webSocket("/player") {
+            send(Frame.Text(Protocol.encode(hello(deviceId = "intruder", token = null))))
+            incoming.receive()
+            send(
+                Frame.Text(
+                    Protocol.encode(
+                        PlayerMessage.CalendarCreate(
+                            tileId = "cal",
+                            entityId = "calendar.family",
+                            summary = "Pwned",
+                            startDate = "2026-07-15",
+                            endDate = "2026-07-15",
+                        ),
+                    ),
+                ),
+            )
+            delay(POLL_DELAY_MS.milliseconds)
+        }
+        assertTrue(home.calls.drop(callsBefore).none { it.first == "calendar" })
+    }
+
+    private fun hello(deviceId: String, token: String?): PlayerMessage.Hello = PlayerMessage.Hello(
+        deviceId = deviceId,
+        deviceName = deviceId,
+        token = token,
+        widthDp = 800,
+        heightDp = 480,
+        density = 1f,
+        appVersion = 1,
+    )
 }

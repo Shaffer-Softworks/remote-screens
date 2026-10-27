@@ -22,9 +22,11 @@ class CalendarMutations(
 ) {
     suspend fun create(message: PlayerMessage.CalendarCreate): AgendaMutation {
         val summary = message.summary.trim()
+        val calendar = agendas.latest.calendars.firstOrNull { it.entityId == message.entityId }
         val rejected = when {
             summary.isEmpty() -> AgendaMutation.Rejected(AgendaCopy.TITLE_REQUIRED)
-            message.entityId.isBlank() -> AgendaMutation.Rejected(AgendaCopy.SELECT_CALENDAR)
+            message.entityId.isBlank() || calendar?.canCreate != true ->
+                AgendaMutation.Rejected(AgendaCopy.SELECT_CALENDAR)
             else -> null
         }
         return rejected ?: sendCreate(message, summary)
@@ -46,7 +48,8 @@ class CalendarMutations(
 
     @Suppress("TooGenericExceptionCaught")
     suspend fun delete(message: PlayerMessage.CalendarDelete): AgendaMutation {
-        if (message.uid.isBlank() || message.entityId.isBlank()) {
+        val calendar = agendas.latest.calendars.firstOrNull { it.entityId == message.entityId }
+        if (message.uid.isBlank() || calendar?.canDelete != true) {
             return AgendaMutation.Rejected(AgendaCopy.CANNOT_DELETE)
         }
         val data = buildJsonObject {
