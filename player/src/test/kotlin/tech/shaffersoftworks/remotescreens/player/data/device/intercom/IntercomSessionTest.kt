@@ -10,6 +10,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class IntercomSessionTest {
@@ -107,7 +108,7 @@ class IntercomSessionTest {
         harness.registered()
         harness.session.command("call", "station-kitchen")
         runCurrent()
-        testScheduler.advanceTimeBy(CALL_TIMEOUT_MS)
+        testScheduler.advanceTimeBy(CALL_TIMEOUT_MS.milliseconds)
         runCurrent()
 
         assertEquals("No answer", harness.reports.last().status)
@@ -140,7 +141,7 @@ class IntercomSessionTest {
         harness.registered()
         harness.link.inbound.send("""{"type":"replaced"}""")
         runCurrent()
-        testScheduler.advanceTimeBy(RECONNECT_MS)
+        testScheduler.advanceTimeBy(RECONNECT_MS.milliseconds)
         runCurrent()
 
         assertEquals(2, harness.link.opened)

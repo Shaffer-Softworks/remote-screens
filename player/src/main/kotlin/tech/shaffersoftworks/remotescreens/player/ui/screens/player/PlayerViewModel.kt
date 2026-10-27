@@ -55,10 +55,10 @@ import timber.log.Timber
 import java.time.LocalTime
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
-private const val MILLISECONDS_PER_SECOND = 1_000L
 private val CLOSE_METADATA = ActionRef("_", "close").encode()
-private const val MILLISECONDS_PER_MINUTE = 60_000L
 private const val NIGHT_CHECK_INTERVAL_MS = 60_000L
 private const val MIN_IDENTIFY_SECONDS = 1
 private const val MAX_IDENTIFY_SECONDS = 60
@@ -539,7 +539,7 @@ class PlayerViewModel @Inject constructor(
         alertTimeoutJob?.cancel()
         if (timeoutSeconds <= 0) return
         alertTimeoutJob = viewModelScope.launch {
-            delay(timeoutSeconds * MILLISECONDS_PER_SECOND)
+            delay(timeoutSeconds.seconds)
             closeSlot(Slot.ALERT)
         }
     }
@@ -550,12 +550,7 @@ class PlayerViewModel @Inject constructor(
             val screenName = preferencesRepository.screenName.first() ?: deviceRepository.model
             _viewState.update { it.copy(identifyScreenName = screenName) }
             wake(true)
-            delay(
-                seconds.coerceIn(
-                    MIN_IDENTIFY_SECONDS,
-                    MAX_IDENTIFY_SECONDS,
-                ) * MILLISECONDS_PER_SECOND,
-            )
+            delay(seconds.coerceIn(MIN_IDENTIFY_SECONDS, MAX_IDENTIFY_SECONDS).seconds)
             _viewState.update { it.copy(identifyScreenName = null) }
         }
     }
@@ -646,7 +641,12 @@ class PlayerViewModel @Inject constructor(
 
     /** Any touch: wake up, and start the standby and back-to-home clocks again. */
     fun onUserInteraction() {
-        if (!_viewState.value.isAwake) setAwake(true)
+        if (!_viewState.value.isAwake) {
+            setAwake(true)
+        } else {
+            // The panel can stay dark after a wake lock that did not take. A later near or touch tries again.
+            screenPowerRepository.turnScreenOn()
+        }
         restartClocks()
     }
 
@@ -657,13 +657,13 @@ class PlayerViewModel @Inject constructor(
         Timber.d("Standby clock restarted: %d min", settings.standbyMinutes)
         if (settings.standbyMinutes > 0) {
             standbyJob = viewModelScope.launch {
-                delay(settings.standbyMinutes * MILLISECONDS_PER_MINUTE)
+                delay(settings.standbyMinutes.minutes)
                 setAwake(false)
             }
         }
         if (settings.backToHomeSeconds > 0) {
             backToHomeJob = viewModelScope.launch {
-                delay(settings.backToHomeSeconds * MILLISECONDS_PER_SECOND)
+                delay(settings.backToHomeSeconds.seconds)
                 closeTopOverlay()
                 showPage(_viewState.value.remoteScreen.homePage)
             }
@@ -678,8 +678,9 @@ class PlayerViewModel @Inject constructor(
         if (_viewState.value.isAwake == isAwake) return
         Timber.d("Awake: %b", isAwake)
         _viewState.update { it.copy(isAwake = isAwake) }
-        updateScreenPower()
+        // Listen before the panel locks, so a near edge during the transition is not dropped.
         updateWakeMonitors()
+        updateScreenPower()
         sendDeviceState()
     }
 
@@ -693,17 +694,21 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    /** Each opt-in source runs on its own; both may listen while asleep. */
+    /**
+     * Face listens only while asleep (the camera needs the panel, or a blackout). Proximity stays
+     * registered whenever it is turned on, including while the screen is on: a near sample then
+     * restarts the standby clock, and a short pulse is not missed between locking and listening.
+     */
     private fun updateWakeMonitors() {
-        proximityWakeMonitor.stop()
-        faceWakeMonitor.stop()
         val state = _viewState.value
-        if (state.isAwake) return
         val settings = state.screenSettings
         if (settings.wakeOnProximity && proximityWakeMonitor.isUsable()) {
             proximityWakeMonitor.start { onUserInteraction() }
+        } else {
+            proximityWakeMonitor.stop()
         }
-        if (settings.wakeOnFace && faceWakeMonitor.isUsable()) {
+        faceWakeMonitor.stop()
+        if (!state.isAwake && settings.wakeOnFace && faceWakeMonitor.isUsable()) {
             faceWakeMonitor.start { onUserInteraction() }
         }
     }

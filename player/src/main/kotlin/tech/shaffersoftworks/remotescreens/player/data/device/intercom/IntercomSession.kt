@@ -10,6 +10,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import tech.shaffersoftworks.remotescreens.shared.IntercomStation
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * One tablet's intercom: stay registered while the page is on the screen, place a call, and answer one that arrives.
@@ -28,7 +30,7 @@ internal class IntercomSession(
     private val registration: IntercomRegistration,
     onReport: (PlayerMessage.IntercomReport) -> Unit,
     private val onWake: () -> Unit,
-    private val delayFor: suspend (Long) -> Unit = { delay(it) },
+    private val delayFor: suspend (Duration) -> Unit = { delay(it) },
 ) {
     private var reportListener: (PlayerMessage.IntercomReport) -> Unit = onReport
     private val clientId = registration.clientId
@@ -89,7 +91,7 @@ internal class IntercomSession(
                 Timber.d(error, "Intercom signaling dropped")
                 dropCall()
             }
-            if (isRunning) delayFor(RECONNECT_MS)
+            if (isRunning) delayFor(RECONNECT_MS.milliseconds)
         }
     }
 
@@ -98,7 +100,7 @@ internal class IntercomSession(
         emit(IntercomWire.register(clientId, registration.displayName))
         val heartbeat = scope.launch {
             while (isRunning) {
-                delayFor(HEARTBEAT_MS)
+                delayFor(HEARTBEAT_MS.milliseconds)
                 emit(IntercomWire.heartbeat())
             }
         }
@@ -241,7 +243,7 @@ internal class IntercomSession(
     private fun armTimeout() {
         timeoutJob?.cancel()
         timeoutJob = scope.launch {
-            delayFor(CALL_TIMEOUT_MS)
+            delayFor(CALL_TIMEOUT_MS.milliseconds)
             endCall(notifyPeer = true, nextStatus = NO_ANSWER)
         }
     }

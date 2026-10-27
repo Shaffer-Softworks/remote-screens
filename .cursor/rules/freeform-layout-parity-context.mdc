@@ -20,6 +20,10 @@ A page that looks right in the editor and wrong on the device means CSS and Comp
 - `Node.looseChildren` in `FreeFormLayout.kt`: a `wrap` row treats children that fill its width as `wrap` (`looseW`); a `wrap` column does the same for heights (`looseH`). Cross-axis sizing stays in `pinH` / `pinW` (a wrapped row whose children fill its height is as tall as its tallest child).
 - Test: `FreeFormTest.aComponentThatFillsAWrappedRowTakesItsContentsWidth` — chips render the same whether the inner column is `wrap`, `fill`, or `weight:2`.
 
+## A scrolling row or column
+
+`props.scroll == "true"` on a row or column. Remote Compose ignores `verticalWeight` and `fillMaxHeight` on a scroller: the drag never starts, and children paint through the header. The modifier is an exact main-axis size, `requiredHeightIn` / `requiredWidthIn` max of that size, a `RectShape` clip, then `keptVerticalScroll` / `keptHorizontalScroll` (`FreeFormLayout.kt`, same pattern as the lights lists).
+
 ## Other CSS vs Compose gaps
 
 - `fillMaxWidth` / `fillMaxHeight` inside a wrap-content container takes the max, unlike CSS. That is why `pinH` / `pinW` exist.

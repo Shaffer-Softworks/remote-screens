@@ -26,6 +26,7 @@ import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.min
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val INITIAL_BACKOFF_MS = 1_000L
 private const val MAX_BACKOFF_MS = 30_000L
@@ -116,7 +117,7 @@ class ConnectionRepository @Inject constructor(
             if (!currentCoroutineContext().isActive) break
             _status.value = ConnectionStatus.DISCONNECTED
             _consecutiveFailures.value += 1
-            delay(backoffMs)
+            delay(backoffMs.milliseconds)
             backoffMs = min(backoffMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS)
         }
     }

@@ -15,6 +15,7 @@ import org.junit.Test
 import tech.shaffersoftworks.remotescreens.shared.DeviceTelemetry
 import tech.shaffersoftworks.remotescreens.shared.LocationTelemetry
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TelemetryReporterTest {
@@ -39,7 +40,7 @@ class TelemetryReporterTest {
         testScope.runCurrent()
         assertEquals(1, sent.size)
 
-        testScope.advanceTimeBy(REPORT_INTERVAL_MS)
+        testScope.advanceTimeBy(REPORT_INTERVAL_MS.milliseconds)
         testScope.runCurrent()
 
         assertEquals(2, sent.size)
@@ -49,7 +50,7 @@ class TelemetryReporterTest {
     fun aChangeReportsBeforeTheInterval() {
         start()
         testScope.runCurrent()
-        testScope.advanceTimeBy(MIN_REPORT_GAP_MS + 1)
+        testScope.advanceTimeBy((MIN_REPORT_GAP_MS + 1).milliseconds)
 
         source.changes.tryEmit(Unit)
         testScope.runCurrent()
@@ -66,7 +67,7 @@ class TelemetryReporterTest {
         testScope.runCurrent()
         assertEquals(1, sent.size)
 
-        testScope.advanceTimeBy(MIN_REPORT_GAP_MS + 1)
+        testScope.advanceTimeBy((MIN_REPORT_GAP_MS + 1).milliseconds)
         testScope.runCurrent()
         assertEquals(2, sent.size)
     }
@@ -77,7 +78,7 @@ class TelemetryReporterTest {
         testScope.runCurrent()
 
         start(isEnabled = false)
-        testScope.advanceTimeBy(REPORT_INTERVAL_MS * 2)
+        testScope.advanceTimeBy((REPORT_INTERVAL_MS * 2).milliseconds)
         testScope.runCurrent()
 
         assertEquals(1, sent.size)
@@ -108,7 +109,7 @@ class TelemetryReporterTest {
         assertEquals(null, sent.last().telemetry.location)
 
         source.hasPermission = true
-        testScope.advanceTimeBy(REPORT_INTERVAL_MS)
+        testScope.advanceTimeBy(REPORT_INTERVAL_MS.milliseconds)
         testScope.runCurrent()
 
         assertTrue(source.isLocationShared)

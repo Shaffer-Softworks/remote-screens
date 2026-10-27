@@ -6,15 +6,23 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import tech.shaffersoftworks.remotescreens.player.data.device.ProximityScale
+import tech.shaffersoftworks.remotescreens.player.di.MainDispatcher
 import tech.shaffersoftworks.remotescreens.shared.EnvironmentTelemetry
 import tech.shaffersoftworks.remotescreens.shared.TelemetryHardware
 import timber.log.Timber
@@ -38,8 +46,11 @@ private const val LIGHT_CHANGE_MIN_LUX = 5f
 @Singleton
 class EnvironmentSensorMonitor @Inject constructor(
     @ApplicationContext context: Context,
+    @MainDispatcher mainDispatcher: CoroutineDispatcher,
 ) {
     private val sensorManager = context.getSystemService(SensorManager::class.java)
+    private val scope = CoroutineScope(SupervisorJob() + mainDispatcher)
+    private var listenJob: Job? = null
     private val lightSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_LIGHT)
     private val pressureSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_PRESSURE)
     private val temperatureSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_AMBIENT_TEMPERATURE)
@@ -58,7 +69,6 @@ class EnvironmentSensorMonitor @Inject constructor(
     val changes: SharedFlow<Unit> = _changes.asSharedFlow()
 
     private var announcedLux: Float? = null
-    private var isListening = false
     private val proximityScale = ProximityScale()
 
     val hardware: List<String>
@@ -72,19 +82,56 @@ class EnvironmentSensorMonitor @Inject constructor(
 
     fun start() {
         val manager = sensorManager
-        if (manager == null || isListening) return
-        isListening = true
-        listOfNotNull(lightSensor, pressureSensor, temperatureSensor, humiditySensor, proximitySensor)
-            .forEach { sensor -> manager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_NORMAL) }
+        if (manager == null || listenJob?.isActive == true) return
+        val sensors = listOfNotNull(
+            lightSensor,
+            pressureSensor,
+            temperatureSensor,
+            humiditySensor,
+            proximitySensor,
+        )
+        listenJob = scope.launch {
+            callbackFlow {
+                val sensorListener = object : SensorEventListener {
+                    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+
+                    override fun onSensorChanged(event: SensorEvent) {
+                        val value = event.values.firstOrNull() ?: return
+                        trySend(
+                            EnvironmentSample(
+                                type = event.sensor.type,
+                                value = value,
+                                maximumRange = event.sensor.maximumRange,
+                                resolution = event.sensor.resolution,
+                            ),
+                        )
+                    }
+                }
+                sensors.forEach { sensor ->
+                    manager.registerListener(sensorListener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+                }
+                awaitClose { manager.unregisterListener(sensorListener) }
+            }.collect { sample -> onSample(sample) }
+        }
         Timber.d("Environment sensors started: %s", hardware)
     }
 
     fun stop() {
-        if (!isListening) return
-        sensorManager?.unregisterListener(listener)
-        isListening = false
+        if (listenJob == null) return
+        listenJob?.cancel()
+        listenJob = null
         announcedLux = null
         _readings.value = EnvironmentTelemetry()
+    }
+
+    private fun onSample(sample: EnvironmentSample) {
+        when (sample.type) {
+            Sensor.TYPE_LIGHT -> onLight(sample.value)
+            Sensor.TYPE_PRESSURE -> _readings.update { it.copy(pressureHpa = sample.value) }
+            Sensor.TYPE_AMBIENT_TEMPERATURE -> _readings.update { it.copy(temperatureC = sample.value) }
+            Sensor.TYPE_RELATIVE_HUMIDITY -> _readings.update { it.copy(humidityPercent = sample.value) }
+            Sensor.TYPE_PROXIMITY -> onProximity(sample.value, sample.maximumRange, sample.resolution)
+        }
     }
 
     private fun onLight(lux: Float) {
@@ -105,23 +152,11 @@ class EnvironmentSensorMonitor @Inject constructor(
         _readings.update { it.copy(isNear = isNear) }
         if (wasNear != null && wasNear != isNear) _changes.tryEmit(Unit)
     }
-
-    private val listener = object : SensorEventListener {
-        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
-
-        override fun onSensorChanged(event: SensorEvent) {
-            val value = event.values.firstOrNull() ?: return
-            when (event.sensor.type) {
-                Sensor.TYPE_LIGHT -> onLight(value)
-                Sensor.TYPE_PRESSURE -> _readings.update { it.copy(pressureHpa = value) }
-                Sensor.TYPE_AMBIENT_TEMPERATURE -> _readings.update { it.copy(temperatureC = value) }
-                Sensor.TYPE_RELATIVE_HUMIDITY -> _readings.update { it.copy(humidityPercent = value) }
-                Sensor.TYPE_PROXIMITY -> onProximity(
-                    value,
-                    event.sensor.maximumRange,
-                    event.sensor.resolution,
-                )
-            }
-        }
-    }
 }
+
+private data class EnvironmentSample(
+    val type: Int,
+    val value: Float,
+    val maximumRange: Float,
+    val resolution: Float,
+)

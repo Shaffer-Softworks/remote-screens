@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import kotlin.time.Duration.Companion.milliseconds
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -324,10 +325,10 @@ class PlayerViewModelTest {
     fun `settings sent again do not restart the standby clock`() {
         val settings = ScreenSettings(standbyMinutes = 1)
         receive(ServerMessage.Settings(settings))
-        testDispatcher.scheduler.advanceTimeBy(50_000)
+        testDispatcher.scheduler.advanceTimeBy(50_000.milliseconds)
 
         receive(ServerMessage.Settings(settings))
-        testDispatcher.scheduler.advanceTimeBy(11_000)
+        testDispatcher.scheduler.advanceTimeBy(11_000.milliseconds)
 
         assertFalse(viewModel.viewState.value.isAwake)
     }
@@ -391,8 +392,25 @@ class PlayerViewModelTest {
 
         // Face needs the panel on (blackout), even when proximity is also listening.
         verify(screenPowerRepository, never()).turnScreenOff()
-        verify(proximityWakeMonitor).start(any())
+        verify(proximityWakeMonitor, atLeastOnce()).start(any())
         verify(faceWakeMonitor).start(any())
+    }
+
+    @Test
+    fun `waking leaves proximity listening`() {
+        whenever(proximityWakeMonitor.isUsable()).thenReturn(true)
+        receive(
+            ServerMessage.Settings(
+                ScreenSettings(standbyScreenOff = true, wakeOnProximity = true),
+            ),
+        )
+
+        receive(ServerMessage.Wake(awake = false))
+        viewModel.onUserInteraction()
+
+        verify(proximityWakeMonitor, never()).stop()
+        verify(proximityWakeMonitor, atLeastOnce()).start(any())
+        verify(screenPowerRepository, atLeastOnce()).turnScreenOn()
     }
 
     @Test

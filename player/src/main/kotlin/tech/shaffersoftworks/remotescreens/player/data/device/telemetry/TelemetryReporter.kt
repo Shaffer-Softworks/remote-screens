@@ -14,6 +14,7 @@ import tech.shaffersoftworks.remotescreens.player.di.IoDispatcher
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 /** A full report this often, even when nothing changed, so Home Assistant sees the tablet is alive. */
 internal const val REPORT_INTERVAL_MS = 60_000L
@@ -71,7 +72,7 @@ class TelemetryReporter @Inject constructor(
                 }
                 val telemetry = withContext(ioDispatcher) { source.snapshot(shareNow) }
                 send(PlayerMessage.Telemetry(telemetry))
-                delay(MIN_REPORT_GAP_MS)
+                delay(MIN_REPORT_GAP_MS.milliseconds)
             }
         }
     }
@@ -88,7 +89,7 @@ class TelemetryReporter @Inject constructor(
     private fun scheduledReports(): Flow<Unit> = flow {
         while (true) {
             emit(Unit)
-            delay(REPORT_INTERVAL_MS)
+            delay(REPORT_INTERVAL_MS.milliseconds)
         }
     }
 }

@@ -11,7 +11,6 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.readText
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -22,6 +21,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val STATE_DEBOUNCE_MS = 80L
 private const val TICK_INTERVAL_MS = 1000L
@@ -47,10 +47,9 @@ class PlayerHub(
     private val scope: CoroutineScope = sessionContext.scope
     private val sessions = ConcurrentHashMap<String, PlayerSession>()
 
-    @OptIn(FlowPreview::class)
     fun start() {
         scope.launch {
-            homeAssistant.states.debounce(STATE_DEBOUNCE_MS).collectLatest { states ->
+            homeAssistant.states.debounce(STATE_DEBOUNCE_MS.milliseconds).collectLatest { states ->
                 for (session in sessions.values) session.refresh(states)
             }
         }
@@ -256,7 +255,7 @@ class PlayerHub(
         while (scope.isActive) {
             val now = screenClock.now()
             val untilNextMinuteMs = (SECONDS_PER_MINUTE - now.second) * MS_PER_SECOND - now.nano / NANOS_PER_MS
-            delay(untilNextMinuteMs.coerceAtLeast(MIN_CLOCK_DELAY_MS))
+            delay(untilNextMinuteMs.coerceAtLeast(MIN_CLOCK_DELAY_MS).milliseconds)
             val clockVars = screenClock.clockVars()
             for (session in sessions.values) {
                 session.sendVars(clockVars)
@@ -267,7 +266,7 @@ class PlayerHub(
 
     private suspend fun runTicks() {
         while (scope.isActive) {
-            delay(TICK_INTERVAL_MS)
+            delay(TICK_INTERVAL_MS.milliseconds)
             val states = homeAssistant.states.value
             for (session in sessions.values) {
                 runCatching { session.tick(

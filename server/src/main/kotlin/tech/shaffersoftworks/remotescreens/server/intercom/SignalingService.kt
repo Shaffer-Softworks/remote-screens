@@ -20,6 +20,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.milliseconds
 
 /** WebSocket sessions for one [SignalingHub], shared by the tablet port and the ingress panel. */
 class SignalingService(
@@ -31,7 +32,7 @@ class SignalingService(
     fun start() {
         scope.launch {
             while (isActive) {
-                delay(APP_PING_INTERVAL_MS)
+                delay(APP_PING_INTERVAL_MS.milliseconds)
                 val ping = """{"type":"ping","ts":${System.currentTimeMillis()}}"""
                 for (socket in sockets.values) {
                     runCatching { socket.send(Frame.Text(ping)) }
@@ -79,7 +80,7 @@ class SignalingService(
         for (sessionId in outcome.closeSessionIds) closeSocket(sessionId)
         for (deferred in outcome.deferred) {
             scope.launch {
-                delay(deferred.delayMs)
+                delay(deferred.delayMs.milliseconds)
                 deliver(deferred.sessionId, deferred.json)
             }
         }

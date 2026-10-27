@@ -17,6 +17,7 @@ import tech.shaffersoftworks.remotescreens.player.ui.screens.player.unrestricted
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 import tech.shaffersoftworks.remotescreens.player.utils.hideSystemBars
 import tech.shaffersoftworks.remotescreens.player.utils.measureDisplay
+import tech.shaffersoftworks.remotescreens.player.utils.requestScreenOn
 import tech.shaffersoftworks.remotescreens.player.utils.showOverLockScreen
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -45,6 +46,7 @@ class MainActivity : ComponentActivity() {
         // After layout/immersive settle — a sync measure here can Hello with the wrong size until reboot.
         scheduleDisplayMeasure()
         observeKiosk()
+        observeScreenOn()
     }
 
     override fun onResume() {
@@ -80,6 +82,20 @@ class MainActivity : ComponentActivity() {
                         }
                         kioskManager.applyKiosk(this@MainActivity, isKioskWanted)
                         viewModel.onKioskStateChanged()
+                    }
+            }
+        }
+    }
+
+    /** A wake after the panel was locked has to ask the window again; the flag does not stick across lockNow. */
+    private fun observeScreenOn() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.viewState
+                    .map { viewState -> viewState.isAwake }
+                    .distinctUntilChanged()
+                    .collect { isAwake ->
+                        if (isAwake) requestScreenOn()
                     }
             }
         }

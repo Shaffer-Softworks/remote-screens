@@ -10,6 +10,7 @@ import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Slot
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 /** Welcome, theme, preview, and layout-change lifecycle for a [SessionHost]. */
 internal class SessionLifecycle(
@@ -141,7 +142,7 @@ internal class SessionLifecycle(
         host.previewScreen = screen
         showWithSettings(screen)
         host.previewJob = context.scope.launch {
-            delay(PREVIEW_MS)
+            delay(PREVIEW_MS.milliseconds)
             host.previewScreen = null
             host.screen()?.let { showWithSettings(it) }
         }.also { host.jobs += it }

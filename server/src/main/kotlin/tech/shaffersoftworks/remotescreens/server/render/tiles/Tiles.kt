@@ -32,7 +32,6 @@ import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
-import androidx.compose.remote.creation.dsl.verticalWeight
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileChrome as C
@@ -136,7 +135,9 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
                     ).background(docContext.color(Vars.tile(tile.id, Vars.KEY_LINE))),
                 )
             }
-            Box(Modifier.fillMaxWidth().verticalWeight(1f)) {
+            // A weight here lays the header title out at the top of the screen, so the name paints
+            // in the bar. The body is the height left under the header.
+            Box(Modifier.fillMaxWidth().height(docContext.units.px(body.h))) {
                 when (kind) {
                     "clock" -> docContext.clockTile(tile, body)
                     "bedside" -> docContext.bedsideTile(tile, body)

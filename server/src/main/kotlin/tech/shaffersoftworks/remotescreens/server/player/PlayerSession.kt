@@ -254,7 +254,7 @@ class PlayerSession(
             is TapOutcome.Confirm -> {
                 send(ServerMessage.Vars(listOf(VarValue.string(outcome.varName, outcome.text))))
                 jobs += context.scope.launch {
-                    delay(ActionRouter.CONFIRM_MS)
+                    delay(ActionRouter.CONFIRM_MS.milliseconds)
                     send(ServerMessage.Vars(listOf(VarValue.string(outcome.varName, ""))))
                 }
             }
@@ -266,7 +266,7 @@ class PlayerSession(
                 documents.resync()
             }
             TapOutcome.Done -> jobs += context.scope.launch {
-                delay(RESYNC_MS)
+                delay(RESYNC_MS.milliseconds)
                 documents.resync()
             }
             TapOutcome.Rebuild -> {

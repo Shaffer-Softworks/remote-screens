@@ -35,6 +35,19 @@ class ScreenPowerRepository @Inject constructor(
         powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG + "standby")
             .apply { setReferenceCounted(false) }
 
+    /**
+     * Stored so the panel actually comes back on after [DevicePolicyManager.lockNow]. A bright wake
+     * lock created and dropped on the sensor thread does not turn this PX30 back on.
+     */
+    @Suppress("DEPRECATION")
+    private val wakeUpLock: PowerManager.WakeLock =
+        powerManager.newWakeLock(
+            PowerManager.FULL_WAKE_LOCK or
+                PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                PowerManager.ON_AFTER_RELEASE,
+            WAKE_LOCK_TAG + "wake",
+        ).apply { setReferenceCounted(false) }
+
     var isScreenOff: Boolean = false
         private set
 
@@ -53,13 +66,10 @@ class ScreenPowerRepository @Inject constructor(
     }
 
     fun turnScreenOn() {
-        if (!isScreenOff) return
+        val panelIsOff = isScreenOff || !powerManager.isInteractive
+        if (!panelIsOff) return
         isScreenOff = false
-        @Suppress("DEPRECATION")
-        powerManager.newWakeLock(
-            PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
-            WAKE_LOCK_TAG + "wake",
-        ).acquire(WAKE_UP_HOLD_MS)
-        keepConnectedLock.release()
+        wakeUpLock.acquire(WAKE_UP_HOLD_MS)
+        if (keepConnectedLock.isHeld) keepConnectedLock.release()
     }
 }

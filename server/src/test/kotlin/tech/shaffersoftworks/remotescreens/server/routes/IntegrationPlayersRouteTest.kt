@@ -38,6 +38,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val TABLET_TOKEN = "tablet-token"
 private const val POLL_ATTEMPTS = 50
@@ -127,7 +128,7 @@ class IntegrationPlayersRouteTest {
             var reported = players(client).first { it.deviceId == "tablet" }
             var attempts = 0
             while (reported.telemetry == null && attempts++ < POLL_ATTEMPTS) {
-                delay(POLL_DELAY_MS)
+                delay(POLL_DELAY_MS.milliseconds)
                 reported = players(client).first { it.deviceId == "tablet" }
             }
 

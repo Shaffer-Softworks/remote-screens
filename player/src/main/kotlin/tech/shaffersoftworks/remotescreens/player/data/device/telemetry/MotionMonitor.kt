@@ -10,10 +10,18 @@ import android.hardware.TriggerEvent
 import android.hardware.TriggerEventListener
 import android.os.SystemClock
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
+import tech.shaffersoftworks.remotescreens.player.di.MainDispatcher
 import tech.shaffersoftworks.remotescreens.shared.MotionTelemetry
 import tech.shaffersoftworks.remotescreens.shared.TelemetryHardware
 import timber.log.Timber
@@ -36,8 +44,11 @@ private const val AXES = 3
 @Singleton
 class MotionMonitor @Inject constructor(
     @ApplicationContext private val context: Context,
+    @MainDispatcher mainDispatcher: CoroutineDispatcher,
 ) {
     private val sensorManager = context.getSystemService(SensorManager::class.java)
+    private val scope = CoroutineScope(SupervisorJob() + mainDispatcher)
+    private var listenJob: Job? = null
     private val accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
     private val significantMotionSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_SIGNIFICANT_MOTION)
 
@@ -53,7 +64,6 @@ class MotionMonitor @Inject constructor(
     private var hasGravity = false
     private var lastMotionElapsedMs: Long? = null
     private var lastMotionAt: Long? = null
-    private var isListening = false
 
     val hardware: List<String>
         get() = listOfNotNull(
@@ -63,18 +73,54 @@ class MotionMonitor @Inject constructor(
 
     fun start() {
         val manager = sensorManager
-        if (manager == null || isListening) return
-        isListening = true
-        accelerometer?.let { manager.registerListener(accelerometerListener, it, SensorManager.SENSOR_DELAY_NORMAL) }
-        significantMotionSensor?.let { manager.requestTriggerSensor(significantMotionListener, it) }
+        if (manager == null || listenJob?.isActive == true) return
+        listenJob = scope.launch {
+            callbackFlow {
+                val samples = this
+                val accelerometerListener = object : SensorEventListener {
+                    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+
+                    override fun onSensorChanged(event: SensorEvent) {
+                        if (event.values.size < AXES) return
+                        trySend(
+                            MotionSample.Acceleration(
+                                x = event.values[0],
+                                y = event.values[1],
+                                z = event.values[2],
+                            ),
+                        )
+                    }
+                }
+                val triggerListener = object : TriggerEventListener() {
+                    override fun onTrigger(event: TriggerEvent?) {
+                        samples.trySend(MotionSample.Significant)
+                        // A trigger sensor disarms after firing.
+                        val sensor = significantMotionSensor ?: return
+                        if (listenJob?.isActive == true) manager.requestTriggerSensor(this, sensor)
+                    }
+                }
+                accelerometer?.let { sensor ->
+                    manager.registerListener(accelerometerListener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+                }
+                significantMotionSensor?.let { sensor -> manager.requestTriggerSensor(triggerListener, sensor) }
+                awaitClose {
+                    manager.unregisterListener(accelerometerListener)
+                    significantMotionSensor?.let { sensor -> manager.cancelTriggerSensor(triggerListener, sensor) }
+                }
+            }.collect { sample ->
+                when (sample) {
+                    is MotionSample.Acceleration -> onAcceleration(sample)
+                    MotionSample.Significant -> onMotion()
+                }
+            }
+        }
         Timber.d("Motion monitor started: %s", hardware)
     }
 
     fun stop() {
-        if (!isListening) return
-        sensorManager?.unregisterListener(accelerometerListener)
-        significantMotionSensor?.let { sensorManager?.cancelTriggerSensor(significantMotionListener, it) }
-        isListening = false
+        if (listenJob == null) return
+        listenJob?.cancel()
+        listenJob = null
         hasGravity = false
     }
 
@@ -103,32 +149,26 @@ class MotionMonitor @Inject constructor(
         if (wasStill) _changes.tryEmit(Unit)
     }
 
-    private val accelerometerListener = object : SensorEventListener {
-        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
-
-        override fun onSensorChanged(event: SensorEvent) {
-            if (event.values.size < AXES) return
-            if (!hasGravity) {
-                event.values.copyInto(gravity, endIndex = AXES)
-                hasGravity = true
-                return
-            }
-            var linearSquared = 0f
-            for (axis in 0 until AXES) {
-                gravity[axis] += GRAVITY_SMOOTHING * (event.values[axis] - gravity[axis])
-                val linear = event.values[axis] - gravity[axis]
-                linearSquared += linear * linear
-            }
-            if (sqrt(linearSquared) >= MOVEMENT_THRESHOLD) onMotion()
+    private fun onAcceleration(sample: MotionSample.Acceleration) {
+        if (!hasGravity) {
+            gravity[0] = sample.x
+            gravity[1] = sample.y
+            gravity[2] = sample.z
+            hasGravity = true
+            return
         }
+        val axes = floatArrayOf(sample.x, sample.y, sample.z)
+        var linearSquared = 0f
+        for (axis in 0 until AXES) {
+            gravity[axis] += GRAVITY_SMOOTHING * (axes[axis] - gravity[axis])
+            val linear = axes[axis] - gravity[axis]
+            linearSquared += linear * linear
+        }
+        if (sqrt(linearSquared) >= MOVEMENT_THRESHOLD) onMotion()
     }
 
-    private val significantMotionListener = object : TriggerEventListener() {
-        override fun onTrigger(event: TriggerEvent?) {
-            onMotion()
-            // A trigger sensor disarms after firing.
-            val sensor = significantMotionSensor
-            if (isListening && sensor != null) sensorManager?.requestTriggerSensor(this, sensor)
-        }
+    private sealed interface MotionSample {
+        data class Acceleration(val x: Float, val y: Float, val z: Float) : MotionSample
+        data object Significant : MotionSample
     }
 }
