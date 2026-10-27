@@ -38,7 +38,7 @@ Read the rule whose files you are changing. These describe behavior that is alre
 - `lights-panel-context.mdc` — RPI lights page and light dialog
 - `cameras-panel-context.mdc` — RPI cameras page
 - `intercom-panel-context.mdc` — tablet intercom page, signaling on port 8766, Home Assistant callers, and why a call or the integration fails to start
-- `music-panel-context.mdc` — RPI music page playhead: HA websocket `media_position` while playing
+- `music-panel-context.mdc` — RPI music page playhead: snapshot `media_position` plus elapsed since `media_position_updated_at`
 - `tablet-telemetry-context.mdc` — tablet sensors, diagnostics and GPS in Home Assistant
 - `configurable-bars-context.mdc` — top bar and nav bar sizes
 - `standby-wake-sources-context.mdc` — wake sources
