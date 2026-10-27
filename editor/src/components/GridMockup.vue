@@ -100,6 +100,29 @@ const ON_STATES = [
 const isHomePanel = (tile: Tile) => kindOf(tile) === 'home'
 const isWeatherPanel = (tile: Tile) => kindOf(tile) === 'weather' && tile.full === true
 const WEATHER_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+/** Keep in step with PortraitFit in WeatherPanel.kt. */
+const WEATHER_WIDE_DP = 520
+const WEATHER_NARROW_DP = 420
+const WEATHER_FORECAST = [
+  { day: 'Monday', condition: 'partlycloudy', label: 'Partly cloudy', high: '19°', low: '10°' },
+  { day: 'Tuesday', condition: 'rainy', label: 'Rain', high: '16°', low: '9°' },
+  { day: 'Wednesday', condition: 'cloudy', label: 'Cloudy', high: '18°', low: '11°' },
+  { day: 'Thursday', condition: 'sunny', label: 'Sunny', high: '21°', low: '12°' },
+  { day: 'Friday', condition: 'partlycloudy', label: 'Partly cloudy', high: '20°', low: '11°' },
+  { day: 'Saturday', condition: 'rainy', label: 'Rain', high: '17°', low: '10°' },
+  { day: 'Sunday', condition: 'sunny', label: 'Sunny', high: '22°', low: '13°' },
+]
+const weatherContent = computed(() => ({
+  w: props.device.w,
+  h: props.device.h - gridLayout.value.topBar - gridLayout.value.navBar,
+}))
+const weatherIsPortrait = computed(() => weatherContent.value.h > weatherContent.value.w)
+const weatherHeroIcon = computed(() => {
+  const width = weatherContent.value.w
+  if (width < WEATHER_NARROW_DP) return 72
+  if (width >= WEATHER_WIDE_DP) return 110
+  return 96
+})
 const isThermostatPanel = (tile: Tile) => kindOf(tile) === 'climate' && tile.full === true
 const isMusicPanel = (tile: Tile) => kindOf(tile) === 'music' && tile.full === true
 /** RPI's alarm page (AlarmPanel.kt): status and zones on the left, the pin keypad on the right. */
@@ -438,6 +461,9 @@ const highlight = computed(() => {
         :class="{
           panel: isHomePanel(placement.tile),
           'weather-panel': isWeatherPanel(placement.tile) || isThermostatPanel(placement.tile),
+          'weather-portrait': isWeatherPanel(placement.tile) && weatherIsPortrait,
+          'weather-wide': isWeatherPanel(placement.tile) && weatherContent.w >= WEATHER_WIDE_DP,
+          'weather-narrow': isWeatherPanel(placement.tile) && weatherContent.w < WEATHER_NARROW_DP,
           'thermostat-panel': isThermostatPanel(placement.tile),
           'music-panel': isMusicPanel(placement.tile),
           'alarm-panel': isAlarmPanel(placement.tile),
@@ -716,6 +742,31 @@ const highlight = computed(() => {
             </span>
           </span>
           <span class="cal-fab"><MdiIcon name="plus" :size="24" /></span>
+        </template>
+        <template v-else-if="isWeatherPanel(placement.tile) && weatherIsPortrait">
+          <span class="wx-name">{{
+            nameOf(placement.tile, entityById.get(placement.tile.entityId ?? ''), pageTitle)
+          }}</span>
+          <span class="wx-now"
+            ><HaWeatherIcon condition="partlycloudy" :size="weatherHeroIcon" />14°</span
+          >
+          <span class="wx-condition">Partly cloudy</span>
+          <span class="wx-details">
+            <span class="wx-detail"><small>Wind</small><strong>12 km/h</strong></span>
+            <span class="wx-detail"><small>Humidity</small><strong>71%</strong></span>
+            <span class="wx-detail"><small>Pressure</small><strong>1,013 hPa</strong></span>
+          </span>
+          <div class="wx-days">
+            <span v-for="day in WEATHER_FORECAST" :key="day.day" class="wx-day">
+              <span class="wx-weekday">{{ day.day }}</span>
+              <HaWeatherIcon :condition="day.condition" :size="40" />
+              <span class="wx-cond soft">{{ day.label }}</span>
+              <span class="wx-temps"
+                ><strong>{{ day.high }}</strong
+                ><small class="wx-low soft"> / {{ day.low }}</small></span
+              >
+            </span>
+          </div>
         </template>
         <template v-else-if="isWeatherPanel(placement.tile)">
           <span class="wx-name">{{
@@ -1045,6 +1096,111 @@ const highlight = computed(() => {
   align-items: center;
   gap: 6px;
   font-size: 16px;
+}
+
+.tile.weather-panel.weather-portrait {
+  align-items: stretch;
+}
+
+.tile.weather-panel.weather-portrait .wx-name {
+  margin-top: 20px;
+  font-size: 28px;
+  text-align: center;
+}
+
+.tile.weather-panel.weather-portrait.weather-wide .wx-name {
+  font-size: 32px;
+}
+
+.tile.weather-panel.weather-portrait .wx-now {
+  margin-top: 12px;
+  justify-content: center;
+  gap: 16px;
+  font-size: 84px;
+}
+
+.tile.weather-panel.weather-portrait.weather-wide .wx-now {
+  font-size: 96px;
+}
+
+.tile.weather-panel.weather-portrait.weather-narrow .wx-now {
+  font-size: 64px;
+}
+
+.tile.weather-panel.weather-portrait .wx-condition {
+  font-size: 22px;
+  text-align: center;
+}
+
+.tile.weather-panel.weather-portrait .wx-details {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 20px 16px 16px;
+  font-size: 18px;
+  text-align: center;
+}
+
+.tile.weather-panel.weather-portrait .wx-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tile.weather-panel.weather-portrait .wx-detail small {
+  font-size: 13px;
+  color: var(--rc-ink-soft);
+  font-weight: 400;
+}
+
+.tile.weather-panel.weather-portrait .wx-days {
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: stretch;
+  padding: 8px 0;
+  overflow-y: auto;
+}
+
+.tile.weather-panel.weather-portrait .wx-day {
+  width: auto;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 16px;
+}
+
+.tile.weather-panel.weather-portrait .wx-weekday {
+  width: 112px;
+  flex: none;
+}
+
+.tile.weather-panel.weather-portrait.weather-narrow .wx-weekday {
+  width: 92px;
+}
+
+.tile.weather-panel.weather-portrait .wx-cond {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.tile.weather-panel.weather-portrait .wx-temps {
+  flex: none;
+  margin-left: auto;
+}
+
+.tile.weather-panel.weather-portrait .wx-temps strong {
+  font-weight: 500;
+}
+
+.tile.weather-panel.weather-portrait .wx-low {
+  font-size: 13px;
 }
 
 .tile.thermostat-panel {
