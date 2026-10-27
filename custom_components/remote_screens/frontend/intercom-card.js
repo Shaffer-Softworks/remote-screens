@@ -185,6 +185,7 @@ class RemoteScreensIntercomCard extends HTMLElement {
       });
     };
     peer.oniceconnectionstatechange = () => {
+      if (this._peer !== peer) return;
       if (peer.iceConnectionState === "connected" || peer.iceConnectionState === "completed") {
         this._phase = "live";
         this._status = `Connected to ${this._name(this._peerId)}`;
@@ -280,7 +281,7 @@ class RemoteScreensIntercomCard extends HTMLElement {
   _endMedia(notify, status) {
     window.clearTimeout(this._callTimer);
     if (notify && this._peerId) this._send({ type: "hangup", to: this._peerId });
-    if (this._peer) this._peer.close();
+    const closing = this._peer;
     (this._stream ? this._stream.getTracks() : []).forEach((track) => track.stop());
     this._peer = null;
     this._stream = null;
@@ -291,6 +292,10 @@ class RemoteScreensIntercomCard extends HTMLElement {
     this._phase = "idle";
     this._busy = false;
     if (status) this._status = status;
+    if (closing) {
+      closing.oniceconnectionstatechange = null;
+      closing.close();
+    }
   }
 
   _armTimeout() {

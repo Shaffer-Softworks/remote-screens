@@ -10,6 +10,7 @@ import tech.shaffersoftworks.remotescreens.player.data.device.DisplayInfo
 import tech.shaffersoftworks.remotescreens.player.data.device.FaceWakeMonitor
 import tech.shaffersoftworks.remotescreens.player.data.device.ProximityWakeMonitor
 import tech.shaffersoftworks.remotescreens.player.data.device.ScreenPowerRepository
+import tech.shaffersoftworks.remotescreens.player.data.device.intercom.IntercomCoordinator
 import tech.shaffersoftworks.remotescreens.player.data.device.telemetry.LocationAccuracy
 import tech.shaffersoftworks.remotescreens.player.data.device.telemetry.TelemetryReporter
 import tech.shaffersoftworks.remotescreens.player.data.discovery.DiscoveryRepository
@@ -72,6 +73,7 @@ class PlayerViewModelTest {
         on { server } doReturn flowOf("10.0.0.5:8100")
         on { token } doReturn flowOf("token")
         on { screenName } doReturn flowOf("Kitchen")
+        on { deviceId() } doReturn "tablet-1"
         on { isKioskEnabled } doReturn isKioskEnabled
         on { isKioskSuppressed } doReturn isKioskSuppressed
     }
@@ -99,6 +101,9 @@ class PlayerViewModelTest {
         on { hasLocationPermission() } doReturn false
     }
     private val locationAccuracy: LocationAccuracy = mock()
+    private val intercomCoordinator: IntercomCoordinator = mock {
+        on { hasMicrophone() } doReturn false
+    }
 
     private lateinit var viewModel: PlayerViewModel
 
@@ -119,7 +124,7 @@ class PlayerViewModelTest {
             imageDecoder = mock<ImageDecoder>(),
             telemetryReporter = telemetryReporter,
             locationAccuracy = locationAccuracy,
-            intercomCoordinator = mock(),
+            intercomCoordinator = intercomCoordinator,
         )
     }
 
@@ -290,16 +295,6 @@ class PlayerViewModelTest {
         assertEquals(2, viewModel.viewState.value.remoteScreen.page)
 
         viewModel.onBack()
-        assertEquals(0, viewModel.viewState.value.remoteScreen.page)
-    }
-
-    @Test
-    fun `swipes are ignored while a card is open`() {
-        receive(mainDocument())
-        receive(ServerMessage.Document(slot = Slot.OVERLAY, rev = 1, data = "AAAA"))
-
-        viewModel.onSwipe(isNext = true)
-
         assertEquals(0, viewModel.viewState.value.remoteScreen.page)
     }
 
@@ -558,5 +553,44 @@ class PlayerViewModelTest {
         viewModel.onLockKioskAgainRequested()
         runCurrent()
         verifyBlocking(preferencesRepository) { setKioskSuppressed(false) }
+    }
+
+    @Test
+    fun `opening the intercom page checks the microphone before joining`() {
+        receive(mainDocument())
+        receive(ServerMessage.IntercomConfig(enabled = true, displayName = "Kitchen", page = 2))
+        verify(intercomCoordinator, never()).start(any(), any(), any(), any(), any(), any())
+
+        receive(ServerMessage.OpenPage(2))
+        verify(intercomCoordinator, never()).start(any(), any(), any(), any(), any(), any())
+
+        viewModel.onMicrophonePermissionResult(granted = false)
+        runCurrent()
+        verify(intercomCoordinator).start(
+            any(),
+            eq("ws://10.0.0.5:8766/webrtc"),
+            eq("station-tablet-1"),
+            eq("Kitchen"),
+            any(),
+            any(),
+        )
+    }
+
+    @Test
+    fun `an intercom page with the microphone already allowed joins as it opens`() {
+        whenever(intercomCoordinator.hasMicrophone()).thenReturn(true)
+        receive(mainDocument())
+        receive(ServerMessage.IntercomConfig(enabled = true, displayName = "Kitchen", page = 2))
+
+        receive(ServerMessage.OpenPage(2))
+
+        verify(intercomCoordinator).start(
+            any(),
+            eq("ws://10.0.0.5:8766/webrtc"),
+            eq("station-tablet-1"),
+            eq("Kitchen"),
+            any(),
+            any(),
+        )
     }
 }

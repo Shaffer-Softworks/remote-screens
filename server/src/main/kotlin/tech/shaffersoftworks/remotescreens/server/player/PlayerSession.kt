@@ -177,7 +177,7 @@ class PlayerSession(
         context.languageRepository.current(),
     )
 
-    /** Once a second: rebuilds documents that refresh on a timer, and sends pictures that are due. */
+    /** Once a second: rebuilds timed documents, sends pictures that are due, and pushes current music vars. */
     suspend fun tick(states: Map<String, EntityState>) {
         if (!isAwake) return
         for (shown in shownDocuments.values.toList()) {
@@ -188,6 +188,7 @@ class PlayerSession(
                 media.sendPictures(shown, states, isForced = false)
             }
         }
+        documents.tickProgress(states)
     }
 
     /** Rebuilds every document when night switches the screen to or from its dark theme. */

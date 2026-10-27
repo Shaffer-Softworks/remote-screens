@@ -226,6 +226,7 @@ export class IntercomBrowser {
       })
     }
     peer.oniceconnectionstatechange = () => {
+      if (this.peer !== peer) return
       if (peer.iceConnectionState === 'connected' || peer.iceConnectionState === 'completed') {
         const target = this.peerId
         if (target === null) return
@@ -312,9 +313,9 @@ export class IntercomBrowser {
 
   private clearCall(notifyPeer: boolean, nextStatus = 'Online'): void {
     const target = this.peerId
+    const closing = this.peer
     this.clearTimer(this.callTimer)
     if (notifyPeer && target !== null) this.send({ type: 'hangup', to: target })
-    this.peer?.close()
     this.peer = null
     this.localStream?.getTracks().forEach(track => track.stop())
     this.localStream = null
@@ -325,6 +326,10 @@ export class IntercomBrowser {
     this.phase = this.socket?.readyState === WebSocket.OPEN ? 'idle' : 'offline'
     this.status = nextStatus
     this.publish()
+    if (closing) {
+      closing.oniceconnectionstatechange = null
+      closing.close()
+    }
   }
 
   private armTimeout(): void {

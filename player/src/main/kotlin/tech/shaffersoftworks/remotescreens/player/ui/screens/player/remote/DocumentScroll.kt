@@ -15,13 +15,15 @@ import java.lang.reflect.Field
  * Copies list positions from the document on screen onto the one that replaces it.
  * [Mark.offset] is the modifier's own value: 0 at the start, negative once the list has moved.
  * Paint reads a positive distance from a float, and the touch expression would otherwise write 0
- * back into that float until the next drag.
+ * back into that float until the next drag. [Mark.max] is how far the list can still travel.
+ * Restoring the offset without that range leaves a later drag clamped at the old (or zero) end.
  */
 internal object DocumentScroll {
     data class Mark(
         val componentId: Int,
         val isVertical: Boolean,
         val offset: Float,
+        val max: Float,
     )
 
     fun capture(player: RemoteComposePlayer): List<Mark> {
@@ -38,7 +40,10 @@ internal object DocumentScroll {
             if (componentId <= 0) return@walk
             val isVertical = scroll.isVerticalScroll()
             val offset = if (isVertical) component.scrollY else component.scrollX
-            if (offset != 0f) marks += Mark(componentId, isVertical, offset)
+            val max = maxField(isVertical).getFloat(scroll)
+            if (offset != 0f || max != 0f) {
+                marks += Mark(componentId, isVertical, offset, max)
+            }
         }
         return marks
     }
@@ -93,20 +98,28 @@ internal object DocumentScroll {
         descend(component)
     }
 
-    /** Writes [mark] onto [scroll] and into the float its paint copies from. */
+    /** Writes [mark] onto [scroll] and into the floats its paint and later drags copy from. */
     private fun putBack(scroll: ScrollModifierOperation, mark: Mark, writeFloat: (Int, Float) -> Unit) {
         val offsetField = if (mark.isVertical) SCROLL_Y else SCROLL_X
         val initialField = if (mark.isVertical) INITIAL_SCROLL_Y else INITIAL_SCROLL_X
         offsetField.setFloat(scroll, mark.offset)
         initialField.setFloat(scroll, mark.offset)
+        maxField(mark.isVertical).setFloat(scroll, mark.max)
         val position = -mark.offset
         val positionExpression = scroll.positionExpression
         if (Utils.isVariable(positionExpression)) {
             writeFloat(Utils.idFromNan(positionExpression), position)
         }
+        val maxExpression = MAX_EXPRESSION.getFloat(scroll)
+        if (Utils.isVariable(maxExpression)) {
+            writeFloat(Utils.idFromNan(maxExpression), mark.max)
+        }
         val touch = TOUCH_EXPRESSION.get(scroll) as? TouchExpression ?: return
         UNMODIFIED.setBoolean(touch, false)
         CURRENT_VALUE.setFloat(touch, position)
+        TOUCH_MAX.setFloat(touch, mark.max)
+        TOUCH_DOWN.setBoolean(touch, false)
+        TOUCH_EASING.setBoolean(touch, false)
     }
 
     private fun field(owner: Class<*>, name: String): Field =
@@ -116,7 +129,15 @@ internal object DocumentScroll {
     private val SCROLL_Y = field(ScrollModifierOperation::class.java, "mScrollY")
     private val INITIAL_SCROLL_X = field(ScrollModifierOperation::class.java, "mInitialScrollX")
     private val INITIAL_SCROLL_Y = field(ScrollModifierOperation::class.java, "mInitialScrollY")
+    private val MAX_SCROLL_X = field(ScrollModifierOperation::class.java, "mMaxScrollX")
+    private val MAX_SCROLL_Y = field(ScrollModifierOperation::class.java, "mMaxScrollY")
+    private val MAX_EXPRESSION = field(ScrollModifierOperation::class.java, "mMax")
     private val TOUCH_EXPRESSION = field(ScrollModifierOperation::class.java, "mTouchExpression")
     private val UNMODIFIED = field(TouchExpression::class.java, "mUnmodified")
     private val CURRENT_VALUE = field(TouchExpression::class.java, "mCurrentValue")
+    private val TOUCH_MAX = field(TouchExpression::class.java, "mOutMax")
+    private val TOUCH_DOWN = field(TouchExpression::class.java, "mTouchDown")
+    private val TOUCH_EASING = field(TouchExpression::class.java, "mEasingToStop")
+
+    private fun maxField(isVertical: Boolean): Field = if (isVertical) MAX_SCROLL_Y else MAX_SCROLL_X
 }

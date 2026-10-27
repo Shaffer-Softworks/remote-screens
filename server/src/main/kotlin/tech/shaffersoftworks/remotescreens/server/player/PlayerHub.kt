@@ -13,6 +13,7 @@ import io.ktor.websocket.readText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -49,9 +50,12 @@ class PlayerHub(
 
     fun start() {
         scope.launch {
-            homeAssistant.states.debounce(STATE_DEBOUNCE_MS.milliseconds).collectLatest { states ->
-                for (session in sessions.values) session.refresh(states)
-            }
+            homeAssistant.states
+                .debounce(STATE_DEBOUNCE_MS.milliseconds)
+                .conflate()
+                .collect { states ->
+                    for (session in sessions.values) session.refresh(states)
+                }
         }
         scope.launch {
             layoutRepository.layout.collectLatest { layout ->

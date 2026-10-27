@@ -2,23 +2,32 @@
 
 package tech.shaffersoftworks.remotescreens.player.data.device.intercom
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.AudioDeviceInfo
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
+import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.webrtc.AudioTrack
 import org.webrtc.IceCandidate
 import org.webrtc.MediaConstraints
+import org.webrtc.MediaStreamTrack
 import org.webrtc.PeerConnection
 import org.webrtc.PeerConnectionFactory
+import org.webrtc.RtpTransceiver
 import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
 import org.webrtc.audio.JavaAudioDeviceModule
@@ -38,10 +47,14 @@ class AndroidWebRtcAudio @Inject constructor(
     private var localAudio: AudioTrack? = null
     private var focusRequest: AudioFocusRequest? = null
     private var listener: AudioListener = IdleAudioListener
+    private var callGeneration = 0
+    private val closeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val pendingCandidates = mutableListOf<IceCandidate>()
     private var hasRemoteDescription = false
 
     override fun start(listener: AudioListener) {
+        callGeneration += 1
+        val generation = callGeneration
         this.listener = listener
         closePeer()
         ensureFactory()
@@ -52,11 +65,11 @@ class AndroidWebRtcAudio @Inject constructor(
             continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
             sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
         }
-        peer = factory?.createPeerConnection(configuration, WebRtcPeerObserver { listener })
-        val source = factory?.createAudioSource(MediaConstraints())
-        localAudio = factory?.createAudioTrack(LOCAL_TRACK_ID, source)
-        localAudio?.setEnabled(true)
-        peer?.addTrack(localAudio, listOf(LOCAL_STREAM_ID))
+        peer = factory?.createPeerConnection(
+            configuration,
+            WebRtcPeerObserver { activeListener(generation) },
+        )
+        addLocalAudio()
         audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
         routeToSpeaker()
         takeAudioFocus()
@@ -99,13 +112,33 @@ class AndroidWebRtcAudio @Inject constructor(
     }
 
     override fun stop() {
-        closePeer()
+        callGeneration += 1
         listener = IdleAudioListener
+        closePeer()
         audioManager.mode = AudioManager.MODE_NORMAL
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) audioManager.clearCommunicationDevice()
         focusRequest?.let { request -> audioManager.abandonAudioFocusRequest(request) }
         focusRequest = null
     }
+
+    /** A granted microphone sends this tablet's voice. Without it the call still receives the other side. */
+    private fun addLocalAudio() {
+        if (!hasMicrophone()) {
+            peer?.addTransceiver(
+                MediaStreamTrack.MediaType.MEDIA_TYPE_AUDIO,
+                RtpTransceiver.RtpTransceiverInit(RtpTransceiver.RtpTransceiverDirection.RECV_ONLY),
+            )
+            return
+        }
+        val source = factory?.createAudioSource(MediaConstraints())
+        localAudio = factory?.createAudioTrack(LOCAL_TRACK_ID, source)
+        localAudio?.setEnabled(true)
+        peer?.addTrack(localAudio, listOf(LOCAL_STREAM_ID))
+    }
+
+    private fun hasMicrophone(): Boolean =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
 
     private fun ensureFactory() {
         if (factory != null) return
@@ -123,14 +156,27 @@ class AndroidWebRtcAudio @Inject constructor(
             .createPeerConnectionFactory()
     }
 
+    /** Events from a peer we already replaced or hung up stay on the idle listener. */
+    private fun activeListener(generation: Int): AudioListener =
+        if (generation == callGeneration) listener else IdleAudioListener
+
+    /**
+     * Drop the peer off the main thread. `close()` can block, and it reports CLOSED, which is not a failed call.
+     * A generation check drops events from a peer that was already replaced or hung up.
+     */
     private fun closePeer() {
-        peer?.close()
+        val closingPeer = peer
+        val closingAudio = localAudio
         peer = null
-        localAudio?.setEnabled(false)
-        localAudio?.dispose()
         localAudio = null
         pendingCandidates.clear()
         hasRemoteDescription = false
+        if (closingPeer == null && closingAudio == null) return
+        closeScope.launch {
+            closingAudio?.setEnabled(false)
+            closingAudio?.dispose()
+            closingPeer?.close()
+        }
     }
 
     private fun routeToSpeaker() {

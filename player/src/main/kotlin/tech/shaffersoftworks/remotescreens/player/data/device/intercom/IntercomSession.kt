@@ -190,13 +190,19 @@ internal class IntercomSession(
     }
 
     private suspend fun endCall(notifyPeer: Boolean, nextStatus: String) {
+        if (!isOnACall()) return
         val target = peerId
         timeoutJob?.cancel()
-        if (notifyPeer && target != null) emit(IntercomWire.hangup(target))
-        dropCall()
+        peerId = null
+        phase = if (isRegistered) Phase.IDLE else Phase.OFFLINE
         status = nextStatus
         publish()
+        if (notifyPeer && target != null) emit(IntercomWire.hangup(target))
+        audio.stop()
     }
+
+    private fun isOnACall(): Boolean =
+        phase == Phase.OUTGOING || phase == Phase.INCOMING || phase == Phase.LIVE
 
     private fun dropCall() {
         timeoutJob?.cancel()

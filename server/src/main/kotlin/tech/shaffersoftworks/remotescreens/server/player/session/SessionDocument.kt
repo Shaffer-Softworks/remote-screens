@@ -136,6 +136,25 @@ internal class SessionDocument(
         }
     }
 
+    /**
+     * Pushes `pos` / `progress` from the latest Home Assistant `media_position` (sent on
+     * `state_changed` while the player is playing). A var update, not a rebuild.
+     */
+    suspend fun tickProgress(states: Map<String, EntityState>) {
+        for (shown in shownDocuments.values.toList()) {
+            val vars = shown.renderedDoc.vars(states)
+            val changed = vars.values.filter { shown.sentVars[it.name] != it }
+            if (changed.isEmpty()) continue
+            shown.sentVars = vars
+            host.send(
+                ServerMessage.Vars(
+                    changed,
+                    shown.renderedDoc.predictions(states, host::foresee),
+                ),
+            )
+        }
+    }
+
     suspend fun rebuild(shown: ShownDocument) {
         val renderedDoc = buildMutex.withLock {
             runCatching { shown.rebuild() }

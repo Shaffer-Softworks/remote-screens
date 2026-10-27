@@ -1,7 +1,7 @@
 package tech.shaffersoftworks.remotescreens.server.player.session
 
 import tech.shaffersoftworks.remotescreens.server.player.PlayerTokens
-import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.hasIntercomTile
+import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.intercomPage
 import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
 import tech.shaffersoftworks.remotescreens.shared.PlayerRecord
 import tech.shaffersoftworks.remotescreens.shared.Screen
@@ -171,9 +171,11 @@ internal class SessionLifecycle(
             ?.name
             ?.takeIf { it.isNotBlank() }
             ?: NOT_SET
+        val page = if (host.supportsIntercom) screen.intercomPage() else ServerMessage.IntercomConfig.NO_PAGE
         return ServerMessage.IntercomConfig(
-            enabled = host.supportsIntercom && screen.hasIntercomTile(),
+            enabled = page >= 0,
             displayName = name,
+            page = page,
         )
     }
 
