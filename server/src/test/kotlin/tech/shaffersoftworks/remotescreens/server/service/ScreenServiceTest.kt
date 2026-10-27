@@ -1,6 +1,7 @@
 package tech.shaffersoftworks.remotescreens.server.service
 
 import tech.shaffersoftworks.remotescreens.server.data.layout.LayoutRepository
+import tech.shaffersoftworks.remotescreens.server.data.pictures.BackgroundStore
 import tech.shaffersoftworks.remotescreens.server.plugins.ApiJson
 import tech.shaffersoftworks.remotescreens.server.service.validation.ScreenValidator
 import tech.shaffersoftworks.remotescreens.shared.Page
@@ -16,6 +17,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ScreenServiceTest {
@@ -86,6 +88,18 @@ class ScreenServiceTest {
     }
 
     @Test
+    fun importDropsABackgroundImage() {
+        val (_, service) = opened()
+        val original = screen().copy(
+            pages = listOf(Page(id = "home", title = "Home", backgroundImage = "1700000000000")),
+        )
+
+        val imported = service.importScreen(file(original))
+
+        assertNull(imported.pages.single().backgroundImage)
+    }
+
+    @Test
     fun importRejectsAFileItCannotUse() {
         val (repository, service) = opened()
         val sample = screen()
@@ -105,8 +119,9 @@ class ScreenServiceTest {
     }
 
     private fun opened(): Pair<LayoutRepository, ScreenService> {
-        val repository = LayoutRepository(Files.createTempDirectory("screen-import").toFile())
-        return repository to ScreenService(repository)
+        val directory = Files.createTempDirectory("screen-import").toFile()
+        val repository = LayoutRepository(directory)
+        return repository to ScreenService(repository, BackgroundStore(directory))
     }
 
     private fun screen(

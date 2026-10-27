@@ -192,6 +192,12 @@ internal fun DocContext.paint(key: String): RcColor? =
 internal fun DocContext.accent(key: String?, fallback: Pastel): Int =
     Pastel.of(key)?.argb ?: key?.let(Themes::parse) ?: fallback.argb
 
+/** ARGB of a layout colour: a pastel, a role such as `ink_dim`, or `#RRGGBB`. [fallback] when [key] is blank. */
+internal fun DocContext.inkArgb(key: String?, fallback: Int): Int {
+    if (key.isNullOrBlank()) return fallback
+    return Pastel.of(key)?.argb ?: Themes.parse(key) ?: Role.of(key)?.argb ?: fallback
+}
+
 internal fun DocContext.node(node: Node, self: Dims, axis: Axis, pages: Pages) {
     if (node.hidden) return
     when (node.type) {

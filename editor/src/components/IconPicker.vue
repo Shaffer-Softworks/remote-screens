@@ -32,6 +32,13 @@ function pick(name: string | undefined): void {
 
 /** The glyph for a blank value: the resolved default, else the placeholder when that is itself an icon. */
 const displayedIcon = computed(() => props.modelValue ?? props.preview ?? props.placeholder)
+
+/** The words beside that glyph. An entity's icon replaces the placeholder words. */
+const defaultCaption = computed((): string => {
+  const iconName = props.preview
+  if (!iconName) return props.placeholder
+  return iconName.replace(/^mdi:/, '')
+})
 </script>
 
 <template>
@@ -39,7 +46,7 @@ const displayedIcon = computed(() => props.modelValue ?? props.preview ?? props.
     <div class="row">
       <button class="current" :title="displayedIcon" @click="open = !open">
         <MdiIcon :name="displayedIcon" :size="22" />
-        <span class="grow">{{ props.modelValue ?? `Default (${props.placeholder})` }}</span>
+        <span class="grow">{{ props.modelValue ?? `Default (${defaultCaption})` }}</span>
       </button>
       <button v-if="props.modelValue" class="icon" title="Use the default" @click="pick(undefined)">
         <MdiIcon name="close" :size="16" />

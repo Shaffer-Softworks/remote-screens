@@ -7,6 +7,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssista
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoHome
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoLayout
 import tech.shaffersoftworks.remotescreens.server.data.layout.LayoutRepository
+import tech.shaffersoftworks.remotescreens.server.data.pictures.BackgroundStore
 import tech.shaffersoftworks.remotescreens.server.data.pictures.PictureRepository
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.data.security.ApiKeyRepository
@@ -45,10 +46,16 @@ class ServerDependencies(
     val homeAssistant: HomeAssistant = homeAssistantClient ?: DemoHome()
 
     val layoutRepository = LayoutRepository(config.dataDir)
+    val backgroundStore = BackgroundStore(config.dataDir)
     val playerApkRepository = PlayerApkRepository(config.apkDir)
     val apiKeyRepository = ApiKeyRepository(config.dataDir)
     private val renderDataRepository = RenderDataRepository(homeAssistant)
-    private val pictureRepository = PictureRepository(homeAssistant, httpClient, config.mapTileUrl)
+    private val pictureRepository = PictureRepository(
+        homeAssistant,
+        httpClient,
+        config.mapTileUrl,
+        backgroundStore,
+    )
     private val languageRepository = LanguageRepository(homeAssistant, layoutRepository)
     private val actionRouter = ActionRouter(
         homeAssistant,
@@ -56,7 +63,7 @@ class ServerDependencies(
         renderDataRepository,
     )
 
-    val screenService = ScreenService(layoutRepository)
+    val screenService = ScreenService(layoutRepository, backgroundStore)
     val themeService = ThemeService(layoutRepository)
     val homeAssistantCatalogService = HomeAssistantCatalogService(homeAssistant)
     val cameraStreamService = CameraStreamService(homeAssistant)

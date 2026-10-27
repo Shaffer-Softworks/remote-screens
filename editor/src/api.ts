@@ -18,11 +18,18 @@ import type { ScreenFile } from './model/screenFile'
 
 export class ApiError extends Error {}
 
+function requestBody(body: unknown): { payload?: BodyInit; json: boolean } {
+  if (body === undefined) return { json: false }
+  if (typeof FormData !== 'undefined' && body instanceof FormData) return { payload: body, json: false }
+  return { payload: JSON.stringify(body), json: true }
+}
+
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const request = requestBody(body)
   const response = await fetch(`api/${path}`, {
     method,
-    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    headers: request.json ? { 'Content-Type': 'application/json' } : undefined,
+    body: request.payload,
   })
   if (!response.ok) {
     const text = await response.text()
@@ -47,6 +54,15 @@ export const api = {
   importScreen: (file: ScreenFile) => call<Screen>('POST', 'screens/import', file),
   saveScreen: (screen: Screen) =>
     call<Screen>('PUT', `screens/${encodeURIComponent(screen.id)}`, screen),
+  uploadPageBackground: (screenId: string, pageId: string, file: File) => {
+    const body = new FormData()
+    body.append('file', file)
+    return call<{ backgroundImage: string }>(
+      'POST',
+      `screens/${encodeURIComponent(screenId)}/pages/${encodeURIComponent(pageId)}/background`,
+      body,
+    )
+  },
   deleteScreen: (id: string) => call<void>('DELETE', `screens/${encodeURIComponent(id)}`),
   themes: () => call<ResolvedTheme[]>('GET', 'themes'),
   saveTheme: (theme: Theme) =>

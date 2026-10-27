@@ -24,7 +24,9 @@ import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.NavBar
+import tech.shaffersoftworks.remotescreens.shared.Page
 import tech.shaffersoftworks.remotescreens.shared.Reflow
+import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.VarType
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonNull
@@ -657,6 +659,22 @@ class RenderTest {
         assertEquals(LiveMap.FIRST_COMPONENT_ID, map.componentId)
         assertTrue(map.dark)
         assertVideoTargetFound(doc, map.componentId)
+    }
+
+    @Test
+    fun aPageBackgroundIsAPictureInTheContentBox() {
+        val token = "1700000000000"
+        val withPhoto = Screen(
+            "s",
+            "Wall",
+            pages = listOf(Page("home", "Home", backgroundImage = token)),
+        )
+        val picture = ScreenRenderer.render(withPhoto, tablet, input()).docContext.pictures
+            .single { it.name == "bg.home" }
+        assertEquals("file:s/home-$token", picture.source)
+        assertTrue(picture.crop)
+        val plain = ScreenRenderer.render(Screen("s", "Wall"), tablet, input())
+        assertTrue(plain.docContext.pictures.none { it.name.startsWith("bg.") })
     }
 
     /** The player finds the target by its id once it has read the document, as it must to lay the video over it. */

@@ -517,12 +517,17 @@ const icon = computed(() => {
 })
 
 const iconColor = computed(() => {
-  const explicit = colorOf(viewNode.value.props.color)
-  if (explicit) return explicit
-  if (!viewNode.value.bind) return colorOf('ink')
+  const nodeProps = viewNode.value.props
+  const binding = viewNode.value.bind
+  if (!binding) return colorOf(nodeProps.color) ?? colorOf('ink')
+  const choosesEachState = nodeProps.colorOff != null || nodeProps.colorOn != null
+  if (!choosesEachState && nodeProps.color) return colorOf(nodeProps.color)
+  const stateName = entity.value?.state
+  if (stateName === 'unavailable' || stateName === 'unknown') return colorOf('ink_faint')
+  const domain = binding.entityId.split('.')[0]
   return on.value
-    ? pastel(undefined, viewNode.value.bind.entityId.split('.')[0]).color
-    : colorOf('ink_dim')
+    ? (colorOf(nodeProps.colorOn) ?? colorOf(entity.value?.rgb) ?? pastel(undefined, domain).color)
+    : (colorOf(nodeProps.colorOff) ?? colorOf('ink_dim'))
 })
 
 const sliderFill = computed(() => {

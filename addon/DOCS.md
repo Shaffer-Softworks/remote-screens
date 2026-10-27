@@ -150,6 +150,8 @@ demo screen includes a Compose page that shows several of them.
 
 A page can be hidden: it has no page dot and is only reached from a navigation tile, with a Back key.
 
+A page can have a JPEG or PNG behind its tiles, and a screen export does not include that file.
+
 ## Themes
 
 A screen wears a theme: RPI dark (the default), Light, OLED black, High contrast, or one of your own. In the

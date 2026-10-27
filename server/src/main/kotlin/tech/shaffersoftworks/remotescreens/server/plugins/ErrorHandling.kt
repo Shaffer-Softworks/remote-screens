@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.plugins
 
+import tech.shaffersoftworks.remotescreens.server.data.pictures.BackgroundRejected
 import tech.shaffersoftworks.remotescreens.server.routes.model.ErrorResponse
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -23,6 +24,12 @@ fun Application.configureErrorHandling() {
             call.respond(
                 HttpStatusCode.BadRequest,
                 ErrorResponse(cause.message ?: BAD_REQUEST_MESSAGE),
+            )
+        }
+        exception<BackgroundRejected> { call, cause ->
+            call.respond(
+                HttpStatusCode.BadRequest,
+                ErrorResponse(cause.message ?: "Use a JPEG or PNG"),
             )
         }
         exception<ContentTransformationException> { call, cause ->

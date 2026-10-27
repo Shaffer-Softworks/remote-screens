@@ -1,11 +1,13 @@
 package tech.shaffersoftworks.remotescreens.server.routes
 
 import tech.shaffersoftworks.remotescreens.server.data.apk.PlayerApkRepository
+import tech.shaffersoftworks.remotescreens.server.data.pictures.BackgroundStore
 import tech.shaffersoftworks.remotescreens.server.di.ServerDependencies
 import tech.shaffersoftworks.remotescreens.server.player.PlayerHub
 import tech.shaffersoftworks.remotescreens.server.render.Alert
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Icons
 import tech.shaffersoftworks.remotescreens.server.routes.model.AdoptPlayerRequest
+import tech.shaffersoftworks.remotescreens.server.routes.model.BackgroundImageResponse
 import tech.shaffersoftworks.remotescreens.server.routes.model.EnrollmentRequest
 import tech.shaffersoftworks.remotescreens.server.routes.model.ErrorResponse
 import tech.shaffersoftworks.remotescreens.server.routes.model.RenamePlayerRequest
@@ -22,10 +24,18 @@ import tech.shaffersoftworks.remotescreens.shared.Grid
 import tech.shaffersoftworks.remotescreens.shared.Preferences
 import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.Theme
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.PartData
+import io.ktor.http.content.forEachPart
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.request.receive
+import io.ktor.server.request.receiveMultipart
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondBytes
+import io.ktor.utils.io.readBuffer
+import kotlinx.io.readByteArray
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
@@ -42,7 +52,7 @@ private const val MAX_PLAYER_NAME_LENGTH = 60
 fun Route.editorRoutes(dependencies: ServerDependencies) {
     route("/api") {
         infoRoutes(dependencies)
-        screenRoutes(dependencies.screenService)
+        screenRoutes(dependencies.screenService, dependencies.backgroundStore)
         themeRoutes(dependencies.themeService)
         playerManagementRoutes(dependencies.playerHub, dependencies.playerApkRepository)
         enrollmentRoutes(dependencies.enrollmentService)
@@ -81,7 +91,7 @@ private fun Route.infoRoutes(dependencies: ServerDependencies) {
     }
 }
 
-private fun Route.screenRoutes(screenService: ScreenService) {
+private fun Route.screenRoutes(screenService: ScreenService, backgrounds: BackgroundStore) {
     get("/layout") { call.respond(screenService.redactedLayout()) }
     put("/preferences") {
         call.respond(screenService.updatePreferences(call.receive<Preferences>()))
@@ -107,6 +117,52 @@ private fun Route.screenRoutes(screenService: ScreenService) {
         screenService.deleteScreen(call.parameters.getOrFail("id"))
         call.respond(HttpStatusCode.NoContent)
     }
+    route("/screens/{id}/pages/{pageId}/background") {
+        post {
+            val screenId = call.parameters.getOrFail("id")
+            val pageId = call.parameters.getOrFail("pageId")
+            if (!screenService.exists(screenId)) {
+                call.respond(HttpStatusCode.NotFound)
+                return@post
+            }
+            val token = backgrounds.save(screenId, pageId, readBackground(call))
+            call.respond(BackgroundImageResponse(token))
+        }
+        get {
+            val image = backgrounds.read(
+                call.parameters.getOrFail("id"),
+                call.parameters.getOrFail("pageId"),
+                call.request.queryParameters["v"].orEmpty(),
+            )
+            if (image == null) {
+                call.respond(HttpStatusCode.NotFound)
+            } else {
+                val contentType = if (image.isPng) ContentType.Image.PNG else ContentType.Image.JPEG
+                call.respondBytes(image.bytes, contentType)
+            }
+        }
+    }
+}
+
+/** The uploaded file, or a 400 when it is missing or larger than the wallpaper limit. */
+private suspend fun readBackground(call: ApplicationCall): ByteArray {
+    val multipart = call.receiveMultipart(formFieldLimit = BackgroundStore.MAX_BYTES.toLong())
+    var uploaded: ByteArray? = null
+    multipart.forEachPart { part ->
+        try {
+            if (part is PartData.FileItem && uploaded == null) {
+                val limit = BackgroundStore.MAX_BYTES.toLong() + 1
+                val read = part.provider().readBuffer(limit).readByteArray()
+                if (read.size > BackgroundStore.MAX_BYTES) {
+                    throw BadRequestException("Image must be 8 MB or smaller")
+                }
+                uploaded = read
+            }
+        } finally {
+            part.release()
+        }
+    }
+    return uploaded ?: throw BadRequestException("Choose an image")
 }
 
 private fun Route.themeRoutes(themeService: ThemeService) {

@@ -26,6 +26,8 @@ data class EntityResponse(
     val area: String?,
     val icon: String?,
     val unit: String?,
+    /** `#RRGGBB` from the entity's `rgb_color`, when Home Assistant sends one. */
+    val rgb: String? = null,
 )
 
 @Serializable
@@ -36,6 +38,9 @@ data class AdoptPlayerRequest(val screenId: String, val name: String? = null, va
 
 @Serializable
 data class RenamePlayerRequest(val name: String)
+
+@Serializable
+data class BackgroundImageResponse(val backgroundImage: String)
 
 @Serializable
 data class OpenPageRequest(val page: String, val targets: List<String> = emptyList())

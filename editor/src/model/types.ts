@@ -49,6 +49,8 @@ export interface Page {
   icon?: string
   /** A free-form page: a tree of components. When set, the grid's tiles are not drawn. */
   root?: Node
+  /** Timestamp token of a JPEG or PNG stored by the add-on. Absent keeps the theme page colour. */
+  backgroundImage?: string
 }
 
 export type NodeType =
@@ -308,6 +310,8 @@ export interface EntityInfo {
   area?: string
   icon?: string
   unit?: string
+  /** `#RRGGBB` from the entity's rgb_color, when Home Assistant sends one. */
+  rgb?: string
 }
 
 export interface AreaInfo {

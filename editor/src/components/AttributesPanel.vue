@@ -5,7 +5,7 @@ import { computed, inject, ref, watch } from 'vue'
 import { CATALOGUE } from '../generated/catalogue'
 import { DESIGN } from '../model/design'
 import { componentOf, isContainer } from '../model/nodes'
-import { BACKGROUND_SWATCHES, INK_SWATCHES, PASTEL_KEYS, colorOf } from '../model/palette'
+import { BACKGROUND_SWATCHES, INK_SWATCHES, PASTEL_KEYS, colorOf, pastel } from '../model/palette'
 import { iconOf, specOf } from '../model/tiles'
 import type { BindFormat, Node, PaddingSide, Screen, TapAction, TapType } from '../model/types'
 import { entityById, state } from '../store'
@@ -72,7 +72,6 @@ const OWN_TAPS = [
 ]
 const COLOURED = [
   'text',
-  'icon',
   'button',
   'divider',
   'clock',
@@ -655,7 +654,7 @@ const typeIcon = computed(() =>
           <IconPicker
             :model-value="currentProps.icon"
             placeholder="from the entity"
-            :preview="entityIcon"
+            :preview="currentNode.bind ? entityIcon : undefined"
             @update:model-value="setProp('icon', $event)"
           />
         </div>
@@ -676,6 +675,41 @@ const typeIcon = computed(() =>
             :value="currentProps.size ?? 32"
             @input="setProp('size', ($event.target as HTMLInputElement).value)"
         /></label>
+        <div v-if="!currentNode.bind" class="field">
+          <span class="label">Colour</span>
+          <ColorSwatches
+            :model-value="currentProps.color"
+            :keys="INK_SWATCHES"
+            clear-title="Ink"
+            :clear-color="colorOf('ink')"
+            @update:model-value="setProp('color', $event)"
+          />
+        </div>
+        <template v-else>
+          <div class="field">
+            <span class="label">Colour while off</span>
+            <ColorSwatches
+              :model-value="currentProps.colorOff"
+              :keys="INK_SWATCHES"
+              clear-title="Dim"
+              :clear-color="colorOf('ink_dim')"
+              @update:model-value="setProp('colorOff', $event)"
+            />
+          </div>
+          <div class="field">
+            <span class="label">Colour while on</span>
+            <ColorSwatches
+              :model-value="currentProps.colorOn"
+              :keys="INK_SWATCHES"
+              clear-title="The entity's colour"
+              :clear-color="
+                colorOf(boundEntity?.rgb) ??
+                pastel(undefined, currentNode.bind?.entityId.split('.')[0]).color
+              "
+              @update:model-value="setProp('colorOn', $event)"
+            />
+          </div>
+        </template>
       </template>
       <template v-if="currentNode.type === 'button'">
         <label class="field"
@@ -1297,7 +1331,8 @@ const typeIcon = computed(() =>
         </div>
       </template>
       <p v-if="currentNode.bind && currentNode.type === 'icon'" class="muted note">
-        Lights up in the entity's colour while it is on.
+        Dim while off. While on, a light uses its own colour when Home Assistant sends one,
+        otherwise the entity's colour. Set either colour above.
       </p>
       <p v-if="BIND_NOTES[currentNode.type]" class="muted note">
         {{ BIND_NOTES[currentNode.type] }}

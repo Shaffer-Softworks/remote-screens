@@ -24,6 +24,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.toggleIcon
 
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import androidx.compose.remote.creation.dsl.Modifier
+import androidx.compose.remote.creation.dsl.RcColor
 import androidx.compose.remote.creation.dsl.RcContentScale
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcPaintStyle
@@ -101,36 +102,58 @@ internal fun DocContext.textNode(node: Node, axis: Axis, pages: Pages) {
     ) }
 }
 
-/** An icon bound to an entity lights up in its pastel while the entity is on, like a tile's. */
+/**
+ * An icon bound to an entity lights up while the entity is on.
+ * `colorOff` and `colorOn` replace the dim and lit colours.
+ */
 internal fun DocContext.iconNode(node: Node, axis: Axis, pages: Pages) {
     val sizeDp = node.props["size"]?.toFloatOrNull() ?: Metrics.ICON_DEFAULT_DP
-    val id = node.bind?.entityId
-    val domain = id?.substringBefore('.')
-    val name = node.props["icon"] ?: id?.let { states[it]?.attr(
+    val entityId = node.bind?.entityId
+    val domain = entityId?.substringBefore('.')
+    val name = node.props["icon"] ?: entityId?.let { states[it]?.attr(
         "icon",
     ) } ?: domain?.let { Catalogue.of(it)?.icon }
-    val explicit = node.props["color"]?.let { paint(it) }
-    val ink = when {
-        explicit != null -> explicit
-        id != null -> {
-            bindTileColors(node.id, id, Pastel.forDomain(domain))
-            color(Vars.tile(node.id, Vars.KEY_ICON))
-        }
-        else -> role(Role.INK)
-    }
+    val ink = iconInk(node, entityId, domain)
     scope.Box(
         styled(node, axis, pages),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@iconNode
-        val on = node.props["iconOn"]
-        if (id != null && on != null) {
-            doc.bindEntity(id)
-            doc.toggleIcon(id, name ?: Icons.FALLBACK, on, sizeDp, ink)
+        val iconOn = node.props["iconOn"]
+        if (entityId != null && iconOn != null) {
+            doc.bindEntity(entityId)
+            doc.toggleIcon(entityId, name ?: Icons.FALLBACK, iconOn, sizeDp, ink)
         } else {
             doc.icon(name, sizeDp, ink)
         }
+    }
+}
+
+/**
+ * The ink of an icon. Unbound, or a bound icon with only the old `color`, stays that one colour.
+ * A bound icon otherwise follows the entity: dim (or `colorOff`) while off, and while on its
+ * `rgb_color` when Home Assistant sends one, else its pastel (or `colorOn`).
+ */
+private fun DocContext.iconInk(node: Node, entityId: String?, domain: String?): RcColor {
+    val fixed = node.props["color"]?.let { paint(it) }
+    val choosesEachState = node.props["colorOff"] != null || node.props["colorOn"] != null
+    return if (entityId == null || (!choosesEachState && fixed != null)) {
+        fixed ?: role(Role.INK)
+    } else {
+        val offColor = inkArgb(node.props["colorOff"], Role.INK_DIM.argb)
+        val onColor = inkArgb(node.props["colorOn"], Pastel.forDomain(domain).argb)
+        bind(entityId) { states ->
+            val view = Present.view(states[entityId], i18n)
+            val entityRgb = if (node.props["colorOn"] == null) states[entityId]?.readRgb() else null
+            val argb = when {
+                !view.isAvailable -> Role.INK_FAINT.argb
+                view.on -> entityRgb ?: onColor
+                else -> offColor
+            }
+            listOf(VarValue.color(Vars.tile(node.id, Vars.KEY_ICON), argb))
+        }
+        color(Vars.tile(node.id, Vars.KEY_ICON))
     }
 }
 
