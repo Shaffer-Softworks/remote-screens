@@ -9,6 +9,7 @@ import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
+import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -78,6 +79,12 @@ class PlayerHub(
     /** Serves one player's WebSocket until it closes. The first message must be its [PlayerMessage.Hello]. */
     suspend fun serve(socket: WebSocketSession, remoteAddress: String) {
         val hello = receiveHello(socket) ?: return
+        val record = layoutRepository.layout.value.players.firstOrNull { it.deviceId == hello.deviceId }
+        if (!PlayerAuth.mayConnect(hello, record)) {
+            logger.warn("Player {} presented invalid credentials", hello.deviceId)
+            runCatching { socket.close() }
+            return
+        }
         val session = PlayerSession(socket, hello, sessionContext, ::newPairingCode)
         sessions.put(hello.deviceId, session)?.close()
         logger.info(

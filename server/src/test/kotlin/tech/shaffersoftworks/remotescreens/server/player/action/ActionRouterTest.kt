@@ -17,6 +17,8 @@ import tech.shaffersoftworks.remotescreens.shared.CalendarDialogMode
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Page
 import tech.shaffersoftworks.remotescreens.shared.Screen
+import tech.shaffersoftworks.remotescreens.shared.TapAction
+import tech.shaffersoftworks.remotescreens.shared.TapType
 import tech.shaffersoftworks.remotescreens.shared.Tile
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
@@ -343,6 +345,36 @@ class ActionRouterTest {
     fun anActionTileCallsItsService() {
         tap("m8|run|")
         assertEquals("script" to "turn_on", ha.calls.last().first to ha.calls.last().second)
+        tap("m8|run|tap")
+        assertEquals("script" to "turn_on", ha.calls.last().first to ha.calls.last().second)
+    }
+
+    @Test
+    fun aHoldActionCallsItsOwnService() {
+        val custom = Screen(
+            id = "s",
+            name = "S",
+            pages = listOf(
+                Page(
+                    "home",
+                    "Home",
+                    listOf(
+                        Tile(
+                            id = "both",
+                            entityId = "script.good_night",
+                            tap = TapAction(TapType.ACTION, service = "script.turn_on"),
+                            hold = TapAction(TapType.ACTION, service = "light.turn_off"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        runBlocking {
+            router.handle(checkNotNull(ActionRef.decode("both|run|tap")), custom, TapMemory())
+            assertEquals("script" to "turn_on", ha.calls.last().first to ha.calls.last().second)
+            router.handle(checkNotNull(ActionRef.decode("both|run|hold")), custom, TapMemory())
+            assertEquals("light" to "turn_off", ha.calls.last().first to ha.calls.last().second)
+        }
     }
 
     @Test

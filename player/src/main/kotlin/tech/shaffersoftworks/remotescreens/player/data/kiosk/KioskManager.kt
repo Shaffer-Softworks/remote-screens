@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.player.data.kiosk
 
+import android.Manifest
 import android.app.Activity
 import android.app.ActivityManager
 import android.app.admin.DevicePolicyManager
@@ -106,10 +107,35 @@ class KioskManager @Inject constructor(
     }
 
     /**
+     * Device owner can grant the player's own runtime permissions. A locked wall tablet must not wait for a prompt
+     * that lock task would hide. Screen pinning cannot do this.
+     */
+    fun grantRuntimePermissions() {
+        if (!isDeviceOwner()) return
+        for (permission in RUNTIME_PERMISSIONS) {
+            val isGranted = runCatching {
+                devicePolicyManager.setPermissionGrantState(
+                    adminComponent,
+                    context.packageName,
+                    permission,
+                    DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED,
+                )
+            }.getOrElse { exception ->
+                Timber.w(exception, "Could not grant %s", permission)
+                false
+            }
+            if (!isGranted) {
+                Timber.w("Device policy did not grant %s", permission)
+            }
+        }
+    }
+
+    /**
      * QR enrollment finished: the tablet locks from its first start, before it is added to a screen, and connects to
      * the add-on named in the code's admin extras without searching for it.
      */
     fun onProvisioned(provisioningIntent: Intent) {
+        grantRuntimePermissions()
         val adminExtras = IntentCompat.getParcelableExtra(
             provisioningIntent,
             DevicePolicyManager.EXTRA_PROVISIONING_ADMIN_EXTRAS_BUNDLE,
@@ -158,6 +184,7 @@ class KioskManager @Inject constructor(
             devicePolicyManager.setKeyguardDisabled(adminComponent, enable)
             setAsHomeApp(enable)
             if (enable) {
+                grantRuntimePermissions()
                 devicePolicyManager.setLockTaskPackages(
                     adminComponent,
                     arrayOf(context.packageName),
@@ -224,6 +251,13 @@ class KioskManager @Inject constructor(
         /** The admin extra the add-on's enrollment code puts its `host:port` in. */
         private const val EXTRA_SERVER = "server"
         private const val GOOGLE_PLAY_SERVICES_PACKAGE = "com.google.android.gms"
+
+        internal val RUNTIME_PERMISSIONS = listOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+        )
 
         fun mainActivityIntent(context: Context): Intent = Intent(
             context,

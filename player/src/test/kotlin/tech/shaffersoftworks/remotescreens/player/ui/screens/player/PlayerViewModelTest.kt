@@ -25,12 +25,15 @@ import tech.shaffersoftworks.remotescreens.shared.Protocol
 import tech.shaffersoftworks.remotescreens.shared.ScreenSettings
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Slot
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -79,6 +82,10 @@ class PlayerViewModelTest {
     }
     private val kioskManager: KioskManager = mock {
         on { lockTaskState() } doReturn KioskState.OFF
+        on { isDeviceOwner() } doReturn false
+    }
+    private val intercomCoordinator: IntercomCoordinator = mock {
+        on { hasMicrophone() } doReturn false
     }
     private val deviceRepository: DeviceRepository = mock {
         on { batteryStatus() } doReturn BatteryStatus(levelPercent = 50, isCharging = true)
@@ -101,9 +108,6 @@ class PlayerViewModelTest {
         on { hasLocationPermission() } doReturn false
     }
     private val locationAccuracy: LocationAccuracy = mock()
-    private val intercomCoordinator: IntercomCoordinator = mock {
-        on { hasMicrophone() } doReturn false
-    }
 
     private lateinit var viewModel: PlayerViewModel
 
@@ -155,6 +159,20 @@ class PlayerViewModelTest {
         runCurrent()
 
         verify(connectionRepository).connect(eq("10.0.0.5:8100"), any())
+    }
+
+    @Test
+    fun `forget resets identity before reconnecting and clears the old screen`() {
+        receive(mainDocument())
+
+        viewModel.onForgetConfirmed()
+        runCurrent()
+
+        inOrder(preferencesRepository, connectionRepository) {
+            runBlocking { verify(preferencesRepository).forget(resetDeviceId = true) }
+            verify(connectionRepository).reconnect()
+        }
+        assertFalse(viewModel.viewState.value.remoteScreen.hasMainDocument)
     }
 
     @Test
@@ -556,41 +574,76 @@ class PlayerViewModelTest {
     }
 
     @Test
-    fun `opening the intercom page checks the microphone before joining`() {
-        receive(mainDocument())
-        receive(ServerMessage.IntercomConfig(enabled = true, displayName = "Kitchen", page = 2))
-        verify(intercomCoordinator, never()).start(any(), any(), any(), any(), any(), any())
+    fun `intercom asks for the microphone when the tablet is not the device owner`() {
+        receive(intercomConfig())
 
-        receive(ServerMessage.OpenPage(2))
+        assertEquals(listOf(PlayerEvent.RequestMicrophonePermission), takeEvents())
         verify(intercomCoordinator, never()).start(any(), any(), any(), any(), any(), any())
-
-        viewModel.onMicrophonePermissionResult(granted = false)
-        runCurrent()
-        verify(intercomCoordinator).start(
-            any(),
-            eq("ws://10.0.0.5:8766/webrtc"),
-            eq("station-tablet-1"),
-            eq("Kitchen"),
-            any(),
-            any(),
-        )
     }
 
     @Test
-    fun `an intercom page with the microphone already allowed joins as it opens`() {
+    fun `intercom starts when the microphone is already granted`() {
         whenever(intercomCoordinator.hasMicrophone()).thenReturn(true)
+        whenever { preferencesRepository.deviceId() } doReturn "device-1"
+
+        receive(intercomConfig())
+
+        verify(intercomCoordinator).start(any(), any(), any(), any(), any(), any())
+        assertFalse(takeEvents().contains(PlayerEvent.RequestMicrophonePermission))
+    }
+
+    @Test
+    fun `a device owner is not asked for the microphone`() {
+        whenever(kioskManager.isDeviceOwner()).thenReturn(true)
+
+        receive(intercomConfig())
+
+        assertFalse(takeEvents().contains(PlayerEvent.RequestMicrophonePermission))
+        verify(intercomCoordinator, never()).start(any(), any(), any(), any(), any(), any())
+    }
+
+    @Test
+    fun `opening the intercom page asks again after the microphone was denied`() {
         receive(mainDocument())
-        receive(ServerMessage.IntercomConfig(enabled = true, displayName = "Kitchen", page = 2))
+        receive(intercomConfig())
+        takeEvents()
+        viewModel.onMicrophonePermissionResult(granted = false)
+        runCurrent()
+        takeEvents()
 
         receive(ServerMessage.OpenPage(2))
 
-        verify(intercomCoordinator).start(
-            any(),
-            eq("ws://10.0.0.5:8766/webrtc"),
-            eq("station-tablet-1"),
-            eq("Kitchen"),
-            any(),
-            any(),
-        )
+        assertTrue(takeEvents().contains(PlayerEvent.RequestMicrophonePermission))
+    }
+
+    @Test
+    fun `opening another page does not ask for the microphone`() {
+        receive(mainDocument())
+        receive(intercomConfig())
+        takeEvents()
+        viewModel.onMicrophonePermissionResult(granted = false)
+        runCurrent()
+        takeEvents()
+
+        receive(ServerMessage.OpenPage(1))
+
+        assertFalse(takeEvents().contains(PlayerEvent.RequestMicrophonePermission))
+    }
+
+    private fun intercomConfig(): ServerMessage.IntercomConfig = ServerMessage.IntercomConfig(
+        enabled = true,
+        displayName = "Office keypad",
+        pageIndexes = listOf(2),
+    )
+
+    private fun takeEvents(): List<PlayerEvent> {
+        val collected = mutableListOf<PlayerEvent>()
+        val job = CoroutineScope(testDispatcher).launch {
+            viewModel.events.collect { event -> collected += event }
+        }
+        runCurrent()
+        job.cancel()
+        runCurrent()
+        return collected
     }
 }

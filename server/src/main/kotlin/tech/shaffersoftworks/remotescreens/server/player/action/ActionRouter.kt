@@ -92,7 +92,7 @@ class ActionRouter(
             target.entityId,
             if (ref.arg == "history") "history" else target.kind,
         )
-        "run" -> runTileAction(target)
+        ActionRef.VERB_RUN -> runTileAction(ref, target)
         "favourite" -> playFavourite(target)
         "event" -> fireEvent(ref.arg, target)
         "code_digit", "code_back", "code_clear" -> typeCode(verb, ref.arg, target, memory)
@@ -326,11 +326,11 @@ class ActionRouter(
         }
     }
 
-    private suspend fun runTileAction(target: TapTarget): TapOutcome {
-        val tap = target.tile?.let { tile -> listOf(
-            tile.tap,
-            tile.hold,
-        ).firstOrNull { it.type == TapType.ACTION } }
+    private suspend fun runTileAction(ref: ActionRef, target: TapTarget): TapOutcome {
+        val tap = target.tile?.let { tile ->
+            val action = if (ref.arg == ActionRef.ARG_HOLD) tile.hold else tile.tap
+            action.takeIf { it.type == TapType.ACTION }
+        }
         val service = tap?.service
         val serviceParts = service?.split('.', limit = 2)
         return when {

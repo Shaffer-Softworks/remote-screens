@@ -39,11 +39,17 @@ data class IntercomView(
     }
 }
 
-internal fun Screen.hasIntercomTile(): Boolean = intercomPage() >= 0
+internal fun Screen.intercomPageIndexes(): List<Int> =
+    pages.mapIndexedNotNull { index, page ->
+        index.takeIf { page.allTiles().any { it.effectiveKind() == "intercom" } }
+    }
 
-/** The page that holds the intercom tile, or -1 when this screen has none. */
-internal fun Screen.intercomPage(): Int =
-    pages.indexOfFirst { page -> page.allTiles().any { it.effectiveKind() == "intercom" } }
+internal fun Screen.hasIntercomTile(): Boolean = intercomPageIndexes().isNotEmpty()
+
+private const val NO_INTERCOM_PAGE = -1
+
+/** The first page that holds the intercom tile, or -1 when this screen has none. */
+internal fun Screen.intercomPage(): Int = intercomPageIndexes().firstOrNull() ?: NO_INTERCOM_PAGE
 
 /** Names of the variables a call updates without rebuilding the page. */
 internal object IntercomVars {

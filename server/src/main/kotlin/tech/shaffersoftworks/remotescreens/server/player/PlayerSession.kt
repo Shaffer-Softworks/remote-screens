@@ -315,7 +315,14 @@ class PlayerSession(
         }
     }
 
+    /** An adopted session whose screen still lists [tileId]; unpaired Hello must not mutate calendars. */
+    private fun canMutateCalendar(tileId: String): Boolean =
+        screenId != null && screen()?.pages?.any { page ->
+            page.allTiles().any { tile -> tile.id == tileId }
+        } == true
+
     private suspend fun createCalendarEvent(message: PlayerMessage.CalendarCreate) {
+        if (!canMutateCalendar(message.tileId)) return
         when (val result = calendarMutations.create(message)) {
             is AgendaMutation.Accepted -> {
                 send(ServerMessage.CalendarDialog(CalendarDialogMode.CLOSE, message.tileId))
@@ -332,6 +339,7 @@ class PlayerSession(
     }
 
     private suspend fun deleteCalendarEvent(message: PlayerMessage.CalendarDelete) {
+        if (!canMutateCalendar(message.tileId)) return
         send(ServerMessage.CalendarDialog(CalendarDialogMode.CLOSE, message.tileId))
         when (val result = calendarMutations.delete(message)) {
             is AgendaMutation.Accepted -> publishAgendaNotice(message.tileId, result.message)
