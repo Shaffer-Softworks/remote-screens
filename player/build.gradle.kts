@@ -137,6 +137,9 @@ dependencies {
     implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.client.websockets)
 
+    // Coil
+    implementation(libs.io.coil.kt.coil.compose)
+
     // Tools
     implementation(libs.timber)
 

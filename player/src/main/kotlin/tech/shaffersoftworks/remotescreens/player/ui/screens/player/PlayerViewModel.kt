@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import coil.ImageLoader
 import dagger.hilt.android.lifecycle.HiltViewModel
 import tech.shaffersoftworks.remotescreens.player.R
 import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionRepository
@@ -42,6 +43,7 @@ import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,6 +53,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import tech.shaffersoftworks.remotescreens.player.di.HaImageLoader
 import timber.log.Timber
 import java.time.LocalTime
 import javax.inject.Inject
@@ -102,6 +105,7 @@ class PlayerViewModel @Inject constructor(
     private val telemetryReporter: TelemetryReporter,
     private val locationAccuracy: LocationAccuracy,
     private val intercomCoordinator: IntercomCoordinator,
+    @HaImageLoader val haImageLoader: ImageLoader
 ) : ViewModel() {
 
     data class ViewState(
@@ -169,6 +173,8 @@ class PlayerViewModel @Inject constructor(
     private var backToHomeJob: Job? = null
     private var alertTimeoutJob: Job? = null
     private var identifyJob: Job? = null
+
+    private val imageJobs = mutableMapOf<String, Job>()
 
     init {
         observeConnectionStatus()
@@ -399,9 +405,16 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun onBitmap(message: ServerMessage.Bitmap) {
-        viewModelScope.launch {
-            val bitmap = imageDecoder.decodeBitmap(message.data) ?: return@launch
-            updateRemoteScreen { it.withBitmap(message.name, bitmap) }
+        imageJobs[message.name]?.cancel()
+
+        imageJobs[message.name] = viewModelScope.launch {
+            val bitmap = imageDecoder.decodeBitmap(message.data)
+                ?: return@launch
+
+            ensureActive()
+            updateRemoteScreen {
+                it.withBitmap(message.name, bitmap)
+            }
         }
     }
 

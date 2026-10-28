@@ -129,6 +129,7 @@ class PlayerViewModelTest {
             telemetryReporter = telemetryReporter,
             locationAccuracy = locationAccuracy,
             intercomCoordinator = intercomCoordinator,
+            haImageLoader = mock(),
         )
     }
 

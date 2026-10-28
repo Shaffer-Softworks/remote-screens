@@ -9,3 +9,4 @@ val Accent = Color(0xFF3D7FD6)
 val Card = Color(0xFFFFFFFF)
 
 val IdentifyBadgeBackground = Color(0xCC000000)
+val teal_200 = Color(0xFF03DAC5)

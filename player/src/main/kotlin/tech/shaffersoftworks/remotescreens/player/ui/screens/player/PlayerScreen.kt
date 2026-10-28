@@ -34,6 +34,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import coil.ImageLoader
 import tech.shaffersoftworks.remotescreens.player.R
 import tech.shaffersoftworks.remotescreens.player.receiver.ScreenOffAdminReceiver
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.CalendarCreateForm
@@ -76,6 +77,7 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
         onSearchEnqueue = viewModel::onSearchEnqueue,
         onEnterAddress = viewModel::openAddressDialog,
         onAllowUnrestrictedBattery = viewModel::onAllowUnrestrictedBatteryRequested,
+        imageLoader = viewModel.haImageLoader,
     )
     PlayerDialogs(
         viewState = viewState,
@@ -117,6 +119,7 @@ private fun PlayerScreenContent(
     onSearchEnqueue: (String, String) -> Unit = { _, _ -> },
     onEnterAddress: () -> Unit = {},
     onAllowUnrestrictedBattery: () -> Unit = {},
+    imageLoader: ImageLoader
 ) {
     Box(
         modifier = Modifier
@@ -140,6 +143,7 @@ private fun PlayerScreenContent(
             onSearchQuery = onSearchQuery,
             onSearchPlay = onSearchPlay,
             onSearchEnqueue = onSearchEnqueue,
+            imageLoader = imageLoader
         )
         viewState.infoPanel?.let { infoPanel ->
             InfoPanel(
@@ -170,6 +174,7 @@ private fun RemoteScreen(
     onSearchQuery: (String, String) -> Unit,
     onSearchPlay: (String, String) -> Unit,
     onSearchEnqueue: (String, String) -> Unit,
+    imageLoader: ImageLoader
 ) {
     RemoteDocumentStack(
         state = state,
@@ -179,6 +184,7 @@ private fun RemoteScreen(
         onSearchQuery = onSearchQuery,
         onSearchPlay = onSearchPlay,
         onSearchEnqueue = onSearchEnqueue,
+        imageLoader = imageLoader
     )
 }
 
@@ -411,38 +417,60 @@ internal fun unrestrictedBatteryIntent(context: Context): Intent =
 @Preview(name = "Searching", widthDp = 800, heightDp = 480)
 @Composable
 private fun PlayerScreenSearchingPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
-        PlayerScreenContent(viewState = PlayerViewModel.ViewState(infoPanel = InfoPanelState.Searching))
+        PlayerScreenContent(
+            viewState = PlayerViewModel.ViewState(infoPanel = InfoPanelState.Searching),
+            imageLoader = previewLoader
+        )
     }
 }
 
 @Preview(name = "Playing", widthDp = 800, heightDp = 480)
 @Composable
 private fun PlayerScreenPlayingPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
-        PlayerScreenContent(viewState = PlayerViewModel.ViewState())
+        PlayerScreenContent(
+            viewState = PlayerViewModel.ViewState(),
+            imageLoader = previewLoader
+        )
     }
 }
 
 @Preview(name = "Identify", widthDp = 800, heightDp = 480)
 @Composable
 private fun PlayerScreenIdentifyPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
-        PlayerScreenContent(viewState = PlayerViewModel.ViewState(identifyScreenName = "Kitchen"))
+        PlayerScreenContent(
+            viewState = PlayerViewModel.ViewState(identifyScreenName = "Kitchen"),
+            imageLoader = previewLoader
+        )
     }
 }
 
 @Preview(name = "Blackout", widthDp = 800, heightDp = 480)
 @Composable
 private fun PlayerScreenBlackoutPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
-        PlayerScreenContent(viewState = PlayerViewModel.ViewState(isAwake = false))
+        PlayerScreenContent(
+            viewState = PlayerViewModel.ViewState(isAwake = false),
+            imageLoader = previewLoader
+        )
     }
 }
 
 @Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun RemoteScreenPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
         RemoteScreen(
             state = RemoteScreenState(),
@@ -452,6 +480,7 @@ private fun RemoteScreenPreview() {
             onSearchQuery = { _, _ -> },
             onSearchPlay = { _, _ -> },
             onSearchEnqueue = { _, _ -> },
+            imageLoader = previewLoader
         )
     }
 }
@@ -459,6 +488,8 @@ private fun RemoteScreenPreview() {
 @Preview(name = "Settings", widthDp = 800, heightDp = 480)
 @Composable
 private fun PlayerDialogsSettingsPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
         PlayerDialogs(
             viewState = PlayerViewModel.ViewState(
@@ -479,6 +510,8 @@ private fun PlayerDialogsSettingsPreview() {
 @Preview(name = "Forget", widthDp = 800, heightDp = 480)
 @Composable
 private fun PlayerDialogsForgetPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
         PlayerDialogs(
             viewState = PlayerViewModel.ViewState(
