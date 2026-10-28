@@ -14,7 +14,6 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
 import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.server.render.tiles.energyFlow
-
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning

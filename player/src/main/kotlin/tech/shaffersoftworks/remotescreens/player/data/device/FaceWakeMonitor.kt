@@ -193,16 +193,16 @@ class FaceWakeMonitor @Inject constructor(
     }
 
     private class ControlledLifecycleOwner : LifecycleOwner {
-        private val registry = LifecycleRegistry(this)
-        override val lifecycle: Lifecycle get() = registry
+        override val lifecycle: Lifecycle
+            field = LifecycleRegistry(this)
 
         fun start() {
-            registry.currentState = Lifecycle.State.STARTED
-            registry.currentState = Lifecycle.State.RESUMED
+            lifecycle.currentState = Lifecycle.State.STARTED
+            lifecycle.currentState = Lifecycle.State.RESUMED
         }
 
         fun destroy() {
-            registry.currentState = Lifecycle.State.DESTROYED
+            lifecycle.currentState = Lifecycle.State.DESTROYED
         }
     }
 }
