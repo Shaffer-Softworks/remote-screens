@@ -34,7 +34,7 @@ internal sealed interface IntercomFrame {
 internal data class RosterStation(
     val clientId: String,
     val displayName: String,
-    val inCall: Boolean
+    val inCall: Boolean,
 )
 
 /** Encodes and decodes the intercom signaling frames. Kept off the call machine so either can be tested alone. */

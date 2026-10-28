@@ -4,5 +4,5 @@ enum class ConnectionStatus {
     IDLE,
     CONNECTING,
     CONNECTED,
-    DISCONNECTED
+    DISCONNECTED,
 }

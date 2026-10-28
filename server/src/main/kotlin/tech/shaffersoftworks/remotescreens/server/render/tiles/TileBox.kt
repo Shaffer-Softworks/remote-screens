@@ -15,7 +15,7 @@ data class TileBox(
     val cols: Int,
     val rows: Int,
     val full: Boolean,
-    val edge: Boolean = false
+    val edge: Boolean = false,
 )
 
 /** Whether the tile is a page of its own: the home panel, or a full tile of a kind that draws a whole page. */
