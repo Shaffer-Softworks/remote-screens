@@ -16,9 +16,7 @@ import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.tiles.bindWhere
 import tech.shaffersoftworks.remotescreens.server.render.tiles.photo
-
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
-
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning

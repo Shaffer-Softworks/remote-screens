@@ -2,19 +2,11 @@
 
 package tech.shaffersoftworks.remotescreens.server.render.freeform
 
-import tech.shaffersoftworks.remotescreens.server.render.DocContext
-import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.bindEntity
-import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
-import tech.shaffersoftworks.remotescreens.server.render.theme.Role
-import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
-import tech.shaffersoftworks.remotescreens.server.render.tiles.tapRef
-
 import androidx.compose.remote.core.operations.layout.animation.AnimationSpec
 import androidx.compose.remote.creation.dsl.Modifier
-import androidx.compose.remote.creation.dsl.animationSpec
 import androidx.compose.remote.creation.dsl.RcBorderShape
 import androidx.compose.remote.creation.dsl.RcColor
+import androidx.compose.remote.creation.dsl.animationSpec
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.border
 import androidx.compose.remote.creation.dsl.clip
@@ -27,7 +19,13 @@ import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.visibility
 import androidx.compose.remote.creation.dsl.width
-import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.bindEntity
+import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
+import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
+import tech.shaffersoftworks.remotescreens.server.render.tiles.tapRef
 import tech.shaffersoftworks.remotescreens.server.render.widgets.at
 import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap

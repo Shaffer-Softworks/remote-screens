@@ -38,7 +38,7 @@ internal object DocumentScroll {
             // componentId() stores the id on getId(). Generated layout ids are negative.
             val componentId = component.id
             if (componentId <= 0) return@walk
-            val isVertical = scroll.isVerticalScroll()
+            val isVertical = scroll.isVerticalScroll
             val offset = if (isVertical) component.scrollY else component.scrollX
             val max = maxField(isVertical).getFloat(scroll)
             if (offset != 0f || max != 0f) {

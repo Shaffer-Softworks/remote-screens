@@ -139,14 +139,14 @@ internal class IntercomSession(
     }
 
     private suspend fun onOffer(frame: IntercomFrame.Offer) {
-        val answer = when {
-            phase == Phase.IDLE -> {
+        val answer = when (phase) {
+            Phase.IDLE -> {
                 peerId = frame.from
                 onWake()
                 audio.start(audioListener)
                 audio.acceptOffer(frame.sdp)
             }
-            phase == Phase.OUTGOING && clientId >= frame.from -> {
+            Phase.OUTGOING if clientId >= frame.from -> {
                 timeoutJob?.cancel()
                 peerId = frame.from
                 audio.rollbackAndAnswer(frame.sdp)
