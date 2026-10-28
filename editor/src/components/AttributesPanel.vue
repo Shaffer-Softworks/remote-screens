@@ -21,6 +21,10 @@ const currentNode = computed(() => props.node)
 const currentProps = computed(() => currentNode.value.props)
 const container = computed(() => isContainer(currentNode.value))
 const BINDABLE = [
+  'column',
+  'row',
+  'box',
+  'flow',
   'text',
   'icon',
   'button',
@@ -1315,6 +1319,9 @@ const typeIcon = computed(() =>
           </option>
         </datalist>
       </label>
+      <p v-if="container" class="muted note">
+        Choose an entity, then set Tap to Toggle under Actions to toggle it when this layout is tapped.
+      </p>
       <template v-if="currentNode.bind && currentNode.type === 'text'">
         <label class="field">
           Show
