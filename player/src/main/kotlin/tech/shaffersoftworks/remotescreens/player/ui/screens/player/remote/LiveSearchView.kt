@@ -1,8 +1,5 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote
 
-import android.annotation.SuppressLint
-import android.content.Context
-import android.widget.FrameLayout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,13 +26,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -63,82 +61,26 @@ private val PREVIEW_SEARCH_ROWS = listOf(
     ),
 )
 
-/**
- * Native Music Assistant search over a document component: TextField + results.
- * Consumes touches so the Remote Compose document underneath does not receive them.
- */
-@SuppressLint("ViewConstructor")
-class LiveSearchView(context: Context) : FrameLayout(context) {
-    private val composeView = ComposeView(context)
-
-    var search: SlotSearch? = null
-        private set
-
-    var onQueryChange: (tileId: String, query: String) -> Unit = { _, _ -> }
-    var onPlayUri: (tileId: String, uri: String) -> Unit = { _, _ -> }
-    var onEnqueueUri: (tileId: String, uri: String) -> Unit = { _, _ -> }
-
-    private var rows: List<MusicSearchRow> = emptyList()
-    private var isLoading: Boolean = false
-
-    init {
-        isClickable = true
-        isFocusable = true
-        composeView.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-        addView(composeView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-    }
-
-    fun show(search: SlotSearch) {
-        this.search = search
-        rows = search.rows
-        render()
-        visibility = VISIBLE
-    }
-
-    fun setResults(tileId: String, nextRows: List<MusicSearchRow>) {
-        if (search?.tileId != tileId) return
-        rows = nextRows
-        isLoading = false
-        render()
-    }
-
-    fun markLoading(tileId: String) {
-        if (search?.tileId != tileId) return
-        isLoading = true
-        render()
-    }
-
-    fun stop() {
-        search = null
-        rows = emptyList()
-        isLoading = false
-        composeView.setContent { }
-        visibility = GONE
-    }
-
-    private fun render() {
-        val active = search ?: return
-        val currentRows = rows
-        val loading = isLoading
-        composeView.setContent {
-            SearchContent(
-                search = active,
-                rows = currentRows,
-                isLoading = loading,
-                onQuery = { query ->
-                    if (query.isNotBlank()) {
-                        isLoading = true
-                    } else {
-                        isLoading = false
-                        rows = emptyList()
-                    }
-                    onQueryChange(active.tileId, query)
-                },
-                onPlay = { uri -> onPlayUri(active.tileId, uri) },
-                onEnqueue = { uri -> onEnqueueUri(active.tileId, uri) },
-            )
-        }
-    }
+/** Search state belongs to the mounted document overlay. */
+@Composable
+internal fun LiveSearchView(
+    search: SlotSearch,
+    onQueryChange: (String, String) -> Unit,
+    onPlayUri: (String, String) -> Unit,
+    onEnqueueUri: (String, String) -> Unit,
+) {
+    var loading by remember(search.tileId, search.revision, search.rows) { mutableStateOf(false) }
+    SearchContent(
+        search = search,
+        rows = search.rows,
+        isLoading = loading,
+        onQuery = { query ->
+            loading = query.isNotBlank()
+            onQueryChange(search.tileId, query)
+        },
+        onPlay = { onPlayUri(search.tileId, it) },
+        onEnqueue = { onEnqueueUri(search.tileId, it) },
+    )
 }
 
 @Composable
@@ -152,19 +94,27 @@ private fun SearchContent(
     initialText: String = "",
 ) {
     var text by remember(search.tileId, search.revision) { mutableStateOf(initialText) }
-    LaunchedEffect(text) {
+    val currentOnQuery by rememberUpdatedState(onQuery)
+    LaunchedEffect(text, search.tileId, search.revision) {
         if (text.isBlank()) {
-            onQuery("")
+            currentOnQuery("")
             return@LaunchedEffect
         }
         delay(SEARCH_DEBOUNCE_MS.milliseconds)
-        onQuery(text)
+        currentOnQuery(text)
     }
     val showResults = text.isNotBlank() || rows.isNotEmpty()
     Column(
         Modifier
             .fillMaxSize()
-            .padding(top = 0.dp),
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Final)
+                        event.changes.forEach { it.consume() }
+                    }
+                }
+            },
     ) {
         OutlinedTextField(
             value = text,
@@ -410,3 +360,13 @@ private fun previewSlotSearch(): SlotSearch = SlotSearch(
     tileId = "music-search",
     playerEntityId = "media_player.kitchen",
 )
+
+@Preview(name = "Search overlay", widthDp = 800, heightDp = 480)
+@Composable
+private fun LiveSearchViewPreview() {
+    RemoteScreensTheme {
+        SearchPreviewBackdrop {
+            LiveSearchView(previewSlotSearch(), { _, _ -> }, { _, _ -> }, { _, _ -> })
+        }
+    }
+}

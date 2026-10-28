@@ -31,7 +31,11 @@ internal sealed interface IntercomFrame {
     data class Ping(val sentAt: Long) : IntercomFrame
 }
 
-internal data class RosterStation(val clientId: String, val displayName: String, val inCall: Boolean)
+internal data class RosterStation(
+    val clientId: String,
+    val displayName: String,
+    val inCall: Boolean
+)
 
 /** Encodes and decodes the intercom signaling frames. Kept off the call machine so either can be tested alone. */
 internal object IntercomWire {

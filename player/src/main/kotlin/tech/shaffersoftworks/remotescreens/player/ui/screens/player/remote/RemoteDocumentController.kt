@@ -2,11 +2,12 @@
 
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.view.View
-import android.widget.FrameLayout
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.remote.core.CalendarSystemClock
 import androidx.compose.remote.core.RemoteClock
 import androidx.compose.remote.player.core.RemoteDocument
@@ -22,26 +23,27 @@ import java.util.TimeZone
 const val PAGE_VARIABLE = "page"
 
 /**
- * The only door to the Remote Compose player (still alpha). Holds one player per [Slot], stacked, and brings them
+ * Owns the Remote Compose renderers and brings them
  * in line with a [RemoteScreenState]: each new document is loaded once, then only changed values and bitmaps are set.
  *
  * Main uses a front/back pair so a rebuild can load off-screen (with PAGE set) and swap — otherwise the tablet
  * blanks to the theme page colour or flashes home until PAGE sticks.
  */
-@SuppressLint("ViewConstructor")
-class RemoteDocumentView(context: Context) : FrameLayout(context) {
-    private val players: Map<Slot, RemoteComposePlayer> = Slot.entries.associateWith { RemoteComposePlayer(
+internal class RemoteDocumentController(
+    context: Context,
+    createPlayer: (Context) -> RemoteComposePlayer = { RemoteComposePlayer(it) },
+) {
+    private val players: Map<Slot, RemoteComposePlayer> = Slot.entries.associateWith { createPlayer(
         context,
     ) }
     /** Inactive MAIN buffer; [mainFrontIsPrimary] says whether [players] MAIN or this view is showing. */
-    private val mainBackPlayer = RemoteComposePlayer(context)
-    private var mainFrontIsPrimary = true
+    val mainBackPlayer = createPlayer(context)
+    var mainFrontIsPrimary by mutableStateOf(true)
+        private set
     private val loadedDocuments = mutableMapOf<Slot, SlotDocument>()
     private var appliedValues: Map<String, VarValue> = emptyMap()
     private var appliedBitmaps: Map<String, Bitmap> = emptyMap()
     private var appliedPage: Int? = null
-    private val overlays = DocumentOverlays(parent = this, documentPlayer = ::documentPlayer)
-    private var lastState: RemoteScreenState? = null
     private var appliedTimeZone: String? = null
     /** After a MAIN rebuild into the back buffer, swap once PAGE has been drawn off-screen. */
     private var pendingMainSwap: SlotDocument? = null
@@ -55,50 +57,33 @@ class RemoteDocumentView(context: Context) : FrameLayout(context) {
     /** A tap in a document: its slot, the revision of the document, and the tap's metadata. */
     var onAction: (slot: Slot, revision: Int, metadata: String) -> Unit = { _, _, _ -> }
 
-    /** A camera's video stopped by itself, with the add-on's HTTP status when that was the cause. */
-    var onVideoFailed: (slot: Slot, video: SlotVideo, httpCode: Int?) -> Unit = { _, _, _ -> }
-
-    /** Music Assistant search query typed in the native overlay. */
-    var onSearchQuery: (tileId: String, query: String) -> Unit = { _, _ -> }
-
-    /** Play / enqueue from the search overlay (`tile|play_uri|…` / `tile|enqueue_uri|…`). */
-    var onSearchPlay: (tileId: String, uri: String) -> Unit = { _, _ -> }
-    var onSearchEnqueue: (tileId: String, uri: String) -> Unit = { _, _ -> }
-
-    /** Off while the screen is in standby, so no camera is decoded for nobody. */
-    var isVideoAllowed = true
-
     init {
-        for (slot in Slot.entries) {
-            val player = players.getValue(slot)
+        players.forEach { (slot, player) ->
             player.visibility = if (slot == Slot.MAIN) View.INVISIBLE else View.GONE
-            addView(player, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         }
         mainBackPlayer.visibility = View.GONE
-        addView(mainBackPlayer, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-        // A text that changes while it is measured registers a relayout boundary in the middle of the partial
-        // layout pass, which then throws ConcurrentModificationException on every frame (alpha20). A full pass
-        // never walks that list, so the partial pass is never left to run.
-        viewTreeObserver.addOnPreDrawListener {
-            for (slot in loadedDocuments.keys) fullLayoutIfDirty(documentPlayer(slot))
-            overlays.placeBeforeDraw()
-            true
-        }
     }
 
-    override fun onWindowVisibilityChanged(visibility: Int) {
-        super.onWindowVisibilityChanged(visibility)
-        lastState?.let { state -> overlays.renderAll(state) }
+    fun primaryPlayer(slot: Slot): RemoteComposePlayer = players.getValue(slot)
+
+    fun beforeDraw() {
+        for (slot in loadedDocuments.keys) fullLayoutIfDirty(documentPlayer(slot))
     }
 
-    override fun onDetachedFromWindow() {
-        overlays.stopAll()
-        super.onDetachedFromWindow()
+    fun dispose() {
+        // Invalidate queued reveal callbacks when this screen leaves composition.
+        loadedDocuments.clear()
+        pendingMainSwap = null
+        pendingMainFirstReveal = null
     }
 
     fun render(state: RemoteScreenState) {
-        lastState = state
         loadedDocuments.keys.retainAll(state.documents.keys)
+        if (Slot.MAIN !in state.documents) {
+            pendingMainSwap = null
+            pendingMainFirstReveal = null
+            pendingMainScroll = emptyList()
+        }
         val newlyLoaded = loadNewDocuments(state)
         applyChangedValues(state.values, excludeSlots = newlyLoaded)
         applyChangedBitmaps(state.bitmaps, excludeSlots = newlyLoaded)
@@ -110,7 +95,6 @@ class RemoteDocumentView(context: Context) : FrameLayout(context) {
         invalidateDocuments()
         pendingMainSwap?.let { document -> revealMainSwap(document) }
         pendingMainFirstReveal?.let { document -> revealMainFirst(document) }
-        overlays.renderAll(state)
     }
 
     private fun syncMainPage(state: RemoteScreenState, newlyLoaded: Set<Slot>) {
@@ -166,7 +150,7 @@ class RemoteDocumentView(context: Context) : FrameLayout(context) {
         if (mainFrontIsPrimary) mainBackPlayer else players.getValue(Slot.MAIN)
 
     /** Player that holds the current document bytes. During a swap that is the back buffer. */
-    private fun documentPlayer(slot: Slot): RemoteComposePlayer =
+    fun documentPlayer(slot: Slot): RemoteComposePlayer =
         if (slot == Slot.MAIN && pendingMainSwap != null) mainInactive() else player(slot)
 
     /**
@@ -182,6 +166,7 @@ class RemoteDocumentView(context: Context) : FrameLayout(context) {
         newFront.post {
             if (!swapStillPending(document)) {
                 mainSwapPosted = false
+                pendingMainSwap?.takeIf(::swapStillPending)?.let(::revealMainSwap)
                 return@post
             }
             newFront.setUserLocalInt(PAGE_VARIABLE, appliedPage ?: 0)
@@ -189,6 +174,7 @@ class RemoteDocumentView(context: Context) : FrameLayout(context) {
             newFront.post {
                 if (!swapStillPending(document)) {
                     mainSwapPosted = false
+                    pendingMainSwap?.takeIf(::swapStillPending)?.let(::revealMainSwap)
                     return@post
                 }
                 DocumentScroll.restore(newFront, pendingMainScroll)
@@ -200,7 +186,6 @@ class RemoteDocumentView(context: Context) : FrameLayout(context) {
                 pendingMainSwap = null
                 mainSwapPosted = false
                 newFront.invalidate()
-                lastState?.let { overlays.renderAll(it) }
             }
         }
     }
@@ -213,6 +198,7 @@ class RemoteDocumentView(context: Context) : FrameLayout(context) {
         main.post {
             if (loadedDocuments[Slot.MAIN] !== document || pendingMainFirstReveal !== document) {
                 mainFirstPosted = false
+                pendingMainFirstReveal?.takeIf { loadedDocuments[Slot.MAIN] === it }?.let(::revealMainFirst)
                 return@post
             }
             main.setUserLocalInt(PAGE_VARIABLE, appliedPage ?: 0)
@@ -220,13 +206,13 @@ class RemoteDocumentView(context: Context) : FrameLayout(context) {
             main.post {
                 if (loadedDocuments[Slot.MAIN] !== document || pendingMainFirstReveal !== document) {
                     mainFirstPosted = false
+                    pendingMainFirstReveal?.takeIf { loadedDocuments[Slot.MAIN] === it }?.let(::revealMainFirst)
                     return@post
                 }
                 pendingMainFirstReveal = null
                 mainFirstPosted = false
                 main.alpha = 1f
                 main.invalidate()
-                lastState?.let { overlays.renderAll(it) }
             }
         }
     }
@@ -271,11 +257,6 @@ class RemoteDocumentView(context: Context) : FrameLayout(context) {
         if (slot == Slot.MAIN) pendingMainScroll = marks
         // Rebuilds load under the current page. Alpha 0 still draws, so PAGE can stick before reveal.
         val target = if (hadMain) mainInactive() else player(slot)
-        if (hadMain) {
-            val front = player(Slot.MAIN)
-            removeView(target)
-            addView(target, indexOfChild(front).coerceAtLeast(0))
-        }
         target.alpha = 0f
         target.visibility = View.INVISIBLE
         // Load with Home Assistant's zone so analog hands match the digital TIME/DATE vars.
@@ -305,13 +286,6 @@ class RemoteDocumentView(context: Context) : FrameLayout(context) {
         loadedDocuments[slot] = document
     }
 
-    private fun clockFor(timeZone: String?): RemoteClock {
-        if (timeZone.isNullOrEmpty()) return RemoteClock.SYSTEM
-        return runCatching {
-            CalendarSystemClock(TimeZone.getTimeZone(ZoneId.of(timeZone)))
-        }.getOrDefault(RemoteClock.SYSTEM)
-    }
-
     private fun applyChangedValues(values: Map<String, VarValue>, excludeSlots: Set<Slot>) {
         val changedValues = values.values.filter { value -> appliedValues[value.name] != value }
         if (changedValues.isEmpty()) return
@@ -330,21 +304,28 @@ class RemoteDocumentView(context: Context) : FrameLayout(context) {
         }
     }
 
-    private fun fullLayoutIfDirty(player: RemoteComposePlayer) {
-        val rootLayout = runCatching { player.document.document.rootLayoutComponent }.getOrNull() ?: return
-        if (rootLayout.needsMeasure()) {
-            rootLayout.clearDirtyBoundaries()
-            rootLayout.invalidateMeasure()
-        }
-    }
+}
 
-    private fun RemoteComposePlayer.applyValue(value: VarValue) {
-        when (value.type) {
-            VarType.STRING -> setUserLocalString(value.name, value.value)
-            VarType.INT -> setUserLocalInt(value.name, value.asInt())
-            VarType.FLOAT -> setUserLocalFloat(value.name, value.asFloat())
-            VarType.COLOR -> setUserLocalColor(value.name, value.asColor())
-        }
-    }
+private fun clockFor(timeZone: String?): RemoteClock {
+    if (timeZone.isNullOrEmpty()) return RemoteClock.SYSTEM
+    return runCatching {
+        CalendarSystemClock(TimeZone.getTimeZone(ZoneId.of(timeZone)))
+    }.getOrDefault(RemoteClock.SYSTEM)
+}
 
+private fun fullLayoutIfDirty(player: RemoteComposePlayer) {
+    val rootLayout = runCatching { player.document.document.rootLayoutComponent }.getOrNull() ?: return
+    if (rootLayout.needsMeasure()) {
+        rootLayout.clearDirtyBoundaries()
+        rootLayout.invalidateMeasure()
+    }
+}
+
+private fun RemoteComposePlayer.applyValue(value: VarValue) {
+    when (value.type) {
+        VarType.STRING -> setUserLocalString(value.name, value.value)
+        VarType.INT -> setUserLocalInt(value.name, value.asInt())
+        VarType.FLOAT -> setUserLocalFloat(value.name, value.asFloat())
+        VarType.COLOR -> setUserLocalColor(value.name, value.asColor())
+    }
 }

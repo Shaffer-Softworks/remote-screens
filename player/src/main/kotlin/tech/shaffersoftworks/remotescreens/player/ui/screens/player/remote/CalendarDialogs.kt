@@ -114,7 +114,6 @@ fun CalendarDialogs(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CreateCalendarEventDialog(
     calendars: List<CalendarChoice>,
@@ -220,7 +219,6 @@ private fun calendarFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.c
     cursorColor = DialogTeal,
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CreateCalendarFields(
     calendars: List<CalendarChoice>,
@@ -377,7 +375,6 @@ private fun CalendarPicker(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CalendarDatePickerDialog(
     initialDate: LocalDate,
@@ -574,7 +571,6 @@ private fun CalendarDialogsErrorPreview() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun CreateCalendarEventDialogPreview() {
@@ -589,7 +585,6 @@ private fun CreateCalendarEventDialogPreview() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun CreateCalendarEventDialogEmptyPreview() {
@@ -604,7 +599,6 @@ private fun CreateCalendarEventDialogEmptyPreview() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun CreateCalendarEventDialogErrorPreview() {
@@ -619,7 +613,6 @@ private fun CreateCalendarEventDialogErrorPreview() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun CreateCalendarFieldsPreview() {
@@ -647,7 +640,6 @@ private fun CreateCalendarFieldsPreview() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun CreateCalendarFieldsAllDayPreview() {
@@ -675,7 +667,6 @@ private fun CreateCalendarFieldsAllDayPreview() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun CreateCalendarFieldsErrorPreview() {
@@ -703,7 +694,6 @@ private fun CreateCalendarFieldsErrorPreview() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun CalendarDropdownPreview() {
@@ -719,7 +709,6 @@ private fun CalendarDropdownPreview() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun PickerFieldPreview() {
