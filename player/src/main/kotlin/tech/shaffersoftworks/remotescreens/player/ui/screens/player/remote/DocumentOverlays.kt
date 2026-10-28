@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import coil.ImageLoader
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 import tech.shaffersoftworks.remotescreens.shared.Slot
 
@@ -20,6 +22,7 @@ internal fun DocumentOverlays(
     onSearchQuery: (String, String) -> Unit,
     onSearchPlay: (String, String) -> Unit,
     onSearchEnqueue: (String, String) -> Unit,
+    imageLoader: ImageLoader,
 ) {
     Box(modifier) {
         state.playingVideo?.takeIf { it.first == slot && isVideoAllowed }?.second?.let { video ->
@@ -37,7 +40,13 @@ internal fun DocumentOverlays(
         state.playingSearch?.takeIf { it.first == slot }?.second?.let { search ->
             key(slot, search.tileId, search.revision, search.componentId) {
                 DocumentOverlay(bounds.search) {
-                    LiveSearchView(search, onSearchQuery, onSearchPlay, onSearchEnqueue)
+                    LiveSearchView(
+                        search = search,
+                        imageLoader = imageLoader,
+                        onQueryChange = onSearchQuery,
+                        onPlayUri = onSearchPlay,
+                        onEnqueueUri = onSearchEnqueue,
+                    )
                 }
             }
         }
@@ -47,6 +56,8 @@ internal fun DocumentOverlays(
 @Preview(name = "Document overlays", widthDp = 800, heightDp = 480)
 @Composable
 private fun DocumentOverlaysPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
         DocumentOverlays(
             slot = Slot.MAIN,
@@ -58,6 +69,7 @@ private fun DocumentOverlaysPreview() {
             onSearchQuery = { _, _ -> },
             onSearchPlay = { _, _ -> },
             onSearchEnqueue = { _, _ -> },
+            imageLoader = previewLoader,
         )
     }
 }

@@ -24,6 +24,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
+import coil.ImageLoader
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 import tech.shaffersoftworks.remotescreens.shared.Slot
 
@@ -37,6 +38,7 @@ internal fun RemoteDocumentStack(
     onSearchQuery: (String, String) -> Unit,
     onSearchPlay: (String, String) -> Unit,
     onSearchEnqueue: (String, String) -> Unit,
+    imageLoader: ImageLoader,
 ) {
     val context = LocalContext.current
     val controller = remember(context) { RemoteDocumentController(context) }
@@ -93,6 +95,7 @@ internal fun RemoteDocumentStack(
                     onSearchQuery = onSearchQuery,
                     onSearchPlay = onSearchPlay,
                     onSearchEnqueue = onSearchEnqueue,
+                    imageLoader = imageLoader,
                 )
             }
         }
@@ -141,6 +144,8 @@ internal fun DocumentOverlay(bounds: Rect?, modifier: Modifier = Modifier, conte
 @Preview(name = "Document stack", widthDp = 800, heightDp = 480)
 @Composable
 private fun RemoteDocumentStackPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
         RemoteDocumentStack(
             state = RemoteScreenState(),
@@ -150,6 +155,7 @@ private fun RemoteDocumentStackPreview() {
             onSearchQuery = { _, _ -> },
             onSearchPlay = { _, _ -> },
             onSearchEnqueue = { _, _ -> },
+            imageLoader = previewLoader,
         )
         DocumentOverlay(Rect(0, 0, 1, 1)) { }
     }

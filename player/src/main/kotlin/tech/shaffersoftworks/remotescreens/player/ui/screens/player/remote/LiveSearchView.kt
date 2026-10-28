@@ -11,12 +11,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -34,12 +36,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.ImageLoader
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import kotlinx.coroutines.delay
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
+import tech.shaffersoftworks.remotescreens.player.ui.theme.teal_200
 import tech.shaffersoftworks.remotescreens.shared.MusicSearchRow
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -54,10 +62,12 @@ private val PREVIEW_SEARCH_ROWS = listOf(
         title = "Digital Love",
         subtitle = "Daft Punk",
         uri = "library://track/digital-love",
+        imagePathOrUrl = "https://picsum.photos/id/203/200.jpg",
     ),
     MusicSearchRow(
         title = "One More Time",
         uri = "library://track/one-more-time",
+        imagePathOrUrl = "https://picsum.photos/id/203/200.jpg",
     ),
 )
 
@@ -68,6 +78,7 @@ internal fun LiveSearchView(
     onQueryChange: (String, String) -> Unit,
     onPlayUri: (String, String) -> Unit,
     onEnqueueUri: (String, String) -> Unit,
+    imageLoader: ImageLoader,
 ) {
     var loading by remember(search.tileId, search.revision, search.rows) { mutableStateOf(false) }
     SearchContent(
@@ -80,6 +91,7 @@ internal fun LiveSearchView(
         },
         onPlay = { onPlayUri(search.tileId, it) },
         onEnqueue = { onEnqueueUri(search.tileId, it) },
+        imageLoader = imageLoader,
     )
 }
 
@@ -92,6 +104,7 @@ private fun SearchContent(
     onPlay: (String) -> Unit,
     onEnqueue: (String) -> Unit,
     initialText: String = "",
+    imageLoader: ImageLoader,
 ) {
     var text by remember(search.tileId, search.revision) { mutableStateOf(initialText) }
     val currentOnQuery by rememberUpdatedState(onQuery)
@@ -171,7 +184,12 @@ private fun SearchContent(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(rows, key = { it.uri + it.title }) { row ->
-                        SearchRow(row, onPlay = { onPlay(row.uri) }, onEnqueue = { onEnqueue(row.uri) })
+                        SearchRow(
+                            musicSearchRow = row,
+                            onPlay = { onPlay(row.uri) },
+                            onEnqueue = { onEnqueue(row.uri) },
+                            imageLoader = imageLoader,
+                        )
                     }
                 }
             }
@@ -181,10 +199,15 @@ private fun SearchContent(
 
 @Composable
 private fun SearchRow(
-    row: MusicSearchRow,
+    musicSearchRow: MusicSearchRow,
     onPlay: () -> Unit,
     onEnqueue: () -> Unit,
+    imageLoader: ImageLoader,
 ) {
+    val context = LocalContext.current
+    val thumbShape = RoundedCornerShape(8.dp)
+    val iconBg = teal_200.copy(alpha = 0.32f)// else 0.18f)
+
     Row(
         Modifier
             .fillMaxWidth()
@@ -193,29 +216,62 @@ private fun SearchRow(
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(
+        Row(
             Modifier
                 .weight(1f)
-                .clickable(onClick = onPlay),
+                .clickable(onClick = onPlay)
+                .padding(horizontal = 4.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(
-                row.title,
-                color = Ink,
-                fontSize = 15.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            row.subtitle?.let {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(thumbShape)
+                    .background(
+                        if (musicSearchRow.imagePathOrUrl != null) {
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                        } else {
+                            iconBg
+                        },
+                        thumbShape,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                musicSearchRow.imagePathOrUrl?.let {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(it)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        imageLoader = imageLoader,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    it,
-                    color = Ink.copy(alpha = 0.75f),
-                    fontSize = 12.sp,
+                    musicSearchRow.title,
+                    color = Ink,
+                    fontSize = 15.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                musicSearchRow.subtitle?.let {
+                    Text(
+                        it,
+                        color = Ink.copy(alpha = 0.75f),
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
-        var menuOpen by remember(row.uri, row.title) { mutableStateOf(false) }
+        var menuOpen by remember(musicSearchRow.uri, musicSearchRow.title) { mutableStateOf(false) }
         Box {
             TextButton(onClick = { menuOpen = true }) {
                 Text("⋮", color = Ink.copy(alpha = 0.75f), fontSize = 18.sp)
@@ -236,6 +292,8 @@ private fun SearchRow(
 @Preview(name = "Empty", widthDp = 400, heightDp = 780)
 @Composable
 private fun SearchContentEmptyPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
         SearchPreviewBackdrop {
             SearchContent(
@@ -245,6 +303,7 @@ private fun SearchContentEmptyPreview() {
                 onQuery = {},
                 onPlay = {},
                 onEnqueue = {},
+                imageLoader = previewLoader,
             )
         }
     }
@@ -253,6 +312,8 @@ private fun SearchContentEmptyPreview() {
 @Preview(name = "Loading", widthDp = 400, heightDp = 780)
 @Composable
 private fun SearchContentLoadingPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
         SearchPreviewBackdrop {
             SearchContent(
@@ -263,6 +324,7 @@ private fun SearchContentLoadingPreview() {
                 onPlay = {},
                 onEnqueue = {},
                 initialText = PREVIEW_QUERY,
+                imageLoader = previewLoader,
             )
         }
     }
@@ -271,6 +333,8 @@ private fun SearchContentLoadingPreview() {
 @Preview(name = "No results", widthDp = 400, heightDp = 780)
 @Composable
 private fun SearchContentNoResultsPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
         SearchPreviewBackdrop {
             SearchContent(
@@ -281,6 +345,7 @@ private fun SearchContentNoResultsPreview() {
                 onPlay = {},
                 onEnqueue = {},
                 initialText = PREVIEW_QUERY,
+                imageLoader = previewLoader,
             )
         }
     }
@@ -289,6 +354,8 @@ private fun SearchContentNoResultsPreview() {
 @Preview(name = "Results", widthDp = 400, heightDp = 780)
 @Composable
 private fun SearchContentResultsPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
         SearchPreviewBackdrop {
             SearchContent(
@@ -299,6 +366,7 @@ private fun SearchContentResultsPreview() {
                 onPlay = {},
                 onEnqueue = {},
                 initialText = PREVIEW_QUERY,
+                imageLoader = previewLoader,
             )
         }
     }
@@ -307,12 +375,15 @@ private fun SearchContentResultsPreview() {
 @Preview(name = "Row", widthDp = 400, heightDp = 780)
 @Composable
 private fun SearchRowPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
         SearchPreviewBackdrop {
             SearchRow(
-                row = PREVIEW_SEARCH_ROWS.first(),
+                musicSearchRow = PREVIEW_SEARCH_ROWS.first(),
                 onPlay = {},
                 onEnqueue = {},
+                imageLoader = previewLoader,
             )
         }
     }
@@ -321,12 +392,15 @@ private fun SearchRowPreview() {
 @Preview(name = "Row, title only", widthDp = 400, heightDp = 780)
 @Composable
 private fun SearchRowTitleOnlyPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
         SearchPreviewBackdrop {
             SearchRow(
-                row = PREVIEW_SEARCH_ROWS.last(),
+                musicSearchRow = PREVIEW_SEARCH_ROWS.last(),
                 onPlay = {},
                 onEnqueue = {},
+                imageLoader = previewLoader,
             )
         }
     }
@@ -364,9 +438,17 @@ private fun previewSlotSearch(): SlotSearch = SlotSearch(
 @Preview(name = "Search overlay", widthDp = 800, heightDp = 480)
 @Composable
 private fun LiveSearchViewPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
         SearchPreviewBackdrop {
-            LiveSearchView(previewSlotSearch(), { _, _ -> }, { _, _ -> }, { _, _ -> })
+            LiveSearchView(
+                previewSlotSearch(),
+                { _, _ -> },
+                { _, _ -> },
+                { _, _ -> },
+                imageLoader = previewLoader,
+            )
         }
     }
 }
