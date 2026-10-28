@@ -188,7 +188,7 @@ private fun SearchContent(
                             musicSearchRow = row,
                             onPlay = { onPlay(row.uri) },
                             onEnqueue = { onEnqueue(row.uri) },
-                            imageLoader = imageLoader
+                            imageLoader = imageLoader,
                         )
                     }
                 }
@@ -202,7 +202,7 @@ private fun SearchRow(
     musicSearchRow: MusicSearchRow,
     onPlay: () -> Unit,
     onEnqueue: () -> Unit,
-    imageLoader: ImageLoader
+    imageLoader: ImageLoader,
 ) {
     val context = LocalContext.current
     val thumbShape = RoundedCornerShape(8.dp)
@@ -222,7 +222,7 @@ private fun SearchRow(
                 .clickable(onClick = onPlay)
                 .padding(horizontal = 4.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Box(
                 modifier = Modifier

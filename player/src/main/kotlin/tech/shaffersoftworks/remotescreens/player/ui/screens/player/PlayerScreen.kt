@@ -77,7 +77,7 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
         onSearchEnqueue = viewModel::onSearchEnqueue,
         onEnterAddress = viewModel::openAddressDialog,
         onAllowUnrestrictedBattery = viewModel::onAllowUnrestrictedBatteryRequested,
-        imageLoader = viewModel.haImageLoader,
+        imageLoader = viewModel.haImageLoaderQualifier
     )
     PlayerDialogs(
         viewState = viewState,
@@ -461,7 +461,7 @@ private fun PlayerScreenBlackoutPreview() {
     RemoteScreensTheme {
         PlayerScreenContent(
             viewState = PlayerViewModel.ViewState(isAwake = false),
-            imageLoader = previewLoader
+            imageLoader = previewLoader,
         )
     }
 }
@@ -500,7 +500,7 @@ private fun PlayerDialogsSettingsPreview() {
                     canOfferUnrestrictedBattery = true,
                     canOfferCameraPermission = true,
                     canOfferLocationPermission = true,
-                    kioskAction = KioskAction.UNLOCK,
+                    kioskAction = KioskAction.UNLOCK
                 ),
             ),
         )

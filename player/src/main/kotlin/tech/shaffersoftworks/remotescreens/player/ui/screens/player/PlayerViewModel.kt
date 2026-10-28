@@ -53,7 +53,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import tech.shaffersoftworks.remotescreens.player.di.HaImageLoader
+import tech.shaffersoftworks.remotescreens.player.di.HaImageLoaderQualifier
 import timber.log.Timber
 import java.time.LocalTime
 import javax.inject.Inject
@@ -105,7 +105,7 @@ class PlayerViewModel @Inject constructor(
     private val telemetryReporter: TelemetryReporter,
     private val locationAccuracy: LocationAccuracy,
     private val intercomCoordinator: IntercomCoordinator,
-    @HaImageLoader val haImageLoader: ImageLoader
+    @HaImageLoaderQualifier val haImageLoaderQualifier: ImageLoader,
 ) : ViewModel() {
 
     data class ViewState(

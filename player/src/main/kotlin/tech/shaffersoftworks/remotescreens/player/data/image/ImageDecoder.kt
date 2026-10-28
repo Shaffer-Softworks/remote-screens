@@ -11,7 +11,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import tech.shaffersoftworks.remotescreens.player.di.DefaultDispatcher
-import tech.shaffersoftworks.remotescreens.player.di.HaImageLoader
+import tech.shaffersoftworks.remotescreens.player.di.HaImageLoaderQualifier
 import tech.shaffersoftworks.remotescreens.player.utils.decodeBase64OrNull
 import java.nio.ByteBuffer
 import java.security.MessageDigest
@@ -23,7 +23,7 @@ import javax.inject.Singleton
 class ImageDecoder @Inject constructor(
     @ApplicationContext private val context: Context,
     @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
-    @HaImageLoader val haImageLoader: ImageLoader
+    @HaImageLoaderQualifier val haImageLoaderQualifier: ImageLoader,
 ) {
     suspend fun decodeBitmap(base64Data: String): Bitmap? =
         withContext(defaultDispatcher) {
@@ -41,7 +41,7 @@ class ImageDecoder @Inject constructor(
                 .size(Size.ORIGINAL)
                 .build()
 
-            val result = haImageLoader.execute(request) as? SuccessResult
+            val result = haImageLoaderQualifier.execute(request) as? SuccessResult
                 ?: return@withContext null
 
             (result.drawable as? BitmapDrawable)?.bitmap

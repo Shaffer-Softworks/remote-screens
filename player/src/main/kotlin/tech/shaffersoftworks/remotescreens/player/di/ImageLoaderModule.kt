@@ -24,7 +24,7 @@ object ImageLoaderModule {
 
     @Provides
     @Singleton
-    @HaImageLoader
+    @HaImageLoaderQualifier
     fun provideHaImageLoader(
         @ApplicationContext context: Context
     ): ImageLoader {
