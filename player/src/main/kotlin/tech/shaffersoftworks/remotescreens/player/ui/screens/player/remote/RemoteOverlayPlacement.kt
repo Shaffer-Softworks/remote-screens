@@ -3,77 +3,15 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote
 
 import android.graphics.Rect
-import android.view.View
-import android.widget.FrameLayout
 import androidx.compose.remote.core.RemoteContext
 import androidx.compose.remote.player.view.RemoteComposePlayer
 import kotlin.math.roundToInt
-
-/** Places [overlay] at a document-pixel rectangle inside [player]. */
-internal fun placeFixedOverlay(
-    overlay: View,
-    player: RemoteComposePlayer,
-    x: Int,
-    y: Int,
-    width: Int,
-    height: Int,
-) {
-    if (width <= 0 || height <= 0) {
-        overlay.visibility = View.INVISIBLE
-        return
-    }
-    val layoutParams = overlay.layoutParams as FrameLayout.LayoutParams
-    val left = player.left + x
-    val top = player.top + y
-    val positionChanged = layoutParams.leftMargin != left || layoutParams.topMargin != top
-    val sizeChanged = layoutParams.width != width || layoutParams.height != height
-    if (positionChanged || sizeChanged) {
-        layoutParams.leftMargin = left
-        layoutParams.topMargin = top
-        layoutParams.width = width
-        layoutParams.height = height
-        overlay.layoutParams = layoutParams
-    }
-    overlay.translationZ = SEARCH_OVERLAY_Z
-    overlay.visibility = View.VISIBLE
-}
-
-private const val SEARCH_OVERLAY_Z = 24f
-
-/** Places a native overlay view over a Remote Compose component bound in [player]. */
-internal fun placeRemoteOverlay(
-    overlay: View,
-    player: RemoteComposePlayer,
-    componentId: Int,
-) {
-    val bounds = componentBounds(player, componentId)
-    if (bounds == null) {
-        overlay.visibility = View.INVISIBLE
-        return
-    }
-    bounds.offset(player.left, player.top)
-    val layoutParams = overlay.layoutParams as FrameLayout.LayoutParams
-    val previousBounds = Rect(
-        layoutParams.leftMargin,
-        layoutParams.topMargin,
-        layoutParams.leftMargin + layoutParams.width,
-        layoutParams.topMargin + layoutParams.height,
-    )
-    if (previousBounds != bounds) {
-        layoutParams.leftMargin = bounds.left
-        layoutParams.topMargin = bounds.top
-        layoutParams.width = bounds.width()
-        layoutParams.height = bounds.height()
-        overlay.layoutParams = layoutParams
-    }
-    overlay.visibility = View.VISIBLE
-}
 
 /**
  * Where component [componentId] sits in [player]'s document. Uses the library location when it works; never
  * fails closed on that path alone (that left the overlay invisible and only the spinner or still showed).
  */
-private fun componentBounds(player: RemoteComposePlayer, componentId: Int): Rect? {
+internal fun componentBounds(player: RemoteComposePlayer, componentId: Int): Rect? {
     val component = runCatching {
         player.document.document.getComponent(componentId)
     }.getOrNull()
