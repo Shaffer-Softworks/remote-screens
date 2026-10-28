@@ -38,7 +38,7 @@ internal fun RemoteDocumentStack(
     onSearchQuery: (String, String) -> Unit,
     onSearchPlay: (String, String) -> Unit,
     onSearchEnqueue: (String, String) -> Unit,
-    imageLoader: ImageLoader
+    imageLoader: ImageLoader,
 ) {
     val context = LocalContext.current
     val controller = remember(context) { RemoteDocumentController(context) }
@@ -95,7 +95,7 @@ internal fun RemoteDocumentStack(
                     onSearchQuery = onSearchQuery,
                     onSearchPlay = onSearchPlay,
                     onSearchEnqueue = onSearchEnqueue,
-                    imageLoader = imageLoader
+                    imageLoader = imageLoader,
                 )
             }
         }
@@ -155,7 +155,7 @@ private fun RemoteDocumentStackPreview() {
             onSearchQuery = { _, _ -> },
             onSearchPlay = { _, _ -> },
             onSearchEnqueue = { _, _ -> },
-            imageLoader = previewLoader
+            imageLoader = previewLoader,
         )
         DocumentOverlay(Rect(0, 0, 1, 1)) { }
     }

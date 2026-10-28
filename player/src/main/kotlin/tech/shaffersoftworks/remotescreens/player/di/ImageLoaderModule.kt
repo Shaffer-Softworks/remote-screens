@@ -16,6 +16,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import timber.log.Timber
+import java.io.IOException
 import javax.inject.Singleton
 
 @Module
@@ -26,7 +27,7 @@ object ImageLoaderModule {
     @Singleton
     @HaImageLoaderQualifier
     fun provideHaImageLoader(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
     ): ImageLoader {
         Timber.tag(LOG_TAG).i("provideHaImageLoader() — building image loader")
         return ImageLoader.Builder(context)
@@ -66,17 +67,17 @@ object ImageLoaderModule {
                                     "image %d %s -> %s",
                                     response.code,
                                     response.message,
-                                    request.url
+                                    request.url,
                                 )
                             } else {
                                 Timber.tag(LOG_TAG).v(
                                     "image %d %s",
                                     response.code,
-                                    request.url
+                                    request.url,
                                 )
                             }
                             response
-                        } catch (e: Exception) {
+                        } catch (e: IOException) {
                             Timber.tag(LOG_TAG).w(e, "image FAIL %s", request.url)
                             throw e
                         }

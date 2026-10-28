@@ -77,7 +77,7 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
         onSearchEnqueue = viewModel::onSearchEnqueue,
         onEnterAddress = viewModel::openAddressDialog,
         onAllowUnrestrictedBattery = viewModel::onAllowUnrestrictedBatteryRequested,
-        imageLoader = viewModel.haImageLoaderQualifier
+        imageLoader = viewModel.haImageLoaderQualifier,
     )
     PlayerDialogs(
         viewState = viewState,
@@ -119,7 +119,7 @@ private fun PlayerScreenContent(
     onSearchEnqueue: (String, String) -> Unit = { _, _ -> },
     onEnterAddress: () -> Unit = {},
     onAllowUnrestrictedBattery: () -> Unit = {},
-    imageLoader: ImageLoader
+    imageLoader: ImageLoader,
 ) {
     Box(
         modifier = Modifier
@@ -143,7 +143,7 @@ private fun PlayerScreenContent(
             onSearchQuery = onSearchQuery,
             onSearchPlay = onSearchPlay,
             onSearchEnqueue = onSearchEnqueue,
-            imageLoader = imageLoader
+            imageLoader = imageLoader,
         )
         viewState.infoPanel?.let { infoPanel ->
             InfoPanel(
@@ -174,7 +174,7 @@ private fun RemoteScreen(
     onSearchQuery: (String, String) -> Unit,
     onSearchPlay: (String, String) -> Unit,
     onSearchEnqueue: (String, String) -> Unit,
-    imageLoader: ImageLoader
+    imageLoader: ImageLoader,
 ) {
     RemoteDocumentStack(
         state = state,
@@ -184,7 +184,7 @@ private fun RemoteScreen(
         onSearchQuery = onSearchQuery,
         onSearchPlay = onSearchPlay,
         onSearchEnqueue = onSearchEnqueue,
-        imageLoader = imageLoader
+        imageLoader = imageLoader,
     )
 }
 
@@ -422,7 +422,7 @@ private fun PlayerScreenSearchingPreview() {
     RemoteScreensTheme {
         PlayerScreenContent(
             viewState = PlayerViewModel.ViewState(infoPanel = InfoPanelState.Searching),
-            imageLoader = previewLoader
+            imageLoader = previewLoader,
         )
     }
 }
@@ -435,7 +435,7 @@ private fun PlayerScreenPlayingPreview() {
     RemoteScreensTheme {
         PlayerScreenContent(
             viewState = PlayerViewModel.ViewState(),
-            imageLoader = previewLoader
+            imageLoader = previewLoader,
         )
     }
 }
@@ -448,7 +448,7 @@ private fun PlayerScreenIdentifyPreview() {
     RemoteScreensTheme {
         PlayerScreenContent(
             viewState = PlayerViewModel.ViewState(identifyScreenName = "Kitchen"),
-            imageLoader = previewLoader
+            imageLoader = previewLoader,
         )
     }
 }
@@ -480,7 +480,7 @@ private fun RemoteScreenPreview() {
             onSearchQuery = { _, _ -> },
             onSearchPlay = { _, _ -> },
             onSearchEnqueue = { _, _ -> },
-            imageLoader = previewLoader
+            imageLoader = previewLoader,
         )
     }
 }
@@ -500,7 +500,7 @@ private fun PlayerDialogsSettingsPreview() {
                     canOfferUnrestrictedBattery = true,
                     canOfferCameraPermission = true,
                     canOfferLocationPermission = true,
-                    kioskAction = KioskAction.UNLOCK
+                    kioskAction = KioskAction.UNLOCK,
                 ),
             ),
         )

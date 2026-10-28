@@ -22,7 +22,7 @@ internal fun DocumentOverlays(
     onSearchQuery: (String, String) -> Unit,
     onSearchPlay: (String, String) -> Unit,
     onSearchEnqueue: (String, String) -> Unit,
-    imageLoader: ImageLoader
+    imageLoader: ImageLoader,
 ) {
     Box(modifier) {
         state.playingVideo?.takeIf { it.first == slot && isVideoAllowed }?.second?.let { video ->
@@ -45,7 +45,7 @@ internal fun DocumentOverlays(
                         imageLoader = imageLoader,
                         onQueryChange = onSearchQuery,
                         onPlayUri = onSearchPlay,
-                        onEnqueueUri = onSearchEnqueue
+                        onEnqueueUri = onSearchEnqueue,
                     )
                 }
             }
@@ -69,7 +69,7 @@ private fun DocumentOverlaysPreview() {
             onSearchQuery = { _, _ -> },
             onSearchPlay = { _, _ -> },
             onSearchEnqueue = { _, _ -> },
-            imageLoader = previewLoader
+            imageLoader = previewLoader,
         )
     }
 }

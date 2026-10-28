@@ -62,12 +62,12 @@ private val PREVIEW_SEARCH_ROWS = listOf(
         title = "Digital Love",
         subtitle = "Daft Punk",
         uri = "library://track/digital-love",
-        imagePathOrUrl = "https://picsum.photos/id/203/200.jpg"
+        imagePathOrUrl = "https://picsum.photos/id/203/200.jpg",
     ),
     MusicSearchRow(
         title = "One More Time",
         uri = "library://track/one-more-time",
-        imagePathOrUrl = "https://picsum.photos/id/203/200.jpg"
+        imagePathOrUrl = "https://picsum.photos/id/203/200.jpg",
     ),
 )
 
@@ -78,7 +78,7 @@ internal fun LiveSearchView(
     onQueryChange: (String, String) -> Unit,
     onPlayUri: (String, String) -> Unit,
     onEnqueueUri: (String, String) -> Unit,
-    imageLoader: ImageLoader
+    imageLoader: ImageLoader,
 ) {
     var loading by remember(search.tileId, search.revision, search.rows) { mutableStateOf(false) }
     SearchContent(
@@ -104,7 +104,7 @@ private fun SearchContent(
     onPlay: (String) -> Unit,
     onEnqueue: (String) -> Unit,
     initialText: String = "",
-    imageLoader: ImageLoader
+    imageLoader: ImageLoader,
 ) {
     var text by remember(search.tileId, search.revision) { mutableStateOf(initialText) }
     val currentOnQuery by rememberUpdatedState(onQuery)
@@ -234,9 +234,9 @@ private fun SearchRow(
                         } else {
                             iconBg
                         },
-                        thumbShape
+                        thumbShape,
                     ),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 musicSearchRow.imagePathOrUrl?.let {
                     AsyncImage(
@@ -247,7 +247,7 @@ private fun SearchRow(
                         contentDescription = null,
                         imageLoader = imageLoader,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
             }
@@ -324,7 +324,7 @@ private fun SearchContentLoadingPreview() {
                 onPlay = {},
                 onEnqueue = {},
                 initialText = PREVIEW_QUERY,
-                imageLoader = previewLoader
+                imageLoader = previewLoader,
             )
         }
     }
@@ -345,7 +345,7 @@ private fun SearchContentNoResultsPreview() {
                 onPlay = {},
                 onEnqueue = {},
                 initialText = PREVIEW_QUERY,
-                imageLoader = previewLoader
+                imageLoader = previewLoader,
             )
         }
     }
@@ -366,7 +366,7 @@ private fun SearchContentResultsPreview() {
                 onPlay = {},
                 onEnqueue = {},
                 initialText = PREVIEW_QUERY,
-                imageLoader = previewLoader
+                imageLoader = previewLoader,
             )
         }
     }
@@ -383,7 +383,7 @@ private fun SearchRowPreview() {
                 musicSearchRow = PREVIEW_SEARCH_ROWS.first(),
                 onPlay = {},
                 onEnqueue = {},
-                imageLoader = previewLoader
+                imageLoader = previewLoader,
             )
         }
     }
@@ -400,7 +400,7 @@ private fun SearchRowTitleOnlyPreview() {
                 musicSearchRow = PREVIEW_SEARCH_ROWS.last(),
                 onPlay = {},
                 onEnqueue = {},
-                imageLoader = previewLoader
+                imageLoader = previewLoader,
             )
         }
     }
@@ -447,7 +447,7 @@ private fun LiveSearchViewPreview() {
                 { _, _ -> },
                 { _, _ -> },
                 { _, _ -> },
-                imageLoader = previewLoader
+                imageLoader = previewLoader,
             )
         }
     }
