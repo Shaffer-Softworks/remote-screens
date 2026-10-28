@@ -78,8 +78,6 @@ private val MARKER_COLOURS = intArrayOf(
 /** Interactive map content; Compose owns its bounds and rounded clipping. */
 @Composable
 internal fun LiveMapView(map: SlotMap, pictures: Map<String, Bitmap>, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    remember(context) { OsmdroidConfiguration.ensureOsmdroidConfigured(context) }
     Box(
         modifier.clip(RoundedCornerShape(CORNER_DP.dp)),
     ) {
@@ -120,7 +118,11 @@ private fun InteractiveMap(
         geoPoint = centre
         this.zoom = zoom
     }
-    val tileSource = remember(tileUrl) { tileSourceFor(tileUrl) }
+    val context = LocalContext.current
+    val tileSource = remember(context, tileUrl) {
+        OsmdroidConfiguration.ensureOsmdroidConfigured(context)
+        tileSourceFor(tileUrl)
+    }
     val properties = remember(tileSource) {
         MapProperties(
             minZoomLevel = MIN_TILE_ZOOM.toDouble(),
