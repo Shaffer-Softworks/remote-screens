@@ -28,7 +28,6 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -40,7 +39,7 @@ import tech.shaffersoftworks.remotescreens.player.receiver.ScreenOffAdminReceive
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.CalendarCreateForm
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.CalendarDialogState
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.CalendarDialogs
-import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteDocumentView
+import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteDocumentStack
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteScreenState
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotVideo
 import tech.shaffersoftworks.remotescreens.player.ui.theme.Page
@@ -172,18 +171,14 @@ private fun RemoteScreen(
     onSearchPlay: (String, String) -> Unit,
     onSearchEnqueue: (String, String) -> Unit,
 ) {
-    AndroidView(
-        factory = { context -> RemoteDocumentView(context) },
-        modifier = Modifier.fillMaxSize(),
-        update = { remoteDocumentView ->
-            remoteDocumentView.onAction = onAction
-            remoteDocumentView.onVideoFailed = onVideoFailed
-            remoteDocumentView.onSearchQuery = onSearchQuery
-            remoteDocumentView.onSearchPlay = onSearchPlay
-            remoteDocumentView.onSearchEnqueue = onSearchEnqueue
-            remoteDocumentView.isVideoAllowed = isVideoAllowed
-            remoteDocumentView.render(state)
-        },
+    RemoteDocumentStack(
+        state = state,
+        isVideoAllowed = isVideoAllowed,
+        onAction = onAction,
+        onVideoFailed = onVideoFailed,
+        onSearchQuery = onSearchQuery,
+        onSearchPlay = onSearchPlay,
+        onSearchEnqueue = onSearchEnqueue,
     )
 }
 

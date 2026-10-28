@@ -1,11 +1,9 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Outline
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PorterDuff
@@ -15,25 +13,29 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewOutlineProvider
-import android.widget.FrameLayout
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.utsman.osmandcompose.MapProperties
 import com.utsman.osmandcompose.Marker
 import com.utsman.osmandcompose.OpenStreetMap
 import com.utsman.osmandcompose.ZoomButtonVisibility
 import com.utsman.osmandcompose.rememberCameraState
 import com.utsman.osmandcompose.rememberMarkerState
+import java.io.File
+import kotlin.math.ln
+import kotlin.math.max
+import kotlin.math.min
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
 import org.osmdroid.util.GeoPoint
@@ -42,10 +44,6 @@ import org.osmdroid.views.MapView
 import tech.shaffersoftworks.remotescreens.player.BuildConfig
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 import tech.shaffersoftworks.remotescreens.shared.MapMarker
-import java.io.File
-import kotlin.math.ln
-import kotlin.math.max
-import kotlin.math.min
 
 private const val CORNER_DP = 16f
 private const val MARKER_SIZE_PX = 96
@@ -77,67 +75,33 @@ private val MARKER_COLOURS = intArrayOf(
     0xFFD6A23D.toInt(),
 )
 
-/**
- * Interactive OpenStreetMap over a map card's component box. Pinch-zoom and pan stay on the device; taps on the
- * card chrome around this view still reach the Remote Compose document.
- */
-@SuppressLint("ViewConstructor")
-class LiveMapView(context: Context) : FrameLayout(context) {
-    private val composeView = ComposeView(context)
-
-    /** What is shown now; null when stopped. */
-    var map: SlotMap? = null
-        private set
-
-    init {
-        ensureOsmdroidConfigured(context)
-        val cornerPx = CORNER_DP * resources.displayMetrics.density
-        outlineProvider = object : ViewOutlineProvider() {
-            override fun getOutline(view: View, outline: Outline) {
-                outline.setRoundRect(0, 0, view.width, view.height, cornerPx)
-            }
-        }
-        clipToOutline = true
-        clipChildren = true
-        composeView.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-        addView(composeView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+/** Interactive map content; Compose owns its bounds and rounded clipping. */
+@Composable
+internal fun LiveMapView(map: SlotMap, pictures: Map<String, Bitmap>, modifier: Modifier = Modifier) {
+    Box(
+        modifier.clip(RoundedCornerShape(CORNER_DP.dp)),
+    ) {
+        InteractiveMap(map.tileUrl, map.dark, map.markers, pictures)
     }
+}
 
-    fun show(map: SlotMap, pictures: Map<String, Bitmap>) {
-        this.map = map
-        composeView.setContent {
-            InteractiveMap(
-                tileUrl = map.tileUrl,
-                dark = map.dark,
-                markers = map.markers,
-                pictures = pictures,
-            )
-        }
-    }
+private object OsmdroidConfiguration {
+    @Volatile
+    private var configured = false
 
-    fun stop() {
-        map = null
-        composeView.setContent { }
-    }
-
-    companion object {
-        @Volatile
-        private var configured = false
-
-        fun ensureOsmdroidConfigured(context: Context) {
+    fun ensureOsmdroidConfigured(context: Context) {
+        if (configured) return
+        synchronized(this) {
             if (configured) return
-            synchronized(this) {
-                if (configured) return
-                val appContext = context.applicationContext
-                val base = File(appContext.cacheDir, "osmdroid")
-                Configuration.getInstance().apply {
-                    userAgentValue = "RemoteScreens/${BuildConfig.VERSION_NAME}"
-                    osmdroidBasePath = base
-                    osmdroidTileCache = File(base, "tiles")
-                    load(appContext, appContext.getSharedPreferences("osmdroid", Context.MODE_PRIVATE))
-                }
-                configured = true
+            val appContext = context.applicationContext
+            val base = File(appContext.cacheDir, "osmdroid")
+            Configuration.getInstance().apply {
+                userAgentValue = "RemoteScreens/${BuildConfig.VERSION_NAME}"
+                osmdroidBasePath = base
+                osmdroidTileCache = File(base, "tiles")
+                load(appContext, appContext.getSharedPreferences("osmdroid", Context.MODE_PRIVATE))
             }
+            configured = true
         }
     }
 }
@@ -154,7 +118,11 @@ private fun InteractiveMap(
         geoPoint = centre
         this.zoom = zoom
     }
-    val tileSource = remember(tileUrl) { tileSourceFor(tileUrl) }
+    val context = LocalContext.current
+    val tileSource = remember(context, tileUrl) {
+        OsmdroidConfiguration.ensureOsmdroidConfigured(context)
+        tileSourceFor(tileUrl)
+    }
     val properties = remember(tileSource) {
         MapProperties(
             minZoomLevel = MIN_TILE_ZOOM.toDouble(),
@@ -294,7 +262,7 @@ private fun markerIcon(picture: Bitmap?, label: String, colourIndex: Int): Drawa
 private fun InteractiveMapPreview() {
     RemoteScreensTheme {
         val context = LocalContext.current
-        LiveMapView.ensureOsmdroidConfigured(context)
+        OsmdroidConfiguration.ensureOsmdroidConfigured(context)
         InteractiveMap(
             tileUrl = PREVIEW_TILE_URL,
             dark = false,
@@ -316,7 +284,7 @@ private fun InteractiveMapPreview() {
 private fun InteractiveMapDarkPreview() {
     RemoteScreensTheme {
         val context = LocalContext.current
-        LiveMapView.ensureOsmdroidConfigured(context)
+        OsmdroidConfiguration.ensureOsmdroidConfigured(context)
         InteractiveMap(
             tileUrl = PREVIEW_TILE_URL,
             dark = true,
@@ -331,7 +299,7 @@ private fun InteractiveMapDarkPreview() {
 private fun MapMarkerPinPreview() {
     RemoteScreensTheme {
         val context = LocalContext.current
-        LiveMapView.ensureOsmdroidConfigured(context)
+        OsmdroidConfiguration.ensureOsmdroidConfigured(context)
         val marker = MapMarker(
             latitude = DEFAULT_LATITUDE,
             longitude = DEFAULT_LONGITUDE,
@@ -366,5 +334,17 @@ private fun applyDarkTileFilter(root: View) {
         for (index in 0 until root.childCount) {
             applyDarkTileFilter(root.getChildAt(index))
         }
+    }
+}
+
+@Preview(name = "Map overlay", widthDp = 800, heightDp = 480)
+@Composable
+private fun LiveMapViewPreview() {
+    RemoteScreensTheme {
+        LiveMapView(
+            map = SlotMap(1, 1, PREVIEW_TILE_URL, false, emptyList()),
+            pictures = emptyMap(),
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }

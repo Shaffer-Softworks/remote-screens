@@ -5,7 +5,7 @@ page records the parts of its API we depend on, what the phase 0 spike proved, a
 library is upgraded, check each item here.
 
 All creation calls go through `server/.../render/Rc.kt` and the tile renderers; all player calls go through
-`player/.../RcHost.kt`.
+`player/.../remote/RemoteDocumentController.kt`.
 
 ## Creation on the JVM
 
@@ -70,9 +70,27 @@ All creation calls go through `server/.../render/Rc.kt` and the tile renderers; 
   camera (and other) images wrap the bitmap in a `Box` that carries the tap, so a tap still opens the card.
 - **`Text` clicks go on a `Box` too.** A click modifier can sit on `Text`/`CoreText` in the document and still miss
   taps on device; free-form text wraps the label in a `Box` that carries the tap, same as images.
-- **Live video must not take touches.** The HLS overlay sits above the camera image in the player; it returns false
-  from `dispatchTouchEvent` and is not brought to the front of the whole stack, so card/alert/text taps still reach
-  the document.
+- **Live video must not take touches.** The HLS overlay uses a non-interactive `TextureView` in `AndroidView`.
+  It sits above its owning document, below later slots, so card/alert/text taps still reach the document.
+
+## Player layout ownership
+
+- `RemoteDocumentStack` owns the Compose layout: MAIN's two document buffers, OVERLAY, and ALERT. Each slot's
+  `DocumentOverlays` sits immediately above that slot. A search field on MAIN cannot cover an alert.
+- `RemoteDocumentController` owns document loading, named values and bitmaps, page selection, scroll restoration,
+  and buffer reveals. Both MAIN renderers stay mounted so replacement documents can draw at alpha zero before
+  swapping. Queued reveals check that their document is still current and are invalidated on disposal.
+- Overlay bounds come from the active document before drawing. `DocumentOverlay` measures and places children
+  in physical document pixels, avoiding a second density conversion. Search uses the add-on's explicit rectangle
+  when supplied, because its remote component can be unmeasured.
+- Map and search are direct composables. Video sizing, cropping, letterboxing, and rounding are Compose layouts;
+  only its texture is native. Remote Compose and osmdroid remain native rendering dependencies.
+- Overlays leave composition when the activity stops. Video also leaves composition during standby and intercom,
+  releasing ExoPlayer and its texture binding through `DisposableEffect`.
+
+After changing the stack, verify on a tablet: repeated document rebuilds without a home-page flash, retained list
+scroll positions, map pan/pinch, search typing and queue actions, video fit/crop and taps through the video,
+alerts over a search field, and video teardown during standby/intercom or navigation away.
 
 ## Pages
 
