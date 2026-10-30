@@ -42,6 +42,10 @@ class RemoteScreensClient:
         """Changes some of a screen's settings; the rest stay as they are."""
         await self._request("POST", f"/screens/{screen_id}/settings", patch)
 
+    async def send_notification(self, notification: dict[str, Any]) -> dict[str, Any]:
+        """Dispatch immediately and return a result for each targeted tablet."""
+        return await self._request("POST", "/notifications", notification)
+
     async def show_alert(self, alert: dict[str, Any]) -> None:
         await self._request("POST", "/alert", alert)
 

@@ -51,4 +51,5 @@
     <string name="checking_for_updates">Checking for updates…</string>
     <string name="update_current">Remote Screens is up to date.</string>
     <string name="update_check_failed">Could not check for updates. Check the server connection and try again.</string>
+    <string name="dismiss_notification">Dismiss notification</string>
 </resources>

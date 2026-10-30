@@ -35,6 +35,7 @@ import tech.shaffersoftworks.remotescreens.shared.isNightAt
 import tech.shaffersoftworks.remotescreens.player.utils.normalizeServerAddress
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
+import tech.shaffersoftworks.remotescreens.shared.NOTIFICATION_MAX_DURATION
 import tech.shaffersoftworks.remotescreens.shared.Protocol
 import tech.shaffersoftworks.remotescreens.shared.ScreenSettings
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
@@ -82,6 +83,7 @@ private val PLAYER_CAPABILITIES =
         Protocol.CAPABILITY_CALENDAR_DIALOGS,
         Protocol.CAPABILITY_TELEMETRY,
         Protocol.CAPABILITY_INTERCOM,
+        Protocol.CAPABILITY_NOTIFICATIONS,
     )
 
 /**
@@ -130,6 +132,7 @@ class PlayerViewModel @Inject constructor(
         val isBatteryRestricted: Boolean = false,
         /** A call is up, so this tablet's camera video and music stay quiet until it ends. */
         val isIntercomCall: Boolean = false,
+        val notificationBanner: ServerMessage.NotificationBanner? = null,
     ) {
         private val scheduledBrightnessPercent: Int
             get() = when {
@@ -172,6 +175,7 @@ class PlayerViewModel @Inject constructor(
     private var standbyJob: Job? = null
     private var backToHomeJob: Job? = null
     private var alertTimeoutJob: Job? = null
+    private var bannerTimeoutJob: Job? = null
     private var identifyJob: Job? = null
 
     private val imageJobs = mutableMapOf<String, Job>()
@@ -352,11 +356,30 @@ class PlayerViewModel @Inject constructor(
             is ServerMessage.CalendarDialog -> updateRemoteScreen { it.withCalendarDialog(message) }
             is ServerMessage.IntercomConfig -> onIntercomConfig(message)
             is ServerMessage.IntercomCommand -> intercomCoordinator.command(message.verb, message.clientId)
+            is ServerMessage.NotificationBanner -> showNotificationBanner(message)
+            ServerMessage.NotificationClear -> dismissNotificationBanner()
             ServerMessage.Pong -> Unit
         }
     }
 
+    private fun showNotificationBanner(message: ServerMessage.NotificationBanner) {
+        bannerTimeoutJob?.cancel()
+        _viewState.update { it.copy(notificationBanner = message) }
+        bannerTimeoutJob = viewModelScope.launch {
+            delay(message.timeout.coerceIn(1, NOTIFICATION_MAX_DURATION).seconds)
+            dismissNotificationBanner()
+        }
+    }
+
+    fun dismissNotificationBanner(button: Int? = null) {
+        val banner = _viewState.value.notificationBanner ?: return
+        bannerTimeoutJob?.cancel()
+        _viewState.update { it.copy(notificationBanner = null) }
+        send(PlayerMessage.NotificationAction(banner.id, button))
+    }
+
     private suspend fun onWelcome(welcome: ServerMessage.Welcome) {
+        dismissNotificationBanner()
         closeSlot(Slot.OVERLAY)
         closeSlot(Slot.ALERT)
         welcome.token?.let { token -> preferencesRepository.setPairing(token, welcome.screenName) }
@@ -397,8 +420,8 @@ class PlayerViewModel @Inject constructor(
                 showPage(_viewState.value.remoteScreen.pageAfterNewDocument)
             }
             Slot.ALERT -> {
-                scheduleAlertTimeout(document.timeout)
-                onUserInteraction()
+                if (document.restartTimeout) scheduleAlertTimeout(document.timeout)
+                if (document.wakeOnShow) onUserInteraction()
             }
             Slot.OVERLAY -> onUserInteraction()
         }
@@ -611,6 +634,10 @@ class PlayerViewModel @Inject constructor(
     /** Back closes a card first, then goes home. */
     fun onBack() {
         if (closeTopOverlay()) return
+        if (_viewState.value.notificationBanner != null) {
+            dismissNotificationBanner()
+            return
+        }
         val remoteScreen = _viewState.value.remoteScreen
         if (remoteScreen.page != remoteScreen.homePage) showPage(remoteScreen.homePage)
     }
@@ -672,6 +699,7 @@ class PlayerViewModel @Inject constructor(
         if (settings.backToHomeSeconds > 0) {
             backToHomeJob = viewModelScope.launch {
                 delay(settings.backToHomeSeconds.seconds)
+                if (_viewState.value.remoteScreen.topOverlay == Slot.ALERT) return@launch
                 closeTopOverlay()
                 showPage(_viewState.value.remoteScreen.homePage)
             }

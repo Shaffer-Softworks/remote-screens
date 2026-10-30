@@ -95,13 +95,13 @@ async def test_the_sharing_switches_reach_the_add_on(hass: HomeAssistant, client
     client.set_settings.assert_awaited_with("demo", {"reportTelemetry": False})
 
 
-async def test_a_tablet_device_targets_its_screen(hass: HomeAssistant, client: AsyncMock, entry) -> None:
+async def test_a_tablet_device_targets_only_that_tablet(hass: HomeAssistant, client: AsyncMock, entry) -> None:
     await setup(hass, entry)
     tablet = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, "player_tablet-1")})
 
     await hass.services.async_call(DOMAIN, "wake", {"screens": [tablet.id]}, blocking=True)
 
-    client.wake.assert_awaited_with(["demo"])
+    client.wake.assert_awaited_with(["tablet-1"])
 
 
 async def test_an_older_add_on_still_lists_its_tablets(hass: HomeAssistant, client: AsyncMock, entry) -> None:

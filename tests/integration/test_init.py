@@ -92,6 +92,40 @@ async def test_services_reach_the_chosen_screens(hass: HomeAssistant, client: As
         await hass.services.async_call(DOMAIN, "close", {"screens": ["not-a-device"]}, blocking=True)
 
 
+async def test_notifications_require_explicit_recipients(hass: HomeAssistant, client: AsyncMock, entry) -> None:
+    await setup(hass, entry)
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(DOMAIN, "send_notification", {"title": "Laundry"}, blocking=True)
+    client.send_notification.assert_not_awaited()
+
+
+async def test_notification_targets_and_results(hass: HomeAssistant, client: AsyncMock, entry) -> None:
+    await setup(hass, entry)
+    tablet = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, "player_tablet-1")})
+    client.send_notification.return_value = {"devices": [{"deviceId": "tablet-1", "name": "Pixel Tablet", "status": "sent"}]}
+    result = await hass.services.async_call(
+        DOMAIN, "send_notification", {"title": "Laundry", "screens": [tablet.id]},
+        blocking=True, return_response=True,
+    )
+    payload = client.send_notification.await_args.args[0]
+    assert payload["targets"] == ["tablet-1"]
+    assert payload["wake"] is False
+    assert payload["presentation"] == "banner"
+    assert "timeout" not in payload
+    assert result == client.send_notification.return_value
+
+    await hass.services.async_call(
+        DOMAIN, "send_notification", {"title": "Hello", "all": True}, blocking=True
+    )
+    assert client.send_notification.await_args.args[0]["all"] is True
+    assert client.send_notification.await_args.args[0]["targets"] == []
+
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(
+            DOMAIN, "send_notification", {"title": "Hello", "all": True, "screens": [tablet.id]}, blocking=True
+        )
+
+
 async def test_a_refused_key_asks_for_a_new_one(hass: HomeAssistant, client: AsyncMock, entry) -> None:
     client.screens.side_effect = RemoteScreensAuthError("no")
     entry.add_to_hass(hass)

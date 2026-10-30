@@ -688,6 +688,92 @@ class PlayerViewModelTest {
         )))
     }
 
+    @Test
+    fun `a silent banner does not wake a sleeping tablet`() {
+        receive(ServerMessage.Wake(false))
+        receive(ServerMessage.NotificationBanner("one", "Laundry", timeout = 10))
+        assertFalse(viewModel.viewState.value.isAwake)
+        assertEquals("one", viewModel.viewState.value.notificationBanner?.id)
+    }
+
+    @Test
+    fun `replacing a banner cancels its old expiry`() {
+        receive(ServerMessage.NotificationBanner("one", "First", timeout = 1))
+        testDispatcher.scheduler.advanceTimeBy(500)
+        receive(ServerMessage.NotificationBanner("two", "Second", timeout = 10))
+        testDispatcher.scheduler.advanceTimeBy(600)
+        runCurrent()
+        assertEquals("two", viewModel.viewState.value.notificationBanner?.id)
+        testDispatcher.scheduler.advanceTimeBy(10_000)
+        runCurrent()
+        assertNull(viewModel.viewState.value.notificationBanner)
+    }
+
+    @Test
+    fun `banner action sends once and clears local state`() {
+        receive(ServerMessage.NotificationBanner("one", "Laundry", buttons = listOf("Done")))
+        viewModel.dismissNotificationBanner(0)
+        viewModel.dismissNotificationBanner(0)
+        runCurrent()
+        verifyBlocking(connectionRepository) { send(PlayerMessage.NotificationAction("one", 0)) }
+        assertNull(viewModel.viewState.value.notificationBanner)
+    }
+
+    @Test
+    fun `banner expiry continues behind an alert`() {
+        receive(ServerMessage.NotificationBanner("one", "Laundry", timeout = 1))
+        receive(ServerMessage.Document(Slot.ALERT, 10, "AAAA", timeout = 0))
+        testDispatcher.scheduler.advanceTimeBy(1_001)
+        runCurrent()
+        assertNull(viewModel.viewState.value.notificationBanner)
+        assertTrue(Slot.ALERT in viewModel.viewState.value.remoteScreen.documents)
+    }
+
+    @Test
+    fun `silent alert document does not wake and explicit wake does`() {
+        receive(ServerMessage.Wake(false))
+        receive(ServerMessage.Document(Slot.ALERT, 10, "AAAA", wakeOnShow = false))
+        assertFalse(viewModel.viewState.value.isAwake)
+        receive(ServerMessage.Wake(true))
+        assertTrue(viewModel.viewState.value.isAwake)
+    }
+
+    @Test
+    fun `back dismisses a banner without invoking a button`() {
+        receive(ServerMessage.NotificationBanner("one", "Laundry"))
+        viewModel.onBack()
+        runCurrent()
+        assertNull(viewModel.viewState.value.notificationBanner)
+        verifyBlocking(connectionRepository) { send(PlayerMessage.NotificationAction("one")) }
+    }
+
+    @Test
+    fun `reconnect clears the previous banner`() {
+        receive(ServerMessage.NotificationBanner("one", "Laundry"))
+        receive(ServerMessage.Welcome(screenId = "home"))
+        assertNull(viewModel.viewState.value.notificationBanner)
+    }
+
+    @Test
+    fun `alert rebuild preserves the original expiry`() {
+        receive(ServerMessage.Document(Slot.ALERT, 10, "AAAA", timeout = 1))
+        testDispatcher.scheduler.advanceTimeBy(500)
+        receive(ServerMessage.Document(Slot.ALERT, 11, "AAAA", timeout = 0, restartTimeout = false))
+        testDispatcher.scheduler.advanceTimeBy(600)
+        runCurrent()
+        assertFalse(Slot.ALERT in viewModel.viewState.value.remoteScreen.documents)
+    }
+
+    @Test
+    fun `back to home clock does not auto-dismiss a persistent alert`() {
+        receive(mainDocument())
+        receive(ServerMessage.Settings(ScreenSettings(backToHomeSeconds = 1)))
+        receive(ServerMessage.Document(Slot.ALERT, 10, "AAAA", timeout = 0))
+        testDispatcher.scheduler.advanceTimeBy(1_100)
+        runCurrent()
+        assertTrue(Slot.ALERT in viewModel.viewState.value.remoteScreen.documents)
+    }
+
     private fun takeEvents(): List<PlayerEvent> {
         val collected = mutableListOf<PlayerEvent>()
         val job = CoroutineScope(testDispatcher).launch {

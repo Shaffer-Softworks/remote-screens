@@ -59,10 +59,12 @@ internal class SessionDocument(
         renderedDoc: RenderedDoc,
         rebuild: suspend () -> RenderedDoc?,
         timeoutSeconds: Int = 0,
+        wakeOnShow: Boolean = host.currentAlert?.wake ?: true,
+        force: Boolean = false,
     ) {
         val states = homeAssistant.states.value
         val previous = shownDocuments[slot]
-        if (previous != null && previous.renderedDoc.bytes.contentEquals(renderedDoc.bytes)) {
+        if (!force && previous != null && previous.renderedDoc.bytes.contentEquals(renderedDoc.bytes)) {
             previous.renderedDoc = renderedDoc
             previous.rebuild = rebuild
             val vars = renderedDoc.vars(states)
@@ -102,6 +104,8 @@ internal class SessionDocument(
                 pageCount = renderedDoc.pageIds.size.coerceAtLeast(1),
                 swipePages = renderedDoc.swipePages,
                 timeout = timeoutSeconds,
+                wakeOnShow = wakeOnShow,
+                restartTimeout = force,
             ),
         )
         media.sendPictures(shown, states, isForced = true)
@@ -210,8 +214,8 @@ internal class SessionDocument(
             ) }
         }
         val renderedDoc = buildMutex.withLock { build() } ?: return
-        host.send(ServerMessage.Wake(true))
-        show(Slot.ALERT, renderedDoc, build, timeoutSeconds = alert.timeout)
+        if (alert.wake) host.send(ServerMessage.Wake(true))
+        show(Slot.ALERT, renderedDoc, build, timeoutSeconds = alert.timeout, wakeOnShow = alert.wake, force = true)
     }
 }
 

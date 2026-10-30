@@ -8,6 +8,7 @@ import type { PlayerStatus, Screen } from '../model/types'
 import { attempt, playersOf, refreshLayout, refreshThemes, state, toast } from '../store'
 import EnrollTabletPanel from './EnrollTabletPanel.vue'
 import MdiIcon from './MdiIcon.vue'
+import NotificationComposer from './NotificationComposer.vue'
 
 const emit = defineEmits<{ edit: [screen: Screen]; themes: [] }>()
 
@@ -19,6 +20,11 @@ const adopted = computed(() => state.players.filter(player => player.screenId))
 
 const creating = ref(false)
 const enrolling = ref(false)
+const notificationTargets = ref<string[] | null>(null)
+function notifyTablet(player: PlayerStatus): void {
+  menu.value = null
+  notificationTargets.value = [player.deviceId]
+}
 const newName = ref('')
 const newSize = ref('0')
 
@@ -214,6 +220,11 @@ function preview(screen: Screen) {
 </script>
 
 <template>
+  <NotificationComposer
+    v-if="notificationTargets !== null"
+    :initial-targets="notificationTargets"
+    @close="notificationTargets = null"
+  />
   <div class="page">
     <header class="row">
       <MdiIcon name="tablet-dashboard" :size="28" />
@@ -363,6 +374,9 @@ function preview(screen: Screen) {
           <h3>Tablets</h3>
           <p class="muted hint">Each paired tablet shows one screen. Change it here at any time.</p>
         </div>
+        <button :disabled="!adopted.length" @click="notificationTargets = []">
+          <MdiIcon name="bell-ring-outline" :size="18" /> Send notification
+        </button>
       </div>
 
       <div class="card list">
@@ -425,6 +439,9 @@ function preview(screen: Screen) {
                 <MdiIcon name="dots-vertical" :size="18" />
               </button>
               <div v-if="menu === p.deviceId" class="card popup" @click.stop>
+                <button class="item" @click="notifyTablet(p)">
+                  <MdiIcon name="bell-ring-outline" :size="16" /> Send notification
+                </button>
                 <button class="item" @click="rename(p)">
                   <MdiIcon name="pencil-outline" :size="16" /> Rename
                 </button>

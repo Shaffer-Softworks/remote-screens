@@ -28,6 +28,11 @@ import tech.shaffersoftworks.remotescreens.shared.CalendarDialogMode
 import tech.shaffersoftworks.remotescreens.shared.DeviceTelemetry
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import tech.shaffersoftworks.remotescreens.shared.Protocol
+import tech.shaffersoftworks.remotescreens.shared.NotificationRequest
+import tech.shaffersoftworks.remotescreens.shared.Grid
+import tech.shaffersoftworks.remotescreens.server.render.widgets.Icons
+import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Slot
@@ -109,6 +114,10 @@ class PlayerSession(
     private var lastRevision = 0
     private val jobs = mutableListOf<Job>()
     private var currentAlert: Alert? = null
+    private var currentBanner: Pair<String, Alert>? = null
+    private var bannerExpiresAt = 0L
+    private val notificationMutex = Mutex()
+    private val sendFailures = java.util.concurrent.atomic.AtomicLong()
 
     private val host = Host()
     private val media = SessionMedia(host)
@@ -120,7 +129,15 @@ class PlayerSession(
 
     suspend fun send(message: ServerMessage) {
         val text = Protocol.encode(message)
-        sendMutex.withLock { runCatching { socket.send(Frame.Text(text)) } }
+        sendMutex.withLock {
+            try {
+                socket.send(Frame.Text(text))
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                sendFailures.incrementAndGet()
+            }
+        }
     }
 
     suspend fun close() {
@@ -198,6 +215,7 @@ class PlayerSession(
 
     suspend fun showPreview(screen: Screen) = lifecycle.showPreview(screen)
 
+    @Suppress("CyclomaticComplexMethod") // Exhaustive protocol dispatch.
     suspend fun receive(message: PlayerMessage) {
         when (message) {
             is PlayerMessage.Ping -> send(ServerMessage.Pong)
@@ -225,6 +243,7 @@ class PlayerSession(
             is PlayerMessage.CalendarCreate -> createCalendarEvent(message)
             is PlayerMessage.CalendarDelete -> deleteCalendarEvent(message)
             is PlayerMessage.IntercomReport -> applyIntercom(message)
+            is PlayerMessage.NotificationAction -> handleNotificationAction(message)
             is PlayerMessage.Hello -> Unit
         }
     }
@@ -292,6 +311,62 @@ class PlayerSession(
     }
 
     suspend fun showAlert(alert: Alert) = documents.showAlert(alert)
+
+    suspend fun notify(request: NotificationRequest): String {
+        val supportsNotifications = Protocol.CAPABILITY_NOTIFICATIONS in hello.capabilities
+        if (!supportsNotifications && (request.presentation == "banner" || !request.wake)) return "unsupported"
+        val alert = Alert(
+            title = request.title, message = request.message, icon = request.icon, level = request.level,
+            camera = request.camera, timeout = request.duration, tag = request.tag, wake = request.wake,
+            buttons = request.buttons.map { AlertButton(it.title, it.service, it.data, it.action) }.ifEmpty {
+                if (request.presentation == "alert" && request.duration == 0) {
+                    listOf(AlertButton("Acknowledge", action = "acknowledge"))
+                } else {
+                    emptyList()
+                }
+            },
+        )
+        notificationMutex.lock()
+        try {
+            val failuresBefore = sendFailures.get()
+            if (request.presentation == "alert") {
+                documents.showAlert(alert)
+            } else {
+                val id = UUID.randomUUID().toString()
+                currentBanner = id to alert
+                bannerExpiresAt = System.nanoTime() + request.duration.seconds.inWholeNanoseconds
+                if (request.wake) send(ServerMessage.Wake(true))
+                send(ServerMessage.NotificationBanner(
+                    id, alert.title, alert.message, alert.level, alert.icon,
+                    alert.buttons.map { it.title }, alert.timeout,
+                    iconPath = Icons.path(
+                        alert.icon ?: if (alert.level == "info") "bell-ring" else "alert",
+                    ),
+                    topInsetDp = screen()?.let { Grid.topBarHeight(it.topBar) } ?: 0f,
+                ))
+            }
+            check(sendFailures.get() == failuresBefore) { "Notification dispatch failed" }
+        } finally {
+            notificationMutex.unlock()
+        }
+        return "sent"
+    }
+
+    private suspend fun handleNotificationAction(message: PlayerMessage.NotificationAction) {
+        notificationMutex.lock()
+        try {
+            val current = currentBanner
+            val alert = current?.second
+            val isCurrent = screenId != null && current?.first == message.id && System.nanoTime() < bannerExpiresAt
+            val isValidButton = message.button == null || message.button in (alert?.buttons?.indices ?: IntRange.EMPTY)
+            if (isCurrent && alert != null && isValidButton) {
+                currentBanner = null
+                message.button?.let { pressAlertButton(alert, alert.buttons[it]) }
+            }
+        } finally {
+            notificationMutex.unlock()
+        }
+    }
 
     private fun calendarDialog(outcome: TapOutcome.OpenCalendar): ServerMessage.CalendarDialog {
         val event = outcome.event
@@ -414,7 +489,16 @@ class PlayerSession(
         send(ServerMessage.OpenPage(pageIndex))
     }
 
-    suspend fun closeAll() = lifecycle.closeAll()
+    suspend fun closeAll() {
+        notificationMutex.lock()
+        try {
+            currentBanner = null
+            if (Protocol.CAPABILITY_NOTIFICATIONS in hello.capabilities) send(ServerMessage.NotificationClear)
+            lifecycle.closeAll()
+        } finally {
+            notificationMutex.unlock()
+        }
+    }
 
     /** Bridges private session state to collaborators without exposing [SessionHost] on the public type. */
     private inner class Host : SessionHost {
@@ -481,6 +565,7 @@ class PlayerSession(
             Protocol.CAPABILITY_CALENDAR_DIALOGS,
             Protocol.CAPABILITY_TELEMETRY,
             Protocol.CAPABILITY_INTERCOM,
+            Protocol.CAPABILITY_NOTIFICATIONS,
         )
         const val RESYNC_MS = 3000L
         const val AGENDA_NOTICE_MS = 4_000L
