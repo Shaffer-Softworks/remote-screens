@@ -30,12 +30,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,14 +45,14 @@ import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import kotlinx.coroutines.delay
+import tech.shaffersoftworks.remotescreens.player.ui.theme.LiveSearchInk
+import tech.shaffersoftworks.remotescreens.player.ui.theme.LiveSearchRowBg
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
+import tech.shaffersoftworks.remotescreens.player.ui.theme.LiveSearchTeal
 import tech.shaffersoftworks.remotescreens.player.ui.theme.teal_200
 import tech.shaffersoftworks.remotescreens.shared.MusicSearchRow
 import kotlin.time.Duration.Companion.milliseconds
 
-private val Teal = Color(0xFF14E1BA)
-private val Ink = Color.White
-private val RowBg = Color(0xFF333333)
 private const val SEARCH_DEBOUNCE_MS = 400L
 private const val PREVIEW_QUERY = "daft punk"
 
@@ -139,7 +138,7 @@ private fun SearchContent(
                     TextButton(onClick = { text = "" }, enabled = text.isNotBlank()) {
                         Text(
                             "×",
-                            color = Ink.copy(alpha = if (text.isNotBlank()) 0.9f else 0.35f),
+                            color = LiveSearchInk.copy(alpha = if (text.isNotBlank()) 0.9f else 0.35f),
                             fontSize = 22.sp,
                         )
                     }
@@ -147,20 +146,20 @@ private fun SearchContent(
             },
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Ink,
-                unfocusedTextColor = Ink,
-                focusedBorderColor = Teal,
-                unfocusedBorderColor = Ink.copy(alpha = 0.5f),
-                cursorColor = Ink,
-                focusedLabelColor = Ink,
-                unfocusedLabelColor = Ink.copy(alpha = 0.7f),
+                focusedTextColor = LiveSearchInk,
+                unfocusedTextColor = LiveSearchInk,
+                focusedBorderColor = LiveSearchTeal,
+                unfocusedBorderColor = LiveSearchInk.copy(alpha = 0.5f),
+                cursorColor = LiveSearchInk,
+                focusedLabelColor = LiveSearchInk,
+                unfocusedLabelColor = LiveSearchInk.copy(alpha = 0.7f),
             ),
         )
         Spacer(Modifier.height(10.dp))
         if (showResults) {
             Text(
                 "Results",
-                color = Ink.copy(alpha = 0.95f),
+                color = LiveSearchInk.copy(alpha = 0.95f),
                 fontSize = 14.sp,
                 modifier = Modifier.padding(bottom = 6.dp),
             )
@@ -172,11 +171,11 @@ private fun SearchContent(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    CircularProgressIndicator(color = Teal)
+                    CircularProgressIndicator(color = LiveSearchTeal)
                 }
             }
             text.isNotBlank() && rows.isEmpty() && !isLoading -> {
-                Text("No results", color = Ink.copy(alpha = 0.8f), fontSize = 14.sp)
+                Text("No results", color = LiveSearchInk.copy(alpha = 0.8f), fontSize = 14.sp)
             }
             else -> {
                 LazyColumn(
@@ -212,7 +211,7 @@ private fun SearchRow(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .background(RowBg.copy(alpha = 0.9f))
+            .background(LiveSearchRowBg.copy(alpha = 0.9f))
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -255,7 +254,7 @@ private fun SearchRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     musicSearchRow.title,
-                    color = Ink,
+                    color = LiveSearchInk,
                     fontSize = 15.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -263,7 +262,7 @@ private fun SearchRow(
                 musicSearchRow.subtitle?.let {
                     Text(
                         it,
-                        color = Ink.copy(alpha = 0.75f),
+                        color = LiveSearchInk.copy(alpha = 0.75f),
                         fontSize = 12.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -274,7 +273,7 @@ private fun SearchRow(
         var menuOpen by remember(musicSearchRow.uri, musicSearchRow.title) { mutableStateOf(false) }
         Box {
             TextButton(onClick = { menuOpen = true }) {
-                Text("⋮", color = Ink.copy(alpha = 0.75f), fontSize = 18.sp)
+                Text("⋮", color = LiveSearchInk.copy(alpha = 0.75f), fontSize = 18.sp)
             }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
@@ -411,7 +410,7 @@ private fun SearchRowTitleOnlyPreview() {
 private fun SearchPreviewBackdropPreview() {
     RemoteScreensTheme {
         SearchPreviewBackdrop {
-            Text(text = "Search", color = Ink)
+            Text(text = "Search", color = LiveSearchInk)
         }
     }
 }
@@ -422,7 +421,7 @@ private fun SearchPreviewBackdrop(content: @Composable () -> Unit) {
     Box(
         Modifier
             .fillMaxSize()
-            .background(RowBg),
+            .background(LiveSearchRowBg),
     ) {
         content()
     }

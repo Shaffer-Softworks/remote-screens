@@ -40,10 +40,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import tech.shaffersoftworks.remotescreens.player.ui.theme.DialogBackground
+import tech.shaffersoftworks.remotescreens.player.ui.theme.DialogSecondary
+import tech.shaffersoftworks.remotescreens.player.ui.theme.DialogTeal
+import tech.shaffersoftworks.remotescreens.player.ui.theme.DialogWhite
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 import tech.shaffersoftworks.remotescreens.shared.CalendarChoice
 import tech.shaffersoftworks.remotescreens.shared.CalendarDeleteTarget
@@ -55,10 +58,6 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val DialogBackground = Color(0xFF333333)
-private val DialogSecondary = Color(0xFFCACACA)
-private val DialogTeal = Color(0xFF03DAC5)
-private val DialogWhite = Color(0xFFFFFFFF)
 private val CreateDialogWidth = 640.dp
 private val FieldLabelSize = 14.sp
 private val TitleSize = 24.sp
