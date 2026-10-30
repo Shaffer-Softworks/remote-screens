@@ -33,7 +33,7 @@ class PlayerApplication : Application() {
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler() ?: return
 
         Thread.setDefaultUncaughtExceptionHandler(
-            UnCaughtExceptionHandler(this, defaultHandler)
+            UnCaughtExceptionHandler(defaultHandler),
         )
     }
 }

@@ -142,7 +142,7 @@ private fun InteractiveMap(
                 resources = context.resources,
                 picture = pictures[marker.picture],
                 label = marker.label,
-                colourIndex = index
+                colourIndex = index,
             )
         }
     }
@@ -231,7 +231,7 @@ private fun markerIcon(
     resources: Resources,
     picture: Bitmap?,
     label: String,
-    colourIndex: Int
+    colourIndex: Int,
 ): Drawable {
     val size = MARKER_SIZE_PX
     val bitmap = createBitmap(size, size)
@@ -333,7 +333,7 @@ private fun MapMarkerPinPreview() {
                     resources = context.resources,
                     picture = null,
                     label = marker.label,
-                    colourIndex = 0
+                    colourIndex = 0,
                 ),
                 index = 0,
             )
