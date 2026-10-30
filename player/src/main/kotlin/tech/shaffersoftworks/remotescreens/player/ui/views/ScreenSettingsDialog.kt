@@ -40,6 +40,8 @@ private val SECTION_SPACING = 8.dp
 fun ScreenSettingsDialog(
     settings: ScreenSettings,
     server: String?,
+    isCheckingForUpdates: Boolean = false,
+    onCheckForUpdates: () -> Unit = {},
     canOfferSelfStart: Boolean,
     canOfferScreenOff: Boolean,
     canOfferUnrestrictedBattery: Boolean,
@@ -84,6 +86,18 @@ fun ScreenSettingsDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(SECTION_SPACING),
             ) {
+                Text(
+                    text = stringResource(
+                        R.string.app_version,
+                        tech.shaffersoftworks.remotescreens.player.BuildConfig.VERSION_NAME,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                TextButton(onClick = onCheckForUpdates, enabled = !isCheckingForUpdates) {
+                    Text(stringResource(
+                        if (isCheckingForUpdates) R.string.checking_for_updates else R.string.check_for_updates,
+                    ))
+                }
                 Text(stringResource(R.string.brightness))
                 Slider(
                     value = brightnessPercent,

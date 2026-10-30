@@ -9,6 +9,12 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import tech.shaffersoftworks.remotescreens.player.di.IoDispatcher
 import tech.shaffersoftworks.remotescreens.player.receiver.InstallReceiver
 import io.ktor.client.HttpClient
+import io.ktor.client.statement.bodyAsText
+import kotlinx.serialization.json.Json
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.http.HttpStatusCode
+import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.isSuccess
@@ -36,6 +42,14 @@ class UpdateRepository @Inject constructor(
     private val httpClient: HttpClient,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) {
+    /** Checks the connected add-on without interrupting the player session. */
+    suspend fun check(server: String, token: String): ServerMessage.UpdateAvailable? {
+        val response = httpClient.get("http://$server/player/update") { parameter("token", token) }
+        if (response.status == HttpStatusCode.NoContent) return null
+        check(response.status.isSuccess()) { "Update check returned ${response.status}" }
+        return Json.decodeFromString<ServerMessage.UpdateAvailable>(response.bodyAsText())
+    }
+
     /**
      * Downloads and commits the APK. When [silent] is true (device owner), Android 12+ is told not to ask;
      * older builds may still surface a confirm intent that [InstallReceiver] opens.

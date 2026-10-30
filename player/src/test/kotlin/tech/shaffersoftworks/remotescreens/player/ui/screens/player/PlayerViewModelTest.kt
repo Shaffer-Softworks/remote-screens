@@ -109,6 +109,8 @@ class PlayerViewModelTest {
     }
     private val locationAccuracy: LocationAccuracy = mock()
 
+    private val updateRepository: UpdateRepository = mock()
+
     private lateinit var viewModel: PlayerViewModel
 
     @Before
@@ -119,7 +121,7 @@ class PlayerViewModelTest {
             preferencesRepository = preferencesRepository,
             connectionRepository = connectionRepository,
             discoveryRepository = discoveryRepository,
-            updateRepository = mock<UpdateRepository>(),
+            updateRepository = updateRepository,
             deviceRepository = deviceRepository,
             screenPowerRepository = screenPowerRepository,
             proximityWakeMonitor = proximityWakeMonitor,
@@ -636,6 +638,55 @@ class PlayerViewModelTest {
         displayName = "Office keypad",
         pageIndexes = listOf(2),
     )
+
+    @Test
+    fun `manual check reopens a dismissed update without device owner`() {
+        val update = ServerMessage.UpdateAvailable(142, "0.1.42", "/player/apk")
+        receive(update)
+        viewModel.onUpdateDismissed()
+        openSettings()
+        runBlocking { whenever(updateRepository.check(any(), any())).thenReturn(update) }
+
+        viewModel.onCheckForUpdatesRequested()
+        runCurrent()
+
+        assertEquals(update, viewModel.viewState.value.availableUpdate)
+        assertNull(viewModel.viewState.value.settingsDialog)
+        verifyBlocking(updateRepository, never()) { install(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `manual check reports current version without offering a downgrade`() {
+        whenever(deviceRepository.appVersionCode).thenReturn(142)
+        runBlocking {
+            whenever(updateRepository.check(any(), any()))
+                .thenReturn(ServerMessage.UpdateAvailable(141, "0.1.41", "/player/apk"))
+        }
+        openSettings()
+
+        viewModel.onCheckForUpdatesRequested()
+        runCurrent()
+
+        assertNull(viewModel.viewState.value.availableUpdate)
+        assertEquals(false, viewModel.viewState.value.settingsDialog?.isCheckingForUpdates)
+        assertTrue(takeEvents().contains(PlayerEvent.ShowMessageResource(
+            tech.shaffersoftworks.remotescreens.player.R.string.update_current,
+        )))
+    }
+
+    @Test
+    fun `failed update check allows retry and reports failure`() {
+        runBlocking { whenever(updateRepository.check(any(), any())).thenThrow(IllegalStateException("offline")) }
+        openSettings()
+
+        viewModel.onCheckForUpdatesRequested()
+        runCurrent()
+
+        assertEquals(false, viewModel.viewState.value.settingsDialog?.isCheckingForUpdates)
+        assertTrue(takeEvents().contains(PlayerEvent.ShowMessageResource(
+            tech.shaffersoftworks.remotescreens.player.R.string.update_check_failed,
+        )))
+    }
 
     private fun takeEvents(): List<PlayerEvent> {
         val collected = mutableListOf<PlayerEvent>()

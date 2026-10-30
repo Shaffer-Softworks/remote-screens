@@ -1129,6 +1129,38 @@ class PlayerViewModel @Inject constructor(
 
     // region Updates
 
+    fun onCheckForUpdatesRequested() {
+        if (_viewState.value.settingsDialog?.isCheckingForUpdates == true) return
+        viewModelScope.launch {
+            val server = connectionRepository.server.value
+            val token = preferencesRepository.token.first()
+            if (server == null || token == null) {
+                _events.send(PlayerEvent.ShowMessageResource(R.string.update_check_failed))
+                return@launch
+            }
+            _viewState.update { it.copy(settingsDialog = it.settingsDialog?.copy(isCheckingForUpdates = true)) }
+            try {
+                val update = updateRepository.check(server, token)
+                if (update != null && update.versionCode > deviceRepository.appVersionCode) {
+                    onSettingsDismissed()
+                    // A manual check always asks, including on enrolled kiosks.
+                    _viewState.update { it.copy(availableUpdate = update) }
+                } else {
+                    _events.send(PlayerEvent.ShowMessageResource(R.string.update_current))
+                }
+            } catch (cancellation: kotlinx.coroutines.CancellationException) {
+                throw cancellation
+            } catch (@Suppress("TooGenericExceptionCaught") error: Exception) {
+                Timber.w(error, "Could not check for player updates")
+                _events.send(PlayerEvent.ShowMessageResource(R.string.update_check_failed))
+            } finally {
+                _viewState.update {
+                    it.copy(settingsDialog = it.settingsDialog?.copy(isCheckingForUpdates = false))
+                }
+            }
+        }
+    }
+
     fun onInstallUpdateConfirmed() {
         val update = _viewState.value.availableUpdate ?: return
         onUpdateDismissed()

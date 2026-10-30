@@ -100,6 +100,7 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
         onKioskPinDismissed = viewModel::onKioskPinDismissed,
         onAddressConfirmed = viewModel::onAddressConfirmed,
         onAddressDismissed = viewModel::onAddressDismissed,
+        onCheckForUpdates = viewModel::onCheckForUpdatesRequested,
         onInstallUpdate = viewModel::onInstallUpdateConfirmed,
         onUpdateDismissed = viewModel::onUpdateDismissed,
         onCalendarDismiss = viewModel::dismissCalendarDialog,
@@ -210,6 +211,7 @@ private fun PlayerDialogs(
     onKioskPinDismissed: () -> Unit = {},
     onAddressConfirmed: (String) -> Unit = {},
     onAddressDismissed: () -> Unit = {},
+    onCheckForUpdates: () -> Unit = {},
     onInstallUpdate: () -> Unit = {},
     onUpdateDismissed: () -> Unit = {},
     onCalendarDismiss: () -> Unit = {},
@@ -234,6 +236,8 @@ private fun PlayerDialogs(
             ScreenSettingsDialog(
                 settings = viewState.screenSettings,
                 server = settingsDialog.server,
+                isCheckingForUpdates = settingsDialog.isCheckingForUpdates,
+                onCheckForUpdates = onCheckForUpdates,
                 canOfferSelfStart = settingsDialog.canOfferSelfStart,
                 canOfferScreenOff = settingsDialog.canOfferScreenOff,
                 canOfferUnrestrictedBattery = settingsDialog.canOfferUnrestrictedBattery,
@@ -488,8 +492,6 @@ private fun RemoteScreenPreview() {
 @Preview(name = "Settings", widthDp = 800, heightDp = 480)
 @Composable
 private fun PlayerDialogsSettingsPreview() {
-    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
-
     RemoteScreensTheme {
         PlayerDialogs(
             viewState = PlayerViewModel.ViewState(
@@ -510,8 +512,6 @@ private fun PlayerDialogsSettingsPreview() {
 @Preview(name = "Forget", widthDp = 800, heightDp = 480)
 @Composable
 private fun PlayerDialogsForgetPreview() {
-    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
-
     RemoteScreensTheme {
         PlayerDialogs(
             viewState = PlayerViewModel.ViewState(
