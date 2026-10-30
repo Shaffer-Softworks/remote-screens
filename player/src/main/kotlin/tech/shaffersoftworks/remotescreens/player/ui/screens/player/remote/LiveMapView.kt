@@ -1,6 +1,7 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote
 
 import android.content.Context
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -9,7 +10,6 @@ import android.graphics.Path
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.graphics.Typeface
-import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewGroup
@@ -26,16 +26,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.graphics.scale
+import androidx.core.graphics.withClip
 import com.utsman.osmandcompose.MapProperties
 import com.utsman.osmandcompose.Marker
 import com.utsman.osmandcompose.OpenStreetMap
 import com.utsman.osmandcompose.ZoomButtonVisibility
 import com.utsman.osmandcompose.rememberCameraState
 import com.utsman.osmandcompose.rememberMarkerState
-import java.io.File
-import kotlin.math.ln
-import kotlin.math.max
-import kotlin.math.min
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
 import org.osmdroid.util.GeoPoint
@@ -44,6 +44,10 @@ import org.osmdroid.views.MapView
 import tech.shaffersoftworks.remotescreens.player.BuildConfig
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 import tech.shaffersoftworks.remotescreens.shared.MapMarker
+import java.io.File
+import kotlin.math.ln
+import kotlin.math.max
+import kotlin.math.min
 
 private const val CORNER_DP = 16f
 private const val MARKER_SIZE_PX = 96
@@ -134,7 +138,12 @@ private fun InteractiveMap(
     }
     val icons = remember(markers, pictures) {
         markers.mapIndexed { index, marker ->
-            markerIcon(pictures[marker.picture], marker.label, index)
+            markerIcon(
+                resources = context.resources,
+                picture = pictures[marker.picture],
+                label = marker.label,
+                colourIndex = index
+            )
         }
     }
 
@@ -218,23 +227,27 @@ private fun tileSourceFor(tileUrl: String): OnlineTileSourceBase =
                 .replace("{y}", MapTileIndex.getY(pMapTileIndex).toString())
     }
 
-private fun markerIcon(picture: Bitmap?, label: String, colourIndex: Int): Drawable {
+private fun markerIcon(
+    resources: Resources,
+    picture: Bitmap?,
+    label: String,
+    colourIndex: Int
+): Drawable {
     val size = MARKER_SIZE_PX
-    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val bitmap = createBitmap(size, size)
     val canvas = Canvas(bitmap)
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     if (picture != null) {
-        val scaled = Bitmap.createScaledBitmap(picture, size, size, true)
+        val scaled = picture.scale(size, size)
         paint.color = Color.WHITE
         canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
-        canvas.save()
-        canvas.clipPath(
+        canvas.withClip(
             Path().apply {
                 addCircle(size / 2f, size / 2f, size / 2f - PHOTO_INSET_PX, Path.Direction.CW)
             },
-        )
-        canvas.drawBitmap(scaled, 0f, 0f, Paint(Paint.ANTI_ALIAS_FLAG))
-        canvas.restore()
+        ) {
+            drawBitmap(scaled, 0f, 0f, Paint(Paint.ANTI_ALIAS_FLAG))
+        }
     } else {
         paint.color = MARKER_COLOURS[colourIndex % MARKER_COLOURS.size]
         canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
@@ -254,7 +267,7 @@ private fun markerIcon(picture: Bitmap?, label: String, colourIndex: Int): Drawa
         val textY = size / 2f - (paint.descent() + paint.ascent()) / 2f
         canvas.drawText(initials, size / 2f, textY, paint)
     }
-    return BitmapDrawable(null, bitmap)
+    return bitmap.toDrawable(resources)
 }
 
 @Preview(name = "Markers", widthDp = 800, heightDp = 480)
@@ -316,7 +329,12 @@ private fun MapMarkerPinPreview() {
         ) {
             MapMarkerPin(
                 marker = marker,
-                icon = markerIcon(picture = null, label = marker.label, colourIndex = 0),
+                icon = markerIcon(
+                    resources = context.resources,
+                    picture = null,
+                    label = marker.label,
+                    colourIndex = 0
+                ),
                 index = 0,
             )
         }

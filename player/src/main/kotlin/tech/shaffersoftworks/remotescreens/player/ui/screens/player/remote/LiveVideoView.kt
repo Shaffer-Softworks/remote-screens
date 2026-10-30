@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -56,12 +57,12 @@ private const val LIVE_MAX_OFFSET_MS = 5_000L
 @OptIn(UnstableApi::class)
 internal fun LiveVideoView(video: SlotVideo, onFailed: (SlotVideo, Int?) -> Unit) {
     if (LocalInspectionMode.current) {
-        Box(Modifier.fillMaxSize().clip(RoundedCornerShape(CORNER_DP.dp)).background(Color.Black))
+        Box(Modifier.fillMaxSize().background(Color.Black))
         return
     }
     val context = LocalContext.current
     val texture = remember { TextureView(context) }
-    var aspectRatio by remember(video) { mutableStateOf(1f) }
+    var aspectRatio by remember(video) { mutableFloatStateOf(1f) }
     var ready by remember(video) { mutableStateOf(false) }
     val currentOnFailed by rememberUpdatedState(onFailed)
     DisposableEffect(video, texture) {
@@ -90,8 +91,9 @@ internal fun LiveVideoView(video: SlotVideo, onFailed: (SlotVideo, Int?) -> Unit
         }
     }
     Box(
-        Modifier.fillMaxSize().clip(RoundedCornerShape(CORNER_DP.dp))
-            .alpha(if (ready) 1f else 0f).background(Color.Black),
+        Modifier.fillMaxSize()
+            .alpha(if (ready) 1f else 0f)
+            .background(Color.Black),
     ) {
         Layout(
             content = { AndroidView(factory = { texture }) },
@@ -139,7 +141,7 @@ private fun createVideoPlayer(context: android.content.Context, video: SlotVideo
         .setLoadControl(loadControl)
         .build()
         .apply {
-            volume = 0f
+            volume = 1f
             setMediaItem(mediaItem)
             prepare()
             playWhenReady = true
