@@ -31,6 +31,7 @@ data class SettingsDialogState(
     val kioskAction: KioskAction? = null,
     /** Offered once the kiosk is unlocked, so the tablet can leave kiosk duty without a factory reset. */
     val canRemoveDeviceOwner: Boolean = false,
+    val isCheckingForUpdates: Boolean = false,
     val isForgetConfirmationVisible: Boolean = false,
 )
 

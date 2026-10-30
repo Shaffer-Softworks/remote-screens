@@ -46,4 +46,9 @@
     <string name="kiosk_unlock">Unlock tablet</string>
     <string name="kiosk_lock_again">Lock again</string>
     <string name="kiosk_remove_device_owner">Stop managing this tablet</string>
+    <string name="app_version">App version: %1$s</string>
+    <string name="check_for_updates">Check for updates</string>
+    <string name="checking_for_updates">Checking for updates…</string>
+    <string name="update_current">Remote Screens is up to date.</string>
+    <string name="update_check_failed">Could not check for updates. Check the server connection and try again.</string>
 </resources>

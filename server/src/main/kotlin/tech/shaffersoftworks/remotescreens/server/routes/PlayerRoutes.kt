@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.routes
 
+import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.server.data.apk.PlayerApkRepository
 import tech.shaffersoftworks.remotescreens.server.player.PlayerHub
 import tech.shaffersoftworks.remotescreens.server.service.CameraStreamService
@@ -36,6 +37,7 @@ fun Route.playerRoutes(
 ) {
     get("/health") { call.respondText("ok") }
     webSocket("/player") { playerHub.serve(this, call.request.origin.remoteAddress) }
+    playerUpdateRoute(playerHub, playerApkRepository)
     get("/player/apk") {
         val apk = playerApkRepository.current()
         val parameters = call.request.queryParameters
@@ -73,6 +75,27 @@ fun Route.playerRoutes(
             !HttpStatusCode.fromValue(
                 status,
             ).isSuccess() -> call.respond(HttpStatusCode.fromValue(status))
+        }
+    }
+}
+
+private fun Route.playerUpdateRoute(playerHub: PlayerHub, playerApkRepository: PlayerApkRepository) {
+    get("/player/update") {
+        if (!playerHub.isTrustedToken(call.request.queryParameters["token"])) {
+            call.respond(HttpStatusCode.Unauthorized)
+            return@get
+        }
+        val apk = playerApkRepository.current()
+        if (apk == null) {
+            call.respond(HttpStatusCode.NoContent)
+        } else {
+            call.respond(
+                ServerMessage.UpdateAvailable(
+                    apk.versionCode,
+                    apk.versionName,
+                    "/player/apk",
+                ),
+            )
         }
     }
 }
