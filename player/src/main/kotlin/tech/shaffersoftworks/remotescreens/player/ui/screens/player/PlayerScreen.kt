@@ -492,6 +492,8 @@ private fun RemoteScreenPreview() {
 @Preview(name = "Settings", widthDp = 800, heightDp = 480)
 @Composable
 private fun PlayerDialogsSettingsPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
         PlayerDialogs(
             viewState = PlayerViewModel.ViewState(
@@ -512,6 +514,8 @@ private fun PlayerDialogsSettingsPreview() {
 @Preview(name = "Forget", widthDp = 800, heightDp = 480)
 @Composable
 private fun PlayerDialogsForgetPreview() {
+    val previewLoader = ImageLoader.Builder(LocalContext.current).build()
+
     RemoteScreensTheme {
         PlayerDialogs(
             viewState = PlayerViewModel.ViewState(
