@@ -18,7 +18,9 @@ detekt {
     baseline.set(file("detekt-baseline.xml"))
 }
 
-version = providers.fileContents(rootProject.layout.projectDirectory.file("addon/VERSION")).asText.map { it.trim() }.getOrElse("0.0.0")
+version = providers.fileContents(
+    rootProject.layout.projectDirectory.file("addon/VERSION"))
+    .asText.map { it.trim() }.getOrElse("0.0.0")
 
 dependencies {
     implementation(project(":shared"))
@@ -54,6 +56,7 @@ tasks.test {
 
 /** One runnable jar for the add-on image. */
 tasks.register<Jar>("fatJar") {
+    description = ""
     group = "build"
     archiveFileName.set("remote-screens-server.jar")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE

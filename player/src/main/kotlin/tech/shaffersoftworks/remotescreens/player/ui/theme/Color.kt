@@ -10,3 +10,18 @@ val Card = Color(0xFFFFFFFF)
 
 val IdentifyBadgeBackground = Color(0xCC000000)
 val teal_200 = Color(0xFF03DAC5)
+
+/**
+ * Calendar Dialog
+ */
+val DialogBackground = Color(0xFF333333)
+val DialogSecondary = Color(0xFFCACACA)
+val DialogTeal = Color(0xFF03DAC5)
+val DialogWhite = Color(0xFFFFFFFF)
+
+/**
+ * Live Search
+ */
+val LiveSearchTeal = Color(0xFF14E1BA)
+val LiveSearchInk = Color.White
+val LiveSearchRowBg = Color(0xFF333333)

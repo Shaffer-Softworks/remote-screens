@@ -5,17 +5,16 @@ import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
@@ -23,7 +22,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -56,12 +54,12 @@ private const val LIVE_MAX_OFFSET_MS = 5_000L
 @OptIn(UnstableApi::class)
 internal fun LiveVideoView(video: SlotVideo, onFailed: (SlotVideo, Int?) -> Unit) {
     if (LocalInspectionMode.current) {
-        Box(Modifier.fillMaxSize().clip(RoundedCornerShape(CORNER_DP.dp)).background(Color.Black))
+        Box(Modifier.fillMaxSize().background(Color.Black))
         return
     }
     val context = LocalContext.current
     val texture = remember { TextureView(context) }
-    var aspectRatio by remember(video) { mutableStateOf(1f) }
+    var aspectRatio by remember(video) { mutableFloatStateOf(1f) }
     var ready by remember(video) { mutableStateOf(false) }
     val currentOnFailed by rememberUpdatedState(onFailed)
     DisposableEffect(video, texture) {
@@ -90,8 +88,9 @@ internal fun LiveVideoView(video: SlotVideo, onFailed: (SlotVideo, Int?) -> Unit
         }
     }
     Box(
-        Modifier.fillMaxSize().clip(RoundedCornerShape(CORNER_DP.dp))
-            .alpha(if (ready) 1f else 0f).background(Color.Black),
+        Modifier.fillMaxSize()
+            .alpha(if (ready) 1f else 0f)
+            .background(Color.Black),
     ) {
         Layout(
             content = { AndroidView(factory = { texture }) },
@@ -139,7 +138,7 @@ private fun createVideoPlayer(context: android.content.Context, video: SlotVideo
         .setLoadControl(loadControl)
         .build()
         .apply {
-            volume = 0f
+            volume = 1f
             setMediaItem(mediaItem)
             prepare()
             playWhenReady = true
