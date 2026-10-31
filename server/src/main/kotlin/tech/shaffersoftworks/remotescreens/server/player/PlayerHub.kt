@@ -3,6 +3,10 @@ package tech.shaffersoftworks.remotescreens.server.player
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
 import tech.shaffersoftworks.remotescreens.server.data.layout.LayoutRepository
 import tech.shaffersoftworks.remotescreens.server.render.Alert
+import tech.shaffersoftworks.remotescreens.shared.NotificationRequest
+import tech.shaffersoftworks.remotescreens.shared.NotificationResult
+import tech.shaffersoftworks.remotescreens.shared.NotificationDelivery
+import kotlinx.coroutines.CancellationException
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import tech.shaffersoftworks.remotescreens.shared.Protocol
 import tech.shaffersoftworks.remotescreens.shared.Screen
@@ -205,6 +209,31 @@ class PlayerHub(
         val session = sessions[deviceId] ?: return false
         session.showPreview(screen)
         return true
+    }
+
+    suspend fun notify(request: NotificationRequest): NotificationResult {
+        request.validate()
+        val layout = layoutRepository.layout.value
+        val knownIds = layout.screens.map { it.id } + layout.players.filter { it.screenId != null }.map { it.deviceId }
+        require(request.targets.all { it in knownIds }) { "Unknown notification target" }
+        val recipients = layout.players.filter { player ->
+            player.screenId != null &&
+                (request.all || player.deviceId in request.targets || player.screenId in request.targets)
+        }
+        val deliveries = recipients.map { player ->
+            val session = sessions[player.deviceId]?.takeIf { it.screenId == player.screenId }
+            val status = if (session == null) {
+                "offline"
+            } else {
+                runCatching { session.notify(request) }.getOrElse { exception ->
+                    if (exception is CancellationException) throw exception
+                    logger.warn("Notification to {} failed: {}", player.deviceId, exception.message)
+                    "failed"
+                }
+            }
+            NotificationDelivery(player.deviceId, player.name, status)
+        }
+        return NotificationResult(deliveries)
     }
 
     suspend fun showAlert(alert: Alert) {

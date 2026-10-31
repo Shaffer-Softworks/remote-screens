@@ -51,6 +51,7 @@ private const val MAX_PLAYER_NAME_LENGTH = 60
 /** The editor's API, under ingress. */
 fun Route.editorRoutes(dependencies: ServerDependencies) {
     route("/api") {
+        notificationRoutes(dependencies.playerHub)
         infoRoutes(dependencies)
         screenRoutes(dependencies.screenService, dependencies.backgroundStore)
         themeRoutes(dependencies.themeService)

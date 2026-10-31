@@ -17,6 +17,7 @@ import kotlinx.serialization.json.JsonObject
 
 /** The API the Home Assistant integration polls and calls, under `/integration` and its key. */
 fun Route.integrationRoutes(screenService: ScreenService, playerHub: PlayerHub) {
+    notificationRoutes(playerHub)
     get("/screens") {
         val players = playerHub.status()
         val screens = screenService.screens().map { screen ->

@@ -47,6 +47,7 @@ data class Alert(
     val targets: List<String> = emptyList(),
     /** Sent back in the `remote_screens_alert_action` event so an automation can tell alerts apart. */
     val tag: String? = null,
+    val wake: Boolean = true,
 )
 
 @Serializable

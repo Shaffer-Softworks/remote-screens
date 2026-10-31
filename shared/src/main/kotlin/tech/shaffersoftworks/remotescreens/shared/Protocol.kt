@@ -37,6 +37,8 @@ object Protocol {
     /** A player that can place and answer an intercom call ([ServerMessage.IntercomCommand]). */
     const val CAPABILITY_INTERCOM = "intercom"
 
+    const val CAPABILITY_NOTIFICATIONS = "notifications"
+
     val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = false
@@ -242,6 +244,10 @@ sealed interface PlayerMessage {
     ) : PlayerMessage
 
     @Serializable
+    @SerialName("notification_action")
+    data class NotificationAction(val id: String, val button: Int? = null) : PlayerMessage
+
+    @Serializable
     @SerialName("ping")
     data object Ping : PlayerMessage
 }
@@ -286,6 +292,9 @@ sealed interface ServerMessage {
         val swipePages: List<Int> = emptyList(),
         /** Seconds before an alert closes by itself; 0 keeps it. */
         val timeout: Int = 0,
+        val wakeOnShow: Boolean = true,
+        /** False for a rebuild of the same alert: its original expiry continues. */
+        val restartTimeout: Boolean = true,
     ) : ServerMessage
 
     @Serializable
@@ -389,6 +398,24 @@ sealed interface ServerMessage {
     @Serializable
     @SerialName("toast")
     data class Toast(val text: String) : ServerMessage
+
+    @Serializable
+    @SerialName("notification_banner")
+    data class NotificationBanner(
+        val id: String,
+        val title: String,
+        val message: String = "",
+        val level: String = "info",
+        val icon: String? = null,
+        val buttons: List<String> = emptyList(),
+        val timeout: Int = 10,
+        val iconPath: String = "",
+        val topInsetDp: Float = 0f,
+    ) : ServerMessage
+
+    @Serializable
+    @SerialName("notification_clear")
+    data object NotificationClear : ServerMessage
 
     @Serializable
     @SerialName("pong")

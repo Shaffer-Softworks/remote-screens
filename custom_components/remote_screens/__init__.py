@@ -7,7 +7,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv, device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -74,6 +74,23 @@ SHOW_ALERT_SCHEMA = vol.Schema(
         vol.Optional(ATTR_TAG): cv.string,
     }
 )
+SEND_NOTIFICATION_SCHEMA = vol.Schema(
+    {
+        SCREENS: vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional("all", default=False): cv.boolean,
+        vol.Required(ATTR_TITLE): vol.All(cv.string, vol.Length(min=1, max=100)),
+        vol.Optional(ATTR_MESSAGE, default=""): vol.All(cv.string, vol.Length(max=500)),
+        vol.Optional("presentation", default="banner"): vol.In(["banner", "alert"]),
+        vol.Optional(ATTR_ICON): cv.string,
+        vol.Optional(ATTR_LEVEL, default="info"): vol.In(LEVELS),
+        vol.Optional(ATTR_CAMERA): cv.entity_domain("camera"),
+        vol.Optional(ATTR_BUTTONS, default=list): vol.All(cv.ensure_list, vol.Length(max=2), [BUTTON_SCHEMA]),
+        vol.Optional(ATTR_TIMEOUT): vol.All(vol.Coerce(int), vol.Range(min=0, max=3600)),
+        vol.Optional("wake", default=False): cv.boolean,
+        vol.Optional(ATTR_TAG): cv.string,
+    }
+)
+
 OPEN_PAGE_SCHEMA = vol.Schema({SCREENS: vol.All(cv.ensure_list, [cv.string]), vol.Required(ATTR_PAGE): cv.string})
 TARGETS_SCHEMA = vol.Schema({SCREENS: vol.All(cv.ensure_list, [cv.string])})
 
@@ -91,15 +108,16 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         return client_coordinator().client
 
     def targets(call: ServiceCall) -> list[str]:
-        """Screen ids from the screen devices chosen, or the screen a chosen tablet shows; none is every screen."""
+        """Screen ids or exact paired tablet ids; legacy services use empty for all."""
         registry = dr.async_get(hass)
         ids: list[str] = []
         for device_id in call.data[ATTR_SCREENS]:
             device = registry.async_get(device_id)
             screen = next((i for d, i in device.identifiers if d == DOMAIN), None) if device else None
             if screen is not None and screen.startswith("player_"):
-                player = client_coordinator().players.get(screen.removeprefix("player_")) or {}
-                screen = player.get("screenId")
+                player_id = screen.removeprefix("player_")
+                player = client_coordinator().players.get(player_id) or {}
+                screen = player_id if player.get("screenId") else None
             if screen is None:
                 raise ServiceValidationError(
                     translation_domain=DOMAIN, translation_key="unknown_screen", translation_placeholders={"id": device_id}
@@ -120,6 +138,18 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         alert["targets"] = targets(call)
         await run(client().show_alert(alert))
 
+    async def send_notification(call: ServiceCall) -> dict[str, Any]:
+        recipients = targets(call)
+        all_devices = call.data["all"]
+        if all_devices == bool(recipients):
+            raise ServiceValidationError("Choose screens/tablets or explicitly set all: true.")
+        payload = {k: v for k, v in call.data.items() if k != ATTR_SCREENS and v is not None}
+        payload["targets"] = recipients
+        try:
+            return await client().send_notification(payload)
+        except RemoteScreensError as err:
+            raise HomeAssistantError(str(err)) from err
+
     async def open_page(call: ServiceCall) -> None:
         await run(client().open_page(call.data[ATTR_PAGE], targets(call)))
 
@@ -133,6 +163,10 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.services.async_register(DOMAIN, SERVICE_OPEN_PAGE, open_page, OPEN_PAGE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_WAKE, wake, TARGETS_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_CLOSE, close, TARGETS_SCHEMA)
+    hass.services.async_register(
+        DOMAIN, "send_notification", send_notification, SEND_NOTIFICATION_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
     await async_setup_intercom(hass)
     return True
 

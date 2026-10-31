@@ -15,6 +15,7 @@ import type {
   Theme,
 } from './model/types'
 import type { ScreenFile } from './model/screenFile'
+import type { NotificationRequest, NotificationResult } from './model/notifications'
 
 export class ApiError extends Error {}
 
@@ -46,6 +47,8 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
 }
 
 export const api = {
+  sendNotification: (request: NotificationRequest) =>
+    call<NotificationResult>('POST', 'notifications', request),
   info: () => call<Info>('GET', 'info'),
   layout: () => call<LayoutData>('GET', 'layout'),
   preferences: (prefs: Preferences) => call<Preferences>('PUT', 'preferences', prefs),

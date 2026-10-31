@@ -1,3 +1,62 @@
+send_notification:
+  fields:
+    screens:
+      selector:
+        device:
+          integration: remote_screens
+          multiple: true
+    all:
+      default: false
+      selector:
+        boolean:
+    title:
+      required: true
+      selector:
+        text:
+    message:
+      selector:
+        text:
+          multiline: true
+    presentation:
+      default: banner
+      selector:
+        select:
+          options:
+            - banner
+            - alert
+    level:
+      default: info
+      selector:
+        select:
+          translation_key: level
+          options:
+            - info
+            - warning
+            - danger
+    timeout:
+      selector:
+        number:
+          min: 0
+          max: 3600
+          unit_of_measurement: s
+    wake:
+      default: false
+      selector:
+        boolean:
+    icon:
+      selector:
+        icon:
+    camera:
+      selector:
+        entity:
+          domain: camera
+    buttons:
+      selector:
+        object:
+    tag:
+      selector:
+        text:
+
 show_alert:
   fields:
     screens:

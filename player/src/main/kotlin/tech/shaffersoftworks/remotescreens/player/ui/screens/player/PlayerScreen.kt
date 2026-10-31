@@ -43,6 +43,7 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
         onEnterAddress = viewModel::openAddressDialog,
         onAllowUnrestrictedBattery = viewModel::onAllowUnrestrictedBatteryRequested,
         imageLoader = viewModel.haImageLoaderQualifier,
+        onNotificationAction = viewModel::dismissNotificationBanner,
     )
     PlayerDialogs(
         viewState = viewState,
@@ -86,6 +87,7 @@ internal fun PlayerScreenContent(
     onEnterAddress: () -> Unit = {},
     onAllowUnrestrictedBattery: () -> Unit = {},
     imageLoader: ImageLoader,
+    onNotificationAction: (Int?) -> Unit = {},
 ) {
     Box(
         modifier = Modifier
@@ -111,6 +113,14 @@ internal fun PlayerScreenContent(
             onSearchEnqueue = onSearchEnqueue,
             imageLoader = imageLoader,
         )
+        if (Slot.ALERT !in viewState.remoteScreen.documents && !viewState.isAnyDialogVisible) {
+            viewState.notificationBanner?.let { banner ->
+                tech.shaffersoftworks.remotescreens.player.ui.views.NotificationBanner(
+                    banner = banner,
+                    onAction = onNotificationAction,
+                )
+            }
+        }
         viewState.infoPanel?.let { infoPanel ->
             InfoPanel(
                 state = infoPanel,

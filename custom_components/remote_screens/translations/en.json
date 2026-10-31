@@ -131,6 +131,24 @@
     }
   },
   "services": {
+    "send_notification": {
+      "name": "Send notification",
+      "description": "Send a silent banner or alert to connected tablets. Offline tablets are skipped. Optionally returns per-tablet dispatch results.",
+      "fields": {
+        "screens": { "name": "Screens or tablets", "description": "Choose exact tablets or all tablets showing a screen." },
+        "all": { "name": "All paired tablets", "description": "Explicitly broadcast instead of selecting recipients." },
+        "title": { "name": "Title", "description": "Up to 100 characters." },
+        "message": { "name": "Message", "description": "Up to 500 characters." },
+        "presentation": { "name": "Presentation", "description": "Banner keeps the dashboard interactive; alert opens a modal." },
+        "level": { "name": "Level", "description": "Information, warning, or danger." },
+        "timeout": { "name": "Duration", "description": "Defaults to 10 seconds for banners and 30 for alerts. Alert timeout 0 adds Acknowledge when no buttons are supplied." },
+        "wake": { "name": "Wake screen", "description": "Wake from standby. Off by default." },
+        "icon": { "name": "Icon", "description": "Optional MDI icon." },
+        "camera": { "name": "Camera", "description": "Optional camera entity, for alerts only." },
+        "buttons": { "name": "Buttons", "description": "Up to two buttons with title, action, optional service and data. Fires remote_screens_alert_action." },
+        "tag": { "name": "Tag", "description": "Included in the action event." }
+      }
+    },
     "show_alert": {
       "name": "Show alert",
       "description": "Shows a message over the screens, with an optional camera and up to two buttons.",
