@@ -47,7 +47,7 @@ onBeforeUnmount(() => browser.stop())
 <style scoped>
 .desk {
   display: flex;
-  flex: 1;
+  height: 420px;
   min-height: 0;
   background: var(--rc-page, var(--bg));
 }
@@ -56,7 +56,8 @@ onBeforeUnmount(() => browser.stop())
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: 350px;
+  flex: 0 0 240px;
+  box-sizing: border-box;
   padding: 28px 20px;
   background: var(--rc-strip, var(--card));
 }
@@ -76,6 +77,7 @@ small {
 }
 
 button {
+  flex-shrink: 0;
   width: 150px;
   height: 50px;
   border: 0;
@@ -91,6 +93,8 @@ button:disabled {
 
 .stations {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -102,12 +106,16 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 100px;
+  min-height: 100px;
+  flex-shrink: 0;
+  gap: 12px;
   padding: 0 20px;
   background: var(--rc-strip, var(--card));
 }
 
 .station div {
+  min-width: 0;
+  overflow-wrap: anywhere;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -115,5 +123,42 @@ button:disabled {
 
 .empty {
   color: var(--rc-ink, var(--ink));
+}
+@media (max-width: 640px) {
+  .desk {
+    flex-direction: column;
+    height: 520px;
+  }
+
+  .side {
+    flex: none;
+    width: 100%;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .side .bar,
+  .side h2,
+  .side p {
+    grid-column: 1 / -1;
+  }
+
+  .side button {
+    width: 100%;
+  }
+
+  .stations {
+    padding: 12px;
+  }
+
+  .station {
+    padding: 0 12px;
+  }
+
+  .station button {
+    width: 72px;
+  }
 }
 </style>
