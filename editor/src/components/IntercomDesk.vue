@@ -7,6 +7,7 @@ const state = ref<IntercomDeskState>({
   status: 'Connecting…',
   isMuted: false,
   isBusy: false,
+  playbackBlocked: false,
   stations: [],
 })
 
@@ -23,6 +24,7 @@ onBeforeUnmount(() => browser.stop())
       <i class="bar" />
       <h2>INTERCOM</h2>
       <p>{{ state.status }}</p>
+      <button v-if="state.playbackBlocked" @click="browser.resumeAudio()">Enable audio</button>
       <button @click="browser.toggleMute()">{{ state.isMuted ? 'Muted' : 'Mute' }}</button>
       <button @click="browser.hangUp()">Hang up</button>
     </div>

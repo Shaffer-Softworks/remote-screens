@@ -49,16 +49,34 @@ class RemoteScreensIntercomCard extends HTMLElement {
     return 3;
   }
 
+  connectedCallback() {
+    if (this._hass && !this._started) this.hass = this._hass;
+  }
+
   disconnectedCallback() {
     this._stop();
   }
 
   async _open() {
     this._session = intercomId();
-    this._unsubscribe = await this._hass.connection.subscribeMessage(
-      (event) => this._handle(event.message),
-      { type: "remote_screens/intercom/subscribe", session: this._session },
-    );
+    const session = this._session;
+    let unsubscribe;
+    try {
+      unsubscribe = await this._hass.connection.subscribeMessage(
+        (event) => this._handle(event.message),
+        { type: "remote_screens/intercom/subscribe", session: this._session },
+      );
+    } catch (error) {
+      if (this._session !== session) return;
+      this._status = `Could not connect to intercom: ${error.message || "Signaling unavailable"}`;
+      this._render();
+      return;
+    }
+    if (this._session !== session) {
+      unsubscribe();
+      return;
+    }
+    this._unsubscribe = unsubscribe;
     this._send({
       type: "register",
       clientId: this._clientId,
@@ -71,8 +89,11 @@ class RemoteScreensIntercomCard extends HTMLElement {
   _stop() {
     window.clearInterval(this._heartbeat);
     window.clearTimeout(this._callTimer);
-    this._endMedia(false);
+    this._endMedia(true);
     if (this._unsubscribe) this._unsubscribe();
+    this._unsubscribe = null;
+    this._session = null;
+    this._started = false;
   }
 
   _send(frame) {
@@ -133,8 +154,8 @@ class RemoteScreensIntercomCard extends HTMLElement {
       this._status = `Calling ${this._name(clientId)}`;
       this._send({ type: "offer", to: clientId, sdp });
       this._armTimeout();
-    } catch (ignored) {
-      this._endMedia(true, "Call failed");
+    } catch (error) {
+      this._endMedia(true, error.message || "Call failed");
     }
     this._render();
   }
@@ -158,8 +179,8 @@ class RemoteScreensIntercomCard extends HTMLElement {
       this._status = `Incoming from ${this._name(from)}`;
       this._send({ type: "answer", to: from, sdp: answerSdp });
       this._armTimeout();
-    } catch (ignored) {
-      this._endMedia(true, "Call failed");
+    } catch (error) {
+      this._endMedia(true, error.message || "Call failed");
     }
   }
 
@@ -168,12 +189,28 @@ class RemoteScreensIntercomCard extends HTMLElement {
     const peer = new RTCPeerConnection({ iceServers: [] });
     this._peer = peer;
     this._canSendCandidates = false;
-    this._stream = await this._captureMicrophone();
-    if (this._stream) {
-      this._stream.getTracks().forEach((track) => peer.addTrack(track, this._stream));
-    } else {
-      peer.addTransceiver("audio", { direction: "recvonly" });
+    const audio = document.createElement("audio");
+    audio.autoplay = true;
+    // Keep audio outside the shadow root: _render replaces its contents on every update.
+    this.appendChild(audio);
+    this._audio = audio;
+    const remoteStream = new MediaStream();
+    audio.srcObject = remoteStream;
+    peer.ontrack = (event) => {
+      if (this._peer !== peer) return;
+      remoteStream.addTrack(event.track);
+      void this._resumeAudio();
+    };
+    const stream = await this._captureMicrophone();
+    if (this._peer !== peer) {
+      stream.getTracks().forEach((track) => track.stop());
+      throw new Error("Call ended");
     }
+    this._stream = stream;
+    stream.getAudioTracks().forEach((track) => {
+      track.enabled = !this._muted;
+      peer.addTrack(track, stream);
+    });
     peer.onicecandidate = (event) => {
       if (!event.candidate || !this._peerId || !this._canSendCandidates) return;
       this._send({
@@ -236,12 +273,35 @@ class RemoteScreensIntercomCard extends HTMLElement {
 
   async _captureMicrophone() {
     const devices = navigator.mediaDevices;
-    if (!devices || typeof devices.getUserMedia !== "function") return null;
+    if (!window.isSecureContext) {
+      throw new Error("Microphone requires HTTPS. Open Home Assistant over HTTPS (or localhost).");
+    }
+    if (!devices || typeof devices.getUserMedia !== "function") {
+      throw new Error("Microphone access is unavailable in this browser.");
+    }
     try {
       return await devices.getUserMedia({ audio: true, video: false });
-    } catch (ignored) {
-      return null;
+    } catch (error) {
+      if (error.name === "NotAllowedError" || error.name === "SecurityError") {
+        throw new Error("Microphone blocked. Allow microphone access for this page and try again.");
+      }
+      if (error.name === "NotFoundError") throw new Error("No microphone found. Connect a microphone and try again.");
+      throw new Error("Could not open the microphone. Check that it is available and try again.");
     }
+  }
+
+  async _resumeAudio() {
+    const audio = this._audio;
+    if (!audio) return;
+    try {
+      await audio.play();
+      if (this._audio !== audio) return;
+      this._playbackBlocked = false;
+    } catch (error) {
+      if (this._audio !== audio) return;
+      this._playbackBlocked = true;
+    }
+    this._render();
   }
 
   _gatheredSdp() {
@@ -285,6 +345,13 @@ class RemoteScreensIntercomCard extends HTMLElement {
     (this._stream ? this._stream.getTracks() : []).forEach((track) => track.stop());
     this._peer = null;
     this._stream = null;
+    if (this._audio) {
+      this._audio.pause();
+      this._audio.srcObject = null;
+      this._audio.remove();
+      this._audio = null;
+    }
+    this._playbackBlocked = false;
     this._pendingCandidates = [];
     this._remoteIsSet = false;
     this._canSendCandidates = false;
@@ -293,6 +360,7 @@ class RemoteScreensIntercomCard extends HTMLElement {
     this._busy = false;
     if (status) this._status = status;
     if (closing) {
+      closing.ontrack = null;
       closing.oniceconnectionstatechange = null;
       closing.close();
     }
@@ -336,6 +404,7 @@ class RemoteScreensIntercomCard extends HTMLElement {
           <div class="side">
             <strong>INTERCOM</strong>
             <span>${escapeText(this._status || "")}</span>
+            ${this._playbackBlocked ? '<button data-audio>Enable audio</button>' : ""}
             <button data-mute>${this._muted ? "Muted" : "Mute"}</button>
             <button data-hangup>Hang up</button>
           </div>
@@ -344,6 +413,7 @@ class RemoteScreensIntercomCard extends HTMLElement {
           </div>
         </div>
       </ha-card>`;
+    this._root.querySelector("[data-audio]")?.addEventListener("click", () => this._resumeAudio());
     this._root.querySelector("[data-mute]")?.addEventListener("click", () => this._toggleMute());
     this._root.querySelector("[data-hangup]")?.addEventListener("click", () => this._hangUp());
     this._root.querySelectorAll("[data-call]").forEach((button) => {
