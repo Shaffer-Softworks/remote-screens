@@ -72,7 +72,7 @@ object CardRenderer {
                         Modifier.size(
                             // TODO add space above and below the popup
                             docContext.units.px(panelW),
-                            docContext.units.px(panelH - 3),
+                            docContext.units.px(panelH - CARD_HEIGHT_SPACE),
                         ).clip(
                             docContext.rounded(CardChrome.PANEL_CORNER_DP),
                         ).background(docContext.role(Role.CARD)),
@@ -142,4 +142,5 @@ object CardRenderer {
 
     /** Colours a card reads, under a tile id of its own. */
     const val TILE = "card"
+    private const val CARD_HEIGHT_SPACE = 3
 }
