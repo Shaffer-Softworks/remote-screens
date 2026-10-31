@@ -70,8 +70,9 @@ object CardRenderer {
                 Column(
                     docContext.tap(
                         Modifier.size(
+                            // TODO add space above and below the popup
                             docContext.units.px(panelW),
-                            docContext.units.px(panelH),
+                            docContext.units.px(panelH - 3),
                         ).clip(
                             docContext.rounded(CardChrome.PANEL_CORNER_DP),
                         ).background(docContext.role(Role.CARD)),

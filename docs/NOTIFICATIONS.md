@@ -8,6 +8,20 @@ Choose individual tablets, all tablets showing selected screens, or explicitly *
 Selecting one tablet reaches only that tablet, even when others show the same screen. Overlapping
 recipients are deduplicated. Offline tablets are skipped and messages are not replayed on reconnect.
 
+## Install the updated components first
+
+This feature changes three separately installed components:
+
+1. Deploy the updated Remote Screens server/editor app.
+2. Update HA's `/config/custom_components/remote_screens/` with this checkout's
+   `custom_components/remote_screens/` directory, then restart Home Assistant to load the new Python code.
+3. Install the updated player APK on tablets for banners and alerts with wake disabled.
+
+`tools/deploy_ha_dev.sh` deploys the server/editor/APK bundle only; it does not update the HA custom integration.
+An app rebuild or integration reload alone does not load newly changed Python modules.
+After restarting HA, verify `remote_screens.send_notification` appears in Tools → Actions.
+If HA reports “Action not found,” check that the updated custom integration has been installed and HA restarted.
+
 ## Appearance
 
 - **Banner:** dashboard stays interactive outside the banner. Default duration: 10 seconds.

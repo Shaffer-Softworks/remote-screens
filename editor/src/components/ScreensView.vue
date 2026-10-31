@@ -9,6 +9,7 @@ import { attempt, playersOf, refreshLayout, refreshThemes, state, toast } from '
 import EnrollTabletPanel from './EnrollTabletPanel.vue'
 import MdiIcon from './MdiIcon.vue'
 import NotificationComposer from './NotificationComposer.vue'
+import IntercomDesk from './IntercomDesk.vue'
 
 const emit = defineEmits<{ edit: [screen: Screen]; themes: [] }>()
 
@@ -20,6 +21,7 @@ const adopted = computed(() => state.players.filter(player => player.screenId))
 
 const creating = ref(false)
 const enrolling = ref(false)
+const intercomOpen = ref(false)
 const notificationTargets = ref<string[] | null>(null)
 function notifyTablet(player: PlayerStatus): void {
   menu.value = null
@@ -374,10 +376,21 @@ function preview(screen: Screen) {
           <h3>Tablets</h3>
           <p class="muted hint">Each paired tablet shows one screen. Change it here at any time.</p>
         </div>
+        <button
+          :class="{ active: intercomOpen }"
+          :aria-expanded="intercomOpen"
+          aria-controls="intercom-desk"
+          title="Call a tablet from this browser"
+          @click="intercomOpen = !intercomOpen"
+        >
+          <MdiIcon name="phone" :size="18" /> Intercom
+        </button>
         <button :disabled="!adopted.length" @click="notificationTargets = []">
           <MdiIcon name="bell-ring-outline" :size="18" /> Send notification
         </button>
       </div>
+
+      <IntercomDesk v-if="intercomOpen" id="intercom-desk" class="intercom-panel" />
 
       <div class="card list">
         <div v-if="adopted.length" class="row player labels muted">
@@ -498,6 +511,20 @@ header h1 {
 .heading {
   margin-bottom: 12px;
   align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.heading button.active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+
+.intercom-panel {
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .hint {
