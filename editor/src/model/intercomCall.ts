@@ -10,6 +10,7 @@ export interface IntercomDeskState {
   status: string
   isMuted: boolean
   isBusy: boolean
+  playbackBlocked: boolean
   stations: IntercomStationRow[]
 }
 
@@ -55,6 +56,8 @@ export class IntercomBrowser {
   private socket: WebSocket | null = null
   private peer: RTCPeerConnection | null = null
   private localStream: MediaStream | null = null
+  private remoteAudio: HTMLAudioElement | null = null
+  private playbackBlocked = false
   private heartbeat: ReturnType<typeof setInterval> | null = null
   private callTimer: ReturnType<typeof setTimeout> | null = null
   private peerId: string | null = null
@@ -94,6 +97,20 @@ export class IntercomBrowser {
   hangUp(): void {
     if (this.peerId === null) return
     this.clearCall(true, 'Call ended')
+  }
+
+  async resumeAudio(): Promise<void> {
+    const audio = this.remoteAudio
+    if (audio === null) return
+    try {
+      await audio.play()
+      if (this.remoteAudio !== audio) return
+      this.playbackBlocked = false
+    } catch {
+      if (this.remoteAudio !== audio) return
+      this.playbackBlocked = true
+    }
+    this.publish()
   }
 
   toggleMute(): void {
@@ -171,8 +188,8 @@ export class IntercomBrowser {
       this.status = `Calling ${this.nameOf(targetId)}`
       this.armTimeout()
       this.publish()
-    } catch {
-      this.clearCall(true, 'Call failed')
+    } catch (error) {
+      this.clearCall(true, error instanceof Error ? error.message : 'Call failed')
     }
   }
 
@@ -196,8 +213,8 @@ export class IntercomBrowser {
       this.status = `Incoming from ${this.nameOf(from)}`
       this.armTimeout()
       this.publish()
-    } catch {
-      this.clearCall(true, 'Call failed')
+    } catch (error) {
+      this.clearCall(true, error instanceof Error ? error.message : 'Call failed')
     }
   }
 
@@ -206,13 +223,27 @@ export class IntercomBrowser {
     const peer = new RTCPeerConnection({ iceServers: [] })
     this.peer = peer
     this.canSendCandidates = false
-    const stream = await this.captureMicrophone()
-    if (stream === null) {
-      peer.addTransceiver('audio', { direction: 'recvonly' })
-    } else {
-      this.localStream = stream
-      stream.getTracks().forEach(track => peer.addTrack(track, stream))
+    const audio = document.createElement('audio')
+    audio.autoplay = true
+    document.body.appendChild(audio)
+    this.remoteAudio = audio
+    const remoteStream = new MediaStream()
+    audio.srcObject = remoteStream
+    peer.ontrack = event => {
+      if (this.peer !== peer) return
+      remoteStream.addTrack(event.track)
+      void this.resumeAudio()
     }
+    const stream = await this.captureMicrophone()
+    if (this.peer !== peer) {
+      stream.getTracks().forEach(track => track.stop())
+      throw new Error('Call ended')
+    }
+    this.localStream = stream
+    stream.getAudioTracks().forEach(track => {
+      track.enabled = !this.isMuted
+      peer.addTrack(track, stream)
+    })
     peer.onicecandidate = event => {
       const candidate = event.candidate
       const target = this.peerId
@@ -280,13 +311,23 @@ export class IntercomBrowser {
     }
   }
 
-  private async captureMicrophone(): Promise<MediaStream | null> {
+  private async captureMicrophone(): Promise<MediaStream> {
+    if (!window.isSecureContext) {
+      throw new Error('Microphone requires HTTPS. Open Home Assistant over HTTPS (or localhost).')
+    }
     const devices = navigator.mediaDevices
-    if (typeof devices?.getUserMedia !== 'function') return null
+    if (typeof devices?.getUserMedia !== 'function') {
+      throw new Error('Microphone access is unavailable in this browser.')
+    }
     try {
       return await devices.getUserMedia({ audio: true, video: false })
-    } catch {
-      return null
+    } catch (error) {
+      const name = error instanceof Error ? error.name : ''
+      if (name === 'NotAllowedError' || name === 'SecurityError') {
+        throw new Error('Microphone blocked. Allow microphone access for this page and try again.')
+      }
+      if (name === 'NotFoundError') throw new Error('No microphone found. Connect a microphone and try again.')
+      throw new Error('Could not open the microphone. Check that it is available and try again.')
     }
   }
 
@@ -319,6 +360,13 @@ export class IntercomBrowser {
     this.peer = null
     this.localStream?.getTracks().forEach(track => track.stop())
     this.localStream = null
+    if (this.remoteAudio !== null) {
+      this.remoteAudio.pause()
+      this.remoteAudio.srcObject = null
+      this.remoteAudio.remove()
+      this.remoteAudio = null
+    }
+    this.playbackBlocked = false
     this.pendingCandidates = []
     this.remoteIsSet = false
     this.canSendCandidates = false
@@ -327,6 +375,7 @@ export class IntercomBrowser {
     this.status = nextStatus
     this.publish()
     if (closing) {
+      closing.ontrack = null
       closing.oniceconnectionstatechange = null
       closing.close()
     }
@@ -347,7 +396,7 @@ export class IntercomBrowser {
 
   private publish(): void {
     const isBusy = this.phase === 'outgoing' || this.phase === 'incoming' || this.phase === 'live'
-    this.onChange({ status: this.status, isMuted: this.isMuted, isBusy, stations: this.stations })
+    this.onChange({ status: this.status, isMuted: this.isMuted, isBusy, playbackBlocked: this.playbackBlocked, stations: this.stations })
   }
 
   private clearTimer(timer: ReturnType<typeof setInterval> | ReturnType<typeof setTimeout> | null): void {
