@@ -1,5 +1,5 @@
 name: Remote Screens
-version: "0.1.44"
+version: "0.1.45"
 slug: remote_screens
 description: Home Assistant screens on Android tablets, drawn with Remote Compose
 url: https://github.com/Shaffer-Softworks/remote-screens
