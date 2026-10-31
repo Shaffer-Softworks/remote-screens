@@ -324,10 +324,12 @@ export class IntercomBrowser {
     } catch (error) {
       const name = error instanceof Error ? error.name : ''
       if (name === 'NotAllowedError' || name === 'SecurityError') {
-        throw new Error('Microphone blocked. Allow microphone access for this page and try again.')
+        throw new Error('Microphone blocked. Allow microphone access for this page and try again.', { cause: error })
       }
-      if (name === 'NotFoundError') throw new Error('No microphone found. Connect a microphone and try again.')
-      throw new Error('Could not open the microphone. Check that it is available and try again.')
+      if (name === 'NotFoundError') {
+        throw new Error('No microphone found. Connect a microphone and try again.', { cause: error })
+      }
+      throw new Error('Could not open the microphone. Check that it is available and try again.', { cause: error })
     }
   }
 
