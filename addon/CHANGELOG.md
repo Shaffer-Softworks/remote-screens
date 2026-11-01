@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.46
+
+- See the [v0.1.46](https://github.com/Shaffer-Softworks/remote-screens/releases/tag/v0.1.46) release notes; replace this line with curated notes before merging.
+
 ## 0.1.45
 
 - Improve intercom audio in the editor and dashboard card: play remote audio, offer **Enable audio**
