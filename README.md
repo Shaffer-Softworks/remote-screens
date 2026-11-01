@@ -11,9 +11,6 @@ Home Assistant; the tablets hold no Home Assistant token.
 Screens wear a theme (built-in or made in the editor) by day and another in dark mode and at night. Tablets can
 wake from standby via Home Assistant, proximity or face detection; the top bar can show Wi‑Fi and battery.
 
-The idea follows [Tessera](https://github.com/MaxGramser/homeassistant_espscreen), which does this for ESP32
-screens. No Tessera code or assets are used.
-
 Full guide: [GitHub Wiki](https://github.com/Shaffer-Softworks/remote-screens/wiki). How to pair and lay out a
 screen is also in [addon/DOCS.md](addon/DOCS.md).
 
