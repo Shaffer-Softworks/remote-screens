@@ -110,6 +110,25 @@ class MusicBindTest {
         assertEquals("3:15", formatMusicTime(TRACK_DURATION))
     }
 
+    @Test
+    fun elapsedTimeOnlyAdvancesOnCompletedSeconds() {
+        val entityState = mediaPlayer(
+            position = REPORTED_POSITION,
+            duration = TRACK_DURATION,
+            updatedAt = NOW_STAMP,
+        )
+
+        listOf(0L, 499L, 500L, 999L, 1000L, 1499L, 1500L, 1999L, 2000L)
+            .forEach { elapsedMillis ->
+                assertEquals(
+                    "0:${42 + elapsedMillis / 1000}",
+                    formatMusicTime(entityState.mediaPosition(NOW.plusMillis(elapsedMillis))!!),
+                    "Elapsed milliseconds: $elapsedMillis",
+                )
+            }
+        assertEquals("0:00", formatMusicTime(-0.6))
+    }
+
     private fun mediaPlayer(
         state: String = "playing",
         position: Double,

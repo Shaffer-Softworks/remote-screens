@@ -121,9 +121,10 @@ private fun SearchContent(
             .fillMaxSize()
             .pointerInput(Unit) {
                 awaitPointerEventScope {
+                    // Keep empty overlay space in hit testing without consuming child gestures.
+                    // Consuming in the Final pass can cancel LazyColumn before a drag starts.
                     while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Final)
-                        event.changes.forEach { it.consume() }
+                        awaitPointerEvent(PointerEventPass.Final)
                     }
                 }
             },
