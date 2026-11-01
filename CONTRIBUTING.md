@@ -35,3 +35,11 @@ workflow** on `main` with the new version. Player signing secrets are listed in 
 - User guide in-repo: [`addon/DOCS.md`](addon/DOCS.md) (also shown in the Supervisor add-on panel)
 - Deep guide: [GitHub Wiki](https://github.com/Shaffer-Softworks/remote-screens/wiki)
 - Remote Compose notes: [`docs/REMOTE_COMPOSE.md`](docs/REMOTE_COMPOSE.md)
+- Notifications: [`docs/NOTIFICATIONS.md`](docs/NOTIFICATIONS.md)
+- Intercom: [`docs/INTERCOM.md`](docs/INTERCOM.md)
+- Verification: [`docs/TESTING.md`](docs/TESTING.md)
+
+The wiki is a separate Git repository (`https://github.com/Shaffer-Softworks/remote-screens.wiki.git`).
+When changing user-facing behavior, update the relevant repository guide and wiki page together, including
+Home and sidebar links for new pages. Keep notification and intercom wiki guides aligned with their `docs/`
+counterparts. Validate relative links in the repository and page links in the wiki before publishing.

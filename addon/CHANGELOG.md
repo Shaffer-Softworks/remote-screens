@@ -2,15 +2,19 @@
 
 ## 0.1.45
 
-- See the [v0.1.45](https://github.com/Shaffer-Softworks/remote-screens/releases/tag/v0.1.45) release notes; replace this line with curated notes before merging.
+- Improve intercom audio in the editor and dashboard card: play remote audio, offer **Enable audio**
+  when autoplay is blocked, and explain HTTPS and microphone permission errors. Clean up calls and
+  recover subscriptions when panels or cards reopen.
 
 ## 0.1.44
 
-- See the [v0.1.44](https://github.com/Shaffer-Softworks/remote-screens/releases/tag/v0.1.44) release notes; replace this line with curated notes before merging.
+- Move the editor intercom to **Tablets → Intercom** and adapt its layout to smaller windows.
+- Clarify that notifications require separate add-on, integration, and player updates.
 
 ## 0.1.43
 
-- See the [v0.1.43](https://github.com/Shaffer-Softworks/remote-screens/releases/tag/v0.1.43) release notes; replace this line with curated notes before merging.
+- Add silent tablet banners and alerts with explicit tablet/screen targeting, optional wake,
+  action buttons, and per-tablet delivery results. Offline notifications are not queued.
 
 ## 0.1.42
 

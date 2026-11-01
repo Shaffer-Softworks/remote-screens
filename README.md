@@ -81,6 +81,12 @@ How to pair a tablet and lay out a screen is in [addon/DOCS.md](addon/DOCS.md) a
 Send banners and alerts from **Tablets → Send notification** or Home Assistant automations.
 See [Device notifications](docs/NOTIFICATIONS.md) for targeting, actions, and delivery results.
 
+## Intercom
+
+Call tablets from a full-page Intercom tile, **Tablets → Intercom** in the editor, or a Home Assistant
+dashboard card. Browser calls need HTTPS and microphone permission; audio needs a direct local network path.
+See [Intercom](docs/INTERCOM.md) for setup and audio troubleshooting.
+
 ## Kiosk lock
 
 A screen's **Kiosk lock** (a switch in Home Assistant, or a setting in the editor) keeps its tablet on Remote

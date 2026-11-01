@@ -9,6 +9,12 @@ cd editor && npm ci && npm test
 python -m pip install -r requirements_test.txt && python -m pytest
 ```
 
+The Home Assistant dashboard intercom card has its own browser-mock regression suite:
+
+```sh
+node --test custom_components/remote_screens/frontend/intercom-card.test.cjs
+```
+
 Detekt (Kotlin style): `./gradlew :shared:detekt :server:detekt :player:detekt`
 
 ## Demo server
@@ -43,3 +49,14 @@ adb shell am start -n tech.shaffersoftworks.remotescreens.player/.MainActivity -
 
 The Remote Compose JVM spike is covered by `RcSpikeTest`; this section is the on-device check that taps reach the
 add-on and live variables update.
+
+## Intercom checks
+
+Use two connected tablets on the local network, both showing an Intercom page. Call between them,
+check audio in both directions, mute/unmute, and hang up from each end. Repeat from **Tablets → Intercom**
+and a Home Assistant dashboard card over HTTPS, allowing microphone access.
+
+Check denied microphone permission, a missing microphone, and blocked autoplay (**Enable audio**).
+End the call and close/reopen the panel or card: the microphone should stop after closing, and the
+station list and audio should work again after reopening. Check narrow and wide editor windows.
+The demo home alone cannot verify real microphone permissions or peer-to-peer audio.
