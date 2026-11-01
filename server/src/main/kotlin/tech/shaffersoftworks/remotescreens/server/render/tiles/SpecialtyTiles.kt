@@ -3,15 +3,19 @@
 package tech.shaffersoftworks.remotescreens.server.render.tiles
 
 import androidx.compose.remote.creation.dsl.Modifier
+import androidx.compose.remote.creation.dsl.RcBorderShape
 import androidx.compose.remote.creation.dsl.RcColor
+import androidx.compose.remote.creation.dsl.RcColorValue
 import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning
 import androidx.compose.remote.creation.dsl.RcContentScale
+import androidx.compose.remote.creation.dsl.RcDp
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcPaintStyle
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
+import androidx.compose.remote.creation.dsl.border
 import androidx.compose.remote.creation.dsl.clip
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.fillMaxWidth
@@ -291,7 +295,18 @@ fun DocContext.photo(
         picture(PictureSlot(slot, pic, px, px, 0, round = true))
         scope.Image(
             image(slot, px, px),
-            Modifier.size(units.px(sizeDp), units.px(sizeDp)).clip(rounded(sizeDp / 2f)),
+            Modifier
+                .size(
+                    units.px(sizeDp),
+                    units.px(sizeDp),
+                )
+                .clip(rounded(sizeDp / 2f))
+                .border(
+                    width = RcDp(2f),
+                    roundedCorner = RcDp(2f),
+                    color = RcColorValue(0),
+                    shape = RcBorderShape.Circle,
+                ),
             contentScale = RcContentScale.Crop,
         )
     } else {

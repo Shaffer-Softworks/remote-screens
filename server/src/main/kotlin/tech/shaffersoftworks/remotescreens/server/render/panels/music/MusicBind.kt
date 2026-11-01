@@ -9,7 +9,6 @@ import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.Instant
 import java.time.OffsetDateTime
-import kotlin.math.roundToInt
 
 /** Now-playing vars and transport predictions for a Music Assistant tile. */
 internal fun DocContext.bindMusicNowPlaying(tileId: String, entityId: String) {
@@ -97,7 +96,8 @@ internal fun mediaProgress(position: Double?, duration: Double?): Float {
 }
 
 internal fun formatMusicTime(seconds: Double): String {
-    val total = seconds.roundToInt().coerceAtLeast(0)
+    // Show completed seconds; rounding advances the counter halfway through each second.
+    val total = seconds.toInt().coerceAtLeast(0)
     val minutes = total / MusicMetrics.SECONDS_PER_MINUTE
     val secs = total % MusicMetrics.SECONDS_PER_MINUTE
     return "$minutes:${secs.toString().padStart(2, '0')}"
