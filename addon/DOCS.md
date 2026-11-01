@@ -174,8 +174,20 @@ English in other languages.
 
 The **Remote Screens** integration (installed with HACS) adds, for each screen, entities for brightness, dark
 mode, standby, night mode, back-to-home, the page shown, kiosk lock, and wake-on-proximity /
-wake-on-face, and the services `remote_screens.show_alert`, `remote_screens.open_page`, `remote_screens.wake`
-and `remote_screens.close`. The add-on announces itself, so Home Assistant offers to set the integration up.
+wake-on-face, and the services `remote_screens.show_alert`, `remote_screens.open_page`, `remote_screens.wake`,
+`remote_screens.close`, and `remote_screens.send_notification`. The add-on announces itself, so Home Assistant
+offers to set the integration up.
+
+### Device notifications
+
+Use **Tablets → Send notification**, a tablet's menu, or `remote_screens.send_notification` to send a silent
+banner or modal alert. Select individual tablets, screens (all tablets showing them), or explicitly all paired
+tablets. Offline tablets are skipped; messages are not queued. **Wake screen** is off by default.
+
+Update the add-on, player APK, and Home Assistant integration for full support. Restart Home Assistant after
+updating the integration. Delivery results (`sent`, `offline`, `unsupported`, `failed`) describe dispatch to
+the tablet connection, not whether someone read the message. The [notification guide](https://github.com/Shaffer-Softworks/remote-screens/wiki/Device-notifications)
+has automation examples, persistent alerts, action buttons, and compatibility details.
 
 ### Tablet sensors
 
@@ -226,7 +238,9 @@ work the same way.
 ## Updating the tablets
 
 When the add-on has a newer player app than a tablet, the tablet offers to install it. Android asks once for
-permission to install apps from Remote Screens, then asks you to confirm each update.
+permission to install apps from Remote Screens, then asks you to confirm each update. To check manually,
+long press the top bar to open settings and choose **Check for updates**. Tablets accept only APKs signed
+with the same key as the installed app.
 
 The player app's ID changed from `dev.remotescreens.player` to `tech.shaffersoftworks.remotescreens.player`, so a
 tablet running the old app cannot update to it. Uninstall the old app, install the new one and pair the tablet again.
@@ -244,11 +258,18 @@ The add-on uses the host network so tablets can find it over mDNS (`_remotescree
 
 ## Intercom
 
-A full **Intercom** tile, from the editor's Other tiles, is a page of stations. A tablet joins the call list only while that page is on its screen. Call starts the audio; the other tablet answers on its own. Mute turns off this tablet's microphone, and Hang up ends the call.
+Add a full-page **Intercom** tile from **Other tiles**. Tablets join the station list while showing that
+page and answer incoming calls automatically. Allow microphone access when prompted. **Mute** disables
+your microphone; **Hang up** ends the call.
 
-The same call can be placed from the **Intercom** button in the Remote Screens panel, or from a `custom:remote-screens-intercom` card on any dashboard. A card with no options lists the stations that are online. Set its `station` option to a tablet's name, such as `Kitchen`, to pin that one.
+From the editor, open **Tablets → Intercom**, choose a station and press **Call**. A Home Assistant dashboard
+can join with a `custom:remote-screens-intercom` card. Browser calls require HTTPS (or localhost) and microphone
+permission. If playback is blocked, press **Enable audio**.
 
-Audio travels directly between the two ends, on the local network. A phone away from home, or Home Assistant opened through Nabu Casa, can open the page and the card, and the call will not connect. There is no relay. The standalone signaling add-on is unchanged and keeps port 8765 for the tablets that still point at it.
+Audio needs a direct local network path between callers; there is no relay for off-site callers or Nabu Casa.
+Remote Screens signaling uses port 8766; the standalone signaling add-on keeps 8765.
+See the [intercom guide](https://github.com/Shaffer-Softworks/remote-screens/wiki/Intercom) for card setup and
+troubleshooting.
 
 ## Data
 
