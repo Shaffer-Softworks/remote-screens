@@ -298,14 +298,14 @@ fun DocContext.photo(
             Modifier
                 .size(
                     units.px(sizeDp),
-                    units.px(sizeDp)
+                    units.px(sizeDp),
                 )
                 .clip(rounded(sizeDp / 2f))
                 .border(
                     width = RcDp(2f),
                     roundedCorner = RcDp(2f),
                     color = RcColorValue(0),
-                    shape = RcBorderShape.Circle
+                    shape = RcBorderShape.Circle,
                 ),
             contentScale = RcContentScale.Crop,
         )
