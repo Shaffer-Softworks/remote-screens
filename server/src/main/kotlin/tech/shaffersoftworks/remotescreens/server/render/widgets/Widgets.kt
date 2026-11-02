@@ -272,12 +272,16 @@ fun DocContext.initials(name: String, sizeDp: Float, bg: RcColor, ink: RcColor) 
     val circle = Modifier.size(
         units.px(sizeDp),
         units.px(sizeDp),
-    ).clip(rounded(sizeDp / 2f)).background(bg)
-    scope.Box(
-        circle,
-        horizontal = RcHorizontalPositioning.Center,
-        vertical = RcVerticalPositioning.Center,
-    ) {
-        this@initials.label(letters, sizeDp * INITIALS_TEXT_RATIO, ink, weight = Weight.SEMI_BOLD)
+    ).clip(rounded(sizeDp / 2f)).background(fixed(0xFF000000.toInt())).padding(1f)
+    scope.Box(circle) {
+        Box(
+            Modifier.fillMaxSize()
+                .clip(this@initials.rounded((sizeDp / 2f - 1f / units.density).coerceAtLeast(0f)))
+                .background(bg),
+            horizontal = RcHorizontalPositioning.Center,
+            vertical = RcVerticalPositioning.Center,
+        ) {
+            this@initials.label(letters, sizeDp * INITIALS_TEXT_RATIO, ink, weight = Weight.SEMI_BOLD)
+        }
     }
 }

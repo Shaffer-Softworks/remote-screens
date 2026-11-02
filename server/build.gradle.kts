@@ -49,6 +49,32 @@ dependencies {
     testImplementation(libs.coroutines.test)
 }
 
+// Preview documents are produced on the JVM; Android never loads the server's dependencies.
+val preview = sourceSets.create("preview") {
+    compileClasspath += sourceSets.main.get().output
+    runtimeClasspath += sourceSets.main.get().output
+}
+configurations[preview.implementationConfigurationName].extendsFrom(configurations.implementation.get())
+configurations[preview.runtimeOnlyConfigurationName].extendsFrom(configurations.runtimeOnly.get())
+
+tasks.register<JavaExec>("generatePreviews") {
+    group = "verification"
+    description = "Render the server UI catalogue for Android Studio previews."
+    classpath = preview.runtimeClasspath
+    mainClass.set("tech.shaffersoftworks.remotescreens.server.preview.GeneratePreviewsKt")
+    val destination = rootProject.layout.projectDirectory.dir("preview/build/generated/serverPreviews")
+    val filter = providers.gradleProperty("previewFilter").getOrElse("")
+    args(destination.asFile.absolutePath, filter)
+    inputs.property("previewFilter", filter)
+    inputs.files(sourceSets.main.get().allSource, preview.allSource)
+    outputs.dir(destination)
+}
+
+dependencies { testImplementation(preview.output) }
+
+// The standard Detekt task does not include custom JVM source sets.
+tasks.named("detekt") { dependsOn("detektPreview") }
+
 tasks.test {
     systemProperty("fixtures.dir", rootProject.file("tests/fixtures").absolutePath)
     inputs.dir(rootProject.file("tests/fixtures")).withPropertyName("fixtures")
