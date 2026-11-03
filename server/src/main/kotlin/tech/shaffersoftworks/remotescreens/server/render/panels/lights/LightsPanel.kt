@@ -89,7 +89,7 @@ fun DocContext.lightsPanel(tile: Tile, box: TileBox) {
     val layout = LightsLayout(pageScale(box), box.w, box.h)
     scope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@lightsPanel
-        doc.roomsColumn(tile.id, rooms, room, layout)
+        doc.roomsColumn(tileId = tile.id, rooms = rooms, selected = room, layout = layout)
         doc.devicesColumn(tile.id, room, layout)
     }
 }
@@ -105,7 +105,13 @@ fun DocContext.lightsDialogLayer(tile: Tile, box: TileBox, screenW: Float, scree
         room != null && entityId in room.entityIds && states[entityId]?.supportsLightDetail() == true
     }
     if (room != null && detailEntityId != null) {
-        lightDetailDialog(tile.id, detailEntityId, room.name, ui, LightsLayout(pageScale(box), screenW, screenH))
+        lightDetailDialog(
+            tileId = tile.id,
+            entityId = detailEntityId,
+            roomName = room.name,
+            ui = ui,
+            layout = LightsLayout(pageScale(box), screenW, screenH),
+        )
     }
 }
 
@@ -133,7 +139,7 @@ private fun DocContext.roomsColumn(
                 Spacer(Modifier.height(doc.units.px(headerH)))
                 rooms.forEachIndexed { index, room ->
                     if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.ROOM_GAP_DP))))
-                    doc.roomRow(tileId, room, room == selected, layout)
+                    doc.roomRow(tileId = tileId, room = room, isSelected = room == selected, layout = layout)
                 }
             }
         }
@@ -159,10 +165,15 @@ private fun DocContext.roomsHeader(layout: LightsLayout, headerH: Float) {
         }
         Spacer(Modifier.height(doc.units.px(layout.dp(M.TITLE_GAP_DP))))
         doc.label(
-            doc.i18n.t("ui.lights_title"),
-            layout.sp(M.TITLE_SP),
-            doc.role(Role.INK),
-            modifier = Modifier.padding(doc.units.px(layout.dp(M.TITLE_START_DP)), 0f, 0f, 0f)
+            text = doc.i18n.t("ui.lights_title"),
+            sp = layout.sp(M.TITLE_SP),
+            color = doc.role(Role.INK),
+            modifier = Modifier.padding(
+                start = doc.units.px(layout.dp(M.TITLE_START_DP)),
+                top = 0f,
+                end = 0f,
+                bottom = 0f,
+            )
                 .height(doc.units.px(layout.line(M.TITLE_SP))),
         )
     }
@@ -175,7 +186,12 @@ private fun DocContext.roomRow(tileId: String, room: LightsRoom, isSelected: Boo
     scope.Column(
         tap(
             Modifier.fillMaxWidth().height(units.px(layout.dp(M.ROOM_H_DP)))
-                .padding(units.px(layout.dp(M.ROOM_PAD_START_DP)), 0f, units.px(layout.dp(M.ROOM_PAD_END_DP)), 0f),
+                .padding(
+                    start = units.px(layout.dp(M.ROOM_PAD_START_DP)),
+                    top = 0f,
+                    end = units.px(layout.dp(M.ROOM_PAD_END_DP)),
+                    bottom = 0f,
+                ),
             ActionRef(tileId, "lights_room", room.areaId),
         ),
         vertical = RcColumnVerticalPositioning.Center,
@@ -227,7 +243,14 @@ private fun DocContext.roomsSpinner(layout: LightsLayout) {
             }
             drawCircle(sizePx / 2f, sizePx / 2f, sizePx / 2f - inset)
             paint { color(doc.fixed(Rpi.LightsSpinner)) }
-            drawArc(inset, inset, sizePx - inset, sizePx - inset, M.SPINNER_START_DEG, M.SPINNER_SWEEP_DEG)
+            drawArc(
+                left = inset,
+                top = inset,
+                right = sizePx - inset,
+                bottom = sizePx - inset,
+                startAngle = M.SPINNER_START_DEG,
+                sweepAngle = M.SPINNER_SWEEP_DEG,
+            )
         }
     }
 }
@@ -237,7 +260,7 @@ private fun DocContext.devicesColumn(tileId: String, room: LightsRoom?, layout: 
     val pad = units.px(layout.dp(M.DEVICES_PAD_DP))
     scope.Column(
         Modifier.horizontalWeight(1f).fillMaxHeight()
-            .padding(pad, units.px(layout.dp(M.COLUMN_TOP_DP)), pad, pad),
+            .padding(start = pad, top = units.px(layout.dp(M.COLUMN_TOP_DP)), end = pad, bottom = pad),
     ) {
         val doc = this@devicesColumn
         if (room == null) {
@@ -265,10 +288,15 @@ private fun DocContext.devicesColumn(tileId: String, room: LightsRoom?, layout: 
                     .background(doc.role(Role.PAGE)),
             ) {
                 doc.label(
-                    room.name,
-                    layout.sp(M.ROOM_TITLE_SP),
-                    doc.role(Role.INK),
-                    modifier = Modifier.padding(doc.units.px(layout.dp(M.ROOM_TITLE_START_DP)), 0f, 0f, 0f)
+                    text = room.name,
+                    sp = layout.sp(M.ROOM_TITLE_SP),
+                    color = doc.role(Role.INK),
+                    modifier = Modifier.padding(
+                        start = doc.units.px(layout.dp(M.ROOM_TITLE_START_DP)),
+                        top = 0f,
+                        end = 0f,
+                        bottom = 0f,
+                    )
                         .height(doc.units.px(layout.line(M.ROOM_TITLE_SP))),
                 )
             }
@@ -299,9 +327,9 @@ private fun DocContext.selectRoomPrompt(layout: LightsLayout) {
         doc.icon("gesture-tap", layout.dp(M.PROMPT_ICON_DP), doc.role(Role.INK_DIM))
         Spacer(Modifier.height(doc.units.px(layout.dp(M.PROMPT_GAP_DP))))
         doc.label(
-            doc.i18n.t("ui.lights_select_room"),
-            layout.sp(M.PROMPT_SP),
-            doc.role(Role.INK_DIM),
+            text = doc.i18n.t("ui.lights_select_room"),
+            sp = layout.sp(M.PROMPT_SP),
+            color = doc.role(Role.INK_DIM),
             align = RcTextAlign.Center,
         )
     }

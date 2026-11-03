@@ -1,0 +1,55 @@
+---
+description: Detekt NamedArguments — name parameters on multi-arg Kotlin calls
+globs: "**/*.kt,**/*.kts"
+alwaysApply: false
+---
+
+# Kotlin: named arguments (Detekt `NamedArguments`)
+
+**`NamedArguments`** (in `config/detekt/detekt.yml`) flags calls with more than **3** unnamed arguments.
+
+## What to do
+
+When a call has several parameters (especially booleans, colours, sizes, or same-typed values), **name them** at the call site — including when the expression already matches the parameter name.
+
+```kotlin
+// Prefer
+levelBar(
+    level = float(Vars.entity(entityId, Vars.KEY_LEVEL)),
+    widthDp = widthDp,
+    heightDp = C.LEVEL_BAR_HEIGHT_DP,
+    fill = color(Vars.tile(tile.id, Vars.KEY_ICON)),
+    track = role(Role.TRACK),
+    steps = C.LEVEL_STEPS,
+) { step -> … }
+
+segmentedLevelBar(
+    entityId = entityId,
+    levelKey = Vars.KEY_LEVEL,
+    widthDp = widthDp,
+    heightDp = C.TILE_SEG_BAR_H_DP,
+    steps = C.LEVEL_STEPS,
+    levelOf = { states -> … },
+    fillRole = Role.ACCENT,
+    trackRole = Role.TRACK,
+) { step -> … }
+
+// Avoid — positional soup past a few args
+levelBar(float(…), widthDp, C.LEVEL_BAR_HEIGHT_DP, color(…), role(Role.TRACK), C.LEVEL_STEPS) { … }
+```
+
+## Pragmatic limits
+
+- Short calls (≤ 3 args) may stay positional: `gap(C.GAP_10_DP)`, `label(name, Type.BODY, ink)`.
+- Trailing lambdas stay trailing; name the parameters *before* the lambda.
+- Do not invent names for unused `it` in one-liners.
+
+## After edits
+
+Run `./gradlew :server:detekt` (or the touched module). Prefer fixing call sites you touch.
+
+Existing debt lives in type-specific baselines (`server/detekt-baseline-main.xml`, `…-preview.xml`). Only regenerate after enabling or tightening this rule:
+
+```bash
+./gradlew :server:detektBaselineMain :server:detektBaselinePreview
+```

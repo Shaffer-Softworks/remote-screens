@@ -87,9 +87,19 @@ internal fun DocContext.deviceRow(tileId: String, entityId: String, layout: Ligh
         null
     }
     val padH = units.px(layout.dp(M.ROW_PAD_H_DP))
-    scope.Column(Modifier.fillMaxWidth().padding(0f, 0f, 0f, units.px(layout.dp(M.ROW_BOTTOM_DP)))) {
+    scope.Column(
+        Modifier.fillMaxWidth()
+            .padding(start = 0f, top = 0f, end = 0f, bottom = units.px(layout.dp(M.ROW_BOTTOM_DP))),
+    ) {
         val doc = this@deviceRow
-        Row(Modifier.padding(padH, doc.units.px(layout.dp(M.ROW_HEADER_TOP_DP)), padH, 0f)) {
+        Row(
+            Modifier.padding(
+                start = padH,
+                top = doc.units.px(layout.dp(M.ROW_HEADER_TOP_DP)),
+                end = padH,
+                bottom = 0f,
+            ),
+        ) {
             Row(doc.tap(Modifier, detailRef), vertical = RcVerticalPositioning.Center) {
                 doc.icon(
                     entityState.rowIcon(),
@@ -104,16 +114,16 @@ internal fun DocContext.deviceRow(tileId: String, entityId: String, layout: Ligh
             val sliderW = layout.devicesW - layout.dp(M.ROW_PAD_H_DP + M.SLIDER_END_DP)
             Box(
                 Modifier.padding(
-                    padH,
-                    doc.units.px(layout.dp(M.SLIDER_TOP_DP)),
-                    doc.units.px(layout.dp(M.SLIDER_END_DP)),
-                    0f,
+                    start = padH,
+                    top = doc.units.px(layout.dp(M.SLIDER_TOP_DP)),
+                    end = doc.units.px(layout.dp(M.SLIDER_END_DP)),
+                    bottom = 0f,
                 ),
             ) {
                 doc.rowSlider(entityId, sliderW, layout)
             }
         }
-        Box(Modifier.padding(padH, doc.units.px(layout.dp(M.SWITCH_TOP_DP)), padH, 0f)) {
+        Box(Modifier.padding(start = padH, top = doc.units.px(layout.dp(M.SWITCH_TOP_DP)), end = padH, bottom = 0f)) {
             doc.rowSwitch(entityState, layout)
         }
     }
@@ -142,13 +152,36 @@ private fun DocContext.rowSlider(entityId: String, widthDp: Float, layout: Light
             val thumbX = level * (w - thumbW) + thumbW / 2f
             val activeEnd = max(thumbX - (gap + thumbW / 2f), 0f)
             val inactiveStart = thumbX + (gap + thumbW / 2f)
-            sliderSegment(0f.rf, activeEnd, top, bottom, track / 2f, inner, doc.fixed(Rpi.LightsOn))
-            sliderSegment(inactiveStart, w.rf, top, bottom, inner, track / 2f, doc.role(Role.TRACK))
+            sliderSegment(
+                left = 0f.rf,
+                right = activeEnd,
+                top = top,
+                bottom = bottom,
+                startCorner = track / 2f,
+                endCorner = inner,
+                fill = doc.fixed(Rpi.LightsOn),
+            )
+            sliderSegment(
+                left = inactiveStart,
+                right = w.rf,
+                top = top,
+                bottom = bottom,
+                startCorner = inner,
+                endCorner = track / 2f,
+                fill = doc.role(Role.TRACK),
+            )
             paint { color(doc.fixed(Rpi.LightsOn)) }
             val stop = doc.units.px(layout.dp(M.SLIDER_STOP_DP))
             drawCircle(w - track / 2f, h / 2f, stop / 2f)
             paint { color(doc.fixed(Rpi.White)) }
-            drawRoundRect(thumbX - thumbW / 2f, 0f.rf, thumbX + thumbW / 2f, h.rf, (thumbW / 2f).rf, (thumbW / 2f).rf)
+            drawRoundRect(
+                left = thumbX - thumbW / 2f,
+                top = 0f.rf,
+                right = thumbX + thumbW / 2f,
+                bottom = h.rf,
+                radiusX = (thumbW / 2f).rf,
+                radiusY = (thumbW / 2f).rf,
+            )
         }
         Row(Modifier.size(w, h)) {
             for (step in 1..steps) {
@@ -177,11 +210,25 @@ private fun RcCanvasScope.sliderSegment(
         style(RcPaintStyle.Fill)
     }
     val corner = maxOf(startCorner, endCorner)
-    drawRoundRect(left, top.rf, right, bottom.rf, corner.rf, corner.rf)
+    drawRoundRect(
+        left = left,
+        top = top.rf,
+        right = right,
+        bottom = bottom.rf,
+        radiusX = corner.rf,
+        radiusY = corner.rf,
+    )
     val small = minOf(startCorner, endCorner)
     val squareLeft = if (startCorner < endCorner) left else max(left, right - corner)
     val squareRight = if (startCorner < endCorner) (left + corner).min(right) else right
-    drawRoundRect(squareLeft, top.rf, squareRight, bottom.rf, small.rf, small.rf)
+    drawRoundRect(
+        left = squareLeft,
+        top = top.rf,
+        right = squareRight,
+        bottom = bottom.rf,
+        radiusX = small.rf,
+        radiusY = small.rf,
+    )
 }
 
 /**
@@ -202,8 +249,8 @@ private fun DocContext.rowSwitch(entityState: EntityState, layout: LightsLayout)
     val touchH = units.px(layout.dp(M.SWITCH_TOUCH_H_DP))
     scope.Box(Modifier.size(w, touchH), vertical = RcVerticalPositioning.Center) {
         val doc = this@rowSwitch
-        doc.switchTrack(entityId, isOn = true, trackH, layout, offRef)
-        doc.switchTrack(entityId, isOn = false, trackH, layout, onRef)
+        doc.switchTrack(entityId = entityId, isOn = true, trackH = trackH, layout = layout, ref = offRef)
+        doc.switchTrack(entityId = entityId, isOn = false, trackH = trackH, layout = layout, ref = onRef)
     }
 }
 

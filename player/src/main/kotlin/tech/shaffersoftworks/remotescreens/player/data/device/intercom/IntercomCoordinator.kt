@@ -42,12 +42,12 @@ class IntercomCoordinator @Inject constructor(
         stop()
         signature = next
         val opened = IntercomSession(
-            link,
-            audio,
-            scope,
-            IntercomRegistration(url, clientId, displayName),
-            onReport,
-            onWake,
+            link = link,
+            audio = audio,
+            scope = scope,
+            registration = IntercomRegistration(url, clientId, displayName),
+            onReport = onReport,
+            onWake = onWake,
         )
         session = opened
         opened.start()

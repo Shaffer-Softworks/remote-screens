@@ -89,24 +89,29 @@ internal class PreviewSession(
     val demo get() = environment.demo
     val extraPages get() = environment.extraPages
     val wall = Device(WALL_WIDTH, WALL_HEIGHT, 1f)
-    private val i18n = I18n("en", I18n.load("en"), emptyMap(), true)
+    private val i18n = I18n(
+        language = "en",
+        ownWords = I18n.load("en"),
+        homeAssistantWords = emptyMap(),
+        is24Hour = true,
+    )
 
     fun input(
         states: Map<String, EntityState> = originalStates,
         renderData: RenderData = data,
         intercom: IntercomView = IntercomView(
-            true,
-            "Ready to call",
-            false,
-            null,
-            listOf(IntercomStation("kitchen", "Kitchen"), IntercomStation("bedroom", "Bedroom")),
+            supportsCalls = true,
+            status = "Ready to call",
+            isBusy = false,
+            connectedId = null,
+            stations = listOf(IntercomStation("kitchen", "Kitchen"), IntercomStation("bedroom", "Bedroom")),
         ),
     ) = RenderInput(
-        states,
-        i18n,
-        environment.config,
-        renderData,
-        palette,
+        states = states,
+        i18n = i18n,
+        homeAssistantConfig = environment.config,
+        data = renderData,
+        palette = palette,
         supportsCalendarDialogs = true,
         intercom = intercom,
     )
@@ -117,7 +122,13 @@ internal class PreviewSession(
         renderInput: RenderInput = input(),
         device: Device = wall,
         render: () -> RenderedDoc,
-    ) = output.emit(group, "$label · $themeName", device, renderInput, render)
+    ) = output.emit(
+        group = group,
+        label = "$label · $themeName",
+        device = device,
+        input = renderInput,
+        render = render,
+    )
 
     fun page(
         group: String,
@@ -126,8 +137,13 @@ internal class PreviewSession(
         renderInput: RenderInput = input(),
         canvas: PageCanvas = PageCanvas(),
     ) {
-        val screen = previewScreen(page, canvas.chrome, canvas.grid.cols, canvas.grid.rows)
-        emit(group, label, renderInput, canvas.device) {
+        val screen = previewScreen(
+            page = page,
+            chrome = canvas.chrome,
+            cols = canvas.grid.cols,
+            rows = canvas.grid.rows,
+        )
+        emit(group = group, label = label, renderInput = renderInput, device = canvas.device) {
             ScreenRenderer.render(screen, canvas.device, renderInput)
         }
     }

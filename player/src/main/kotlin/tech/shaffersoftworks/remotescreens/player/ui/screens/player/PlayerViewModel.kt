@@ -445,12 +445,12 @@ class PlayerViewModel @Inject constructor(
         val server = connectionRepository.server.value ?: return
         val token = preferencesRepository.token.first() ?: return
         val video = SlotVideo(
-            message.rev,
-            message.componentId,
-            "http://$server${message.path}",
-            token,
-            message.crop,
-            message.page,
+            revision = message.rev,
+            componentId = message.componentId,
+            url = "http://$server${message.path}",
+            token = token,
+            crop = message.crop,
+            page = message.page,
         )
         updateRemoteScreen { it.withVideo(message.slot, video) }
     }
@@ -546,9 +546,9 @@ class PlayerViewModel @Inject constructor(
     private fun sendAction(slot: Slot, revision: Int, metadata: String) {
         send(
             PlayerMessage.Action(
-                slot,
-                revision,
-                metadata,
+                slot = slot,
+                rev = revision,
+                metadata = metadata,
                 page = _viewState.value.remoteScreen.page,
             ),
         )
@@ -557,7 +557,14 @@ class PlayerViewModel @Inject constructor(
     /** The add-on starts the camera's stream again, as Home Assistant ends one nobody watched for a while. */
     fun onVideoFailed(slot: Slot, video: SlotVideo, httpCode: Int?) {
         updateRemoteScreen { it.withoutVideo(slot, video) }
-        send(PlayerMessage.VideoFailed(slot, video.revision, video.componentId, httpCode))
+        send(
+            PlayerMessage.VideoFailed(
+                slot = slot,
+                rev = video.revision,
+                componentId = video.componentId,
+                httpCode = httpCode,
+            ),
+        )
     }
 
     private suspend fun onUpdateAvailable(update: ServerMessage.UpdateAvailable) {
@@ -1215,7 +1222,7 @@ class PlayerViewModel @Inject constructor(
                 PlayerEvent.StopScreenPinning,
             )
         }
-        val installed = updateRepository.install(server, update.path, token, silent = silent)
+        val installed = updateRepository.install(server = server, path = update.path, token = token, silent = silent)
         if (!installed) {
             _events.send(PlayerEvent.ShowMessageResource(R.string.update_failed))
             _events.send(PlayerEvent.ReapplyKiosk)

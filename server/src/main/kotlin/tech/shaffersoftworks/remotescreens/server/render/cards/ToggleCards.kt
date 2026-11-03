@@ -30,17 +30,17 @@ internal fun DocContext.lockCard(entityId: String, entityState: EntityState?) {
     gap(CardChrome.PANEL_CORNER_DP)
     scope.Box(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
         this@lockCard.label(
-            this@lockCard.text(Vars.tile("e:$entityId", Vars.KEY_CONFIRM)),
-            Type.TITLE,
-            this@lockCard.role(Role.WARN),
-            Weight.SEMI_BOLD,
+            text = this@lockCard.text(Vars.tile("e:$entityId", Vars.KEY_CONFIRM)),
+            sp = Type.TITLE,
+            color = this@lockCard.role(Role.WARN),
+            weight = Weight.SEMI_BOLD,
             align = RcTextAlign.Center,
         )
     }
     if (entityState?.supports(CardChrome.FAN_PERCENTAGE_FLAG) == true) {
         gap(CardChrome.HEADER_GAP_DP)
         key(
-            ref(entityId, "open"),
+            ref = ref(entityId, "open"),
             text = i18n.t("ui.open_door"),
             icon = "door-open",
             heightDp = CardChrome.LEVEL_BAR_H_DP,
@@ -68,7 +68,7 @@ internal fun DocContext.vacuumCard(entityId: String, entityState: EntityState?) 
     scope.Row(Modifier.fillMaxWidth()) {
         val doc = this@vacuumCard
         doc.key(
-            ref(entityId, "start"),
+            ref = ref(entityId, "start"),
             text = doc.i18n.t("ui.start"),
             icon = "play",
             heightDp = 56f,
@@ -76,7 +76,7 @@ internal fun DocContext.vacuumCard(entityId: String, entityState: EntityState?) 
         )
         Spacer(Modifier.width(doc.units.px(CardChrome.PANEL_CORNER_DP)))
         doc.key(
-            ref(entityId, "pause"),
+            ref = ref(entityId, "pause"),
             text = doc.i18n.t("ui.pause"),
             icon = "pause",
             heightDp = 56f,
@@ -84,7 +84,7 @@ internal fun DocContext.vacuumCard(entityId: String, entityState: EntityState?) 
         )
         Spacer(Modifier.width(doc.units.px(CardChrome.PANEL_CORNER_DP)))
         doc.key(
-            ref(entityId, "dock"),
+            ref = ref(entityId, "dock"),
             text = doc.i18n.t("ui.dock"),
             icon = "home-import-outline",
             heightDp = 56f,
@@ -93,7 +93,7 @@ internal fun DocContext.vacuumCard(entityId: String, entityState: EntityState?) 
     }
     gap(CardChrome.PANEL_CORNER_DP)
     key(
-        ref(entityId, "locate"),
+        ref = ref(entityId, "locate"),
         text = i18n.t("ui.locate"),
         icon = "map-marker",
         heightDp = CardChrome.FLOW_KEY_H_DP,
@@ -112,7 +112,7 @@ internal fun DocContext.lawnMowerCard(entityId: String) {
     scope.Row(Modifier.fillMaxWidth()) {
         val doc = this@lawnMowerCard
         doc.key(
-            ref(entityId, "start"),
+            ref = ref(entityId, "start"),
             text = doc.i18n.t("ui.start"),
             icon = "play",
             heightDp = 56f,
@@ -120,7 +120,7 @@ internal fun DocContext.lawnMowerCard(entityId: String) {
         )
         Spacer(Modifier.width(doc.units.px(CardChrome.PANEL_CORNER_DP)))
         doc.key(
-            ref(entityId, "pause"),
+            ref = ref(entityId, "pause"),
             text = doc.i18n.t("ui.pause"),
             icon = "pause",
             heightDp = 56f,
@@ -128,7 +128,7 @@ internal fun DocContext.lawnMowerCard(entityId: String) {
         )
         Spacer(Modifier.width(doc.units.px(CardChrome.PANEL_CORNER_DP)))
         doc.key(
-            ref(entityId, "dock"),
+            ref = ref(entityId, "dock"),
             text = doc.i18n.t("ui.dock"),
             icon = "home-import-outline",
             heightDp = 56f,

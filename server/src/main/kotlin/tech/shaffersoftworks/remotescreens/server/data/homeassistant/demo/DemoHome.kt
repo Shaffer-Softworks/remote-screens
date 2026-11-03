@@ -78,7 +78,7 @@ class DemoHome : HomeAssistant {
             "todo" if service == "get_items" -> todoItems(ids)
             "music_assistant" -> musicAssistant(service, data)
             else -> {
-                for (id in ids) apply(id, domain, service, data)
+                for (id in ids) apply(id = id, domain = domain, service = service, data = data)
                 null
             }
         }
@@ -183,7 +183,7 @@ class DemoHome : HomeAssistant {
 
     private fun apply(id: String, domain: String, service: String, data: JsonObject) {
         val current = _states.value[id] ?: return
-        serviceHandlers.apply(id, domain, service, data, current)
+        serviceHandlers.apply(entityId = id, domain = domain, service = service, data = data, current = current)
     }
 
     private fun todoItems(ids: List<String>): JsonObject = buildJsonObject {

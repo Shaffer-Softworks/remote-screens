@@ -42,7 +42,7 @@ internal object DocumentScroll {
             val offset = if (isVertical) component.scrollY else component.scrollX
             val max = maxField(isVertical).getFloat(scroll)
             if (offset != 0f || max != 0f) {
-                marks += Mark(componentId, isVertical, offset, max)
+                marks += Mark(componentId = componentId, isVertical = isVertical, offset = offset, max = max)
             }
         }
         return marks

@@ -70,7 +70,7 @@ internal fun DocContext.lightDetailDialog(
                     .clip(doc.rounded(layout.dp(D.CARD_CORNER_DP)))
                     .background(doc.fixed(Rpi.LightDetailCard)),
                 ActionRef("_", "noop"),
-            ).padding(padH, padV, padH, padV),
+            ).padding(start = padH, top = padV, end = padH, bottom = padV),
         ) {
             // Weight on a scroller is ignored and the content paints past the card, as in MusicPanel: an exact
             // viewport height, capped and rect-clipped, keeps it inside.
@@ -83,7 +83,12 @@ internal fun DocContext.lightDetailDialog(
                     .keptVerticalScroll("lights.$tileId.detail"),
                 horizontal = RcHorizontalPositioning.Center,
             ) {
-                doc.detailHeader(roomName, entityState.name, dismiss, layout)
+                doc.detailHeader(
+                    roomName = roomName,
+                    deviceName = entityState.name,
+                    dismiss = dismiss,
+                    layout = layout,
+                )
                 doc.detailHeadline(tileId, entityState, layout)
                 Spacer(Modifier.height(doc.units.px(layout.dp(D.CONTROL_GAP_DP))))
                 when (mode) {
@@ -93,15 +98,10 @@ internal fun DocContext.lightDetailDialog(
                     LightDetailMode.POWER -> Spacer(Modifier.height(doc.units.px(layout.dp(D.CONTROL_H_DP))))
                 }
                 Spacer(Modifier.height(doc.units.px(layout.dp(D.MODE_BAR_GAP_DP))))
-                doc.modeBar(tileId, entityId, mode, layout)
+                doc.modeBar(tileId = tileId, entityId = entityId, mode = mode, layout = layout)
                 Spacer(Modifier.height(doc.units.px(layout.dp(D.PALETTE_GAP_DP))))
                 doc.palette(tileId, ui.paletteIndex, layout)
-                val effects = entityState.list("effect_list").filter { it.isNotBlank() }
-                if (effects.isNotEmpty()) {
-                    Spacer(Modifier.height(doc.units.px(layout.dp(D.EFFECT_GAP_DP))))
-                    doc.effectButton(tileId, layout)
-                    if (ui.isEffectMenuOpen) doc.effectMenu(tileId, effects, entityState.attr("effect"), layout)
-                }
+                doc.effectSection(tileId = tileId, ui = ui, entityState = entityState, layout = layout)
             }
         }
     }
@@ -141,9 +141,14 @@ private fun DocContext.detailHeader(roomName: String, deviceName: String, dismis
             doc.icon("close", layout.dp(D.CLOSE_ICON_DP), doc.fixed(Rpi.White))
         }
         val textPad = doc.units.px(layout.dp(D.HEADER_TEXT_PAD_DP))
-        Column(Modifier.horizontalWeight(1f).padding(textPad, 0f, textPad, 0f)) {
+        Column(Modifier.horizontalWeight(1f).padding(start = textPad, top = 0f, end = textPad, bottom = 0f)) {
             doc.label(roomName, layout.sp(D.ROOM_SP), doc.fixed(Rpi.LightDetailSecondary))
-            doc.label(deviceName, layout.sp(D.DEVICE_SP), doc.fixed(Rpi.White), Weight.SEMI_BOLD)
+            doc.label(
+                text = deviceName,
+                sp = layout.sp(D.DEVICE_SP),
+                color = doc.fixed(Rpi.White),
+                weight = Weight.SEMI_BOLD,
+            )
         }
     }
 }
@@ -153,15 +158,30 @@ private fun DocContext.detailHeadline(tileId: String, entityState: EntityState, 
     scope.Spacer(Modifier.height(units.px(layout.dp(D.HEADLINE_GAP_DP))))
     val ink = fixed(Rpi.White)
     if (entityState.state == "on") {
-        label(text(Vars.tile(tileId, KEY_HEADLINE)), layout.sp(D.HEADLINE_SP), ink, Weight.MEDIUM)
+        label(
+            text = text(Vars.tile(tileId, KEY_HEADLINE)),
+            sp = layout.sp(D.HEADLINE_SP),
+            color = ink,
+            weight = Weight.MEDIUM,
+        )
     } else {
-        label(i18n.t("ui.lights_off"), layout.sp(D.HEADLINE_SP), ink, Weight.MEDIUM)
+        label(
+            text = i18n.t("ui.lights_off"),
+            sp = layout.sp(D.HEADLINE_SP),
+            color = ink,
+            weight = Weight.MEDIUM,
+        )
     }
     label(
-        entityState.updatedLabel(i18n),
-        layout.sp(D.UPDATED_SP),
-        fixed(Rpi.LightDetailSecondary),
-        modifier = Modifier.padding(0f, units.px(layout.dp(D.UPDATED_TOP_DP)), 0f, 0f),
+        text = entityState.updatedLabel(i18n),
+        sp = layout.sp(D.UPDATED_SP),
+        color = fixed(Rpi.LightDetailSecondary),
+        modifier = Modifier.padding(
+            start = 0f,
+            top = units.px(layout.dp(D.UPDATED_TOP_DP)),
+            end = 0f,
+            bottom = 0f,
+        ),
     )
 }
 
@@ -170,7 +190,7 @@ private fun DocContext.modeBar(tileId: String, entityId: String, mode: LightDeta
     val pad = units.px(layout.dp(D.MODE_BAR_PAD_DP))
     scope.Row(
         Modifier.fillMaxWidth().clip(rounded(layout.dp(D.MODE_BAR_CORNER_DP)))
-            .background(fixed(Rpi.LightDetailModeBar)).padding(pad, pad, pad, pad),
+            .background(fixed(Rpi.LightDetailModeBar)).padding(start = pad, top = pad, end = pad, bottom = pad),
         horizontal = RcRowHorizontalPositioning.SpaceEvenly,
         vertical = RcVerticalPositioning.Center,
     ) {
@@ -235,9 +255,20 @@ private fun DocContext.gradientChip(isRadial: Boolean, layout: LightsLayout) {
         paint {
             style(RcPaintStyle.Fill)
             if (isRadial) {
-                radialGradient(px / 2f, px / 2f, px / 2f, Rpi.LightDetailWheelChip)
+                radialGradient(
+                    centerX = px / 2f,
+                    centerY = px / 2f,
+                    radius = px / 2f,
+                    colors = Rpi.LightDetailWheelChip,
+                )
             } else {
-                linearGradient(0f, 0f, px, 0f, Rpi.LightDetailTemperatureChip)
+                linearGradient(
+                    startX = 0f,
+                    startY = 0f,
+                    endX = px,
+                    endY = 0f,
+                    colors = Rpi.LightDetailTemperatureChip,
+                )
             }
         }
         drawCircle(px / 2f, px / 2f, px / 2f)
@@ -277,6 +308,23 @@ private fun DocContext.palette(tileId: String, selectedIndex: Int?, layout: Ligh
     }
 }
 
+/** The effect button, and the effect menu when it is open; nothing when the light has no effects. */
+private fun DocContext.effectSection(
+    tileId: String,
+    ui: LightsUiState,
+    entityState: EntityState,
+    layout: LightsLayout,
+) {
+    val effects = entityState.list("effect_list").filter { it.isNotBlank() }
+    if (effects.isNotEmpty()) {
+        scope.Spacer(Modifier.height(units.px(layout.dp(D.EFFECT_GAP_DP))))
+        effectButton(tileId, layout)
+        if (ui.isEffectMenuOpen) {
+            effectMenu(tileId = tileId, effects = effects, current = entityState.attr("effect"), layout = layout)
+        }
+    }
+}
+
 /** The grey "Effect" button with RPI's sparkles; it opens the list of the light's effects. */
 private fun DocContext.effectButton(tileId: String, layout: LightsLayout) {
     scope.Row(
@@ -311,7 +359,8 @@ private fun DocContext.effectMenu(tileId: String, effects: List<String>, current
             val isCurrent = current != null && effect.equals(current, ignoreCase = true)
             Row(
                 doc.tap(
-                    Modifier.fillMaxWidth().height(doc.units.px(itemH)).padding(padH, 0f, padH, 0f),
+                    Modifier.fillMaxWidth().height(doc.units.px(itemH))
+                        .padding(start = padH, top = 0f, end = padH, bottom = 0f),
                     ActionRef(tileId, "lights_effect", effect),
                 ),
                 vertical = RcVerticalPositioning.Center,

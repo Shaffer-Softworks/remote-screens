@@ -751,14 +751,58 @@ const typeIcon = computed(() =>
           />
         </div>
       </template>
-      <label v-if="currentNode.type === 'slider'" class="field"
-        >Steps<input
-          type="number"
-          min="2"
-          max="20"
-          :value="currentProps.steps ?? 10"
-          @input="setProp('steps', ($event.target as HTMLInputElement).value)"
-      /></label>
+      <template v-if="currentNode.type === 'slider'">
+        <label class="field"
+          >Steps<input
+            type="number"
+            min="2"
+            max="20"
+            :value="currentProps.steps ?? 10"
+            @input="setProp('steps', ($event.target as HTMLInputElement).value)"
+        /></label>
+        <div class="field">
+          <span class="label">Active colour</span>
+          <ColorSwatches
+            :model-value="currentProps.color"
+            :keys="['accent', 'blue', ...PASTEL_KEYS]"
+            clear-title="The entity's"
+            :clear-color="
+              pastel(undefined, currentNode.bind?.entityId.split('.')[0]).color
+            "
+            @update:model-value="setProp('color', $event)"
+          />
+        </div>
+        <div class="field">
+          <span class="label">Inactive colour</span>
+          <ColorSwatches
+            :model-value="currentProps.track"
+            :keys="['track', 'key', 'card', 'page', 'header_dark', ...PASTEL_KEYS]"
+            clear-title="Track"
+            :clear-color="colorOf('track')"
+            @update:model-value="setProp('track', $event)"
+          />
+        </div>
+        <label class="field">
+          Border (dp)
+          <input
+            type="number"
+            min="0"
+            step="1"
+            :value="currentNode.style.border ?? 0"
+            @input="
+              (() => {
+                const borderDp = Number(($event.target as HTMLInputElement).value)
+                if (borderDp > 0) currentNode.style.border = borderDp
+                else delete currentNode.style.border
+              })()
+            "
+          />
+        </label>
+        <div v-if="currentNode.style.border" class="field">
+          <span class="label">Border colour</span>
+          <ColorSwatches v-model="currentNode.style.borderColor" :keys="INK_SWATCHES" />
+        </div>
+      </template>
       <label v-if="currentNode.type === 'image'" class="field">
         Fit
         <select

@@ -1,0 +1,135 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:CardRenderer.kt:CardRenderer$fun render: RenderedDoc</ID>
+    <ID>CyclomaticComplexMethod:EntityTile.kt:internal fun DocContext.entityTile</ID>
+    <ID>CyclomaticComplexMethod:FreeForm.kt:internal fun DocContext.node</ID>
+    <ID>CyclomaticComplexMethod:FreeForm.kt:internal fun DocContext.styled: Modifier</ID>
+    <ID>CyclomaticComplexMethod:FreeFormControls.kt:internal fun DocContext.stepperNode</ID>
+    <ID>CyclomaticComplexMethod:FreeFormLayout.kt:internal fun DocContext.container</ID>
+    <ID>CyclomaticComplexMethod:FreeFormMedia.kt:internal fun DocContext.iconButtonNode</ID>
+    <ID>CyclomaticComplexMethod:FreeFormNodes.kt:internal fun DocContext.badgeNode</ID>
+    <ID>CyclomaticComplexMethod:FreeFormNodes.kt:internal fun DocContext.buttonNode</ID>
+    <ID>CyclomaticComplexMethod:FreeFormNodes.kt:internal fun DocContext.textNode</ID>
+    <ID>CyclomaticComplexMethod:InfoCards.kt:internal fun DocContext.weatherCard</ID>
+    <ID>CyclomaticComplexMethod:SpecialtyTiles.kt:fun DocContext.energyFlow</ID>
+    <ID>CyclomaticComplexMethod:ThermostatBind.kt:internal fun DocContext.bindThermostat</ID>
+    <ID>CyclomaticComplexMethod:TileBox.kt:fun tapRef: ActionRef?</ID>
+    <ID>HasPlatformType:AdbService.kt:AdbService$suspend fun associate</ID>
+    <ID>ImplicitDefaultLocale:HomeAssistantModels.kt:EntityState$"#%06X".format(it and RGB_MASK)</ID>
+    <ID>ImplicitDefaultLocale:PlayerTokens.kt:PlayerTokens.Companion$"%02x".format(it)</ID>
+    <ID>ImplicitDefaultLocale:Themes.kt:Themes$"#%06X".format(argb and RGB_MASK)</ID>
+    <ID>ImplicitDefaultLocale:Themes.kt:Themes$"#%08X".format(argb.toLong() and ARGB_MASK)</ID>
+    <ID>InjectDispatcher:AdbService.kt:AdbService$IO</ID>
+    <ID>InjectDispatcher:Application.kt:Default</ID>
+    <ID>LongMethod:Alerts.kt:AlertRenderer$fun render: RenderedDoc</ID>
+    <ID>LongMethod:CardRenderer.kt:CardRenderer$fun render: RenderedDoc</ID>
+    <ID>LongMethod:ClimateCards.kt:internal fun DocContext.climateCard</ID>
+    <ID>LongMethod:ClimateCards.kt:internal fun DocContext.climateDualSetpoint</ID>
+    <ID>LongMethod:DemoHome.kt:DemoHome$@Suppress("CyclomaticComplexMethod") override suspend fun command: JsonElement?</ID>
+    <ID>LongMethod:EntityTile.kt:internal fun DocContext.entityTile</ID>
+    <ID>LongMethod:FreeFormControls.kt:internal fun DocContext.stepperNode</ID>
+    <ID>LongMethod:FreeFormLayout.kt:internal fun DocContext.container</ID>
+    <ID>LongMethod:FreeFormMedia.kt:@Suppress("CyclomaticComplexMethod") internal fun DocContext.dialNode</ID>
+    <ID>LongMethod:FreeFormMedia.kt:internal fun DocContext.analogNode</ID>
+    <ID>LongMethod:FreeFormMedia.kt:internal fun DocContext.gaugeNode</ID>
+    <ID>LongMethod:InfoCards.kt:internal fun DocContext.weatherCard</ID>
+    <ID>LongMethod:MediaCards.kt:internal fun DocContext.mediaCard</ID>
+    <ID>LongMethod:ScreenRenderer.kt:ScreenRenderer$private fun DocContext.navBar</ID>
+    <ID>LongMethod:SpecialtyTiles.kt:fun DocContext.energyFlow</ID>
+    <ID>LongMethod:SpecialtyTiles.kt:internal fun DocContext.climateTile</ID>
+    <ID>LongMethod:SpecialtyTiles.kt:internal fun DocContext.mediaTile</ID>
+    <ID>LongMethod:SpecialtyTiles.kt:internal fun DocContext.personTile</ID>
+    <ID>LongMethod:SpecialtyTiles.kt:internal fun DocContext.weatherTile</ID>
+    <ID>LongMethod:ThermostatBind.kt:internal fun DocContext.bindThermostat</ID>
+    <ID>LongMethod:WeatherPanel.kt:fun DocContext.weatherPanel</ID>
+    <ID>LongParameterList:ActionRouter.kt:ActionRouter$private suspend fun callService: TapOutcome</ID>
+    <ID>LongParameterList:ActionRouter.kt:ActionRouter$private suspend fun dispatchTap: TapOutcome</ID>
+    <ID>LongParameterList:ActionRouter.kt:ActionRouter$private suspend fun musicVerb: TapOutcome</ID>
+    <ID>LongParameterList:CardChrome.kt:internal fun DocContext.bar</ID>
+    <ID>LongParameterList:Controls.kt:fun DocContext.choiceRow</ID>
+    <ID>LongParameterList:Controls.kt:fun DocContext.levelBar</ID>
+    <ID>LongParameterList:Controls.kt:fun DocContext.segmentedLevelBar</ID>
+    <ID>LongParameterList:DocContext.kt:DocContext</ID>
+    <ID>LongParameterList:FreeForm.kt:fun DocContext.freeForm</ID>
+    <ID>LongParameterList:MusicPanel.kt:private fun DocContext.queueSection</ID>
+    <ID>LongParameterList:PlayerSessionContext.kt:PlayerSessionContext</ID>
+    <ID>LongParameterList:RenderDataRepository.kt:RenderDataRepository</ID>
+    <ID>LongParameterList:ScreenRenderer.kt:RenderInput</ID>
+    <ID>LongParameterList:ScreenRenderer.kt:ScreenRenderer$private fun DocContext.navButton</ID>
+    <ID>LongParameterList:ScreenRenderer.kt:ScreenRenderer$private fun DocContext.page</ID>
+    <ID>LongParameterList:ScreenRenderer.kt:ScreenRenderer$private fun DocContext.topBarStat</ID>
+    <ID>LongParameterList:SessionDocument.kt:SessionDocument$suspend fun show</ID>
+    <ID>LongParameterList:Themes.kt:Themes$private fun resolved: ResolvedTheme</ID>
+    <ID>LongParameterList:ThermostatPanel.kt:@Suppress("LongMethod") private fun DocContext.thermostatModes</ID>
+    <ID>LongParameterList:Widgets.kt:fun DocContext.key</ID>
+    <ID>LongParameterList:Widgets.kt:fun DocContext.label</ID>
+    <ID>MaxLineLength:EntityTile.kt:internal</ID>
+    <ID>MaxLineLength:FreeFormControls.kt:ChoiceSet$internal</ID>
+    <ID>MaxLineLength:FreeFormMedia.kt:val inner = if (i % Metrics.ANALOG_QUARTER_STEP == 0) Metrics.ANALOG_TICK_INNER_MAJOR else Metrics.ANALOG_TICK_INNER_MINOR</ID>
+    <ID>MaxLineLength:FreeFormMetrics.kt:/** About the size [node]'s content takes: a leaf's natural size, a container's children laid end to end, plus padding. */</ID>
+    <ID>MaxLineLength:InfoCards.kt:(width - CardChrome.MEDIA_CTRL_DP - CardChrome.WEATHER_ICON_ROW_DP - CardChrome.PANEL_CORNER_DP - CardChrome.FLOW_KEY_H_DP - CardChrome.CLOSE_KEY_DP - CardChrome.CLOSE_KEY_DP - CardChrome.SECTION_GAP_DP)</ID>
+    <ID>MaxLineLength:Present.kt:Present$fun</ID>
+    <ID>MaxLineLength:Present.kt:Present$private</ID>
+    <ID>MaxLineLength:ScreenRenderer.kt:RenderedDoc$fun</ID>
+    <ID>MaxLineLength:ScreenRenderer.kt:RenderedDoc$val entities: Set&lt;String&gt; = (docContext.bindings.mapNotNull { it.entityId } + docContext.structure.map { it.first }).toSet()</ID>
+    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer.NavStyle$/** How navigation buttons look: icon, word or both, [layoutScale] against the default bar, the current page's fill. */</ID>
+    <ID>MaxLineLength:SessionLifecycle.kt:SessionLifecycle$host.screenId = layoutRepository.layout.value.players.firstOrNull { it.deviceId == host.hello.deviceId }?.screenId</ID>
+    <ID>MaxLineLength:SpecialtyTiles.kt:/** Solar, the grid and the battery around the house, with the power of each, as Home Assistant's energy settings name them. */</ID>
+    <ID>MaxLineLength:SpecialtyTiles.kt:fun</ID>
+    <ID>MaxLineLength:SpecialtyTiles.kt:val tint = when (key) { "solar" -&gt; Pastel.YELLOW; "grid" -&gt; Pastel.BLUE; "battery" -&gt; Pastel.GREEN; else -&gt; Pastel.GREY }</ID>
+    <ID>MaxLineLength:ThermostatPanel.kt:val fanW = if (fans.isEmpty()) 0f else ThermostatMetrics.FAN_BUTTON_WIDTH_DP * layoutScale + ThermostatMetrics.MODE_ROW_GAP_DP * layoutScale</ID>
+    <ID>MaxLineLength:TileChrome.kt:entityId != null &amp;&amp; entityState != null &amp;&amp; spec != null &amp;&amp; spec.toggle &amp;&amp; (spec.domain != "cover" &amp;&amp; spec.domain != "lock")</ID>
+    <ID>MaxLineLength:TileChrome.kt:internal</ID>
+    <ID>NoNameShadowing:AlarmPanel.kt:{ VarValue.int(alarmDotVar(entityId, it), Vars.GONE) }</ID>
+    <ID>NoNameShadowing:FreeFormBlocks.kt:seconds</ID>
+    <ID>NoNameShadowing:FreeFormBlocks.kt:{ it.uid }</ID>
+    <ID>NoNameShadowing:IntercomVars.kt:{ it.effectiveKind() == "intercom" }</ID>
+    <ID>UnreachableCatchBlock:CameraStreamService.kt:CameraStreamService$catch (e: TimeoutCancellationException) { logger.info("Home Assistant did not start a stream for {}: {}", entityId, e.message) null }</ID>
+    <ID>UnusedVariable:MusicResponseParsers.kt:MusicResponseParsers$depth</ID>
+    <ID>UseOrEmpty:CardChrome.kt:entityState?.domain ?: ""</ID>
+    <ID>UseOrEmpty:ClimateCards.kt:it?.list("operation_list")?.joinToString() ?: ""</ID>
+    <ID>UseOrEmpty:ClimateCards.kt:it?.list(key)?.joinToString() ?: ""</ID>
+    <ID>UseOrEmpty:FreeFormBlocks.kt:entityState?.attr("media_title") ?: entityState?.name ?: ""</ID>
+    <ID>UseOrEmpty:FreeFormBlocks.kt:it?.state ?: ""</ID>
+    <ID>UseOrEmpty:FreeFormControls.kt:it?.list(set.attribute)?.joinToString() ?: ""</ID>
+    <ID>UseOrEmpty:FreeFormNodes.kt:binding.attribute?.let { entityState?.attr(it) } ?: ""</ID>
+    <ID>UseOrEmpty:Home.kt:entityState?.state ?: ""</ID>
+    <ID>UseOrEmpty:Home.kt:it?.state ?: ""</ID>
+    <ID>UseOrEmpty:InfoCards.kt:day.high?.let { "${it.roundToInt()}°" } ?: ""</ID>
+    <ID>UseOrEmpty:InfoCards.kt:day.low?.let { "${it.roundToInt()}°" } ?: ""</ID>
+    <ID>UseOrEmpty:InfoCards.kt:day.rain?.let { "$it%" } ?: ""</ID>
+    <ID>UseOrEmpty:InfoCards.kt:entityState?.state ?: ""</ID>
+    <ID>UseOrEmpty:InfoCards.kt:it?.list("options")?.joinToString() ?: ""</ID>
+    <ID>UseOrEmpty:InfoCards.kt:it?.state ?: ""</ID>
+    <ID>UseOrEmpty:LightFanCards.kt:it?.list("available_modes")?.joinToString() ?: ""</ID>
+    <ID>UseOrEmpty:LightFanCards.kt:it?.list("effect_list")?.joinToString() ?: ""</ID>
+    <ID>UseOrEmpty:MediaCards.kt:current?.attr("media_title") ?: ""</ID>
+    <ID>UseOrEmpty:MediaCards.kt:it?.list("source_list")?.joinToString() ?: ""</ID>
+    <ID>UseOrEmpty:PlayerSession.kt:PlayerSession$battery?.let { i18n.percent(it) } ?: ""</ID>
+    <ID>UseOrEmpty:PlayerSession.kt:PlayerSession$wifi?.toString() ?: ""</ID>
+    <ID>UseOrEmpty:ScreenRenderer.kt:ScreenRenderer$entityState.number( "temperature", )?.let { i18n.number(it, 0) + "°" } ?: ""</ID>
+    <ID>UseOrEmpty:ScreenRenderer.kt:ScreenRenderer$it?.state ?: ""</ID>
+    <ID>UseOrEmpty:SpecialtyTiles.kt:current?.attr("media_title") ?: current?.name ?: ""</ID>
+    <ID>UseOrEmpty:SpecialtyTiles.kt:entityState?.state ?: ""</ID>
+    <ID>UseOrEmpty:SpecialtyTiles.kt:it?.list("hvac_modes")?.joinToString() ?: ""</ID>
+    <ID>UseOrEmpty:SpecialtyTiles.kt:it?.state ?: ""</ID>
+    <ID>UseOrEmpty:SpecialtyTiles.kt:tile.name ?: ""</ID>
+    <ID>UseOrEmpty:SpecialtyTiles.kt:tile.name ?: tile.options["title"] ?: ""</ID>
+    <ID>UseOrEmpty:ThermostatPanel.kt:s?.attr("fan_mode") ?: ""</ID>
+    <ID>UseOrEmpty:ThermostatPanel.kt:s?.list("fan_modes")?.joinToString() ?: ""</ID>
+    <ID>UseOrEmpty:ThermostatPanel.kt:s?.list("hvac_modes")?.joinToString() ?: ""</ID>
+    <ID>UseOrEmpty:ThermostatPanel.kt:s?.state ?: ""</ID>
+    <ID>UseOrEmpty:TileChrome.kt:s?.let { Present.view(it, i18n).icon } ?: ""</ID>
+    <ID>UseOrEmpty:TileChrome.kt:tile.name ?: tile.options["title"] ?: Catalogue.of(kind)?.name ?: ""</ID>
+    <ID>UseOrEmpty:ToggleCards.kt:it?.list("available_tones")?.joinToString() ?: ""</ID>
+    <ID>UseOrEmpty:ToggleCards.kt:it?.list("fan_speed_list")?.joinToString() ?: ""</ID>
+    <ID>UseOrEmpty:WeatherPanel.kt:day.low?.let { " / ${it.roundToInt()}°" } ?: ""</ID>
+    <ID>UseOrEmpty:WeatherPanel.kt:entityState?.let { detailPhrase(it, key) } ?: ""</ID>
+    <ID>UseOrEmpty:WeatherPanel.kt:entityState?.let { reading(it, key) } ?: ""</ID>
+    <ID>UseOrEmpty:WeatherPanel.kt:entityState?.state ?: ""</ID>
+    <ID>UseOrEmpty:WeatherPanel.kt:page.entityState?.state ?: ""</ID>
+    <ID>UseOrEmpty:WeatherPanel.kt:s?.state ?: ""</ID>
+  </CurrentIssues>
+</SmellBaseline>

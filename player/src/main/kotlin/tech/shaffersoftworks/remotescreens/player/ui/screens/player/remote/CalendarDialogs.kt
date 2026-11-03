@@ -169,7 +169,16 @@ private fun CreateCalendarEventDialog(
                 enabled = !isMutating && calendars.isNotEmpty(),
                 onClick = {
                     formError = submitNewEvent(
-                        NewEventDraft(selected, summary, location, isAllDay, startDate, startTime, endDate, endTime),
+                        NewEventDraft(
+                            calendar = selected,
+                            summary = summary,
+                            location = location,
+                            isAllDay = isAllDay,
+                            startDate = startDate,
+                            startTime = startTime,
+                            endDate = endDate,
+                            endTime = endTime,
+                        ),
                         onCreate,
                     )
                 },
@@ -197,7 +206,12 @@ private fun CreateCalendarEventDialog(
         onEndDate = { endDate = it; activePicker = null },
         onStartTime = { picked ->
             startTime = picked
-            endTime = endTimeAfterStartChange(picked, endTime, startDate, endDate)
+            endTime = endTimeAfterStartChange(
+                picked = picked,
+                endTime = endTime,
+                startDate = startDate,
+                endDate = endDate,
+            )
             activePicker = null
         },
         onEndTime = { endTime = it; activePicker = null },
@@ -244,7 +258,7 @@ private fun CreateCalendarFields(
         if (calendars.isEmpty()) {
             Text(text = "No calendars allow creating events.", color = DialogSecondary, fontSize = FieldLabelSize)
         } else {
-            CalendarDropdown(calendars, selected, onSelected, colors)
+            CalendarDropdown(calendars = calendars, selected = selected, onSelected = onSelected, colors = colors)
         }
         OutlinedTextField(
             value = summary,

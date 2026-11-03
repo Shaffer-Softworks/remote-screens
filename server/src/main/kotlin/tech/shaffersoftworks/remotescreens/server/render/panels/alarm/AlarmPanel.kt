@@ -47,7 +47,7 @@ private val ALARM_ACTIONS = listOf(
     AlarmAction("arm_home", "ui.alarm_arm_home", "shield-home"),
     AlarmAction("arm_away", "ui.alarm_arm_away", "shield-lock"),
     AlarmAction("arm_night", "ui.alarm_night_mode", "shield-moon"),
-    AlarmAction("disarm", "ui.alarm_disarm", "shield-lock-open", isDanger = true),
+    AlarmAction(verb = "disarm", labelKey = "ui.alarm_disarm", icon = "shield-lock-open", isDanger = true),
 )
 
 private const val KEY_CLEAR = "clear"
@@ -83,7 +83,7 @@ fun DocContext.alarmPanel(tile: Tile, box: TileBox) {
     val panelsW = box.w - 2 * M.PAGE_PAD_H_DP * scale - M.PANEL_GAP_DP * scale
     val weights = M.ALARM_PANEL_WEIGHT + M.KEYPAD_PANEL_WEIGHT
     val layout = AlarmLayout(
-        scale,
+        scale = scale,
         alarmW = panelsW * M.ALARM_PANEL_WEIGHT / weights,
         keypadW = panelsW * M.KEYPAD_PANEL_WEIGHT / weights,
         cardH = box.h - 2 * M.PAGE_PAD_V_DP * scale,
@@ -92,8 +92,8 @@ fun DocContext.alarmPanel(tile: Tile, box: TileBox) {
         val doc = this@alarmPanel
         val padH = doc.units.px(layout.dp(M.PAGE_PAD_H_DP))
         val padV = doc.units.px(layout.dp(M.PAGE_PAD_V_DP))
-        Row(Modifier.fillMaxSize().padding(padH, padV, padH, padV)) {
-            doc.alarmCard(tile.id, zones, zone, layout)
+        Row(Modifier.fillMaxSize().padding(start = padH, top = padV, end = padH, bottom = padV)) {
+            doc.alarmCard(tileId = tile.id, zones = zones, zone = zone, layout = layout)
             Spacer(Modifier.width(doc.units.px(layout.dp(M.PANEL_GAP_DP))))
             doc.keypadCard(tile.id, entityId, layout)
         }
@@ -120,13 +120,13 @@ private fun DocContext.alarmCard(tileId: String, zones: List<AlarmZone>, zone: A
         )
         Spacer(Modifier.height(doc.units.px(layout.dp(M.DIVIDER_BOTTOM_GAP_DP))))
         doc.label(
-            doc.i18n.t("ui.alarm_select_zone"),
-            layout.sp(M.SELECT_ZONE_SP),
-            doc.role(Role.INK),
-            Weight.SEMI_BOLD,
+            text = doc.i18n.t("ui.alarm_select_zone"),
+            sp = layout.sp(M.SELECT_ZONE_SP),
+            color = doc.role(Role.INK),
+            weight = Weight.SEMI_BOLD,
         )
         Spacer(Modifier.height(doc.units.px(layout.dp(M.SELECT_ZONE_GAP_DP))))
-        doc.zoneChips(tileId, zones, zone, rowW, layout)
+        doc.zoneChips(tileId = tileId, zones = zones, selected = zone, rowW = rowW, layout = layout)
         Spacer(Modifier.verticalWeight(1f))
         doc.alarmActions(tileId, rowW, layout)
     }
@@ -193,7 +193,7 @@ private fun DocContext.statusWord(state: String?, layout: AlarmLayout) {
     if (state == "arming") {
         armingLabel(word, sizeSp)
     } else {
-        label(word, sizeSp, role(Role.INK), Weight.BOLD)
+        label(text = word, sp = sizeSp, color = role(Role.INK), weight = Weight.BOLD)
     }
 }
 
@@ -206,9 +206,9 @@ private fun DocContext.armingLabel(word: String, sizeSp: Float) {
     val orange = (M.ARMING_ALPHA shl M.ALPHA_SHIFT) or (Role.WARN.argb and M.RGB_MASK)
     val fade = armingFade().toFloat()
     label(
-        word,
-        sizeSp,
-        fixed(orange),
+        text = word,
+        sp = sizeSp,
+        color = fixed(orange),
         modifier = Modifier.graphicsLayer { alpha = fade },
     )
 }
@@ -239,7 +239,14 @@ private fun DocContext.zoneChips(
         val doc = this@zoneChips
         zones.forEachIndexed { index, zone ->
             if (index > 0) Spacer(Modifier.width(doc.units.px(gap)))
-            doc.zoneChip(tileId, zone, index, zone == selected, chipW, layout)
+            doc.zoneChip(
+                tileId = tileId,
+                zone = zone,
+                index = index,
+                isSelected = zone == selected,
+                chipW = chipW,
+                layout = layout,
+            )
         }
     }
 }
@@ -279,10 +286,10 @@ private fun DocContext.zoneChip(
                     .clip(doc.rounded(corner - border))
                     .background(fill)
                     .padding(
-                        doc.units.px(layout.dp(M.CHIP_PAD_START_DP)),
-                        0f,
-                        doc.units.px(layout.dp(M.CHIP_PAD_END_DP)),
-                        0f,
+                        start = doc.units.px(layout.dp(M.CHIP_PAD_START_DP)),
+                        top = 0f,
+                        end = doc.units.px(layout.dp(M.CHIP_PAD_END_DP)),
+                        bottom = 0f,
                     ),
                 ActionRef(tileId, "alarm_zone", zone.entityId),
             ),
@@ -310,7 +317,7 @@ private fun DocContext.alarmActions(tileId: String, rowW: Float, layout: AlarmLa
                     Modifier.size(doc.units.px(buttonW), doc.units.px(layout.dp(M.ACTION_H_DP)))
                         .clip(doc.rounded(layout.dp(M.ACTION_CORNER_DP)))
                         .background(doc.role(if (action.isDanger) Role.DANGER else Role.KEY))
-                        .padding(padH, 0f, padH, 0f),
+                        .padding(start = padH, top = 0f, end = padH, bottom = 0f),
                     ActionRef(tileId, "alarm_arm", action.verb),
                 ),
                 horizontal = RcRowHorizontalPositioning.Center,
@@ -344,7 +351,12 @@ private fun DocContext.keypadCard(tileId: String, entityId: String, layout: Alar
         horizontal = RcHorizontalPositioning.Center,
     ) {
         val doc = this@keypadCard
-        doc.label(doc.i18n.t("ui.alarm_enter_code"), layout.sp(M.ENTER_CODE_SP), doc.role(Role.INK), Weight.MEDIUM)
+        doc.label(
+            text = doc.i18n.t("ui.alarm_enter_code"),
+            sp = layout.sp(M.ENTER_CODE_SP),
+            color = doc.role(Role.INK),
+            weight = Weight.MEDIUM,
+        )
         Spacer(Modifier.height(doc.units.px(layout.dp(M.ENTER_CODE_GAP_DP))))
         doc.pinDots(entityId, layout)
         Spacer(Modifier.height(doc.units.px(layout.dp(M.DOTS_GAP_DP))))
@@ -353,7 +365,7 @@ private fun DocContext.keypadCard(tileId: String, entityId: String, layout: Alar
             Row {
                 row.forEachIndexed { index, key ->
                     if (index > 0) Spacer(Modifier.width(doc.units.px(colGap)))
-                    doc.keypadKey(tileId, key, keyW, keyH, layout)
+                    doc.keypadKey(tileId = tileId, key = key, keyW = keyW, keyH = keyH, layout = layout)
                 }
             }
         }
@@ -399,7 +411,12 @@ private fun DocContext.keypadKey(tileId: String, key: String, keyW: Float, keyH:
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
     ) {
-        this@keypadKey.label(text, layout.sp(M.KEY_SP), this@keypadKey.role(Role.INK), Weight.MEDIUM)
+        this@keypadKey.label(
+            text = text,
+            sp = layout.sp(M.KEY_SP),
+            color = this@keypadKey.role(Role.INK),
+            weight = Weight.MEDIUM,
+        )
     }
 }
 
@@ -424,12 +441,17 @@ private fun DocContext.alarmDialog(tileId: String, notice: AlarmNotice, layout: 
             val gap = doc.units.px(layout.dp(M.DIALOG_GAP_DP))
             doc.icon("alert-plus", layout.dp(M.DIALOG_ICON_DP), doc.role(Role.INK))
             Spacer(Modifier.height(gap))
-            doc.label(notice.title, layout.sp(M.DIALOG_TITLE_SP), doc.role(Role.INK), align = RcTextAlign.Center)
+            doc.label(
+                text = notice.title,
+                sp = layout.sp(M.DIALOG_TITLE_SP),
+                color = doc.role(Role.INK),
+                align = RcTextAlign.Center,
+            )
             Spacer(Modifier.height(gap))
             doc.label(
-                notice.message,
-                layout.sp(M.DIALOG_TEXT_SP),
-                doc.role(Role.INK_SOFT),
+                text = notice.message,
+                sp = layout.sp(M.DIALOG_TEXT_SP),
+                color = doc.role(Role.INK_SOFT),
                 lines = 3,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -447,12 +469,18 @@ private fun DocContext.dialogButton(text: String, ref: ActionRef, layout: AlarmL
     val padH = units.px(layout.dp(M.DIALOG_GAP_DP))
     scope.Box(
         tap(
-            Modifier.height(units.px(layout.dp(M.DIALOG_BUTTON_H_DP))).padding(padH, 0f, padH, 0f),
+            Modifier.height(units.px(layout.dp(M.DIALOG_BUTTON_H_DP)))
+                .padding(start = padH, top = 0f, end = padH, bottom = 0f),
             ref,
         ),
         vertical = RcVerticalPositioning.Center,
     ) {
         val ink: RcColor = this@dialogButton.role(Role.ACCENT)
-        this@dialogButton.label(text, layout.sp(M.DIALOG_BUTTON_SP), ink, Weight.MEDIUM)
+        this@dialogButton.label(
+            text = text,
+            sp = layout.sp(M.DIALOG_BUTTON_SP),
+            color = ink,
+            weight = Weight.MEDIUM,
+        )
     }
 }

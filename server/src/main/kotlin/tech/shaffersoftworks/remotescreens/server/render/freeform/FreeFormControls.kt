@@ -55,44 +55,49 @@ internal fun DocContext.sliderNode(node: Node, self: Dims, axis: Axis, pages: Pa
     )
     val domain = id.substringBefore('.')
     val entityState = states[id]
-    val verb = when (domain) { "light" -> "brightness"; "fan" -> "percentage"; "cover" -> "position"; "media_player" -> "volume"; else -> "value" }
-    val (min, max) = if (domain in setOf("number", "input_number")) {
-        (entityState?.number(
-            "min",
-        ) ?: 0.0) to (entityState?.number("max") ?: Metrics.LEVEL_RANGE_MAX)
-    } else {
-        0.0 to Metrics.LEVEL_RANGE_MAX
-    }
+    val verb = sliderVerb(domain)
+    val (min, max) = sliderRange(domain, entityState)
     val steps = node.props["steps"]?.toIntOrNull()?.coerceIn(
         Metrics.SLIDER_MIN_STEPS,
         Metrics.SLIDER_MAX_STEPS,
     ) ?: Metrics.SLIDER_DEFAULT_STEPS
     val h = if (node.size.height == "wrap") Metrics.SLIDER_NATURAL_H else self.h
-    scope.Box(styled(node, axis, pages)) {
+    val track = node.props["track"]?.let { paint(it) } ?: role(Role.TRACK)
+    val borderInk = node.style.borderColor?.let { paint(it) }
+    scope.Box(styled(node = node, axis = axis, pages = pages, applyBorder = false)) {
         val doc = this@sliderNode
         doc.levelBar(
-            doc.float(Vars.entity(id, Vars.KEY_LEVEL)),
-            self.w - node.style.padX,
-            h - node.style.padY,
-            doc.color(Vars.tile(node.id, Vars.KEY_ICON)),
-            doc.role(Role.TRACK),
-            steps,
-        ) { i ->
-            val value = min + (max - min) * i / steps
-            ActionRef(
-                node.id,
-                verb,
-                if (value % 1.0 == 0.0) {
-                    value.toInt().toString()
-                } else {
-                    "%.1f".format(
-                        Locale.ROOT,
-                        value,
-                    )
-                },
-            )
-        }
+            level = doc.float(Vars.entity(id, Vars.KEY_LEVEL)),
+            widthDp = self.w - node.style.padX,
+            heightDp = h - node.style.padY,
+            fill = doc.color(Vars.tile(node.id, Vars.KEY_ICON)),
+            track = track,
+            steps = steps,
+            borderDp = node.style.border,
+            border = borderInk,
+        ) { i -> ActionRef(node.id, verb, sliderStepValue(min = min, max = max, step = i, steps = steps)) }
     }
+}
+
+private fun sliderVerb(domain: String) = when (domain) {
+    "light" -> "brightness"
+    "fan" -> "percentage"
+    "cover" -> "position"
+    "media_player" -> "volume"
+    else -> "value"
+}
+
+private fun sliderRange(domain: String, entityState: EntityState?): Pair<Double, Double> =
+    if (domain in setOf("number", "input_number")) {
+        (entityState?.number("min") ?: 0.0) to
+            (entityState?.number("max") ?: Metrics.LEVEL_RANGE_MAX)
+    } else {
+        0.0 to Metrics.LEVEL_RANGE_MAX
+    }
+
+private fun sliderStepValue(min: Double, max: Double, step: Int, steps: Int): String {
+    val value = min + (max - min) * step / steps
+    return if (value % 1.0 == 0.0) value.toInt().toString() else "%.1f".format(Locale.ROOT, value)
 }
 
 /** An on and off switch: the track lights up in the entity's colour and the knob moves over while it is on. */
@@ -211,7 +216,7 @@ internal fun DocContext.stepperNode(node: Node, axis: Axis, pages: Pages) {
         fun key(ref: ActionRef?, icon: String) {
             if (ref != null) {
                 doc.key(
-                    ref,
+                    ref = ref,
                     icon = icon,
                     heightDp = Metrics.STEPPER_KEY_DP,
                     widthDp = Metrics.STEPPER_KEY_DP,
@@ -246,18 +251,18 @@ internal fun DocContext.stepperNode(node: Node, axis: Axis, pages: Pages) {
         ) {
             if (id != null) {
                 doc.label(
-                    doc.text(Vars.entity(id, Vars.KEY_VALUE)),
-                    Type.HEADLINE,
-                    ink,
-                    Weight.MEDIUM,
+                    text = doc.text(Vars.entity(id, Vars.KEY_VALUE)),
+                    sp = Type.HEADLINE,
+                    color = ink,
+                    weight = Weight.MEDIUM,
                     align = RcTextAlign.Center,
                 )
             } else {
                 doc.label(
-                    "–",
-                    Type.HEADLINE,
-                    doc.role(Role.INK_DIM),
-                    Weight.MEDIUM,
+                    text = "–",
+                    sp = Type.HEADLINE,
+                    color = doc.role(Role.INK_DIM),
+                    weight = Weight.MEDIUM,
                     align = RcTextAlign.Center,
                 )
             }
@@ -271,26 +276,26 @@ internal class ChoiceSet(val verb: String, val attribute: String, val choices: L
 
 internal fun DocContext.choicesOf(entityState: EntityState?, domain: String?): ChoiceSet? = when (domain) {
     "select", "input_select" -> ChoiceSet(
-        "option",
-        "options",
-        entityState?.list("options").orEmpty(),
-        { it },
-        { it.state },
+        verb = "option",
+        attribute = "options",
+        choices = entityState?.list("options").orEmpty(),
+        word = { it },
+        chosen = { it.state },
     )
     "climate" -> ChoiceSet(
-        "mode",
-        "hvac_modes",
-        entityState?.list("hvac_modes").orEmpty(),
-        { i18n.state("climate", it) },
-        { it.state },
-        MODE_ICONS,
+        verb = "mode",
+        attribute = "hvac_modes",
+        choices = entityState?.list("hvac_modes").orEmpty(),
+        word = { i18n.state("climate", it) },
+        chosen = { it.state },
+        icons = MODE_ICONS,
     )
     "light" -> ChoiceSet(
-        "effect",
-        "effect_list",
-        entityState?.list("effect_list").orEmpty(),
-        { it },
-        { it.attr("effect") },
+        verb = "effect",
+        attribute = "effect_list",
+        choices = entityState?.list("effect_list").orEmpty(),
+        word = { it },
+        chosen = { it.attr("effect") },
     )
     else -> null
 }
@@ -298,7 +303,7 @@ internal fun DocContext.choicesOf(entityState: EntityState?, domain: String?): C
 /** A row of keys, one per option: a select's options, a thermostat's modes, a light's effects. */
 internal fun DocContext.choicesNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
     val id = node.bind?.entityId
-    val modifier = styled(node, axis, pages, measured(node, axis, self))
+    val modifier = styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))
     val set = id?.let { choicesOf(states[it], it.substringBefore('.')) }
     if (id == null || set == null || set.choices.isEmpty()) {
         scope.Box(
@@ -313,16 +318,16 @@ internal fun DocContext.choicesNode(node: Node, self: Dims, axis: Axis, pages: P
             Metrics.CHOICES_MAX,
         ) ?: Metrics.CHOICES_DEFAULT_MAX,
     )
-    bindChoices(node.id, "c", id, shown, set.chosen)
+    bindChoices(scopeId = node.id, group = "c", entityId = id, choices = shown, chosen = set.chosen)
     val h = (self.h - node.style.padY).coerceAtLeast(Metrics.CHOICES_MIN_H)
     scope.Box(modifier, vertical = RcVerticalPositioning.Center) {
         this@choicesNode.choiceRow(
-            node.id,
-            "c",
-            shown.map { it to set.word(it) },
-            { ActionRef(node.id, set.verb, it) },
-            h,
-            set.icons,
+            scopeId = node.id,
+            group = "c",
+            choices = shown.map { it to set.word(it) },
+            refFor = { ActionRef(node.id, set.verb, it) },
+            heightDp = h,
+            icons = set.icons,
         )
     }
 }

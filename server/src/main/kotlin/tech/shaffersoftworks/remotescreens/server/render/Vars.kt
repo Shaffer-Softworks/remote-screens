@@ -61,7 +61,7 @@ object Vars {
 /** Binds the values every tile and card of an entity reads. Once per entity per document. */
 fun DocContext.bindEntity(entityId: String, name: String? = null, icon: String? = null) {
     if (bindings.any { it.entityId == entityId && it.compute is EntityBinding }) return
-    bind(entityId, EntityBinding(entityId, this, name, icon))
+    bind(entityId, EntityBinding(entityId = entityId, docContext = this, name = name, icon = icon))
 }
 
 private class EntityBinding(
@@ -71,7 +71,12 @@ private class EntityBinding(
     val icon: String?,
 ) : (Map<String, EntityState>) -> List<VarValue> {
     override fun invoke(states: Map<String, EntityState>): List<VarValue> {
-        val view = Present.view(states[entityId], docContext.i18n, name, icon)
+        val view = Present.view(
+            entityState = states[entityId],
+            i18n = docContext.i18n,
+            nameOverride = name,
+            iconOverride = icon,
+        )
         return listOf(
             VarValue.string(Vars.entity(entityId, Vars.KEY_NAME), view.name),
             VarValue.string(Vars.entity(entityId, Vars.KEY_STATE), view.stateText),
@@ -95,7 +100,7 @@ private class EntityBinding(
  * under its header (`line`) and its round badge (`bg`, with `bgink` drawn on it) in the tile's accent.
  */
 fun DocContext.bindTileColors(tileId: String, entityId: String?, pastel: Pastel, alwaysOn: Boolean = false) =
-    bindTileColors(tileId, entityId, pastel.argb, alwaysOn)
+    bindTileColors(tileId = tileId, entityId = entityId, accent = pastel.argb, alwaysOn = alwaysOn)
 
 /** As above, lit in [accent] (ARGB). */
 fun DocContext.bindTileColors(tileId: String, entityId: String?, accent: Int, alwaysOn: Boolean = false) {
@@ -149,11 +154,11 @@ fun DocContext.bindChoices(
             val on = choice == current
             listOf(
                 VarValue.color(
-                    Vars.option(scopeId, group, index, Vars.KEY_BG),
+                    Vars.option(scope = scopeId, group = group, index = index, key = Vars.KEY_BG),
                     (if (on) Role.KEY_ON else Role.KEY).argb,
                 ),
                 VarValue.color(
-                    Vars.option(scopeId, group, index, Vars.KEY_INK),
+                    Vars.option(scope = scopeId, group = group, index = index, key = Vars.KEY_INK),
                     Role.INK.argb,
                 ),
             )

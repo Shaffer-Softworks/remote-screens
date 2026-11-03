@@ -4,7 +4,6 @@ package tech.shaffersoftworks.remotescreens.server.render.cards
 
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.HaRenderFlags
-import tech.shaffersoftworks.remotescreens.server.render.Present
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.Vars
@@ -14,8 +13,8 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.choiceRow
 import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
+import tech.shaffersoftworks.remotescreens.server.render.widgets.levelBar
 import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
-import tech.shaffersoftworks.remotescreens.server.render.widgets.segmentedLevelBar
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.server.render.widgets.toggleIcon
 
@@ -55,8 +54,6 @@ internal object CardChrome {
     const val SWATCH_DP = 46f
     const val FLOW_KEY_H_DP = 48f
     const val LEVEL_BAR_H_DP = 52f
-    /** Segmented level bar height on detail cards (mockup style). */
-    const val SEG_BAR_H_DP = 16f
     const val MEDIA_CTRL_DP = 60f
     const val TOGGLE_ICON_DP = 64f
     const val STEPPER_KEY_DP = 72f
@@ -101,8 +98,8 @@ internal object CardChrome {
     const val SOURCES_TAKE = 16
     const val LIBRARY_TAKE = 20
     const val FORECAST_DAYS = 7
-    /** PictureSlot fit mode for the camera card still. */
-    const val CAMERA_CARD_FIT = 4
+    /** Seconds between refreshes of the camera card's still. */
+    const val CAMERA_CARD_REFRESH_S = 4
     const val PERCENT_SCALE = 100.0
     const val TEMP_STEP_F = 1.0
     const val TEMP_STEP_C = 0.5
@@ -130,7 +127,7 @@ internal fun DocContext.header(entityId: String, card: String) {
     scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@header
         doc.key(
-            ActionRef("_", "close"),
+            ref = ActionRef("_", "close"),
             icon = "close",
             heightDp = CardChrome.CLOSE_KEY_DP,
             widthDp = CardChrome.CLOSE_KEY_DP,
@@ -139,24 +136,24 @@ internal fun DocContext.header(entityId: String, card: String) {
         Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
             if (card == "energy") {
                 doc.label(
-                    doc.i18n.t("ui.house"),
-                    Type.HEADLINE,
-                    ink,
-                    Weight.SEMI_BOLD,
+                    text = doc.i18n.t("ui.house"),
+                    sp = Type.HEADLINE,
+                    color = ink,
+                    weight = Weight.SEMI_BOLD,
                     align = RcTextAlign.Center,
                 )
             } else {
                 doc.label(
-                    doc.text(Vars.entity(entityId, Vars.KEY_NAME)),
-                    Type.HEADLINE,
-                    ink,
-                    Weight.SEMI_BOLD,
+                    text = doc.text(Vars.entity(entityId, Vars.KEY_NAME)),
+                    sp = Type.HEADLINE,
+                    color = ink,
+                    weight = Weight.SEMI_BOLD,
                     align = RcTextAlign.Center,
                 )
                 doc.label(
-                    doc.text(Vars.entity(entityId, Vars.KEY_STATE)),
-                    Type.BODY,
-                    soft,
+                    text = doc.text(Vars.entity(entityId, Vars.KEY_STATE)),
+                    sp = Type.BODY,
+                    color = soft,
                     align = RcTextAlign.Center,
                 )
             }
@@ -190,11 +187,11 @@ internal fun DocContext.bigToggle(entityId: String, entityState: EntityState?, v
             vertical = RcVerticalPositioning.Center,
         ) {
             doc.toggleIcon(
-                entityId,
-                spec?.icon ?: "power",
-                spec?.iconOn,
-                CardChrome.TOGGLE_ICON_DP,
-                doc.color(Vars.tile(CardRenderer.TILE, Vars.KEY_BG_INK)),
+                entityId = entityId,
+                off = spec?.icon ?: "power",
+                on = spec?.iconOn,
+                sizeDp = CardChrome.TOGGLE_ICON_DP,
+                color = doc.color(Vars.tile(CardRenderer.TILE, Vars.KEY_BG_INK)),
             )
         }
     }
@@ -202,7 +199,7 @@ internal fun DocContext.bigToggle(entityId: String, entityState: EntityState?, v
 
 internal fun DocContext.section(title: String) {
     gap(CardChrome.SECTION_TITLE_GAP_DP)
-    label(title, Type.BODY, role(Role.INK_SOFT), Weight.SEMI_BOLD)
+    label(text = title, sp = Type.BODY, color = role(Role.INK_SOFT), weight = Weight.SEMI_BOLD)
     gap(CardChrome.FLOW_PAD_DP)
 }
 
@@ -214,23 +211,13 @@ internal fun DocContext.bar(
     max: Double = CardChrome.LEVEL_DEFAULT_MAX,
     level: String = Vars.KEY_LEVEL,
 ) {
-    // Keep the continuous float declared so predictions still update other readers.
-    float(Vars.entity(entityId, level))
-    segmentedLevelBar(
-        entityId = entityId,
-        levelKey = level,
+    levelBar(
+        level = float(Vars.entity(entityId, level)),
         widthDp = width,
-        heightDp = CardChrome.SEG_BAR_H_DP,
+        heightDp = CardChrome.LEVEL_BAR_H_DP,
+        fill = role(Role.ACCENT),
+        track = role(Role.TRACK),
         steps = CardChrome.LEVEL_STEPS,
-        levelOf = { states ->
-            if (level == "tilt") {
-                ((states[entityId]?.number(
-                    "current_tilt_position",
-                ) ?: 0.0) / CardChrome.LEVEL_DEFAULT_MAX).toFloat()
-            } else {
-                Present.view(states[entityId], i18n).level ?: 0f
-            }
-        },
     ) { step ->
         val value = min + (max - min) * step / CardChrome.LEVEL_STEPS.toDouble()
         val action = ref(
@@ -275,14 +262,20 @@ internal fun DocContext.flowKeys(
     choices: List<Pair<String, String>>,
     chosen: (EntityState) -> String?,
 ) {
-    bindChoices(entityId, verb, entityId, choices.map { it.first }, chosen)
+    bindChoices(
+        scopeId = entityId,
+        group = verb,
+        entityId = entityId,
+        choices = choices.map { it.first },
+        chosen = chosen,
+    )
     if (choices.size in 2..CardChrome.FLOW_KEYS_SEGMENT_MAX) {
         choiceRow(
-            entityId,
-            verb,
-            choices,
-            { ref(entityId, verb, it) },
-            CardChrome.FLOW_KEY_SEG_H_DP,
+            scopeId = entityId,
+            group = verb,
+            choices = choices,
+            refFor = { ref(entityId, verb, it) },
+            heightDp = CardChrome.FLOW_KEY_SEG_H_DP,
         )
         return
     }
@@ -291,17 +284,17 @@ internal fun DocContext.flowKeys(
         choices.forEachIndexed { index, (value, word) ->
             Box(
                 Modifier.padding(
-                    0f,
-                    0f,
-                    doc.units.px(CardChrome.FLOW_PAD_DP),
-                    doc.units.px(CardChrome.FLOW_PAD_DP),
+                    start = 0f,
+                    top = 0f,
+                    end = doc.units.px(CardChrome.FLOW_PAD_DP),
+                    bottom = doc.units.px(CardChrome.FLOW_PAD_DP),
                 ),
             ) {
                 doc.key(
-                    ref(entityId, verb, value),
+                    ref = ref(entityId, verb, value),
                     text = word,
-                    bg = doc.color(Vars.option(entityId, verb, index, Vars.KEY_BG)),
-                    ink = doc.color(Vars.option(entityId, verb, index, Vars.KEY_INK)),
+                    bg = doc.color(Vars.option(scope = entityId, group = verb, index = index, key = Vars.KEY_BG)),
+                    ink = doc.color(Vars.option(scope = entityId, group = verb, index = index, key = Vars.KEY_INK)),
                     heightDp = CardChrome.FLOW_KEY_SEG_H_DP,
                 )
             }

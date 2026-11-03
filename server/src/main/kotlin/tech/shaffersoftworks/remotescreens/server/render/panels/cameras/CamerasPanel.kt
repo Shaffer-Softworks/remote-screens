@@ -72,7 +72,7 @@ private fun pageScale(box: TileBox): Float =
 private fun DocContext.cameraList(tileId: String, cameras: List<CameraEntry>, layout: CamerasLayout) {
     scope.Column(
         Modifier.width(units.px(layout.listW)).fillMaxHeight().background(role(Role.STRIP))
-            .padding(0f, units.px(layout.dp(M.LIST_TOP_DP)), 0f, 0f),
+            .padding(start = 0f, top = units.px(layout.dp(M.LIST_TOP_DP)), end = 0f, bottom = 0f),
     ) {
         val doc = this@cameraList
         Row {
@@ -86,17 +86,22 @@ private fun DocContext.cameraList(tileId: String, cameras: List<CameraEntry>, la
         }
         Spacer(Modifier.height(doc.units.px(layout.dp(M.TITLE_GAP_DP))))
         doc.label(
-            doc.i18n.t("ui.cameras_title"),
-            layout.sp(M.TITLE_SP),
-            doc.role(Role.INK),
-            modifier = Modifier.padding(doc.units.px(layout.dp(M.TITLE_START_DP)), 0f, 0f, 0f),
+            text = doc.i18n.t("ui.cameras_title"),
+            sp = layout.sp(M.TITLE_SP),
+            color = doc.role(Role.INK),
+            modifier = Modifier.padding(
+                start = doc.units.px(layout.dp(M.TITLE_START_DP)),
+                top = 0f,
+                end = 0f,
+                bottom = 0f,
+            ),
         )
         val pad = doc.units.px(layout.dp(M.LIST_PAD_DP))
         Column(
             Modifier.fillMaxWidth()
                 .verticalWeight(1f)
                 .keptVerticalScroll("cameras.$tileId")
-                .padding(pad, pad, pad, pad),
+                .padding(start = pad, top = pad, end = pad, bottom = pad),
         ) {
             cameras.forEachIndexed { index, camera ->
                 if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.ITEM_GAP_DP))))
@@ -116,11 +121,11 @@ private fun DocContext.cameraRow(tileId: String, camera: CameraEntry, layout: Ca
     val rowH = units.px(layout.dp(M.ITEM_H_DP))
     picture(
         PictureSlot(
-            pictureName,
-            "/api/camera_proxy/${camera.entityId}",
-            imageW.toInt().coerceAtLeast(1),
-            rowH.toInt().coerceAtLeast(1),
-            0,
+            name = pictureName,
+            source = "/api/camera_proxy/${camera.entityId}",
+            widthPx = imageW.toInt().coerceAtLeast(1),
+            heightPx = rowH.toInt().coerceAtLeast(1),
+            refreshSeconds = 0,
         ),
     )
     val barColor = fixed((M.ITEM_BAR_ALPHA shl ALPHA_SHIFT) or (palette[Role.ACCENT_DARK] and RGB_MASK))
@@ -143,10 +148,15 @@ private fun DocContext.cameraRow(tileId: String, camera: CameraEntry, layout: Ca
             vertical = RcVerticalPositioning.Center,
         ) {
             doc.label(
-                camera.displayName(doc.states[camera.entityId]),
-                layout.sp(M.ITEM_LABEL_SP),
-                doc.role(Role.INK),
-                modifier = Modifier.padding(doc.units.px(layout.dp(M.ITEM_LABEL_START_DP)), 0f, 0f, 0f),
+                text = camera.displayName(doc.states[camera.entityId]),
+                sp = layout.sp(M.ITEM_LABEL_SP),
+                color = doc.role(Role.INK),
+                modifier = Modifier.padding(
+                    start = doc.units.px(layout.dp(M.ITEM_LABEL_START_DP)),
+                    top = 0f,
+                    end = 0f,
+                    bottom = 0f,
+                ),
             )
         }
     }
@@ -155,14 +165,21 @@ private fun DocContext.cameraRow(tileId: String, camera: CameraEntry, layout: Ca
 /** The chosen camera's name over its live video; blank until a camera is chosen, as RPI's right pane is. */
 private fun DocContext.selectedCameraPane(selected: CameraEntry?, layout: CamerasLayout) {
     val pad = units.px(layout.dp(M.DETAIL_PAD_DP))
-    scope.Column(Modifier.horizontalWeight(1f).fillMaxHeight().padding(pad, pad, pad, pad)) {
+    scope.Column(
+        Modifier.horizontalWeight(1f).fillMaxHeight().padding(start = pad, top = pad, end = pad, bottom = pad),
+    ) {
         val doc = this@selectedCameraPane
         if (selected == null) return@Column
         doc.label(
-            selected.displayName(doc.states[selected.entityId]),
-            layout.sp(M.DETAIL_NAME_SP),
-            doc.role(Role.INK),
-            modifier = Modifier.padding(doc.units.px(layout.dp(M.DETAIL_NAME_START_DP)), 0f, 0f, 0f),
+            text = selected.displayName(doc.states[selected.entityId]),
+            sp = layout.sp(M.DETAIL_NAME_SP),
+            color = doc.role(Role.INK),
+            modifier = Modifier.padding(
+                start = doc.units.px(layout.dp(M.DETAIL_NAME_START_DP)),
+                top = 0f,
+                end = 0f,
+                bottom = 0f,
+            ),
         )
         Spacer(Modifier.height(doc.units.px(layout.dp(M.DETAIL_GAP_DP))))
         doc.liveVideoBox(selected.entityId, layout)
@@ -178,7 +195,14 @@ private fun DocContext.liveVideoBox(entityId: String, layout: CamerasLayout) {
     val pictureW = units.px(layout.videoW).toInt().coerceAtLeast(1)
     val pictureH = units.px(layout.videoH).toInt().coerceAtLeast(1)
     picture(
-        PictureSlot(pictureName, "/api/camera_proxy/$entityId", pictureW, pictureH, 0, crop = false),
+        PictureSlot(
+            name = pictureName,
+            source = "/api/camera_proxy/$entityId",
+            widthPx = pictureW,
+            heightPx = pictureH,
+            refreshSeconds = 0,
+            crop = false,
+        ),
     )
     val video = liveVideo(entityId, crop = false)
     val waiting = int(Vars.entity(entityId, Vars.KEY_CAM_WAITING), Vars.VISIBLE)

@@ -21,7 +21,6 @@ import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.freeform.paint
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.VarValue
@@ -35,11 +34,14 @@ private const val SEG_EDGE_DP = 1f
 private const val SEG_LEVEL_GAP_DP = 4f
 private const val SEG_LEVEL_CORNER_DP = 3f
 private const val SEG_CHOICE_CORNER_DIVISOR = 2f
+/** Knob diameter as a share of the track height; smaller than the pill so it reads as a thumb, not an end-cap. */
+private const val LEVEL_KNOB_SHARE = 0.9f
 
 /**
  * A bar from 0 to 1 that follows [level], with [steps] taps across it: a tap on step i sends [refAt] (i + 1).
  * Remote Compose has no drag that reports a value, so a slider is a row of steps. The fill is painted: a width
- * bound to a variable is measured once and does not follow it.
+ * bound to a variable is measured once and does not follow it. A round white knob sits on the active fill (its
+ * right edge at the value) so the bar reads as a slider. [borderDp] strokes the pill when greater than 0.
  */
 fun DocContext.levelBar(
     level: RcFloat,
@@ -48,14 +50,59 @@ fun DocContext.levelBar(
     fill: RcColor,
     track: RcColor,
     steps: Int,
+    borderDp: Float = 0f,
+    border: RcColor? = null,
     refAt: (Int) -> ActionRef,
 ) {
     val widthPx = units.px(widthDp)
     val heightPx = units.px(heightDp)
+    val knob = role(Role.INK)
+    val strokeColor = border ?: role(Role.DIVIDER)
+    val stroke = if (borderDp > 0f) units.px(borderDp) else 0f
+    val thumb = heightPx * LEVEL_KNOB_SHARE
+    val thumbPad = (heightPx - thumb) / 2f
+    val barRadius = heightPx / 2f
     scope.Box(Modifier.size(widthPx, heightPx).clip(rounded(heightDp / 2f)).background(track)) {
         Canvas(Modifier.size(widthPx, heightPx)) {
+            // Knob travels in-bounds; fill tip peeks past its right edge by the vertical inset so the
+            // stadium end reads past the thumb (knob sits left of the tip).
+            val thumbLeft = level * (widthPx - thumb - thumbPad)
+            val thumbRight = thumbLeft + thumb
+            val tip = thumbRight + thumbPad
             paint { color(fill); style(RcPaintStyle.Fill) }
-            drawRect(0f.rf, 0f.rf, level * widthPx, heightPx.rf)
+            drawRoundRect(
+                left = 0f.rf,
+                top = 0f.rf,
+                right = tip,
+                bottom = heightPx.rf,
+                radiusX = barRadius.rf,
+                radiusY = barRadius.rf,
+            )
+            paint { color(knob); style(RcPaintStyle.Fill) }
+            drawRoundRect(
+                left = thumbLeft,
+                top = thumbPad.rf,
+                right = thumbRight,
+                bottom = (heightPx - thumbPad).rf,
+                radiusX = (thumb / 2f).rf,
+                radiusY = (thumb / 2f).rf,
+            )
+            if (stroke > 0f) {
+                paint {
+                    color(strokeColor)
+                    style(RcPaintStyle.Stroke)
+                    strokeWidth(stroke)
+                }
+                val inset = stroke / 2f
+                drawRoundRect(
+                    left = inset.rf,
+                    top = inset.rf,
+                    right = (widthPx - inset).rf,
+                    bottom = (heightPx - inset).rf,
+                    radiusX = (barRadius - inset).coerceAtLeast(0f).rf,
+                    radiusY = (barRadius - inset).coerceAtLeast(0f).rf,
+                )
+            }
         }
         Row(Modifier.size(widthPx, heightPx)) {
             for (i in 1..steps) Box(
@@ -82,13 +129,13 @@ fun DocContext.segmentedLevelBar(
 ) {
     val group = "seg.$levelKey"
     for (index in 0 until steps) {
-        color(Vars.option(entityId, group, index, Vars.KEY_BG), trackRole.argb)
+        color(Vars.option(scope = entityId, group = group, index = index, key = Vars.KEY_BG), trackRole.argb)
     }
     bind(entityId) { states ->
         val lit = (levelOf(states).coerceIn(0f, 1f) * steps).roundToInt().coerceIn(0, steps)
         (0 until steps).map { index ->
             VarValue.color(
-                Vars.option(entityId, group, index, Vars.KEY_BG),
+                Vars.option(scope = entityId, group = group, index = index, key = Vars.KEY_BG),
                 (if (index < lit) fillRole else trackRole).argb,
             )
         }
@@ -104,7 +151,9 @@ fun DocContext.segmentedLevelBar(
                 doc.tap(
                     Modifier.size(doc.units.px(segW), heightPx)
                         .clip(doc.rounded(SEG_LEVEL_CORNER_DP))
-                        .background(doc.color(Vars.option(entityId, group, index, Vars.KEY_BG))),
+                        .background(
+                            doc.color(Vars.option(scope = entityId, group = group, index = index, key = Vars.KEY_BG)),
+                        ),
                     refAt(index + 1),
                 ),
             )
@@ -136,13 +185,13 @@ fun DocContext.choiceRow(
         choices.forEachIndexed { index, (value, word) ->
             if (index > 0) Spacer(Modifier.width(edge))
             val cell = Modifier.horizontalWeight(1f).fillMaxHeight()
-                .background(doc.color(Vars.option(scopeId, group, index, Vars.KEY_BG)))
+                .background(doc.color(Vars.option(scope = scopeId, group = group, index = index, key = Vars.KEY_BG)))
             Row(
                 doc.tap(cell, refFor(value)),
                 horizontal = RcRowHorizontalPositioning.Center,
                 vertical = RcVerticalPositioning.Center,
             ) {
-                val ink = doc.color(Vars.option(scopeId, group, index, Vars.KEY_INK))
+                val ink = doc.color(Vars.option(scope = scopeId, group = group, index = index, key = Vars.KEY_INK))
                 val icon = icons[value]
                 if (icon != null) {
                     doc.icon(icon, heightDp * CHOICE_ICON_SHARE, ink)
@@ -155,7 +204,13 @@ fun DocContext.choiceRow(
                     }
                 }
                 if (icon == null || word.isNotEmpty()) {
-                    doc.label(word, Type.BODY, ink, Weight.MEDIUM, align = RcTextAlign.Center)
+                    doc.label(
+                        text = word,
+                        sp = Type.BODY,
+                        color = ink,
+                        weight = Weight.MEDIUM,
+                        align = RcTextAlign.Center,
+                    )
                 }
             }
         }

@@ -48,7 +48,12 @@ class EnrollmentService(
         val server = "$host:$playerPort"
         val downloadUrl = "http://$server/player/apk?enroll=$token"
         return EnrollmentResponse(
-            provisioning = provisioningJson(apk, downloadUrl, server, request).toString(),
+            provisioning = provisioningJson(
+                apk = apk,
+                downloadUrl = downloadUrl,
+                server = server,
+                request = request,
+            ).toString(),
             downloadUrl = downloadUrl,
             expiresAt = expiresAt,
         )

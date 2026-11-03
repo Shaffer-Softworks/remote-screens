@@ -62,10 +62,10 @@ internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: 
             paint {
                 style(RcPaintStyle.Fill)
                 radialGradient(
-                    cx,
-                    cx,
-                    r,
-                    intArrayOf(inner.id, outer.id),
+                    centerX = cx,
+                    centerY = cx,
+                    radius = r,
+                    colors = intArrayOf(inner.id, outer.id),
                     colorMask = ThermostatMetrics.DIAL_GRADIENT_COLOR_MASK,
                 )
             }
@@ -92,10 +92,10 @@ internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: 
                 val ca = cos(a).toFloat()
                 val sa = sin(a).toFloat()
                 drawLine(
-                    cx + tickInner * ca,
-                    cx + tickInner * sa,
-                    cx + tickOuter * ca,
-                    cx + tickOuter * sa,
+                    x1 = cx + tickInner * ca,
+                    y1 = cx + tickInner * sa,
+                    x2 = cx + tickOuter * ca,
+                    y2 = cx + tickOuter * sa,
                 )
             }
             val left = (cx - r).rf
@@ -111,7 +111,14 @@ internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: 
                     strokeCap(RcStrokeCap.Round)
                     style(RcPaintStyle.Stroke)
                 }
-                drawArc(left, top, right, bottom, ThermostatMetrics.ARC_START_DEG.rf, sweepLow)
+                drawArc(
+                    left = left,
+                    top = top,
+                    right = right,
+                    bottom = bottom,
+                    startAngle = ThermostatMetrics.ARC_START_DEG.rf,
+                    sweepAngle = sweepLow,
+                )
                 paint {
                     clearShader()
                     color(cool)
@@ -120,7 +127,14 @@ internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: 
                     strokeCap(RcStrokeCap.Round)
                     style(RcPaintStyle.Stroke)
                 }
-                drawArc(left, top, right, bottom, coolStart, coolSweep)
+                drawArc(
+                    left = left,
+                    top = top,
+                    right = right,
+                    bottom = bottom,
+                    startAngle = coolStart,
+                    sweepAngle = coolSweep,
+                )
                 val knob = doc.units.px(knobDp)
                 save {
                     rotate(sweepLow, cx.rf, cx.rf)
@@ -157,7 +171,14 @@ internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: 
                     strokeCap(RcStrokeCap.Round)
                     style(RcPaintStyle.Stroke)
                 }
-                drawArc(left, top, right, bottom, ThermostatMetrics.ARC_START_DEG.rf, sweep)
+                drawArc(
+                    left = left,
+                    top = top,
+                    right = right,
+                    bottom = bottom,
+                    startAngle = ThermostatMetrics.ARC_START_DEG.rf,
+                    sweepAngle = sweep,
+                )
                 save {
                     rotate(sweep, cx.rf, cx.rf)
                     val knob = doc.units.px(knobDp)
@@ -180,19 +201,19 @@ internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: 
             vertical = RcColumnVerticalPositioning.Center,
         ) {
             doc.label(
-                doc.text(Vars.tile(tileId, "action")),
-                ThermostatMetrics.ACTION_LABEL_SP * layoutScale,
-                ink,
+                text = doc.text(Vars.tile(tileId, "action")),
+                sp = ThermostatMetrics.ACTION_LABEL_SP * layoutScale,
+                color = ink,
                 align = RcTextAlign.Center,
             )
             Spacer(Modifier.height(doc.units.px(ThermostatMetrics.HEADER_GAP_DP * layoutScale)))
             if (dual) {
                 Row(vertical = RcVerticalPositioning.Center) {
                     doc.label(
-                        doc.text(Vars.tile(tileId, "low")),
-                        ThermostatMetrics.TARGET_LABEL_SP * layoutScale,
-                        heat,
-                        Weight.LIGHT,
+                        text = doc.text(Vars.tile(tileId, "low")),
+                        sp = ThermostatMetrics.TARGET_LABEL_SP * layoutScale,
+                        color = heat,
+                        weight = Weight.LIGHT,
                         align = RcTextAlign.Center,
                     )
                     Spacer(
@@ -201,19 +222,19 @@ internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: 
                         ),
                     )
                     doc.label(
-                        doc.text(Vars.tile(tileId, "high")),
-                        ThermostatMetrics.TARGET_LABEL_SP * layoutScale,
-                        cool,
-                        Weight.LIGHT,
+                        text = doc.text(Vars.tile(tileId, "high")),
+                        sp = ThermostatMetrics.TARGET_LABEL_SP * layoutScale,
+                        color = cool,
+                        weight = Weight.LIGHT,
                         align = RcTextAlign.Center,
                     )
                 }
             } else {
                 doc.label(
-                    doc.text(Vars.tile(tileId, "target")),
-                    ThermostatMetrics.TARGET_LABEL_SP * layoutScale,
-                    ink,
-                    Weight.LIGHT,
+                    text = doc.text(Vars.tile(tileId, "target")),
+                    sp = ThermostatMetrics.TARGET_LABEL_SP * layoutScale,
+                    color = ink,
+                    weight = Weight.LIGHT,
                     align = RcTextAlign.Center,
                 )
             }

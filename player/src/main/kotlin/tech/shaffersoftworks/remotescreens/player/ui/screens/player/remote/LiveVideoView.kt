@@ -160,6 +160,6 @@ private fun PlaybackException.httpResponseCode(): Int? {
 @Composable
 private fun LiveVideoViewPreview() {
     RemoteScreensTheme {
-        LiveVideoView(SlotVideo(1, 1, "", "", false)) { _, _ -> }
+        LiveVideoView(SlotVideo(revision = 1, componentId = 1, url = "", token = "", crop = false)) { _, _ -> }
     }
 }

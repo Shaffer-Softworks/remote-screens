@@ -42,9 +42,9 @@ internal class SessionDocument(
 
     suspend fun renderScreen(screen: Screen): RenderedDoc =
         ScreenRenderer.render(
-            screen,
-            host.device,
-            renderInput(context.renderDataRepository.forScreen(screen)),
+            screen = screen,
+            device = host.device,
+            input = renderInput(context.renderDataRepository.forScreen(screen)),
             initialPage = host.page,
         )
 
@@ -193,10 +193,10 @@ internal class SessionDocument(
         val build: suspend () -> RenderedDoc? = {
             val renderData = context.renderDataRepository.forCard(entityId, kind)
             CardRenderer.render(
-                entityId ?: "card.$kind",
-                kind,
-                host.device,
-                renderInput(renderData),
+                entityId = entityId ?: "card.$kind",
+                kind = kind,
+                device = host.device,
+                input = renderInput(renderData),
             )
         }
         val renderedDoc = buildMutex.withLock { build() } ?: return
@@ -215,7 +215,14 @@ internal class SessionDocument(
         }
         val renderedDoc = buildMutex.withLock { build() } ?: return
         if (alert.wake) host.send(ServerMessage.Wake(true))
-        show(Slot.ALERT, renderedDoc, build, timeoutSeconds = alert.timeout, wakeOnShow = alert.wake, force = true)
+        show(
+            slot = Slot.ALERT,
+            renderedDoc = renderedDoc,
+            rebuild = build,
+            timeoutSeconds = alert.timeout,
+            wakeOnShow = alert.wake,
+            force = true,
+        )
     }
 }
 

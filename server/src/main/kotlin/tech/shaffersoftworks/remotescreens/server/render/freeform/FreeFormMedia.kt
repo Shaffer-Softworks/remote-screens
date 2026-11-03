@@ -98,12 +98,12 @@ internal fun DocContext.gaugeNode(node: Node, axis: Axis, pages: Pages) {
                     track,
                 ); style(RcPaintStyle.Stroke); strokeWidth(stroke); strokeCap(RcStrokeCap.Round) }
                 drawArc(
-                    inset,
-                    inset,
-                    px - inset,
-                    px - inset,
-                    Metrics.GAUGE_ARC_START_DEG,
-                    Metrics.GAUGE_ARC_SWEEP_DEG,
+                    left = inset,
+                    top = inset,
+                    right = px - inset,
+                    bottom = px - inset,
+                    startAngle = Metrics.GAUGE_ARC_START_DEG,
+                    sweepAngle = Metrics.GAUGE_ARC_SWEEP_DEG,
                 )
                 if (id != null) {
                     paint { color(
@@ -112,12 +112,12 @@ internal fun DocContext.gaugeNode(node: Node, axis: Axis, pages: Pages) {
                         RcPaintStyle.Stroke,
                     ); strokeWidth(stroke); strokeCap(RcStrokeCap.Round) }
                     drawArc(
-                        inset.rf,
-                        inset.rf,
-                        (px - inset).rf,
-                        (px - inset).rf,
-                        Metrics.GAUGE_ARC_START_DEG.rf,
-                        doc.float(nodeLevel(node.id)) * Metrics.GAUGE_ARC_SWEEP_DEG,
+                        left = inset.rf,
+                        top = inset.rf,
+                        right = (px - inset).rf,
+                        bottom = (px - inset).rf,
+                        startAngle = Metrics.GAUGE_ARC_START_DEG.rf,
+                        sweepAngle = doc.float(nodeLevel(node.id)) * Metrics.GAUGE_ARC_SWEEP_DEG,
                     )
                 }
                 if (caption != null) {
@@ -125,20 +125,20 @@ internal fun DocContext.gaugeNode(node: Node, axis: Axis, pages: Pages) {
                         doc.role(Role.INK_SOFT),
                     ); style(RcPaintStyle.Fill); textSize(px * Metrics.GAUGE_CAPTION_SIZE_RATIO) }
                     drawTextAnchored(
-                        caption,
-                        px / 2f,
-                        px - px * Metrics.GAUGE_CAPTION_Y_RATIO,
-                        0f,
-                        0f,
+                        text = caption,
+                        x = px / 2f,
+                        y = px - px * Metrics.GAUGE_CAPTION_Y_RATIO,
+                        panX = 0f,
+                        panY = 0f,
                     )
                 }
             }
             if (id != null) {
                 doc.label(
-                    doc.text(Vars.entity(id, Vars.KEY_VALUE)),
-                    maxOf(sizeDp * Metrics.GAUGE_VALUE_SIZE_RATIO, Type.CAPTION),
-                    doc.role(Role.INK),
-                    Weight.MEDIUM,
+                    text = doc.text(Vars.entity(id, Vars.KEY_VALUE)),
+                    sp = maxOf(sizeDp * Metrics.GAUGE_VALUE_SIZE_RATIO, Type.CAPTION),
+                    color = doc.role(Role.INK),
+                    weight = Weight.MEDIUM,
                     align = RcTextAlign.Center,
                 )
             }
@@ -177,10 +177,10 @@ internal fun DocContext.analogNode(node: Node, axis: Axis, pages: Pages) {
                 val angle = i * 2 * PI / Metrics.ANALOG_HOUR_MARKS
                 val inner = if (i % Metrics.ANALOG_QUARTER_STEP == 0) Metrics.ANALOG_TICK_INNER_MAJOR else Metrics.ANALOG_TICK_INNER_MINOR
                 drawLine(
-                    mid + (sin(angle) * mid * inner).toFloat(),
-                    mid - (cos(angle) * mid * inner).toFloat(),
-                    mid + (sin(angle) * mid * Metrics.ANALOG_TICK_OUTER).toFloat(),
-                    mid - (cos(angle) * mid * Metrics.ANALOG_TICK_OUTER).toFloat(),
+                    x1 = mid + (sin(angle) * mid * inner).toFloat(),
+                    y1 = mid - (cos(angle) * mid * inner).toFloat(),
+                    x2 = mid + (sin(angle) * mid * Metrics.ANALOG_TICK_OUTER).toFloat(),
+                    y2 = mid - (cos(angle) * mid * Metrics.ANALOG_TICK_OUTER).toFloat(),
                 )
             }
             val hours = when (node.props["numbers"]) {
@@ -199,11 +199,11 @@ internal fun DocContext.analogNode(node: Node, axis: Axis, pages: Pages) {
                 for (hour in hours) {
                     val angle = hour * 2 * PI / Metrics.ANALOG_HOUR_MARKS
                     drawTextAnchored(
-                        doc.literal(hour.toString()),
-                        mid + (sin(angle) * mid * Metrics.ANALOG_NUMBER_RADIUS).toFloat(),
-                        mid - (cos(angle) * mid * Metrics.ANALOG_NUMBER_RADIUS).toFloat(),
-                        0f,
-                        0f,
+                        text = doc.literal(hour.toString()),
+                        x = mid + (sin(angle) * mid * Metrics.ANALOG_NUMBER_RADIUS).toFloat(),
+                        y = mid - (cos(angle) * mid * Metrics.ANALOG_NUMBER_RADIUS).toFloat(),
+                        panX = 0f,
+                        panY = 0f,
                     )
                 }
             }
@@ -216,27 +216,27 @@ internal fun DocContext.analogNode(node: Node, axis: Axis, pages: Pages) {
                     ); style(
                         RcPaintStyle.Stroke,
                     ); strokeWidth(width); strokeCap(RcStrokeCap.Round) }
-                    drawLine(mid, mid, mid, mid - mid * length)
+                    drawLine(x1 = mid, y1 = mid, x2 = mid, y2 = mid - mid * length)
                 }
             }
             hand(
-                minutes() * Metrics.ANALOG_HOUR_DEG_PER_MIN,
-                Metrics.ANALOG_HOUR_HAND_LEN,
-                px * Metrics.ANALOG_HOUR_HAND_WIDTH,
-                ink,
+                angle = minutes() * Metrics.ANALOG_HOUR_DEG_PER_MIN,
+                length = Metrics.ANALOG_HOUR_HAND_LEN,
+                width = px * Metrics.ANALOG_HOUR_HAND_WIDTH,
+                colour = ink,
             )
             hand(
-                seconds() * Metrics.ANALOG_MINUTE_DEG_PER_SEC,
-                Metrics.ANALOG_MINUTE_HAND_LEN,
-                px * Metrics.ANALOG_MINUTE_HAND_WIDTH,
-                ink,
+                angle = seconds() * Metrics.ANALOG_MINUTE_DEG_PER_SEC,
+                length = Metrics.ANALOG_MINUTE_HAND_LEN,
+                width = px * Metrics.ANALOG_MINUTE_HAND_WIDTH,
+                colour = ink,
             )
             if (seconds) {
                 hand(
-                    continuousSeconds() * Metrics.ANALOG_SECOND_DEG,
-                    Metrics.ANALOG_SECOND_HAND_LEN,
-                    px * Metrics.ANALOG_SECOND_HAND_WIDTH,
-                    accent,
+                    angle = continuousSeconds() * Metrics.ANALOG_SECOND_DEG,
+                    length = Metrics.ANALOG_SECOND_HAND_LEN,
+                    width = px * Metrics.ANALOG_SECOND_HAND_WIDTH,
+                    colour = accent,
                 )
             }
             paint { color(ink); style(RcPaintStyle.Fill) }
@@ -273,7 +273,7 @@ internal fun DocContext.iconButtonNode(node: Node, axis: Axis, pages: Pages) {
     base = base.clip(rounded(if (node.style.corner > 0f) node.style.corner else sizeDp / 2f))
     if (node.style.background == null) base = base.background(bg)
     scope.Box(
-        styled(node, axis, pages, base),
+        styled(node = node, axis = axis, pages = pages, base = base),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
     ) {
@@ -281,11 +281,11 @@ internal fun DocContext.iconButtonNode(node: Node, axis: Axis, pages: Pages) {
         val on = node.props["iconOn"]
         if (id != null && on != null) {
             doc.toggleIcon(
-                id,
-                name,
-                on,
-                sizeDp * Metrics.ICON_BUTTON_ICON_RATIO,
-                ink,
+                entityId = id,
+                off = name,
+                on = on,
+                sizeDp = sizeDp * Metrics.ICON_BUTTON_ICON_RATIO,
+                color = ink,
             )
         } else {
             doc.icon(name, sizeDp * Metrics.ICON_BUTTON_ICON_RATIO, ink)
@@ -353,7 +353,7 @@ internal fun DocContext.keysNode(node: Node, axis: Axis, pages: Pages) {
                 val ref = ActionRef(node.id, verb)
                 if (spec?.predict?.containsKey(verb) == true) doc.predict(ref, id)
                 doc.key(
-                    ref,
+                    ref = ref,
                     icon = icon,
                     heightDp = sizeDp,
                     widthDp = if (stretch) null else sizeDp,
@@ -364,10 +364,10 @@ internal fun DocContext.keysNode(node: Node, axis: Axis, pages: Pages) {
         }
         if (domain == "lock") {
             doc.label(
-                doc.text(Vars.tile(node.id, Vars.KEY_CONFIRM)),
-                Type.CAPTION,
-                doc.role(Role.WARN),
-                Weight.SEMI_BOLD,
+                text = doc.text(Vars.tile(node.id, Vars.KEY_CONFIRM)),
+                sp = Type.CAPTION,
+                color = doc.role(Role.WARN),
+                weight = Weight.SEMI_BOLD,
             )
         }
     }
@@ -433,10 +433,10 @@ internal fun DocContext.keypadNode(node: Node, axis: Axis, pages: Pages) {
         ) {
             if (id != null) {
                 doc.label(
-                    doc.text(codeVar),
-                    Type.VALUE,
-                    doc.role(Role.INK),
-                    Weight.MEDIUM,
+                    text = doc.text(codeVar),
+                    sp = Type.VALUE,
+                    color = doc.role(Role.INK),
+                    weight = Weight.MEDIUM,
                     align = RcTextAlign.Center,
                 )
             }
@@ -448,7 +448,7 @@ internal fun DocContext.keypadNode(node: Node, axis: Axis, pages: Pages) {
             listOf("clear", "0", "back"),
         )) {
             Row(
-                Modifier.padding(0f, 0f, 0f, doc.units.px(Metrics.KEYPAD_ROW_GAP_DP)),
+                Modifier.padding(start = 0f, top = 0f, end = 0f, bottom = doc.units.px(Metrics.KEYPAD_ROW_GAP_DP)),
                 horizontal = RcRowHorizontalPositioning.Center,
             ) {
                 row.forEachIndexed { i, digit ->
@@ -460,7 +460,7 @@ internal fun DocContext.keypadNode(node: Node, axis: Axis, pages: Pages) {
                     }
                     val icon = when (digit) { "clear" -> "close"; "back" -> "backspace-outline"; else -> null }
                     doc.key(
-                        ref,
+                        ref = ref,
                         text = if (icon == null) digit else null,
                         icon = icon,
                         heightDp = sizeDp,
@@ -521,12 +521,12 @@ internal fun DocContext.dialNode(node: Node, axis: Axis, pages: Pages) {
                     strokeWidth(stroke); strokeCap(RcStrokeCap.Round)
                 }
                 drawArc(
-                    inset,
-                    inset,
-                    px - inset,
-                    px - inset,
-                    Metrics.GAUGE_ARC_START_DEG,
-                    Metrics.GAUGE_ARC_SWEEP_DEG,
+                    left = inset,
+                    top = inset,
+                    right = px - inset,
+                    bottom = px - inset,
+                    startAngle = Metrics.GAUGE_ARC_START_DEG,
+                    sweepAngle = Metrics.GAUGE_ARC_SWEEP_DEG,
                 )
                 if (id != null) {
                     paint {
@@ -535,30 +535,30 @@ internal fun DocContext.dialNode(node: Node, axis: Axis, pages: Pages) {
                     }
                     val sweep = doc.float(nodeLevel(node.id)) * Metrics.GAUGE_ARC_SWEEP_DEG
                     drawArc(
-                        inset.rf,
-                        inset.rf,
-                        (px - inset).rf,
-                        (px - inset).rf,
-                        Metrics.GAUGE_ARC_START_DEG.rf,
-                        sweep,
+                        left = inset.rf,
+                        top = inset.rf,
+                        right = (px - inset).rf,
+                        bottom = (px - inset).rf,
+                        startAngle = Metrics.GAUGE_ARC_START_DEG.rf,
+                        sweepAngle = sweep,
                     )
                 }
             }
             val valueSp = maxOf(sizeDp * Metrics.DIAL_VALUE_SIZE_RATIO, Type.CAPTION)
             if (id != null) {
                 doc.label(
-                    doc.text(Vars.entity(id, Vars.KEY_VALUE)),
-                    valueSp,
-                    doc.role(Role.INK),
-                    Weight.MEDIUM,
+                    text = doc.text(Vars.entity(id, Vars.KEY_VALUE)),
+                    sp = valueSp,
+                    color = doc.role(Role.INK),
+                    weight = Weight.MEDIUM,
                     align = RcTextAlign.Center,
                 )
             } else {
                 doc.label(
-                    "–",
-                    valueSp,
-                    doc.role(Role.INK_DIM),
-                    Weight.MEDIUM,
+                    text = "–",
+                    sp = valueSp,
+                    color = doc.role(Role.INK_DIM),
+                    weight = Weight.MEDIUM,
                     align = RcTextAlign.Center,
                 )
             }
@@ -568,7 +568,7 @@ internal fun DocContext.dialNode(node: Node, axis: Axis, pages: Pages) {
             fun key(ref: ActionRef?, icon: String) {
                 if (ref != null) {
                     doc.key(
-                        ref,
+                        ref = ref,
                         icon = icon,
                         heightDp = Metrics.STEPPER_KEY_DP,
                         widthDp = Metrics.STEPPER_KEY_DP,
@@ -607,17 +607,17 @@ internal fun DocContext.countdownNode(node: Node, axis: Axis, pages: Pages) {
         val doc = this@countdownNode
         when {
             id != null -> doc.label(
-                doc.text(Vars.entity(id, Vars.KEY_VALUE)),
-                sp,
-                ink,
-                weight,
+                text = doc.text(Vars.entity(id, Vars.KEY_VALUE)),
+                sp = sp,
+                color = ink,
+                weight = weight,
                 align = textAlign,
             )
             else -> doc.label(
-                node.props["text"] ?: "0:00",
-                sp,
-                ink,
-                weight,
+                text = node.props["text"] ?: "0:00",
+                sp = sp,
+                color = ink,
+                weight = weight,
                 align = textAlign,
             )
         }
@@ -639,7 +639,16 @@ internal fun DocContext.qrNode(node: Node, axis: Axis, pages: Pages) {
         else -> node.props["text"].orEmpty()
     }
     val slot = "qr.${node.id}"
-    picture(PictureSlot(slot, "qr:$text", px, px, 0, crop = false))
+    picture(
+        PictureSlot(
+            name = slot,
+            source = "qr:$text",
+            widthPx = px,
+            heightPx = px,
+            refreshSeconds = 0,
+            crop = false,
+        ),
+    )
     // Mockup: white rounded plate around the code.
     val plate = styled(node, axis, pages)
         .clip(rounded(Metrics.QR_CORNER_DP))
@@ -672,7 +681,7 @@ internal fun DocContext.markdownNode(node: Node, axis: Axis, pages: Pages) {
                 line.italic -> Weight.NORMAL
                 else -> Weight.NORMAL
             }
-            doc.label(line.text.ifEmpty { " " }, sp, ink, weight, align = textAlign)
+            doc.label(text = line.text.ifEmpty { " " }, sp = sp, color = ink, weight = weight, align = textAlign)
         }
     }
 }
@@ -689,14 +698,14 @@ internal fun DocContext.tabsNode(node: Node, self: Dims, axis: Axis, pages: Page
     val stripH = Metrics.TABS_STRIP_H
     val bodyH = (self.h - node.style.padY - stripH - gap).coerceAtLeast(1f)
     val bodyW = (self.w - node.style.padX).coerceAtLeast(1f)
-    scope.Column(styled(node, axis, pages, measured(node, axis, self))) {
+    scope.Column(styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))) {
         val doc = this@tabsNode
-        doc.tabStrip(shown, tabVar, selected, stripH)
+        doc.tabStrip(shown = shown, tabVar = tabVar, selected = selected, stripH = stripH)
         Spacer(Modifier.height(doc.units.px(gap)))
         StateLayout(selected, Modifier.size(doc.units.px(bodyW), doc.units.px(bodyH))) {
             for (child in children) {
                 Box(Modifier.fillMaxSize()) {
-                    doc.node(child, Dims(bodyW, bodyH), Axis.BOX, pages)
+                    doc.node(node = child, self = Dims(bodyW, bodyH), axis = Axis.BOX, pages = pages)
                 }
             }
         }
@@ -736,10 +745,10 @@ internal fun DocContext.tabLabel(label: String, active: Boolean, ref: ActionRef)
     scope.Column(tap(Modifier, ref), horizontal = RcHorizontalPositioning.Center) {
         val doc = this@tabLabel
         doc.label(
-            label,
-            Type.BODY,
-            if (active) doc.role(Role.INK) else doc.role(Role.INK_DIM),
-            if (active) Weight.SEMI_BOLD else Weight.NORMAL,
+            text = label,
+            sp = Type.BODY,
+            color = if (active) doc.role(Role.INK) else doc.role(Role.INK_DIM),
+            weight = if (active) Weight.SEMI_BOLD else Weight.NORMAL,
         )
         Spacer(Modifier.height(doc.units.px(Metrics.TABS_UNDERLINE_GAP_DP)))
         Box(

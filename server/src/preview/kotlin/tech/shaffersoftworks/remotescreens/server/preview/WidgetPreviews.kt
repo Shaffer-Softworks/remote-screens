@@ -36,10 +36,10 @@ private const val SAMPLE_LEVEL = 0.6f
 
 internal fun widgetGallery(device: Device, input: RenderInput, typography: Boolean): RenderedDoc {
     val (bytes, context) = DocContext.build(
-        device.widthPx,
-        device.heightPx,
-        "Shared widgets",
-        { input.context(device) },
+        widthPx = device.widthPx,
+        heightPx = device.heightPx,
+        description = "Shared widgets",
+        newContext = { input.context(device) },
     ) { doc ->
         Column(Modifier.fillMaxSize().background(doc.role(Role.PAGE)).padding(SAMPLE_PADDING)) {
             if (typography) {
@@ -58,7 +58,7 @@ private fun DocContext.typographySamples() {
         gap(TYPE_GAP)
     }
     for (weight in listOf(Weight.LIGHT, Weight.NORMAL, Weight.MEDIUM, Weight.SEMI_BOLD, Weight.BOLD)) {
-        label("Font weight ${weight.toInt()}", Type.TITLE, role(Role.INK), weight)
+        label(text = "Font weight ${weight.toInt()}", sp = Type.TITLE, color = role(Role.INK), weight = weight)
     }
 }
 
@@ -66,7 +66,7 @@ private fun DocContext.controlSamples() {
     scope.Row {
         icon("lightbulb-on", ICON_SIZE, role(Role.ACCENT))
         weatherStateIcon("partlycloudy", ICON_SIZE, fallbackColor = role(Role.INK))
-        initials("Sam Taylor", ICON_SIZE, role(Role.KEY), role(Role.INK))
+        initials(name = "Sam Taylor", sizeDp = ICON_SIZE, bg = role(Role.KEY), ink = role(Role.INK))
         spinner(SPINNER_SIZE, role(Role.ACCENT))
     }
     gap(CONTROL_GAP)
@@ -78,31 +78,31 @@ private fun DocContext.controlSamples() {
     barSamples()
     gap(CONTROL_GAP)
     label(
-        "A long label that wraps across the available width to show how shared text behaves.",
-        Type.HEADLINE,
-        role(Role.INK),
+        text = "A long label that wraps across the available width to show how shared text behaves.",
+        sp = Type.HEADLINE,
+        color = role(Role.INK),
         lines = 2,
     )
 }
 
 private fun DocContext.barSamples() {
     levelBar(
-        float("preview.level", SAMPLE_LEVEL),
-        BAR_WIDTH,
-        BAR_HEIGHT,
-        role(Role.ACCENT),
-        role(Role.TRACK),
-        BAR_STEPS,
+        level = float("preview.level", SAMPLE_LEVEL),
+        widthDp = BAR_WIDTH,
+        heightDp = BAR_HEIGHT,
+        fill = role(Role.ACCENT),
+        track = role(Role.TRACK),
+        steps = BAR_STEPS,
     ) { ActionRef("sample", "level", it.toString()) }
     gap(CONTROL_GAP)
     segmentedLevelBar(
-        "sample",
-        "preview",
-        BAR_WIDTH,
-        SEGMENT_HEIGHT,
-        BAR_STEPS,
-        { SAMPLE_LEVEL },
-        Role.ACCENT,
-        Role.TRACK,
+        entityId = "sample",
+        levelKey = "preview",
+        widthDp = BAR_WIDTH,
+        heightDp = SEGMENT_HEIGHT,
+        steps = BAR_STEPS,
+        levelOf = { SAMPLE_LEVEL },
+        fillRole = Role.ACCENT,
+        trackRole = Role.TRACK,
     ) { ActionRef("sample", "level", it.toString()) }
 }

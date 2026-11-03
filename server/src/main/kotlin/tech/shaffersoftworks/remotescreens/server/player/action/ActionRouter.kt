@@ -46,13 +46,20 @@ class ActionRouter(
     fun target(ref: ActionRef, screen: Screen?): TapTarget? = when {
         ref.tile.startsWith(ENTITY_TILE_PREFIX) -> {
             val entityId = ref.tile.removePrefix(ENTITY_TILE_PREFIX)
-            TapTarget(ref.tile, entityId, entityId.substringBefore('.'), null)
+            TapTarget(tileId = ref.tile, entityId = entityId, kind = entityId.substringBefore('.'), tile = null)
         }
         ref.tile == "card" -> null
         else -> screen?.pages
             ?.flatMap { it.allTiles() }
             ?.firstOrNull { it.id == ref.tile }
-            ?.let { tile -> TapTarget(tile.id, tile.entityId, tile.effectiveKind(), tile) }
+            ?.let { tile ->
+                TapTarget(
+                    tileId = tile.id,
+                    entityId = tile.entityId,
+                    kind = tile.effectiveKind(),
+                    tile = tile,
+                )
+            }
     }
 
     // Any failure of a tap is shown on the tablet rather than ending its session.
@@ -70,7 +77,7 @@ class ActionRouter(
             if (verb == "calendar_create" || verb == "calendar_delete") {
                 handleCalendar(verb, ref, target)
             } else {
-                dispatchTap(verb, ref, target, entity, memory, nowMs)
+                dispatchTap(verb = verb, ref = ref, target = target, entity = entity, memory = memory, nowMs = nowMs)
             }
         } catch (cancellation: CancellationException) {
             throw cancellation
@@ -95,8 +102,18 @@ class ActionRouter(
         ActionRef.VERB_RUN -> runTileAction(ref, target)
         "favourite" -> playFavourite(target)
         "event" -> fireEvent(ref.arg, target)
-        "code_digit", "code_back", "code_clear" -> typeCode(verb, ref.arg, target, memory)
-        "alarm_arm", "alarm_zone", "alarm_dismiss" -> alarmActions.handle(verb, ref.arg, target, memory)
+        "code_digit", "code_back", "code_clear" -> typeCode(
+            verb = verb,
+            arg = ref.arg,
+            target = target,
+            memory = memory,
+        )
+        "alarm_arm", "alarm_zone", "alarm_dismiss" -> alarmActions.handle(
+            verb = verb,
+            arg = ref.arg,
+            target = target,
+            memory = memory,
+        )
         "lights_room", "lights_detail", "lights_dismiss", "lights_mode", "lights_palette",
         "lights_effects", "lights_effect",
         -> lightsActions.handle(verb, ref.arg, target)
@@ -106,7 +123,7 @@ class ActionRouter(
         "clear_queue", "play_uri", "enqueue_uri",
         "volume_up", "volume_down",
         -> handleMusic(verb, ref, target)
-        else -> callService(verb, ref, target, entity, memory, nowMs)
+        else -> callService(verb = verb, ref = ref, target = target, entity = entity, memory = memory, nowMs = nowMs)
     }
 
     /** See [ServiceDataBuilder.resolveArg]. */
@@ -118,7 +135,7 @@ class ActionRouter(
         val spec = target?.spec ?: Catalogue.of(entity.domain)
         val verb = resolveVerb(
             ref.verb,
-            target ?: TapTarget("", entity.entityId, entity.domain, null),
+            target ?: TapTarget(tileId = "", entityId = entity.entityId, kind = entity.domain, tile = null),
             entity,
         )
         val prediction = spec?.predict?.get(verb) ?: return null
@@ -139,7 +156,10 @@ class ActionRouter(
                 JsonPrimitive(value)
             }
         }
-        return entity.with(predictedState(prediction, spec, entity, arg), attributes)
+        return entity.with(
+            predictedState(prediction = prediction, spec = spec, entity = entity, arg = arg),
+            attributes,
+        )
     }
 
     private fun predictedState(prediction: PredictSpec, spec: TypeSpec, entity: EntityState, arg: String): String =
@@ -180,9 +200,21 @@ class ActionRouter(
         val action = spec?.actions?.get(verb)
         val entityId = target.entityId
         if (action == null || entityId == null) return TapOutcome.Ignored
-        return confirmationNeeded(action, verb, target, memory, nowMs) ?: run {
+        return confirmationNeeded(
+            action = action,
+            verb = verb,
+            target = target,
+            memory = memory,
+            nowMs = nowMs,
+        ) ?: run {
             val code = memory.codes.remove(entityId)
-            val data = ServiceDataBuilder.build(action, verb, ref.arg, entity, code)
+            val data = ServiceDataBuilder.build(
+                action = action,
+                verb = verb,
+                arg = ref.arg,
+                entity = entity,
+                code = code,
+            )
             val (domain, service) = action.service.split('.', limit = 2)
             homeAssistant.callService(
                 domain,
@@ -231,7 +263,7 @@ class ActionRouter(
         return if (entityId == null || repo == null) {
             TapOutcome.Ignored
         } else {
-            musicVerb(verb, ref, target, tileId, entityId, repo)
+            musicVerb(verb = verb, ref = ref, target = target, tileId = tileId, entityId = entityId, repo = repo)
         }
     }
 
@@ -255,14 +287,14 @@ class ActionRouter(
             repo.musicUi.setPrimarySection(tileId, ref.arg)
             TapOutcome.Rebuild
         }
-        "load_more" -> musicLoadMore(repo, target, tileId, entityId)
+        "load_more" -> musicLoadMore(repo = repo, target = target, tileId = tileId, entityId = entityId)
         "clear_queue" -> {
             repo.music.clearPlaylist(entityId)
             repo.invalidateMusic(playerEntityId = entityId)
             TapOutcome.Rebuild
         }
-        "play_uri" -> musicPlayUri(repo, entityId, ref.arg, enqueue = "play")
-        "enqueue_uri" -> musicPlayUri(repo, entityId, ref.arg, enqueue = "add")
+        "play_uri" -> musicPlayUri(repo = repo, entityId = entityId, uri = ref.arg, enqueue = "play")
+        "enqueue_uri" -> musicPlayUri(repo = repo, entityId = entityId, uri = ref.arg, enqueue = "add")
         "volume_up" -> musicVolume(entityId, "volume_up")
         "volume_down" -> musicVolume(entityId, "volume_down")
         else -> TapOutcome.Ignored

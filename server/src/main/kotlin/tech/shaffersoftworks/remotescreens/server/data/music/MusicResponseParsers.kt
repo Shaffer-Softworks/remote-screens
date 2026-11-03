@@ -42,11 +42,21 @@ internal object MusicResponseParsers {
         return when (itemsEl) {
             is JsonArray -> MusicQueueSnapshot(
                 itemsEl.mapIndexedNotNull { index, item ->
-                    queueRowFromArrayItem(item, index, currentId, currentIndex)
+                    queueRowFromArrayItem(
+                        item = item,
+                        index = index,
+                        currentId = currentId,
+                        currentIndex = currentIndex,
+                    )
                 },
                 moreCount = 0,
             )
-            else -> compactQueueSnapshot(currentObj, nextObj, currentId, itemsEl)
+            else -> compactQueueSnapshot(
+                currentObj = currentObj,
+                nextObj = nextObj,
+                currentId = currentId,
+                itemsEl = itemsEl,
+            )
         }
     }
 
@@ -108,7 +118,13 @@ internal object MusicResponseParsers {
             media["image"] ?: obj["image"]
                 ?: media["metadata"]?.jsonObject?.get("images")?.jsonArray?.firstOrNull(),
         )
-        return MusicListRow(title, subtitle, uri, art, isCurrent)
+        return MusicListRow(
+            title = title,
+            subtitle = subtitle,
+            uri = uri,
+            imagePathOrUrl = art,
+            isCurrentPlayback = isCurrent,
+        )
     }
 
     private fun JsonObject.toRow(kind: String): MusicListRow? {

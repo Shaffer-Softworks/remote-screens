@@ -15,16 +15,22 @@ internal fun PreviewSession.people() {
     )
     val photoInput = input(originalStates + (id to photo))
     val home = demo.pages.first { it.id == "home" }
-    page("Panels", "Home · person photo", home, photoInput, PageCanvas(chrome = true))
+    page(
+        group = "Panels",
+        label = "Home · person photo",
+        page = home,
+        renderInput = photoInput,
+        canvas = PageCanvas(chrome = true),
+    )
     for ((label, renderInput) in listOf("Photo" to photoInput, "Initials" to input())) {
         for ((width, height) in listOf(1 to 1, 2 to 1, 2 to 2)) {
-            val tile = Tile("person", id, w = width, h = height)
+            val tile = Tile(id = "person", entityId = id, w = width, h = height)
             page(
-                "People",
-                "$label · ${width}x$height",
-                Page("person", "Person", listOf(tile)),
-                renderInput,
-                PageCanvas(grid = GridSize(GRID_COLS, GRID_ROWS)),
+                group = "People",
+                label = "$label · ${width}x$height",
+                page = Page("person", "Person", listOf(tile)),
+                renderInput = renderInput,
+                canvas = PageCanvas(grid = GridSize(GRID_COLS, GRID_ROWS)),
             )
         }
     }

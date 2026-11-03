@@ -45,8 +45,6 @@ internal object TileChrome {
     const val WIDE_ASPECT = 0.9f
     const val LEVEL_MIN_WIDTH_DP = 150f
     const val LEVEL_BAR_HEIGHT_DP = 28f
-    /** Domain-mockup segmented fill under entity tiles (humidifier / hot water). */
-    const val TILE_SEG_BAR_H_DP = 14f
     const val LEVEL_STEPS = HaRenderFlags.TILE_LEVEL_STEPS
     const val LEVEL_DEFAULT_MAX = 100.0
     const val COVER_POSITION_FLAG = HaRenderFlags.COVER_POSITION_FLAG
@@ -173,7 +171,7 @@ internal fun DocContext.tileIcon(tile: Tile, spec: TypeSpec?, entityState: Entit
     when {
         override != null -> icon(override, sizeDp, ink)
         entityId != null && entityState != null && spec != null && spec.toggle && (spec.domain != "cover" && spec.domain != "lock") ->
-            toggleIcon(entityId, spec.icon, spec.iconOn, sizeDp, ink)
+            toggleIcon(entityId = entityId, off = spec.icon, on = spec.iconOn, sizeDp = sizeDp, color = ink)
         entityState != null -> {
             structural(entityState.entityId) { s -> s?.let { Present.view(it, i18n).icon } ?: "" }
             icon(Present.view(entityState, i18n).icon, sizeDp, ink)

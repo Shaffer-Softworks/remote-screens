@@ -4,14 +4,13 @@ package tech.shaffersoftworks.remotescreens.server.render.tiles
 
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.HaRenderFlags
-import tech.shaffersoftworks.remotescreens.server.render.Present
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
 import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
-import tech.shaffersoftworks.remotescreens.server.render.widgets.segmentedLevelBar
+import tech.shaffersoftworks.remotescreens.server.render.widgets.levelBar
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning
@@ -66,22 +65,22 @@ internal fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, en
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcColumnVerticalPositioning.Center,
         ) {
-            this@entityTile.tileIcon(tile, spec, entityState, C.SHORT_HEIGHT_DP)
+            this@entityTile.tileIcon(tile = tile, spec = spec, entityState = entityState, sizeDp = C.SHORT_HEIGHT_DP)
             this@entityTile.gap(C.PAD_XL_DP)
             if (name != null) {
                 this@entityTile.label(
-                    name,
-                    Type.DISPLAY * C.FULL_NAME_SCALE,
-                    ink,
-                    Weight.SEMI_BOLD,
+                    text = name,
+                    sp = Type.DISPLAY * C.FULL_NAME_SCALE,
+                    color = ink,
+                    weight = Weight.SEMI_BOLD,
                     align = RcTextAlign.Center,
                 )
             }
             if (state != null) {
                 this@entityTile.label(
-                    state,
-                    Type.HEADLINE,
-                    ink2,
+                    text = state,
+                    sp = Type.HEADLINE,
+                    color = ink2,
                     align = RcTextAlign.Center,
                 )
             }
@@ -93,16 +92,23 @@ internal fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, en
             Modifier.fillMaxSize().padding(units.px(pad)),
             vertical = RcVerticalPositioning.Center,
         ) {
-            this@entityTile.tileIcon(tile, spec, entityState, C.HEADER_SHORT_DP)
+            this@entityTile.tileIcon(tile = tile, spec = spec, entityState = entityState, sizeDp = C.HEADER_SHORT_DP)
             Spacer(Modifier.width(this@entityTile.units.px(C.PAD_LG_DP)))
             Column(Modifier.horizontalWeight(1f)) {
-                if (name != null) this@entityTile.label(name, Type.TITLE, ink, Weight.SEMI_BOLD)
+                if (name != null) {
+                    this@entityTile.label(
+                        text = name,
+                        sp = Type.TITLE,
+                        color = ink,
+                        weight = Weight.SEMI_BOLD,
+                    )
+                }
                 if (state != null) {
                     this@entityTile.label(
-                        state,
-                        if (bigValue) Type.HEADLINE else Type.BODY,
-                        ink2,
-                        if (bigValue) Weight.MEDIUM else Weight.NORMAL,
+                        text = state,
+                        sp = if (bigValue) Type.HEADLINE else Type.BODY,
+                        color = ink2,
+                        weight = if (bigValue) Weight.MEDIUM else Weight.NORMAL,
                     )
                 }
             }
@@ -113,10 +119,10 @@ internal fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, en
         val doc = this@entityTile
         Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Top) {
             doc.tileIcon(
-                tile,
-                spec,
-                entityState,
-                if (box.h >= C.TALL_HEIGHT_DP) C.COL_ICON_TALL_DP else C.COL_ICON_SHORT_DP,
+                tile = tile,
+                spec = spec,
+                entityState = entityState,
+                sizeDp = if (box.h >= C.TALL_HEIGHT_DP) C.COL_ICON_TALL_DP else C.COL_ICON_SHORT_DP,
             )
             Spacer(Modifier.horizontalWeight(1f))
             if (tile.domain == "lock") doc.lockConfirmBadge(tile)
@@ -124,18 +130,18 @@ internal fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, en
         Spacer(Modifier.verticalWeight(1f))
         if (bigValue && state != null) {
             doc.label(
-                state,
-                if (box.h >= C.TALL_HEIGHT_DP) Type.VALUE else Type.HEADLINE,
-                ink,
-                Weight.MEDIUM,
+                text = state,
+                sp = if (box.h >= C.TALL_HEIGHT_DP) Type.VALUE else Type.HEADLINE,
+                color = ink,
+                weight = Weight.MEDIUM,
             )
         }
         if (name != null) {
             doc.label(
-                name,
-                Type.BODY + if (box.h >= C.TALL_HEIGHT_DP) 2f else 0f,
-                ink,
-                Weight.SEMI_BOLD,
+                text = name,
+                sp = Type.BODY + if (box.h >= C.TALL_HEIGHT_DP) 2f else 0f,
+                color = ink,
+                weight = Weight.SEMI_BOLD,
                 lines = if (state == null || bigValue) 2 else 1,
             )
         }
@@ -146,7 +152,14 @@ internal fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, en
                 ink2,
             )
         }
-        if (hasLevel) doc.entityTileLevelBar(tile, entityId, entityState, box.w - 2 * pad)
+        if (hasLevel) {
+            doc.entityTileLevelBar(
+                tile = tile,
+                entityId = entityId,
+                entityState = entityState,
+                widthDp = box.w - 2 * pad,
+            )
+        }
     }
 }
 
@@ -170,18 +183,13 @@ internal fun DocContext.entityTileLevelBar(tile: Tile, entityId: String, entityS
     } else {
         0.0 to C.LEVEL_DEFAULT_MAX
     }
-    // Keep the continuous float declared for other readers / predictions.
-    float(Vars.entity(entityId, Vars.KEY_LEVEL))
-    // Domain mockup: discrete teal segments on a dark track (humidifier / hot water).
-    segmentedLevelBar(
-        entityId = entityId,
-        levelKey = Vars.KEY_LEVEL,
+    levelBar(
+        level = float(Vars.entity(entityId, Vars.KEY_LEVEL)),
         widthDp = widthDp,
-        heightDp = C.TILE_SEG_BAR_H_DP,
+        heightDp = C.LEVEL_BAR_HEIGHT_DP,
+        fill = color(Vars.tile(tile.id, Vars.KEY_ICON)),
+        track = role(Role.TRACK),
         steps = C.LEVEL_STEPS,
-        levelOf = { states -> Present.view(states[entityId], i18n).level ?: 0f },
-        fillRole = Role.ACCENT,
-        trackRole = Role.TRACK,
     ) { step ->
         val value = minValue + (maxValue - minValue) * step / C.LEVEL_STEPS.toDouble()
         val action = ActionRef(
@@ -204,5 +212,5 @@ internal fun DocContext.entityTileLevelBar(tile: Tile, entityId: String, entityS
 /** "Tap again to unlock" on a lock tile, shown by the add-on between the two taps. */
 internal fun DocContext.lockConfirmBadge(tile: Tile) {
     val confirmText = text(Vars.tile(tile.id, Vars.KEY_CONFIRM))
-    label(confirmText, Type.CAPTION, role(Role.WARN), Weight.SEMI_BOLD)
+    label(text = confirmText, sp = Type.CAPTION, color = role(Role.WARN), weight = Weight.SEMI_BOLD)
 }

@@ -24,6 +24,10 @@ Style source of truth: **Shaffer-Softworks/RPI** (`StudioProjects/RPI`) — trai
 - `MultiLineIfElse` / `IfElseBracing` / `IfElseWrapping` — `autoCorrect: true`
 - `Kdoc` — no dangling top-level KDocs (attach to the declaration or delete)
 
+## Related complexity rules
+
+- `NamedArguments` — name parameters when a call has more than 3 args (see `kotlin-named-arguments-detekt.mdc`)
+
 ## Style rules
 
 ```yaml
@@ -61,8 +65,8 @@ val level = if (debug) Log.DEBUG else logData.priority
 
 1. Auto-correct **one module at a time**:  
    `./gradlew :shared:detekt --auto-correct --rerun` then `:server:` then `:player:`
-2. Regenerate baselines if needed:  
-   `./gradlew :shared:detektBaseline :server:detektBaseline :player:detektBaseline`
+2. Regenerate baselines if needed (server uses type-specific files):
+   `./gradlew :shared:detektBaseline :server:detektBaselineMain :server:detektBaselinePreview :player:detektBaseline`
 3. Verify:  
    `./gradlew :shared:detekt :server:detekt :player:detekt :shared:test :server:test :player:testDebugUnitTest`
 

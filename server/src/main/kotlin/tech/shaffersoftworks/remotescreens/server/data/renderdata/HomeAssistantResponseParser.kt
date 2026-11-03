@@ -38,7 +38,12 @@ internal object HomeAssistantResponseParser {
             .mapNotNull { device -> device.powerSensor()?.let { sensor -> (device.text(
                 "name",
             ) ?: sensor) to sensor } }
-        return EnergyPrefs(rateOf("solar"), rateOf("grid"), rateOf("battery"), devices)
+        return EnergyPrefs(
+            solar = rateOf("solar"),
+            grid = rateOf("grid"),
+            battery = rateOf("battery"),
+            devices = devices,
+        )
     }
 
     /** The children of a `media_player/browse_media` answer. */
@@ -68,11 +73,11 @@ internal object HomeAssistantResponseParser {
             ?.let { runCatching { OffsetDateTime.parse(it).toZonedDateTime() }.getOrNull() }
             ?: return null
         return Forecast(
-            time,
-            forecast.text("condition").orEmpty(),
-            forecast.number("temperature"),
-            forecast.number("templow"),
-            forecast.number("precipitation_probability")?.toInt(),
+            time = time,
+            condition = forecast.text("condition").orEmpty(),
+            high = forecast.number("temperature"),
+            low = forecast.number("templow"),
+            rain = forecast.number("precipitation_probability")?.toInt(),
         )
     }
 

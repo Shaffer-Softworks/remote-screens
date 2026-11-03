@@ -5,10 +5,10 @@
     <ID>CyclomaticComplexMethod:CardRenderer.kt:CardRenderer$fun render: RenderedDoc</ID>
     <ID>CyclomaticComplexMethod:EntityTile.kt:internal fun DocContext.entityTile</ID>
     <ID>CyclomaticComplexMethod:FreeForm.kt:internal fun DocContext.node</ID>
+    <ID>CyclomaticComplexMethod:FreeForm.kt:internal fun DocContext.styled: Modifier</ID>
     <ID>CyclomaticComplexMethod:FreeFormControls.kt:internal fun DocContext.stepperNode</ID>
     <ID>CyclomaticComplexMethod:FreeFormLayout.kt:internal fun DocContext.container</ID>
     <ID>CyclomaticComplexMethod:FreeFormMedia.kt:internal fun DocContext.iconButtonNode</ID>
-    <ID>CyclomaticComplexMethod:FreeFormMetrics.kt:internal fun Node.natural: Dims</ID>
     <ID>CyclomaticComplexMethod:FreeFormNodes.kt:internal fun DocContext.badgeNode</ID>
     <ID>CyclomaticComplexMethod:FreeFormNodes.kt:internal fun DocContext.buttonNode</ID>
     <ID>CyclomaticComplexMethod:FreeFormNodes.kt:internal fun DocContext.textNode</ID>
@@ -23,7 +23,6 @@
     <ID>LongMethod:ClimateCards.kt:internal fun DocContext.climateDualSetpoint</ID>
     <ID>LongMethod:DemoHome.kt:DemoHome$@Suppress("CyclomaticComplexMethod") override suspend fun command: JsonElement?</ID>
     <ID>LongMethod:EntityTile.kt:internal fun DocContext.entityTile</ID>
-    <ID>LongMethod:FreeFormBlocks.kt:private fun DocContext.mediaBarNode</ID>
     <ID>LongMethod:FreeFormControls.kt:internal fun DocContext.stepperNode</ID>
     <ID>LongMethod:FreeFormLayout.kt:internal fun DocContext.container</ID>
     <ID>LongMethod:FreeFormMedia.kt:@Suppress("CyclomaticComplexMethod") internal fun DocContext.dialNode</ID>
@@ -41,7 +40,6 @@
     <ID>LongMethod:WeatherPanel.kt:fun DocContext.weatherPanel</ID>
     <ID>MaxLineLength:EntityTile.kt:internal</ID>
     <ID>MaxLineLength:FreeFormControls.kt:ChoiceSet$internal</ID>
-    <ID>MaxLineLength:FreeFormControls.kt:val verb = when (domain) { "light" -&gt; "brightness"; "fan" -&gt; "percentage"; "cover" -&gt; "position"; "media_player" -&gt; "volume"; else -&gt; "value" }</ID>
     <ID>MaxLineLength:FreeFormMedia.kt:val inner = if (i % Metrics.ANALOG_QUARTER_STEP == 0) Metrics.ANALOG_TICK_INNER_MAJOR else Metrics.ANALOG_TICK_INNER_MINOR</ID>
     <ID>MaxLineLength:FreeFormMetrics.kt:/** About the size [node]'s content takes: a leaf's natural size, a container's children laid end to end, plus padding. */</ID>
     <ID>MaxLineLength:InfoCards.kt:(width - CardChrome.MEDIA_CTRL_DP - CardChrome.WEATHER_ICON_ROW_DP - CardChrome.PANEL_CORNER_DP - CardChrome.FLOW_KEY_H_DP - CardChrome.CLOSE_KEY_DP - CardChrome.CLOSE_KEY_DP - CardChrome.SECTION_GAP_DP)</ID>
@@ -53,11 +51,8 @@
     <ID>MaxLineLength:SessionLifecycle.kt:SessionLifecycle$host.screenId = layoutRepository.layout.value.players.firstOrNull { it.deviceId == host.hello.deviceId }?.screenId</ID>
     <ID>MaxLineLength:SpecialtyTiles.kt:/** Solar, the grid and the battery around the house, with the power of each, as Home Assistant's energy settings name them. */</ID>
     <ID>MaxLineLength:SpecialtyTiles.kt:fun</ID>
-    <ID>MaxLineLength:SpecialtyTiles.kt:fun px</ID>
     <ID>MaxLineLength:SpecialtyTiles.kt:val tint = when (key) { "solar" -&gt; Pastel.YELLOW; "grid" -&gt; Pastel.BLUE; "battery" -&gt; Pastel.GREEN; else -&gt; Pastel.GREY }</ID>
     <ID>MaxLineLength:ThermostatPanel.kt:val fanW = if (fans.isEmpty()) 0f else ThermostatMetrics.FAN_BUTTON_WIDTH_DP * layoutScale + ThermostatMetrics.MODE_ROW_GAP_DP * layoutScale</ID>
-    <ID>MaxLineLength:TileBox.kt:/** Whether the tile is a page of its own (the home panel, a full weather or climate tile), drawn without a card from edge to edge. */</ID>
-    <ID>MaxLineLength:TileBox.kt:TileBox$data</ID>
     <ID>MaxLineLength:TileChrome.kt:entityId != null &amp;&amp; entityState != null &amp;&amp; spec != null &amp;&amp; spec.toggle &amp;&amp; (spec.domain != "cover" &amp;&amp; spec.domain != "lock")</ID>
     <ID>MaxLineLength:TileChrome.kt:internal</ID>
   </CurrentIssues>

@@ -48,10 +48,10 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
     val entityState = entityId?.let { states[it] }
     if (entityId != null) bindEntity(entityId, tile.name, tile.icon)
     val lit = accent(tile.color, Pastel.forDomain(tile.domain ?: kind))
-    bindTileColors(tile.id, entityId, lit, alwaysOn = kind in C.ALWAYS_LIT)
+    bindTileColors(tileId = tile.id, entityId = entityId, accent = lit, alwaysOn = kind in C.ALWAYS_LIT)
 
-    val tapRef = tapRef(tile, tile.tap, spec, pageIndex, hold = false)
-    val holdRef = tapRef(tile, tile.hold, spec, pageIndex, hold = true)
+    val tapRef = tapRef(tile = tile, action = tile.tap, spec = spec, pageIndex = pageIndex, hold = false)
+    val holdRef = tapRef(tile = tile, action = tile.hold, spec = spec, pageIndex = pageIndex, hold = true)
     if (tapRef != null && entityId != null && spec?.predict?.containsKey(
             tapRef.verb,
         ) == true) {
@@ -116,10 +116,10 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
                     ).background(
                         docContext.role(Role.CARD_HEADER),
                     ).padding(
-                        docContext.units.px(C.PAD_LG_DP),
-                        0f,
-                        docContext.units.px(C.PAD_LG_DP),
-                        0f,
+                        start = docContext.units.px(C.PAD_LG_DP),
+                        top = 0f,
+                        end = docContext.units.px(C.PAD_LG_DP),
+                        bottom = 0f,
                     ),
                     vertical = RcVerticalPositioning.Center,
                 ) {
@@ -142,8 +142,18 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
                     "clock" -> docContext.clockTile(tile, body)
                     "bedside" -> docContext.bedsideTile(tile, body)
                     "nav" -> docContext.navTile(tile, body, named)
-                    "weather" -> docContext.weatherTile(tile, body, entityState, named)
-                    "climate" -> docContext.climateTile(tile, body, entityState, named)
+                    "weather" -> docContext.weatherTile(
+                        tile = tile,
+                        box = body,
+                        entityState = entityState,
+                        named = named,
+                    )
+                    "climate" -> docContext.climateTile(
+                        tile = tile,
+                        box = body,
+                        entityState = entityState,
+                        named = named,
+                    )
                     "media_player" -> docContext.mediaTile(tile, body, entityState)
                     "camera" -> docContext.cameraTile(tile, body, named)
                     "history" -> docContext.historyTile(tile, body, named)
@@ -163,7 +173,12 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
                         docContext.personTile(tile, body, entityState)
                     }
                     "favourite" -> docContext.favouriteTile(tile, body, named)
-                    "calendar" -> docContext.calendarTile(tile, body, entityState, named)
+                    "calendar" -> docContext.calendarTile(
+                        tile = tile,
+                        box = body,
+                        entityState = entityState,
+                        named = named,
+                    )
                     "sensor" -> if (tile.options["graph"] == "true" && body.h >= C.SHORT_HEIGHT_DP) {
                         docContext.historyTile(
                             tile,
@@ -171,9 +186,21 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
                             named,
                         )
                     } else {
-                        docContext.entityTile(tile, body, spec, entityState, named)
+                        docContext.entityTile(
+                            tile = tile,
+                            box = body,
+                            spec = spec,
+                            entityState = entityState,
+                            named = named,
+                        )
                     }
-                    else -> docContext.entityTile(tile, body, spec, entityState, named)
+                    else -> docContext.entityTile(
+                        tile = tile,
+                        box = body,
+                        spec = spec,
+                        entityState = entityState,
+                        named = named,
+                    )
                 }
             }
         }

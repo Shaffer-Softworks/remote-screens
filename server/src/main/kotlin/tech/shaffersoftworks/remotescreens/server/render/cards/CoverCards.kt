@@ -21,7 +21,7 @@ internal fun DocContext.coverCard(entityId: String, entityState: EntityState?, w
     scope.Row(Modifier.fillMaxWidth()) {
         val doc = this@coverCard
         doc.key(
-            ref(entityId, verbs.open),
+            ref = ref(entityId, verbs.open),
             text = doc.i18n.t("ui.open"),
             icon = "arrow-up",
             heightDp = 56f,
@@ -29,7 +29,7 @@ internal fun DocContext.coverCard(entityId: String, entityState: EntityState?, w
         )
         Spacer(Modifier.width(doc.units.px(CardChrome.PANEL_CORNER_DP)))
         doc.key(
-            ref(entityId, verbs.stop),
+            ref = ref(entityId, verbs.stop),
             text = doc.i18n.t("ui.stop"),
             icon = "stop",
             heightDp = 56f,
@@ -37,7 +37,7 @@ internal fun DocContext.coverCard(entityId: String, entityState: EntityState?, w
         )
         Spacer(Modifier.width(doc.units.px(CardChrome.PANEL_CORNER_DP)))
         doc.key(
-            ref(entityId, verbs.close),
+            ref = ref(entityId, verbs.close),
             text = doc.i18n.t("ui.close_cover"),
             icon = "arrow-down",
             heightDp = 56f,
@@ -60,7 +60,7 @@ internal fun DocContext.coverCard(entityId: String, entityState: EntityState?, w
             ),
         ) }
         section(i18n.t(if (canSetShade) "ui.tilt" else "ui.position"))
-        bar(entityId, "tilt", w, level = "tilt")
+        bar(entityId = entityId, verb = "tilt", width = w, level = "tilt")
     }
 }
 

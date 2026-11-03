@@ -176,7 +176,7 @@ class DocContext(
     /** The component id to give the box [entityId]'s live video plays over, with `Modifier.componentId`. */
     fun liveVideo(entityId: String, crop: Boolean): Int {
         val componentId = LiveVideo.FIRST_COMPONENT_ID + videos.size
-        videos += LiveVideo(entityId, componentId, crop, renderingPage)
+        videos += LiveVideo(entityId = entityId, componentId = componentId, crop = crop, page = renderingPage)
         return componentId
     }
 
@@ -268,9 +268,9 @@ fun DocContext.liveMap(entityIds: List<String>): Int {
 fun DocContext.liveSearch(tileId: String, playerEntityId: String, boundsPx: SearchBoundsPx): Int {
     val componentId = LiveSearch.FIRST_COMPONENT_ID + searches.size
     searches += LiveSearch(
-        tileId,
-        playerEntityId,
-        componentId,
+        tileId = tileId,
+        playerEntityId = playerEntityId,
+        componentId = componentId,
         xPx = boundsPx.x,
         yPx = boundsPx.y,
         widthPx = boundsPx.width,

@@ -159,7 +159,7 @@ private fun SearchContent(
         Spacer(Modifier.height(10.dp))
         if (showResults) {
             Text(
-                "Results",
+                text = "Results",
                 color = LiveSearchInk.copy(alpha = 0.95f),
                 fontSize = 14.sp,
                 modifier = Modifier.padding(bottom = 6.dp),
@@ -254,7 +254,7 @@ private fun SearchRow(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    musicSearchRow.title,
+                    text = musicSearchRow.title,
                     color = LiveSearchInk,
                     fontSize = 15.sp,
                     maxLines = 1,
@@ -262,7 +262,7 @@ private fun SearchRow(
                 )
                 musicSearchRow.subtitle?.let {
                     Text(
-                        it,
+                        text = it,
                         color = LiveSearchInk.copy(alpha = 0.75f),
                         fontSize = 12.sp,
                         maxLines = 1,
@@ -443,10 +443,10 @@ private fun LiveSearchViewPreview() {
     RemoteScreensTheme {
         SearchPreviewBackdrop {
             LiveSearchView(
-                previewSlotSearch(),
-                { _, _ -> },
-                { _, _ -> },
-                { _, _ -> },
+                search = previewSlotSearch(),
+                onQueryChange = { _, _ -> },
+                onPlayUri = { _, _ -> },
+                onEnqueueUri = { _, _ -> },
                 imageLoader = previewLoader,
             )
         }

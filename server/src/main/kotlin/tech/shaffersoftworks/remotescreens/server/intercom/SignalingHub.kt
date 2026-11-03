@@ -87,7 +87,12 @@ internal class SignalingHub(
         val previousSessionId = clientSessions[clientId]
         val previous = previousSessionId?.let { sessions[it] }
         clientSessions[clientId] = sessionId
-        sessions[sessionId] = SessionInfo(clientId, displayName, now(), null)
+        sessions[sessionId] = SessionInfo(
+            clientId = clientId,
+            displayName = displayName,
+            lastActivity = now(),
+            inCallWith = null,
+        )
         val sends = mutableListOf<Outbound>()
         val close = mutableListOf<String>()
         if (previousSessionId != null && previousSessionId != sessionId) {

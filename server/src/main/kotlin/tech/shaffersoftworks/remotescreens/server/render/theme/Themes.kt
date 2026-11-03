@@ -203,8 +203,12 @@ object Themes {
 
     /** Every theme, built-in first, as the editor draws them. */
     fun all(custom: List<Theme>): List<ResolvedTheme> =
-        BUILTIN.map { (id, v) -> resolved(id, v.first, id, true, v.second, Theme(id, v.first)) } +
-            custom.map { resolved(it.id, it.name, it.base, false, over(it), it) }
+        BUILTIN.map { (id, v) ->
+            resolved(id = id, name = v.first, base = id, builtin = true, palette = v.second, own = Theme(id, v.first))
+        } +
+            custom.map {
+                resolved(id = it.id, name = it.name, base = it.base, builtin = false, palette = over(it), own = it)
+            }
 
     private fun resolved(
         id: String,

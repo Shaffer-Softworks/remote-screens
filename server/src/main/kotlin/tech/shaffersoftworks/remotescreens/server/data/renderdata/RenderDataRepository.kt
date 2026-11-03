@@ -143,9 +143,9 @@ class RenderDataRepository(
             put("type", "daily")
         }
         val result = homeAssistant.callService(
-            "weather",
-            "get_forecasts",
-            request,
+            domain = "weather",
+            service = "get_forecasts",
+            data = request,
             returnResponse = true,
         )
         HomeAssistantResponseParser.forecasts(result, entityId)
@@ -192,7 +192,12 @@ class RenderDataRepository(
         BROWSE_TTL_MS,
     ) {
         val request = buildJsonObject { put("entity_id", entityId) }
-        val result = homeAssistant.callService("todo", "get_items", request, returnResponse = true)
+        val result = homeAssistant.callService(
+            domain = "todo",
+            service = "get_items",
+            data = request,
+            returnResponse = true,
+        )
         HomeAssistantResponseParser.todos(result, entityId)
     }
 
@@ -235,7 +240,7 @@ class RenderDataRepository(
                 queue[tile.id] = musicQueue(playerEntityId)
             }
         }
-        return MusicPayload(browse, queue, configEntries, ui, hasMore)
+        return MusicPayload(browse = browse, queue = queue, configEntries = configEntries, ui = ui, hasMore = hasMore)
     }
 
     private suspend fun resolveConfigEntry(tile: Tile, playerEntityId: String): String? {
