@@ -1,3 +1,5 @@
+import java.util.concurrent.TimeUnit
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
@@ -74,6 +76,81 @@ android {
 kotlin {
     jvmToolchain(21)
 }
+
+// SDK ADB, available from Android Studio's Gradle tool window under "adb".
+val sdkAdb = androidComponents.sdkComponents.adb
+val adbSerial = providers.gradleProperty("adbSerial")
+val adbServer = providers.gradleProperty("adbServer").orElse("127.0.0.1:18100")
+val adbPort = providers.gradleProperty("adbPort").orElse("18100")
+val adbCaptureDir = layout.buildDirectory.dir("adb")
+
+fun registerAdbTask(name: String, descriptionText: String, action: String) =
+    tasks.register(name) {
+        group = "adb"
+        description = descriptionText
+        if (action == "deploy") dependsOn("assembleDebug")
+        doLast {
+            val executable = sdkAdb.get().asFile.absolutePath
+            fun runAdb(arguments: List<String>, output: File? = null): String {
+                val command = mutableListOf(executable)
+                if (action != "devices") {
+                    val serial = adbSerial.orNull
+                        ?: throw GradleException("Select a device with -PadbSerial=<serial>; use adbDevices to list devices")
+                    command.addAll(listOf("-s", serial))
+                }
+                command.addAll(arguments)
+                val report = output ?: File.createTempFile("remote-screens-adb-", ".txt")
+                val errors = File.createTempFile("remote-screens-adb-errors-", ".txt")
+                report.parentFile.mkdirs()
+                val process = ProcessBuilder(command).redirectOutput(report).redirectError(errors).start()
+                try {
+                    if (!process.waitFor(120, TimeUnit.SECONDS)) {
+                        throw GradleException("ADB command timed out")
+                    }
+                    val errorText = errors.readText().takeLast(4000)
+                    if (errorText.isNotBlank()) logger.lifecycle(errorText)
+                    if (process.exitValue() != 0) {
+                        val detail = if (output == null) report.readText().takeLast(4000) else errorText
+                        throw GradleException("ADB failed: ${arguments.first()}: $detail")
+                    }
+                    if (output == null) logger.lifecycle(report.readText())
+                    return output?.absolutePath.orEmpty()
+                } finally {
+                    if (process.isAlive) process.destroyForcibly()
+                    errors.delete()
+                    if (output == null) report.delete()
+                }
+            }
+            if (action == "deploy") {
+                runAdb(listOf("install", "-r", layout.buildDirectory.file("outputs/apk/debug/player-debug.apk").get().asFile.absolutePath))
+            }
+            val packageName = "tech.shaffersoftworks.remotescreens.player"
+            when (action) {
+                "devices" -> runAdb(listOf("devices", "-l"))
+                "reverse" -> runAdb(listOf("reverse", "tcp:${adbPort.get()}", "tcp:${adbPort.get()}"))
+                "deploy", "launch" -> runAdb(
+                    listOf("shell", "am", "start", "-W", "-n", "$packageName/.MainActivity",
+                        "--es", "server", adbServer.get()),
+                )
+                "screenshot" -> logger.lifecycle(runAdb(
+                    listOf("exec-out", "screencap", "-p"),
+                    adbCaptureDir.get().file("screenshot.png").asFile,
+                ))
+                "logs" -> logger.lifecycle(runAdb(
+                    listOf("logcat", "-d", "-t", "500", "-v", "threadtime"),
+                    adbCaptureDir.get().file("logcat.txt").asFile,
+                ))
+            }
+        }
+    }
+
+registerAdbTask("adbDevices", "List ADB devices and serials", "devices")
+registerAdbTask("adbLaunch", "Launch the player with -PadbSerial and optional -PadbServer", "launch")
+registerAdbTask("adbDeploy", "Install debug player and launch on the selected device", "deploy")
+registerAdbTask("adbReverse", "Forward the tablet's local player port to this computer", "reverse")
+registerAdbTask("adbScreenshot", "Save a screenshot in player/build/adb", "screenshot")
+registerAdbTask("adbLogs", "Save the latest 500 log lines in player/build/adb", "logs")
+
 
 detekt {
     baseline.set(file("detekt-baseline.xml"))

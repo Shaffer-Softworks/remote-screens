@@ -10,6 +10,7 @@ import EnrollTabletPanel from './EnrollTabletPanel.vue'
 import MdiIcon from './MdiIcon.vue'
 import NotificationComposer from './NotificationComposer.vue'
 import IntercomDesk from './IntercomDesk.vue'
+import AdbPanel from './AdbPanel.vue'
 
 const emit = defineEmits<{ edit: [screen: Screen]; themes: [] }>()
 
@@ -22,6 +23,7 @@ const adopted = computed(() => state.players.filter(player => player.screenId))
 const creating = ref(false)
 const enrolling = ref(false)
 const intercomOpen = ref(false)
+const adbOpen = ref(false)
 const notificationTargets = ref<string[] | null>(null)
 function notifyTablet(player: PlayerStatus): void {
   menu.value = null
@@ -385,12 +387,14 @@ function preview(screen: Screen) {
         >
           <MdiIcon name="phone" :size="18" /> Intercom
         </button>
+        <button :aria-expanded="adbOpen" aria-controls="adb-panel" @click="adbOpen = !adbOpen">ADB</button>
         <button :disabled="!adopted.length" @click="notificationTargets = []">
           <MdiIcon name="bell-ring-outline" :size="18" /> Send notification
         </button>
       </div>
 
       <IntercomDesk v-if="intercomOpen" id="intercom-desk" class="intercom-panel" />
+      <AdbPanel v-if="adbOpen" id="adb-panel" />
 
       <div class="card list">
         <div v-if="adopted.length" class="row player labels muted">
