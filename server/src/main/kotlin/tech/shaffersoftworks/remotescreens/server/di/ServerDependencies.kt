@@ -72,6 +72,7 @@ class ServerDependencies(
         playerPort = config.playerPort,
         defaultHost = { siteLocalAddress()?.hostAddress },
     )
+    val adbService = tech.shaffersoftworks.remotescreens.server.service.AdbService(config.dataDir, playerApkRepository)
     val signaling = SignalingService(scope)
 
     val playerHub = PlayerHub(

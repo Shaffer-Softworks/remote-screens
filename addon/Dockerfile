@@ -3,7 +3,7 @@
 FROM eclipse-temurin:21-jre-alpine
 
 # Java2D draws the maps and needs a font.
-RUN apk add --no-cache fontconfig ttf-dejavu
+RUN apk add --no-cache fontconfig ttf-dejavu android-tools
 
 WORKDIR /app
 COPY dist/remote-screens-server.jar /app/remote-screens-server.jar

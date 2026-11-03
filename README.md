@@ -117,6 +117,8 @@ cd editor && npm ci && npm test && npm run build
 python -m pip install -r requirements_test.txt && python -m pytest   # the integration
 ```
 
+[ADB integration](docs/ADB.md) covers Android Studio deployment tasks and wireless tablet management from the editor.
+
 A made-up home makes it possible to work without Home Assistant — see [docs/DEMO.md](docs/DEMO.md):
 
 ```sh
