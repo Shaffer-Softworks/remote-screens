@@ -23,8 +23,8 @@ internal object ThermostatMetrics {
     /** Ring thickness as a share of the dial diameter (RPI `width / 25`). */
     const val RING_THICKNESS_SHARE = 1f / 25f
     const val ADJUST_CAPTION_SP = 15f
-    const val ACTION_LABEL_SP = 20f
-    const val TARGET_LABEL_SP = 38f
+    const val ACTION_LABEL_SP = 40f
+    const val TARGET_LABEL_SP = 55f
     const val PANEL_PAD_DP = 20f
     const val MODE_ICON_DP = 22f
     const val MODE_LABEL_SP = 20f
