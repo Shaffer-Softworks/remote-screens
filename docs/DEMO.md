@@ -4,6 +4,17 @@ Remote Screens can run without Home Assistant. Set `REMOTE_SCREENS_DEMO=1` and t
 `server` build) invents a small home, entities and a screen named **Living room tablet**. That is what the
 editor screenshots and most development workflows use.
 
+## Preview the Vue UI without a backend
+
+From `editor/`, run `npm run dev:mock` and open the local URL Vite prints.
+No Gradle build, Home Assistant, or device is required. Vue changes update as you save.
+
+This mode serves sample screens, tablets, ADB connection status, entities, and local icons.
+The header identifies it as **UI preview · sample data**. Actions that would save changes,
+send notifications, or operate devices return a preview-only message. It does not provide
+working intercom calls or a full backend simulation. Restart with `npm run dev` to use the
+real backend through `REMOTE_SCREENS_URL` (default `http://localhost:18099`).
+
 ## Start it
 
 You need a built server (`./gradlew :server:installDist`) and a built editor (`cd editor && npm ci && npm run build`).
