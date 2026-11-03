@@ -65,7 +65,7 @@ On the tablet (Pixel Tablet emulator against the demo home):
 
 1. **Add-on.** In Home Assistant, Settings, Add-ons, Add-on store, add this repository
    (`https://github.com/Shaffer-Softworks/remote-screens`) and install **Remote Screens**.
-2. **Player app.** Download it from the editor (**Download the player app**) or from the latest GitHub release.
+2. **Player app.** Download it from the editor (**Download app**) or from the latest GitHub release.
 3. **Integration** (optional, for automations). In HACS, add this repository as a custom repository of type
    *Integration*, install **Remote Screens** and restart Home Assistant. The add-on announces itself, so Home
    Assistant then offers to set it up.

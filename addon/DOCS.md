@@ -13,7 +13,7 @@ The full guide (editor, free-form components, architecture, troubleshooting) is 
 1. Start the add-on and open **Remote Screens** in the sidebar.
 2. Make a screen with **New screen**. Pick the size of your tablet, or make it after the tablet has shown up and
    pick that.
-3. Install the Remote Screens app on the tablet: **Download the player app** in the editor, or the APK from the
+3. Install the Remote Screens app on the tablet: **Download app** in the editor, or the APK from the
    GitHub release. Android asks you to allow installing apps from your browser.
 4. Open the app. It finds the add-on on your network and shows a six-digit code.
 5. In the editor, the tablet appears under **Tablets** with its code. Check that the codes match, choose the screen
@@ -143,6 +143,46 @@ The **map card** (person, device tracker, or the map tile's detail) is an intera
 players: pinch to zoom and drag to pan. Older players still get a still image drawn by the add-on. Grid map tiles
 stay as still images.
 
+### Full-page panels
+
+**Other tiles** in the library includes pages that fill the tablet on their own. Drop one onto an empty page.
+The editor refuses it on a page that already has tiles ("A full-page tile needs a page of its own").
+
+Panels that follow an entity — alarm, weather, thermostat, music, and calendar — use the first entity of that
+domain. They stay unavailable until Home Assistant has one, and the tile's settings change which entity they
+follow. Home, lights, cameras, intercom, and the bedside clock do not need an entity.
+
+- **Home** shows the first weather entity, the next event across every calendar, and who is home.
+- **Lights** lists Home Assistant areas. A light, switch, or cover uses its own area, or its device's area when
+  it has none. Choose a room, then a row, to switch it, set brightness, or tilt a cover. A light with more
+  controls opens its detail from the row. The count under a room is lights that are on; switches and covers
+  are not included.
+- **Cameras** lists only the cameras you add under **Cameras** in the tile's settings, with an optional label
+  each. The right side stays blank until a row is tapped, then plays that camera's live stream. The first
+  picture can take several seconds while Home Assistant starts the stream; if the stream fails, the page shows
+  a still. Leaving the page stops the video. A camera card or an alert uses the same decoder, so the page
+  pauses and resumes when that closes. An older player app stays on the spinner: install the current app.
+- **Alarm panel** puts status and zones on the left and a keypad on the right. The tile's own panel is **All
+  Zones**; **Zones** in the tile's settings adds other alarm panels, such as Alarmo areas, and arms the one you
+  pick. Arming and disarming need a four-digit PIN. An empty or shorter PIN is refused. When Alarmo reports
+  open sensors, arming is refused and disarming still works. Switching zone clears the PIN.
+- **Weather** is the current conditions and forecast for its weather entity. When the page is taller than it
+  is wide, that same content stacks vertically and the forecast becomes a scrolling list of days.
+- **Thermostat** adjusts its climate entity. Heat/Cool, and Auto when the entity has a low and a high, uses
+  two setpoints. Heat, Cool, and Off use one. Temperature moves in steps with **+** and **−**. Mode and fan
+  are buttons on the page.
+- **Music** is the Music Assistant page for the media player on the tile: now playing, browse, search, and
+  queue. Pick a Music Assistant player. While a track plays, the progress bar advances from the last position
+  Home Assistant reported; pausing leaves it there. A new position arrives when playback starts, pauses, seeks,
+  or the track changes.
+- **Calendar** lists upcoming events. On a current player, an add button creates an event when that calendar
+  allows it, and holding a row deletes the event when it can be deleted.
+
+The intercom is one of these pages too. See [Intercom](#intercom).
+
+If the library groups every entity under **No area**, refresh the editor. Areas are loaded once, and a load
+while Home Assistant's area list is unavailable (including just after the add-on restarts) comes back empty.
+
 Besides the grid, a page can be **free-form**: convert it in the page settings, then drag components from the
 palette (columns, rows, dials, tabs, markdown, QR codes, thermostat, weather, and the rest). Bound components
 can use `showWhen` and `animate`. The wiki’s **Free-form components** page lists every type and its props. The
@@ -245,6 +285,36 @@ with the same key as the installed app.
 The player app's ID changed from `dev.remotescreens.player` to `tech.shaffersoftworks.remotescreens.player`, so a
 tablet running the old app cannot update to it. Uninstall the old app, install the new one and pair the tablet again.
 A tablet enrolled as a kiosk has to be factory reset and enrolled again.
+
+## Managing a tablet with ADB
+
+**Tablets → ADB** in the editor can pair a tablet over the network, restart the player, install the packaged
+player app, take a screenshot, and download recent logs. The add-on image includes Android's platform tools.
+The browser only talks to the add-on, so the add-on must be able to reach the tablet on the local network.
+This works through Home Assistant ingress. These actions are not on the player port or the integration port,
+and there is no free-form shell command.
+
+On Android 11 or newer:
+
+1. On the tablet, turn on Developer options and **Wireless debugging**.
+2. Choose **Pair device with pairing code**.
+3. In the editor, enter that pairing address (`host:port`) and the six-digit code, then **Pair ADB**.
+4. Enter the separate debugging address from the main Wireless debugging screen, then **Connect**. Pairing
+   and debugging use different ports. The debugging port can change after wireless debugging or the tablet
+   restarts; connect again with the new address.
+5. **Refresh** to see the device. **ADB device for** a paired tablet remembers which serial belongs to it.
+   That label does not change where an action goes: each button uses the serial shown on the device.
+
+**Install player APK** uses the same app as **Download app**. The tablet accepts it only when it is
+signed with the same key as the installed app. A failed install leaves the current app in place. **Restart
+player** stops and starts Remote Screens on that tablet. **Screenshot** downloads a PNG, and **Download logs**
+downloads the latest 500 logcat lines, which include messages from other apps. **Disconnect** closes the network
+connection. To revoke this add-on's access, use **Forget** in the tablet's Wireless debugging paired-computer
+list. Android debugging has to stay on for any of this to work.
+
+An older tablet usually needs a USB connection and TCP debugging turned on from a computer first. The editor
+does not enable debugging or skip the tablet's own authorization. A USB device appears here only when the
+add-on can see it. Each command stops after two minutes.
 
 ## Network
 
