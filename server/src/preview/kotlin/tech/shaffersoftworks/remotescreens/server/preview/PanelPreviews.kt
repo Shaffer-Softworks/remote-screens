@@ -22,9 +22,9 @@ internal fun PreviewSession.panels() {
 }
 
 private fun PreviewSession.lightRooms() {
-    for (room in data.lightsRooms) {
-        val renderData = data.copy(lightsUi = mapOf("li1" to LightsUiState(selectedAreaId = room.areaId)))
-        page("Panels", "Lights · ${room.name}", DemoLayout.lightsPage(), input(renderData = renderData))
+    for ((areaId, name) in data.lightsRooms) {
+        val renderData = data.copy(lightsUi = mapOf("li1" to LightsUiState(selectedAreaId = areaId)))
+        page("Panels", "Lights · $name", DemoLayout.lightsPage(), input(renderData = renderData))
     }
 }
 

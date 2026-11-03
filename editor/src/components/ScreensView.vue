@@ -378,19 +378,29 @@ function preview(screen: Screen) {
           <h3>Tablets</h3>
           <p class="muted hint">Each paired tablet shows one screen. Change it here at any time.</p>
         </div>
-        <button
-          :class="{ active: intercomOpen }"
-          :aria-expanded="intercomOpen"
-          aria-controls="intercom-desk"
-          title="Call a tablet from this browser"
-          @click="intercomOpen = !intercomOpen"
-        >
-          <MdiIcon name="phone" :size="18" /> Intercom
-        </button>
-        <button :aria-expanded="adbOpen" aria-controls="adb-panel" @click="adbOpen = !adbOpen">ADB</button>
-        <button :disabled="!adopted.length" @click="notificationTargets = []">
-          <MdiIcon name="bell-ring-outline" :size="18" /> Send notification
-        </button>
+        <div class="tablet-actions" role="group" aria-label="Tablet actions">
+          <button
+            :class="{ active: intercomOpen }"
+            :aria-expanded="intercomOpen"
+            aria-controls="intercom-desk"
+            title="Call a tablet from this browser"
+            @click="intercomOpen = !intercomOpen"
+          >
+            <MdiIcon name="phone" :size="18" /> Intercom
+          </button>
+          <button
+            :class="{ active: adbOpen }"
+            :aria-expanded="adbOpen"
+            aria-controls="adb-panel"
+            title="Manage tablets with Android Debug Bridge"
+            @click="adbOpen = !adbOpen"
+          >
+            <MdiIcon name="android" :size="18" /> ADB
+          </button>
+          <button :disabled="!adopted.length" @click="notificationTargets = []">
+            <MdiIcon name="bell-ring-outline" :size="18" /> Send notification
+          </button>
+        </div>
       </div>
 
       <IntercomDesk v-if="intercomOpen" id="intercom-desk" class="intercom-panel" />
@@ -516,6 +526,51 @@ header h1 {
   margin-bottom: 12px;
   align-items: flex-end;
   flex-wrap: wrap;
+}
+
+.tablet-actions {
+  display: inline-flex;
+  max-width: 100%;
+}
+
+.tablet-actions button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 0;
+  white-space: nowrap;
+}
+
+.tablet-actions button + button {
+  margin-left: -1px;
+}
+
+.tablet-actions button:first-child {
+  border-radius: 999px 0 0 999px;
+}
+
+.tablet-actions button:last-child {
+  border-radius: 0 999px 999px 0;
+}
+
+.tablet-actions button:hover:not(:disabled),
+.tablet-actions button.active,
+.tablet-actions button:focus-visible {
+  z-index: 1;
+}
+
+.tablet-actions button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .tablet-actions button {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
 }
 
 .heading button.active {
