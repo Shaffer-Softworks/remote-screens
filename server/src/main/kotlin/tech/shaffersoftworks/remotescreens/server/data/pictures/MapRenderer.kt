@@ -72,12 +72,12 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
         graphics.fillRect(0, 0, width, height)
 
         val view = viewOf(people, width, height)
-        drawTiles(graphics, view, width, height)
+        drawTiles(graphics = graphics, view = view, width = width, height = height)
         if (isDark) {
             graphics.color = Color(0, 0, 0, DARK_OVERLAY_ALPHA)
             graphics.fillRect(0, 0, width, height)
         }
-        drawMarkers(graphics, people, view, min(width, height))
+        drawMarkers(graphics = graphics, people = people, view = view, shortestSide = min(width, height))
         graphics.dispose()
         return image
     }

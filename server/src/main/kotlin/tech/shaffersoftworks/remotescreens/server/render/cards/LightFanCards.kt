@@ -114,7 +114,7 @@ internal fun DocContext.humidifierCard(entityId: String, entityState: EntityStat
     scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@humidifierCard
         doc.key(
-            ref(entityId, "humidity", "-$step"),
+            ref = ref(entityId, "humidity", "-$step"),
             icon = "minus",
             heightDp = CardChrome.STEPPER_KEY_DP,
             widthDp = CardChrome.STEPPER_KEY_DP,
@@ -122,15 +122,15 @@ internal fun DocContext.humidifierCard(entityId: String, entityState: EntityStat
         )
         Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
             doc.label(
-                doc.text(Vars.entity(entityId, Vars.KEY_VALUE)),
-                Type.DISPLAY,
-                doc.role(Role.INK),
-                Weight.NORMAL,
+                text = doc.text(Vars.entity(entityId, Vars.KEY_VALUE)),
+                sp = Type.DISPLAY,
+                color = doc.role(Role.INK),
+                weight = Weight.NORMAL,
                 align = RcTextAlign.Center,
             )
         }
         doc.key(
-            ref(entityId, "humidity", "+$step"),
+            ref = ref(entityId, "humidity", "+$step"),
             icon = "plus",
             heightDp = CardChrome.STEPPER_KEY_DP,
             widthDp = CardChrome.STEPPER_KEY_DP,
@@ -138,7 +138,7 @@ internal fun DocContext.humidifierCard(entityId: String, entityState: EntityStat
         )
     }
     gap(CardChrome.CARD_GAP_DP)
-    bar(entityId, "humidity", w, min, max)
+    bar(entityId = entityId, verb = "humidity", width = w, min = min, max = max)
     val modes = entityState?.list("available_modes").orEmpty()
     if (modes.isNotEmpty()) {
         structural(entityId) { it?.list("available_modes")?.joinToString() ?: "" }

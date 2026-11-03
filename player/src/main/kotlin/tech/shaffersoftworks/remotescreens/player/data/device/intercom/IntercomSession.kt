@@ -260,7 +260,14 @@ internal class IntercomSession(
         scope = scope,
         peerId = { peerId },
         sendCandidate = { target, candidate, sdpMid, sdpMLineIndex ->
-            emit(IntercomWire.candidate(target, candidate, sdpMid, sdpMLineIndex))
+            emit(
+                IntercomWire.candidate(
+                    targetId = target,
+                    candidate = candidate,
+                    sdpMid = sdpMid,
+                    sdpMLineIndex = sdpMLineIndex,
+                ),
+            )
         },
         connected = connected@{
             val target = peerId ?: return@connected

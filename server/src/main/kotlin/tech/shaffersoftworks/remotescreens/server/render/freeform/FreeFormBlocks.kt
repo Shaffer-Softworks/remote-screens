@@ -167,15 +167,15 @@ internal fun blockNatural(node: Node): Dims? = when (node.type) {
 internal fun DocContext.blockNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
     when (node.type) {
         "timerkeys" -> timerKeysNode(node, axis, pages)
-        "todolist" -> todoListNode(node, self, axis, pages)
-        "events" -> eventsNode(node, self, axis, pages)
-        "mediabar" -> mediaBarNode(node, self, axis, pages)
-        "forecast" -> forecastNode(node, self, axis, pages)
-        "presence" -> presenceNode(node, self, axis, pages)
-        "weather" -> weatherNowNode(node, self, axis, pages)
-        "nextevent" -> nextEventNode(node, self, axis, pages)
+        "todolist" -> todoListNode(node = node, self = self, axis = axis, pages = pages)
+        "events" -> eventsNode(node = node, self = self, axis = axis, pages = pages)
+        "mediabar" -> mediaBarNode(node = node, self = self, axis = axis, pages = pages)
+        "forecast" -> forecastNode(node = node, self = self, axis = axis, pages = pages)
+        "presence" -> presenceNode(node = node, self = self, axis = axis, pages = pages)
+        "weather" -> weatherNowNode(node = node, self = self, axis = axis, pages = pages)
+        "nextevent" -> nextEventNode(node = node, self = self, axis = axis, pages = pages)
         "led" -> ledNode(node, axis, pages)
-        "thermostat" -> thermostatNode(node, self, axis, pages)
+        "thermostat" -> thermostatNode(node = node, self = self, axis = axis, pages = pages)
     }
 }
 
@@ -190,7 +190,7 @@ private fun DocContext.timerKeysNode(node: Node, axis: Axis, pages: Pages) {
             val ref = id?.let { ActionRef(node.id, verb) }
             if (ref != null) {
                 doc.key(
-                    ref,
+                    ref = ref,
                     text = word,
                     icon = icon,
                     heightDp = keyH,
@@ -227,7 +227,7 @@ private fun DocContext.todoListNode(node: Node, self: Dims, axis: Axis, pages: P
         refreshEvery(BlockMetrics.TODO_REFRESH_S)
     }
     val items = id?.let { data.todos[it].orEmpty().take(max) }.orEmpty()
-    scope.Column(styled(node, axis, pages, measured(node, axis, self))) {
+    scope.Column(styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))) {
         val doc = this@todoListNode
         if (id == null || items.isEmpty()) {
             doc.label(doc.i18n.t("ui.no_todos"), Type.BODY, doc.role(Role.INK_SOFT))
@@ -235,7 +235,7 @@ private fun DocContext.todoListNode(node: Node, self: Dims, axis: Axis, pages: P
             items.forEachIndexed { index, item ->
                 if (index > 0) doc.gap(BlockMetrics.TODO_GAP_DP)
                 doc.key(
-                    ActionRef(node.id, "complete", item.uid),
+                    ref = ActionRef(node.id, "complete", item.uid),
                     text = item.summary,
                     icon = "checkbox-blank-outline",
                     heightDp = BlockMetrics.TODO_ROW_H_DP,
@@ -266,7 +266,7 @@ private fun DocContext.eventsNode(node: Node, self: Dims, axis: Axis, pages: Pag
             zone,
         )?.let { calendarId to it } }
     }.sortedBy { it.second.start }.take(max)
-    scope.Column(styled(node, axis, pages, measured(node, axis, self))) {
+    scope.Column(styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))) {
         val doc = this@eventsNode
         if (events.isEmpty()) {
             doc.label(doc.i18n.t("ui.no_events"), Type.BODY, doc.role(Role.INK_SOFT))
@@ -287,10 +287,10 @@ private fun DocContext.eventsNode(node: Node, self: Dims, axis: Axis, pages: Pag
                 }
                 Column(doc.tap(Modifier.fillMaxWidth(), ActionRef("e:$calendarId", "card"))) {
                     doc.label(
-                        event.title,
-                        Type.BODY,
-                        doc.role(Role.INK),
-                        Weight.SEMI_BOLD,
+                        text = event.title,
+                        sp = Type.BODY,
+                        color = doc.role(Role.INK),
+                        weight = Weight.SEMI_BOLD,
                         lines = 1,
                     )
                     doc.label(whenText, Type.CAPTION, doc.role(Role.INK_SOFT))
@@ -311,7 +311,7 @@ private fun DocContext.mediaBarNode(node: Node, self: Dims, axis: Axis, pages: P
     val ink = role(Role.INK)
     val soft = role(Role.INK_SOFT)
     scope.Column(
-        styled(node, axis, pages, measured(node, axis, self)),
+        styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self)),
         vertical = RcColumnVerticalPositioning.Center,
     ) {
         val doc = this@mediaBarNode
@@ -326,7 +326,15 @@ private fun DocContext.mediaBarNode(node: Node, self: Dims, axis: Axis, pages: P
                 vertical = RcVerticalPositioning.Center,
             ) {
                 val px = doc.units.px(art).toInt()
-                doc.picture(PictureSlot("art.$id.${node.id}", "attr:$id:entity_picture", px, px, 0))
+                doc.picture(
+                    PictureSlot(
+                        name = "art.$id.${node.id}",
+                        source = "attr:$id:entity_picture",
+                        widthPx = px,
+                        heightPx = px,
+                        refreshSeconds = 0,
+                    ),
+                )
                 Image(
                     doc.image("art.$id.${node.id}", px, px),
                     Modifier.size(doc.units.px(art), doc.units.px(art))
@@ -336,22 +344,22 @@ private fun DocContext.mediaBarNode(node: Node, self: Dims, axis: Axis, pages: P
                 Spacer(Modifier.width(doc.units.px(BlockMetrics.PRESENCE_GAP_DP)))
                 Column(Modifier.horizontalWeight(1f)) {
                     doc.label(
-                        doc.text(Vars.entity(id, "title")),
-                        Type.BODY,
-                        ink,
-                        Weight.SEMI_BOLD,
+                        text = doc.text(Vars.entity(id, "title")),
+                        sp = Type.BODY,
+                        color = ink,
+                        weight = Weight.SEMI_BOLD,
                         lines = 1,
                     )
                     doc.label(
-                        doc.text(Vars.entity(id, "artist")),
-                        Type.CAPTION,
-                        soft,
+                        text = doc.text(Vars.entity(id, "artist")),
+                        sp = Type.CAPTION,
+                        color = soft,
                         lines = 1,
                     )
                 }
             }
             doc.key(
-                ActionRef(node.id, "previous"),
+                ref = ActionRef(node.id, "previous"),
                 icon = "skip-previous",
                 heightDp = key,
                 widthDp = key,
@@ -368,20 +376,20 @@ private fun DocContext.mediaBarNode(node: Node, self: Dims, axis: Axis, pages: P
             ) {
                 val iconDp = key * BlockMetrics.MEDIA_KEY_ICON_SHARE
                 doc.icon(
-                    "pause",
-                    iconDp,
-                    doc.role(Role.KEY_ON_INK),
-                    doc.int(Vars.entity(id, "playing")),
+                    name = "pause",
+                    sizeDp = iconDp,
+                    color = doc.role(Role.KEY_ON_INK),
+                    visible = doc.int(Vars.entity(id, "playing")),
                 )
                 doc.icon(
-                    "play",
-                    iconDp,
-                    doc.role(Role.KEY_ON_INK),
-                    doc.int(Vars.entity(id, "notplaying")),
+                    name = "play",
+                    sizeDp = iconDp,
+                    color = doc.role(Role.KEY_ON_INK),
+                    visible = doc.int(Vars.entity(id, "notplaying")),
                 )
             }
             doc.key(
-                ActionRef(node.id, "next"),
+                ref = ActionRef(node.id, "next"),
                 icon = "skip-next",
                 heightDp = key,
                 widthDp = key,
@@ -398,12 +406,12 @@ private fun DocContext.mediaBarNode(node: Node, self: Dims, axis: Axis, pages: P
                     BlockMetrics.MEDIA_TIME_LABELS_W_DP
                 ).coerceAtLeast(BlockMetrics.MEDIA_PROGRESS_MIN_W_DP)
             doc.levelBar(
-                doc.float(Vars.entity(id, "progress")),
-                progressW,
-                BlockMetrics.MEDIA_BAR_H_DP,
-                doc.role(Role.ACCENT),
-                doc.role(Role.TRACK),
-                BlockMetrics.MEDIA_PROGRESS_STEPS,
+                level = doc.float(Vars.entity(id, "progress")),
+                widthDp = progressW,
+                heightDp = BlockMetrics.MEDIA_BAR_H_DP,
+                fill = doc.role(Role.ACCENT),
+                track = doc.role(Role.TRACK),
+                steps = BlockMetrics.MEDIA_PROGRESS_STEPS,
             ) { step ->
                 ActionRef(
                     node.id,
@@ -424,12 +432,12 @@ private fun DocContext.mediaBarNode(node: Node, self: Dims, axis: Axis, pages: P
             )
             Spacer(Modifier.width(doc.units.px(BlockMetrics.MEDIA_TIME_GAP_DP)))
             doc.levelBar(
-                doc.float(Vars.entity(id, Vars.KEY_LEVEL)),
-                BlockMetrics.MEDIA_VOLUME_W_DP,
-                BlockMetrics.MEDIA_BAR_H_DP,
-                doc.role(Role.ACCENT),
-                doc.role(Role.TRACK),
-                BlockMetrics.MEDIA_VOLUME_STEPS,
+                level = doc.float(Vars.entity(id, Vars.KEY_LEVEL)),
+                widthDp = BlockMetrics.MEDIA_VOLUME_W_DP,
+                heightDp = BlockMetrics.MEDIA_BAR_H_DP,
+                fill = doc.role(Role.ACCENT),
+                track = doc.role(Role.TRACK),
+                steps = BlockMetrics.MEDIA_VOLUME_STEPS,
             ) { step ->
                 ActionRef(
                     node.id,
@@ -501,7 +509,7 @@ private fun DocContext.forecastNode(node: Node, self: Dims, axis: Axis, pages: P
     val dayInk = node.props["ink"]?.let { paint(it) } ?: role(Role.INK_SOFT)
     val tempInk = node.props["color"]?.let { paint(it) } ?: role(Role.INK)
     scope.Row(
-        styled(node, axis, pages, measured(node, axis, self)),
+        styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self)),
         horizontal = RcRowHorizontalPositioning.SpaceBetween,
         vertical = RcVerticalPositioning.Center,
     ) {
@@ -515,9 +523,9 @@ private fun DocContext.forecastNode(node: Node, self: Dims, axis: Axis, pages: P
                     horizontal = RcHorizontalPositioning.Center,
                 ) {
                     doc.label(
-                        doc.i18n.weekday(day.time.withZoneSameInstant(zone)),
-                        Type.CAPTION,
-                        dayInk,
+                        text = doc.i18n.weekday(day.time.withZoneSameInstant(zone)),
+                        sp = Type.CAPTION,
+                        color = dayInk,
                         align = RcTextAlign.Center,
                     )
                     doc.weatherStateIcon(
@@ -526,12 +534,12 @@ private fun DocContext.forecastNode(node: Node, self: Dims, axis: Axis, pages: P
                         fallbackColor = tempInk,
                     )
                     doc.label(
-                        listOfNotNull(
+                        text = listOfNotNull(
                             day.high?.let { "${it.roundToInt()}°" },
                             day.low?.let { "${it.roundToInt()}°" },
                         ).joinToString(" "),
-                        Type.CAPTION,
-                        tempInk,
+                        sp = Type.CAPTION,
+                        color = tempInk,
                         align = RcTextAlign.Center,
                     )
                 }
@@ -548,7 +556,7 @@ private fun DocContext.presenceNode(node: Node, self: Dims, axis: Axis, pages: P
     val where = node.props["color"]?.let { paint(it) } ?: role(Role.ACCENT_SOFT)
     val empty = node.props["ink"]?.let { paint(it) } ?: role(Role.INK_DIM)
     scope.Row(
-        styled(node, axis, pages, measured(node, axis, self)),
+        styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self)),
         horizontal = RcRowHorizontalPositioning.SpaceEvenly,
         vertical = RcVerticalPositioning.Center,
     ) {
@@ -567,19 +575,19 @@ private fun DocContext.presenceNode(node: Node, self: Dims, axis: Axis, pages: P
                     vertical = RcVerticalPositioning.Center,
                 ) {
                     doc.photo(
-                        doc.states[personId],
-                        personId,
-                        "presence.${node.id}.$personId",
-                        photo,
-                        ink,
+                        entityState = doc.states[personId],
+                        entityId = personId,
+                        slot = "presence.${node.id}.$personId",
+                        sizeDp = photo,
+                        ink = ink,
                     )
                     Spacer(Modifier.width(doc.units.px(BlockMetrics.PRESENCE_GAP_DP)))
                     Column {
                         doc.label(
-                            doc.text(Vars.entity(personId, Vars.KEY_NAME)),
-                            Type.BODY,
-                            ink,
-                            Weight.SEMI_BOLD,
+                            text = doc.text(Vars.entity(personId, Vars.KEY_NAME)),
+                            sp = Type.BODY,
+                            color = ink,
+                            weight = Weight.SEMI_BOLD,
                             lines = 1,
                         )
                         doc.label(
@@ -604,7 +612,7 @@ private fun DocContext.weatherNowNode(node: Node, self: Dims, axis: Axis, pages:
     val cardRef = id?.let { ActionRef("e:$it", "card") }
     scope.Column(
         tap(
-            styled(node, axis, pages, measured(node, axis, self))
+            styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))
                 .padding(units.px(BlockMetrics.WEATHER_PAD_DP)),
             cardRef,
         ),
@@ -626,17 +634,17 @@ private fun DocContext.weatherNowNode(node: Node, self: Dims, axis: Axis, pages:
             Spacer(Modifier.width(doc.units.px(BlockMetrics.WEATHER_GAP_DP)))
             if (id != null) {
                 doc.label(
-                    doc.text(Vars.tile(node.id, "temp")),
-                    BlockMetrics.WEATHER_TEMP_SP,
-                    ink,
-                    BlockMetrics.WEATHER_TEMP_WEIGHT,
+                    text = doc.text(Vars.tile(node.id, "temp")),
+                    sp = BlockMetrics.WEATHER_TEMP_SP,
+                    color = ink,
+                    weight = BlockMetrics.WEATHER_TEMP_WEIGHT,
                 )
             } else {
                 doc.label(
-                    "—",
-                    BlockMetrics.WEATHER_TEMP_SP,
-                    ink,
-                    BlockMetrics.WEATHER_TEMP_WEIGHT,
+                    text = "—",
+                    sp = BlockMetrics.WEATHER_TEMP_SP,
+                    color = ink,
+                    weight = BlockMetrics.WEATHER_TEMP_WEIGHT,
                 )
             }
             if (id != null) {
@@ -679,29 +687,29 @@ private fun DocContext.nextEventNode(node: Node, self: Dims, axis: Axis, pages: 
     val cardRef = calendarId?.let { ActionRef("e:$it", "card") }
     scope.Column(
         tap(
-            styled(node, axis, pages, measured(node, axis, self))
+            styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))
                 .padding(units.px(BlockMetrics.NEXT_EVENT_PAD_DP)),
             cardRef,
         ),
     ) {
         val doc = this@nextEventNode
         doc.label(
-            doc.text(Vars.tile(node.id, "ev.day")),
-            BlockMetrics.NEXT_EVENT_DAY_SP,
-            dayColor,
-            Weight.LIGHT,
+            text = doc.text(Vars.tile(node.id, "ev.day")),
+            sp = BlockMetrics.NEXT_EVENT_DAY_SP,
+            color = dayColor,
+            weight = Weight.LIGHT,
         )
         doc.label(
-            doc.text(Vars.tile(node.id, "ev.time")),
-            BlockMetrics.NEXT_EVENT_TIME_SP,
-            ink,
-            BlockMetrics.NEXT_EVENT_TIME_WEIGHT,
+            text = doc.text(Vars.tile(node.id, "ev.time")),
+            sp = BlockMetrics.NEXT_EVENT_TIME_SP,
+            color = ink,
+            weight = BlockMetrics.NEXT_EVENT_TIME_WEIGHT,
         )
         Spacer(Modifier.height(doc.units.px(BlockMetrics.NEXT_EVENT_TITLE_GAP_DP)))
         doc.label(
-            doc.text(Vars.tile(node.id, "ev.title")),
-            BlockMetrics.NEXT_EVENT_TITLE_SP,
-            ink,
+            text = doc.text(Vars.tile(node.id, "ev.title")),
+            sp = BlockMetrics.NEXT_EVENT_TITLE_SP,
+            color = ink,
             lines = 2,
         )
         Spacer(Modifier.height(doc.units.px(BlockMetrics.NEXT_EVENT_META_GAP_DP)))
@@ -766,7 +774,7 @@ private fun DocContext.thermostatNode(node: Node, self: Dims, axis: Axis, pages:
     val entityId = node.bind?.entityId
     val contentW = (self.w - node.style.padX).coerceAtLeast(0f)
     val contentH = (self.h - node.style.padY).coerceAtLeast(0f)
-    val modifier = styled(node, axis, pages, measured(node, axis, self))
+    val modifier = styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))
     if (entityId == null) {
         scope.Box(
             modifier.background(role(Role.PAGE)),
@@ -780,7 +788,7 @@ private fun DocContext.thermostatNode(node: Node, self: Dims, axis: Axis, pages:
     scope.Box(modifier) {
         this@thermostatNode.thermostatPanel(
             Tile(id = node.id, entityId = entityId, full = true),
-            TileBox(0f, 0f, contentW, contentH, 1, 1, full = true),
+            TileBox(x = 0f, y = 0f, w = contentW, h = contentH, cols = 1, rows = 1, full = true),
         )
     }
 }

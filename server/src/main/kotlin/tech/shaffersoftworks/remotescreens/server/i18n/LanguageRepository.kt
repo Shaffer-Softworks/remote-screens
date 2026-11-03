@@ -24,10 +24,10 @@ class LanguageRepository(
         val key = "$language|$is24Hour"
         cached?.takeIf { cacheKey == key }?.let { return it }
         val built = I18n(
-            language,
-            I18n.load(language.substringBefore('-')),
-            homeAssistantWords[language].orEmpty(),
-            is24Hour,
+            language = language,
+            ownWords = I18n.load(language.substringBefore('-')),
+            homeAssistantWords = homeAssistantWords[language].orEmpty(),
+            is24Hour = is24Hour,
         )
         cached = built
         cacheKey = key

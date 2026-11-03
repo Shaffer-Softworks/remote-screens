@@ -63,14 +63,19 @@ class PictureRepository(
             slot.source.startsWith(MAP_SOURCE_PREFIX) -> {
                 val style = slot.source.removePrefix(MAP_SOURCE_PREFIX).substringBefore(':')
                 val people = mapEntityIds(slot).mapNotNull { states[it] }
-                mapRenderer.draw(people, slot.widthPx, slot.heightPx, isDark = style == "dark")
+                mapRenderer.draw(
+                    entities = people,
+                    width = slot.widthPx,
+                    height = slot.heightPx,
+                    isDark = style == "dark",
+                )
             }
             slot.source.startsWith(QR_SOURCE_PREFIX) ->
                 QrBitmaps.encode(qrPayload(slot.source, states), maxOf(slot.widthPx, slot.heightPx))
             else -> fetchImage(slot, states)
         }
         image?.let { ImageEncoder.encode(
-            ImageEncoder.fit(it, slot.widthPx, slot.heightPx, slot.crop),
+            ImageEncoder.fit(source = it, width = slot.widthPx, height = slot.heightPx, isCropped = slot.crop),
             slot.round,
         ) }
     }.onFailure { logger.warn("Picture {} failed: {}", slot.name, it.toString()) }.getOrNull()

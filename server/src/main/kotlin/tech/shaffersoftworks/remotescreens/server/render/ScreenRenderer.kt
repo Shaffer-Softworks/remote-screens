@@ -138,14 +138,14 @@ class RenderInput(
     val intercom: IntercomView? = null,
 ) {
     fun context(device: Device) = DocContext(
-        Units(device.density),
-        palette,
-        i18n,
-        states,
-        homeAssistantConfig,
-        data,
-        supportsCalendarDialogs,
-        intercom,
+        units = Units(device.density),
+        palette = palette,
+        i18n = i18n,
+        states = states,
+        homeAssistantConfig = homeAssistantConfig,
+        data = data,
+        supportsCalendarDialogs = supportsCalendarDialogs,
+        intercom = intercom,
     )
 }
 
@@ -166,13 +166,19 @@ object ScreenRenderer {
         val widthDp = device.widthDp.toFloat()
         val topBar = Grid.topBarHeight(screen.topBar)
         val navBar = Grid.navBarHeight(screen.navBar, widthDp)
-        val spec = Grid.spec(screen.grid, widthDp, device.heightDp.toFloat(), topBar, navBar)
+        val spec = Grid.spec(
+            size = screen.grid,
+            widthDp = widthDp,
+            heightDp = device.heightDp.toFloat(),
+            topBar = topBar,
+            navBar = navBar,
+        )
 
         val (bytes, docContext) = DocContext.build(
-            device.widthPx,
-            device.heightPx,
-            screen.name,
-            { input.context(device) },
+            widthPx = device.widthPx,
+            heightPx = device.heightPx,
+            description = screen.name,
+            newContext = { input.context(device) },
         ) { docContext ->
             docContext.bindSystem(screen)
             val page = docContext.int(Vars.PAGE, startPage)
@@ -181,21 +187,27 @@ object ScreenRenderer {
                     pages.forEachIndexed { pageNumber, screenPage ->
                         Box(Modifier.fillMaxSize()) {
                             docContext.page(
-                                screen,
-                                screenPage,
-                                pageNumber,
-                                spec,
-                                pageIndex,
-                                visible,
-                                home,
-                                showBar,
+                                screen = screen,
+                                page = screenPage,
+                                index = pageNumber,
+                                spec = spec,
+                                pageIndex = pageIndex,
+                                visible = visible,
+                                home = home,
+                                showBar = showBar,
                             )
                         }
                     }
                 }
             }
         }
-        return RenderedDoc(bytes, docContext, pages.map { it.id }, home, visible)
+        return RenderedDoc(
+            bytes = bytes,
+            docContext = docContext,
+            pageIds = pages.map { it.id },
+            homePage = home,
+            swipePages = visible,
+        )
     }
 
     private fun DocContext.page(
@@ -209,43 +221,24 @@ object ScreenRenderer {
         showBar: Boolean,
     ) {
         renderingPage = index
-        if (showBar) topBar(screen, page, spec, back = page.hidden, home = home)
+        if (showBar) topBar(screen = screen, page = page, spec = spec, back = page.hidden, home = home)
         val contentH = spec.heightDp - spec.topBar - spec.navBar
-        pageBackground(screen, page, spec, contentH)
+        pageBackground(screen = screen, page = page, spec = spec, contentH = contentH)
         val root = page.root
         if (root != null) {
             freeForm(
-                root,
-                0f,
-                spec.topBar,
-                spec.widthDp,
-                contentH,
-                pageIndex,
+                root = root,
+                xDp = 0f,
+                yDp = spec.topBar,
+                wDp = spec.widthDp,
+                hDp = contentH,
+                pageIndex = pageIndex,
             ) { id -> screen.pages.firstOrNull { it.id == id }?.title }
-            navBar(screen, spec, visible, index, home)
+            navBar(screen = screen, spec = spec, visible = visible, current = index, home = home)
             return
         }
         val placed = Reflow.place(page.tiles.filter { tileUsable(it) }, screen.grid)
-        if (placed.isEmpty()) {
-            at(0f, spec.topBar) {
-                scope.Box(
-                    Modifier.size(units.px(spec.widthDp), units.px(contentH)),
-                    horizontal = RcHorizontalPositioning.Center,
-                    vertical = RcVerticalPositioning.Center,
-                ) {
-                    this@page.label(
-                        this@page.i18n.t("ui.empty_page"),
-                        Type.TITLE,
-                        this@page.role(Role.INK_SOFT),
-                        align = RcTextAlign.Center,
-                        lines = 3,
-                        modifier = Modifier.width(
-                            this@page.units.px(spec.widthDp * TOP_BAR_MIN_SCALE),
-                        ),
-                    )
-                }
-            }
-        }
+        if (placed.isEmpty()) emptyPage(spec, contentH)
         for (placement in placed) {
             val tile = placement.tile
             val box = tileBox(spec, placement, contentH)
@@ -258,10 +251,39 @@ object ScreenRenderer {
             }
             tile(named, box, pageIndex)
         }
-        navBar(screen, spec, visible, index, home)
+        navBar(screen = screen, spec = spec, visible = visible, current = index, home = home)
         for (placement in placed.filter { it.tile.effectiveKind() == "lights" && it.tile.edgeToEdge() }) {
             val box = tileBox(spec, placement, contentH)
-            at(0f, 0f) { lightsDialogLayer(placement.tile, box, spec.widthDp, spec.heightDp) }
+            at(0f, 0f) {
+                lightsDialogLayer(
+                    tile = placement.tile,
+                    box = box,
+                    screenW = spec.widthDp,
+                    screenH = spec.heightDp,
+                )
+            }
+        }
+    }
+
+    /** The message shown on a page with no tiles. */
+    private fun DocContext.emptyPage(spec: GridSpec, contentH: Float) {
+        at(0f, spec.topBar) {
+            scope.Box(
+                Modifier.size(units.px(spec.widthDp), units.px(contentH)),
+                horizontal = RcHorizontalPositioning.Center,
+                vertical = RcVerticalPositioning.Center,
+            ) {
+                this@emptyPage.label(
+                    text = this@emptyPage.i18n.t("ui.empty_page"),
+                    sp = Type.TITLE,
+                    color = this@emptyPage.role(Role.INK_SOFT),
+                    align = RcTextAlign.Center,
+                    lines = 3,
+                    modifier = Modifier.width(
+                        this@emptyPage.units.px(spec.widthDp * TOP_BAR_MIN_SCALE),
+                    ),
+                )
+            }
         }
     }
 
@@ -274,10 +296,17 @@ object ScreenRenderer {
             val heightPx = units.px(contentH).toInt().coerceAtLeast(1)
             val slot = "bg.${page.id}"
             picture(
-                PictureSlot(slot, source, widthPx, heightPx, refreshSeconds = 0, crop = true),
+                PictureSlot(
+                    name = slot,
+                    source = source,
+                    widthPx = widthPx,
+                    heightPx = heightPx,
+                    refreshSeconds = 0,
+                    crop = true,
+                ),
             )
             scope.Box(
-                Modifier.fillMaxSize().padding(0f, units.px(spec.topBar), 0f, 0f),
+                Modifier.fillMaxSize().padding(start = 0f, top = units.px(spec.topBar), end = 0f, bottom = 0f),
             ) {
                 Image(
                     this@pageBackground.image(slot, widthPx, heightPx),
@@ -296,24 +325,24 @@ object ScreenRenderer {
         val full = tile.full || (placement.w == spec.cols && placement.h == spec.rows)
         return if (tile.edgeToEdge()) {
             TileBox(
-                0f,
-                spec.topBar,
-                spec.widthDp,
-                contentH,
-                placement.w,
-                placement.h,
+                x = 0f,
+                y = spec.topBar,
+                w = spec.widthDp,
+                h = contentH,
+                cols = placement.w,
+                rows = placement.h,
                 full = true,
                 edge = true,
             )
         } else {
             TileBox(
-                spec.x(placement.col),
-                spec.y(placement.row),
-                spec.w(placement.w),
-                spec.h(placement.h),
-                placement.w,
-                placement.h,
-                full,
+                x = spec.x(placement.col),
+                y = spec.y(placement.row),
+                w = spec.w(placement.w),
+                h = spec.h(placement.h),
+                cols = placement.w,
+                rows = placement.h,
+                full = full,
             )
         }
     }
@@ -351,7 +380,7 @@ object ScreenRenderer {
                     horizontal = RcRowHorizontalPositioning.SpaceEvenly,
                     vertical = RcVerticalPositioning.Center,
                 ) {
-                    doc.label(doc.text(Vars.TIME), headerSp, ink, Weight.BOLD)
+                    doc.label(text = doc.text(Vars.TIME), sp = headerSp, color = ink, weight = Weight.BOLD)
                     if (bar.date && spec.widthDp >= Grid.NARROW) {
                         doc.label(
                             doc.text(Vars.DAY),
@@ -367,17 +396,17 @@ object ScreenRenderer {
                     val keyDp = minOf(BACK_KEY_BASE_DP * layoutScale, spec.topBar - BACK_KEY_INSET_DP)
                     val backRef = ActionRef("_", "back", home.toString())
                     doc.key(
-                        backRef,
+                        ref = backRef,
                         icon = "arrow-left",
                         heightDp = keyDp,
                         widthDp = keyDp,
                         round = true,
                     )
                     Spacer(Modifier.width(doc.units.px(NAV_LABEL_BASE_SP * layoutScale)))
-                    doc.label(page.title, Type.TITLE * layoutScale, ink, Weight.MEDIUM)
+                    doc.label(text = page.title, sp = Type.TITLE * layoutScale, color = ink, weight = Weight.MEDIUM)
                 }
             }
-            doc.topBarTrailing(bar, headerSp, layoutScale, ink)
+            doc.topBarTrailing(bar = bar, headerSp = headerSp, layoutScale = layoutScale, ink = ink)
             Spacer(Modifier.width(doc.units.px(NAV_ICON_LABEL_GAP_DP)))
         }
     }
@@ -397,11 +426,34 @@ object ScreenRenderer {
                 label(text(Vars.TEMP), headerSp, ink)
                 scope.Spacer(Modifier.width(units.px(STAT_GAP_DP * layoutScale)))
             } else {
-                topBarStat("thermometer", Vars.TEMP, headerSp, layoutScale, ink, role(Role.BLUE))
+                topBarStat(
+                    icon = "thermometer",
+                    value = Vars.TEMP,
+                    headerSp = headerSp,
+                    layoutScale = layoutScale,
+                    ink = ink,
+                    iconColor = role(Role.BLUE),
+                )
             }
         }
-        if (bar.people) topBarStat("home-account", Vars.PEOPLE, headerSp, layoutScale, ink)
-        if (bar.wifi) topBarStat("wifi", Vars.WIFI, headerSp, layoutScale, ink)
+        if (bar.people) {
+            topBarStat(
+                icon = "home-account",
+                value = Vars.PEOPLE,
+                headerSp = headerSp,
+                layoutScale = layoutScale,
+                ink = ink,
+            )
+        }
+        if (bar.wifi) {
+            topBarStat(
+                icon = "wifi",
+                value = Vars.WIFI,
+                headerSp = headerSp,
+                layoutScale = layoutScale,
+                ink = ink,
+            )
+        }
         if (bar.battery) topBarBattery(headerSp, layoutScale, ink)
     }
 
@@ -429,8 +481,18 @@ object ScreenRenderer {
                 units.px(STAT_ICON_DP * layoutScale),
             ),
         ) {
-            icon("battery", STAT_ICON_DP * layoutScale, tint, int(Vars.BATTERY_IDLE))
-            icon("battery-charging", STAT_ICON_DP * layoutScale, tint, int(Vars.BATTERY_CHARGING))
+            icon(
+                name = "battery",
+                sizeDp = STAT_ICON_DP * layoutScale,
+                color = tint,
+                visible = int(Vars.BATTERY_IDLE),
+            )
+            icon(
+                name = "battery-charging",
+                sizeDp = STAT_ICON_DP * layoutScale,
+                color = tint,
+                visible = int(Vars.BATTERY_CHARGING),
+            )
         }
         scope.Spacer(Modifier.width(units.px(STAT_ICON_GAP_DP * layoutScale)))
         label(text(Vars.BATTERY), headerSp, ink)
@@ -484,23 +546,23 @@ object ScreenRenderer {
                     val page = screen.pages[i]
                     val icon = page.icon ?: if (i == home) "home" else "view-dashboard"
                     doc.navButton(
-                        page.title,
-                        icon,
-                        buttonW,
-                        barH,
-                        i == current,
-                        ActionRef("_", "page", i.toString()),
-                        style,
+                        title = page.title,
+                        icon = icon,
+                        wDp = buttonW,
+                        hDp = barH,
+                        on = i == current,
+                        ref = ActionRef("_", "page", i.toString()),
+                        style = style,
                     )
                 }
                 doc.navButton(
-                    doc.i18n.t("ui.settings"),
-                    "cog",
-                    buttonW,
-                    barH,
-                    false,
-                    ActionRef("_", "settings"),
-                    style,
+                    title = doc.i18n.t("ui.settings"),
+                    icon = "cog",
+                    wDp = buttonW,
+                    hDp = barH,
+                    on = false,
+                    ref = ActionRef("_", "settings"),
+                    style = style,
                 )
             }
         } }
@@ -546,10 +608,10 @@ object ScreenRenderer {
                         NAV_WORD_ONLY_MAX_SP,
                     )
                     doc.label(
-                        word,
-                        sp,
-                        ink,
-                        Weight.MEDIUM,
+                        text = word,
+                        sp = sp,
+                        color = ink,
+                        weight = Weight.MEDIUM,
                         lines = 2,
                         align = RcTextAlign.Center,
                         modifier = wordW,
@@ -570,7 +632,7 @@ object ScreenRenderer {
                         NAV_LABEL_MIN_SP,
                         NAV_LABEL_MAX_SP,
                     )
-                    doc.label(word, sp, ink, align = RcTextAlign.Center, modifier = wordW)
+                    doc.label(text = word, sp = sp, color = ink, align = RcTextAlign.Center, modifier = wordW)
                 }
             }
         }

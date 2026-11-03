@@ -89,7 +89,12 @@ class PlayerHub(
             runCatching { socket.close() }
             return
         }
-        val session = PlayerSession(socket, hello, sessionContext, ::newPairingCode)
+        val session = PlayerSession(
+            socket = socket,
+            hello = hello,
+            context = sessionContext,
+            newPairingCode = ::newPairingCode,
+        )
         sessions.put(hello.deviceId, session)?.close()
         logger.info(
             "Player {} ({}) connected from {}",

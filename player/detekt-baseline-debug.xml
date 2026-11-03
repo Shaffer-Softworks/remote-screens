@@ -1,0 +1,76 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ImplicitDefaultLocale:ImageDecoder.kt:ImageDecoder$"%02x".format(it)</ID>
+    <ID>InjectDispatcher:AndroidWebRtcAudio.kt:AndroidWebRtcAudio$IO</ID>
+    <ID>InjectDispatcher:CoroutinesDispatchersModule.kt:CoroutinesDispatchersModule$Default</ID>
+    <ID>InjectDispatcher:CoroutinesDispatchersModule.kt:CoroutinesDispatchersModule$IO</ID>
+    <ID>LongParameterList:IntercomCoordinator.kt:IntercomCoordinator$fun start</ID>
+    <ID>LongParameterList:IntercomSession.kt:IntercomSession</ID>
+    <ID>LongParameterList:PlayerViewModel.kt:PlayerViewModel</ID>
+    <ID>ReturnFromFinally:UpdateRepository.kt:UpdateRepository$finally { apkFile.delete() }</ID>
+    <ID>UnusedPrivateFunction:AddressDialog.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun AddressDialogPreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun CalendarDatePickerDialogPreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun CalendarDialogsDeletePreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun CalendarDialogsErrorPreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun CalendarDialogsPreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun CalendarDropdownPreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun CalendarPickerDatePreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun CalendarPickerTimePreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun CalendarTimePickerDialogPreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun CreateCalendarEventDialogEmptyPreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun CreateCalendarEventDialogErrorPreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun CreateCalendarEventDialogPreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun CreateCalendarFieldsAllDayPreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun CreateCalendarFieldsErrorPreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun CreateCalendarFieldsPreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun DeleteCalendarEventDialogMutatingPreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun DeleteCalendarEventDialogPreview</ID>
+    <ID>UnusedPrivateFunction:CalendarDialogs.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun PickerFieldPreview</ID>
+    <ID>UnusedPrivateFunction:DocumentOverlays.kt:@Preview(name = "Document overlays", widthDp = 800, heightDp = 480) @Composable private fun DocumentOverlaysPreview</ID>
+    <ID>UnusedPrivateFunction:IdentifyBadge.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun IdentifyBadgePreview</ID>
+    <ID>UnusedPrivateFunction:InfoPanel.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun InfoPanelConnectingPreview</ID>
+    <ID>UnusedPrivateFunction:InfoPanel.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun InfoPanelDisconnectedPreview</ID>
+    <ID>UnusedPrivateFunction:InfoPanel.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun InfoPanelPairingPreview</ID>
+    <ID>UnusedPrivateFunction:InfoPanel.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun InfoPanelSearchingPreview</ID>
+    <ID>UnusedPrivateFunction:KioskPinDialog.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun KioskPinDialogPreview</ID>
+    <ID>UnusedPrivateFunction:LiveMapView.kt:@Preview(name = "Dark, empty", widthDp = 800, heightDp = 480) @Composable private fun InteractiveMapDarkPreview</ID>
+    <ID>UnusedPrivateFunction:LiveMapView.kt:@Preview(name = "Map overlay", widthDp = 800, heightDp = 480) @Composable private fun LiveMapViewPreview</ID>
+    <ID>UnusedPrivateFunction:LiveMapView.kt:@Preview(name = "Marker pin", widthDp = 800, heightDp = 480) @Composable private fun MapMarkerPinPreview</ID>
+    <ID>UnusedPrivateFunction:LiveMapView.kt:@Preview(name = "Markers", widthDp = 800, heightDp = 480) @Composable private fun InteractiveMapPreview</ID>
+    <ID>UnusedPrivateFunction:LiveSearchView.kt:@Preview(name = "Backdrop", widthDp = 400, heightDp = 780) @Composable private fun SearchPreviewBackdropPreview</ID>
+    <ID>UnusedPrivateFunction:LiveSearchView.kt:@Preview(name = "Empty", widthDp = 400, heightDp = 780) @Composable private fun SearchContentEmptyPreview</ID>
+    <ID>UnusedPrivateFunction:LiveSearchView.kt:@Preview(name = "Loading", widthDp = 400, heightDp = 780) @Composable private fun SearchContentLoadingPreview</ID>
+    <ID>UnusedPrivateFunction:LiveSearchView.kt:@Preview(name = "No results", widthDp = 400, heightDp = 780) @Composable private fun SearchContentNoResultsPreview</ID>
+    <ID>UnusedPrivateFunction:LiveSearchView.kt:@Preview(name = "Results", widthDp = 400, heightDp = 780) @Composable private fun SearchContentResultsPreview</ID>
+    <ID>UnusedPrivateFunction:LiveSearchView.kt:@Preview(name = "Row", widthDp = 400, heightDp = 780) @Composable private fun SearchRowPreview</ID>
+    <ID>UnusedPrivateFunction:LiveSearchView.kt:@Preview(name = "Row, title only", widthDp = 400, heightDp = 780) @Composable private fun SearchRowTitleOnlyPreview</ID>
+    <ID>UnusedPrivateFunction:LiveSearchView.kt:@Preview(name = "Search overlay", widthDp = 800, heightDp = 480) @Composable private fun LiveSearchViewPreview</ID>
+    <ID>UnusedPrivateFunction:LiveVideoView.kt:@Preview(name = "Video surface", widthDp = 800, heightDp = 480) @Composable private fun LiveVideoViewPreview</ID>
+    <ID>UnusedPrivateFunction:NotificationBanner.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun NotificationBannerPreview</ID>
+    <ID>UnusedPrivateFunction:PlayerDialogs.kt:@Preview(name = "Address", widthDp = 800, heightDp = 480) @Composable private fun PlayerDialogsAddressPreview</ID>
+    <ID>UnusedPrivateFunction:PlayerDialogs.kt:@Preview(name = "Calendar", widthDp = 800, heightDp = 480) @Composable private fun PlayerDialogsCalendarPreview</ID>
+    <ID>UnusedPrivateFunction:PlayerDialogs.kt:@Preview(name = "Forget", widthDp = 800, heightDp = 480) @Composable private fun PlayerDialogsForgetPreview</ID>
+    <ID>UnusedPrivateFunction:PlayerDialogs.kt:@Preview(name = "Kiosk PIN", widthDp = 800, heightDp = 480) @Composable private fun PlayerDialogsKioskPinPreview</ID>
+    <ID>UnusedPrivateFunction:PlayerDialogs.kt:@Preview(name = "Settings", widthDp = 800, heightDp = 480) @Composable private fun PlayerDialogsSettingsPreview</ID>
+    <ID>UnusedPrivateFunction:PlayerDialogs.kt:@Preview(name = "Update", widthDp = 800, heightDp = 480) @Composable private fun PlayerDialogsUpdatePreview</ID>
+    <ID>UnusedPrivateFunction:PlayerScreen.kt:@Preview(name = "Blackout", widthDp = 800, heightDp = 480) @Composable private fun PlayerScreenBlackoutPreview</ID>
+    <ID>UnusedPrivateFunction:PlayerScreen.kt:@Preview(name = "Identify", widthDp = 800, heightDp = 480) @Composable private fun PlayerScreenIdentifyPreview</ID>
+    <ID>UnusedPrivateFunction:PlayerScreen.kt:@Preview(name = "Playing", widthDp = 800, heightDp = 480) @Composable private fun PlayerScreenPlayingPreview</ID>
+    <ID>UnusedPrivateFunction:PlayerScreen.kt:@Preview(name = "Searching", widthDp = 800, heightDp = 480) @Composable private fun PlayerScreenSearchingPreview</ID>
+    <ID>UnusedPrivateFunction:PlayerScreen.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun RemoteScreenPreview</ID>
+    <ID>UnusedPrivateFunction:RemoteDocumentStack.kt:@Preview(name = "Document stack", widthDp = 800, heightDp = 480) @Composable private fun RemoteDocumentStackPreview</ID>
+    <ID>UnusedPrivateFunction:ScreenSettingsDialog.kt:@Preview(name = "Lock again", widthDp = 800, heightDp = 480) @Composable private fun ScreenSettingsDialogLockAgainPreview</ID>
+    <ID>UnusedPrivateFunction:ScreenSettingsDialog.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun ForgetScreenDialogPreview</ID>
+    <ID>UnusedPrivateFunction:ScreenSettingsDialog.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun ScreenSettingsDialogPreview</ID>
+    <ID>UnusedPrivateFunction:Theme.kt:@Preview(name = "Dark", widthDp = 800, heightDp = 480) @Composable private fun RemoteScreensThemeDarkPreview</ID>
+    <ID>UnusedPrivateFunction:Theme.kt:@Preview(name = "Light", widthDp = 800, heightDp = 480) @Composable private fun RemoteScreensThemeLightPreview</ID>
+    <ID>UnusedPrivateFunction:UpdateDialog.kt:@Preview(widthDp = 800, heightDp = 480) @Composable private fun UpdateDialogPreview</ID>
+    <ID>UnusedPrivateProperty:DiscoveryRepository.kt:DiscoveryRepository$@ApplicationContext private val context: Context</ID>
+    <ID>UnusedPrivateProperty:LiveVideoView.kt:/** The card's and the alert's camera images are both rounded by this much. */ private const val CORNER_DP = 16f</ID>
+    <ID>UnusedPrivateProperty:ScreenPowerRepository.kt:ScreenPowerRepository$@ApplicationContext private val context: Context</ID>
+    <ID>UseOrEmpty:AndroidWebRtcAudio.kt:AndroidWebRtcAudio$sdpMid ?: ""</ID>
+    <ID>UseOrEmpty:IntercomWire.kt:IntercomWire$root.string("message") ?: ""</ID>
+  </CurrentIssues>
+</SmellBaseline>

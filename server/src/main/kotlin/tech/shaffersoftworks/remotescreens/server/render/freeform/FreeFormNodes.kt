@@ -47,26 +47,19 @@ internal fun DocContext.textNode(node: Node, axis: Axis, pages: Pages) {
     val weight = node.props["weight"]?.toFloatOrNull() ?: Weight.NORMAL
     val ink = node.props["color"]?.let { paint(it) } ?: role(Role.INK)
     val marquee = node.props["marquee"] == "true"
-    val lines = if (marquee) {
-        1
-    } else {
-        node.props["lines"]?.toIntOrNull()?.coerceIn(
-            1,
-            Metrics.TEXT_MAX_LINES,
-        ) ?: 1
-    }
+    val lines = if (marquee) 1 else node.props["lines"]?.toIntOrNull()?.coerceIn(1, Metrics.TEXT_MAX_LINES) ?: 1
     val textAlign = align(node.props["align"])
     // Words wider than their space glide back and forth at 30 dp a second, forever.
     // Put taps on a Box: like Image, Text can keep a ClickModifier that still misses taps on device.
     val modifier = styled(node, axis, pages).let {
         if (marquee) {
             it.marquee(
-                Int.MAX_VALUE,
-                0,
-                Metrics.MARQUEE_GAP_PX,
-                Metrics.MARQUEE_SPACE_PX,
-                0f,
-                Metrics.MARQUEE_SPEED_DP,
+                iterations = Int.MAX_VALUE,
+                animationMode = 0,
+                repeatDelayMillis = Metrics.MARQUEE_REPEAT_DELAY_MS,
+                initialDelayMillis = Metrics.MARQUEE_INITIAL_DELAY_MS,
+                spacing = 0f,
+                velocity = Metrics.MARQUEE_SPEED_DP,
             )
         } else {
             it
@@ -76,7 +69,14 @@ internal fun DocContext.textNode(node: Node, axis: Axis, pages: Pages) {
     if (binding == null) {
         scope.Box(
             modifier,
-        ) { this@textNode.label(node.props["text"].orEmpty(), sp, ink, weight, lines, textAlign) }
+        ) { this@textNode.label(
+            text = node.props["text"].orEmpty(),
+            sp = sp,
+            color = ink,
+            weight = weight,
+            lines = lines,
+            align = textAlign,
+        ) }
         return
     }
     bind(binding.entityId) { states ->
@@ -93,12 +93,12 @@ internal fun DocContext.textNode(node: Node, axis: Axis, pages: Pages) {
     scope.Box(
         modifier,
     ) { this@textNode.label(
-        this@textNode.text(nodeVar(node.id)),
-        sp,
-        ink,
-        weight,
-        lines,
-        textAlign,
+        text = this@textNode.text(nodeVar(node.id)),
+        sp = sp,
+        color = ink,
+        weight = weight,
+        lines = lines,
+        align = textAlign,
     ) }
 }
 
@@ -123,7 +123,7 @@ internal fun DocContext.iconNode(node: Node, axis: Axis, pages: Pages) {
         val iconOn = node.props["iconOn"]
         if (entityId != null && iconOn != null) {
             doc.bindEntity(entityId)
-            doc.toggleIcon(entityId, name ?: Icons.FALLBACK, iconOn, sizeDp, ink)
+            doc.toggleIcon(entityId = entityId, off = name ?: Icons.FALLBACK, on = iconOn, sizeDp = sizeDp, color = ink)
         } else {
             doc.icon(name, sizeDp, ink)
         }
@@ -168,13 +168,13 @@ internal fun DocContext.buttonNode(node: Node, axis: Axis, pages: Pages) {
         ),
     )
     if (node.style.background == null) base = base.background(bg)
-    val modifier = styled(node, axis, pages, base).let {
+    val modifier = styled(node = node, axis = axis, pages = pages, base = base).let {
         if (!node.style.padded) {
             it.padding(
-                units.px(Metrics.BUTTON_PAD_H_DP),
-                0f,
-                units.px(Metrics.BUTTON_PAD_H_DP),
-                0f,
+                start = units.px(Metrics.BUTTON_PAD_H_DP),
+                top = 0f,
+                end = units.px(Metrics.BUTTON_PAD_H_DP),
+                bottom = 0f,
             )
         } else {
             it
@@ -202,7 +202,7 @@ internal fun DocContext.buttonNode(node: Node, axis: Axis, pages: Pages) {
                 Modifier.width(doc.units.px(Metrics.BUTTON_ICON_GAP_DP)),
             )
         }
-        if (word != null) doc.label(word, sp, ink, weight = weight)
+        if (word != null) doc.label(text = word, sp = sp, color = ink, weight = weight)
     }
 }
 
@@ -221,11 +221,11 @@ internal fun DocContext.imageNode(node: Node, self: Dims, axis: Axis, pages: Pag
     val slot = "img.${node.id}"
     picture(
         PictureSlot(
-            slot,
-            if (camera) "/api/camera_proxy/$id" else "attr:$id:entity_picture",
-            w,
-            h,
-            if (camera) Metrics.CAMERA_REFRESH_SEC else 0,
+            name = slot,
+            source = if (camera) "/api/camera_proxy/$id" else "attr:$id:entity_picture",
+            widthPx = w,
+            heightPx = h,
+            refreshSeconds = if (camera) Metrics.CAMERA_REFRESH_SEC else 0,
             crop = !fit,
         ),
     )
@@ -267,7 +267,11 @@ internal fun DocContext.tileNode(node: Node, self: Dims, axis: Axis, pages: Page
         tile
     }
     scope.Box(modifier) {
-        this@tileNode.tile(named, TileBox(0f, 0f, self.w, self.h, 1, 1, full = false), pages.index)
+        this@tileNode.tile(
+            named,
+            TileBox(x = 0f, y = 0f, w = self.w, h = self.h, cols = 1, rows = 1, full = false),
+            pages.index,
+        )
     }
 }
 
@@ -280,14 +284,31 @@ internal fun DocContext.clockNode(node: Node, axis: Axis, pages: Pages) {
     val textAlign = align(node.props["align"])
     scope.Column(styled(node, axis, pages), horizontal = horizontal(node.props["align"])) {
         val doc = this@clockNode
-        if (show != "date") doc.label(doc.text(Vars.TIME), sp, ink, weight, align = textAlign)
-        if (show == "date") doc.label(doc.text(Vars.DATE), sp, ink, weight, align = textAlign, lines = 2)
+        if (show != "date") {
+            doc.label(
+                text = doc.text(Vars.TIME),
+                sp = sp,
+                color = ink,
+                weight = weight,
+                align = textAlign,
+            )
+        }
+        if (show == "date") {
+            doc.label(
+                text = doc.text(Vars.DATE),
+                sp = sp,
+                color = ink,
+                weight = weight,
+                align = textAlign,
+                lines = 2,
+            )
+        }
         if (show == "both") {
             doc.label(
-                doc.text(Vars.DATE),
-                maxOf(sp * Metrics.CLOCK_DATE_SCALE, Type.BODY),
-                doc.role(Role.INK_SOFT),
-                weight,
+                text = doc.text(Vars.DATE),
+                sp = maxOf(sp * Metrics.CLOCK_DATE_SCALE, Type.BODY),
+                color = doc.role(Role.INK_SOFT),
+                weight = weight,
                 align = textAlign,
                 lines = 2,
             )
@@ -315,13 +336,13 @@ internal fun DocContext.badgeNode(node: Node, axis: Axis, pages: Pages) {
         rounded(if (node.style.corner > 0f) node.style.corner else Metrics.BADGE_CORNER_DP),
     )
     if (node.style.background == null) base = base.background(bg)
-    val modifier = styled(node, axis, pages, base).let {
+    val modifier = styled(node = node, axis = axis, pages = pages, base = base).let {
         if (!node.style.padded) {
             it.padding(
-                units.px(Metrics.BADGE_PAD_H_DP),
-                0f,
-                units.px(Metrics.BADGE_PAD_H_DP),
-                0f,
+                start = units.px(Metrics.BADGE_PAD_H_DP),
+                top = 0f,
+                end = units.px(Metrics.BADGE_PAD_H_DP),
+                bottom = 0f,
             )
         } else {
             it
@@ -344,13 +365,13 @@ internal fun DocContext.badgeNode(node: Node, axis: Axis, pages: Pages) {
         }
         if (id != null && node.props["text"].isNullOrEmpty()) {
             doc.label(
-                doc.text(Vars.entity(id, Vars.KEY_STATE)),
-                sp,
-                ink,
-                weight,
+                text = doc.text(Vars.entity(id, Vars.KEY_STATE)),
+                sp = sp,
+                color = ink,
+                weight = weight,
             )
         } else {
-            doc.label(node.props["text"].orEmpty(), sp, ink, weight)
+            doc.label(text = node.props["text"].orEmpty(), sp = sp, color = ink, weight = weight)
         }
     }
 }
@@ -370,13 +391,13 @@ internal fun DocContext.avatarNode(node: Node, axis: Axis, pages: Pages) {
         val doc = this@avatarNode
         if (id != null) {
             doc.bindEntity(id)
-            doc.photo(doc.states[id], id, "pic.${node.id}", sizeDp)
+            doc.photo(entityState = doc.states[id], entityId = id, slot = "pic.${node.id}", sizeDp = sizeDp)
         } else {
             doc.initials(
-                node.props["text"]?.takeIf { it.isNotBlank() } ?: "?",
-                sizeDp,
-                doc.role(Role.KEY),
-                doc.role(Role.INK),
+                name = node.props["text"]?.takeIf { it.isNotBlank() } ?: "?",
+                sizeDp = sizeDp,
+                bg = doc.role(Role.KEY),
+                ink = doc.role(Role.INK),
             )
         }
     }
@@ -415,7 +436,7 @@ internal fun DocContext.progressNode(node: Node, self: Dims, axis: Axis, pages: 
         it,
     ) } ?: fixed(Pastel.forDomain(id?.substringBefore('.')).argb)
     if (id != null) bindLevel(node, id)
-    scope.Box(styled(node, axis, pages, measured(node, axis, self))) {
+    scope.Box(styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))) {
         val doc = this@progressNode
         Box(
             Modifier.size(
@@ -427,7 +448,7 @@ internal fun DocContext.progressNode(node: Node, self: Dims, axis: Axis, pages: 
                 val level = doc.float(nodeLevel(node.id))
                 Canvas(Modifier.size(w, doc.units.px(h))) {
                     paint { color(fill); style(RcPaintStyle.Fill) }
-                    drawRect(0f.rf, 0f.rf, level * w, doc.units.px(h).rf)
+                    drawRect(left = 0f.rf, top = 0f.rf, right = level * w, bottom = doc.units.px(h).rf)
                 }
             }
         }
@@ -437,7 +458,7 @@ internal fun DocContext.progressNode(node: Node, self: Dims, axis: Axis, pages: 
 /** The entity's history from the recorder as a line, over the last `hours` (24 unless set). */
 internal fun DocContext.graphNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
     val id = node.bind?.entityId
-    val modifier = styled(node, axis, pages, measured(node, axis, self))
+    val modifier = styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))
     if (id == null) {
         scope.Box(modifier.background(role(Role.TRACK)))
         return
@@ -448,6 +469,12 @@ internal fun DocContext.graphNode(node: Node, self: Dims, axis: Axis, pages: Pag
     val h = (self.h - node.style.padY).coerceAtLeast(1f)
     scope.Box(modifier) {
         val doc = this@graphNode
-        doc.graph(doc.data.history[id].orEmpty(), w, h, line, doc.role(Role.INK_SOFT))
+        doc.graph(
+            points = doc.data.history[id].orEmpty(),
+            wDp = w,
+            hDp = h,
+            line = line,
+            soft = doc.role(Role.INK_SOFT),
+        )
     }
 }

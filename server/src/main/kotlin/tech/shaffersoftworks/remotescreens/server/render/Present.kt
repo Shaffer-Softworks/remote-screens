@@ -97,13 +97,13 @@ object Present {
         if (entityState == null) {
             val unavailable = i18n.state("", "unavailable")
             return EntityView(
-                nameOverride ?: "?",
-                unavailable,
-                "–",
-                false,
-                null,
-                false,
-                iconOverride ?: Icons.FALLBACK,
+                name = nameOverride ?: "?",
+                stateText = unavailable,
+                value = "–",
+                on = false,
+                level = null,
+                isAvailable = false,
+                icon = iconOverride ?: Icons.FALLBACK,
             )
         }
         val spec = Catalogue.of(entityState.domain)
@@ -114,17 +114,17 @@ object Present {
             entityState.attr("device_class"),
         )
         val level = levelOf(entityState, on)
-        val stateText = stateTextOf(entityState, i18n, on, level, word)
-        val value = valueOf(entityState, i18n, stateText, word)
+        val stateText = stateTextOf(entityState = entityState, i18n = i18n, on = on, level = level, word = word)
+        val value = valueOf(entityState = entityState, i18n = i18n, stateText = stateText, word = word)
         val icon = iconOverride ?: entityState.attr("icon") ?: iconFor(entityState, on)
         return EntityView(
-            nameOverride ?: entityState.name,
-            stateText,
-            value,
-            on,
-            level,
-            entityState.isAvailable,
-            icon,
+            name = nameOverride ?: entityState.name,
+            stateText = stateText,
+            value = value,
+            on = on,
+            level = level,
+            isAvailable = entityState.isAvailable,
+            icon = icon,
         )
     }
 

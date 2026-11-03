@@ -55,8 +55,8 @@ internal fun sampleNode(type: String): Node {
         emptyList()
     }
     return Node(
-        "sample",
-        type,
+        id = "sample",
+        type = type,
         children = children,
         props = props,
         size = NodeSize("fill", if (type == "spacer" || type == "divider") "dp:24" else "fill"),
@@ -66,8 +66,8 @@ internal fun sampleNode(type: String): Node {
 }
 
 internal fun previewScreen(page: Page, chrome: Boolean = false, cols: Int = 1, rows: Int = 1) = Screen(
-    "preview",
-    page.title,
+    id = "preview",
+    name = page.title,
     grid = GridSize(cols, rows),
     pages = listOf(page),
     topBar = TopBar(show = chrome),

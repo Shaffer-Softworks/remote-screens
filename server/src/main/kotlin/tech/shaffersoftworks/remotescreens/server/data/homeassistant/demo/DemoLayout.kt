@@ -26,51 +26,51 @@ object DemoLayout {
         grid = GridSize(5, 3),
         topBar = TopBar(temperatureEntity = "sensor.outdoor_temperature"),
         pages = listOf(
-            Page("home", "Home", listOf(Tile("h1", kind = "home", full = true)), icon = "home"),
-            Page("living", "Living room", icon = "sofa", tiles = listOf(
-                Tile("t1", "light.living_room", col = 0, row = 0, w = 2),
-                Tile("t2", "light.table_lamp", col = 2, row = 0),
-                Tile("t3", "switch.coffee_machine", col = 3, row = 0),
-                Tile("t6", "weather.home", col = 4, row = 0, h = 2),
-                Tile("t4", "climate.living_room", col = 0, row = 1, h = 2),
-                Tile("t5", "media_player.living_room", col = 1, row = 1, w = 2, h = 2),
-                Tile("t7", "lock.front_door", col = 3, row = 1),
-                Tile("t8", "scene.movie_night", col = 3, row = 2),
-                Tile("t9", kind = "nav", col = 4, row = 2, options = mapOf("page" to "more")),
+            Page(id = "home", title = "Home", tiles = listOf(Tile("h1", kind = "home", full = true)), icon = "home"),
+            Page(id = "living", title = "Living room", icon = "sofa", tiles = listOf(
+                Tile(id = "t1", entityId = "light.living_room", col = 0, row = 0, w = 2),
+                Tile(id = "t2", entityId = "light.table_lamp", col = 2, row = 0),
+                Tile(id = "t3", entityId = "switch.coffee_machine", col = 3, row = 0),
+                Tile(id = "t6", entityId = "weather.home", col = 4, row = 0, h = 2),
+                Tile(id = "t4", entityId = "climate.living_room", col = 0, row = 1, h = 2),
+                Tile(id = "t5", entityId = "media_player.living_room", col = 1, row = 1, w = 2, h = 2),
+                Tile(id = "t7", entityId = "lock.front_door", col = 3, row = 1),
+                Tile(id = "t8", entityId = "scene.movie_night", col = 3, row = 2),
+                Tile(id = "t9", kind = "nav", col = 4, row = 2, options = mapOf("page" to "more")),
             )),
-            Page("rooms", "Rooms", icon = "floor-plan", tiles = listOf(
-                Tile("r1", "cover.living_room_curtains", col = 0, row = 0, w = 2),
-                Tile("r2", "fan.bedroom", col = 2, row = 0, w = 2),
+            Page(id = "rooms", title = "Rooms", icon = "floor-plan", tiles = listOf(
+                Tile(id = "r1", entityId = "cover.living_room_curtains", col = 0, row = 0, w = 2),
+                Tile(id = "r2", entityId = "fan.bedroom", col = 2, row = 0, w = 2),
                 Tile(
-                    "r3",
-                    "sensor.kitchen_temperature",
+                    id = "r3",
+                    entityId = "sensor.kitchen_temperature",
                     col = 0,
                     row = 1,
                     w = 2,
                     h = 2,
                     options = mapOf("graph" to "true"),
                 ),
-                Tile("r4", "camera.front_door", col = 2, row = 1, w = 2, h = 2),
-                Tile("r5", kind = "map", col = 4, row = 0, h = 3),
+                Tile(id = "r4", entityId = "camera.front_door", col = 2, row = 1, w = 2, h = 2),
+                Tile(id = "r5", kind = "map", col = 4, row = 0, h = 3),
             )),
-            Page("more", "More", hidden = true, tiles = listOf(
-                Tile("m1", kind = "clock", col = 0, row = 0, w = 2),
-                Tile("m9", kind = "history", entityId = "sensor.power", col = 0, row = 1, w = 2),
-                Tile("m2", kind = "energy", col = 2, row = 0, w = 2, h = 2),
-                Tile("m3", "alarm_control_panel.house", col = 4, row = 0),
-                Tile("m4", "input_select.washing_program", col = 4, row = 1),
-                Tile("m5", "vacuum.robot", col = 0, row = 2),
-                Tile("m6", "person.sam", col = 1, row = 2),
-                Tile("m7", "input_boolean.guest_mode", col = 2, row = 2),
+            Page(id = "more", title = "More", hidden = true, tiles = listOf(
+                Tile(id = "m1", kind = "clock", col = 0, row = 0, w = 2),
+                Tile(id = "m9", kind = "history", entityId = "sensor.power", col = 0, row = 1, w = 2),
+                Tile(id = "m2", kind = "energy", col = 2, row = 0, w = 2, h = 2),
+                Tile(id = "m3", entityId = "alarm_control_panel.house", col = 4, row = 0),
+                Tile(id = "m4", entityId = "input_select.washing_program", col = 4, row = 1),
+                Tile(id = "m5", entityId = "vacuum.robot", col = 0, row = 2),
+                Tile(id = "m6", entityId = "person.sam", col = 1, row = 2),
+                Tile(id = "m7", entityId = "input_boolean.guest_mode", col = 2, row = 2),
                 Tile(
-                    "m8",
-                    "script.good_night",
+                    id = "m8",
+                    entityId = "script.good_night",
                     col = 3,
                     row = 2,
                     tap = TapAction(TapType.ACTION, service = "script.turn_on"),
                 ),
                 Tile(
-                    "m10",
+                    id = "m10",
                     kind = "favourite",
                     entityId = "media_player.living_room",
                     col = 4,
@@ -78,27 +78,27 @@ object DemoLayout {
                     options = mapOf("content_id" to "playlist:1", "title" to "Sunday Morning"),
                 ),
             )),
-            Page("extras", "Extras", icon = "puzzle", tiles = listOf(
-                Tile("x1", "calendar.family", col = 0, row = 0, w = 2),
-                Tile("x2", "todo.shopping", col = 2, row = 0),
-                Tile("x3", "timer.kitchen", col = 3, row = 0),
-                Tile("x4", "counter.guests", col = 4, row = 0),
-                Tile("x5", "water_heater.tank", col = 0, row = 1, w = 2),
-                Tile("x6", "valve.garden", col = 2, row = 1),
-                Tile("x7", "siren.alarm", col = 3, row = 1),
-                Tile("x8", "lawn_mower.yard", col = 4, row = 1),
-                Tile("x9", "humidifier.bedroom", col = 0, row = 2),
-                Tile("x10", "input_text.note", col = 1, row = 2, w = 2),
-                Tile("x11", "input_datetime.quiet_hours", col = 3, row = 2),
-                Tile("x12", "sun.sun", kind = "generic", col = 4, row = 2),
+            Page(id = "extras", title = "Extras", icon = "puzzle", tiles = listOf(
+                Tile(id = "x1", entityId = "calendar.family", col = 0, row = 0, w = 2),
+                Tile(id = "x2", entityId = "todo.shopping", col = 2, row = 0),
+                Tile(id = "x3", entityId = "timer.kitchen", col = 3, row = 0),
+                Tile(id = "x4", entityId = "counter.guests", col = 4, row = 0),
+                Tile(id = "x5", entityId = "water_heater.tank", col = 0, row = 1, w = 2),
+                Tile(id = "x6", entityId = "valve.garden", col = 2, row = 1),
+                Tile(id = "x7", entityId = "siren.alarm", col = 3, row = 1),
+                Tile(id = "x8", entityId = "lawn_mower.yard", col = 4, row = 1),
+                Tile(id = "x9", entityId = "humidifier.bedroom", col = 0, row = 2),
+                Tile(id = "x10", entityId = "input_text.note", col = 1, row = 2, w = 2),
+                Tile(id = "x11", entityId = "input_datetime.quiet_hours", col = 3, row = 2),
+                Tile(id = "x12", entityId = "sun.sun", kind = "generic", col = 4, row = 2),
             )),
             Page(
-                "compose",
-                "Compose",
+                id = "compose",
+                title = "Compose",
                 icon = "view-dashboard-edit",
                 root = Node(
-                    "root",
-                    "column",
+                    id = "root",
+                    type = "column",
                     size = NodeSize("fill", "fill"),
                     style = NodeStyle(padding = 16f),
                     props = mapOf("gap" to "12", "scroll" to "true"),
@@ -113,20 +113,20 @@ object DemoLayout {
                             ),
                         ),
                         Node(
-                            "row",
-                            "row",
+                            id = "row",
+                            type = "row",
                             size = NodeSize("fill", "wrap"),
                             props = mapOf("gap" to "16", "alignment" to "center"),
                             children = listOf(
                                 Node(
-                                    "heat",
-                                    "dial",
+                                    id = "heat",
+                                    type = "dial",
                                     bind = NodeBinding("climate.living_room"),
                                     props = mapOf("size" to "140"),
                                 ),
                                 Node(
-                                    "left",
-                                    "countdown",
+                                    id = "left",
+                                    type = "countdown",
                                     bind = NodeBinding("timer.kitchen"),
                                     props = mapOf("fontSize" to "36"),
                                 ),
@@ -141,8 +141,8 @@ object DemoLayout {
                             ),
                         ),
                         Node(
-                            "tabs",
-                            "tabs",
+                            id = "tabs",
+                            type = "tabs",
                             size = NodeSize("fill", "dp:160"),
                             props = mapOf("labels" to "Note,Light", "gap" to "8"),
                             children = listOf(
@@ -157,55 +157,55 @@ object DemoLayout {
                             ),
                         ),
                         Node(
-                            "now",
-                            "mediabar",
+                            id = "now",
+                            type = "mediabar",
                             size = NodeSize("fill", "wrap"),
                             bind = NodeBinding("media_player.living_room"),
                         ),
                         Node(
-                            "timerRow",
-                            "timerkeys",
+                            id = "timerRow",
+                            type = "timerkeys",
                             size = NodeSize("fill", "wrap"),
                             bind = NodeBinding("timer.kitchen"),
                         ),
                         Node(
-                            "days",
-                            "forecast",
+                            id = "days",
+                            type = "forecast",
                             size = NodeSize("fill", "wrap"),
                             bind = NodeBinding("weather.home"),
                             props = mapOf("days" to "5"),
                         ),
                         Node("who", "presence", size = NodeSize("fill", "wrap")),
                         Node(
-                            "ev",
-                            "events",
+                            id = "ev",
+                            type = "events",
                             size = NodeSize("fill", "wrap"),
                             bind = NodeBinding("calendar.family"),
                         ),
                         Node(
-                            "todos",
-                            "todolist",
+                            id = "todos",
+                            type = "todolist",
                             size = NodeSize("fill", "wrap"),
                             bind = NodeBinding("todo.shopping"),
                         ),
                         Node(
-                            "ledRow",
-                            "row",
+                            id = "ledRow",
+                            type = "row",
                             size = NodeSize("fill", "wrap"),
                             props = mapOf("gap" to "12", "alignment" to "center"),
                             children = listOf(
                                 Node("ledLabel", "text", props = mapOf("text" to "Living room")),
                                 Node(
-                                    "dot",
-                                    "led",
+                                    id = "dot",
+                                    type = "led",
                                     bind = NodeBinding("light.living_room"),
                                     props = mapOf("size" to "18"),
                                 ),
                             ),
                         ),
                         Node(
-                            "climate",
-                            "thermostat",
+                            id = "climate",
+                            type = "thermostat",
                             size = NodeSize("fill", "dp:420"),
                             bind = NodeBinding("climate.living_room"),
                         ),
@@ -213,24 +213,24 @@ object DemoLayout {
                 ),
             ),
             Page(
-                "weather",
-                "Weather",
-                listOf(Tile("w1", "weather.home", full = true)),
+                id = "weather",
+                title = "Weather",
+                tiles = listOf(Tile("w1", "weather.home", full = true)),
                 icon = "weather-partly-cloudy",
             ),
             Page(
-                "thermostat",
-                "Thermostat",
-                listOf(Tile("c1", "climate.living_room", full = true)),
+                id = "thermostat",
+                title = "Thermostat",
+                tiles = listOf(Tile("c1", "climate.living_room", full = true)),
                 icon = "thermostat",
             ),
             Page(
-                "music",
-                "Music",
-                listOf(
+                id = "music",
+                title = "Music",
+                tiles = listOf(
                     Tile(
-                        "ma1",
-                        "media_player.living_room",
+                        id = "ma1",
+                        entityId = "media_player.living_room",
                         kind = "music",
                         full = true,
                         options = mapOf("config_entry_id" to "demo_music_assistant"),
@@ -246,12 +246,12 @@ object DemoLayout {
      * [tech.shaffersoftworks.remotescreens.shared.MAX_PAGES] pages, so this one is added where it is wanted.
      */
     fun alarmPage(): Page = Page(
-        "alarm",
-        "Alarm",
-        listOf(
+        id = "alarm",
+        title = "Alarm",
+        tiles = listOf(
             Tile(
-                "a1",
-                "alarm_control_panel.house",
+                id = "a1",
+                entityId = "alarm_control_panel.house",
                 full = true,
                 options = mapOf(
                     ALARM_ZONES_OPTION to listOf(
@@ -267,19 +267,19 @@ object DemoLayout {
 
     /** RPI's lights page over every demo area. Added where it is wanted, like [alarmPage]. */
     fun lightsPage(): Page = Page(
-        "lights",
-        "Lights",
-        listOf(Tile("li1", kind = "lights", full = true)),
+        id = "lights",
+        title = "Lights",
+        tiles = listOf(Tile("li1", kind = "lights", full = true)),
         icon = "lightbulb-group",
     )
 
     /** RPI's cameras page over the demo cameras. Added where it is wanted, like [alarmPage]. */
     fun camerasPage(): Page = Page(
-        "cameras",
-        "Cameras",
-        listOf(
+        id = "cameras",
+        title = "Cameras",
+        tiles = listOf(
             Tile(
-                "cm1",
+                id = "cm1",
                 kind = "cameras",
                 full = true,
                 options = mapOf(CAMERAS_OPTION to "camera.front_door=Front Door;camera.driveway"),
@@ -290,9 +290,9 @@ object DemoLayout {
 
     /** RPI's intercom page. Added where it is wanted, like [camerasPage]. */
     fun intercomPage(): Page = Page(
-        "intercom",
-        "Intercom",
-        listOf(Tile("ic1", kind = "intercom", full = true)),
+        id = "intercom",
+        title = "Intercom",
+        tiles = listOf(Tile("ic1", kind = "intercom", full = true)),
         icon = "phone",
     )
 }

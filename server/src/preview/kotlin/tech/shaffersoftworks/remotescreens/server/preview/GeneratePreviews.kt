@@ -33,9 +33,20 @@ fun main(args: Array<String>) = runBlocking {
         lightsRooms = extras.flatMap { it.lightsRooms },
         agenda = extras.mapNotNull { it.agenda }.firstOrNull(),
     )
-    val environment = PreviewEnvironment(home.states.value, home.config.value, data, demo, extraPages)
+    val environment = PreviewEnvironment(
+        originalStates = home.states.value,
+        config = home.config.value,
+        data = data,
+        demo = demo,
+        extraPages = extraPages,
+    )
     for ((themeName, palette) in listOf("Dark" to Themes.RPI, "Light" to Themes.LIGHT)) {
-        val session = PreviewSession(output, themeName, palette, environment)
+        val session = PreviewSession(
+            output = output,
+            themeName = themeName,
+            palette = palette,
+            environment = environment,
+        )
         session.screens()
         session.catalogue()
         session.components()

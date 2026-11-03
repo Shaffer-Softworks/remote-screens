@@ -51,10 +51,10 @@ class ServerDependencies(
     val apiKeyRepository = ApiKeyRepository(config.dataDir)
     private val renderDataRepository = RenderDataRepository(homeAssistant)
     private val pictureRepository = PictureRepository(
-        homeAssistant,
-        httpClient,
-        config.mapTileUrl,
-        backgroundStore,
+        homeAssistant = homeAssistant,
+        httpClient = httpClient,
+        tileUrl = config.mapTileUrl,
+        backgroundStore = backgroundStore,
     )
     private val languageRepository = LanguageRepository(homeAssistant, layoutRepository)
     private val actionRouter = ActionRouter(

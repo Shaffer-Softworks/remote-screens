@@ -84,9 +84,9 @@ internal fun DocContext.verticalBrightnessSlider(tileId: String, entityState: En
                 alpha(1f)
                 style(RcPaintStyle.Fill)
             }
-            drawRect(0f.rf, fillTop, w.rf, h.rf)
+            drawRect(left = 0f.rf, top = fillTop, right = w.rf, bottom = h.rf)
             paint { color(doc.fixed(Rpi.White)) }
-            drawRect(0f.rf, fillTop - line, w.rf, fillTop)
+            drawRect(left = 0f.rf, top = fillTop - line, right = w.rf, bottom = fillTop)
         }
         doc.verticalTaps(w, h) { index ->
             val percent = (D.SLIDER_STEPS - index) * (LightsMetrics.PERCENT / D.SLIDER_STEPS)
@@ -121,20 +121,20 @@ internal fun DocContext.verticalTemperatureSlider(entityState: EntityState, layo
             paint {
                 style(RcPaintStyle.Fill)
                 linearGradient(
-                    0f,
-                    0f,
-                    0f,
-                    h,
-                    intArrayOf(blackbodyColor(range.first), blackbodyColor(range.last)),
+                    startX = 0f,
+                    startY = 0f,
+                    endX = 0f,
+                    endY = h,
+                    colors = intArrayOf(blackbodyColor(range.first), blackbodyColor(range.last)),
                 )
             }
-            drawRect(0f, 0f, w, h)
+            drawRect(left = 0f, top = 0f, right = w, bottom = h)
             paint {
                 clearShader()
                 color(doc.fixed(Rpi.White))
                 alpha(1f)
             }
-            drawRect(0f, lineY - line / 2f, w, lineY + line / 2f)
+            drawRect(left = 0f, top = lineY - line / 2f, right = w, bottom = lineY + line / 2f)
         }
         doc.verticalTaps(w, h) { index ->
             val kelvin = (range.first + (index + HALF) / D.SLIDER_STEPS * span).roundToInt()
@@ -158,7 +158,7 @@ internal fun DocContext.colorWheel(entityState: EntityState, layout: LightsLayou
     ) {
         val doc = this@colorWheel
         Box(Modifier.size(w, h)) {
-            doc.wheelDisc(entityState, w, h, layout)
+            doc.wheelDisc(entityState = entityState, w = w, h = h, layout = layout)
             doc.wheelTaps(entityState, w, h)
             Box(Modifier.size(w, h), horizontal = RcHorizontalPositioning.End) {
                 val buttonPx = doc.units.px(layout.dp(D.EYEDROPPER_DP))
@@ -185,9 +185,9 @@ private fun DocContext.wheelDisc(entityState: EntityState, w: Float, h: Float, l
             style(RcPaintStyle.Fill)
             sweepGradient(cx, cy, Rpi.LightDetailWheelHues)
         }
-        drawOval(0f, 0f, w, h)
-        paint { radialGradient(cx, cy, radius, Rpi.LightDetailWheelCentre) }
-        drawOval(0f, 0f, w, h)
+        drawOval(left = 0f, top = 0f, right = w, bottom = h)
+        paint { radialGradient(centerX = cx, centerY = cy, radius = radius, colors = Rpi.LightDetailWheelCentre) }
+        drawOval(left = 0f, top = 0f, right = w, bottom = h)
         if (hsb != null) {
             val angle = hsb[0] * 2 * PI
             val x = (cx + hsb[1] * radius * cos(angle)).toFloat()

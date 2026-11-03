@@ -15,7 +15,9 @@ internal class DemoServiceHandlers(
     private val completedTodos: MutableSet<String>,
 ) {
     fun apply(entityId: String, domain: String, service: String, data: JsonObject, current: EntityState) {
-        handlers[service]?.invoke(ServiceCall(entityId, domain, service, data, current))
+        handlers[service]?.invoke(
+            ServiceCall(entityId = entityId, domain = domain, service = service, data = data, current = current),
+        )
     }
 
     private fun ServiceCall.setStateFrom(key: String) {

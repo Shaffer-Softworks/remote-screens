@@ -75,7 +75,9 @@ fun DocContext.rounded(dp: Float) = units.px(dp).let { RoundedRectShape(it, it, 
  * was tapped from the layout, so a placed tap target must be moved by padding instead.
  */
 fun DocContext.at(xDp: Float, yDp: Float, content: () -> Unit) {
-    scope.Box(Modifier.fillMaxSize().padding(units.px(xDp), units.px(yDp), 0f, 0f)) { content() }
+    scope.Box(
+        Modifier.fillMaxSize().padding(start = units.px(xDp), top = units.px(yDp), end = 0f, bottom = 0f),
+    ) { content() }
 }
 
 fun DocContext.tap(modifier: Modifier, ref: ActionRef?, hold: ActionRef? = null): Modifier {
@@ -156,8 +158,18 @@ fun DocContext.toggleIcon(entityId: String, off: String, on: String?, sizeDp: Fl
         return
     }
     scope.Box(Modifier.size(units.px(sizeDp), units.px(sizeDp))) {
-        this@toggleIcon.icon(off, sizeDp, color, int(Vars.entity(entityId, Vars.KEY_OFF)))
-        this@toggleIcon.icon(on, sizeDp, color, int(Vars.entity(entityId, Vars.KEY_ON)))
+        this@toggleIcon.icon(
+            name = off,
+            sizeDp = sizeDp,
+            color = color,
+            visible = int(Vars.entity(entityId, Vars.KEY_OFF)),
+        )
+        this@toggleIcon.icon(
+            name = on,
+            sizeDp = sizeDp,
+            color = color,
+            visible = int(Vars.entity(entityId, Vars.KEY_ON)),
+        )
     }
 }
 
@@ -181,7 +193,14 @@ fun DocContext.spinner(sizeDp: Float, color: RcColor, visible: RcInteger? = null
                 strokeWidth(stroke)
                 strokeCap(RcStrokeCap.Round)
             }
-            drawArc(inset, inset, px - inset, px - inset, 0f, SPINNER_SWEEP_DEG)
+            drawArc(
+                left = inset,
+                top = inset,
+                right = px - inset,
+                bottom = px - inset,
+                startAngle = 0f,
+                sweepAngle = SPINNER_SWEEP_DEG,
+            )
         }
     }
 }
@@ -196,8 +215,8 @@ fun DocContext.label(
     modifier: Modifier = Modifier,
 ) {
     scope.Text(
-        text,
-        modifier,
+        text = text,
+        modifier = modifier,
         color = color,
         fontSize = units.sp(sp).rsp,
         fontWeight = weight,
@@ -217,8 +236,8 @@ fun DocContext.label(
     modifier: Modifier = Modifier,
 ) {
     scope.Text(
-        text,
-        modifier,
+        text = text,
+        modifier = modifier,
         color = color,
         fontSize = units.sp(sp).rsp,
         fontWeight = weight,
@@ -246,7 +265,7 @@ fun DocContext.key(
         rounded(if (round) heightDp / 2f else heightDp / KEY_CORNER_DIVISOR),
     ).background(bg)
     box = tap(box, ref)
-    val padded = box.padding(units.px(KEY_PADDING_DP), 0f, units.px(KEY_PADDING_DP), 0f)
+    val padded = box.padding(start = units.px(KEY_PADDING_DP), top = 0f, end = units.px(KEY_PADDING_DP), bottom = 0f)
     scope.Row(
         padded,
         horizontal = RcRowHorizontalPositioning.Center,
@@ -260,7 +279,7 @@ fun DocContext.key(
             )
         }
         if (icon != null && text != null) Spacer(Modifier.width(this@key.units.px(KEY_ICON_GAP_DP)))
-        if (text != null) this@key.label(text, Type.BODY, ink, weight = Weight.MEDIUM)
+        if (text != null) this@key.label(text = text, sp = Type.BODY, color = ink, weight = Weight.MEDIUM)
     }
 }
 
@@ -281,7 +300,12 @@ fun DocContext.initials(name: String, sizeDp: Float, bg: RcColor, ink: RcColor) 
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcVerticalPositioning.Center,
         ) {
-            this@initials.label(letters, sizeDp * INITIALS_TEXT_RATIO, ink, weight = Weight.SEMI_BOLD)
+            this@initials.label(
+                text = letters,
+                sp = sizeDp * INITIALS_TEXT_RATIO,
+                color = ink,
+                weight = Weight.SEMI_BOLD,
+            )
         }
     }
 }

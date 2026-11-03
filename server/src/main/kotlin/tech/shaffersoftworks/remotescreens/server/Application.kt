@@ -172,10 +172,10 @@ fun Application.playerModule(dependencies: ServerDependencies) {
     }
     routing {
         playerRoutes(
-            dependencies.playerHub,
-            dependencies.playerApkRepository,
-            dependencies.enrollmentService,
-            dependencies.cameraStreamService,
+            playerHub = dependencies.playerHub,
+            playerApkRepository = dependencies.playerApkRepository,
+            enrollmentService = dependencies.enrollmentService,
+            cameraStreamService = dependencies.cameraStreamService,
         )
         route("/integration") {
             install(IntegrationKey) { apiKey = dependencies.apiKeyRepository.apiKey }

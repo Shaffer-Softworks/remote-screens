@@ -104,7 +104,7 @@ class MusicAssistantClient(private val homeAssistant: HomeAssistant) {
 
     private suspend fun callMa(service: String, data: JsonObject): JsonElement? =
         runCatching {
-            homeAssistant.callService("music_assistant", service, data, returnResponse = true)
+            homeAssistant.callService(domain = "music_assistant", service = service, data = data, returnResponse = true)
         }.onFailure { logger.debug("music_assistant.{}: {}", service, it.message) }.getOrNull()
 
     companion object {

@@ -22,18 +22,18 @@ internal fun PreviewSession.catalogue() {
         } else {
             originalStates
         }
-        tileSizes(kind, spec, entity, states)
+        tileSizes(kind = kind, spec = spec, entity = entity, states = states)
         if (spec.card != "none" && entity != null) {
-            card("Cards", "$kind · ${spec.card}", entity, kind, states)
+            card(group = "Cards", label = "$kind · ${spec.card}", entity = entity, kind = kind, states = states)
             output.covered += "card:$kind"
         }
         if (entity != null) {
-            entityStates(kind, spec, entity, states)
+            entityStates(kind = kind, spec = spec, entity = entity, states = states)
         }
     }
     // These card entry points do not require a catalogue entity.
     for (kind in listOf("energy", "history")) {
-        card("Cards", kind, "sensor.power", kind, originalStates)
+        card(group = "Cards", label = kind, entity = "sensor.power", kind = kind, states = originalStates)
     }
 }
 
@@ -46,12 +46,20 @@ private fun PreviewSession.tileSizes(
     for (size in spec.sizes) {
         val full = size == "full"
         val dims = if (full) listOf(1, 1) else size.split("x").map(String::toInt)
-        val tile = Tile("sample", entity, kind, w = dims[0], h = dims[1], full = full, options = options(kind))
+        val tile = Tile(
+            id = "sample",
+            entityId = entity,
+            kind = kind,
+            w = dims[0],
+            h = dims[1],
+            full = full,
+            options = options(kind),
+        )
         page(
-            "Tiles",
-            "$kind · $size",
-            Page("preview", spec.name, listOf(tile)),
-            input(states),
+            group = "Tiles",
+            label = "$kind · $size",
+            page = Page("preview", spec.name, listOf(tile)),
+            renderInput = input(states),
             canvas = PageCanvas(grid = GridSize(if (full) 1 else GRID_COLS, if (full) 1 else GRID_ROWS)),
         )
         output.covered += "tile:$kind:$size"
@@ -67,9 +75,9 @@ private fun PreviewSession.entityStates(
     val sampleEntity = states.getValue(entity)
     for (state in (spec.onStates + listOf("off", "unknown", "unavailable")).distinct()) {
         val changed = states + (entity to sampleEntity.copy(state = state))
-        stateTile(kind, spec.name, entity, changed, state)
+        stateTile(kind = kind, title = spec.name, entity = entity, states = changed, state = state)
         if (spec.card != "none") {
-            card("Card states", "$kind · $state", entity, kind, changed)
+            card(group = "Card states", label = "$kind · $state", entity = entity, kind = kind, states = changed)
         }
     }
     val attributes = JsonObject(
@@ -78,7 +86,7 @@ private fun PreviewSession.entityStates(
             ),
     )
     val longLabel = states + (entity to sampleEntity.copy(attributes = attributes))
-    stateTile(kind, spec.name, entity, longLabel, "long label")
+    stateTile(kind = kind, title = spec.name, entity = entity, states = longLabel, state = "long label")
 }
 
 private fun PreviewSession.stateTile(
@@ -88,12 +96,12 @@ private fun PreviewSession.stateTile(
     states: Map<String, EntityState>,
     state: String,
 ) {
-    val tile = Tile("sample", entity, kind, w = 2, h = 2, options = options(kind))
+    val tile = Tile(id = "sample", entityId = entity, kind = kind, w = 2, h = 2, options = options(kind))
     page(
-        "States",
-        "$kind · $state",
-        Page("preview", title, listOf(tile)),
-        input(states),
+        group = "States",
+        label = "$kind · $state",
+        page = Page("preview", title, listOf(tile)),
+        renderInput = input(states),
         canvas = PageCanvas(grid = GridSize(GRID_COLS, GRID_ROWS)),
     )
 }
@@ -106,7 +114,9 @@ private fun PreviewSession.card(
     states: Map<String, EntityState>,
 ) {
     val cardInput = input(states)
-    emit(group, label, cardInput) { CardRenderer.render(entity, kind, wall, cardInput) }
+    emit(group, label, cardInput) {
+        CardRenderer.render(entityId = entity, kind = kind, device = wall, input = cardInput)
+    }
 }
 
 private fun options(kind: String): Map<String, String> = when (kind) {

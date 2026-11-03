@@ -127,7 +127,8 @@ object NodeTypes {
  * One component of a free-form page. Sizes are `wrap`, `fill`, `dp:N` or `weight:N`, as in Compose.
  * Props by type: `text` (text, fontSize, weight, align, color, lines),
  * `icon` (icon, iconOn, size, color; bound also colorOff and colorOn; while on, `rgb_color` unless colorOn is set),
- * `button` (text, icon, color, ink, fontSize, weight), containers (arrangement, alignment, gap), `slider` (steps),
+ * `button` (text, icon, color, ink, fontSize, weight), containers (arrangement, alignment, gap),
+ * `slider` (steps, color: active fill, track: inactive well; Style border strokes the pill),
  * `image` (fit), `clock` (show: time, date or both; fontSize, weight, color, align),
  * `badge` (text, icon, color, fontSize, weight), `avatar` (text, size),
  * `progress` (min, max, color), `graph` (hours, color), `switch` (color), `stepper` (step), `choices` (max),

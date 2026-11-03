@@ -119,7 +119,7 @@ class CalendarAgendaStore(private val homeAssistant: HomeAssistant) {
         val events = mutableListOf<AgendaEvent>()
         var firstError: String? = null
         for (calendar in calendars) {
-            val fetched = fetchEvents(calendar, zone, now, rangeEnd)
+            val fetched = fetchEvents(calendar = calendar, zone = zone, start = now, end = rangeEnd)
             if (fetched == null) {
                 if (firstError == null) firstError = AgendaCopy.ERROR
             } else {

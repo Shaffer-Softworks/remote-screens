@@ -24,8 +24,13 @@ class LightsActions(
         val store = renderData?.lightsUi
         val isHandled = when {
             tileId == null || store == null -> false
-            verb == "lights_palette" || verb == "lights_effect" -> changeLight(store, tileId, verb, arg)
-            else -> changePage(store, tileId, verb, arg)
+            verb == "lights_palette" || verb == "lights_effect" -> changeLight(
+                store = store,
+                tileId = tileId,
+                verb = verb,
+                arg = arg,
+            )
+            else -> changePage(store = store, tileId = tileId, verb = verb, arg = arg)
         }
         return if (isHandled) TapOutcome.Rebuild else TapOutcome.Ignored
     }

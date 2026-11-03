@@ -47,7 +47,13 @@ internal class IntercomLayout private constructor(
             val headerBody = headerBody(statusLines)
             val scale = if (stacked) stackScale(pageW, pageH, headerBody) else sideScale(pageW, pageH)
             val headerH = if (stacked) (headerBody * scale).coerceAtMost(pageH) else 0f
-            return IntercomLayout(scale, pageW, pageH, stacked, headerH)
+            return IntercomLayout(
+                scale = scale,
+                pageW = pageW,
+                pageH = pageH,
+                isStacked = stacked,
+                headerH = headerH,
+            )
         }
 
         private fun sideBySide(pageW: Float, pageH: Float, statusLines: Int): Boolean {

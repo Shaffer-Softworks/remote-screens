@@ -39,7 +39,7 @@ internal fun DocContext.climateCard(entityId: String, entityState: EntityState?)
         scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
             val doc = this@climateCard
             doc.key(
-                ref(entityId, "temperature", "-$step"),
+                ref = ref(entityId, "temperature", "-$step"),
                 icon = "minus",
                 heightDp = CardChrome.STEPPER_KEY_DP,
                 widthDp = CardChrome.STEPPER_KEY_DP,
@@ -47,21 +47,21 @@ internal fun DocContext.climateCard(entityId: String, entityState: EntityState?)
             )
             Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
                 doc.label(
-                    doc.i18n.t("ui.target"),
-                    Type.BODY,
-                    doc.role(Role.INK_SOFT),
+                    text = doc.i18n.t("ui.target"),
+                    sp = Type.BODY,
+                    color = doc.role(Role.INK_SOFT),
                     align = RcTextAlign.Center,
                 )
                 doc.label(
-                    doc.text(Vars.entity(entityId, Vars.KEY_VALUE)),
-                    Type.DISPLAY,
-                    doc.role(Role.INK),
-                    Weight.NORMAL,
+                    text = doc.text(Vars.entity(entityId, Vars.KEY_VALUE)),
+                    sp = Type.DISPLAY,
+                    color = doc.role(Role.INK),
+                    weight = Weight.NORMAL,
                     align = RcTextAlign.Center,
                 )
             }
             doc.key(
-                ref(entityId, "temperature", "+$step"),
+                ref = ref(entityId, "temperature", "+$step"),
                 icon = "plus",
                 heightDp = CardChrome.STEPPER_KEY_DP,
                 widthDp = CardChrome.STEPPER_KEY_DP,
@@ -133,7 +133,7 @@ internal fun DocContext.climateDualSetpoint(
     scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@climateDualSetpoint
         doc.key(
-            ref(entityId, "temperature_low", "-$step"),
+            ref = ref(entityId, "temperature_low", "-$step"),
             icon = "minus",
             heightDp = CardChrome.STEPPER_KEY_DP,
             widthDp = CardChrome.STEPPER_KEY_DP,
@@ -141,21 +141,21 @@ internal fun DocContext.climateDualSetpoint(
         )
         Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
             doc.label(
-                doc.i18n.t("ui.low"),
-                Type.BODY,
-                doc.role(Role.INK_SOFT),
+                text = doc.i18n.t("ui.low"),
+                sp = Type.BODY,
+                color = doc.role(Role.INK_SOFT),
                 align = RcTextAlign.Center,
             )
             doc.label(
-                doc.text(Vars.entity(entityId, "temp_low")),
-                Type.DISPLAY,
-                doc.role(Role.INK),
-                Weight.NORMAL,
+                text = doc.text(Vars.entity(entityId, "temp_low")),
+                sp = Type.DISPLAY,
+                color = doc.role(Role.INK),
+                weight = Weight.NORMAL,
                 align = RcTextAlign.Center,
             )
         }
         doc.key(
-            ref(entityId, "temperature_low", "+$step"),
+            ref = ref(entityId, "temperature_low", "+$step"),
             icon = "plus",
             heightDp = CardChrome.STEPPER_KEY_DP,
             widthDp = CardChrome.STEPPER_KEY_DP,
@@ -166,7 +166,7 @@ internal fun DocContext.climateDualSetpoint(
     scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@climateDualSetpoint
         doc.key(
-            ref(entityId, "temperature_high", "-$step"),
+            ref = ref(entityId, "temperature_high", "-$step"),
             icon = "minus",
             heightDp = CardChrome.STEPPER_KEY_DP,
             widthDp = CardChrome.STEPPER_KEY_DP,
@@ -174,21 +174,21 @@ internal fun DocContext.climateDualSetpoint(
         )
         Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
             doc.label(
-                doc.i18n.t("ui.high"),
-                Type.BODY,
-                doc.role(Role.INK_SOFT),
+                text = doc.i18n.t("ui.high"),
+                sp = Type.BODY,
+                color = doc.role(Role.INK_SOFT),
                 align = RcTextAlign.Center,
             )
             doc.label(
-                doc.text(Vars.entity(entityId, "temp_high")),
-                Type.DISPLAY,
-                doc.role(Role.INK),
-                Weight.NORMAL,
+                text = doc.text(Vars.entity(entityId, "temp_high")),
+                sp = Type.DISPLAY,
+                color = doc.role(Role.INK),
+                weight = Weight.NORMAL,
                 align = RcTextAlign.Center,
             )
         }
         doc.key(
-            ref(entityId, "temperature_high", "+$step"),
+            ref = ref(entityId, "temperature_high", "+$step"),
             icon = "plus",
             heightDp = CardChrome.STEPPER_KEY_DP,
             widthDp = CardChrome.STEPPER_KEY_DP,
@@ -207,7 +207,7 @@ internal fun DocContext.waterHeaterCard(entityId: String, entityState: EntitySta
     scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@waterHeaterCard
         doc.key(
-            ref(entityId, "temperature", "-$step"),
+            ref = ref(entityId, "temperature", "-$step"),
             icon = "minus",
             heightDp = CardChrome.STEPPER_KEY_DP,
             widthDp = CardChrome.STEPPER_KEY_DP,
@@ -215,21 +215,21 @@ internal fun DocContext.waterHeaterCard(entityId: String, entityState: EntitySta
         )
         Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
             doc.label(
-                doc.i18n.t("ui.target"),
-                Type.BODY,
-                doc.role(Role.INK_SOFT),
+                text = doc.i18n.t("ui.target"),
+                sp = Type.BODY,
+                color = doc.role(Role.INK_SOFT),
                 align = RcTextAlign.Center,
             )
             doc.label(
-                doc.text(Vars.entity(entityId, Vars.KEY_VALUE)),
-                Type.DISPLAY,
-                doc.role(Role.INK),
-                Weight.NORMAL,
+                text = doc.text(Vars.entity(entityId, Vars.KEY_VALUE)),
+                sp = Type.DISPLAY,
+                color = doc.role(Role.INK),
+                weight = Weight.NORMAL,
                 align = RcTextAlign.Center,
             )
         }
         doc.key(
-            ref(entityId, "temperature", "+$step"),
+            ref = ref(entityId, "temperature", "+$step"),
             icon = "plus",
             heightDp = CardChrome.STEPPER_KEY_DP,
             widthDp = CardChrome.STEPPER_KEY_DP,
@@ -237,7 +237,7 @@ internal fun DocContext.waterHeaterCard(entityId: String, entityState: EntitySta
         )
     }
     gap(CardChrome.CARD_GAP_DP)
-    bar(entityId, "temperature", w, min, max)
+    bar(entityId = entityId, verb = "temperature", width = w, min = min, max = max)
     val modes = entityState?.list("operation_list").orEmpty()
     if (modes.isNotEmpty()) {
         structural(entityId) { it?.list("operation_list")?.joinToString() ?: "" }
@@ -257,7 +257,7 @@ internal fun DocContext.valveCard(entityId: String, entityState: EntityState?, w
     scope.Row(Modifier.fillMaxWidth()) {
         val doc = this@valveCard
         doc.key(
-            ref(entityId, "open"),
+            ref = ref(entityId, "open"),
             text = doc.i18n.t("ui.open"),
             icon = "valve-open",
             heightDp = 56f,
@@ -265,7 +265,7 @@ internal fun DocContext.valveCard(entityId: String, entityState: EntityState?, w
         )
         Spacer(Modifier.width(doc.units.px(CardChrome.PANEL_CORNER_DP)))
         doc.key(
-            ref(entityId, "stop"),
+            ref = ref(entityId, "stop"),
             text = doc.i18n.t("ui.stop"),
             icon = "stop",
             heightDp = 56f,
@@ -273,7 +273,7 @@ internal fun DocContext.valveCard(entityId: String, entityState: EntityState?, w
         )
         Spacer(Modifier.width(doc.units.px(CardChrome.PANEL_CORNER_DP)))
         doc.key(
-            ref(entityId, "close"),
+            ref = ref(entityId, "close"),
             text = doc.i18n.t("ui.close_cover"),
             icon = "valve-closed",
             heightDp = 56f,

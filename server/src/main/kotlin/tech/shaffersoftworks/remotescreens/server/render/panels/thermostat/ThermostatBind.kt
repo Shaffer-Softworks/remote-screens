@@ -92,7 +92,7 @@ internal fun DocContext.bindThermostat(tileId: String, entityId: String, modes: 
             ),
         ) + modes.mapIndexed { i, mode ->
             VarValue.color(
-                Vars.option(tileId, "seg", i, Vars.KEY_BG),
+                Vars.option(scope = tileId, group = "seg", index = i, key = Vars.KEY_BG),
                 (if (modeSelected(state, mode)) Role.ACCENT_DARK else Role.PAGE).argb,
             )
         }

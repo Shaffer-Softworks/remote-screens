@@ -318,7 +318,14 @@ class PlayerSession(
         val alert = Alert(
             title = request.title, message = request.message, icon = request.icon, level = request.level,
             camera = request.camera, timeout = request.duration, tag = request.tag, wake = request.wake,
-            buttons = request.buttons.map { AlertButton(it.title, it.service, it.data, it.action) }.ifEmpty {
+            buttons = request.buttons.map {
+                AlertButton(
+                    title = it.title,
+                    service = it.service,
+                    data = it.data,
+                    action = it.action,
+                )
+            }.ifEmpty {
                 if (request.presentation == "alert" && request.duration == 0) {
                     listOf(AlertButton("Acknowledge", action = "acknowledge"))
                 } else {
@@ -337,8 +344,13 @@ class PlayerSession(
                 bannerExpiresAt = System.nanoTime() + request.duration.seconds.inWholeNanoseconds
                 if (request.wake) send(ServerMessage.Wake(true))
                 send(ServerMessage.NotificationBanner(
-                    id, alert.title, alert.message, alert.level, alert.icon,
-                    alert.buttons.map { it.title }, alert.timeout,
+                    id = id,
+                    title = alert.title,
+                    message = alert.message,
+                    level = alert.level,
+                    icon = alert.icon,
+                    buttons = alert.buttons.map { it.title },
+                    timeout = alert.timeout,
                     iconPath = Icons.path(
                         alert.icon ?: if (alert.level == "info") "bell-ring" else "alert",
                     ),

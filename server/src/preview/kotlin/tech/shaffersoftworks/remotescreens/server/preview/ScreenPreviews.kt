@@ -23,36 +23,36 @@ internal fun PreviewSession.screens() {
     for ((pageIndex, demoPage) in demo.pages.withIndex()) {
         val renderInput = input()
         emit("Screens", demoPage.title, renderInput) {
-            ScreenRenderer.render(demo, wall, renderInput, initialPage = pageIndex)
+            ScreenRenderer.render(screen = demo, device = wall, input = renderInput, initialPage = pageIndex)
         }
     }
     for (panel in extraPages + demo.pages.filter { it.tiles.any(Tile::full) }) {
-        page("Panels", panel.title, panel, canvas = PageCanvas(chrome = true))
+        page(group = "Panels", label = panel.title, page = panel, canvas = PageCanvas(chrome = true))
     }
     page(
-        "Portrait",
-        "Portrait",
-        demo.pages.first(),
+        group = "Portrait",
+        label = "Portrait",
+        page = demo.pages.first(),
         canvas = PageCanvas(chrome = true, device = Device(WALL_HEIGHT, WALL_WIDTH, 1f)),
     )
     page(
-        "Large",
-        "Large tablet",
-        demo.pages.first(),
+        group = "Large",
+        label = "Large tablet",
+        page = demo.pages.first(),
         canvas = PageCanvas(chrome = true, device = Device(LARGE_WIDTH, WALL_WIDTH, 1f)),
     )
     page("States", "Empty screen", Page("empty", "Empty"))
     val emptyInput = input(emptyMap(), RenderData())
     for (panel in extraPages + demo.pages.filter { it.tiles.any(Tile::full) }) {
-        page("States", "${panel.title} · no entities or data", panel, emptyInput)
+        page(group = "States", label = "${panel.title} · no entities or data", page = panel, renderInput = emptyInput)
     }
 }
 
 internal fun PreviewSession.components() {
     for (type in NodeTypes.ALL.sorted()) {
         val root = Node(
-            "root",
-            "box",
+            id = "root",
+            type = "box",
             children = listOf(sampleNode(type)),
             size = NodeSize("fill", "fill"),
             style = NodeStyle(padding = SAMPLE_PADDING),
@@ -67,8 +67,8 @@ internal fun PreviewSession.alerts() {
         for (camera in listOf(false, true)) {
             val renderInput = input()
             val alert = Alert(
-                "Someone is at the front door",
-                "A sample notification with enough text to check wrapping and spacing.",
+                title = "Someone is at the front door",
+                message = "A sample notification with enough text to check wrapping and spacing.",
                 level = level,
                 camera = if (camera) "camera.front_door" else null,
                 buttons = listOf(AlertButton("Open door"), AlertButton("Turn on lights")),

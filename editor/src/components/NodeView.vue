@@ -100,7 +100,8 @@ const style = computed<CSSProperties>(() => {
   if (viewNode.value.style.corner) css.borderRadius = `${viewNode.value.style.corner}px`
   const bg = colorOf(viewNode.value.style.background)
   if (bg) css.background = bg
-  if (viewNode.value.style.border)
+  // Slider draws its border on the pill track, not the outer box (see FreeFormControls.sliderNode).
+  if (viewNode.value.style.border && viewNode.value.type !== 'slider')
     css.border = `${viewNode.value.style.border}px solid ${colorOf(viewNode.value.style.borderColor ?? 'divider') ?? colorOf('divider')}`
   const nodeProps = viewNode.value.props
   if (viewNode.value.bind && nodeProps.showWhen && (nodeProps.showWhen === 'on') !== on.value)
@@ -812,7 +813,18 @@ function end(): void {
       <MdiIcon v-if="node.props.icon" :name="node.props.icon" :size="node.props.text ? 20 : 24" />
       <span v-if="node.props.text">{{ node.props.text }}</span>
     </template>
-    <div v-else-if="node.type === 'slider'" class="track">
+    <div
+      v-else-if="node.type === 'slider'"
+      class="track"
+      :style="{
+        background: colorOf(node.props.track) ?? colorOf('track'),
+        border:
+          node.style.border && node.style.border > 0
+            ? `${node.style.border}px solid ${colorOf(node.style.borderColor ?? 'divider') ?? colorOf('divider')}`
+            : undefined,
+        boxSizing: 'border-box',
+      }"
+    >
       <i
         :style="{
           width: `${sliderFill}%`,
@@ -1745,6 +1757,17 @@ function end(): void {
 .track i {
   position: absolute;
   inset: 0 auto 0 0;
+}
+
+.t-slider .track i::after {
+  content: '';
+  position: absolute;
+  top: 15%;
+  right: 15%;
+  width: 70%;
+  height: 70%;
+  border-radius: 50%;
+  background: var(--rc-ink);
 }
 
 .track .hint {

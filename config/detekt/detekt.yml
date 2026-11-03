@@ -15,6 +15,11 @@ complexity:
     allowedFunctionsPerClass: 20
     allowedFunctionsPerFile: 20
     allowedFunctionsPerObject: 20
+  # Prefer named args on multi-arg calls (see .cursor/rules/kotlin-named-arguments-detekt.mdc).
+  NamedArguments:
+    active: true
+    allowedArguments: 3
+    ignoreArgumentsMatchingNames: false
 
 # Match Shaffer-Softworks/RPI: braced multiline if/else for statements; short
 # expression ifs may stay one line (e.g. `if (debug) a else b`).

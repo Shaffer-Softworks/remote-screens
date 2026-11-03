@@ -159,8 +159,10 @@ internal object Metrics {
     const val HUE_SATURATION = 0.55f
     const val LEVEL_RANGE_MAX = 100.0
     const val CAMERA_REFRESH_SEC = 10
-    const val MARQUEE_GAP_PX = 1000f
-    const val MARQUEE_SPACE_PX = 1200f
+    /** Pause in milliseconds before the text repeats. */
+    const val MARQUEE_REPEAT_DELAY_MS = 1000f
+    /** Pause in milliseconds before the first scroll. */
+    const val MARQUEE_INITIAL_DELAY_MS = 1200f
     const val MARQUEE_SPEED_DP = 30f
     const val OPAQUE_ARGB = 0xFF000000.toInt()
     const val ALARM_FEAT_ARM_HOME = 1

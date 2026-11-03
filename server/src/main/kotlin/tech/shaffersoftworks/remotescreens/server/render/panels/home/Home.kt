@@ -92,11 +92,16 @@ fun DocContext.homeTile(tile: Tile, box: TileBox) {
     scope.Column(Modifier.fillMaxSize().background(role(Role.HOME))) {
         val doc = this@homeTile
         Row(Modifier.size(doc.units.px(box.w), doc.units.px(upperH))) {
-            doc.homeWeather(tile.id, weather, box.w * WEATHER_WIDTH_SHARE, layoutScale)
+            doc.homeWeather(
+                tileId = tile.id,
+                weather = weather,
+                wDp = box.w * WEATHER_WIDTH_SHARE,
+                layoutScale = layoutScale,
+            )
             Spacer(Modifier.width(doc.units.px(box.w * WEATHER_EVENT_GAP_SHARE)))
             doc.homeEvent(tile.id, box.w * EVENT_WIDTH_SHARE, layoutScale)
         }
-        if (stripH > 0f) doc.homePeople(tile.id, people, box.w, stripH)
+        if (stripH > 0f) doc.homePeople(tileId = tile.id, people = people, wDp = box.w, hDp = stripH)
     }
 }
 
@@ -109,10 +114,10 @@ private fun DocContext.homeWeather(tileId: String, weather: String?, wDp: Float,
             Modifier.width(
                 units.px(wDp),
             ).fillMaxHeight().padding(
-                units.px(WEATHER_SIDE_PAD_DP * layoutScale),
-                units.px(SECTION_TOP_PAD_DP * layoutScale),
-                0f,
-                0f,
+                start = units.px(WEATHER_SIDE_PAD_DP * layoutScale),
+                top = units.px(SECTION_TOP_PAD_DP * layoutScale),
+                end = 0f,
+                bottom = 0f,
             ),
             ref,
         ),
@@ -137,10 +142,10 @@ private fun DocContext.homeWeather(tileId: String, weather: String?, wDp: Float,
             )
             Spacer(Modifier.width(doc.units.px(SECTION_GAP_DP * layoutScale)))
             doc.label(
-                doc.text(Vars.tile(tileId, "temp")),
-                ACCENT_BAR_WIDTH_DP * layoutScale,
-                doc.role(Role.INK),
-                TEMP_WEIGHT,
+                text = doc.text(Vars.tile(tileId, "temp")),
+                sp = ACCENT_BAR_WIDTH_DP * layoutScale,
+                color = doc.role(Role.INK),
+                weight = TEMP_WEIGHT,
             )
         }
     }
@@ -151,10 +156,10 @@ private fun DocContext.homeEvent(tileId: String, wDp: Float, layoutScale: Float)
         Modifier.width(
             units.px(wDp),
         ).fillMaxHeight().padding(
-            units.px(EVENT_SIDE_PAD_DP * layoutScale),
-            units.px(SECTION_TOP_PAD_DP * layoutScale),
-            units.px(EVENT_DAY_SP * layoutScale),
-            units.px(EVENT_META_SP * layoutScale),
+            start = units.px(EVENT_SIDE_PAD_DP * layoutScale),
+            top = units.px(SECTION_TOP_PAD_DP * layoutScale),
+            end = units.px(EVENT_DAY_SP * layoutScale),
+            bottom = units.px(EVENT_META_SP * layoutScale),
         ),
     ) {
         val doc = this@homeEvent
@@ -166,29 +171,29 @@ private fun DocContext.homeEvent(tileId: String, wDp: Float, layoutScale: Float)
         )
         Spacer(Modifier.height(doc.units.px(EVENT_META_SP * layoutScale)))
         doc.label(
-            doc.i18n.t("ui.next_event").uppercase(doc.i18n.locale),
-            small(SECTION_CAPTION_SP, layoutScale),
-            doc.role(Role.INK),
-            Weight.MEDIUM,
+            text = doc.i18n.t("ui.next_event").uppercase(doc.i18n.locale),
+            sp = small(SECTION_CAPTION_SP, layoutScale),
+            color = doc.role(Role.INK),
+            weight = Weight.MEDIUM,
         )
         Spacer(Modifier.height(doc.units.px(EVENT_TIME_GAP_DP * layoutScale)))
         doc.label(
-            doc.text(Vars.tile(tileId, "ev.day")),
-            EVENT_DAY_SP * layoutScale,
-            doc.role(Role.ACCENT_DARK),
-            Weight.LIGHT,
+            text = doc.text(Vars.tile(tileId, "ev.day")),
+            sp = EVENT_DAY_SP * layoutScale,
+            color = doc.role(Role.ACCENT_DARK),
+            weight = Weight.LIGHT,
         )
         doc.label(
-            doc.text(Vars.tile(tileId, "ev.time")),
-            EVENT_TIME_SP * layoutScale,
-            doc.role(Role.INK),
-            TEMP_WEIGHT,
+            text = doc.text(Vars.tile(tileId, "ev.time")),
+            sp = EVENT_TIME_SP * layoutScale,
+            color = doc.role(Role.INK),
+            weight = TEMP_WEIGHT,
         )
         Spacer(Modifier.height(doc.units.px(MIN_LABEL_SP * layoutScale)))
         doc.label(
-            doc.text(Vars.tile(tileId, "ev.title")),
-            small(EVENT_TITLE_SP, layoutScale),
-            doc.role(Role.INK),
+            text = doc.text(Vars.tile(tileId, "ev.title")),
+            sp = small(EVENT_TITLE_SP, layoutScale),
+            color = doc.role(Role.INK),
             lines = 2,
         )
         Spacer(Modifier.height(doc.units.px(META_GAP_DP * layoutScale)))
@@ -218,7 +223,12 @@ private fun DocContext.homePeople(tileId: String, people: List<String>, wDp: Flo
                 ),
                 vertical = RcVerticalPositioning.Center,
             ) {
-                doc.photo(doc.states[id], id, "home.$id", photo)
+                doc.photo(
+                    entityState = doc.states[id],
+                    entityId = id,
+                    slot = "home.$id",
+                    sizeDp = photo,
+                )
                 Spacer(Modifier.width(doc.units.px(SECTION_GAP_DP)))
                 Column(vertical = RcColumnVerticalPositioning.Center) {
                     doc.label(

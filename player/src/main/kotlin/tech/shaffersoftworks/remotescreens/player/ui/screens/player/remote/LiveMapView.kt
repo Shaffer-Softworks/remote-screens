@@ -85,7 +85,7 @@ internal fun LiveMapView(map: SlotMap, pictures: Map<String, Bitmap>, modifier: 
     Box(
         modifier.clip(RoundedCornerShape(CORNER_DP.dp)),
     ) {
-        InteractiveMap(map.tileUrl, map.dark, map.markers, pictures)
+        InteractiveMap(tileUrl = map.tileUrl, dark = map.dark, markers = map.markers, pictures = pictures)
     }
 }
 
@@ -360,7 +360,13 @@ private fun applyDarkTileFilter(root: View) {
 private fun LiveMapViewPreview() {
     RemoteScreensTheme {
         LiveMapView(
-            map = SlotMap(1, 1, PREVIEW_TILE_URL, false, emptyList()),
+            map = SlotMap(
+                revision = 1,
+                componentId = 1,
+                tileUrl = PREVIEW_TILE_URL,
+                dark = false,
+                markers = emptyList(),
+            ),
             pictures = emptyMap(),
             modifier = Modifier.fillMaxSize(),
         )

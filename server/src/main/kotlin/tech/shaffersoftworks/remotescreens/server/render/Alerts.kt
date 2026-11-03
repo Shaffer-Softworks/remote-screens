@@ -73,7 +73,8 @@ object AlertRenderer {
     private const val MESSAGE_GAP_DP = 6f
     private const val MESSAGE_LINES = 6
     private const val CAMERA_CORNER_DP = 16f
-    private const val CAMERA_FIT = 3
+    /** Seconds between refreshes of the camera still in an alert. */
+    private const val CAMERA_ALERT_REFRESH_S = 3
     private const val BUTTONS_GAP_DP = 20f
     private const val MAX_BUTTONS = 3
     private const val BUTTON_SPACING_DP = 10f
@@ -87,10 +88,10 @@ object AlertRenderer {
             0f
         }
         val (bytes, docContext) = DocContext.build(
-            device.widthPx,
-            device.heightPx,
-            alert.title,
-            { input.context(device) },
+            widthPx = device.widthPx,
+            heightPx = device.heightPx,
+            description = alert.title,
+            newContext = { input.context(device) },
         ) { docContext ->
             val scrim = docContext.tap(
                 Modifier.fillMaxSize().background(docContext.role(Role.SCRIM)),
@@ -114,19 +115,19 @@ object AlertRenderer {
                     docContext.badge(alert)
                     docContext.gap(TITLE_GAP_DP)
                     docContext.label(
-                        alert.title,
-                        Type.HEADLINE,
-                        docContext.role(Role.INK),
-                        Weight.SEMI_BOLD,
+                        text = alert.title,
+                        sp = Type.HEADLINE,
+                        color = docContext.role(Role.INK),
+                        weight = Weight.SEMI_BOLD,
                         lines = 2,
                         align = RcTextAlign.Center,
                     )
                     if (alert.message.isNotBlank()) {
                         docContext.gap(MESSAGE_GAP_DP)
                         docContext.label(
-                            alert.message,
-                            Type.TITLE,
-                            docContext.role(Role.INK_SOFT),
+                            text = alert.message,
+                            sp = Type.TITLE,
+                            color = docContext.role(Role.INK_SOFT),
                             lines = MESSAGE_LINES,
                             align = RcTextAlign.Center,
                         )
@@ -169,7 +170,15 @@ object AlertRenderer {
     private fun DocContext.camera(camera: String, widthDp: Float, heightDp: Float) {
         val pw = units.px(widthDp).toInt()
         val ph = units.px(heightDp).toInt()
-        picture(PictureSlot("alert.cam", "/api/camera_proxy/$camera", pw, ph, CAMERA_FIT))
+        picture(
+            PictureSlot(
+                name = "alert.cam",
+                source = "/api/camera_proxy/$camera",
+                widthPx = pw,
+                heightPx = ph,
+                refreshSeconds = CAMERA_ALERT_REFRESH_S,
+            ),
+        )
         val video = liveVideo(camera, crop = true)
         gap(TITLE_GAP_DP)
         scope.Image(
@@ -189,7 +198,7 @@ object AlertRenderer {
                 if (i > 0) Spacer(Modifier.width(docContext.units.px(BUTTON_SPACING_DP)))
                 val isPrimary = i == 0
                 docContext.key(
-                    ActionRef("alert", "button", i.toString()),
+                    ref = ActionRef("alert", "button", i.toString()),
                     text = b.title,
                     heightDp = BUTTON_HEIGHT_DP,
                     modifier = Modifier.horizontalWeight(1f),
@@ -205,7 +214,7 @@ object AlertRenderer {
             }
             if (buttons.isNotEmpty()) Spacer(Modifier.width(docContext.units.px(BUTTON_SPACING_DP)))
             docContext.key(
-                ActionRef("alert", "dismiss"),
+                ref = ActionRef("alert", "dismiss"),
                 text = docContext.i18n.t("ui.close"),
                 heightDp = BUTTON_HEIGHT_DP,
                 modifier = Modifier.horizontalWeight(1f),

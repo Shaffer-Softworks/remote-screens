@@ -108,7 +108,12 @@ internal object IntercomWire {
         val candidate = root.string("candidate")
         val line = (root["sdpMLineIndex"] as? JsonPrimitive)?.content?.toIntOrNull() ?: 0
         return if (from != null && candidate != null) {
-            IntercomFrame.Candidate(candidate, root.string("sdpMid"), line, from)
+            IntercomFrame.Candidate(
+                candidate = candidate,
+                sdpMid = root.string("sdpMid"),
+                sdpMLineIndex = line,
+                from = from,
+            )
         } else {
             null
         }

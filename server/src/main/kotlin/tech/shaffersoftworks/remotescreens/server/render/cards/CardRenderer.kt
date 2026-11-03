@@ -47,16 +47,16 @@ object CardRenderer {
         )
         val panelH = device.heightDp - CardChrome.CLOSE_KEY_DP
         val (bytes, docContext) = DocContext.build(
-            device.widthPx,
-            device.heightPx,
-            entityState?.name ?: entityId,
-            { input.context(device) },
+            widthPx = device.widthPx,
+            heightPx = device.heightPx,
+            description = entityState?.name ?: entityId,
+            newContext = { input.context(device) },
         ) { docContext ->
             if (card != "energy") docContext.bindEntity(entityId)
             docContext.bindTileColors(
-                TILE,
-                entityId,
-                Pastel.forDomain(entityState?.domain),
+                tileId = TILE,
+                entityId = entityId,
+                pastel = Pastel.forDomain(entityState?.domain),
                 alwaysOn = card in setOf("camera", "map", "energy", "history"),
             )
             Box(

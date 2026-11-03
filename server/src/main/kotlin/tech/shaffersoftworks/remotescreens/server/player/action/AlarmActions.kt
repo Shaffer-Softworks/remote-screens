@@ -25,12 +25,12 @@ class AlarmActions(
             TapOutcome.Ignored
         } else {
             when (verb) {
-                "alarm_zone" -> selectZone(tile, entityId, arg, memory)
+                "alarm_zone" -> selectZone(tile = tile, entityId = entityId, zoneEntityId = arg, memory = memory)
                 "alarm_dismiss" -> {
                     renderData.alarmUi.dismissNotice(tile.id)
                     TapOutcome.Rebuild
                 }
-                else -> arm(tile, entityId, arg, memory)
+                else -> arm(tile = tile, entityId = entityId, verb = arg, memory = memory)
             }
         }
     }
@@ -64,7 +64,7 @@ class AlarmActions(
         return if (notice != null) {
             TapOutcome.AlarmNotice(tile.id, notice.first, notice.second)
         } else {
-            val data = ServiceDataBuilder.build(action, verb, "", zoneState, code)
+            val data = ServiceDataBuilder.build(action = action, verb = verb, arg = "", entity = zoneState, code = code)
             val (domain, service) = action.service.split('.', limit = 2)
             homeAssistant.callService(domain, service, JsonObject(data + ("entity_id" to JsonPrimitive(zoneEntityId))))
             TapOutcome.Done
