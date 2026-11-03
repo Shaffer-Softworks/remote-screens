@@ -56,7 +56,9 @@ See [DEMO.md](DEMO.md). A made-up home is enough for most UI and render tests.
 ## On a device
 
 1. Start the demo server (player port **18100** locally).
-2. Install the player: `./gradlew :player:assembleDebug` then `adb install -r player/build/outputs/apk/debug/player-debug.apk`
+2. Install the player: `./gradlew :player:assembleDebug` then `adb install -r player/build/outputs/apk/debug/player-debug.apk`.
+   [ADB.md](ADB.md) lists the Gradle tasks that deploy, reverse-forward, screenshot, and save logs for one
+   serial. **Tablets → ADB** in the editor does the same kind of actions when that server can reach the tablet.
 3. Launch against the host:
 
 ```sh

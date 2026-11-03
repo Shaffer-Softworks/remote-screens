@@ -29,6 +29,9 @@ The logs contain system diagnostics, including messages from other apps.
 
 ## Editor
 
+The same pairing steps, written for the add-on panel, are in
+[addon/DOCS.md](../addon/DOCS.md#managing-a-tablet-with-adb).
+
 Open **Tablets → ADB**. The add-on image includes Android Platform Tools.
 
 1. On an Android 11+ tablet, enable Developer options and Wireless debugging.
