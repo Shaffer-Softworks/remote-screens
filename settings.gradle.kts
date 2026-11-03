@@ -16,4 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "remote-screens"
 
-include(":shared", ":server", ":player")
+include(":shared", ":server", ":player", ":preview")

@@ -52,6 +52,7 @@ On the tablet (Pixel Tablet emulator against the demo home):
 | ---- | ---- |
 | `server/` | The add-on: a Kotlin/Ktor server that talks to Home Assistant, renders documents and serves the editor |
 | `player/` | The Android player app (Android 8 and later) |
+| `preview/` | Android Studio previews of server-rendered UI, using local demo data |
 | `shared/` | The layout model, the grid maths and the protocol, used by the server and the player |
 | `editor/` | The Vue 3 editor, opened through ingress |
 | `catalogue/` | Which tiles and cards each Home Assistant domain gets |
@@ -111,6 +112,7 @@ You need JDK 21, the Android SDK (for the player), Node 24 and Python 3.13. See 
 ./gradlew :shared:test :server:test        # server and shared tests
 ./gradlew :server:installDist              # the server, runnable as server/build/install/server/bin/server
 ./gradlew :player:assembleDebug            # the player app
+./gradlew :preview:assembleDebug           # Android Studio previews of server UI
 
 cd editor && npm ci && npm test && npm run build
 
@@ -136,6 +138,9 @@ In the Android emulator, start the player with
 
 The player's application ID was `dev.remotescreens.player` before; Android treats the renamed app as a different
 one, so uninstall the old build first (kiosk tablets need a factory reset and a new enrollment).
+
+[preview/README.md](preview/README.md) explains the Android Studio preview gallery for server-rendered screens,
+tiles, cards, panels and free-form components. Build it with `./gradlew :preview:assembleDebug`.
 
 [docs/REMOTE_COMPOSE.md](docs/REMOTE_COMPOSE.md) lists what we learned about Remote Compose `1.0.0-alpha22`
 and the workarounds the code relies on. Architecture notes are on the

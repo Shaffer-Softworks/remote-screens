@@ -17,6 +17,38 @@ node --test custom_components/remote_screens/frontend/intercom-card.test.cjs
 
 Detekt (Kotlin style): `./gradlew :shared:detekt :server:detekt :player:detekt`
 
+## Server UI previews
+
+```sh
+./gradlew :preview:assembleDebug
+```
+
+Open a gallery file under `preview/src/main/kotlin` in Android Studio and select **Split** or **Design**.
+The [preview guide](../preview/README.md) lists the galleries and fixture sources.
+Rebuild after changing server code or fixtures; refreshing the preview alone does not regenerate documents.
+Use `-PpreviewFilter=climate` to focus on a feature, then rebuild without the property to restore all cases.
+
+Generation checks catalogue tile sizes/cards and the free-form node registry, and parses every generated document.
+`PreviewDocumentsTest` checks that named values are baked correctly without modifying production document bytes.
+These checks establish scenario representation and document validity; they do not verify every visual branch or pixel.
+
+For avatar changes, open `PeoplePreviews.kt` and inspect **Photo** and **Initials** at each tile size in both themes.
+Both avatars have a one-physical-pixel black ring. The photo cases use synthetic artwork; the standard demo person
+has no photo and uses initials. `PanelsPreviews.kt` also includes **Home · person photo**.
+
+Run the Android checks alongside the server checks:
+
+```sh
+./gradlew :shared:detekt :server:detekt :player:detekt
+./gradlew :shared:test :server:test :player:testDebugUnitTest
+./gradlew :player:assembleDebug :preview:assembleDebug :player:lintDebug :preview:lintDebug
+```
+
+`:server:detekt` includes `:server:detektPreview`; it can also be run directly while editing fixtures.
+Inspect representative previews after a successful build. Preview generation is not an automated screenshot
+comparison, and previews do not execute actions, stream media, or mount map/search overlays.
+Use the device checks below for live behavior.
+
 ## Demo server
 
 See [DEMO.md](DEMO.md). A made-up home is enough for most UI and render tests.
