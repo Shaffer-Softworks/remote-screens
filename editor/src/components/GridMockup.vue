@@ -107,7 +107,6 @@ const ON_STATES = [
 
 const isHomePanel = (tile: Tile) => kindOf(tile) === 'home'
 const isWeatherPanel = (tile: Tile) => kindOf(tile) === 'weather' && tile.full === true
-const WEATHER_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 /** Keep in step with PortraitFit in WeatherPanel.kt. */
 const WEATHER_WIDE_DP = 520
 const WEATHER_NARROW_DP = 420
@@ -142,6 +141,59 @@ const ALARM_ACTIONS = [
   { label: 'Disarm', icon: 'shield-lock-open', danger: true },
 ]
 const ALARM_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'Clear', '0', '⌫']
+/** Same base and clamp as AlarmMetrics / AlarmPanel.kt so the mockup fits short tablets. */
+const ALARM_BASE_W = 1280
+const ALARM_BASE_H = 650
+const ALARM_SCALE_MIN = 0.4
+const ALARM_SCALE_MAX = 1.5
+const alarmLayout = computed(() => {
+  const contentH = props.device.h - gridLayout.value.topBar - gridLayout.value.navBar
+  const scale = Math.min(
+    Math.max(Math.min(props.device.w / ALARM_BASE_W, contentH / ALARM_BASE_H), ALARM_SCALE_MIN),
+    ALARM_SCALE_MAX,
+  )
+  const dp = (value: number) => `${value * scale}px`
+  const sp = (value: number) => `${Math.max(value * scale, 12)}px`
+  return {
+    statusIcon: Math.round(54 * scale),
+    actionIcon: Math.round(18 * scale),
+    style: {
+      '--al-pad-h': dp(32),
+      '--al-pad-v': dp(24),
+      '--al-gap': dp(28),
+      '--al-card-pad': dp(24),
+      '--al-keypad-pad': dp(28),
+      '--al-corner': dp(24),
+      '--al-circle': dp(120),
+      '--al-status-gap': dp(28),
+      '--al-title': sp(34),
+      '--al-secure': sp(18),
+      '--al-accent-w': dp(4),
+      '--al-accent-h': dp(120),
+      '--al-divider-top': dp(18),
+      '--al-divider-bottom': dp(14),
+      '--al-label': sp(18),
+      '--al-keypad-label': sp(22),
+      '--al-label-gap': dp(12),
+      '--al-chip-gap': dp(14),
+      '--al-chip-h': dp(56),
+      '--al-chip-min': dp(110),
+      '--al-chip-pad': dp(14),
+      '--al-chip-radius': dp(14),
+      '--al-chip-font': sp(15),
+      '--al-action-h': dp(64),
+      '--al-action-radius': dp(16),
+      '--al-action-font': sp(16),
+      '--al-dot': dp(18),
+      '--al-dot-gap': dp(18),
+      '--al-dots-gap': dp(28),
+      '--al-key-gap-row': dp(10),
+      '--al-key-gap-col': dp(14),
+      '--al-key-radius': dp(16),
+      '--al-key-font': sp(22),
+    },
+  }
+})
 /** RPI's lights page (LightsPanel.kt): every Home Assistant area on the left, its lights once one is chosen. */
 const isLightsPanel = (tile: Tile) => kindOf(tile) === 'lights' && tile.full === true
 const LIGHTS_SAMPLE_ROOMS = ['Bedroom', 'Garden', 'Kitchen', 'Living Room']
@@ -504,7 +556,7 @@ const highlight = computed(() => {
               <i class="bar" />
               <span class="caption">TEMPERATURE OUTSIDE NOW</span>
               <span class="temp"
-                ><MdiIcon name="weather-partly-cloudy" :size="110" />{{
+                ><HaWeatherIcon condition="partlycloudy" :size="110" />{{
                   weather ? '14°' : '–'
                 }}</span
               >
@@ -566,10 +618,12 @@ const highlight = computed(() => {
           </div>
         </template>
         <template v-else-if="isAlarmPanel(placement.tile)">
-          <div class="al-split">
+          <div class="al-split" :style="alarmLayout.style">
             <div class="al-card al-main">
               <div class="al-status">
-                <span class="al-circle"><MdiIcon name="shield-lock-open" :size="54" /></span>
+                <span class="al-circle"
+                  ><MdiIcon name="shield-lock-open" :size="alarmLayout.statusIcon"
+                /></span>
                 <span class="al-words"
                   ><strong>Disarmed</strong><span>System not secure</span></span
                 >
@@ -590,7 +644,9 @@ const highlight = computed(() => {
                   v-for="action in ALARM_ACTIONS"
                   :key="action.label"
                   :class="{ danger: action.danger }"
-                  ><MdiIcon :name="action.icon" :size="18" />{{ action.label }}</i
+                  ><MdiIcon :name="action.icon" :size="alarmLayout.actionIcon" />{{
+                    action.label
+                  }}</i
                 >
               </span>
             </div>
@@ -670,7 +726,8 @@ const highlight = computed(() => {
               <span class="th-key"><MdiIcon name="plus" :size="28" /></span>
               <span class="th-key"><MdiIcon name="minus" :size="28" /></span>
             </span>
-            <svg class="th-dial" viewBox="-200 -200 400 400" width="380" height="380">
+            <!-- Dual dial arcs match ThermostatBind demo setpoints (18°/24° on 7…35). -->
+            <svg class="th-dial" viewBox="-200 -200 400 400" aria-hidden="true">
               <defs>
                 <radialGradient id="th-glow" cx="50%" cy="50%" r="50%">
                   <stop offset="0%" stop-color="var(--rc-blue)" stop-opacity="0.45" />
@@ -689,21 +746,21 @@ const highlight = computed(() => {
                 :transform="`rotate(${a})`"
               />
               <path
-                d="M 0 180 A 180 180 0 0 1 25 -178"
+                d="M 0 180 A 180 180 0 0 1 -112.2 -140.7"
                 fill="none"
                 class="dial-arc heat"
                 stroke-width="14"
                 stroke-linecap="round"
               />
               <path
-                d="M 0 -180 A 180 180 0 0 1 -175 -45"
+                d="M -91.6 -155 A 180 180 0 0 1 112.2 -140.7"
                 fill="none"
                 class="dial-arc cool"
                 stroke-width="14"
                 stroke-linecap="round"
               />
-              <circle cx="25" cy="-178" r="14" class="dial-knob heat" stroke-width="4" />
-              <circle cx="-175" cy="-45" r="14" class="dial-knob cool" stroke-width="4" />
+              <circle cx="-112.2" cy="-140.7" r="14" class="dial-knob heat" stroke-width="4" />
+              <circle cx="112.2" cy="-140.7" r="14" class="dial-knob cool" stroke-width="4" />
               <text y="-40" text-anchor="middle" class="dial-ink" font-size="20">Cooling</text>
               <text
                 x="-36"
@@ -787,21 +844,29 @@ const highlight = computed(() => {
           <span class="wx-name">{{
             nameOf(placement.tile, entityById.get(placement.tile.entityId ?? ''), pageTitle)
           }}</span>
-          <span class="wx-now"><MdiIcon name="weather-partly-cloudy" :size="110" />14°</span>
+          <span class="wx-now"
+            ><HaWeatherIcon condition="partlycloudy" :size="110" />14°</span
+          >
           <span class="wx-condition">Partly cloudy</span>
           <span class="wx-details"
             ><span>Wind 12 km/h</span><span>Humidity 71%</span><span>Pressure 1013 hPa</span></span
           >
           <div class="wx-days">
             <span
-              v-for="day in WEATHER_DAYS.slice(0, Math.min(7, Math.floor((device.w - 20) / 120)))"
-              :key="day"
+              v-for="day in WEATHER_FORECAST.slice(
+                0,
+                Math.min(7, Math.floor((device.w - 20) / 120)),
+              )"
+              :key="day.day"
               class="wx-day"
             >
-              <span>{{ day }}</span>
-              <MdiIcon name="weather-partly-cloudy" :size="60" />
-              <span class="soft">Partly cloudy</span>
-              <span><strong>19°</strong><small class="soft"> / 10°</small></span>
+              <span>{{ day.day }}</span>
+              <HaWeatherIcon :condition="day.condition" :size="60" />
+              <span class="soft">{{ day.label }}</span>
+              <span
+                ><strong>{{ day.high }}</strong
+                ><small class="soft"> / {{ day.low }}</small></span
+              >
             </span>
           </div>
         </template>
@@ -1230,10 +1295,11 @@ const highlight = computed(() => {
 
 .tile.alarm-panel {
   align-items: stretch;
-  padding: 24px 32px;
+  padding: 0;
   background: var(--rc-page);
   border: none;
   border-radius: 0;
+  min-height: 0;
 }
 
 .tile.lights-panel {
@@ -1521,15 +1587,19 @@ const highlight = computed(() => {
   flex: 1;
   min-height: 0;
   display: flex;
-  gap: 28px;
+  gap: var(--al-gap, 28px);
+  padding: var(--al-pad-v, 24px) var(--al-pad-h, 32px);
+  box-sizing: border-box;
 }
 
 .al-card {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 24px;
-  border-radius: 24px;
+  min-height: 0;
+  overflow: hidden;
+  padding: var(--al-card-pad, 24px);
+  border-radius: var(--al-corner, 24px);
   background: var(--rc-card);
   color: var(--rc-ink);
 }
@@ -1540,18 +1610,19 @@ const highlight = computed(() => {
 
 .al-keypad {
   flex: 0.85;
-  padding: 28px;
+  padding: var(--al-keypad-pad, 28px);
 }
 
 .al-status {
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: var(--al-status-gap, 28px);
+  flex: none;
 }
 
 .al-circle {
-  width: 120px;
-  height: 120px;
+  width: var(--al-circle, 120px);
+  height: var(--al-circle, 120px);
   flex: none;
   display: flex;
   align-items: center;
@@ -1564,48 +1635,57 @@ const highlight = computed(() => {
 
 .al-words {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 18px;
+  font-size: var(--al-secure, 18px);
   color: var(--rc-ink-soft);
 }
 
 .al-words strong {
-  font-size: 34px;
+  font-size: var(--al-title, 34px);
   font-weight: 600;
   color: var(--rc-accent);
 }
 
 .al-accent {
-  width: 4px;
-  height: 120px;
+  width: var(--al-accent-w, 4px);
+  height: var(--al-accent-h, 120px);
   border-radius: 8px;
   background: var(--rc-accent);
+  flex: none;
 }
 
 .al-divider {
   height: 1px;
-  margin: 18px 0 14px;
+  margin: var(--al-divider-top, 18px) 0 var(--al-divider-bottom, 14px);
   background: var(--rc-divider);
+  flex: none;
 }
 
 .al-label {
-  font-size: 18px;
-  margin-bottom: 12px;
+  font-size: var(--al-label, 18px);
+  margin-bottom: var(--al-label-gap, 12px);
+  flex: none;
 }
 
 .al-keypad .al-label {
-  font-size: 22px;
+  font-size: var(--al-keypad-label, 22px);
   text-align: center;
-  margin-bottom: 22px;
+  margin-bottom: var(--al-dots-gap, 22px);
 }
 
 .al-chips,
 .al-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: var(--al-chip-gap, 14px);
+}
+
+.al-chips {
+  min-height: 0;
+  overflow: auto;
 }
 
 .al-chips i,
@@ -1620,12 +1700,12 @@ const highlight = computed(() => {
 }
 
 .al-chips i {
-  min-width: 130px;
-  height: 56px;
-  padding: 0 14px;
-  border-radius: 14px;
+  min-width: var(--al-chip-min, 110px);
+  height: var(--al-chip-h, 56px);
+  padding: 0 var(--al-chip-pad, 14px);
+  border-radius: var(--al-chip-radius, 14px);
   border: 1px solid var(--rc-divider);
-  font-size: 15px;
+  font-size: var(--al-chip-font, 15px);
 }
 
 .al-chips i.on {
@@ -1636,14 +1716,15 @@ const highlight = computed(() => {
 
 .al-actions {
   margin-top: auto;
+  flex: none;
 }
 
 .al-actions i {
   flex: 1 1 40%;
   gap: 10px;
-  height: 64px;
-  border-radius: 16px;
-  font-size: 16px;
+  height: var(--al-action-h, 64px);
+  border-radius: var(--al-action-radius, 16px);
+  font-size: var(--al-action-font, 16px);
 }
 
 .al-actions i.danger {
@@ -1654,27 +1735,30 @@ const highlight = computed(() => {
 .al-dots {
   display: flex;
   justify-content: center;
-  gap: 18px;
-  margin-bottom: 28px;
+  gap: var(--al-dot-gap, 18px);
+  margin-bottom: var(--al-dots-gap, 28px);
+  flex: none;
 }
 
 .al-dots i {
-  width: 18px;
-  height: 18px;
+  width: var(--al-dot, 18px);
+  height: var(--al-dot, 18px);
   border-radius: 50%;
   background: var(--rc-ink-dim);
 }
 
 .al-keys {
   flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px 14px;
+  gap: var(--al-key-gap-row, 10px) var(--al-key-gap-col, 14px);
 }
 
 .al-keys i {
-  border-radius: 16px;
-  font-size: 22px;
+  border-radius: var(--al-key-radius, 16px);
+  font-size: var(--al-key-font, 22px);
+  min-height: 0;
 }
 
 .tile.calendar-panel {
@@ -1932,6 +2016,15 @@ const highlight = computed(() => {
 
 .dial-ring {
   stroke: var(--rc-ink);
+}
+
+.th-dial {
+  width: min(42%, 280px);
+  height: auto;
+  aspect-ratio: 1;
+  flex: 0 1 auto;
+  min-width: 120px;
+  max-height: 100%;
 }
 
 .th-middle {
@@ -2244,6 +2337,7 @@ const highlight = computed(() => {
   position: absolute;
   left: 0;
   right: 0;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   border-top: 2px solid var(--rc-nav-line);
