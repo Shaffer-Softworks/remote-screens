@@ -22,6 +22,9 @@ import java.util.TimeZone
 /** The user variable each main document reads to know which page to draw. */
 const val PAGE_VARIABLE = "page"
 
+/** The user variable that is 1 while a main document's modal navigation drawer is open. */
+const val DRAWER_VARIABLE = "drawer"
+
 /**
  * Owns the Remote Compose renderers and brings them
  * in line with a [RemoteScreenState]: each new document is loaded once, then only changed values and bitmaps are set.

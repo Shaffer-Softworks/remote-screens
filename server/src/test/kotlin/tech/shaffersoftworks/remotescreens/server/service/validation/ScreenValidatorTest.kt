@@ -1,6 +1,7 @@
 package tech.shaffersoftworks.remotescreens.server.service.validation
 
 import tech.shaffersoftworks.remotescreens.shared.DeviceSize
+import tech.shaffersoftworks.remotescreens.shared.Drawer
 import tech.shaffersoftworks.remotescreens.shared.LayoutData
 import tech.shaffersoftworks.remotescreens.shared.NavBar
 import tech.shaffersoftworks.remotescreens.shared.Page
@@ -9,7 +10,9 @@ import tech.shaffersoftworks.remotescreens.shared.TopBar
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ScreenValidatorTest {
     private val json = Json { ignoreUnknownKeys = true }
@@ -45,6 +48,36 @@ class ScreenValidatorTest {
         val defaults = ScreenValidator.validate(Screen("s", "Wall")).topBar
         assertEquals(false, defaults.wifi)
         assertEquals(false, defaults.battery)
+    }
+
+    @Test
+    fun drawerSettingsAreKeptInRange() {
+        val screen = ScreenValidator.validate(
+            Screen(
+                "s",
+                "Wall",
+                navBar = NavBar(show = false),
+                drawer = Drawer(style = "modal", side = "middle", width = 999),
+            ),
+        )
+        assertEquals("modal", screen.drawer.style)
+        assertEquals("start", screen.drawer.side)
+        assertEquals(Drawer.MAX_MODAL_WIDTH, screen.drawer.width)
+        assertFalse(screen.navBar.show)
+        val modal = ScreenValidator.validate(Screen("s", "Wall", drawer = Drawer(style = "modal", width = 10)))
+        assertEquals(Drawer.MIN_MODAL_WIDTH, modal.drawer.width)
+        assertEquals(Drawer(), ScreenValidator.validate(Screen("s", "Wall")).drawer)
+    }
+
+    @Test
+    fun theBottomBarStaysWithoutADrawer() {
+        for (style in listOf("sideways", "rail")) {
+            val screen = ScreenValidator.validate(
+                Screen("s", "Wall", navBar = NavBar(show = false), drawer = Drawer(style = style)),
+            )
+            assertEquals("off", screen.drawer.style)
+            assertTrue(screen.navBar.show)
+        }
     }
 
     @Test

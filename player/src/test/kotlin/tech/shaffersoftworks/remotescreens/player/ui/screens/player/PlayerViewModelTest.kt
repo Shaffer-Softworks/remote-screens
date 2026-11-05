@@ -320,6 +320,20 @@ class PlayerViewModelTest {
     }
 
     @Test
+    fun `a page from the drawer or back closes it`() {
+        receive(mainDocument())
+        val openDrawer = ActionRef("_", "set", "drawer|1").encode()
+        viewModel.onDocumentAction(Slot.MAIN, revision = 7, metadata = openDrawer)
+        viewModel.onDocumentAction(Slot.MAIN, revision = 7, metadata = ActionRef("_", "page", "2").encode())
+        assertFalse(viewModel.viewState.value.remoteScreen.isDrawerOpen)
+
+        viewModel.onDocumentAction(Slot.MAIN, revision = 7, metadata = openDrawer)
+        viewModel.onBack()
+        assertFalse(viewModel.viewState.value.remoteScreen.isDrawerOpen)
+        assertEquals(2, viewModel.viewState.value.remoteScreen.page)
+    }
+
+    @Test
     fun `a wake message to sleep dims to standby brightness`() {
         receive(ServerMessage.Wake(awake = false))
 

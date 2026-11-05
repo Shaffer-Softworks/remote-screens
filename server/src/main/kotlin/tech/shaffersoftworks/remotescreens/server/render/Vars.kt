@@ -43,6 +43,8 @@ object Vars {
     fun option(scope: String, group: String, index: Int, key: String) = "o.$scope.$group.$index.$key"
 
     const val PAGE = "page"
+    /** 1 while the modal navigation drawer is open. The player sets it, and clears it when the page changes. */
+    const val DRAWER = "drawer"
     const val TIME = "sys.time"
     const val DATE = "sys.date"
     /** The date as the header shows it: "24 MAY 2024". */

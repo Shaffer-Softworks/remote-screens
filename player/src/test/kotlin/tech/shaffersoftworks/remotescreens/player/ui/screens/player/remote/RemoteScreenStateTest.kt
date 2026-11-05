@@ -44,6 +44,36 @@ class RemoteScreenStateTest {
     }
 
     @Test
+    fun `closing the drawer leaves the other local values and a shut drawer alone`() {
+        val shut = RemoteScreenState().withLocalInt("n.tabs.tab", 2)
+        assertSame(shut, shut.withDrawerClosed())
+
+        val open = shut.withLocalInt(DRAWER_VARIABLE, 1)
+        assertTrue(open.isDrawerOpen)
+        val closed = open.withDrawerClosed()
+        assertFalse(closed.isDrawerOpen)
+        assertEquals(0, closed.localInts[DRAWER_VARIABLE])
+        assertEquals(2, closed.localInts["n.tabs.tab"])
+    }
+
+    @Test
+    fun `native drawer metadata belongs to the main document and clears with it`() {
+        val drawer = tech.shaffersoftworks.remotescreens.shared.NavigationDrawer(
+            title = "Kitchen",
+            items = listOf(tech.shaffersoftworks.remotescreens.shared.NavigationDrawerItem("Home", page = 0)),
+        )
+        val state = RemoteScreenState().withDocument(
+            mainDocument().copy(navigationDrawer = drawer),
+            documentBytes,
+        )
+        assertEquals(drawer, state.navigationDrawer)
+        val overlay = ServerMessage.Document(slot = Slot.OVERLAY, rev = 2, data = "")
+        assertEquals(drawer, state.withDocument(overlay, documentBytes).navigationDrawer)
+        assertNull(state.withDocument(mainDocument(), documentBytes).navigationDrawer)
+        assertNull(state.cleared().navigationDrawer)
+    }
+
+    @Test
     fun `empty swipe pages means every page`() {
         val state = RemoteScreenState().withDocument(mainDocument(pageCount = 3), documentBytes)
 

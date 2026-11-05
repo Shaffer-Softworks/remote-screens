@@ -17,6 +17,7 @@ A normal preview refresh only recompiles the Android preview file; it does not r
 | File | Content |
 | --- | --- |
 | [ServerPreviews.kt](src/main/kotlin/tech/shaffersoftworks/remotescreens/preview/ServerPreviews.kt) | Demo screens and an AndroidX tooling comparison |
+| [NavigationPreviews.kt](src/main/kotlin/tech/shaffersoftworks/remotescreens/preview/NavigationPreviews.kt) | Menu drawer key on each side and without the top or bottom bar |
 | [TilesPreviews.kt](src/main/kotlin/tech/shaffersoftworks/remotescreens/preview/TilesPreviews.kt) | Every catalogue tile in every advertised size |
 | [CardsPreviews.kt](src/main/kotlin/tech/shaffersoftworks/remotescreens/preview/CardsPreviews.kt) | Every entity card, plus history and energy |
 | [PanelsPreviews.kt](src/main/kotlin/tech/shaffersoftworks/remotescreens/preview/PanelsPreviews.kt) | Full-screen panels, selected camera, music modes, home with a person photo |
@@ -91,6 +92,12 @@ does not automatically compare screenshots for every scenario.
   Generation fails when that registry and `NodeTypes.ALL` differ.
 - Add transient panel states and dialogs in `PanelPreviews.kt`, and screen configurations in `ScreenPreviews.kt`.
 - Shared widget examples live in `WidgetPreviews.kt`.
+
+A state layout paints its first state in Layoutlib's single frame whatever its starting value, then switches
+on the next. So **Screens** cases for pages other than the first show the first page's picture (their layout
+tree is right). The modal drawer is native Material 3 UI in the Android player, so its open-state preview is
+`PlayerNavigationDrawerPreview` in `player/.../ui/screens/player/PlayerNavigationDrawer.kt`.
+The server gallery previews the drawer’s menu key.
 
 Previews are snapshots. They do not execute Home Assistant actions, simulate navigation, play video/audio,
 or mount Android map/search overlays. Camera, map and artwork areas show sample bitmaps.

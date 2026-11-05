@@ -127,6 +127,18 @@ same.
 Per screen, the top bar can show the clock, date, outdoor temperature, people home count, Wi‑Fi signal and
 battery level. Turn each on in the editor under the screen’s settings.
 
+## Navigation
+
+Each screen has a button per visible page, then Settings. They can be in the bottom bar, a navigation drawer, or
+both. Choose under the screen’s settings, **Navigation drawer**:
+
+- **Menu that slides over the page**: a menu key in the top bar opens a panel from the left or right. It takes no
+  room from the grid. Choosing a page, tapping outside the panel or pressing Back closes it. Without the top bar,
+  the key sits in the page’s top corner.
+
+With a drawer on, **Show the bottom bar** can be turned off to give the grid its height. Without a drawer, the
+bottom bar always shows, as it is the only way to the other pages and Settings.
+
 ## Tiles
 
 Every tile follows its entity live. A tap does the obvious thing for its type (toggle a light, open a cover's

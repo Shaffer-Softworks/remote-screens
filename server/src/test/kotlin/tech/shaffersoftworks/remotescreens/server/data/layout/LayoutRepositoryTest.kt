@@ -76,6 +76,17 @@ class LayoutRepositoryTest {
     }
 
     @Test
+    fun aSavedRetiredDrawerStyleLoadsWithBottomNavigation() {
+        val directory = dirWith(
+            """{"schemaVersion":2,"screens":[{"id":"wall","name":"Wall","navBar":{"show":false},""" +
+                """"drawer":{"style":"rail","width":96,"labels":"icons"}}]}""",
+        )
+        val screen = LayoutRepository(directory).layout.value.screens.single()
+        assertEquals("off", screen.drawer.style)
+        assertTrue(screen.navBar.show)
+    }
+
+    @Test
     fun aNewerSchemaIsKeptAsideNotOverwritten() {
         val dir = dirWith(
             """{"schemaVersion": ${SCHEMA_VERSION + 1}, "screens": [], "somethingNew": true}""",

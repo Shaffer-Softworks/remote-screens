@@ -40,6 +40,7 @@ object Grid {
     const val TOP_BAR = 48f
     const val NAV_BAR = 102f
     const val COMPACT_NAV_BAR = 66f
+    const val MODAL_DRAWER = 300f
 
     /** Narrower than this is a phone or a small wall panel: a compact navigation bar and no date in the header. */
     const val NARROW = 600f
@@ -49,7 +50,8 @@ object Grid {
     /** The height [bar] takes: none when hidden, else its own or the default. */
     fun topBarHeight(bar: TopBar): Float = if (!bar.show) 0f else bar.height?.toFloat() ?: TOP_BAR
 
-    fun navBarHeight(bar: NavBar, widthDp: Float): Float = bar.height?.toFloat() ?: navBar(widthDp)
+    fun navBarHeight(bar: NavBar, widthDp: Float): Float =
+        if (!bar.show) 0f else bar.height?.toFloat() ?: navBar(widthDp)
 
     /** The grid a device of this size gets when it is adopted. */
     fun suggest(widthDp: Float, heightDp: Float): GridSize {

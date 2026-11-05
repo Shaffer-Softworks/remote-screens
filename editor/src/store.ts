@@ -82,7 +82,15 @@ export function pollPlayers(): void {
 
 export function open(screen: Screen | null): void {
   editing.value = screen ? (JSON.parse(JSON.stringify(screen)) as Screen) : null
-  if (editing.value) editing.value.navBar ??= {}
+  if (editing.value) {
+    editing.value.navBar ??= {}
+    editing.value.drawer ??= {}
+    // Retired or unknown drawer styles must keep the bottom bar available.
+    if (editing.value.drawer.style !== 'modal') {
+      delete editing.value.drawer.style
+      delete editing.value.navBar.show
+    }
+  }
   saved.value = screen ? JSON.stringify(editing.value) : ''
 }
 

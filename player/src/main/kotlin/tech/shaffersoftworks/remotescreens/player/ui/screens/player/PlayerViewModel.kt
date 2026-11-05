@@ -623,7 +623,10 @@ class PlayerViewModel @Inject constructor(
             "prev" -> remoteScreen.previousSwipePage?.let(::showPage)
             "back" -> showPage(actionRef.arg.toIntOrNull() ?: remoteScreen.homePage)
             "close" -> closeSlot(slot)
-            "settings" -> openSettings()
+            "settings" -> {
+                updateRemoteScreen { it.withDrawerClosed() }
+                openSettings()
+            }
             "set" -> {
                 val parts = actionRef.arg.split('|', limit = 2)
                 if (parts.size == 2) {
@@ -638,19 +641,19 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    /** Back closes a card first, then goes home. */
+    /** Back closes a card first, then the navigation drawer, then goes home. */
     fun onBack() {
-        if (closeTopOverlay()) return
-        if (_viewState.value.notificationBanner != null) {
-            dismissNotificationBanner()
-            return
-        }
         val remoteScreen = _viewState.value.remoteScreen
-        if (remoteScreen.page != remoteScreen.homePage) showPage(remoteScreen.homePage)
+        when {
+            closeTopOverlay() -> Unit
+            remoteScreen.isDrawerOpen -> updateRemoteScreen { it.withDrawerClosed() }
+            _viewState.value.notificationBanner != null -> dismissNotificationBanner()
+            remoteScreen.page != remoteScreen.homePage -> showPage(remoteScreen.homePage)
+        }
     }
 
     private fun showPage(index: Int) {
-        updateRemoteScreen { it.withPage(index) }
+        updateRemoteScreen { it.withPage(index).withDrawerClosed() }
         send(PlayerMessage.PageShown(_viewState.value.remoteScreen.page))
         sendDeviceState()
         if (isIntercomPage(index)) {

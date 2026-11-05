@@ -1,6 +1,6 @@
 ---
-description: Configurable top bar and bottom navigation bar — heights in the grid math, how the renderer scales them, and the editor controls
-globs: shared/src/main/kotlin/**/Layout.kt,shared/src/main/kotlin/**/Grid.kt,shared/src/test/kotlin/**/GridParityTest.kt,tests/fixtures/grid_parity.json,server/src/main/kotlin/**/render/ScreenRenderer.kt,server/src/main/kotlin/**/validation/ScreenValidator.kt,editor/src/model/grid.ts,editor/src/model/grid.test.ts,editor/src/components/ScreenPanel.vue,editor/src/components/GridMockup.vue
+description: Configurable top bar, bottom navigation bar and native modal navigation drawer — sizes in the grid math, how the renderer draws them, and the editor controls
+globs: shared/src/main/kotlin/**/Layout.kt,shared/src/main/kotlin/**/Grid.kt,shared/src/test/kotlin/**/GridParityTest.kt,tests/fixtures/grid_parity.json,server/src/main/kotlin/**/render/ScreenRenderer.kt,server/src/main/kotlin/**/render/NavDrawer.kt,server/src/main/kotlin/**/validation/ScreenValidator.kt,editor/src/model/grid.ts,editor/src/model/grid.test.ts,editor/src/components/ScreenPanel.vue,editor/src/components/GridMockup.vue
 alwaysApply: false
 ---
 
@@ -9,15 +9,16 @@ alwaysApply: false
 ## Model (`shared/.../Layout.kt`, mirrored in `editor/src/model/types.ts`)
 
 - `TopBar`: `date` (default true), `wifi` and `battery` (default false), `height` (null is 48 dp, clamped 32–120), `clockWidth` (percent of the screen width; null is `min(350, 42%)`, clamped 15–60), `background` / `clockBackground`.
-- `Screen.navBar`: `height` (null is 102 dp, or 66 dp under 600 dp wide, clamped 48–160), `labels` (`both` | `icons` | `text`), `layout` (`spread` | `center` | `fill`), colours `background`, `line`, `active`.
+- `Screen.navBar`: `show` (default true), `height` (null is 102 dp, or 66 dp under 600 dp wide, clamped 48–160), `labels` (`both` | `icons` | `text`), `layout` (`spread` | `center` | `fill`), colours `background`, `line`, `active`.
+- `Screen.drawer`: `style` (`off` | `modal`), `side` (`start` | `end`), `width` (null is `Grid.MODAL_DRAWER` 300 dp, clamped 200–480), colours `background`, `active`. `ScreenValidator` keeps `navBar.show` true while the drawer is `off`, so the pages and Settings stay reachable. Unsupported saved styles fall back to `off`. `store.open()` also normalizes unsupported styles and restores the bottom bar before saving the initial editor snapshot.
 - Colour fields take a theme role, a pastel key, or `#RRGGBB` / `#AARRGGBB`. The server resolves them with `DocContext.paint()` in `FreeForm.kt`.
 - Defaults match the original look, so old layouts load unchanged. `TopBar.validated()` and `NavBar.validated()` clamp values. `navBar` is optional in TypeScript; `store.open()` sets `navBar ??= {}` before the saved copy, so opening an old screen is not a change.
 
 ## Grid math (keep Kotlin and TypeScript in step)
 
-- `Grid.spec(size, w, h, topBar, navBar)` takes bar heights in dp. `Grid.topBarHeight` returns 0 when the bar is hidden. `Grid.navBarHeight` uses the width-based default when height is null. `suggest()` (used on adoption) still uses the defaults.
+- `Grid.spec(size, w, h, topBar, navBar)` takes bar heights in dp. `Grid.topBarHeight` and `Grid.navBarHeight` return 0 when the bar is hidden. `Grid.navBarHeight` uses the width-based default when height is null. The modal drawer takes no space from the grid. `suggest()` (used on adoption) still uses the defaults.
 - `editor/src/model/grid.ts` mirrors it with `Math.fround`. Its `spec` takes `(size, w, h, topBar, nav)`.
-- `tests/fixtures/grid_parity.json` is the shared answer key. Regenerate with `./gradlew :shared:test -PupdateFixtures` and check the diff only adds the intended lines.
+- `tests/fixtures/grid_parity.json` is the shared answer key. Regenerate with `./gradlew :shared:test -PupdateFixtures` and review the resulting diff.
 
 ## Renderer (`ScreenRenderer.kt`)
 
@@ -25,9 +26,15 @@ alwaysApply: false
 - A weather temperature entity draws `weatherStateIcon` for its current condition (the weather page’s coloured sun, cloud and rain). The condition is structural, so a change rebuilds the document. A temperature sensor keeps the blue thermometer.
 - Bottom bar scale is the bar height against that width's default bar, so the defaults draw as before. `navArrangement()` picks the row arrangement. `fill` makes each button `width / count` wide; the other layouts use square buttons.
 - `GridMockup.vue` repeats this sizing. Change the renderer and the mockup together. Sliders need `v-range` (see `editor-sliders-and-theme-preview-context.mdc`).
+- Content that spans the page (free-form root, edge-to-edge panels, page photo, empty-page message) uses `spec.widthDp`, below the top bar and above the bottom bar. Full-screen dialogs (the lights dialog) use the whole screen.
+- `navItems()` builds the bottom bar's buttons (visible pages, then Settings). `render/NavDrawer.kt` builds the native drawer metadata separately.
+- Modal drawer: the menu key sits in the top bar on the drawer's side (`menuKey`), or in the page's top corner when the top bar is hidden (`floatingMenuKey`). It sends `_|set|drawer|1`. The Android player renders `ModalNavigationDrawer`, `ModalDrawerSheet` and `NavigationDrawerItem` in `PlayerNavigationDrawer.kt`; the remote document contains no drawer panel or scrim. `RenderedDoc.navigationDrawer` carries the title, visible page indices, localized Settings label, SVG icon paths, width, side and resolved theme colors through `ServerMessage.Document.navigationDrawer`. Drawer gestures update the same local integer; choosing a row uses the existing local page/Settings actions. The player suspends the drawer while overlays, dialogs or standby are shown. Metadata changes force a document send even when the remote bytes match.
+- Player: `RemoteScreenState.withDrawerClosed()` runs on every `showPage` and on Settings. `onBack` closes an open drawer after an overlay and before going home.
 
 ## Tests
 
 - `RenderTest.barsTakeTheirOwnSizeLabelsLayoutAndColours`
-- `ScreenValidatorTest.barSettingsAreKeptInRange`
-- `editor/src/model/grid.test.ts` bar-height cases
+- `NavDrawerRenderTest` (modal both sides with and without the top bar, native metadata updates)
+- `ScreenValidatorTest.barSettingsAreKeptInRange`, `drawerSettingsAreKeptInRange`, `theBottomBarStaysWithoutADrawer`
+- `PlayerViewModelTest` "a page from the drawer or back closes it", `RemoteScreenStateTest` drawer close
+- `editor/src/model/grid.test.ts` bar-height and shared grid parity cases

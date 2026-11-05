@@ -69,6 +69,7 @@ data class Screen(
     val settings: ScreenSettings = ScreenSettings(),
     val topBar: TopBar = TopBar(),
     val navBar: NavBar = NavBar(),
+    val drawer: Drawer = Drawer(),
     /** The size the editor draws the screen at until a tablet shows it; a tablet renders at its own size. */
     val designSize: DeviceSize? = null,
 )
@@ -384,6 +385,8 @@ data class TopBar(
 /** The bottom navigation bar: one button per visible page, then Settings. */
 @Serializable
 data class NavBar(
+    /** Off only while a [Drawer] gives the pages and Settings another way in. */
+    val show: Boolean = true,
     /** dp, or null for the default, which is smaller on a narrow device. Text and icons scale with it. */
     val height: Int? = null,
     /** `both`, `icons` or `text`. */
@@ -409,6 +412,44 @@ data class NavBar(
         const val MAX_HEIGHT = 160
         val LABELS = setOf("both", "icons", "text")
         val LAYOUTS = setOf("spread", "center", "fill")
+    }
+}
+
+/**
+ * Navigation at the side, with or without the [NavBar]: the same buttons, one per visible page, then Settings.
+ * A native Material 3 modal drawer slides over the page from the menu key.
+ */
+@Serializable
+data class Drawer(
+    /** `off` or `modal`. */
+    val style: String = "off",
+    /** `start` (left) or `end` (right). */
+    val side: String = "start",
+    /** dp, or null for the default modal drawer width. */
+    val width: Int? = null,
+    /** Theme roles or pastel keys, as [NodeStyle.background]; null is the theme's own. */
+    val background: String? = null,
+    val active: String? = null,
+) {
+    val modal: Boolean get() = style == "modal"
+    val end: Boolean get() = side == "end"
+
+    fun validated(): Drawer {
+        val style = style.takeIf { it in STYLES } ?: "off"
+        return copy(
+            style = style,
+            side = side.takeIf { it in SIDES } ?: "start",
+            width = width?.coerceIn(MIN_MODAL_WIDTH, MAX_MODAL_WIDTH),
+            background = background?.takeIf { it.length <= Theme.MAX_ID },
+            active = active?.takeIf { it.length <= Theme.MAX_ID },
+        )
+    }
+
+    companion object {
+        const val MIN_MODAL_WIDTH = 200
+        const val MAX_MODAL_WIDTH = 480
+        val STYLES = setOf("off", "modal")
+        val SIDES = setOf("start", "end")
     }
 }
 

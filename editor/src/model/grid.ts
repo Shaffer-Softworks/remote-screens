@@ -13,6 +13,7 @@ export const GAP = 10
 export const TOP_BAR = 48
 export const NAV_BAR = 102
 export const COMPACT_NAV_BAR = 66
+export const MODAL_DRAWER = 300
 
 /** Narrower than this is a phone or a small wall panel: a compact navigation bar and no date in the header. */
 export const NARROW = 600
@@ -27,6 +28,7 @@ export function topBarHeight(bar: TopBar): number {
 }
 
 export function navBarHeight(bar: NavBar | undefined, widthDp: number): number {
+  if (bar?.show === false) return 0
   return bar?.height ?? navBar(widthDp)
 }
 
@@ -82,7 +84,9 @@ export function suggest(widthDp: number, heightDp: number): GridSize {
   return { cols: fit(w), rows: fit(h) }
 }
 
-/** The geometry of [size] on a device of [widthDp] by [heightDp], under a [topBar] and over a [nav] of these heights. */
+/**
+ * The geometry of [size] on a device of [widthDp] by [heightDp], under a [topBar] and over a [nav] of these heights,
+ */
 export function spec(
   size: GridSize,
   widthDp: number,
