@@ -826,6 +826,7 @@ function end(): void {
       }"
     >
       <i
+        :class="{ filled: sliderFill > 0 }"
         :style="{
           width: `${sliderFill}%`,
           background: pastel(node.props.color, node.bind?.entityId.split('.')[0]).color,
@@ -1132,21 +1133,21 @@ function end(): void {
             :transform="`rotate(${a})`"
           />
           <path
-            d="M 0 180 A 180 180 0 0 1 25 -178"
+            d="M 0 180 A 180 180 0 0 1 -112.2 -140.7"
             fill="none"
             class="dial-arc heat"
             stroke-width="14"
             stroke-linecap="round"
           />
           <path
-            d="M 0 -180 A 180 180 0 0 1 -175 -45"
+            d="M -91.6 -155 A 180 180 0 0 1 112.2 -140.7"
             fill="none"
             class="dial-arc cool"
             stroke-width="14"
             stroke-linecap="round"
           />
-          <circle cx="25" cy="-178" r="14" class="dial-knob heat" stroke-width="4" />
-          <circle cx="-175" cy="-45" r="14" class="dial-knob cool" stroke-width="4" />
+          <circle cx="-112.2" cy="-140.7" r="14" class="dial-knob heat" stroke-width="4" />
+          <circle cx="112.2" cy="-140.7" r="14" class="dial-knob cool" stroke-width="4" />
           <text y="-40" text-anchor="middle" class="dial-ink" font-size="18">
             {{ thermostatPreview.action }}
           </text>
@@ -1544,6 +1545,7 @@ function end(): void {
 .th-dial {
   width: min(38%, 180px);
   height: auto;
+  aspect-ratio: 1;
   flex-shrink: 0;
 }
 
@@ -1759,13 +1761,18 @@ function end(): void {
   inset: 0 auto 0 0;
 }
 
-.t-slider .track i::after {
+/* Round knob sized from track height (Controls.kt LEVEL_KNOB_SHARE = 0.9), not fill width. */
+.t-slider .track {
+  container-type: size;
+}
+
+.t-slider .track i.filled::after {
   content: '';
   position: absolute;
-  top: 15%;
-  right: 15%;
-  width: 70%;
-  height: 70%;
+  top: 5%;
+  right: 5cqh;
+  width: 90cqh;
+  height: 90%;
   border-radius: 50%;
   background: var(--rc-ink);
 }
