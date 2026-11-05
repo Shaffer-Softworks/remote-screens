@@ -29,7 +29,7 @@ describe('the same grid as the add-on', () => {
   }
 
   for (const case_ of fixture.spec) {
-    // `topBar` is whether the default bar shows, or its height; `navBar`, when given, is the bottom bar's height.
+    // `topBar` is whether the default bar shows, or its height; `navBar`, when given, is the bottom bar's height;
     const top = typeof case_.topBar === 'boolean' ? (case_.topBar ? TOP_BAR : 0) : case_.topBar
     const bars = `${top === TOP_BAR ? '' : ` with a ${top} dp top bar`}${case_.navBar === undefined ? '' : ` and a ${case_.navBar} dp nav bar`}`
     it(`measures ${case_.cols}x${case_.rows} on ${case_.width}x${case_.height}${bars}`, () => {
@@ -81,7 +81,9 @@ describe('bar heights', () => {
     expect(navBarHeight(undefined, 1280)).toBe(navBar(1280))
     expect(navBarHeight({}, 400)).toBe(navBar(400))
     expect(navBarHeight({ height: 80 }, 1280)).toBe(80)
+    expect(navBarHeight({ show: false, height: 80 }, 1280)).toBe(0)
   })
+
 })
 
 describe('placing tiles in the editor', () => {

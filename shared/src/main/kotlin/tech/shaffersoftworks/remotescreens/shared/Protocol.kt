@@ -295,6 +295,8 @@ sealed interface ServerMessage {
         val wakeOnShow: Boolean = true,
         /** False for a rebuild of the same alert: its original expiry continues. */
         val restartTimeout: Boolean = true,
+        /** Present only for a main screen with a native modal navigation drawer. */
+        val navigationDrawer: NavigationDrawer? = null,
     ) : ServerMessage
 
     @Serializable

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { navBar as defaultNavBar, TOP_BAR } from '../model/grid'
+import { MODAL_DRAWER, navBar as defaultNavBar, TOP_BAR } from '../model/grid'
 import { BACKGROUND_SWATCHES, DEFAULT_THEME, INK_SWATCHES, themes } from '../model/palette'
-import type { NavBar, Screen } from '../model/types'
+import type { Drawer, DrawerSide, DrawerStyle, NavBar, Screen } from '../model/types'
 import { state } from '../store'
 import ColorSwatches from './ColorSwatches.vue'
 
@@ -10,6 +10,30 @@ const props = defineProps<{ screen: Screen; deviceWidth?: number }>()
 
 if (!props.screen.navBar) props.screen.navBar = {}
 const nav = computed<NavBar>(() => props.screen.navBar!)
+if (!props.screen.drawer) props.screen.drawer = {}
+const drawer = computed<Drawer>(() => props.screen.drawer!)
+const hasDrawer = computed(() => drawer.value.style === 'modal')
+
+/** The add-on keeps the bottom bar while there is no drawer, the only other way to the pages and Settings. */
+const navShown = computed({
+  get: () => nav.value.show !== false,
+  set: (on: boolean) => {
+    if (on) delete nav.value.show
+    else nav.value.show = false
+  },
+})
+
+/** Start a newly enabled drawer at its default width. */
+function setDrawerStyle(style: DrawerStyle): void {
+  const target = drawer.value
+  delete target.width
+  if (style === 'off') {
+    delete target.style
+    delete nav.value.show
+  } else {
+    target.style = style
+  }
+}
 
 /** An optional number that is absent for Auto: the checkbox clears it, or sets it to [fallback] to start from. */
 function auto<T extends object>(target: () => T, key: keyof T & string, fallback: () => number) {
@@ -37,6 +61,11 @@ const navAuto = auto(
   () => nav.value,
   'height',
   () => defaultNavBar(props.deviceWidth ?? 1280),
+)
+const drawerWidthAuto = auto(
+  () => drawer.value,
+  'width',
+  () => MODAL_DRAWER,
 )
 
 const temperatures = computed(() =>
@@ -161,49 +190,114 @@ function pin(e: Event): string | null {
     </template>
 
     <h3>Bottom bar</h3>
-    <label class="check"><input v-model="navAuto" type="checkbox" /> Default height</label>
-    <label v-if="!navAuto" class="field">
-      Height {{ nav.height }} dp
-      <input v-model.number="nav.height" v-range type="range" min="48" max="160" step="2" />
-    </label>
+    <label class="check"
+      ><input v-model="navShown" :disabled="!hasDrawer" type="checkbox" /> Show the bottom
+      bar</label
+    >
+    <p v-if="!hasDrawer" class="note muted">
+      To hide it, turn on a navigation drawer first: it is the other way to the pages and Settings.
+    </p>
+    <template v-if="navShown">
+      <label class="check"><input v-model="navAuto" type="checkbox" /> Default height</label>
+      <label v-if="!navAuto" class="field">
+        Height {{ nav.height }} dp
+        <input v-model.number="nav.height" v-range type="range" min="48" max="160" step="2" />
+      </label>
+      <label class="field">
+        Buttons show
+        <select
+          :value="nav.labels ?? 'both'"
+          @change="nav.labels = ($event.target as HTMLSelectElement).value as NavBar['labels']"
+        >
+          <option value="both">Icons and names</option>
+          <option value="icons">Icons only</option>
+          <option value="text">Names only</option>
+        </select>
+      </label>
+      <label class="field">
+        Layout
+        <select
+          :value="nav.layout ?? 'spread'"
+          @change="nav.layout = ($event.target as HTMLSelectElement).value as NavBar['layout']"
+        >
+          <option value="spread">Spread out</option>
+          <option value="center">Centred</option>
+          <option value="fill">Fill the width</option>
+        </select>
+      </label>
+      <div class="field">
+        Background
+        <ColorSwatches
+          v-model="nav.background"
+          :keys="BACKGROUND_SWATCHES"
+          clear-title="The theme's"
+        />
+      </div>
+      <div class="field">
+        Line
+        <ColorSwatches v-model="nav.line" :keys="INK_SWATCHES" clear-title="The theme's" />
+      </div>
+      <div class="field">
+        Current page
+        <ColorSwatches v-model="nav.active" :keys="BACKGROUND_SWATCHES" clear-title="The theme's" />
+      </div>
+    </template>
+
+    <h3>Navigation drawer</h3>
     <label class="field">
-      Buttons show
+      Style
       <select
-        :value="nav.labels ?? 'both'"
-        @change="nav.labels = ($event.target as HTMLSelectElement).value as NavBar['labels']"
+        :value="drawer.style ?? 'off'"
+        @change="setDrawerStyle(($event.target as HTMLSelectElement).value as DrawerStyle)"
       >
-        <option value="both">Icons and names</option>
-        <option value="icons">Icons only</option>
-        <option value="text">Names only</option>
+        <option value="off">None</option>
+        <option value="modal">Menu that slides over the page</option>
       </select>
     </label>
-    <label class="field">
-      Layout
-      <select
-        :value="nav.layout ?? 'spread'"
-        @change="nav.layout = ($event.target as HTMLSelectElement).value as NavBar['layout']"
-      >
-        <option value="spread">Spread out</option>
-        <option value="center">Centred</option>
-        <option value="fill">Fill the width</option>
-      </select>
-    </label>
-    <div class="field">
-      Background
-      <ColorSwatches
-        v-model="nav.background"
-        :keys="BACKGROUND_SWATCHES"
-        clear-title="The theme's"
-      />
-    </div>
-    <div class="field">
-      Line
-      <ColorSwatches v-model="nav.line" :keys="INK_SWATCHES" clear-title="The theme's" />
-    </div>
-    <div class="field">
-      Current page
-      <ColorSwatches v-model="nav.active" :keys="BACKGROUND_SWATCHES" clear-title="The theme's" />
-    </div>
+    <template v-if="hasDrawer">
+      <p v-if="drawer.style === 'modal'" class="note muted">
+        The menu key in the top bar opens it, or a key in the page's top corner when the top bar is
+        hidden. Click the key in the preview to see it open.
+      </p>
+      <label class="field">
+        Side
+        <select
+          :value="drawer.side ?? 'start'"
+          @change="drawer.side = ($event.target as HTMLSelectElement).value as DrawerSide"
+        >
+          <option value="start">Left</option>
+          <option value="end">Right</option>
+        </select>
+      </label>
+      <label class="check"><input v-model="drawerWidthAuto" type="checkbox" /> Default width</label>
+      <label v-if="!drawerWidthAuto" class="field">
+        Width {{ drawer.width }} dp
+        <input
+          v-model.number="drawer.width"
+          v-range
+          type="range"
+          min="200"
+          max="480"
+          step="2"
+        />
+      </label>
+      <div class="field">
+        Background
+        <ColorSwatches
+          v-model="drawer.background"
+          :keys="BACKGROUND_SWATCHES"
+          clear-title="The theme's"
+        />
+      </div>
+      <div class="field">
+        Current page
+        <ColorSwatches
+          v-model="drawer.active"
+          :keys="BACKGROUND_SWATCHES"
+          clear-title="The theme's"
+        />
+      </div>
+    </template>
 
     <h3>Display</h3>
     <label class="field">

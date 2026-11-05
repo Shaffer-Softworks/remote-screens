@@ -103,16 +103,27 @@ internal fun PlayerScreenContent(
                 }
             },
     ) {
-        RemoteDocumentStack(
+        PlayerNavigationDrawer(
+            modifier = Modifier.fillMaxSize(),
             state = viewState.remoteScreen,
-            isVideoAllowed = viewState.isAwake && !viewState.isIntercomCall,
-            onAction = onDocumentAction,
-            onVideoFailed = onVideoFailed,
-            onSearchQuery = onSearchQuery,
-            onSearchPlay = onSearchPlay,
-            onSearchEnqueue = onSearchEnqueue,
-            imageLoader = imageLoader,
-        )
+            isEnabled = viewState.remoteScreen.hasMainDocument && !viewState.remoteScreen.isOverlayShown &&
+                !viewState.isAnyDialogVisible && viewState.isAwake,
+            onAction = { metadata ->
+                val revision = viewState.remoteScreen.documents.getValue(Slot.MAIN).revision
+                onDocumentAction(Slot.MAIN, revision, metadata)
+            },
+        ) {
+            RemoteDocumentStack(
+                state = viewState.remoteScreen,
+                isVideoAllowed = viewState.isAwake && !viewState.isIntercomCall,
+                onAction = onDocumentAction,
+                onVideoFailed = onVideoFailed,
+                onSearchQuery = onSearchQuery,
+                onSearchPlay = onSearchPlay,
+                onSearchEnqueue = onSearchEnqueue,
+                imageLoader = imageLoader,
+            )
+        }
         if (Slot.ALERT !in viewState.remoteScreen.documents && !viewState.isAnyDialogVisible) {
             viewState.notificationBanner?.let { banner ->
                 tech.shaffersoftworks.remotescreens.player.ui.views.NotificationBanner(

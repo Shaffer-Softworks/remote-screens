@@ -92,6 +92,7 @@ data class RemoteScreenState(
     val timeZone: String? = null,
     /** Native create or delete dialog for the calendar page. */
     val calendarDialog: CalendarDialogState? = null,
+    val navigationDrawer: tech.shaffersoftworks.remotescreens.shared.NavigationDrawer? = null,
 ) {
     val hasMainDocument: Boolean get() = Slot.MAIN in documents
 
@@ -153,6 +154,7 @@ data class RemoteScreenState(
         if (message.slot != Slot.MAIN) return updated
         val newPageCount = message.pageCount.coerceAtLeast(1)
         return updated.copy(
+            navigationDrawer = message.navigationDrawer,
             homePage = message.homePage,
             pageCount = newPageCount,
             swipePages = message.swipePages
@@ -252,6 +254,11 @@ data class RemoteScreenState(
         localInts = localInts + (name to value),
     )
 
+    val isDrawerOpen: Boolean get() = localInts[DRAWER_VARIABLE] == 1
+
+    /** The modal navigation drawer shut, as after choosing a page from it. */
+    fun withDrawerClosed(): RemoteScreenState = if (isDrawerOpen) withLocalInt(DRAWER_VARIABLE, 0) else this
+
     /** The main document cannot be closed, only replaced or cleared. */
     fun closed(slot: Slot): RemoteScreenState =
         if (slot == Slot.MAIN) {
@@ -275,6 +282,7 @@ data class RemoteScreenState(
             searches = emptyMap(),
             localInts = emptyMap(),
             calendarDialog = null,
+            navigationDrawer = null,
         )
 }
 

@@ -224,12 +224,29 @@ export type NavLabels = 'both' | 'icons' | 'text'
 export type NavLayout = 'spread' | 'center' | 'fill'
 
 export interface NavBar {
+  /** Absent is shown. Off only while a drawer gives the pages and Settings another way in. */
+  show?: boolean
   /** dp; absent is the default, smaller on a narrow device. */
   height?: number
   labels?: NavLabels
   layout?: NavLayout
   background?: string
   line?: string
+  active?: string
+}
+
+export type DrawerStyle = 'off' | 'modal'
+export type DrawerSide = 'start' | 'end'
+
+/** Native Material 3 navigation drawer that slides over the page. */
+export interface Drawer {
+  /** Absent is off. */
+  style?: DrawerStyle
+  /** Absent is the start (left). */
+  side?: DrawerSide
+  /** dp; absent is the default modal drawer width. */
+  width?: number
+  background?: string
   active?: string
 }
 
@@ -243,6 +260,8 @@ export interface Screen {
   topBar: TopBar
   /** Absent in screens saved before the bottom bar had settings; the editor fills it in when it opens one. */
   navBar?: NavBar
+  /** Absent in screens saved before the drawer; the editor fills it in when it opens one. */
+  drawer?: Drawer
   /** The size the editor draws the screen at until a tablet shows it. */
   designSize?: DeviceSize
 }

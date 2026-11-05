@@ -63,7 +63,14 @@ class LayoutRepository(dataDir: File) {
         if (version < SCHEMA_VERSION) {
             file.copyTo(File(file.parentFile, "layouts.v$version.bak.json"), overwrite = true)
         }
-        return JSON.decodeFromJsonElement(LayoutData.serializer(), migrated)
+        val layout = JSON.decodeFromJsonElement(LayoutData.serializer(), migrated)
+        return layout.copy(screens = layout.screens.map { screen ->
+            val drawer = screen.drawer.validated()
+            screen.copy(
+                drawer = drawer,
+                navBar = if (drawer.modal) screen.navBar else screen.navBar.copy(show = true),
+            )
+        })
     }
 
     private fun save(layout: LayoutData) {

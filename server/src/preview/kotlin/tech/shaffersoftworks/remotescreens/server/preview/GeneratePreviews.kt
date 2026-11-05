@@ -48,6 +48,7 @@ fun main(args: Array<String>) = runBlocking {
             environment = environment,
         )
         session.screens()
+        session.navigation()
         session.catalogue()
         session.components()
         session.alerts()

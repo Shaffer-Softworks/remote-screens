@@ -64,7 +64,7 @@ internal class SessionDocument(
     ) {
         val states = homeAssistant.states.value
         val previous = shownDocuments[slot]
-        if (!force && previous != null && previous.renderedDoc.bytes.contentEquals(renderedDoc.bytes)) {
+        if (!force && previous != null && previous.renderedDoc.hasSameContent(renderedDoc)) {
             previous.renderedDoc = renderedDoc
             previous.rebuild = rebuild
             val vars = renderedDoc.vars(states)
@@ -106,6 +106,7 @@ internal class SessionDocument(
                 timeout = timeoutSeconds,
                 wakeOnShow = wakeOnShow,
                 restartTimeout = force,
+                navigationDrawer = renderedDoc.navigationDrawer,
             ),
         )
         media.sendPictures(shown, states, isForced = true)

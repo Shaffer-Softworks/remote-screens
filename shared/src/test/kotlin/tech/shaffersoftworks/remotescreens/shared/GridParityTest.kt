@@ -68,7 +68,7 @@ class GridParityTest {
         })
         put("spec", buildJsonArray {
             for (case in fixture.getValue("spec").jsonArray.map { it.jsonObject }) {
-                // `topBar` is whether the default bar shows, or its height; `navBar`, if given, the bottom bar's.
+                // `topBar` is whether the default bar shows, or its height; `navBar`, if given, the bottom bar's;
                 val topBarValue = case.getValue("topBar").jsonPrimitive
                 val topBarHeight = topBarValue.booleanOrNull?.let { if (it) Grid.TOP_BAR else 0f }
                     ?: topBarValue.float
@@ -77,11 +77,11 @@ class GridParityTest {
                 )
                 val grid = GridSize(case.intAt("cols"), case.intAt("rows"))
                 val spec = Grid.spec(
-                    grid,
-                    case.floatAt("width"),
-                    case.floatAt("height"),
-                    topBarHeight,
-                    navBarHeight,
+                    size = grid,
+                    widthDp = case.floatAt("width"),
+                    heightDp = case.floatAt("height"),
+                    topBar = topBarHeight,
+                    navBar = navBarHeight,
                 )
                 add(inputs(case) + ("expect" to buildJsonObject {
                     put("cols", spec.cols)

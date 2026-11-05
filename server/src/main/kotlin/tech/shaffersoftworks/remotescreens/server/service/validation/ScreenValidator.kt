@@ -40,12 +40,16 @@ object ScreenValidator {
         ensureValid(tiles.map { it.id }.toSet().size == tiles.size) { "Tile ids must differ" }
         for (page in pages) page.root?.let { validateTree(it, page.title) }
         ensureValid(grid.cols in cellRange && grid.rows in cellRange) { "Grid out of range" }
+        val drawer = screen.drawer.validated()
+        val navBar = screen.navBar.validated()
         return screen.copy(
             name = normalizeName(screen.name),
             homePage = screen.homePage.takeIf { home -> pages.any { it.id == home } } ?: pages.first().id,
             settings = screen.settings.validated(),
             topBar = screen.topBar.validated(),
-            navBar = screen.navBar.validated(),
+            // Without a drawer the bottom bar is the only way to the other pages and Settings.
+            navBar = if (drawer.style == "off") navBar.copy(show = true) else navBar,
+            drawer = drawer,
             designSize = screen.designSize?.let(::coerceDesignSize),
             pages = pages.map { page -> clampPage(page, grid.cols, grid.rows) },
         )

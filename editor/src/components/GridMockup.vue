@@ -4,7 +4,9 @@ import { ALARM_ZONES_OPTION, parseAlarmZones } from '../model/alarmZones'
 import { CAMERAS_OPTION, parseCameraList } from '../model/cameraList'
 import { dragged } from '../model/drag'
 import {
+  MODAL_DRAWER,
   NARROW,
+  PADDING,
   TOP_BAR,
   fitsAt,
   navBar,
@@ -331,6 +333,28 @@ const nav = computed(() => {
     active: colorOf(bar.active),
   }
 })
+/** A button per visible page, then Settings for the bottom bar and modal drawer. */
+const navButtons = computed(() => [
+  ...visiblePages.value.map(navPage => ({
+    id: navPage.id,
+    icon: navIcon(navPage),
+    title: navPage.title,
+    on: navPage.id === props.page.id,
+  })),
+  { id: '_settings', icon: 'cog', title: 'Settings', on: false },
+])
+const drawer = computed(() => props.screen.drawer ?? {})
+const navShown = computed(() => props.screen.navBar?.show !== false)
+const modal = computed(() => drawer.value.style === 'modal')
+const menuKeySize = computed(() => Math.min(34 * top.value.barScale, gridLayout.value.topBar - 6))
+/** The modal drawer, open in the preview after a click on the menu key; the tablet opens it the same way. */
+const drawerOpen = ref(false)
+const drawerPanel = computed(() => ({
+  width: Math.min(drawer.value.width ?? MODAL_DRAWER, props.device.w * 0.85),
+  end: drawer.value.side === 'end',
+  background: colorOf(drawer.value.background),
+  active: colorOf(drawer.value.active),
+}))
 const people = computed(() => state.entities.filter(entity => entity.domain === 'person'))
 const weather = computed(() => state.entities.find(entity => entity.domain === 'weather'))
 const headerWeather = computed(() => {
@@ -455,6 +479,14 @@ const highlight = computed(() => {
           background: top.background,
         }"
       >
+        <span
+          v-if="modal && drawer.side !== 'end'"
+          class="back menu-key"
+          title="Open the navigation drawer"
+          :style="{ width: `${menuKeySize}px`, height: `${menuKeySize}px` }"
+          @click.stop="drawerOpen = true"
+          ><MdiIcon name="menu" :size="20 * top.barScale"
+        /></span>
         <div
           v-if="screen.topBar.clock"
           class="when"
@@ -495,12 +527,21 @@ const highlight = computed(() => {
         <span v-if="screen.topBar.battery" class="stat"
           ><MdiIcon name="battery" :size="26 * top.barScale" class="teal" />87%</span
         >
+        <span
+          v-if="modal && drawer.side === 'end'"
+          class="back menu-key"
+          title="Open the navigation drawer"
+          :style="{ width: `${menuKeySize}px`, height: `${menuKeySize}px` }"
+          @click.stop="drawerOpen = true"
+          ><MdiIcon name="menu" :size="20 * top.barScale"
+        /></span>
       </div>
 
       <div
         v-if="free"
         class="free"
         :style="{
+          left: '0px',
           top: `${gridLayout.topBar}px`,
           width: `${device.w}px`,
           height: `${device.h - gridLayout.topBar - gridLayout.navBar}px`,
@@ -913,6 +954,7 @@ const highlight = computed(() => {
       </p>
 
       <div
+        v-if="navShown"
         class="nav"
         :class="`labels-${nav.labels}`"
         :style="{
@@ -924,15 +966,7 @@ const highlight = computed(() => {
       >
         <div class="buttons" :style="{ justifyContent: nav.justify }">
           <span
-            v-for="b in [
-              ...visiblePages.map(navPage => ({
-                id: navPage.id,
-                icon: navIcon(navPage),
-                title: navPage.title,
-                on: navPage.id === page.id,
-              })),
-              { id: '_settings', icon: 'cog', title: 'Settings', on: false },
-            ]"
+            v-for="b in navButtons"
             :key="b.id"
             class="button"
             :class="{ on: b.on }"
@@ -946,6 +980,42 @@ const highlight = computed(() => {
             <MdiIcon v-if="nav.labels !== 'text'" :name="b.icon" :size="nav.iconSize" />
             <span v-if="nav.labels !== 'icons'">{{ b.title.toUpperCase() }}</span>
           </span>
+        </div>
+      </div>
+
+      <span
+        v-if="modal && !screen.topBar.show"
+        class="back menu-key floating"
+        title="Open the navigation drawer"
+        :style="{
+          top: `${PADDING}px`,
+          [drawerPanel.end ? 'right' : 'left']: `${PADDING}px`,
+        }"
+        @click.stop="drawerOpen = true"
+        ><MdiIcon name="menu" :size="24"
+      /></span>
+
+      <div v-if="modal && drawerOpen" class="scrim" @click.stop="drawerOpen = false">
+        <div
+          class="drawer"
+          :class="{ end: drawerPanel.end }"
+          :style="{ width: `${drawerPanel.width}px`, background: drawerPanel.background }"
+          @click.stop
+        >
+          <div class="drawer-head">
+            <span class="grow">{{ screen.name }}</span>
+            <span class="back" @click.stop="drawerOpen = false"
+              ><MdiIcon name="close" :size="20"
+            /></span>
+          </div>
+          <span
+            v-for="b in navButtons"
+            :key="b.id"
+            class="drawer-row"
+            :class="{ on: b.on, settings: b.id === '_settings' }"
+            :style="{ background: b.on ? drawerPanel.active : undefined }"
+            ><MdiIcon :name="b.icon" :size="24" />{{ b.title }}</span
+          >
         </div>
       </div>
     </div>
@@ -2368,5 +2438,87 @@ const highlight = computed(() => {
 .nav .button.on {
   background: var(--rc-nav-on);
   color: var(--rc-ink);
+}
+
+.menu-key {
+  flex: none;
+  cursor: pointer;
+}
+
+.topbar .menu-key:first-child {
+  margin-left: 8px;
+}
+
+.topbar .menu-key:last-child {
+  margin-right: -12px;
+}
+
+.menu-key.floating {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  z-index: 3;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 50%);
+  z-index: 4;
+}
+
+.drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-sizing: border-box;
+  padding: 16px;
+  background: var(--rc-nav);
+  cursor: default;
+}
+
+.drawer.end {
+  left: auto;
+  right: 0;
+}
+
+.drawer-head {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  margin-bottom: 4px;
+  padding-left: 16px;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.drawer-head .back {
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+}
+
+.drawer-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 56px;
+  flex: none;
+  padding: 0 16px;
+  border-radius: 28px;
+  font-size: 16px;
+}
+
+.drawer-row.on {
+  background: var(--rc-nav-on);
+  font-weight: 600;
+}
+
+.drawer-row.settings {
+  margin-top: 8px;
 }
 </style>

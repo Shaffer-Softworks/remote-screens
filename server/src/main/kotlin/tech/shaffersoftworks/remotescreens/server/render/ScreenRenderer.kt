@@ -49,6 +49,7 @@ import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Grid
 import tech.shaffersoftworks.remotescreens.shared.GridSpec
+import tech.shaffersoftworks.remotescreens.shared.NavBar
 import tech.shaffersoftworks.remotescreens.shared.Page
 import tech.shaffersoftworks.remotescreens.shared.Reflow
 import tech.shaffersoftworks.remotescreens.shared.Screen
@@ -71,6 +72,7 @@ private const val PERCENT = 100f
 private const val LAYOUT_SCALE_MAX = 2f
 private const val BACK_KEY_BASE_DP = 34f
 private const val BACK_KEY_INSET_DP = 6f
+private const val MENU_KEY_GAP_DP = 8f
 
 /** The device a document is built for. */
 data class Device(val widthDp: Int, val heightDp: Int, val density: Float) {
@@ -86,6 +88,7 @@ class RenderedDoc(
     val homePage: Int = 0,
     val swipePages: List<Int> = emptyList(),
     val builtAt: Long = System.currentTimeMillis(),
+    val navigationDrawer: tech.shaffersoftworks.remotescreens.shared.NavigationDrawer? = null,
 ) {
     val entities: Set<String> = (docContext.bindings.mapNotNull { it.entityId } + docContext.structure.map { it.first }).toSet()
 
@@ -114,6 +117,10 @@ class RenderedDoc(
         }
         return out
     }
+
+    /** Native metadata participates in document identity even when remote drawing bytes are unchanged. */
+    fun hasSameContent(other: RenderedDoc): Boolean =
+        bytes.contentEquals(other.bytes) && navigationDrawer == other.navigationDrawer
 
     /** Whether a structural entity changed, so the document must be built again. */
     fun structureChanged(states: Map<String, EntityState>): Boolean =
@@ -207,6 +214,7 @@ object ScreenRenderer {
             pageIds = pages.map { it.id },
             homePage = home,
             swipePages = visible,
+            navigationDrawer = docContext.navigationDrawer(screen = screen, pages = pages, home = home),
         )
     }
 
@@ -234,9 +242,38 @@ object ScreenRenderer {
                 hDp = contentH,
                 pageIndex = pageIndex,
             ) { id -> screen.pages.firstOrNull { it.id == id }?.title }
-            navBar(screen = screen, spec = spec, visible = visible, current = index, home = home)
-            return
         }
+        val placed = if (root == null) {
+            gridTiles(screen = screen, page = page, spec = spec, pageIndex = pageIndex, contentH = contentH)
+        } else {
+            emptyList()
+        }
+        val items = navItems(screen = screen, visible = visible, current = index, home = home)
+        if (screen.navBar.show) navBar(bar = screen.navBar, spec = spec, items = items)
+        for (placement in placed.filter { it.tile.effectiveKind() == "lights" && it.tile.edgeToEdge() }) {
+            val box = tileBox(spec, placement, contentH)
+            at(0f, 0f) {
+                lightsDialogLayer(
+                    tile = placement.tile,
+                    box = box,
+                    screenW = spec.widthDp,
+                    screenH = spec.heightDp,
+                )
+            }
+        }
+        if (screen.drawer.modal) {
+            if (!showBar) floatingMenuKey(drawer = screen.drawer, spec = spec)
+        }
+    }
+
+    /** The grid's tiles, or the empty page's message; what was placed, for the layers drawn over the bars. */
+    private fun DocContext.gridTiles(
+        screen: Screen,
+        page: Page,
+        spec: GridSpec,
+        pageIndex: (String) -> Int?,
+        contentH: Float,
+    ): List<Reflow.Placed> {
         val placed = Reflow.place(page.tiles.filter { tileUsable(it) }, screen.grid)
         if (placed.isEmpty()) emptyPage(spec, contentH)
         for (placement in placed) {
@@ -251,18 +288,7 @@ object ScreenRenderer {
             }
             tile(named, box, pageIndex)
         }
-        navBar(screen = screen, spec = spec, visible = visible, current = index, home = home)
-        for (placement in placed.filter { it.tile.effectiveKind() == "lights" && it.tile.edgeToEdge() }) {
-            val box = tileBox(spec, placement, contentH)
-            at(0f, 0f) {
-                lightsDialogLayer(
-                    tile = placement.tile,
-                    box = box,
-                    screenW = spec.widthDp,
-                    screenH = spec.heightDp,
-                )
-            }
-        }
+        return placed
     }
 
     /** The message shown on a page with no tiles. */
@@ -306,7 +332,12 @@ object ScreenRenderer {
                 ),
             )
             scope.Box(
-                Modifier.fillMaxSize().padding(start = 0f, top = units.px(spec.topBar), end = 0f, bottom = 0f),
+                Modifier.fillMaxSize().padding(
+                    start = units.px(0f),
+                    top = units.px(spec.topBar),
+                    end = 0f,
+                    bottom = 0f,
+                ),
             ) {
                 Image(
                     this@pageBackground.image(slot, widthPx, heightPx),
@@ -367,11 +398,14 @@ object ScreenRenderer {
         )
         val background = bar.background?.let { paint(it) } ?: role(Role.HEADER)
         val clockBackground = bar.clockBackground?.let { paint(it) } ?: role(Role.HEADER_DARK)
+        val keyDp = minOf(BACK_KEY_BASE_DP * layoutScale, spec.topBar - BACK_KEY_INSET_DP)
+        val drawer = screen.drawer
         scope.Row(
             Modifier.size(units.px(spec.widthDp), units.px(spec.topBar)).background(background),
             vertical = RcVerticalPositioning.Center,
         ) {
             val doc = this@topBar
+            doc.menuKey(drawer = drawer, end = false, sizeDp = keyDp, gapDp = MENU_KEY_GAP_DP)
             if (bar.clock) {
                 Row(
                     Modifier.width(
@@ -393,7 +427,6 @@ object ScreenRenderer {
             Spacer(Modifier.width(doc.units.px(spec.padding + CLOCK_PAD_EXTRA_DP)))
             Row(Modifier.horizontalWeight(1f), vertical = RcVerticalPositioning.Center) {
                 if (back) {
-                    val keyDp = minOf(BACK_KEY_BASE_DP * layoutScale, spec.topBar - BACK_KEY_INSET_DP)
                     val backRef = ActionRef("_", "back", home.toString())
                     doc.key(
                         ref = backRef,
@@ -407,7 +440,9 @@ object ScreenRenderer {
                 }
             }
             doc.topBarTrailing(bar = bar, headerSp = headerSp, layoutScale = layoutScale, ink = ink)
-            Spacer(Modifier.width(doc.units.px(NAV_ICON_LABEL_GAP_DP)))
+            if (!doc.menuKey(drawer = drawer, end = true, sizeDp = keyDp, gapDp = MENU_KEY_GAP_DP)) {
+                Spacer(Modifier.width(doc.units.px(NAV_ICON_LABEL_GAP_DP)))
+            }
         }
     }
 
@@ -503,10 +538,9 @@ object ScreenRenderer {
      * The RPI navigation bar: a teal line over a dark row of buttons, one per visible page and Settings last, the
      * current page's button filled teal. Square buttons narrow when there are more than the width holds.
      */
-    private fun DocContext.navBar(screen: Screen, spec: GridSpec, visible: List<Int>, current: Int, home: Int) {
-        val bar = screen.navBar
+    private fun DocContext.navBar(bar: NavBar, spec: GridSpec, items: List<NavItem>) {
         val barH = spec.navBar - NAV_LINE
-        val count = visible.size + 1
+        val count = items.size
         val buttonW = if (bar.layout == "fill") {
             spec.widthDp / count
         } else {
@@ -542,31 +576,27 @@ object ScreenRenderer {
                 horizontal = navArrangement(bar.layout, count),
                 vertical = RcVerticalPositioning.Center,
             ) {
-                for (i in visible) {
-                    val page = screen.pages[i]
-                    val icon = page.icon ?: if (i == home) "home" else "view-dashboard"
-                    doc.navButton(
-                        title = page.title,
-                        icon = icon,
-                        wDp = buttonW,
-                        hDp = barH,
-                        on = i == current,
-                        ref = ActionRef("_", "page", i.toString()),
-                        style = style,
-                    )
-                }
-                doc.navButton(
-                    title = doc.i18n.t("ui.settings"),
-                    icon = "cog",
-                    wDp = buttonW,
-                    hDp = barH,
-                    on = false,
-                    ref = ActionRef("_", "settings"),
-                    style = style,
-                )
+                for (item in items) doc.navButton(item = item, wDp = buttonW, hDp = barH, style = style)
             }
         } }
     }
+
+    /** A button per visible page, the current one lit, then Settings for the bottom navigation bar. */
+    private fun DocContext.navItems(screen: Screen, visible: List<Int>, current: Int, home: Int): List<NavItem> =
+        visible.map { pageNumber ->
+            val page = screen.pages[pageNumber]
+            NavItem(
+                title = page.title,
+                icon = page.icon ?: if (pageNumber == home) "home" else "view-dashboard",
+                ref = ActionRef("_", "page", pageNumber.toString()),
+                isCurrent = pageNumber == current,
+            )
+        } + NavItem(
+            title = i18n.t("ui.settings"),
+            icon = "cog",
+            ref = ActionRef("_", "settings"),
+            isCurrent = false,
+        )
 
     /** Spread out spaces the buttons apart, centred packs them in the middle, fill stretches them to the width. */
     private fun navArrangement(layout: String, count: Int) = when {
@@ -579,24 +609,17 @@ object ScreenRenderer {
     /** How navigation buttons look: icon, word or both, [layoutScale] against the default bar, the current page's fill. */
     private class NavStyle(val labels: String, val layoutScale: Float, val on: RcColor)
 
-    private fun DocContext.navButton(
-        title: String,
-        icon: String,
-        wDp: Float,
-        hDp: Float,
-        on: Boolean,
-        ref: ActionRef,
-        style: NavStyle,
-    ) {
+    private fun DocContext.navButton(item: NavItem, wDp: Float, hDp: Float, style: NavStyle) {
+        val icon = item.icon
         var modifier = Modifier.size(units.px(wDp), units.px(hDp))
-        if (on) modifier = modifier.background(style.on)
+        if (item.isCurrent) modifier = modifier.background(style.on)
         scope.Column(
-            tap(modifier, ref),
+            tap(modifier, item.ref),
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcColumnVerticalPositioning.Center,
         ) {
             val doc = this@navButton
-            val word = title.uppercase(doc.i18n.locale)
+            val word = item.title.uppercase(doc.i18n.locale)
             val wordW = Modifier.width(doc.units.px(wDp - STAT_ICON_GAP_DP))
             // Icon and label stay page ink on the teal pill (selected does not flip to KEY_ON_INK).
             val ink = doc.role(Role.INK)
