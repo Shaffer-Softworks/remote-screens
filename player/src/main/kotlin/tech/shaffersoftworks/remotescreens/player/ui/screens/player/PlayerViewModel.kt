@@ -199,13 +199,13 @@ class PlayerViewModel @Inject constructor(
     // region Display and connection
 
     /** The window was measured. The first time starts the connection; a new size asks for new documents. */
-    fun onDisplayMeasured(measuredDisplay: DisplayInfo) {
+    fun onDisplayMeasured(measuredDisplay: DisplayInfo, forceReload: Boolean = false) {
         if (measuredDisplay.widthDp <= 0 || measuredDisplay.heightDp <= 0) return
         val previousDisplay = displayInfo
         displayInfo = measuredDisplay
         when {
             previousDisplay == null -> start()
-            !previousDisplay.hasSameSizeAs(measuredDisplay) -> connectionRepository.reconnect()
+            forceReload || !previousDisplay.hasSameSizeAs(measuredDisplay) -> connectionRepository.reconnect()
         }
     }
 

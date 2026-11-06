@@ -87,6 +87,7 @@
         "name": "Kiosk",
         "state": { "off": "Off", "pinned": "Pinned", "locked": "Locked" }
       },
+      "permission": { "state": { "granted": "Granted", "denied": "Denied" } },
       "permissions": { "name": "Permissions" },
       "last_report": { "name": "Last report" }
     },

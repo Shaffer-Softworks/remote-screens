@@ -73,7 +73,12 @@ fun Activity.applyScreenOrientation(orientationSetting: Int) {
 /** The size of the whole window in dp, without the hidden system bars. */
 fun Activity.measureDisplay(): DisplayInfo {
     val displayMetrics = resources.displayMetrics
-    val (widthPx, heightPx) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+    // Some devices report natural portrait dimensions during lock-task transitions even though
+    // the app is laid out in landscape. The laid-out window is the area the document actually draws in.
+    val decor = window.decorView
+    val (widthPx, heightPx) = if (decor.width > 0 && decor.height > 0) {
+        decor.width to decor.height
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
         windowManager.currentWindowMetrics.bounds.let { bounds -> bounds.width() to bounds.height() }
     } else {
         val realMetrics = DisplayMetrics()

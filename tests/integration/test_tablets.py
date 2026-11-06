@@ -64,14 +64,22 @@ async def test_permissions_report_granted_and_denied_and_refresh(hass: HomeAssis
     await setup(hass, entry)
 
     state = hass.states.get("sensor.pixel_tablet_permissions")
-    assert state.state == "1"
+    assert state.state == "Permissions missing"
     assert state.attributes["granted"] == ["android.permission.CAMERA"]
     assert state.attributes["denied"] == ["android.permission.RECORD_AUDIO"]
+    assert state.attributes["granted_names"] == ["Camera"]
+    assert state.attributes["denied_names"] == ["Microphone"]
+    permissions = [s for s in hass.states.async_all("sensor") if s.name.endswith(" permission")]
+    assert {s.name: s.state for s in permissions} == {
+        "Pixel Tablet Camera permission": "granted",
+        "Pixel Tablet Microphone permission": "denied",
+    }
 
     client.players_data[0]["telemetry"]["permissions"]["android.permission.RECORD_AUDIO"] = True
     await refresh(hass)
     state = hass.states.get("sensor.pixel_tablet_permissions")
-    assert state.state == "2"
+    assert state.state == "All granted"
+    assert hass.states.get(permissions[1].entity_id).state == "granted"
     assert state.attributes["denied"] == []
 
 

@@ -45,6 +45,38 @@ def group(player: dict[str, Any], name: str) -> dict[str, Any]:
     return telemetry_of(player).get(name) or {}
 
 
+def permission_name(permission: str) -> str:
+    """Readable names for Android runtime permissions and special access."""
+    labels = {
+        "CAMERA": "Camera",
+        "RECORD_AUDIO": "Microphone",
+        "ACCESS_FINE_LOCATION": "Precise location",
+        "ACCESS_COARSE_LOCATION": "Approximate location",
+        "ACCESS_BACKGROUND_LOCATION": "Background location",
+        "POST_NOTIFICATIONS": "Notifications",
+        "SYSTEM_ALERT_WINDOW": "Display over other apps",
+        "REQUEST_INSTALL_PACKAGES": "Install unknown apps",
+        "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS": "Unrestricted battery",
+    }
+    key = permission.rsplit(".", 1)[-1]
+    return labels.get(key, key.replace("_", " ").capitalize())
+
+
+def permission_descriptions(player: dict[str, Any]) -> tuple[TabletSensorDescription, ...]:
+    """Only expose permissions actually reported by this tablet."""
+    return tuple(
+        TabletSensorDescription(
+            key=f"permission_{permission}", name=f"{permission_name(permission)} permission",
+            device_class=SensorDeviceClass.ENUM, options=["granted", "denied"],
+            entity_category=DIAGNOSTIC, icon="mdi:shield-check",
+            value_fn=lambda p, key=permission: (
+                "granted" if group(p, "permissions")[key] else "denied"
+            ) if isinstance(group(p, "permissions").get(key), bool) else None,
+        )
+        for permission in sorted(group(player, "permissions"))
+    )
+
+
 def epoch_ms(value: int | None) -> datetime | None:
     return datetime.fromtimestamp(value / MILLI_PER_UNIT, UTC) if value else None
 
@@ -166,8 +198,8 @@ SENSORS: tuple[TabletSensorDescription, ...] = (
     TabletSensorDescription(
         key="permissions", entity_category=DIAGNOSTIC, icon="mdi:shield-check",
         value_fn=lambda p: (
-            sum(value is True for value in group(p, "permissions").values())
-            if telemetry_of(p).get("permissions") is not None else None
+            "Permissions missing" if any(value is False for value in group(p, "permissions").values())
+            else "All granted" if group(p, "permissions") else None
         ),
     ),
     # System
@@ -222,7 +254,7 @@ async def async_setup_entry(
             if not player.get("online"):
                 continue
             has_telemetry = bool(player.get("telemetry"))
-            for description in SENSORS:
+            for description in (*SENSORS, *permission_descriptions(player)):
                 if (device_id, description.key) in known:
                     continue
                 if description.needs_telemetry and not has_telemetry:
@@ -243,6 +275,9 @@ class TabletSensor(RemoteScreensTabletEntity, SensorEntity):
     def __init__(self, coordinator, device_id: str, description: TabletSensorDescription) -> None:
         super().__init__(coordinator, device_id, description.key)
         self.entity_description = description
+        if description.key.startswith("permission_"):
+            self._attr_translation_key = "permission"
+            self._attr_name = description.name
 
     @property
     def native_value(self) -> Any:
@@ -256,6 +291,8 @@ class TabletSensor(RemoteScreensTabletEntity, SensorEntity):
         if permissions is None:
             return None
         return {
+            "granted_names": sorted(permission_name(key) for key, value in permissions.items() if value is True),
+            "denied_names": sorted(permission_name(key) for key, value in permissions.items() if value is False),
             "granted": sorted(key for key, value in permissions.items() if value is True),
             "denied": sorted(key for key, value in permissions.items() if value is False),
         }
