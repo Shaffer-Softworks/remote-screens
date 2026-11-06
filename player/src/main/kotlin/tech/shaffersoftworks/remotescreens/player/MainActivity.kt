@@ -2,6 +2,8 @@ package tech.shaffersoftworks.remotescreens.player
 
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.SystemClock
+import android.view.MotionEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -59,6 +61,24 @@ class MainActivity : ComponentActivity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         scheduleDisplayMeasure()
+    }
+
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        val action = event.actionMasked
+        val logEvent = BuildConfig.DEBUG && (action == MotionEvent.ACTION_DOWN ||
+            action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL)
+        if (!logEvent) return super.dispatchTouchEvent(event)
+        val receivedAt = SystemClock.uptimeMillis()
+        val handled = super.dispatchTouchEvent(event)
+        Timber.tag("InputDiagnostics").d(
+            "gesture=%d event=%s deliveryDelay=%dms dispatch=%dms handled=%b",
+            event.downTime,
+            MotionEvent.actionToString(action),
+            receivedAt - event.eventTime,
+            SystemClock.uptimeMillis() - receivedAt,
+            handled,
+        )
+        return handled
     }
 
     private fun scheduleDisplayMeasure() {

@@ -14,6 +14,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -66,7 +68,9 @@ internal fun RemoteDocumentStack(
             controller.dispose()
         }
     }
-    Box(Modifier.fillMaxSize()) {
+    Box(
+        Modifier.fillMaxSize().deferDocumentUpdatesDuringTouch(controller),
+    ) {
         // Both MAIN renderers stay mounted so the next document can draw before it is revealed.
         Slot.entries.forEach { slot ->
             val base = slot.ordinal * SLOT_LAYER_SPACING
@@ -101,6 +105,21 @@ internal fun RemoteDocumentStack(
         }
     }
 }
+
+/** Observe without consuming: Remote Compose still owns clicks and scrolling. */
+private fun Modifier.deferDocumentUpdatesDuringTouch(controller: RemoteDocumentController): Modifier =
+    pointerInput(controller) {
+        try {
+            awaitPointerEventScope {
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    controller.setTouchActive(event.changes.any { it.pressed })
+                }
+            }
+        } finally {
+            controller.setTouchActive(false)
+        }
+    }
 
 private const val SLOT_LAYER_SPACING = 10f
 

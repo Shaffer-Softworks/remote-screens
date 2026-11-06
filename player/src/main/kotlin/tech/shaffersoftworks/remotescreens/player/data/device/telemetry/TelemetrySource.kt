@@ -28,6 +28,7 @@ class DeviceTelemetrySource @Inject constructor(
     private val environmentSensorMonitor: EnvironmentSensorMonitor,
     private val motionMonitor: MotionMonitor,
     private val locationMonitor: LocationMonitor,
+    private val permissionReader: PermissionReader,
 ) : TelemetrySource {
     override val changes: Flow<Unit> = merge(
         environmentSensorMonitor.changes,
@@ -57,6 +58,7 @@ class DeviceTelemetrySource @Inject constructor(
         environment = environmentSensorMonitor.readings.value.takeIf { it != EMPTY_ENVIRONMENT },
         motion = motionMonitor.snapshot(),
         location = if (isLocationShared) locationMonitor.location.value else null,
+        permissions = permissionReader.snapshot(),
     )
 
     private companion object {

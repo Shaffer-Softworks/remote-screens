@@ -605,6 +605,15 @@ class PlayerViewModel @Inject constructor(
     fun onDocumentAction(slot: Slot, revision: Int, metadata: String) {
         onUserInteraction()
         val actionRef = ActionRef.decode(metadata) ?: return
+        if (tech.shaffersoftworks.remotescreens.player.BuildConfig.DEBUG) {
+            Timber.tag("InputDiagnostics").d(
+                "documentAction slot=%s revision=%d verb=%s local=%b",
+                slot,
+                revision,
+                actionRef.verb,
+                actionRef.local,
+            )
+        }
         if (actionRef.local) {
             handleLocalAction(slot, actionRef)
             return

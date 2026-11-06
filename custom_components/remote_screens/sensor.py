@@ -162,6 +162,14 @@ SENSORS: tuple[TabletSensorDescription, ...] = (
         native_unit_of_measurement=UnitOfFrequency.MEGAHERTZ, entity_category=DIAGNOSTIC,
         entity_registry_enabled_default=False, value_fn=lambda p: group(p, "network").get("frequencyMhz"),
     ),
+    # Permission status is absent on older players.
+    TabletSensorDescription(
+        key="permissions", entity_category=DIAGNOSTIC, icon="mdi:shield-check",
+        value_fn=lambda p: (
+            sum(value is True for value in group(p, "permissions").values())
+            if telemetry_of(p).get("permissions") is not None else None
+        ),
+    ),
     # System
     TabletSensorDescription(
         key="storage_free", device_class=SensorDeviceClass.DATA_SIZE,
@@ -239,3 +247,15 @@ class TabletSensor(RemoteScreensTabletEntity, SensorEntity):
     @property
     def native_value(self) -> Any:
         return self.entity_description.value_fn(self.player)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        if self.entity_description.key != "permissions":
+            return None
+        permissions = telemetry_of(self.player).get("permissions")
+        if permissions is None:
+            return None
+        return {
+            "granted": sorted(key for key, value in permissions.items() if value is True),
+            "denied": sorted(key for key, value in permissions.items() if value is False),
+        }
