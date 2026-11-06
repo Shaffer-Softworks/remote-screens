@@ -54,6 +54,7 @@ fun DocContext.levelBar(
     border: RcColor? = null,
     refAt: (Int) -> ActionRef,
 ) {
+    val displayedLevel = level.smooth()
     val widthPx = units.px(widthDp)
     val heightPx = units.px(heightDp)
     val knob = role(Role.INK)
@@ -66,7 +67,7 @@ fun DocContext.levelBar(
         Canvas(Modifier.size(widthPx, heightPx)) {
             // Knob travels in-bounds; fill tip peeks past its right edge by the vertical inset so the
             // stadium end reads past the thumb (knob sits left of the tip).
-            val thumbLeft = level * (widthPx - thumb - thumbPad)
+            val thumbLeft = displayedLevel * (widthPx - thumb - thumbPad)
             val thumbRight = thumbLeft + thumb
             val tip = thumbRight + thumbPad
             paint { color(fill); style(RcPaintStyle.Fill) }

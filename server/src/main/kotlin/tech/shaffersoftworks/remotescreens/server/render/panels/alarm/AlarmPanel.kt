@@ -32,6 +32,7 @@ import androidx.compose.remote.creation.dsl.visibility
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
+import tech.shaffersoftworks.remotescreens.server.render.widgets.statusIcon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
 import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
@@ -137,7 +138,7 @@ private fun DocContext.alarmStatus(zoneState: EntityState?, layout: AlarmLayout)
     val state = zoneState?.state
     scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@alarmStatus
-        doc.statusCircle(if (state == "disarmed") "lock-open-variant-outline" else "lock", layout)
+        doc.statusCircle(zoneState, layout)
         Spacer(Modifier.width(doc.units.px(layout.dp(M.STATUS_TEXT_GAP_DP))))
         Column(Modifier.horizontalWeight(1f)) {
             doc.statusWord(state, layout)
@@ -158,7 +159,8 @@ private fun DocContext.alarmStatus(zoneState: EntityState?, layout: AlarmLayout)
 }
 
 /** Accent ring, then RPI's dark fill clipped to the inner radius so both edges stay round. */
-private fun DocContext.statusCircle(icon: String, layout: AlarmLayout) {
+private fun DocContext.statusCircle(entity: EntityState?, layout: AlarmLayout) {
+    val icon = if (entity?.state == "disarmed") "lock-open-variant-outline" else "lock"
     val sizeDp = layout.dp(M.STATUS_CIRCLE_DP)
     val ringDp = maxOf(layout.dp(M.STATUS_RING_DP), 1f)
     scope.Box(
@@ -173,7 +175,11 @@ private fun DocContext.statusCircle(icon: String, layout: AlarmLayout) {
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcVerticalPositioning.Center,
         ) {
-            doc.icon(icon, layout.dp(M.STATUS_ICON_DP), doc.fixed(Rpi.White))
+            if (entity != null) {
+                doc.statusIcon(entity.entityId, icon, layout.dp(M.STATUS_ICON_DP), doc.fixed(Rpi.White))
+            } else {
+                doc.icon(icon, layout.dp(M.STATUS_ICON_DP), doc.fixed(Rpi.White))
+            }
         }
     }
 }

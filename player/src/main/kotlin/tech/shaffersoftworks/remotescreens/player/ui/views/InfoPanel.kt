@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.player.ui.views
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -7,12 +8,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -24,6 +27,8 @@ import androidx.compose.ui.unit.sp
 import tech.shaffersoftworks.remotescreens.player.R
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.InfoPanelState
 import tech.shaffersoftworks.remotescreens.player.ui.theme.Accent
+import tech.shaffersoftworks.remotescreens.player.ui.theme.DialogWhite
+import tech.shaffersoftworks.remotescreens.player.ui.theme.IdentifyBadgeBackground
 import tech.shaffersoftworks.remotescreens.player.ui.theme.Ink
 import tech.shaffersoftworks.remotescreens.player.ui.theme.InkSoft
 import tech.shaffersoftworks.remotescreens.player.ui.theme.Page
@@ -64,12 +69,19 @@ fun InfoPanel(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Page)
+            .background(IdentifyBadgeBackground)
             .padding(PANEL_PADDING),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(text = title, color = Ink, fontSize = TITLE_TEXT_SIZE, textAlign = TextAlign.Center)
+        Image(
+            painter = painterResource(id = R.drawable.chatgpt_image_aug_6__2025__09_22_24_pm),
+            contentDescription = "Shaffer Softworks Logo",
+            modifier = Modifier.size(150.dp),
+        )
+
+        Text(text = title, color = DialogWhite, fontSize = TITLE_TEXT_SIZE, textAlign = TextAlign.Center)
+
         if (pairingCode != null) {
             Text(
                 text = pairingCode,
@@ -82,16 +94,18 @@ fun InfoPanel(
                 modifier = Modifier.padding(vertical = CODE_VERTICAL_PADDING),
             )
         }
-        Text(text = body, color = InkSoft, fontSize = BODY_TEXT_SIZE, textAlign = TextAlign.Center)
+        Text(text = body, color = DialogWhite, fontSize = BODY_TEXT_SIZE, textAlign = TextAlign.Center)
+
         if (pairingCode == null) {
             Spacer(Modifier.height(PANEL_PADDING))
             Button(onClick = onEnterAddress) { Text(stringResource(R.string.enter_address)) }
         }
+
         if (canOfferUnrestrictedBattery) {
             Spacer(Modifier.height(PANEL_PADDING))
             Text(
                 text = stringResource(R.string.battery_restricted),
-                color = InkSoft,
+                color = DialogWhite,
                 fontSize = NOTE_TEXT_SIZE,
                 textAlign = TextAlign.Center,
             )

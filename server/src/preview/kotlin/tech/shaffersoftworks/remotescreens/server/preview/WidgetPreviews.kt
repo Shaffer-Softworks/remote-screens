@@ -22,6 +22,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.levelBar
 import tech.shaffersoftworks.remotescreens.server.render.widgets.segmentedLevelBar
 import tech.shaffersoftworks.remotescreens.server.render.widgets.spinner
 import tech.shaffersoftworks.remotescreens.server.render.widgets.weatherStateIcon
+import tech.shaffersoftworks.remotescreens.server.render.widgets.numericLabel
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 
 private const val TYPE_GAP = 8f
@@ -33,6 +34,7 @@ private const val BAR_HEIGHT = 32f
 private const val SEGMENT_HEIGHT = 40f
 private const val BAR_STEPS = 10
 private const val SAMPLE_LEVEL = 0.6f
+private const val CLOCK_GLYPHS = 8
 
 internal fun widgetGallery(device: Device, input: RenderInput, typography: Boolean): RenderedDoc {
     val (bytes, context) = DocContext.build(
@@ -60,6 +62,8 @@ private fun DocContext.typographySamples() {
     for (weight in listOf(Weight.LIGHT, Weight.NORMAL, Weight.MEDIUM, Weight.SEMI_BOLD, Weight.BOLD)) {
         label(text = "Font weight ${weight.toInt()}", sp = Type.TITLE, color = role(Role.INK), weight = weight)
     }
+    gap(TYPE_GAP)
+    numericLabel(text = literal("11:08 PM"), sp = Type.HEADLINE, color = role(Role.INK), glyphs = CLOCK_GLYPHS)
 }
 
 private fun DocContext.controlSamples() {

@@ -11,6 +11,8 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
 import tech.shaffersoftworks.remotescreens.server.render.freeform.paint
 import tech.shaffersoftworks.remotescreens.server.render.widgets.toggleIcon
+import tech.shaffersoftworks.remotescreens.server.render.widgets.statusIcon
+import tech.shaffersoftworks.remotescreens.server.render.widgets.fittingLabel
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
@@ -155,8 +157,9 @@ internal fun DocContext.headerTitle(tile: Tile, kind: String, sp: Float) {
                 ink,
             )
         }
-        entityId != null && kind != "favourite" -> label(
+        entityId != null && kind != "favourite" -> fittingLabel(
             text(Vars.entity(entityId, Vars.KEY_NAME)),
+            tile.name ?: states[entityId]?.attr("friendly_name") ?: entityId,
             sp,
             ink,
         )
@@ -164,11 +167,26 @@ internal fun DocContext.headerTitle(tile: Tile, kind: String, sp: Float) {
     }
 }
 
+private fun DocContext.statusIconName(override: String?, entityState: EntityState?, spec: TypeSpec?): String? {
+    if (override != null) return override
+    return if (entityState != null) {
+        structural(entityState.entityId) { state -> state?.let { Present.view(it, i18n).icon } ?: "" }
+        Present.view(entityState, i18n).icon
+    } else {
+        spec?.icon
+    }
+}
+
+private fun Tile.hasStatusMotion(): Boolean =
+    entityId != null && domain in setOf("fan", "climate", "alarm_control_panel")
+
 internal fun DocContext.tileIcon(tile: Tile, spec: TypeSpec?, entityState: EntityState?, sizeDp: Float, colorKey: String = Vars.KEY_ICON) {
     val entityId = tile.entityId
     val ink = color(Vars.tile(tile.id, colorKey))
     val override = tile.icon ?: entityState?.attr("icon")
     when {
+        tile.hasStatusMotion() ->
+            statusIcon(requireNotNull(entityId), statusIconName(override, entityState, spec), sizeDp, ink)
         override != null -> icon(override, sizeDp, ink)
         entityId != null && entityState != null && spec != null && spec.toggle && (spec.domain != "cover" && spec.domain != "lock") ->
             toggleIcon(entityId = entityId, off = spec.icon, on = spec.iconOn, sizeDp = sizeDp, color = ink)

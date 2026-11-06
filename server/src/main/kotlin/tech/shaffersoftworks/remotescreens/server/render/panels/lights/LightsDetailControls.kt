@@ -23,6 +23,7 @@ import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.visibility
+import tech.shaffersoftworks.remotescreens.server.render.widgets.smooth
 import java.awt.Color
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -70,7 +71,7 @@ internal fun DocContext.verticalBrightnessSlider(tileId: String, entityState: En
     val w = units.px(layout.dp(D.SLIDER_W_DP))
     val h = units.px(layout.dp(D.CONTROL_H_DP))
     val line = units.px(layout.dp(D.SLIDER_LINE_DP))
-    val level = float(detailLevelVar(tileId))
+    val level = float(detailLevelVar(tileId)).smooth()
     val fill = liftedForTrack(entityState.selectedColor())
     val canSet = entityState.supportsBrightness()
     val track = Modifier.size(w, h).clip(rounded(layout.dp(D.SLIDER_CORNER_DP))).background(fixed(Rpi.LightDetailTrack))

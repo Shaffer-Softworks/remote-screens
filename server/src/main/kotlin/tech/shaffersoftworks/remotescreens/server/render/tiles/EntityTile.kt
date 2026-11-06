@@ -94,7 +94,8 @@ internal fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, en
         ) {
             this@entityTile.tileIcon(tile = tile, spec = spec, entityState = entityState, sizeDp = C.HEADER_SHORT_DP)
             Spacer(Modifier.width(this@entityTile.units.px(C.PAD_LG_DP)))
-            Column(Modifier.horizontalWeight(1f)) {
+            // Preserve the name; secondary state text yields first when the tile is too short.
+            CollapsibleColumn(Modifier.horizontalWeight(1f)) {
                 if (name != null) {
                     this@entityTile.label(
                         text = name,
