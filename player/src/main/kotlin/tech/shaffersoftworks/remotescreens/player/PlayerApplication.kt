@@ -17,7 +17,7 @@ class PlayerApplication : Application() {
         initializeLogging()
         initializeUncaughtExceptionHandler()
 
-        // Before the player connects, so intercom and sensors do not wait on a permission dialog.
+        // Start grants in the background; device-policy callbacks must not block the first app window.
         kioskManager.grantRuntimePermissions()
         // A process restarted after a crash opens no activity, so nothing would lock the kiosk again.
         kioskManager.relaunchKioskIfUnlocked(reason = "process_start")

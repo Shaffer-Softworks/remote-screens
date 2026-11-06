@@ -22,6 +22,7 @@ import tech.shaffersoftworks.remotescreens.player.utils.normalizeServerAddress
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -57,6 +58,8 @@ class KioskManager @Inject constructor(
 ) {
     private val devicePolicyManager = context.getSystemService(DevicePolicyManager::class.java)
     private val activityManager = context.getSystemService(ActivityManager::class.java)
+
+    private val permissionGrantMutex = Mutex()
 
     val adminComponent = ComponentName(context, LockTaskDeviceAdminReceiver::class.java)
 
@@ -111,15 +114,29 @@ class KioskManager @Inject constructor(
      * that lock task would hide. Screen pinning cannot do this.
      */
     fun grantRuntimePermissions() {
+        // DevicePolicyManager waits for a remote callback on some Android builds. Never hold up
+        // Application.onCreate, an admin receiver, or a lock-task transition while it does so.
+        ioScope.launch {
+            if (!permissionGrantMutex.tryLock()) return@launch
+            try {
+                grantMissingRuntimePermissions()
+            } finally {
+                permissionGrantMutex.unlock()
+            }
+        }
+    }
+
+    private fun grantMissingRuntimePermissions() {
         if (!isDeviceOwner()) return
         for (permission in RUNTIME_PERMISSIONS) {
             val isGranted = runCatching {
-                devicePolicyManager.setPermissionGrantState(
-                    adminComponent,
-                    context.packageName,
-                    permission,
-                    DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED,
-                )
+                devicePolicyManager.getPermissionGrantState(adminComponent, context.packageName, permission) ==
+                    DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED || devicePolicyManager.setPermissionGrantState(
+                        adminComponent,
+                        context.packageName,
+                        permission,
+                        DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED,
+                    )
             }.getOrElse { exception ->
                 Timber.w(exception, "Could not grant %s", permission)
                 false
