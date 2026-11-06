@@ -13,7 +13,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.ImageLoader
+import coil3.ImageLoader
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteDocumentStack
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotVideo
 import tech.shaffersoftworks.remotescreens.player.ui.theme.Page

@@ -6,7 +6,7 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import coil.ImageLoader
+import coil3.ImageLoader
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 import tech.shaffersoftworks.remotescreens.shared.Slot
 

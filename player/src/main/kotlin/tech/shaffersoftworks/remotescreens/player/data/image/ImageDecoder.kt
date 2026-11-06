@@ -2,18 +2,18 @@ package tech.shaffersoftworks.remotescreens.player.data.image
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
-import coil.ImageLoader
-import coil.request.ImageRequest
-import coil.request.SuccessResult
-import coil.size.Size
+import coil3.ImageLoader
+import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.request.allowHardware
+import coil3.toBitmap
+import coil3.size.Size
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import tech.shaffersoftworks.remotescreens.player.di.DefaultDispatcher
 import tech.shaffersoftworks.remotescreens.player.di.HaImageLoaderQualifier
 import tech.shaffersoftworks.remotescreens.player.utils.decodeBase64OrNull
-import java.nio.ByteBuffer
 import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -35,7 +35,7 @@ class ImageDecoder @Inject constructor(
                 .joinToString("") { "%02x".format(it) }
 
             val request = ImageRequest.Builder(context)
-                .data(ByteBuffer.wrap(bytes))
+                .data(bytes)
                 .memoryCacheKey("remote-bitmap:$contentHash")
                 .allowHardware(false)
                 .size(Size.ORIGINAL)
@@ -44,6 +44,6 @@ class ImageDecoder @Inject constructor(
             val result = haImageLoaderQualifier.execute(request) as? SuccessResult
                 ?: return@withContext null
 
-            (result.drawable as? BitmapDrawable)?.bitmap
+            result.image.toBitmap()
         }
 }
