@@ -41,6 +41,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.initials
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
+import tech.shaffersoftworks.remotescreens.server.render.widgets.numericLabel
 import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.server.render.widgets.weatherStateIcon
@@ -53,6 +54,8 @@ import java.time.ZoneId
 import kotlin.math.roundToInt
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileChrome as C
 
+private const val CLOCK_GLYPHS = 8
+
 internal fun DocContext.clockTile(tile: Tile, box: TileBox) {
     val ink = color(Vars.tile(tile.id, Vars.KEY_INK))
     val ink2 = color(Vars.tile(tile.id, Vars.KEY_INK2))
@@ -62,12 +65,12 @@ internal fun DocContext.clockTile(tile: Tile, box: TileBox) {
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcColumnVerticalPositioning.Center,
     ) {
-        this@clockTile.label(
+        this@clockTile.numericLabel(
             text = this@clockTile.text(Vars.TIME),
             sp = big,
             color = ink,
             weight = Weight.LIGHT,
-            align = RcTextAlign.Center,
+            glyphs = CLOCK_GLYPHS,
         )
         this@clockTile.label(
             text = this@clockTile.text(Vars.DATE),
@@ -91,12 +94,12 @@ internal fun DocContext.bedsideTile(tile: Tile, box: TileBox) {
         vertical = RcColumnVerticalPositioning.Center,
     ) {
         val doc = this@bedsideTile
-        doc.label(
+        doc.numericLabel(
             text = doc.text(Vars.TIME),
             sp = minOf(box.w * C.BEDSIDE_TIME_W, box.h * C.BEDSIDE_TIME_H),
             color = ink,
             weight = C.HEADER_TALL_MIN_DP,
-            align = RcTextAlign.Center,
+            glyphs = CLOCK_GLYPHS,
         )
         doc.gap(C.PAD_XXL_DP)
         Row(horizontal = RcRowHorizontalPositioning.Center) {

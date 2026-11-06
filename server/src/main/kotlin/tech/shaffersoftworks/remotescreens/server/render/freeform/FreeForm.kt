@@ -135,6 +135,8 @@ internal fun DocContext.styled(
         appear(
             node.props["animate"],
         )?.let { (enter, exit) -> modifier = modifier.animationSpec(
+            motionDuration = 0.25f,
+            visibilityDuration = 0.2f,
             enterAnimation = enter,
             exitAnimation = exit,
         ) }

@@ -27,6 +27,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
+import tech.shaffersoftworks.remotescreens.server.render.widgets.numericLabel
 import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
@@ -449,12 +450,11 @@ private fun DocContext.reading(caption: String, varName: String, layoutScale: Fl
             align = RcTextAlign.Center,
         )
         Spacer(Modifier.height(doc.units.px(ThermostatMetrics.READING_GAP_DP * layoutScale)))
-        doc.label(
+        doc.numericLabel(
             text = doc.text(varName),
             sp = ThermostatMetrics.READING_VALUE_SP * layoutScale,
             color = doc.role(Role.INK),
             weight = Weight.LIGHT,
-            align = RcTextAlign.Center,
         )
     }
 }

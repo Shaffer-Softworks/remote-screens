@@ -18,6 +18,8 @@ import tech.shaffersoftworks.remotescreens.server.render.freeform.paint
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
+import tech.shaffersoftworks.remotescreens.server.render.widgets.smooth
+import tech.shaffersoftworks.remotescreens.server.render.widgets.numericLabel
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -42,11 +44,11 @@ internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: 
     val tint = color(Vars.tile(tileId, "dial"))
     val heat = role(Role.WARN)
     val cool = role(Role.BLUE)
-    val sweep = float(Vars.tile(tileId, "sweep"))
-    val sweepLow = float(Vars.tile(tileId, "sweepLow"))
-    val sweepHigh = float(Vars.tile(tileId, "sweepHigh"))
-    val coolStart = float(Vars.tile(tileId, "coolStart"))
-    val coolSweep = float(Vars.tile(tileId, "coolSweep"))
+    val sweep = float(Vars.tile(tileId, "sweep")).smooth()
+    val sweepLow = float(Vars.tile(tileId, "sweepLow")).smooth()
+    val sweepHigh = float(Vars.tile(tileId, "sweepHigh")).smooth()
+    val coolStart = float(Vars.tile(tileId, "coolStart")).smooth()
+    val coolSweep = float(Vars.tile(tileId, "coolSweep")).smooth()
     val ink = role(Role.INK)
     val layoutScale = (diameterDp / ThermostatMetrics.DIAL_BASE_DP).coerceIn(
         ThermostatMetrics.LAYOUT_SCALE_MIN,
@@ -209,33 +211,30 @@ internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: 
             Spacer(Modifier.height(doc.units.px(ThermostatMetrics.HEADER_GAP_DP * layoutScale)))
             if (dual) {
                 Row(vertical = RcVerticalPositioning.Center) {
-                    doc.label(
+                    doc.numericLabel(
                         text = doc.text(Vars.tile(tileId, "low")),
                         sp = ThermostatMetrics.TARGET_LABEL_SP * layoutScale,
                         color = heat,
                         weight = Weight.LIGHT,
-                        align = RcTextAlign.Center,
                     )
                     Spacer(
                         Modifier.width(
                             doc.units.px(ThermostatMetrics.DUAL_TEMP_GAP_DP * layoutScale),
                         ),
                     )
-                    doc.label(
+                    doc.numericLabel(
                         text = doc.text(Vars.tile(tileId, "high")),
                         sp = ThermostatMetrics.TARGET_LABEL_SP * layoutScale,
                         color = cool,
                         weight = Weight.LIGHT,
-                        align = RcTextAlign.Center,
                     )
                 }
             } else {
-                doc.label(
+                doc.numericLabel(
                     text = doc.text(Vars.tile(tileId, "target")),
                     sp = ThermostatMetrics.TARGET_LABEL_SP * layoutScale,
                     color = ink,
                     weight = Weight.LIGHT,
-                    align = RcTextAlign.Center,
                 )
             }
         }

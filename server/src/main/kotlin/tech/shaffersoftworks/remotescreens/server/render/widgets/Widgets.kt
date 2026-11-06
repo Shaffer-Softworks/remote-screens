@@ -4,6 +4,7 @@ package tech.shaffersoftworks.remotescreens.server.render.widgets
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcColor
+import androidx.compose.remote.creation.dsl.RcFontWeight
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcInteger
 import androidx.compose.remote.creation.dsl.RcPaintStyle
@@ -93,7 +94,13 @@ fun DocContext.tap(modifier: Modifier, ref: ActionRef?, hold: ActionRef? = null)
     return out
 }
 
-fun DocContext.icon(name: String?, sizeDp: Float, color: RcColor, visible: RcInteger? = null) {
+fun DocContext.icon(
+    name: String?,
+    sizeDp: Float,
+    color: RcColor,
+    visible: RcInteger? = null,
+    motion: IconMotion? = null,
+) {
     val px = units.px(sizeDp)
     // Pixel coordinates, not a canvas scale of the 24-grid. On Android 8 the scale is a bitmap stretch.
     val iconPath = path(name, scale = px / ICON_VIEWPORT)
@@ -101,12 +108,13 @@ fun DocContext.icon(name: String?, sizeDp: Float, color: RcColor, visible: RcInt
     if (visible != null) modifier = modifier.visibility(visible)
     scope.Canvas(modifier) {
         save {
+            motion?.angle?.let { rotate(it, (px / 2f).rf, (px / 2f).rf) }
             // Paint is shared for the whole document. The dial's gradient stays installed
             // until cleared, so icons drawn later (nav, modes) fill with it and look grey.
             paint {
                 clearShader()
                 color(color)
-                alpha(1f)
+                motion?.opacity?.let { alpha(it) } ?: alpha(1f)
                 antiAlias(true)
                 style(RcPaintStyle.Fill)
             }
@@ -219,7 +227,7 @@ fun DocContext.label(
         modifier = modifier,
         color = color,
         fontSize = units.sp(sp).rsp,
-        fontWeight = weight,
+        fontWeight = RcFontWeight(weight),
         textAlign = align,
         overflow = RcTextOverflow.Ellipsis,
         maxLines = lines,
@@ -240,7 +248,7 @@ fun DocContext.label(
         modifier = modifier,
         color = color,
         fontSize = units.sp(sp).rsp,
-        fontWeight = weight,
+        fontWeight = RcFontWeight(weight),
         textAlign = align,
         overflow = RcTextOverflow.Ellipsis,
         maxLines = lines,
