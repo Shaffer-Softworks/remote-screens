@@ -187,11 +187,14 @@ class PlayerViewModelTest {
     }
 
     @Test
-    fun `the same size again does not reconnect`() {
-        viewModel.onDisplayMeasured(DisplayInfo(widthDp = 800, heightDp = 480))
-        viewModel.onDisplayMeasured(DisplayInfo(widthDp = 800, heightDp = 480))
-
+    fun `the same size reconnects only when a kiosk transition forces a reload`() {
+        val display = DisplayInfo(widthDp = 800, heightDp = 480)
+        viewModel.onDisplayMeasured(display)
+        viewModel.onDisplayMeasured(display)
         verify(connectionRepository, never()).reconnect()
+
+        viewModel.onDisplayMeasured(display, forceReload = true)
+        verify(connectionRepository).reconnect()
     }
 
     @Test

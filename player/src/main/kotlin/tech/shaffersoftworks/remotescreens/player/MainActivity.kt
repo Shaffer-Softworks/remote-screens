@@ -8,6 +8,7 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.core.view.doOnPreDraw
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -31,6 +32,8 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val viewModel: PlayerViewModel by viewModels()
+    private var displayMeasureScheduled = false
+    private var reloadAfterDisplayMeasure = false
 
     @Inject
     lateinit var kioskManager: KioskManager
@@ -47,6 +50,12 @@ class MainActivity : ComponentActivity() {
         }
         // After layout/immersive settle — a sync measure here can Hello with the wrong size until reboot.
         scheduleDisplayMeasure()
+        window.decorView.addOnLayoutChangeListener {
+                _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
+            if (right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop) {
+                scheduleDisplayMeasure()
+            }
+        }
         observeKiosk()
         observeScreenOn()
     }
@@ -81,8 +90,17 @@ class MainActivity : ComponentActivity() {
         return handled
     }
 
-    private fun scheduleDisplayMeasure() {
-        window.decorView.post { viewModel.onDisplayMeasured(measureDisplay()) }
+    private fun scheduleDisplayMeasure(forceReload: Boolean = false) {
+        reloadAfterDisplayMeasure = reloadAfterDisplayMeasure || forceReload
+        if (displayMeasureScheduled) return
+        displayMeasureScheduled = true
+        window.decorView.doOnPreDraw {
+            displayMeasureScheduled = false
+            val reload = reloadAfterDisplayMeasure
+            reloadAfterDisplayMeasure = false
+            viewModel.onDisplayMeasured(measureDisplay(), forceReload = reload)
+        }
+        window.decorView.invalidate()
     }
 
     /**
@@ -100,8 +118,13 @@ class MainActivity : ComponentActivity() {
                         if (isKioskWanted && kioskManager.consumeBatteryPrompt() && requestUnrestrictedBattery()) {
                             return@collect
                         }
+                        val previousKioskState = kioskManager.lockTaskState()
                         kioskManager.applyKiosk(this@MainActivity, isKioskWanted)
                         viewModel.onKioskStateChanged()
+                        if (previousKioskState != kioskManager.lockTaskState()) {
+                            hideSystemBars()
+                            scheduleDisplayMeasure(forceReload = true)
+                        }
                     }
             }
         }
