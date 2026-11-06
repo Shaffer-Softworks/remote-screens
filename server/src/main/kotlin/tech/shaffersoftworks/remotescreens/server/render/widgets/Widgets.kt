@@ -265,7 +265,9 @@ fun DocContext.key(
         rounded(if (round) heightDp / 2f else heightDp / KEY_CORNER_DIVISOR),
     ).background(bg)
     box = tap(box, ref)
-    val padded = box.padding(start = units.px(KEY_PADDING_DP), top = 0f, end = units.px(KEY_PADDING_DP), bottom = 0f)
+    // Fixed padding can leave less room than the icon in small, square keys.
+    val horizontalPadding = if (text == null) 0f else units.px(KEY_PADDING_DP)
+    val padded = box.padding(start = horizontalPadding, top = 0f, end = horizontalPadding, bottom = 0f)
     scope.Row(
         padded,
         horizontal = RcRowHorizontalPositioning.Center,

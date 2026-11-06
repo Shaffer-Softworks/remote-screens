@@ -54,14 +54,16 @@ internal fun PlayerNavigationDrawer(
     content: @Composable () -> Unit,
 ) {
     val navigation = state.navigationDrawer
-    if (navigation == null || !isEnabled) {
+    // Keep the content in the same composition branch while dialogs disable the drawer.
+    // Moving it would dispose and recreate the Remote Compose document players.
+    if (navigation == null) {
         Box(modifier) { content() }
         return
     }
     val drawerState = rememberDrawerState(if (state.isDrawerOpen) DrawerValue.Open else DrawerValue.Closed)
     val currentAction by rememberUpdatedState(onAction)
-    LaunchedEffect(state.isDrawerOpen) {
-        if (state.isDrawerOpen) drawerState.open() else drawerState.close()
+    LaunchedEffect(state.isDrawerOpen, isEnabled) {
+        if (state.isDrawerOpen && isEnabled) drawerState.open() else drawerState.close()
     }
     LaunchedEffect(drawerState) {
         // Skip the initial value: the effect above may still be animating a requested open.
@@ -69,7 +71,7 @@ internal fun PlayerNavigationDrawer(
             currentAction(ActionRef("_", "set", "drawer|${if (value == DrawerValue.Open) 1 else 0}").encode())
         }
     }
-    BackHandler(enabled = drawerState.isOpen || state.isDrawerOpen) {
+    BackHandler(enabled = isEnabled && (drawerState.isOpen || state.isDrawerOpen)) {
         currentAction(ActionRef("_", "set", "drawer|0").encode())
     }
     val contentDirection = LocalLayoutDirection.current
@@ -78,6 +80,7 @@ internal fun PlayerNavigationDrawer(
         ModalNavigationDrawer(
             modifier = modifier,
             drawerState = drawerState,
+            gesturesEnabled = isEnabled,
             drawerContent = {
                 PlayerDrawerSheet(
                     navigation = navigation,
