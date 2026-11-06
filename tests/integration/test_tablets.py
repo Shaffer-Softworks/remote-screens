@@ -56,6 +56,33 @@ async def test_diagnostics_are_reported(hass: HomeAssistant, client: AsyncMock, 
     assert er.async_get(hass).async_get("sensor.pixel_tablet_battery_power").disabled_by is er.RegistryEntryDisabler.INTEGRATION
 
 
+async def test_permissions_report_granted_and_denied_and_refresh(hass: HomeAssistant, client: AsyncMock, entry) -> None:
+    client.players_data[0]["telemetry"]["permissions"] = {
+        "android.permission.CAMERA": True,
+        "android.permission.RECORD_AUDIO": False,
+    }
+    await setup(hass, entry)
+
+    state = hass.states.get("sensor.pixel_tablet_permissions")
+    assert state.state == "1"
+    assert state.attributes["granted"] == ["android.permission.CAMERA"]
+    assert state.attributes["denied"] == ["android.permission.RECORD_AUDIO"]
+
+    client.players_data[0]["telemetry"]["permissions"]["android.permission.RECORD_AUDIO"] = True
+    await refresh(hass)
+    state = hass.states.get("sensor.pixel_tablet_permissions")
+    assert state.state == "2"
+    assert state.attributes["denied"] == []
+
+
+async def test_older_players_have_unknown_permissions(hass: HomeAssistant, client: AsyncMock, entry) -> None:
+    await setup(hass, entry)
+
+    state = hass.states.get("sensor.pixel_tablet_permissions")
+    assert state.state == "unknown"
+    assert "denied" not in state.attributes
+
+
 async def test_an_offline_tablet_without_telemetry_only_gets_connectivity(
     hass: HomeAssistant, client: AsyncMock, entry
 ) -> None:

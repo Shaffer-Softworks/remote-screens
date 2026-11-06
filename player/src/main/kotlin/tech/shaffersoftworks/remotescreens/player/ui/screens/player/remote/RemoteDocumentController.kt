@@ -47,6 +47,10 @@ internal class RemoteDocumentController(
     private var appliedValues: Map<String, VarValue> = emptyMap()
     private var appliedBitmaps: Map<String, Bitmap> = emptyMap()
     private var appliedPage: Int? = null
+    private var appliedLocalInts: Map<String, Int> = emptyMap()
+    private var latestState: RemoteScreenState? = null
+    private var isTouchActive = false
+    private var needsRenderAfterTouch = false
     private var appliedTimeZone: String? = null
     /** After a MAIN rebuild into the back buffer, swap once PAGE has been drawn off-screen. */
     private var pendingMainSwap: SlotDocument? = null
@@ -73,7 +77,17 @@ internal class RemoteDocumentController(
         for (slot in loadedDocuments.keys) fullLayoutIfDirty(documentPlayer(slot))
     }
 
+    /** Finish the current gesture before applying server updates or revealing a replacement view. */
+    fun setTouchActive(active: Boolean) {
+        if (isTouchActive == active) return
+        isTouchActive = active
+        if (!active && needsRenderAfterTouch) {
+            primaryPlayer(Slot.MAIN).post { latestState?.let(::render) }
+        }
+    }
+
     fun dispose() {
+        latestState = null
         // Invalidate queued reveal callbacks when this screen leaves composition.
         loadedDocuments.clear()
         pendingMainSwap = null
@@ -81,6 +95,12 @@ internal class RemoteDocumentController(
     }
 
     fun render(state: RemoteScreenState) {
+        latestState = state
+        if (isTouchActive) {
+            needsRenderAfterTouch = true
+            return
+        }
+        needsRenderAfterTouch = false
         loadedDocuments.keys.retainAll(state.documents.keys)
         if (Slot.MAIN !in state.documents) {
             pendingMainSwap = null
@@ -108,8 +128,11 @@ internal class RemoteDocumentController(
         }
         if (Slot.MAIN !in loadedDocuments) return
         for ((name, value) in state.localInts) {
-            mainTarget.setUserLocalInt(name, value)
+            if (Slot.MAIN in newlyLoaded || appliedLocalInts[name] != value) {
+                mainTarget.setUserLocalInt(name, value)
+            }
         }
+        appliedLocalInts = state.localInts
     }
 
     private fun showSlots(state: RemoteScreenState) {
@@ -180,6 +203,11 @@ internal class RemoteDocumentController(
                     pendingMainSwap?.takeIf(::swapStillPending)?.let(::revealMainSwap)
                     return@post
                 }
+                if (isTouchActive) {
+                    needsRenderAfterTouch = true
+                    mainSwapPosted = false
+                    return@post
+                }
                 DocumentScroll.restore(newFront, pendingMainScroll)
                 pendingMainScroll = emptyList()
                 newFront.alpha = 1f
@@ -210,6 +238,11 @@ internal class RemoteDocumentController(
                 if (loadedDocuments[Slot.MAIN] !== document || pendingMainFirstReveal !== document) {
                     mainFirstPosted = false
                     pendingMainFirstReveal?.takeIf { loadedDocuments[Slot.MAIN] === it }?.let(::revealMainFirst)
+                    return@post
+                }
+                if (isTouchActive) {
+                    needsRenderAfterTouch = true
+                    mainFirstPosted = false
                     return@post
                 }
                 pendingMainFirstReveal = null
@@ -293,7 +326,7 @@ internal class RemoteDocumentController(
         val changedValues = values.values.filter { value -> appliedValues[value.name] != value }
         if (changedValues.isEmpty()) return
         for (slot in loadedDocuments.keys - excludeSlots) {
-            val target = player(slot)
+            val target = documentPlayer(slot)
             for (value in changedValues) target.applyValue(value)
         }
     }
@@ -302,7 +335,7 @@ internal class RemoteDocumentController(
         val changedBitmaps = bitmaps.filter { (name, bitmap) -> appliedBitmaps[name] !== bitmap }
         if (changedBitmaps.isEmpty()) return
         for (slot in loadedDocuments.keys - excludeSlots) {
-            val target = player(slot)
+            val target = documentPlayer(slot)
             for ((name, bitmap) in changedBitmaps) target.setUserLocalBitmap(name, bitmap)
         }
     }

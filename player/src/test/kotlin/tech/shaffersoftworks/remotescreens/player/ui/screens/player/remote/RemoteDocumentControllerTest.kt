@@ -97,6 +97,64 @@ class RemoteDocumentControllerTest {
         verify(controller.mainBackPlayer, times(2)).setDocument(any<RemoteDocument>())
     }
 
+    @Test
+    fun replacementWaitsForGestureAndUsesLatestState() {
+        controller.render(state(document(1)))
+        drainFrames()
+        controller.setTouchActive(true)
+        controller.render(state(document(2)))
+        val latest = state(document(3)).copy(page = 2)
+        controller.render(latest)
+        verify(controller.mainBackPlayer, never()).setDocument(any<RemoteDocument>())
+
+        controller.setTouchActive(false)
+        drainFrames()
+        assertFalse(controller.mainFrontIsPrimary)
+        verify(controller.mainBackPlayer, times(1)).setDocument(any<RemoteDocument>())
+        verify(controller.mainBackPlayer, org.mockito.kotlin.atLeastOnce()).setUserLocalInt(PAGE_VARIABLE, 2)
+    }
+
+    @Test
+    fun queuedSwapWaitsForGestureToEnd() {
+        controller.render(state(document(1)))
+        drainFrames()
+        controller.render(state(document(2)))
+        controller.setTouchActive(true)
+        drainFrames()
+        assertTrue(controller.mainFrontIsPrimary)
+
+        controller.setTouchActive(false)
+        drainFrames()
+        assertFalse(controller.mainFrontIsPrimary)
+    }
+
+    @Test
+    fun updatesDuringReplacementReachTheNewDocument() {
+        controller.render(state(document(1)))
+        drainFrames()
+        val replacement = state(document(2))
+        controller.render(replacement)
+        clearInvocations(controller.mainBackPlayer, controller.primaryPlayer(Slot.MAIN))
+
+        controller.render(replacement.copy(values = mapOf("title" to VarValue.string("title", "Latest"))))
+        verify(controller.mainBackPlayer).setUserLocalString("title", "Latest")
+        verify(controller.primaryPlayer(Slot.MAIN), never()).setUserLocalString(any(), any())
+    }
+
+    @Test
+    fun unchangedLocalIntegersAreNotReapplied() {
+        val initial = state(document(1)).copy(localInts = mapOf("drawer" to 0))
+        controller.render(initial)
+        drainFrames()
+        val front = controller.primaryPlayer(Slot.MAIN)
+        clearInvocations(front)
+        controller.render(initial)
+        verify(front, never()).setUserLocalInt(any(), any())
+
+        controller.render(initial.copy(localInts = mapOf("drawer" to 1)))
+        verify(front).setUserLocalInt("drawer", 1)
+    }
+
     private fun drainFrames() {
         while (posted.isNotEmpty()) posted.removeFirst().run()
     }

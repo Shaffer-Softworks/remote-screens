@@ -13,6 +13,7 @@ class TelemetryProtocolTest {
                 hardware = listOf(TelemetryHardware.LIGHT, TelemetryHardware.GPS),
                 battery = BatteryTelemetry(health = "good", temperatureC = 31.5f, cycles = 12),
                 network = NetworkTelemetry(ssid = "HomeNet", rssiDbm = -54),
+                permissions = mapOf("android.permission.CAMERA" to true, "android.permission.RECORD_AUDIO" to false),
                 system = SystemTelemetry(storageFreeBytes = 11_000_000_000L, model = "Tab M10"),
                 environment = EnvironmentTelemetry(illuminanceLux = 182f, isNear = false),
                 motion = MotionTelemetry(isMoving = true, orientation = "landscape", lastMotionAt = 1L),

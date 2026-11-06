@@ -17,6 +17,8 @@ data class DeviceTelemetry(
     val motion: MotionTelemetry? = null,
     /** Only while [ScreenSettings.shareLocation] is on and the tablet has a fix. */
     val location: LocationTelemetry? = null,
+    /** Current grants, keyed by Android permission name; false includes permissions never requested. */
+    val permissions: Map<String, Boolean>? = null,
 )
 
 /** [DeviceTelemetry.hardware] values. */
