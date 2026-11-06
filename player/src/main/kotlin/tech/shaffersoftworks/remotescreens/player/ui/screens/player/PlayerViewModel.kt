@@ -4,7 +4,7 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import coil.ImageLoader
+import coil3.ImageLoader
 import dagger.hilt.android.lifecycle.HiltViewModel
 import tech.shaffersoftworks.remotescreens.player.R
 import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionRepository

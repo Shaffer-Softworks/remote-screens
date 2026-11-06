@@ -211,11 +211,13 @@ dependencies {
 
     // Ktor
     implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.websockets)
 
     // Coil
     implementation(libs.io.coil.kt.coil.compose)
+    implementation(libs.io.coil.kt.coil.network.ktor)
+    implementation(libs.io.coil.kt.coil.network.cache.control)
 
     // Tools
     implementation(libs.timber)
