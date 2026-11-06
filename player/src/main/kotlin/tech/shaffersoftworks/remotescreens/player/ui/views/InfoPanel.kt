@@ -29,9 +29,6 @@ import tech.shaffersoftworks.remotescreens.player.ui.screens.player.InfoPanelSta
 import tech.shaffersoftworks.remotescreens.player.ui.theme.Accent
 import tech.shaffersoftworks.remotescreens.player.ui.theme.DialogWhite
 import tech.shaffersoftworks.remotescreens.player.ui.theme.IdentifyBadgeBackground
-import tech.shaffersoftworks.remotescreens.player.ui.theme.Ink
-import tech.shaffersoftworks.remotescreens.player.ui.theme.InkSoft
-import tech.shaffersoftworks.remotescreens.player.ui.theme.Page
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 
 private val PANEL_PADDING = 32.dp
