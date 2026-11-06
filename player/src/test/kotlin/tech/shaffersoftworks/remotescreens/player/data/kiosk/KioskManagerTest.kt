@@ -7,6 +7,8 @@ import android.app.admin.DevicePolicyManager
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
@@ -17,6 +19,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class KioskManagerTest {
+    private val scheduler = TestCoroutineScheduler()
+    private val dispatcher = StandardTestDispatcher(scheduler)
     private val devicePolicyManager: DevicePolicyManager = mock()
     private val activityManager: ActivityManager = mock()
     private val context: Context = mock {
@@ -33,6 +37,8 @@ class KioskManagerTest {
         ).thenReturn(true)
 
         manager().grantRuntimePermissions()
+        verify(devicePolicyManager, never()).setPermissionGrantState(any(), any(), any(), any())
+        scheduler.runCurrent()
 
         for (permission in KioskManager.RUNTIME_PERMISSIONS) {
             verify(devicePolicyManager).setPermissionGrantState(
@@ -52,6 +58,7 @@ class KioskManagerTest {
         ).thenReturn(true)
 
         manager().startLockTaskMode(mock<Activity>())
+        scheduler.runCurrent()
 
         verify(devicePolicyManager).setPermissionGrantState(
             any(),
@@ -66,6 +73,20 @@ class KioskManagerTest {
         whenever(devicePolicyManager.isDeviceOwnerApp(PACKAGE)).thenReturn(false)
 
         manager().grantRuntimePermissions()
+        verify(devicePolicyManager, never()).setPermissionGrantState(any(), any(), any(), any())
+        scheduler.runCurrent()
+
+        verify(devicePolicyManager, never()).setPermissionGrantState(any(), any(), any(), any())
+    }
+
+    @Test
+    fun alreadyGrantedPoliciesAreNotGrantedAgain() {
+        whenever(devicePolicyManager.isDeviceOwnerApp(PACKAGE)).thenReturn(true)
+        whenever(devicePolicyManager.getPermissionGrantState(any(), any(), any()))
+            .thenReturn(DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED)
+
+        manager().grantRuntimePermissions()
+        scheduler.runCurrent()
 
         verify(devicePolicyManager, never()).setPermissionGrantState(any(), any(), any(), any())
     }
@@ -74,7 +95,7 @@ class KioskManagerTest {
         context,
         mock(),
         mock(),
-        CoroutineScope(SupervisorJob()),
+        CoroutineScope(SupervisorJob() + dispatcher),
     )
 
     private companion object {
