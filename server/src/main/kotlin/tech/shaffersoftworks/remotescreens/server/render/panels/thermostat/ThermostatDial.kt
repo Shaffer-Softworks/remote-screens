@@ -19,7 +19,6 @@ import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
 import tech.shaffersoftworks.remotescreens.server.render.widgets.smooth
-import tech.shaffersoftworks.remotescreens.server.render.widgets.numericLabel
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -211,30 +210,33 @@ internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: 
             Spacer(Modifier.height(doc.units.px(ThermostatMetrics.HEADER_GAP_DP * layoutScale)))
             if (dual) {
                 Row(vertical = RcVerticalPositioning.Center) {
-                    doc.numericLabel(
+                    doc.label(
                         text = doc.text(Vars.tile(tileId, "low")),
                         sp = ThermostatMetrics.TARGET_LABEL_SP * layoutScale,
                         color = heat,
                         weight = Weight.LIGHT,
+                        align = RcTextAlign.Center,
                     )
                     Spacer(
                         Modifier.width(
                             doc.units.px(ThermostatMetrics.DUAL_TEMP_GAP_DP * layoutScale),
                         ),
                     )
-                    doc.numericLabel(
+                    doc.label(
                         text = doc.text(Vars.tile(tileId, "high")),
                         sp = ThermostatMetrics.TARGET_LABEL_SP * layoutScale,
                         color = cool,
                         weight = Weight.LIGHT,
+                        align = RcTextAlign.Center,
                     )
                 }
             } else {
-                doc.numericLabel(
+                doc.label(
                     text = doc.text(Vars.tile(tileId, "target")),
                     sp = ThermostatMetrics.TARGET_LABEL_SP * layoutScale,
                     color = ink,
                     weight = Weight.LIGHT,
+                    align = RcTextAlign.Center,
                 )
             }
         }
