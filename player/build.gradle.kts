@@ -226,6 +226,7 @@ dependencies {
     testImplementation(libs.remote.creation.core)
     testImplementation(libs.remote.creation.jvm)
     testImplementation(libs.junit)
+    testImplementation(libs.ktor.client.mock)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.kotlin)
