@@ -63,11 +63,27 @@ fun Activity.setWindowBrightness(brightnessPercent: Int) {
 
 /** 0 follows the device, 1 locks portrait, 2 locks landscape (see `ScreenSettings.orientation`). */
 fun Activity.applyScreenOrientation(orientationSetting: Int) {
-    requestedOrientation = when (orientationSetting) {
-        ORIENTATION_PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        ORIENTATION_LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+    val targetOrientation = when (orientationSetting) {
+        ORIENTATION_PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        ORIENTATION_LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         else -> ActivityInfo.SCREEN_ORIENTATION_FULL_USER
     }
+    val expectedConfiguration = when (orientationSetting) {
+        ORIENTATION_PORTRAIT -> Configuration.ORIENTATION_PORTRAIT
+        ORIENTATION_LANDSCAPE -> Configuration.ORIENTATION_LANDSCAPE
+        else -> Configuration.ORIENTATION_UNDEFINED
+    }
+    val currentConfiguration = resources.configuration.orientation
+    val isConfigurationMismatched = currentConfiguration != Configuration.ORIENTATION_UNDEFINED &&
+        currentConfiguration != expectedConfiguration
+    if (requestedOrientation == targetOrientation &&
+        expectedConfiguration != Configuration.ORIENTATION_UNDEFINED &&
+        isConfigurationMismatched
+    ) {
+        // RPI #677: some OEMs ignore an unchanged request after wake; clear it before reapplying.
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+    }
+    requestedOrientation = targetOrientation
 }
 
 /** The size of the whole window in dp, without the hidden system bars. */
