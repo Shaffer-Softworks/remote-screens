@@ -242,8 +242,7 @@ object DemoLayout {
     )
 
     /**
-     * RPI's alarm page over the house panel and its three Alarmo zones. The demo screen already has
-     * [tech.shaffersoftworks.remotescreens.shared.MAX_PAGES] pages, so this one is added where it is wanted.
+     * RPI's alarm page over the house panel and its three Alarmo zones, added where it is wanted.
      */
     fun alarmPage(): Page = Page(
         id = "alarm",
