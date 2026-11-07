@@ -221,6 +221,7 @@ dependencies {
 
     // Tools
     implementation(libs.timber)
+    implementation(libs.sentry.android)
 
     // Testing
     testImplementation(libs.remote.creation.core)

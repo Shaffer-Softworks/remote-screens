@@ -1,6 +1,7 @@
 package tech.shaffersoftworks.remotescreens.player
 
 import android.app.Application
+import tech.shaffersoftworks.remotescreens.player.data.diagnostics.CrashReporter
 import dagger.hilt.android.HiltAndroidApp
 import tech.shaffersoftworks.remotescreens.player.data.kiosk.KioskManager
 import tech.shaffersoftworks.remotescreens.player.utils.UnCaughtExceptionHandler
@@ -12,10 +13,14 @@ class PlayerApplication : Application() {
     @Inject
     lateinit var kioskManager: KioskManager
 
+    @Inject
+    lateinit var crashReporter: CrashReporter
+
     override fun onCreate() {
         super.onCreate()
         initializeLogging()
         initializeUncaughtExceptionHandler()
+        crashReporter.start()
 
         // Start grants in the background; device-policy callbacks must not block the first app window.
         kioskManager.grantRuntimePermissions()

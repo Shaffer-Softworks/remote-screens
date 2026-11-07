@@ -55,6 +55,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyBlocking
 import org.mockito.kotlin.whenever
+import tech.shaffersoftworks.remotescreens.player.data.diagnostics.CrashReporter
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlayerViewModelTest {
@@ -110,6 +111,7 @@ class PlayerViewModelTest {
     private val locationAccuracy: LocationAccuracy = mock()
 
     private val updateRepository: UpdateRepository = mock()
+    private val crashReporter: CrashReporter = mock()
 
     private lateinit var viewModel: PlayerViewModel
 
@@ -129,6 +131,7 @@ class PlayerViewModelTest {
             kioskManager = kioskManager,
             imageDecoder = mock<ImageDecoder>(),
             telemetryReporter = telemetryReporter,
+            crashReporter = crashReporter,
             locationAccuracy = locationAccuracy,
             intercomCoordinator = intercomCoordinator,
             haImageLoaderQualifier = mock(),
@@ -154,6 +157,15 @@ class PlayerViewModelTest {
         runCurrent()
         serverMessages.tryEmit(message)
         runCurrent()
+    }
+
+    @Test
+    fun `server settings configure crash reporting`() = runBlocking {
+        val sentry = tech.shaffersoftworks.remotescreens.shared.SentrySettings(
+            enabled = true, dsn = "https://key@sentry.example/123",
+        )
+        receive(ServerMessage.Settings(ScreenSettings(), sentry))
+        verify(crashReporter).configure(sentry)
     }
 
     @Test

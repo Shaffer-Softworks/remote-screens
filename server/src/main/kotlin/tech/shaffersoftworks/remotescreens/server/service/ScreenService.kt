@@ -46,8 +46,14 @@ class ScreenService(
 
     fun preferences(): Preferences = layoutRepository.layout.value.preferences
 
-    fun updatePreferences(preferences: Preferences): Preferences =
-        layoutRepository.update { it.copy(preferences = preferences) }.preferences
+    fun updatePreferences(preferences: Preferences): Preferences {
+        val sentry = try {
+            preferences.sentry.validated()
+        } catch (error: IllegalArgumentException) {
+            throw BadRequestException(error.message ?: "Invalid Sentry settings")
+        }
+        return layoutRepository.update { it.copy(preferences = preferences.copy(sentry = sentry)) }.preferences
+    }
 
     fun createScreen(request: CreateScreenRequest): Screen {
         val designSize = if (request.widthDp != null && request.heightDp != null) {

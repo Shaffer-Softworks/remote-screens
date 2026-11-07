@@ -298,6 +298,28 @@ The player app's ID changed from `dev.remotescreens.player` to `tech.shaffersoft
 tablet running the old app cannot update to it. Uninstall the old app, install the new one and pair the tablet again.
 A tablet enrolled as a kiosk has to be factory reset and enrolled again.
 
+## Sentry crash reporting
+
+Open **Sentry crash reporting** on the editor's main page. Enter your Sentry Android project's public
+DSN (Project Settings → Client Keys), choose an environment, enable reporting, then save. This applies
+to all paired tablets running a player build with Sentry support; older players ignore the setting.
+No Sentry auth token belongs in this form.
+
+Connected tablets apply changes immediately. Offline tablets receive them on reconnect. The player
+caches the configuration, so reporting starts again after an app restart even without the add-on.
+Disabling closes Sentry when the tablet receives the update; unpairing also disables it.
+
+Reporting covers uncaught JVM exceptions, native crashes, and optional ANRs, including release builds.
+Sentry queues reports while offline. Reports may contain exception messages, stack traces, app version,
+and device/OS details. Default PII collection, breadcrumbs, screenshots, view hierarchy attachments,
+session replay, session tracking, and performance tracing are disabled. A full device freeze, abrupt
+power loss, or an early crash before SDK initialization may not produce a report.
+
+Release builds use R8, so some frames will be obfuscated. Keep that exact build's
+`player/build/outputs/mapping/release/mapping.txt` for retracing. Automatic Sentry mapping association
+and native-symbol uploads are not set up here; those require a separate build-time integration.
+This integration reports the Android player, not the add-on server or browser editor.
+
 ## Managing a tablet with ADB
 
 **Tablets → ADB** in the editor can pair a tablet over the network, restart the player, install the packaged
