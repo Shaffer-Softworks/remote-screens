@@ -19,6 +19,7 @@ class IntercomCoordinator @Inject constructor(
 ) {
     private var session: IntercomSession? = null
     private var signature: String? = null
+    private var sessionScope: CoroutineScope? = null
 
     fun hasMicrophone(): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
@@ -34,13 +35,15 @@ class IntercomCoordinator @Inject constructor(
     ) {
         val next = "$url|$clientId|$displayName"
         val current = session
-        if (current != null && signature == next) {
+        // A kiosk relaunch can replace the ViewModel and cancel the session's original scope.
+        if (current?.isActive == true && signature == next && sessionScope === scope) {
             current.attachReport(onReport)
             current.publishAgain()
             return
         }
         stop()
         signature = next
+        sessionScope = scope
         val opened = IntercomSession(
             link = link,
             audio = audio,
@@ -57,6 +60,7 @@ class IntercomCoordinator @Inject constructor(
         session?.stop()
         session = null
         signature = null
+        sessionScope = null
     }
 
     fun command(verb: String, clientId: String) {

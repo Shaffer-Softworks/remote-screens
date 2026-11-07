@@ -47,6 +47,8 @@ internal class IntercomSession(
     private var job: Job? = null
     private var timeoutJob: Job? = null
 
+    val isActive: Boolean get() = job?.isActive == true
+
     fun start() {
         job = scope.launch { run() }
     }
