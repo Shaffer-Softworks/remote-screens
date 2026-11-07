@@ -15,10 +15,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpStatusCode
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
-import io.ktor.client.request.prepareGet
-import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.isSuccess
-import io.ktor.utils.io.jvm.javaio.copyTo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -58,11 +55,7 @@ class UpdateRepository @Inject constructor(
         withContext(ioDispatcher) {
             val apkFile = File(context.cacheDir, UPDATE_FILE_PATH).apply { parentFile?.mkdirs() }
             try {
-                val wrote = httpClient.prepareGet("http://$server$path?token=$token").execute { response ->
-                    if (!response.status.isSuccess()) return@execute false
-                    apkFile.outputStream().use { output -> response.bodyAsChannel().copyTo(output) }
-                    true
-                }
+                val wrote = httpClient.downloadPlayerApk("http://$server$path?token=$token", apkFile)
                 if (!wrote) return@withContext false
                 commitInstallSession(apkFile, silent)
                 true

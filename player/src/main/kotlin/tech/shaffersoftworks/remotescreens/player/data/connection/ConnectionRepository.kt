@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.min
@@ -55,8 +56,7 @@ class ConnectionRepository @Inject constructor(
     )
     val messages: SharedFlow<ServerMessage> = _messages.asSharedFlow()
 
-    @Volatile
-    private var session: DefaultClientWebSocketSession? = null
+    private val session = AtomicReference<DefaultClientWebSocketSession?>(null)
     private var connectionJob: Job? = null
     private var helloProvider: (suspend () -> PlayerMessage.Hello)? = null
 
@@ -85,7 +85,7 @@ class ConnectionRepository @Inject constructor(
     }
 
     suspend fun send(message: PlayerMessage) {
-        val currentSession = session ?: return
+        val currentSession = session.get() ?: return
         runCatching { currentSession.send(Frame.Text(Protocol.encode(message))) }
             .onFailure { error -> Timber.w(error, "Could not send %s", message::class.simpleName) }
     }
@@ -94,9 +94,11 @@ class ConnectionRepository @Inject constructor(
         var backoffMs = INITIAL_BACKOFF_MS
         while (currentCoroutineContext().isActive) {
             _status.value = ConnectionStatus.CONNECTING
+            var ownedSession: DefaultClientWebSocketSession? = null
             try {
                 httpClient.webSocket("ws://$server/player") {
-                    session = this
+                    ownedSession = this
+                    session.set(this)
                     send(Frame.Text(Protocol.encode(buildHello())))
                     _status.value = ConnectionStatus.CONNECTED
                     _consecutiveFailures.value = 0
@@ -112,7 +114,8 @@ class ConnectionRepository @Inject constructor(
             } catch (@Suppress("TooGenericExceptionCaught") error: Exception) {
                 Timber.w("Connection to %s failed: %s", server, error.message)
             } finally {
-                session = null
+                // An older connection can finish closing after its replacement has connected.
+                session.compareAndSet(ownedSession, null)
             }
             if (!currentCoroutineContext().isActive) break
             _status.value = ConnectionStatus.DISCONNECTED
