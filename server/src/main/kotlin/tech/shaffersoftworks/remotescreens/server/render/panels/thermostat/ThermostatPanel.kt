@@ -27,7 +27,6 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
-import tech.shaffersoftworks.remotescreens.server.render.widgets.numericLabel
 import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
@@ -118,6 +117,7 @@ fun DocContext.thermostatPanel(tile: Tile, box: TileBox) {
             dual = dual,
             layoutScale = layoutScale,
             boxH = box.h,
+            showHumidity = entityState?.number("current_humidity") != null,
         )
         doc.thermostatModes(
             tileId = tile.id,
@@ -170,6 +170,7 @@ private fun DocContext.thermostatBody(
     dual: Boolean,
     layoutScale: Float,
     boxH: Float,
+    showHumidity: Boolean,
 ) {
     val keyDp = ThermostatMetrics.ADJUST_KEY_DP * layoutScale
     val dialDp = minOf(
@@ -221,12 +222,21 @@ private fun DocContext.thermostatBody(
                 round = true,
             )
         }
-        doc.reading(
-            caption = doc.i18n.t("ui.current_humidity"),
+        doc.humidityReading(tileId, layoutScale, showHumidity)
+    }
+}
+
+private fun DocContext.humidityReading(tileId: String, layoutScale: Float, visible: Boolean) {
+    if (visible) {
+        reading(
+            caption = i18n.t("ui.current_humidity"),
             varName = Vars.tile(tileId, "humidity"),
             layoutScale = layoutScale,
             modifier = Modifier.horizontalWeight(1f),
         )
+    } else {
+        // Keep the dial centered when there is no humidity reading.
+        scope.Spacer(Modifier.horizontalWeight(1f))
     }
 }
 
@@ -450,11 +460,12 @@ private fun DocContext.reading(caption: String, varName: String, layoutScale: Fl
             align = RcTextAlign.Center,
         )
         Spacer(Modifier.height(doc.units.px(ThermostatMetrics.READING_GAP_DP * layoutScale)))
-        doc.numericLabel(
+        doc.label(
             text = doc.text(varName),
             sp = ThermostatMetrics.READING_VALUE_SP * layoutScale,
             color = doc.role(Role.INK),
             weight = Weight.LIGHT,
+            align = RcTextAlign.Center,
         )
     }
 }
