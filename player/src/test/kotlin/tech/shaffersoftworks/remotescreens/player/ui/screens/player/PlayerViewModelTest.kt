@@ -55,6 +55,15 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyBlocking
 import org.mockito.kotlin.whenever
+import tech.shaffersoftworks.remotescreens.player.data.diagnostics.CrashReporter
+
+private fun mainDocument(pageCount: Int = 3, homePage: Int = 0) = ServerMessage.Document(
+    slot = Slot.MAIN,
+    rev = 7,
+    data = "AAAA",
+    homePage = homePage,
+    pageCount = pageCount,
+)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlayerViewModelTest {
@@ -110,6 +119,7 @@ class PlayerViewModelTest {
     private val locationAccuracy: LocationAccuracy = mock()
 
     private val updateRepository: UpdateRepository = mock()
+    private val crashReporter: CrashReporter = mock()
 
     private lateinit var viewModel: PlayerViewModel
 
@@ -129,6 +139,7 @@ class PlayerViewModelTest {
             kioskManager = kioskManager,
             imageDecoder = mock<ImageDecoder>(),
             telemetryReporter = telemetryReporter,
+            crashReporter = crashReporter,
             locationAccuracy = locationAccuracy,
             intercomCoordinator = intercomCoordinator,
             haImageLoaderQualifier = mock(),
@@ -141,14 +152,6 @@ class PlayerViewModelTest {
     fun tearDown() {
         Dispatchers.resetMain()
     }
-
-    private fun mainDocument(pageCount: Int = 3, homePage: Int = 0) = ServerMessage.Document(
-        slot = Slot.MAIN,
-        rev = 7,
-        data = "AAAA",
-        homePage = homePage,
-        pageCount = pageCount,
-    )
 
     private fun receive(message: ServerMessage) {
         runCurrent()
@@ -513,8 +516,10 @@ class PlayerViewModelTest {
     }
 
     @Test
-    fun `the kiosk setting from the add-on is saved`() {
-        receive(ServerMessage.Settings(ScreenSettings(kiosk = true)))
+    fun `server settings persist kiosk and configure crash reporting`() {
+        val sentry = tech.shaffersoftworks.remotescreens.shared.SentrySettings(true, "https://key@sentry.example/123")
+        receive(ServerMessage.Settings(ScreenSettings(kiosk = true), sentry))
+        verifyBlocking(crashReporter) { configure(sentry) }
 
         verifyBlocking(preferencesRepository) { setKioskEnabled(true) }
     }

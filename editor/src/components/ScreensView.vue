@@ -11,6 +11,7 @@ import MdiIcon from './MdiIcon.vue'
 import NotificationComposer from './NotificationComposer.vue'
 import IntercomDesk from './IntercomDesk.vue'
 import AdbPanel from './AdbPanel.vue'
+import CrashReportingPanel from './CrashReportingPanel.vue'
 
 const emit = defineEmits<{ edit: [screen: Screen]; themes: [] }>()
 
@@ -243,6 +244,8 @@ function preview(screen: Screen) {
         {{ state.info?.locationName || 'Home Assistant' }}
       </span>
     </header>
+
+    <CrashReportingPanel />
 
     <section v-if="waiting.length" class="card pairing">
       <div class="row">

@@ -374,7 +374,10 @@ sealed interface ServerMessage {
 
     @Serializable
     @SerialName("settings")
-    data class Settings(val settings: ScreenSettings) : ServerMessage
+    data class Settings(
+        val settings: ScreenSettings,
+        val sentry: SentrySettings = SentrySettings(),
+    ) : ServerMessage
 
     @Serializable
     @SerialName("open_page")

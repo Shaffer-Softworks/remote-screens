@@ -162,7 +162,7 @@ internal class SessionLifecycle(
     }
 
     private suspend fun sendChrome(screen: Screen) {
-        host.send(ServerMessage.Settings(screen.settings))
+        host.send(ServerMessage.Settings(screen.settings, layoutRepository.layout.value.preferences.sentry))
         host.send(intercomConfig(screen))
     }
 

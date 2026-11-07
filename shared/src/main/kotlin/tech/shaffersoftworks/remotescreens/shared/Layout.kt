@@ -55,6 +55,7 @@ data class Preferences(
     /** BCP 47 tag, or null to follow Home Assistant. */
     val language: String? = null,
     val clock24h: Boolean? = null,
+    val sentry: SentrySettings = SentrySettings(),
 )
 
 /** A screen is a layout. One or more players (tablets) show it. */

@@ -271,9 +271,17 @@ export interface DeviceSize {
   heightDp: number
 }
 
+export interface SentrySettings {
+  enabled: boolean
+  dsn: string
+  environment: string
+  anrEnabled: boolean
+}
+
 export interface Preferences {
   language?: string
   clock24h?: boolean
+  sentry?: SentrySettings
 }
 
 export interface LayoutData {

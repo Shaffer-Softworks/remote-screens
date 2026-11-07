@@ -54,7 +54,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import tech.shaffersoftworks.remotescreens.player.data.diagnostics.CrashReporter
 import tech.shaffersoftworks.remotescreens.player.di.HaImageLoaderQualifier
+import tech.shaffersoftworks.remotescreens.shared.SentrySettings
 import timber.log.Timber
 import java.time.LocalTime
 import javax.inject.Inject
@@ -105,6 +107,7 @@ class PlayerViewModel @Inject constructor(
     private val kioskManager: KioskManager,
     private val imageDecoder: ImageDecoder,
     private val telemetryReporter: TelemetryReporter,
+    private val crashReporter: CrashReporter,
     private val locationAccuracy: LocationAccuracy,
     private val intercomCoordinator: IntercomCoordinator,
     @HaImageLoaderQualifier val haImageLoaderQualifier: ImageLoader,
@@ -338,7 +341,10 @@ class PlayerViewModel @Inject constructor(
             is ServerMessage.Document -> onDocument(message)
             is ServerMessage.Vars -> updateRemoteScreen { it.withVars(message) }
             is ServerMessage.Bitmap -> onBitmap(message)
-            is ServerMessage.Settings -> onServerSettings(message.settings)
+            is ServerMessage.Settings -> {
+                crashReporter.configure(message.sentry)
+                onServerSettings(message.settings)
+            }
             is ServerMessage.OpenPage -> {
                 closeTopOverlay()
                 showPage(message.index)
@@ -379,6 +385,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     private suspend fun onWelcome(welcome: ServerMessage.Welcome) {
+        if (welcome.pairingCode != null) crashReporter.configure(SentrySettings())
         dismissNotificationBanner()
         closeSlot(Slot.OVERLAY)
         closeSlot(Slot.ALERT)
@@ -1103,6 +1110,7 @@ class PlayerViewModel @Inject constructor(
     fun onForgetConfirmed() {
         onSettingsDismissed()
         viewModelScope.launch {
+            crashReporter.configure(SentrySettings())
             preferencesRepository.forget(resetDeviceId = true)
             updateRemoteScreen { it.cleared() }
             connectionRepository.reconnect()
