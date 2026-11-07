@@ -4,7 +4,6 @@ import tech.shaffersoftworks.remotescreens.shared.DeviceSize
 import tech.shaffersoftworks.remotescreens.shared.Grid
 import tech.shaffersoftworks.remotescreens.shared.MAX_NODES_PER_PAGE
 import tech.shaffersoftworks.remotescreens.shared.MAX_NODE_DEPTH
-import tech.shaffersoftworks.remotescreens.shared.MAX_PAGES
 import tech.shaffersoftworks.remotescreens.shared.MAX_TILES_PER_SCREEN
 import tech.shaffersoftworks.remotescreens.shared.Node
 import tech.shaffersoftworks.remotescreens.shared.NodeTypes
@@ -34,7 +33,6 @@ object ScreenValidator {
         val grid = screen.grid
         val cellRange = Grid.MIN_CELLS..Grid.MAX_CELLS
         ensureValid(pages.isNotEmpty()) { "A screen needs a page" }
-        ensureValid(pages.size <= MAX_PAGES) { "At most $MAX_PAGES pages" }
         ensureValid(pages.map { it.id }.toSet().size == pages.size) { "Page ids must differ" }
         ensureValid(gridTileCount <= MAX_TILES_PER_SCREEN) { "At most $MAX_TILES_PER_SCREEN tiles" }
         ensureValid(tiles.map { it.id }.toSet().size == tiles.size) { "Tile ids must differ" }

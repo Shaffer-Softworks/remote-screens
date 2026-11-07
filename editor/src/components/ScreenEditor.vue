@@ -237,7 +237,6 @@ function removeTile(id: string): void {
 }
 
 function addPage(kind: 'free' | 'grid'): void {
-  if (screen.value.pages.length >= 9) return toast('At most 9 pages')
   const id = `p${Date.now().toString(36)}`
   const newPage: Page = { id, title: `Page ${screen.value.pages.length + 1}`, tiles: [] }
   if (kind === 'free') newPage.root = newRoot()

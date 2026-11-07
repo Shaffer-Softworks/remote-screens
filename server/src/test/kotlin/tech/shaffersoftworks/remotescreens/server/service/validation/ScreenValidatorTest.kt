@@ -18,6 +18,13 @@ class ScreenValidatorTest {
     private val json = Json { ignoreUnknownKeys = true }
 
     @Test
+    fun screensCanHaveMoreThanNinePages() {
+        val pages = List(32) { index -> Page("page-$index", "Page ${index + 1}") }
+        val screen = ScreenValidator.validate(Screen("s", "Wall", pages = pages))
+        assertEquals(pages, screen.pages)
+    }
+
+    @Test
     fun aCustomSizeIsKeptWithinTheLimits() {
         val s = ScreenValidator.validate(Screen("s", "Wall", designSize = DeviceSize(50, 99999)))
         assertEquals(DeviceSize(DeviceSize.MIN, DeviceSize.MAX), s.designSize)
