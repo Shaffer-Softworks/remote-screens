@@ -68,7 +68,8 @@ class CrashReporter @Inject constructor(
                 SentryAndroid.init(context) { options ->
                     options.dsn = settings.dsn
                     options.environment = settings.environment
-                    options.release = "${BuildConfig.APPLICATION_ID}@${BuildConfig.VERSION_NAME}+${BuildConfig.VERSION_CODE}"
+                    options.release = "${BuildConfig.APPLICATION_ID}@" +
+                        "${BuildConfig.VERSION_NAME}+${BuildConfig.VERSION_CODE}"
                     options.isAnrEnabled = settings.anrEnabled
                     options.isEnableNdk = true
                     options.isSendDefaultPii = false

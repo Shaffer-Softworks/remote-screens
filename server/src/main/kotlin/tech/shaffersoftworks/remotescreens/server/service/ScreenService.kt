@@ -50,7 +50,7 @@ class ScreenService(
         val sentry = try {
             preferences.sentry.validated()
         } catch (error: IllegalArgumentException) {
-            throw BadRequestException(error.message ?: "Invalid Sentry settings")
+            throw BadRequestException(error.message ?: "Invalid Sentry settings", error)
         }
         return layoutRepository.update { it.copy(preferences = preferences.copy(sentry = sentry)) }.preferences
     }

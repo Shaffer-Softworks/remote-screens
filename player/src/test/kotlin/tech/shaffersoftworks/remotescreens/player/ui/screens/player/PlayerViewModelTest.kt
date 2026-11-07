@@ -57,6 +57,14 @@ import org.mockito.kotlin.verifyBlocking
 import org.mockito.kotlin.whenever
 import tech.shaffersoftworks.remotescreens.player.data.diagnostics.CrashReporter
 
+private fun mainDocument(pageCount: Int = 3, homePage: Int = 0) = ServerMessage.Document(
+    slot = Slot.MAIN,
+    rev = 7,
+    data = "AAAA",
+    homePage = homePage,
+    pageCount = pageCount,
+)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlayerViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
@@ -145,27 +153,10 @@ class PlayerViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun mainDocument(pageCount: Int = 3, homePage: Int = 0) = ServerMessage.Document(
-        slot = Slot.MAIN,
-        rev = 7,
-        data = "AAAA",
-        homePage = homePage,
-        pageCount = pageCount,
-    )
-
     private fun receive(message: ServerMessage) {
         runCurrent()
         serverMessages.tryEmit(message)
         runCurrent()
-    }
-
-    @Test
-    fun `server settings configure crash reporting`() = runBlocking {
-        val sentry = tech.shaffersoftworks.remotescreens.shared.SentrySettings(
-            enabled = true, dsn = "https://key@sentry.example/123",
-        )
-        receive(ServerMessage.Settings(ScreenSettings(), sentry))
-        verify(crashReporter).configure(sentry)
     }
 
     @Test
@@ -525,8 +516,10 @@ class PlayerViewModelTest {
     }
 
     @Test
-    fun `the kiosk setting from the add-on is saved`() {
-        receive(ServerMessage.Settings(ScreenSettings(kiosk = true)))
+    fun `server settings persist kiosk and configure crash reporting`() {
+        val sentry = tech.shaffersoftworks.remotescreens.shared.SentrySettings(true, "https://key@sentry.example/123")
+        receive(ServerMessage.Settings(ScreenSettings(kiosk = true), sentry))
+        verifyBlocking(crashReporter) { configure(sentry) }
 
         verifyBlocking(preferencesRepository) { setKioskEnabled(true) }
     }

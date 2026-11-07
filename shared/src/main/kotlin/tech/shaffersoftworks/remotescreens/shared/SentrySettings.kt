@@ -3,6 +3,9 @@ package tech.shaffersoftworks.remotescreens.shared
 import java.net.URI
 import kotlinx.serialization.Serializable
 
+private const val MAX_ENVIRONMENT_LENGTH = 64
+private const val MAX_DSN_LENGTH = 2048
+
 /** Opt-in crash reporting for paired tablets. The DSN is a public ingestion key, never an auth token. */
 @Serializable
 data class SentrySettings(
@@ -13,10 +16,13 @@ data class SentrySettings(
 ) {
     fun validated(): SentrySettings {
         val clean = copy(dsn = dsn.trim(), environment = environment.trim().ifEmpty { "production" })
-        require(clean.environment.length <= 64 && clean.environment.none { it.isWhitespace() || it == '/' }) {
+        require(
+            clean.environment.length <= MAX_ENVIRONMENT_LENGTH &&
+                clean.environment.none { it.isWhitespace() || it == '/' },
+        ) {
             "Sentry environment must be at most 64 characters without spaces or slashes"
         }
-        require(clean.dsn.length <= 2048) { "Sentry DSN is too long" }
+        require(clean.dsn.length <= MAX_DSN_LENGTH) { "Sentry DSN is too long" }
         require(!clean.enabled || clean.dsn.isNotEmpty()) { "Sentry needs a DSN when enabled" }
         if (clean.dsn.isNotEmpty()) {
             val uri = runCatching { URI(clean.dsn) }.getOrNull()

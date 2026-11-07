@@ -31,8 +31,16 @@ class SentrySettingsTest {
 
     @Test
     fun malformedOrPrivateDsnsAndMissingEnabledDsnsAreRejected() {
-        for (dsn in listOf("", "not a uri", "https://host/123", "https://key:secret@host/123",
-            "ftp://key@host/123", "https://key@host/abc", "https://key@host/123?token=secret")) {
+        val invalidDsns = listOf(
+            "",
+            "not a uri",
+            "https://host/123",
+            "https://key:secret@host/123",
+            "ftp://key@host/123",
+            "https://key@host/abc",
+            "https://key@host/123?token=secret",
+        )
+        for (dsn in invalidDsns) {
             assertFailsWith<IllegalArgumentException>(dsn) { SentrySettings(true, dsn).validated() }
         }
         assertFailsWith<IllegalArgumentException> {
