@@ -18,6 +18,7 @@ import tech.shaffersoftworks.remotescreens.player.ui.screens.player.PlayerScreen
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.PlayerViewModel
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.unrestrictedBatteryIntent
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
+import tech.shaffersoftworks.remotescreens.player.utils.applyScreenOrientation
 import tech.shaffersoftworks.remotescreens.player.utils.hideSystemBars
 import tech.shaffersoftworks.remotescreens.player.utils.measureDisplay
 import tech.shaffersoftworks.remotescreens.player.utils.requestScreenOn
@@ -62,6 +63,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        applyScreenOrientation(viewModel.viewState.value.screenSettings.orientation)
         hideSystemBars()
         scheduleDisplayMeasure()
         viewModel.onResumed()
@@ -69,6 +71,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        applyScreenOrientation(viewModel.viewState.value.screenSettings.orientation)
         scheduleDisplayMeasure()
     }
 
@@ -138,7 +141,10 @@ class MainActivity : ComponentActivity() {
                     .map { viewState -> viewState.isAwake }
                     .distinctUntilChanged()
                     .collect { isAwake ->
-                        if (isAwake) requestScreenOn()
+                        if (isAwake) {
+                            applyScreenOrientation(viewModel.viewState.value.screenSettings.orientation)
+                            requestScreenOn()
+                        }
                     }
             }
         }
