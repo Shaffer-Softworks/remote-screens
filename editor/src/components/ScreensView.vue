@@ -13,6 +13,7 @@ import AdbPanel from './AdbPanel.vue'
 import ScreenPreview from './ScreenPreview.vue'
 import SettingsDialog from './SettingsDialog.vue'
 import DeviceInfoDialog from './DeviceInfoDialog.vue'
+import brandIcon from '../../../addon/icon.png'
 import './dashboard.css'
 
 const emit = defineEmits<{ edit: [screen: Screen]; themes: [] }>()
@@ -220,7 +221,7 @@ function status(player: PlayerStatus): string {
     <EnrollTabletPanel v-if="enrolling" @close="enrolling = false" />
 
     <header class="dashboard-header">
-      <div class="brand"><MdiIcon name="monitor" :size="30" /><span>Remote Screens</span></div>
+      <div class="brand"><img class="brand-icon" :src="brandIcon" alt="" width="30" height="30" /><span>Remote Screens</span></div>
       <nav aria-label="Main navigation">
         <button class="nav-tab selected" aria-current="page"><MdiIcon name="view-grid" :size="22" /> Screens</button>
         <button class="nav-tab" @click="emit('themes')"><MdiIcon name="palette-outline" :size="22" /> Themes</button>
@@ -241,10 +242,9 @@ function status(player: PlayerStatus): string {
             <h1 id="screens-title">Your screens</h1>
             <p>Design and manage your Remote Screens dashboards for your wall tablets.</p>
           </div>
-          <div class="segmented" role="group" aria-label="Screen actions">
-            <button @click="emit('themes')"><MdiIcon name="palette-outline" :size="20" /> Themes</button>
-            <button title="Add a screen from a file" @click="chooseFile"><MdiIcon name="download" :size="20" /> Import</button>
-            <button class="primary" :aria-expanded="creating" @click="creating = !creating"><MdiIcon name="plus" :size="22" /> New screen</button>
+          <div class="screen-actions" role="group" aria-label="Screen actions">
+            <button class="secondary-action" title="Add a screen from a file" @click="chooseFile"><MdiIcon name="download" :size="18" /> Import</button>
+            <button class="primary" :aria-expanded="creating" @click="creating = !creating"><MdiIcon name="plus" :size="20" /> Create screen</button>
           </div>
           <input ref="fileInput" class="file" type="file" accept=".json,application/json" @change="importChosen" />
         </div>
