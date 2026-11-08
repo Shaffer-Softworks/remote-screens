@@ -22,6 +22,14 @@ class SentrySettingsTest {
     }
 
     @Test
+    fun connectivityRequestsAndResultsRoundTrip() {
+        val request = ServerMessage.SentryTest("request")
+        assertEquals(request, Protocol.decodeServer(Protocol.encode(request)))
+        val report = PlayerMessage.SentryTestResult("request", CrashTestResult("accepted", "event"))
+        assertEquals(report, Protocol.decodePlayer(Protocol.encode(report)))
+    }
+
+    @Test
     fun publicAndSelfHostedDsnsAreAcceptedAndTrimmed() {
         val settings = SentrySettings(true, " https://key@sentry.example/prefix/123 ", " staging ")
         assertEquals("https://key@sentry.example/prefix/123", settings.validated().dsn)

@@ -38,6 +38,7 @@ object Protocol {
     const val CAPABILITY_INTERCOM = "intercom"
 
     const val CAPABILITY_NOTIFICATIONS = "notifications"
+    const val CAPABILITY_SENTRY_TEST = "sentry_test"
 
     val json = Json {
         ignoreUnknownKeys = true
@@ -248,6 +249,10 @@ sealed interface PlayerMessage {
     data class NotificationAction(val id: String, val button: Int? = null) : PlayerMessage
 
     @Serializable
+    @SerialName("sentry_test_result")
+    data class SentryTestResult(val requestId: String, val result: CrashTestResult) : PlayerMessage
+
+    @Serializable
     @SerialName("ping")
     data object Ping : PlayerMessage
 }
@@ -262,6 +267,11 @@ data class IntercomStation(
 
 @Serializable
 sealed interface ServerMessage {
+    /** Explicit nonfatal connectivity check; requires the sentry_test capability. */
+    @Serializable
+    @SerialName("sentry_test")
+    data class SentryTest(val requestId: String) : ServerMessage
+
     /** Answer to [PlayerMessage.Hello]. An unadopted player gets a [pairingCode] to show and nothing else. */
     @Serializable
     @SerialName("welcome")

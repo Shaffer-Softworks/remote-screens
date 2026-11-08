@@ -80,6 +80,8 @@ export const api = {
     call<void>('PATCH', `players/${encodeURIComponent(deviceId)}`, { name }),
   forgetPlayer: (deviceId: string) =>
     call<void>('DELETE', `players/${encodeURIComponent(deviceId)}`),
+  testSentry: (deviceId: string) =>
+    call<{ status: string; eventId?: string }>('POST', `players/${encodeURIComponent(deviceId)}/sentry-test`),
   identify: (deviceId: string) =>
     call<void>('POST', `players/${encodeURIComponent(deviceId)}/identify`),
   preview: (deviceId: string, screen: Screen) =>

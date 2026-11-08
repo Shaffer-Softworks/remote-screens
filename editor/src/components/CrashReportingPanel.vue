@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { api } from '../api'
 import type { SentrySettings } from '../model/types'
 import { attempt, state, toast } from '../store'
@@ -12,6 +12,31 @@ const settings = ref<SentrySettings>({
   ...state.layout?.preferences.sentry,
 })
 const saving = ref(false)
+const testing = ref(false)
+const testTablet = ref('')
+const testResult = ref<{ status: string; eventId?: string } | null>(null)
+const tablets = computed(() => state.players.filter(player => player.screenId && player.online))
+const statusText: Record<string, string> = {
+  accepted: 'Sentry accepted the test event. Search for its event ID in your Sentry project.',
+  disabled: 'Sentry is disabled on this tablet. Save the configuration and retry.',
+  unsupported: 'Update this tablet’s player app to use the test action.',
+  offline: 'The tablet disconnected. Reconnect it and retry.',
+  busy: 'A test is already running on this tablet.',
+  dropped: 'The SDK dropped the test event. Check the Sentry configuration.',
+  failed: 'Delivery failed. Check the DSN, network access, and Sentry quota.',
+  timeout: 'No delivery confirmation arrived. The event may be queued; check Sentry before retrying.',
+}
+
+async function test(): Promise<void> {
+  if (!testTablet.value || testing.value) return
+  testing.value = true
+  testResult.value = null
+  try {
+    testResult.value = (await attempt(() => api.testSentry(testTablet.value))) ?? null
+  } finally {
+    testing.value = false
+  }
+}
 
 async function save(): Promise<void> {
   if (!state.layout || saving.value) return
@@ -77,6 +102,31 @@ async function save(): Promise<void> {
         {{ saving ? 'Saving…' : 'Save crash reporting' }}
       </button>
     </form>
+    <div class="test">
+      <h3>Verify a tablet</h3>
+      <p class="muted">
+        Sends one labeled, nonfatal event with app/device details to the tablet’s saved Sentry DSN.
+        Save settings first. “Accepted” confirms the ingestion endpoint acknowledged the event;
+        it may take time to appear in Sentry.
+      </p>
+      <label>
+        Tablet
+        <select v-model="testTablet" :disabled="testing">
+          <option value="" disabled>Choose a connected tablet…</option>
+          <option v-for="tablet in tablets" :key="tablet.deviceId" :value="tablet.deviceId">
+            {{ tablet.name }}
+          </option>
+        </select>
+      </label>
+      <button type="button" :disabled="testing || !testTablet" @click="test">
+        {{ testing ? 'Testing…' : 'Send test event' }}
+      </button>
+      <p v-if="testResult" role="status">
+        {{ statusText[testResult.status] ?? 'Unexpected result. Check the player version.' }}
+        <br v-if="testResult.eventId" />
+        <code v-if="testResult.eventId">Event ID: {{ testResult.eventId }}</code>
+      </p>
+    </div>
   </details>
 </template>
 
@@ -88,7 +138,8 @@ summary {
   cursor: pointer;
   font-weight: 600;
 }
-form {
+form,
+.test {
   display: flex;
   flex-direction: column;
   gap: 14px;
