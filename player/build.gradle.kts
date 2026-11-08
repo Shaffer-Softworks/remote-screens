@@ -6,6 +6,19 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.sentry.android)
+}
+
+// Generate the mapping UUID in the APK; each user's add-on uploads to their own Sentry project.
+sentry {
+    includeProguardMapping.set(true)
+    autoUploadProguardMapping.set(false)
+    includeSourceContext.set(false)
+    includeDependenciesReport.set(false)
+    telemetry.set(false)
+    autoInstallation { enabled.set(false) }
+    tracingInstrumentation { enabled.set(false) }
+    ignoredBuildTypes.set(setOf("debug"))
 }
 
 val addonVersion = rootProject.file("addon/VERSION").readText().trim()

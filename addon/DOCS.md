@@ -303,7 +303,7 @@ A tablet enrolled as a kiosk has to be factory reset and enrolled again.
 Open **Sentry crash reporting** on the editor's main page. Enter your Sentry Android project's public
 DSN (Project Settings → Client Keys), choose an environment, enable reporting, then save. This applies
 to all paired tablets running a player build with Sentry support; older players ignore the setting.
-No Sentry auth token belongs in this form.
+The public DSN is not an auth token. Upload credentials belong only in **Readable crash reports** below.
 
 To check delivery, choose a connected tablet under **Verify a tablet**, then **Send test event**.
 This explicitly sends one nonfatal connectivity event with app/device metadata to that tablet's
@@ -322,9 +322,24 @@ and device/OS details. Default PII collection, breadcrumbs, screenshots, view hi
 session replay, session tracking, and performance tracing are disabled. A full device freeze, abrupt
 power loss, or an early crash before SDK initialization may not produce a report.
 
-Release builds use R8, so some frames will be obfuscated. Keep that exact build's
-`player/build/outputs/mapping/release/mapping.txt` for retracing. Automatic Sentry mapping association
-and native-symbol uploads are not set up here; those require a separate build-time integration.
+Release builds use R8. Under **Readable crash reports**, enter your Sentry Cloud organization slug
+and a Sentry organization upload token with the `org:ci` scope for the project in your saved DSN. Choose **Save and
+upload mappings**. The server stores the token separately from layouts in a file readable only by
+its owner; it never returns the token to the editor, sends it to tablets, or includes it in exports.
+Add-on backups include this credential file, so protect your backups. **Remove saved token** stops
+future uploads without disabling tablet reporting or deleting files already uploaded to Sentry.
+
+The matching R8 mapping is bundled with each new release APK. Sentry's build plugin embeds its
+mapping identifier in that APK. The add-on verifies the APK checksum, retains the mapping in its
+persistent data, and uploads it when reporting is enabled or a new bundled APK appears (within
+30 seconds). Status lists retained builds; **Retry upload** retries failures. Already uploaded
+mappings are remembered per organization and project. Save settings before retrying after a DSN
+change. Uploads currently support Sentry Cloud only; self-hosted DSNs still receive crash events.
+
+This applies to APKs built with mapping support. Earlier APKs need an update; rebuilding an old
+version does not recover its exact mapping. New events include the mapping identifier required for
+deobfuscation. Native-symbol uploads are not included. For local manual retracing, keep the exact
+build's `player/build/outputs/mapping/release/mapping.txt`.
 This integration reports the Android player, not the add-on server or browser editor.
 
 ## Managing a tablet with ADB

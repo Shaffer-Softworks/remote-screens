@@ -1,6 +1,8 @@
 # The add-on image. Built from addon/ after tools/package_addon.sh has put the server, the editor and the
 # player app in addon/dist/ (CI does both; see .github/workflows/addon.yml).
+FROM getsentry/sentry-cli:3.8.2 AS sentry-cli
 FROM eclipse-temurin:21-jre-alpine
+COPY --from=sentry-cli /bin/sentry-cli /usr/local/bin/sentry-cli
 
 # Java2D draws the maps and needs a font.
 RUN apk add --no-cache fontconfig ttf-dejavu android-tools
