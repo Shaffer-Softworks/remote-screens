@@ -291,6 +291,59 @@ export interface LayoutData {
   themes?: Theme[]
 }
 
+/** Optional sensor groups, matching shared/DeviceTelemetry.kt and the HA integration. */
+export interface DeviceTelemetry {
+  hardware?: string[] | null
+  battery?: {
+    health?: string | null
+    temperatureC?: number | null
+    voltageMv?: number | null
+    currentMa?: number | null
+    chargerType?: string | null
+    cycles?: number | null
+  } | null
+  network?: {
+    ssid?: string | null
+    bssid?: string | null
+    ipAddress?: string | null
+    linkSpeedMbps?: number | null
+    frequencyMhz?: number | null
+    rssiDbm?: number | null
+  } | null
+  system?: {
+    storageFreeBytes?: number | null
+    storageTotalBytes?: number | null
+    memoryAvailableBytes?: number | null
+    memoryTotalBytes?: number | null
+    uptimeSeconds?: number | null
+    osVersion?: string | null
+    securityPatch?: string | null
+    appVersionName?: string | null
+    manufacturer?: string | null
+    model?: string | null
+  } | null
+  environment?: {
+    illuminanceLux?: number | null
+    pressureHpa?: number | null
+    temperatureC?: number | null
+    humidityPercent?: number | null
+    isNear?: boolean | null
+  } | null
+  motion?: {
+    isMoving?: boolean | null
+    orientation?: string | null
+    lastMotionAt?: number | null
+  } | null
+  location?: {
+    latitude: number
+    longitude: number
+    accuracyM?: number | null
+    altitudeM?: number | null
+    fixedAt: number
+  } | null
+  permissions?: Record<string, boolean | null> | null
+}
+
 export interface PlayerStatus {
   deviceId: string
   name: string
@@ -309,6 +362,8 @@ export interface PlayerStatus {
   charging?: boolean
   /** Wi‑Fi signal level 0–4. */
   wifi?: number
+  /** Sensors and diagnostics, absent until a compatible player reports them. */
+  telemetry?: DeviceTelemetry | null
   /** Epoch milliseconds of the last sensor report. */
   telemetryAt?: number
 }

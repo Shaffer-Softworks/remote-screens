@@ -16,7 +16,7 @@ import {
   topBarHeight,
 } from '../model/grid'
 import { intercomStacks } from '../model/intercomLayout'
-import { colorOf, pastel } from '../model/palette'
+import { usePreviewPalette } from '../model/palette'
 import { iconOf, nameOf, stateOf } from '../model/tiles'
 import type { Page, Screen, Tile, TileSource } from '../model/types'
 import { domainOf, kindOf } from '../model/types'
@@ -30,12 +30,15 @@ const props = defineProps<{
   device: { w: number; h: number }
   selectedId: string | null
   moved: Set<string>
+  thumbnail?: boolean
 }>()
 const emit = defineEmits<{
   select: [id: string | null]
   move: [id: string, col: number, row: number]
   add: [source: TileSource, at: { col: number; row: number }]
 }>()
+
+const { colorOf, pastel } = usePreviewPalette()
 
 const wallpaper = computed(() => {
   const token = props.page.backgroundImage
@@ -65,13 +68,14 @@ const gridLayout = computed(() =>
     navBarHeight(props.screen.navBar, props.device.w),
   ),
 )
-// The frame is 10px around the device and its margin 10px more.
-const scale = computed(() =>
-  Math.max(
-    0.1,
-    Math.min((room.value.w - 24) / props.device.w, (room.value.h - 24) / props.device.h),
-  ),
-)
+// Dashboard thumbnails use the whole available area; the designer keeps its device frame.
+const scale = computed(() => {
+  const inset = props.thumbnail ? 0 : 24
+  return Math.max(
+    props.thumbnail ? 0.01 : 0.1,
+    Math.min((room.value.w - inset) / props.device.w, (room.value.h - inset) / props.device.h),
+  )
+})
 const placed = computed(() => reflow(props.page.tiles, props.screen.grid))
 const visiblePages = computed(() => props.screen.pages.filter(page => !page.hidden))
 const cells = computed(() => {
@@ -462,6 +466,8 @@ const highlight = computed(() => {
         width: `${device.w}px`,
         height: `${device.h}px`,
         transform: `scale(${scale})`,
+        left: thumbnail ? `${(room.w - device.w * scale) / 2}px` : undefined,
+        top: thumbnail ? `${(room.h - device.h * scale) / 2}px` : undefined,
         backgroundImage: wallpaper,
         backgroundSize: wallpaper ? 'cover' : undefined,
         backgroundPosition: wallpaper ? 'center' : undefined,

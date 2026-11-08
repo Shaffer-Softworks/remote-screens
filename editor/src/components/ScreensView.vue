@@ -2,7 +2,6 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { api } from '../api'
 import { DENSITIES, PRESETS, clampDp, toDp } from '../model/devices'
-import { reflow, suggest } from '../model/grid'
 import { isScreenFile, screenFile, screenFileName, type ScreenFile } from '../model/screenFile'
 import type { PlayerStatus, Screen } from '../model/types'
 import { attempt, playersOf, refreshLayout, refreshThemes, state, toast } from '../store'
@@ -11,7 +10,10 @@ import MdiIcon from './MdiIcon.vue'
 import NotificationComposer from './NotificationComposer.vue'
 import IntercomDesk from './IntercomDesk.vue'
 import AdbPanel from './AdbPanel.vue'
-import CrashReportingPanel from './CrashReportingPanel.vue'
+import ScreenPreview from './ScreenPreview.vue'
+import SettingsDialog from './SettingsDialog.vue'
+import DeviceInfoDialog from './DeviceInfoDialog.vue'
+import './dashboard.css'
 
 const emit = defineEmits<{ edit: [screen: Screen]; themes: [] }>()
 
@@ -21,6 +23,9 @@ const screens = computed(() => state.layout?.screens ?? [])
 const waiting = computed(() => state.players.filter(player => !player.screenId))
 const adopted = computed(() => state.players.filter(player => player.screenId))
 
+const settingsOpen = ref(false)
+const infoDeviceId = ref<string | null>(null)
+const screenMenu = ref<string | null>(null)
 const creating = ref(false)
 const enrolling = ref(false)
 const intercomOpen = ref(false)
@@ -166,9 +171,21 @@ async function forget(player: PlayerStatus): Promise<void> {
 
 /** The device id of the tablet whose ⋮ menu is open. */
 const menu = ref<string | null>(null)
-const closeMenu = () => (menu.value = null)
-onMounted(() => window.addEventListener('click', closeMenu))
-onBeforeUnmount(() => window.removeEventListener('click', closeMenu))
+const closeMenu = () => {
+  menu.value = null
+  screenMenu.value = null
+}
+const menuKey = (event: KeyboardEvent) => {
+  if (event.key === 'Escape') closeMenu()
+}
+onMounted(() => {
+  window.addEventListener('click', closeMenu)
+  window.addEventListener('keydown', menuKey)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('click', closeMenu)
+  window.removeEventListener('keydown', menuKey)
+})
 
 function tileCount(screen: Screen): number {
   return screen.pages.reduce((count, page) => count + page.tiles.length, 0)
@@ -193,103 +210,44 @@ function status(player: PlayerStatus): string {
   return player.lastSeen ? `Offline · ${ago(player.lastSeen)}` : 'Never connected'
 }
 
-function suggested(player: PlayerStatus): string {
-  const gridSize = suggest(player.widthDp, player.heightDp)
-  return `${gridSize.cols} × ${gridSize.rows}`
-}
-
-/** The shape the preview is drawn in: the screen's design size, else its first tablet's. */
-function aspect(screen: Screen): string {
-  if (screen.designSize) return `${screen.designSize.widthDp} / ${screen.designSize.heightDp}`
-  const player = playersOf(screen.id).find(candidate => candidate.widthDp > 0)
-  return player ? `${player.widthDp} / ${player.heightDp}` : '16 / 10'
-}
-
-function preview(screen: Screen) {
-  const page = screen.pages.find(candidate => candidate.id === screen.homePage) ?? screen.pages[0]
-  if (!page || page.root) return { free: page?.root !== undefined, tiles: [] }
-  const { cols, rows } = screen.grid
-  return {
-    free: false,
-    tiles: reflow(page.tiles, screen.grid).map(placed => ({
-      id: placed.tile.id,
-      style: {
-        left: `${(placed.col / cols) * 100}%`,
-        top: `${(placed.row / rows) * 100}%`,
-        width: `${(placed.w / cols) * 100}%`,
-        height: `${(placed.h / rows) * 100}%`,
-      },
-    })),
-  }
-}
 </script>
 
 <template>
-  <NotificationComposer
-    v-if="notificationTargets !== null"
-    :initial-targets="notificationTargets"
-    @close="notificationTargets = null"
-  />
-  <div class="page">
-    <header class="row">
-      <MdiIcon name="tablet-dashboard" :size="28" />
-      <h1 class="grow">Remote Screens</h1>
-      <button title="Colours the screens wear" @click="emit('themes')">
-        <MdiIcon name="palette-outline" :size="16" /> Themes
-      </button>
-      <span v-if="state.info?.demo" class="badge">Demo</span>
-      <span class="pill">
+  <div class="dashboard">
+    <NotificationComposer v-if="notificationTargets !== null" :initial-targets="notificationTargets" @close="notificationTargets = null" />
+    <SettingsDialog v-if="settingsOpen" @close="settingsOpen = false" />
+    <DeviceInfoDialog v-if="infoDeviceId" :device-id="infoDeviceId" @close="infoDeviceId = null" />
+    <EnrollTabletPanel v-if="enrolling" @close="enrolling = false" />
+
+    <header class="dashboard-header">
+      <div class="brand"><MdiIcon name="monitor" :size="30" /><span>Remote Screens</span></div>
+      <nav aria-label="Main navigation">
+        <button class="nav-tab selected" aria-current="page"><MdiIcon name="view-grid" :size="22" /> Screens</button>
+        <button class="nav-tab" @click="emit('themes')"><MdiIcon name="palette-outline" :size="22" /> Themes</button>
+      </nav>
+      <div class="connection" role="status">
+        <MdiIcon name="home-assistant" :size="23" />
         <span class="dot" :class="{ on: state.info?.connected }" />
-        {{ state.info?.connected ? 'Connected to' : 'Not connected to' }}
-        {{ state.info?.locationName || 'Home Assistant' }}
-      </span>
+        <span>{{ state.info?.connected ? 'Connected to' : 'Not connected to' }} {{ state.info?.locationName || 'Home Assistant' }}</span>
+      </div>
+      <span v-if="state.info?.demo" class="demo-badge">Demo</span>
+      <button class="settings-button" aria-label="Settings" title="Settings" @click="settingsOpen = true"><MdiIcon name="cog-outline" :size="24" /></button>
     </header>
 
-    <CrashReportingPanel />
-
-    <section v-if="waiting.length" class="card pairing">
-      <div class="row">
-        <MdiIcon name="tablet" :size="22" />
-        <h2 class="grow">
-          {{ waiting.length === 1 ? 'A tablet wants' : `${waiting.length} tablets want` }} to pair
-        </h2>
-      </div>
-      <p class="muted">
-        Check the code matches the one on the tablet, then pick the screen it should show.
-      </p>
-      <div v-for="p in waiting" :key="p.deviceId" class="row player">
-        <span class="code">{{ p.pairingCode ?? '—' }}</span>
-        <span class="grow">
-          {{ p.name }}
-          <span class="muted">
-            · {{ p.widthDp }} × {{ p.heightDp }} dp, suits a {{ suggested(p) }} grid</span
-          >
-        </span>
-        <select v-model="assign[p.deviceId]" :disabled="screens.length === 0">
-          <option value="" disabled>Show screen…</option>
-          <option v-for="s in screens" :key="s.id" :value="s.id">{{ s.name }}</option>
-        </select>
-        <button class="primary" :disabled="screens.length === 0" @click="adopt(p)">Pair</button>
-      </div>
-      <p v-if="screens.length === 0" class="muted">Make a screen below first.</p>
-    </section>
-
-    <section>
-      <div class="row heading">
-        <div class="grow">
-          <h3>Screens</h3>
-          <p class="muted hint">What the tablets display. Click one to edit its pages and tiles.</p>
+    <main class="dashboard-content">
+      <section aria-labelledby="screens-title">
+        <div class="section-heading screens-heading">
+          <div>
+            <h1 id="screens-title">Your screens</h1>
+            <p>Design and manage your Remote Screens dashboards for your wall tablets.</p>
+          </div>
+          <div class="segmented" role="group" aria-label="Screen actions">
+            <button @click="emit('themes')"><MdiIcon name="palette-outline" :size="20" /> Themes</button>
+            <button title="Add a screen from a file" @click="chooseFile"><MdiIcon name="download" :size="20" /> Import</button>
+            <button class="primary" :aria-expanded="creating" @click="creating = !creating"><MdiIcon name="plus" :size="22" /> New screen</button>
+          </div>
+          <input ref="fileInput" class="file" type="file" accept=".json,application/json" @change="importChosen" />
         </div>
-        <button title="Add a screen from a file" @click="chooseFile">Import</button>
-        <button class="primary" @click="creating = !creating">+ New screen</button>
-        <input
-          ref="fileInput"
-          class="file"
-          type="file"
-          accept=".json,application/json"
-          @change="importChosen"
-        />
-      </div>
 
       <div v-if="creating" class="card create">
         <label class="field grow"
@@ -324,570 +282,118 @@ function preview(screen: Screen) {
         </div>
       </div>
 
-      <p v-if="screens.length === 0 && !creating" class="card muted empty">
-        No screens yet. Make one, then pair a tablet with it.
-      </p>
 
-      <div class="screens">
-        <article v-for="s in screens" :key="s.id" class="card screen" @click="emit('edit', s)">
-          <div class="frame">
-            <div class="thumb" :style="{ aspectRatio: aspect(s) }">
-              <div class="cells">
-                <span v-for="t in preview(s).tiles" :key="t.id" class="tile" :style="t.style" />
+        <p v-if="!screens.length && !creating" class="card empty">No screens yet. Make one, then pair a tablet with it.</p>
+        <div class="screens">
+          <article v-for="s in screens" :key="s.id" class="screen">
+            <button class="screen-open" :aria-label="'Edit ' + s.name" @click="emit('edit', s)" />
+            <ScreenPreview :screen="s" />
+            <div class="screen-footer">
+              <div class="screen-description">
+                <h2>{{ s.name }}</h2>
+                <p><MdiIcon name="layers-outline" :size="17" /> {{ s.pages.length }} {{ s.pages.length === 1 ? 'page' : 'pages' }} · {{ tileCount(s) }} {{ tileCount(s) === 1 ? 'tile' : 'tiles' }}</p>
               </div>
-              <span v-if="preview(s).free" class="empty-thumb"
-                ><MdiIcon name="vector-square" :size="28"
-              /></span>
-              <span v-else-if="preview(s).tiles.length === 0" class="empty-thumb"
-                >Empty — click to add tiles</span
-              >
-              <span class="nav" />
+              <div class="screen-tablets">
+                <span v-for="p in playersOf(s.id)" :key="p.deviceId" class="chip" :title="status(p)"><MdiIcon name="tablet" :size="17" /> {{ p.name }}</span>
+                <span v-if="!playersOf(s.id).length" class="unassigned">No tablet assigned</span>
+              </div>
+              <div class="menu">
+                <button class="icon quiet" :aria-label="'Actions for ' + s.name" :aria-expanded="screenMenu === s.id" @click.stop="screenMenu = screenMenu === s.id ? null : s.id"><MdiIcon name="dots-vertical" :size="22" /></button>
+                <div v-if="screenMenu === s.id" class="card popup" @click.stop>
+                  <button @click="screenMenu = null; duplicate(s)"><MdiIcon name="content-copy" :size="18" /> Duplicate</button>
+                  <button @click="screenMenu = null; exportScreen(s)"><MdiIcon name="download" :size="18" /> Export</button>
+                  <button class="danger" @click="screenMenu = null; remove(s)"><MdiIcon name="delete-outline" :size="18" /> Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="tablet-section" aria-labelledby="tablets-title">
+        <div class="section-heading">
+          <div>
+            <h2 id="tablets-title">Tablets</h2>
+            <p>Manage your Android tablets, assign screens and run device tools.</p>
+          </div>
+          <div class="segmented" role="group" aria-label="Tablet actions">
+            <button :class="{ active: intercomOpen }" :aria-expanded="intercomOpen" aria-controls="intercom-desk" @click="intercomOpen = !intercomOpen"><MdiIcon name="microphone-outline" :size="20" /> Intercom</button>
+            <button :class="{ active: adbOpen }" :aria-expanded="adbOpen" aria-controls="adb-panel" @click="adbOpen = !adbOpen"><MdiIcon name="console" :size="20" /> ADB</button>
+            <button :disabled="!adopted.length" @click="notificationTargets = []"><MdiIcon name="bell-outline" :size="20" /> Send notification</button>
+          </div>
+        </div>
+
+        <div v-if="waiting.length" class="pairing" aria-label="Tablets waiting to pair">
+          <div v-for="p in waiting" :key="p.deviceId" class="pairing-row">
+            <MdiIcon class="pairing-icon" name="tablet" :size="42" />
+            <div class="pairing-copy">
+              <h3>{{ waiting.length === 1 ? 'Tablet waiting to pair' : p.name + ' waiting to pair' }}</h3>
+              <p>Check this code matches your tablet.</p>
+              <small>{{ p.name }} · {{ p.widthDp }} × {{ p.heightDp }} dp</small>
+            </div>
+            <div class="pairing-code"><span>Pairing code</span><strong>{{ p.pairingCode ?? '—' }}</strong></div>
+            <label class="pairing-select">Assign screen
+              <select :value="assign[p.deviceId] || screens[0]?.id || ''" :disabled="!screens.length" @change="assign[p.deviceId] = ($event.target as HTMLSelectElement).value">
+                <option v-if="!screens.length" value="">Create a screen first</option>
+                <option v-for="s in screens" :key="s.id" :value="s.id">{{ s.name }}</option>
+              </select>
+            </label>
+            <button class="primary pair-button" :disabled="!screens.length" @click="adopt(p)">Pair</button>
+          </div>
+        </div>
+
+        <IntercomDesk v-if="intercomOpen" id="intercom-desk" class="intercom-panel" />
+        <AdbPanel v-if="adbOpen" id="adb-panel" />
+
+        <div class="tablet-setup">
+          <p><MdiIcon name="plus-circle-outline" :size="18" /> Add a tablet: install the player app, or enroll a factory-reset tablet as a kiosk.</p>
+          <div class="setup-actions">
+            <a v-if="state.info?.playerApp" href="api/player.apk"><MdiIcon name="download" :size="18" /> Download app ({{ state.info.playerApp }})</a>
+            <a v-else :href="RELEASES" target="_blank" rel="noopener"><MdiIcon name="download" :size="18" /> Download app <span class="sr-only">from GitHub releases</span></a>
+            <button aria-haspopup="dialog" :aria-expanded="enrolling" @click="enrolling = true"><MdiIcon name="qrcode-scan" :size="18" /> Enroll a tablet</button>
+          </div>
+        </div>
+
+        <div class="device-list" role="table" aria-label="Paired tablets">
+          <div v-if="adopted.length" class="device-row labels" role="row">
+            <span role="columnheader">Device</span><span role="columnheader">State</span><span role="columnheader">Battery</span><span role="columnheader">Assigned screen</span><span role="columnheader" class="sr-only">Actions</span>
+          </div>
+          <div v-for="p in adopted" :key="p.deviceId" class="device-row" role="row">
+            <div class="device-name" role="cell">
+              <MdiIcon name="tablet" :size="27" />
+              <div><button class="device-info-link" :data-device-info="p.deviceId" :aria-label="p.name + ' device info'" aria-haspopup="dialog" @click="infoDeviceId = p.deviceId">{{ p.name }}</button><small>{{ p.widthDp }} × {{ p.heightDp }} dp
+                <span v-if="p.kiosk === 'locked' || p.kiosk === 'pinned'" class="kiosk-status" :title="p.online ? (p.kiosk === 'locked' ? 'Kiosk locked' : 'Kiosk pinned') : 'Last reported: kiosk ' + p.kiosk">
+                  <MdiIcon :name="p.kiosk === 'locked' ? 'lock' : 'pin'" :size="15" />
+                  <span class="sr-only">{{ p.online ? '' : 'Last reported: ' }}{{ p.kiosk === 'locked' ? 'Kiosk locked' : 'Kiosk pinned' }}</span>
+                </span>
+              </small></div>
+            </div>
+            <span class="device-status" role="cell" :class="p.online ? (p.awake ? 'online' : 'standby') : 'offline'" :title="status(p)">
+              <span class="dot" /> {{ p.online ? (p.awake ? 'Online' : 'Standby') : 'Offline' }}
+            </span>
+            <span class="battery" role="cell" :aria-label="p.battery != null ? p.battery + ' percent battery' : 'Battery unknown'" :class="{ charging: p.charging }"><MdiIcon :name="p.battery == null ? 'battery-unknown' : p.charging ? 'battery-charging' : 'battery-outline'" :size="22" /> {{ p.battery != null ? p.battery + '%' : '—' }}</span>
+            <div role="cell" class="assignment-cell"><select class="screen-assignment" :value="p.screenId" :aria-label="'Screen shown on ' + p.name" @change="move(p, ($event.target as HTMLSelectElement).value)">
+              <option v-for="s in screens" :key="s.id" :value="s.id">{{ s.name }}</option>
+              <option v-if="!screens.some(s => s.id === p.screenId)" :value="p.screenId">{{ screenName(p.screenId) }}</option>
+            </select></div>
+            <div class="device-actions" role="cell">
+              <button class="identify" :disabled="!p.online" title="Flash this tablet's name on its display" @click="identify(p)"><MdiIcon name="crosshairs-gps" :size="18" /> Identify</button>
+              <div class="menu">
+                <button class="icon quiet" :aria-label="'Actions for ' + p.name" :aria-expanded="menu === p.deviceId" @click.stop="menu = menu === p.deviceId ? null : p.deviceId"><MdiIcon name="dots-vertical" :size="22" /></button>
+                <div v-if="menu === p.deviceId" class="card popup" @click.stop>
+                  <button @click="menu = null; infoDeviceId = p.deviceId"><MdiIcon name="information-outline" :size="18" /> Device info</button>
+                  <button @click="notifyTablet(p)"><MdiIcon name="bell-outline" :size="18" /> Send notification</button>
+                  <button @click="rename(p)"><MdiIcon name="pencil-outline" :size="18" /> Rename</button>
+                  <button class="danger" @click="forget(p)"><MdiIcon name="link-off" :size="18" /> Unpair</button>
+                </div>
+              </div>
             </div>
           </div>
-
-          <div class="row">
-            <h2 class="grow">{{ s.name }}</h2>
-            <button class="icon quiet" title="Duplicate screen" @click.stop="duplicate(s)">
-              <MdiIcon name="content-copy" :size="18" />
-            </button>
-            <button class="icon quiet" title="Export screen" @click.stop="exportScreen(s)">
-              <MdiIcon name="download" :size="18" />
-            </button>
-            <button class="icon quiet remove" title="Delete screen" @click.stop="remove(s)">
-              <MdiIcon name="delete-outline" :size="18" />
-            </button>
-          </div>
-          <p class="muted">
-            {{ s.pages.length }} {{ s.pages.length === 1 ? 'page' : 'pages' }} · {{ s.grid.cols }} ×
-            {{ s.grid.rows }} grid · {{ tileCount(s) }} {{ tileCount(s) === 1 ? 'tile' : 'tiles' }}
-          </p>
-
-          <div class="row tablets">
-            <template v-if="playersOf(s.id).length">
-              <span class="muted">On</span>
-              <span v-for="p in playersOf(s.id)" :key="p.deviceId" class="chip" :title="status(p)">
-                <span class="dot small" :class="{ on: p.online }" /> {{ p.name }}
-              </span>
-            </template>
-            <span v-else class="muted">Not on any tablet yet</span>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section>
-      <div class="row heading">
-        <div class="grow">
-          <h3>Tablets</h3>
-          <p class="muted hint">Each paired tablet shows one screen. Change it here at any time.</p>
-        </div>
-        <div class="tablet-actions" role="group" aria-label="Tablet actions">
-          <button
-            :class="{ active: intercomOpen }"
-            :aria-expanded="intercomOpen"
-            aria-controls="intercom-desk"
-            title="Call a tablet from this browser"
-            @click="intercomOpen = !intercomOpen"
-          >
-            <MdiIcon name="phone" :size="18" /> Intercom
-          </button>
-          <button
-            :class="{ active: adbOpen }"
-            :aria-expanded="adbOpen"
-            aria-controls="adb-panel"
-            title="Manage tablets with Android Debug Bridge"
-            @click="adbOpen = !adbOpen"
-          >
-            <MdiIcon name="android" :size="18" /> ADB
-          </button>
-          <button :disabled="!adopted.length" @click="notificationTargets = []">
-            <MdiIcon name="bell-ring-outline" :size="18" /> Send notification
-          </button>
-        </div>
-      </div>
-
-      <IntercomDesk v-if="intercomOpen" id="intercom-desk" class="intercom-panel" />
-      <AdbPanel v-if="adbOpen" id="adb-panel" />
-
-      <div class="card list">
-        <div v-if="adopted.length" class="row player labels muted">
-          <span class="grow">Tablet</span>
-          <span class="status">Status</span>
-          <span class="shows">Shows screen</span>
-          <span class="actions" />
+          <p v-if="!adopted.length" class="empty">No paired tablets yet. Install the player app on a tablet to get started.</p>
         </div>
 
-        <div v-for="p in adopted" :key="p.deviceId" class="row player">
-          <span class="grow name">
-            <MdiIcon name="tablet" :size="20" class="muted" />
-            <span>
-              {{ p.name }}
-              <template v-if="p.widthDp > 0"
-                ><br /><span class="muted small"
-                  >{{ p.widthDp }} × {{ p.heightDp }} dp</span
-                ></template
-              >
-            </span>
-          </span>
-          <span class="status" :class="{ online: p.online }">
-            <span class="dot small" :class="{ on: p.online }" /> {{ status(p) }}
-            <template v-if="p.battery != null"> · {{ p.battery }}%</template>
-            <span v-if="p.online && p.kiosk === 'locked'" title="Kiosk locked"
-              ><MdiIcon name="lock" :size="14"
-            /></span>
-            <span v-else-if="p.online && p.kiosk === 'pinned'" title="Kiosk pinned (screen pinning)"
-              ><MdiIcon name="pin" :size="14"
-            /></span>
-          </span>
-          <select
-            class="shows"
-            :value="p.screenId"
-            :title="`Screen shown on ${p.name}`"
-            @change="move(p, ($event.target as HTMLSelectElement).value)"
-          >
-            <option v-for="s in screens" :key="s.id" :value="s.id">{{ s.name }}</option>
-            <option v-if="!screens.some(s => s.id === p.screenId)" :value="p.screenId">
-              {{ screenName(p.screenId) }}
-            </option>
-          </select>
-          <span class="actions row">
-            <button
-              class="quiet"
-              :disabled="!p.online"
-              title="Flash this tablet's name on its display"
-              @click="identify(p)"
-            >
-              Identify
-            </button>
-            <span class="menu">
-              <button
-                class="icon quiet"
-                :class="{ open: menu === p.deviceId }"
-                title="More"
-                @click.stop="menu = menu === p.deviceId ? null : p.deviceId"
-              >
-                <MdiIcon name="dots-vertical" :size="18" />
-              </button>
-              <div v-if="menu === p.deviceId" class="card popup" @click.stop>
-                <button class="item" @click="notifyTablet(p)">
-                  <MdiIcon name="bell-ring-outline" :size="16" /> Send notification
-                </button>
-                <button class="item" @click="rename(p)">
-                  <MdiIcon name="pencil-outline" :size="16" /> Rename
-                </button>
-                <button class="item danger" @click="forget(p)">
-                  <MdiIcon name="link-off" :size="16" /> Unpair
-                </button>
-              </div>
-            </span>
-          </span>
-        </div>
 
-        <div class="row add" :class="{ alone: adopted.length === 0 }">
-          <MdiIcon name="plus-circle-outline" :size="20" class="muted" />
-          <span class="grow muted">
-            <strong>Add a tablet:</strong> install the player app on a tablet on the same network.
-            It finds the add-on by itself and a pairing code appears here.
-          </span>
-          <a v-if="state.info?.playerApp" href="api/player.apk" class="link"
-            >Download app ({{ state.info.playerApp }})</a
-          >
-          <a v-else :href="RELEASES" target="_blank" rel="noopener" class="link"
-            >Get the app on GitHub</a
-          >
-        </div>
-
-        <div v-if="state.info?.playerApp" class="row add">
-          <MdiIcon name="lock-outline" :size="20" class="muted" />
-          <span class="grow muted">
-            <strong>Kiosk tablet:</strong> enroll a factory-reset tablet with a QR code, so Kiosk
-            lock keeps everyone on the screen.
-          </span>
-          <button class="link-button" @click="enrolling = !enrolling">Enroll a tablet</button>
-        </div>
-      </div>
-      <EnrollTabletPanel v-if="enrolling" class="enroll-panel" @close="enrolling = false" />
-    </section>
+      </section>
+    </main>
   </div>
 </template>
-
-<style scoped>
-.page {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
-
-header h1 {
-  font-size: 22px;
-}
-
-.heading {
-  margin-bottom: 12px;
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-
-.tablet-actions {
-  display: inline-flex;
-  max-width: 100%;
-}
-
-.tablet-actions button {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border-radius: 0;
-  white-space: nowrap;
-}
-
-.tablet-actions button + button {
-  margin-left: -1px;
-}
-
-.tablet-actions button:first-child {
-  border-radius: 999px 0 0 999px;
-}
-
-.tablet-actions button:last-child {
-  border-radius: 0 999px 999px 0;
-}
-
-.tablet-actions button:hover:not(:disabled),
-.tablet-actions button.active,
-.tablet-actions button:focus-visible {
-  z-index: 1;
-}
-
-.tablet-actions button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-@media (max-width: 480px) {
-  .tablet-actions button {
-    padding: 6px 8px;
-    font-size: 12px;
-  }
-}
-
-.heading button.active {
-  background: var(--ink);
-  color: var(--bg);
-  border-color: var(--ink);
-}
-
-.intercom-panel {
-  margin-bottom: 14px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.hint {
-  margin: 4px 0 0;
-}
-
-.badge {
-  background: var(--accent);
-  color: var(--accent-ink);
-  border-radius: 999px;
-  padding: 2px 10px;
-  font-size: 12px;
-}
-
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 3px 10px;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--muted);
-  opacity: 0.6;
-  flex: none;
-}
-
-.dot.small {
-  width: 8px;
-  height: 8px;
-}
-
-.dot.on {
-  background: #3da866;
-  opacity: 1;
-}
-
-.pairing {
-  outline: 2px solid var(--accent);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.pairing p {
-  margin: 0;
-}
-
-.create {
-  display: flex;
-  gap: 12px;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-
-.empty {
-  margin: 0;
-  text-align: center;
-  padding: 28px;
-}
-
-.screens {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
-}
-
-.screen {
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  outline: 2px solid transparent;
-}
-
-.screen:hover {
-  outline-color: var(--accent);
-}
-
-.screen p {
-  margin: 0;
-}
-
-.frame {
-  height: 160px;
-  margin-bottom: 6px;
-  display: flex;
-  justify-content: center;
-}
-
-.thumb {
-  position: relative;
-  height: 100%;
-  max-width: 100%;
-  border-radius: 10px;
-  background: #2f2e2e;
-  padding: 6px 6px 0;
-  overflow: hidden;
-}
-
-.cells {
-  position: relative;
-  height: 86%;
-}
-
-.tile {
-  position: absolute;
-  border: 2px solid #2f2e2e;
-  border-radius: 5px;
-  background: #555;
-}
-
-.screen:hover .tile {
-  background: #3e7f72;
-}
-
-.nav {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 12%;
-  background: #262525;
-  border-top: 2px solid #03dac5;
-}
-
-.empty-thumb {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: #8a8a8a;
-  font-size: 12px;
-  text-align: center;
-}
-
-button.quiet {
-  color: var(--muted);
-  border-color: transparent;
-  background: transparent;
-}
-
-.screen button.quiet:hover {
-  color: var(--ink);
-}
-
-.screen button.remove:hover {
-  color: var(--danger);
-}
-
-.file {
-  display: none;
-}
-
-.tablets {
-  flex-wrap: wrap;
-  margin-top: 2px;
-  font-size: 12px;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 2px 8px;
-}
-
-.list {
-  padding: 4px 16px;
-}
-
-.player {
-  padding: 10px 0;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.player + .player,
-.add {
-  border-top: 1px solid var(--line);
-}
-
-.labels {
-  font-size: 12px;
-  padding: 8px 0 6px;
-}
-
-.name {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 180px;
-}
-
-.small {
-  font-size: 12px;
-}
-
-.status {
-  width: 170px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--muted);
-}
-
-.status.online {
-  color: var(--ink);
-}
-
-.shows {
-  width: 150px;
-}
-
-.actions {
-  width: 130px;
-  justify-content: flex-end;
-}
-
-.menu {
-  position: relative;
-}
-
-.menu button.open {
-  background: var(--line);
-  color: var(--ink);
-}
-
-.popup {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 4px);
-  z-index: 10;
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  min-width: 150px;
-  outline: 1px solid var(--line);
-}
-
-.popup .item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-}
-
-.popup .item:hover {
-  background: var(--bg);
-}
-
-.add {
-  padding: 12px 0;
-  gap: 10px;
-}
-
-.add.alone {
-  border-top: none;
-}
-
-.add strong {
-  color: var(--ink);
-  font-weight: 500;
-}
-
-.link {
-  color: var(--accent);
-  white-space: nowrap;
-}
-
-.link-button {
-  color: var(--accent);
-  white-space: nowrap;
-  border: none;
-  background: transparent;
-  padding: 0;
-}
-
-.enroll-panel {
-  margin-top: 14px;
-}
-
-.code {
-  font-family: ui-monospace, monospace;
-  font-size: 18px;
-  letter-spacing: 0.15em;
-  background: var(--bg);
-  border-radius: 8px;
-  padding: 4px 10px;
-}
-</style>

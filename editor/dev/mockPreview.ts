@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import type { Plugin } from 'vite'
-import type { Info, LayoutData, PlayerStatus, Screen } from '../src/model/types'
+import type { Info, LayoutData } from '../src/model/types'
+import { dashboardEntities, dashboardPlayers, dashboardScreens, dashboardThemes, pendingTablets } from './dashboardFixtures'
 
 // Loaded by Vite's development server only. No backend or physical device is contacted.
 export function mockPreview(): Plugin {
@@ -12,38 +13,13 @@ export function mockPreview(): Plugin {
         readFileSync(new URL('../../server/src/main/resources/mdi.json', import.meta.url), 'utf8'),
       ) as { icons: Record<string, string> }
       const key = (name: string) => name.replace(/^mdi:/, '').replace(/^mdi/, '').replaceAll('-', '').toLowerCase()
-      const screen: Screen = {
-        id: 'preview-home', name: 'Home',
-        grid: { cols: 4, rows: 2 }, homePage: 'home',
-        designSize: { widthDp: 1280, heightDp: 800 },
-        pages: [{
-          id: 'home', title: 'Home',
-          tiles: [
-            { id: 'light', entityId: 'light.living_room', name: 'Living room', col: 0, row: 0, w: 1, h: 1,
-              tap: { type: 'toggle' }, hold: { type: 'card' }, options: {} },
-            { id: 'temperature', entityId: 'sensor.temperature', name: 'Temperature', col: 1, row: 0, w: 1, h: 1,
-              tap: { type: 'card' }, hold: { type: 'none' }, options: {} },
-          ],
-        }],
-        settings: {
-          brightness: 80, darkMode: false, standbyMinutes: 10, standbyBrightness: 10,
-          nightBrightness: 20, nightDark: true, backToHomeSeconds: 60, swipe: true, orientation: 0,
-        },
-        topBar: { show: true, clock: true, people: true },
-        navBar: {},
-      }
-      const layout: LayoutData = { schemaVersion: 1, screens: [screen], preferences: {}, themes: [] }
-      const players: PlayerStatus[] = [
-        { deviceId: 'preview-kitchen', name: 'Kitchen tablet', screenId: screen.id,
-          online: true, awake: true, widthDp: 1280, heightDp: 800, appVersion: 100,
-          lastSeen: Date.now(), page: 0, battery: 86, charging: true, kiosk: 'locked' },
-        { deviceId: 'preview-hall', name: 'Hallway tablet', screenId: screen.id,
-          online: false, awake: false, widthDp: 800, heightDp: 1280, appVersion: 100,
-          lastSeen: Date.now() - 3600000, page: 0, battery: 42 },
-      ]
+      const layout: LayoutData = { schemaVersion: 1, screens: dashboardScreens, preferences: {}, themes: [] }
+      // Set REMOTE_SCREENS_MOCK_PENDING=0 or 2 to inspect other pairing states.
+      const pendingCount = Math.max(0, Math.min(5, Number(process.env.REMOTE_SCREENS_MOCK_PENDING ?? 1) || 0))
+      const players = [...dashboardPlayers, ...pendingTablets(pendingCount)]
       const info: Info = {
         version: 'UI preview', demo: true, connected: true, language: 'en',
-        haVersion: 'Preview', locationName: 'UI preview · sample data',
+        haVersion: 'Preview', locationName: 'Home Assistant (preview)',
       }
       server.middlewares.use((request, response, next) => {
         const url = new URL(request.url ?? '/', 'http://localhost')
@@ -59,12 +35,9 @@ export function mockPreview(): Plugin {
           case '/api/info': return send(info)
           case '/api/layout': return send(layout)
           case '/api/players': return send(players)
-          case '/api/entities': return send([
-            { entityId: 'light.living_room', name: 'Living room', state: 'on', domain: 'light', area: 'living' },
-            { entityId: 'sensor.temperature', name: 'Temperature', state: '21.5', domain: 'sensor', unit: '°C', area: 'living' },
-          ])
+          case '/api/entities': return send(dashboardEntities)
           case '/api/areas': return send([{ id: 'living', name: 'Living room' }])
-          case '/api/themes': return send([])
+          case '/api/themes': return send(dashboardThemes)
           case '/api/adb': return send({
             devices: [{ serial: '192.0.2.10:41001', state: 'device', description: 'Sample tablet · preview only' }],
             associations: { 'preview-kitchen': '192.0.2.10:41001' },
