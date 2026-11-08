@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { api } from '../api'
+import SentryMappingsPanel from './SentryMappingsPanel.vue'
 import type { SentrySettings } from '../model/types'
 import { state, toast } from '../store'
 
@@ -114,6 +115,7 @@ async function save(): Promise<void> {
       <p v-if="saveError" class="error" role="alert">{{ saveError }}</p>
       <p v-if="saveMessage" role="status">{{ saveMessage }}</p>
     </form>
+    <SentryMappingsPanel />
     <div class="test">
       <h3>Verify a tablet</h3>
       <p class="muted">

@@ -20,6 +20,7 @@ hilt = "2.60.1"
 ksp = "2.3.12"
 timber = "5.0.1"
 sentry = "8.63.0"
+sentryGradle = "6.26.0"
 detekt = "2.0.0-alpha.6"
 mockito = "5.24.0"
 mockitoKotlin = "6.4.0"
@@ -111,3 +112,4 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
+sentry-android = { id = "io.sentry.android.gradle", version.ref = "sentryGradle" }

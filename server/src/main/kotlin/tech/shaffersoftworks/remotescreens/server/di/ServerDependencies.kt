@@ -63,6 +63,11 @@ class ServerDependencies(
         renderDataRepository,
     )
 
+    val sentryMappings = tech.shaffersoftworks.remotescreens.server.service.SentryMappingService(
+        config.dataDir,
+        playerApkRepository,
+        { layoutRepository.layout.value.preferences.sentry },
+    )
     val screenService = ScreenService(layoutRepository, backgroundStore)
     val themeService = ThemeService(layoutRepository)
     val homeAssistantCatalogService = HomeAssistantCatalogService(homeAssistant)
@@ -98,6 +103,7 @@ class ServerDependencies(
         if (config.isDemo && layoutRepository.layout.value.screens.isEmpty()) {
             layoutRepository.update { it.copy(screens = listOf(DemoLayout.screen())) }
         }
+        sentryMappings.start(scope)
         playerHub.start()
         signaling.start()
         scope.launch {

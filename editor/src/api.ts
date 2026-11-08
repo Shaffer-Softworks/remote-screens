@@ -46,7 +46,20 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
   return (await response.json()) as T
 }
 
+export interface MappingUploadStatus {
+  organization: string
+  tokenConfigured: boolean
+  status: string
+  message: string
+  builds: { version: string; uuid: string; uploaded: boolean }[]
+}
+
 export const api = {
+  sentryMappings: () => call<MappingUploadStatus>('GET', 'sentry/mappings'),
+  saveSentryMappings: (organization: string, token: string) =>
+    call<MappingUploadStatus>('PUT', 'sentry/mappings', { organization, token }),
+  retrySentryMappings: () => call<MappingUploadStatus>('POST', 'sentry/mappings'),
+  clearSentryMappings: () => call<MappingUploadStatus>('DELETE', 'sentry/mappings'),
   sendNotification: (request: NotificationRequest) =>
     call<NotificationResult>('POST', 'notifications', request),
   info: () => call<Info>('GET', 'info'),
