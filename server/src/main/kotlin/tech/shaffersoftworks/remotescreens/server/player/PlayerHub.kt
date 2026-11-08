@@ -29,6 +29,13 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.milliseconds
 
+private suspend fun receiveHello(socket: WebSocketSession): PlayerMessage.Hello? {
+    val firstFrame = socket.incoming.receiveCatching().getOrNull() as? Frame.Text
+    return firstFrame
+        ?.let { Protocol.decodePlayer(it.readText()) as? PlayerMessage.Hello }
+        ?.takeIf { it.protocol >= 1 }
+}
+
 private const val STATE_DEBOUNCE_MS = 80L
 private const val TICK_INTERVAL_MS = 1000L
 private const val MIN_CLOCK_DELAY_MS = 200L
@@ -127,13 +134,6 @@ class PlayerHub(
         }
     }
 
-    private suspend fun receiveHello(socket: WebSocketSession): PlayerMessage.Hello? {
-        val firstFrame = socket.incoming.receiveCatching().getOrNull() as? Frame.Text
-        return firstFrame
-            ?.let { Protocol.decodePlayer(it.readText()) as? PlayerMessage.Hello }
-            ?.takeIf { it.protocol >= 1 }
-    }
-
     fun status(): List<PlayerStatus> = layoutRepository.layout.value.players.map { record ->
         val session = sessions[record.deviceId]
         PlayerStatus(
@@ -202,6 +202,16 @@ class PlayerHub(
                     it
                 } },
             )
+        }
+    }
+
+    suspend fun testSentry(deviceId: String): tech.shaffersoftworks.remotescreens.shared.CrashTestResult {
+        val session = sessions[deviceId]?.takeIf { it.screenId != null }
+            ?: return tech.shaffersoftworks.remotescreens.shared.CrashTestResult("offline")
+        return if (Protocol.CAPABILITY_SENTRY_TEST in session.hello.capabilities) {
+            session.testSentry()
+        } else {
+            tech.shaffersoftworks.remotescreens.shared.CrashTestResult("unsupported")
         }
     }
 

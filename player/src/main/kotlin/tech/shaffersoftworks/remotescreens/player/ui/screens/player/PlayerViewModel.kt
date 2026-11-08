@@ -86,6 +86,7 @@ private val PLAYER_CAPABILITIES =
         Protocol.CAPABILITY_TELEMETRY,
         Protocol.CAPABILITY_INTERCOM,
         Protocol.CAPABILITY_NOTIFICATIONS,
+        Protocol.CAPABILITY_SENTRY_TEST,
     )
 
 /**
@@ -364,6 +365,9 @@ class PlayerViewModel @Inject constructor(
             is ServerMessage.IntercomCommand -> intercomCoordinator.command(message.verb, message.clientId)
             is ServerMessage.NotificationBanner -> showNotificationBanner(message)
             ServerMessage.NotificationClear -> dismissNotificationBanner()
+            is ServerMessage.SentryTest -> viewModelScope.launch {
+                send(PlayerMessage.SentryTestResult(message.requestId, crashReporter.test()))
+            }
             ServerMessage.Pong -> Unit
         }
     }

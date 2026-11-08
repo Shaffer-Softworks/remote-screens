@@ -305,6 +305,13 @@ DSN (Project Settings → Client Keys), choose an environment, enable reporting,
 to all paired tablets running a player build with Sentry support; older players ignore the setting.
 No Sentry auth token belongs in this form.
 
+To check delivery, choose a connected tablet under **Verify a tablet**, then **Send test event**.
+This explicitly sends one nonfatal connectivity event with app/device metadata to that tablet's
+saved DSN. **Accepted** means Sentry's ingestion endpoint acknowledged the event; use the returned
+event ID to find it in Sentry after indexing. A timeout does not prove failure: the report may be
+queued. Offline, disabled, unsupported, dropped, and failed results are shown separately.
+Both the server and tablet need a version that supports the test action.
+
 Connected tablets apply changes immediately. Offline tablets receive them on reconnect. The player
 caches the configuration, so reporting starts again after an app restart even without the add-on.
 Disabling closes Sentry when the tablet receives the update; unpairing also disables it.

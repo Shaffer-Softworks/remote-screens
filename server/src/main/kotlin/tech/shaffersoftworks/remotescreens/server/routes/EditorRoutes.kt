@@ -209,6 +209,9 @@ private fun Route.playerManagementRoutes(playerHub: PlayerHub, playerApkReposito
             playerHub.forget(call.parameters.getOrFail("id"))
             call.respond(HttpStatusCode.NoContent)
         }
+        post("/sentry-test") {
+            call.respond(playerHub.testSentry(call.parameters.getOrFail("id")))
+        }
         post("/identify") {
             playerHub.identify(call.parameters.getOrFail("id"))
             call.respond(HttpStatusCode.NoContent)

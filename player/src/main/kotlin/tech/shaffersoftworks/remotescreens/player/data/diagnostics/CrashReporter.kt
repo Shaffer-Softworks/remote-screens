@@ -3,6 +3,16 @@ package tech.shaffersoftworks.remotescreens.player.data.diagnostics
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.sentry.Sentry
+import io.sentry.SentryEvent
+import io.sentry.SentryLevel
+import io.sentry.hints.SubmissionResult
+import io.sentry.protocol.Message
+import io.sentry.protocol.SentryId
+import io.sentry.util.HintUtils
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withTimeoutOrNull
+import tech.shaffersoftworks.remotescreens.shared.CrashTestResult
 import io.sentry.android.core.SentryAndroid
 import java.io.File
 import java.security.MessageDigest
@@ -19,6 +29,8 @@ import tech.shaffersoftworks.remotescreens.player.BuildConfig
 import tech.shaffersoftworks.remotescreens.player.di.IoScope
 import tech.shaffersoftworks.remotescreens.shared.SentrySettings
 import timber.log.Timber
+
+private const val TEST_TIMEOUT_MS = 8_000L
 
 /** Owns the SDK for the whole process, including when the add-on cannot be reached. */
 @Singleton
@@ -55,6 +67,43 @@ class CrashReporter @Inject constructor(
                 return@withLock
             }
             apply(clean)
+        }
+    }
+
+    /** Waits for the test event's transport acknowledgement rather than assuming flush means delivery. */
+    suspend fun test(): CrashTestResult = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            if (applied?.enabled != true || !Sentry.isEnabled()) return@withLock CrashTestResult("disabled")
+            try {
+                val submitted = CompletableDeferred<Boolean>()
+                val successful = java.util.concurrent.atomic.AtomicBoolean()
+                val hint = HintUtils.createWithTypeCheckHint(object : SubmissionResult {
+                    override fun isSuccess(): Boolean = successful.get()
+                    override fun setResult(success: Boolean) {
+                        successful.set(success)
+                        submitted.complete(success)
+                    }
+                })
+                val event = SentryEvent().apply {
+                    level = SentryLevel.INFO
+                    message = Message().apply { formatted = "Remote Screens connectivity test (nonfatal)" }
+                    setTag("diagnostic", "connectivity-test")
+                }
+                val id = Sentry.captureEvent(event, hint)
+                if (id == SentryId.EMPTY_ID) return@withLock CrashTestResult("dropped")
+                val status = when (withTimeoutOrNull(TEST_TIMEOUT_MS) { submitted.await() }) {
+                    true -> "accepted"
+                    false -> "failed"
+                    null -> "timeout"
+                }
+                CrashTestResult(status, id.toString())
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (@Suppress("TooGenericExceptionCaught") error: Exception) {
+                // SDK failures must return a diagnostic result rather than take down the player.
+                Timber.w(error, "Sentry connectivity test failed")
+                CrashTestResult("failed")
+            }
         }
     }
 

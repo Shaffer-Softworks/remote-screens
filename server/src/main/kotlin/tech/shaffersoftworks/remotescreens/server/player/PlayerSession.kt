@@ -123,6 +123,10 @@ class PlayerSession(
     private val media = SessionMedia(host)
     private val documents = SessionDocument(host, media)
     private val lifecycle = SessionLifecycle(host, documents)
+    private val diagnostics =
+        tech.shaffersoftworks.remotescreens.server.player.session.SessionDiagnostics(::send)
+
+    suspend fun testSentry() = diagnostics.test()
 
     private fun screen(): Screen? =
         previewScreen ?: layoutRepository.layout.value.screens.firstOrNull { it.id == screenId }
@@ -144,7 +148,10 @@ class PlayerSession(
         runCatching { socket.close() }
     }
 
-    fun stop() = jobs.forEach { it.cancel() }
+    fun stop() {
+        diagnostics.stop()
+        jobs.forEach { it.cancel() }
+    }
 
     suspend fun welcome() = lifecycle.welcome()
 
@@ -218,6 +225,7 @@ class PlayerSession(
     @Suppress("CyclomaticComplexMethod") // Exhaustive protocol dispatch.
     suspend fun receive(message: PlayerMessage) {
         when (message) {
+            is PlayerMessage.SentryTestResult -> diagnostics.receive(message)
             is PlayerMessage.Ping -> send(ServerMessage.Pong)
             is PlayerMessage.PageShown -> page = message.index
             is PlayerMessage.DeviceState -> {
