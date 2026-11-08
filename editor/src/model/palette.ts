@@ -2,7 +2,7 @@
 // (`card`, `ink_soft`) and of each pastel a tile lights up in when it is on. Previews draw in the active theme, which
 // the screen editor picks; the colours are also set as CSS variables (`--rc-card`, `--rc-p-teal`) for stylesheets.
 
-import { computed, reactive, ref, watchEffect } from 'vue'
+import { computed, inject, reactive, ref, watchEffect, type ComputedRef, type InjectionKey } from 'vue'
 import type { ResolvedTheme } from './types'
 
 export interface Pastel {
@@ -60,6 +60,21 @@ export function themeById(id: string | undefined): ResolvedTheme | undefined {
 }
 
 export const activeTheme = computed(() => themeById(activeThemeId.value))
+
+/** A preview can resolve colours locally without changing the editor's active theme. */
+export const PREVIEW_THEME: InjectionKey<ComputedRef<ResolvedTheme | undefined>> = Symbol('preview-theme')
+
+export function paletteFor(theme: () => ResolvedTheme | undefined) {
+  return {
+    colorOf: (key: string | undefined) => colorOf(key, theme()),
+    pastel: (key: string | undefined, domain: string | undefined) => pastel(key, domain, theme()),
+  }
+}
+
+export function usePreviewPalette() {
+  const theme = inject(PREVIEW_THEME, activeTheme)
+  return paletteFor(() => theme.value)
+}
 
 /** The pastels of the active theme, kept in place so templates and lists of keys can use it directly. */
 export const PASTELS: Pastel[] = reactive(PASTEL_KEYS.map(key => ({ key, color: '' })))

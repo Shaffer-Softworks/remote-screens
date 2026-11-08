@@ -1,12 +1,30 @@
 <script setup lang="ts">
 import QRCode from 'qrcode'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { api } from '../api'
 import type { Enrollment, EnrollmentRequest } from '../model/types'
-import { attempt } from '../store'
+import { state } from '../store'
 import MdiIcon from './MdiIcon.vue'
 
 const emit = defineEmits<{ close: [] }>()
+const dialog = ref<HTMLDialogElement>()
+const available = computed(() => !!state.info?.playerApp)
+const busy = ref(false)
+const error = ref('')
+let closed = false
+let trigger: HTMLElement | null = null
+onMounted(() => {
+  trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
+  dialog.value?.showModal()
+})
+onBeforeUnmount(() => {
+  closed = true
+  wifiPassword.value = ''
+  enrollment.value = null
+  qrImage.value = ''
+  dialog.value?.close()
+  trigger?.focus()
+})
 
 const wifiSsid = ref('')
 const wifiPassword = ref('')
@@ -26,24 +44,37 @@ const expiresAt = computed(() =>
 )
 
 async function showCode(): Promise<void> {
+  if (!available.value || busy.value) return
+  busy.value = true
+  error.value = ''
   const request: EnrollmentRequest = {
     wifiSsid: wifiSsid.value.trim() || undefined,
     wifiPassword: wifiPassword.value || undefined,
     wifiSecurity: wifiSecurity.value,
     host: host.value.trim() || undefined,
   }
-  const created = await attempt(() => api.enrollment(request))
-  if (!created) return
-  enrollment.value = created
-  qrImage.value = await QRCode.toDataURL(created.provisioning, {
-    errorCorrectionLevel: 'M',
-    margin: 2,
-    width: 320,
-  })
+  try {
+    const created = await api.enrollment(request)
+    if (closed) return
+    const image = await QRCode.toDataURL(created.provisioning, {
+      errorCorrectionLevel: 'M',
+      margin: 2,
+      width: 320,
+    })
+    if (closed) return
+    qrImage.value = image
+    enrollment.value = created
+    wifiPassword.value = ''
+  } catch (cause) {
+    if (!closed) error.value = cause instanceof Error ? cause.message : 'Could not create an enrollment code.'
+  } finally {
+    busy.value = false
+  }
 }
 
 /** The Wi-Fi password lives only in the code: forget both once it has been scanned. */
 function done(): void {
+  closed = true
   wifiPassword.value = ''
   enrollment.value = null
   qrImage.value = ''
@@ -52,11 +83,12 @@ function done(): void {
 </script>
 
 <template>
-  <div class="card enroll">
+  <dialog ref="dialog" class="enroll-dialog" aria-labelledby="enrollment-title" @cancel.prevent="done">
+  <div class="enroll">
     <div class="row">
       <MdiIcon name="qrcode-scan" :size="22" />
-      <h2 class="grow">Enroll a tablet as a kiosk</h2>
-      <button class="icon quiet" title="Close" @click="done">
+      <h2 id="enrollment-title" class="grow">Enroll a tablet as a kiosk</h2>
+      <button class="icon quiet" aria-label="Close enrollment" @click="done">
         <MdiIcon name="close" :size="18" />
       </button>
     </div>
@@ -66,7 +98,14 @@ function done(): void {
       added.
     </p>
 
+    <p v-if="!available" class="availability" role="status">
+      QR enrollment requires the player APK to be hosted by the add-on.
+      {{ state.info?.demo ? 'This sample preview does not provide an installable APK.' : 'The add-on is not currently serving a player APK.' }}
+      You can still download the app from GitHub and pair it manually.
+    </p>
+
     <template v-if="!enrollment">
+      <fieldset :disabled="busy || !available" class="enrollment-fields">
       <div class="row fields">
         <label class="field grow"
           >Wi-Fi name (optional)<input v-model="wifiSsid" autocomplete="off"
@@ -96,8 +135,10 @@ function done(): void {
       <p class="muted small">The Wi-Fi password only goes into the code. It is not saved.</p>
       <div class="row">
         <span class="grow" />
-        <button class="primary" @click="showCode">Show QR code</button>
+        <button class="primary" :disabled="busy || !available" @click="showCode">{{ busy ? 'Creating code…' : 'Show QR code' }}</button>
       </div>
+      </fieldset>
+      <p v-if="error" class="error" role="alert">{{ error }}</p>
     </template>
 
     <div v-else class="row result">
@@ -123,14 +164,24 @@ function done(): void {
       <button class="primary" @click="done">Done</button>
     </div>
   </div>
+  </dialog>
 </template>
 
 <style scoped>
+.enroll-dialog {
+  width: min(900px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
+  padding: 24px;
+}
+.enroll-dialog::backdrop { background: rgb(0 0 0 / 65%); }
+.enrollment-fields { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.availability { border: 1px solid var(--line); padding: 14px; border-radius: 8px; color: var(--muted); }
+.error { color: var(--danger); }
 .enroll {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  outline: 2px solid var(--accent);
 }
 
 .enroll p {
@@ -153,6 +204,8 @@ function done(): void {
 }
 
 .result img {
+  max-width: 100%;
+  height: auto;
   background: #fff;
   border-radius: 10px;
   flex: none;

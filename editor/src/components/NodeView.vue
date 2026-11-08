@@ -8,7 +8,7 @@ import { DESIGN } from '../model/design'
 import { dragged } from '../model/drag'
 import { isContainer, paddingOf, type Where } from '../model/nodes'
 import { MOCK_FORECAST_CONDITIONS } from '../model/haWeatherIcons'
-import { colorOf, pastel } from '../model/palette'
+import { usePreviewPalette } from '../model/palette'
 import { iconOf, nameOf, stateOf } from '../model/tiles'
 import type { EntityInfo, Node } from '../model/types'
 import { domainOf } from '../model/types'
@@ -24,6 +24,7 @@ const props = defineProps<{
   isRoot?: boolean
 }>()
 const ctx = inject(DESIGN)!
+const { colorOf, pastel } = usePreviewPalette()
 const el = ref<HTMLElement>()
 
 const ON_STATES = [

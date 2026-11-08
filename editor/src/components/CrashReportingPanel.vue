@@ -2,7 +2,9 @@
 import { computed, ref } from 'vue'
 import { api } from '../api'
 import type { SentrySettings } from '../model/types'
-import { attempt, state, toast } from '../store'
+import { state, toast } from '../store'
+
+defineProps<{ expanded?: boolean }>()
 
 const settings = ref<SentrySettings>({
   enabled: false,
@@ -12,6 +14,9 @@ const settings = ref<SentrySettings>({
   ...state.layout?.preferences.sentry,
 })
 const saving = ref(false)
+const saveMessage = ref('')
+const saveError = ref('')
+const testError = ref('')
 const testing = ref(false)
 const testTablet = ref('')
 const testResult = ref<{ status: string; eventId?: string } | null>(null)
@@ -31,8 +36,11 @@ async function test(): Promise<void> {
   if (!testTablet.value || testing.value) return
   testing.value = true
   testResult.value = null
+  testError.value = ''
   try {
-    testResult.value = (await attempt(() => api.testSentry(testTablet.value))) ?? null
+    testResult.value = await api.testSentry(testTablet.value)
+  } catch (error) {
+    testError.value = error instanceof Error ? error.message : 'Could not send the test event.'
   } finally {
     testing.value = false
   }
@@ -41,21 +49,23 @@ async function test(): Promise<void> {
 async function save(): Promise<void> {
   if (!state.layout || saving.value) return
   saving.value = true
+  saveMessage.value = ''
+  saveError.value = ''
   try {
-    const saved = await attempt(() =>
-      api.preferences({
+    const saved = await api.preferences({
         ...state.layout!.preferences,
         sentry: {
           ...settings.value,
           dsn: settings.value.dsn.trim(),
           environment: settings.value.environment.trim() || 'production',
         },
-      }),
-    )
-    if (!saved) return
+      })
     state.layout.preferences = saved
     settings.value = saved.sentry ?? settings.value
-    toast('Crash reporting saved. Connected tablets receive it now; offline tablets on reconnect.')
+    saveMessage.value = 'Crash reporting saved. Connected tablets receive it now; offline tablets on reconnect.'
+    toast(saveMessage.value)
+  } catch (error) {
+    saveError.value = error instanceof Error ? error.message : 'Could not save crash reporting.'
   } finally {
     saving.value = false
   }
@@ -63,7 +73,7 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <details class="card diagnostics">
+  <details class="card diagnostics" :open="expanded">
     <summary>Sentry crash reporting</summary>
     <form @submit.prevent="save">
       <p class="muted">
@@ -101,6 +111,8 @@ async function save(): Promise<void> {
       <button class="primary" type="submit" :disabled="saving">
         {{ saving ? 'Saving…' : 'Save crash reporting' }}
       </button>
+      <p v-if="saveError" class="error" role="alert">{{ saveError }}</p>
+      <p v-if="saveMessage" role="status">{{ saveMessage }}</p>
     </form>
     <div class="test">
       <h3>Verify a tablet</h3>
@@ -121,6 +133,7 @@ async function save(): Promise<void> {
       <button type="button" :disabled="testing || !testTablet" @click="test">
         {{ testing ? 'Testing…' : 'Send test event' }}
       </button>
+      <p v-if="testError" class="error" role="alert">{{ testError }}</p>
       <p v-if="testResult" role="status">
         {{ statusText[testResult.status] ?? 'Unexpected result. Check the player version.' }}
         <br v-if="testResult.eventId" />
@@ -134,6 +147,7 @@ async function save(): Promise<void> {
 .diagnostics {
   margin-block: 20px;
 }
+.error { color: var(--danger); }
 summary {
   cursor: pointer;
   font-weight: 600;

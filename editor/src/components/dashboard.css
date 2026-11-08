@@ -1,0 +1,273 @@
+/* The dashboard shell has its own palette; saved screen previews keep their --rc-* themes. */
+.dashboard {
+  --bg: #141516;
+  --card: #202123;
+  --ink: #f5f5f7;
+  --muted: #b9bbbf;
+  --line: #484a4e;
+  --accent: #4d9aff;
+  --accent-ink: #071422;
+  --danger: #ff8b86;
+  --shadow: 0 4px 20px rgb(0 0 0 / 15%);
+  min-height: 100vh;
+  color-scheme: dark;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Roboto, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 15px;
+}
+.dashboard :where(button, input, select, textarea):not(.screen-preview *) {
+  color: var(--ink);
+  background: #242527;
+  border: 1px solid #66686c;
+  border-radius: 7px;
+}
+.dashboard :where(button):not(.screen-preview *) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 9px 15px;
+  min-height: 36px;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+}
+.dashboard :where(button):not(.screen-preview *):hover:not(:disabled) {
+  background: #303338;
+  border-color: #92969d;
+}
+.dashboard :where(button, select, input, textarea, summary):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.dashboard button.primary {
+  background: var(--accent);
+  border-color: #78b6ff;
+  color: var(--accent-ink);
+  font-weight: 650;
+}
+.dashboard button.primary:hover:not(:disabled) { background: #73b1ff; border-color: #a7d0ff; }
+.dashboard button:disabled { opacity: .45; cursor: default; }
+.dashboard button.danger { color: var(--danger); }
+.dashboard :where(select, input, textarea):not(.screen-preview *) { padding: 8px 12px; }
+.dashboard select { cursor: pointer; }
+.dashboard .card { border: 1px solid var(--line); background: var(--card); box-shadow: none; }
+.dashboard dialog {
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 20px 80px rgb(0 0 0 / 50%);
+}
+.dashboard a { color: #86bbff; }
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  min-height: 64px;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--line);
+  background: #191a1c;
+}
+.dashboard .brand { display: flex; align-items: center; gap: 15px; font-size: 25px; font-weight: 700; white-space: nowrap; }
+.dashboard-header nav { display: flex; align-self: stretch; border-left: 1px solid var(--line); padding-left: 20px; }
+.dashboard button.nav-tab {
+  position: relative;
+  gap: 12px;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-size: 18px;
+}
+.dashboard button.nav-tab.selected { color: var(--accent); font-weight: 650; }
+.dashboard button.nav-tab.selected::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  height: 5px;
+  left: 12px;
+  right: 12px;
+  border-radius: 4px 4px 0 0;
+  background: var(--accent);
+}
+.dashboard .connection { margin-left: auto; display: flex; align-items: center; gap: 12px; font-size: 14px; min-width: 0; }
+.dashboard .connection > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dashboard .connection > svg { flex: none; }
+.dashboard .dot { width: 11px; height: 11px; border-radius: 50%; background: #9da0a5; display: inline-block; flex: none; }
+.dashboard .dot.on { background: #94efbd; }
+.dashboard button.settings-button { padding: 8px; border: none; background: transparent; }
+.dashboard .demo-badge { font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; color: var(--muted); }
+.dashboard-content { max-width: 1760px; margin: 0 auto; padding: 28px 32px 36px; }
+.dashboard .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
+.dashboard .section-heading h1 { font-size: 36px; line-height: 1.15; font-weight: 750; letter-spacing: -.7px; }
+.dashboard .section-heading h2 { font-size: 30px; line-height: 1.2; font-weight: 700; letter-spacing: -.4px; }
+.dashboard .section-heading p { margin: 10px 0 0; color: var(--muted); line-height: 1.45; font-size: 16px; }
+.dashboard .segmented { display: inline-flex; flex: none; max-width: 100%; border: 1px solid #9b9da2; border-radius: 11px; }
+.dashboard .segmented button { min-height: 44px; border: 0; border-radius: 0; padding: 10px 26px; background: #232426; white-space: nowrap; font-size: 16px; font-weight: 550; }
+.dashboard .segmented button + button { border-left: 1px solid #81848a; }
+.dashboard .segmented button:first-child { border-radius: 10px 0 0 10px; }
+.dashboard .segmented button:last-child { border-radius: 0 10px 10px 0; }
+.dashboard .segmented button.primary { background: var(--accent); }
+.dashboard .segmented button.active { background: #203853; color: #9acaff; }
+.dashboard .file { display: none; }
+.dashboard .create { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 14px; margin-bottom: 22px; padding: 20px; }
+.dashboard .empty { padding: 28px; text-align: center; color: var(--muted); }
+.dashboard .screens { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.dashboard .screen {
+  position: relative;
+  min-width: 0;
+  padding: 7px 7px 0;
+  border: 1px solid #505256;
+  border-radius: 13px;
+  background: #222325;
+  box-shadow: 0 3px 8px rgb(0 0 0 / 14%);
+}
+.dashboard .screen:hover { border-color: #747c88; }
+.dashboard button.screen-open { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; border: none; border-radius: 13px; background: transparent; padding: 0; }
+.dashboard button.screen-open:hover { background: transparent; border: none; }
+.dashboard .screen-footer { display: flex; align-items: center; gap: 12px; padding: 13px 8px 14px; min-height: 76px; }
+.dashboard .screen-description { min-width: 0; flex: 1; }
+.dashboard .screen-description h2 { font-size: 22px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dashboard .screen-description p { display: flex; gap: 7px; align-items: center; margin: 6px 0 0; font-size: 13px; white-space: nowrap; color: #e3e4e7; }
+.dashboard .screen-tablets { display: flex; flex-direction: column; gap: 4px; max-width: 46%; }
+.dashboard .chip { display: inline-flex; gap: 6px; align-items: center; border: 1px solid #707277; border-radius: 7px; padding: 6px 8px; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dashboard .unassigned { color: var(--muted); font-size: 12px; }
+.dashboard .screen .menu { z-index: 2; }
+.dashboard .menu { position: relative; flex: none; }
+.dashboard button.icon.quiet { padding: 5px; border: none; background: transparent; }
+.dashboard .popup { position: absolute; top: calc(100% + 6px); right: 0; z-index: 10; min-width: 178px; padding: 6px; border-radius: 9px; display: flex; flex-direction: column; box-shadow: 0 8px 28px #0009; }
+.dashboard .popup button { border: none; background: transparent; justify-content: flex-start; border-radius: 5px; white-space: nowrap; }
+.dashboard .tablet-section { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 22px; }
+.dashboard .tablet-section .section-heading { margin-bottom: 18px; }
+.dashboard .pairing { margin: 0 0 16px; border: 1px solid #60b4ff; border-radius: 11px; background: linear-gradient(100deg, #1d2a36, #19212a); }
+.dashboard .pairing-row { display: grid; grid-template-columns: 68px minmax(210px, 1fr) minmax(150px, 220px) minmax(170px, 280px) 120px; align-items: center; gap: 24px; padding: 12px 16px; }
+.dashboard .pairing-row + .pairing-row { border-top: 1px solid #355069; }
+.dashboard .pairing-icon { color: var(--accent); justify-self: center; }
+.dashboard .pairing-copy { border-left: 1px solid #68717d; padding-left: 24px; }
+.dashboard .pairing-copy h3 { text-transform: none; letter-spacing: 0; color: var(--ink); font-size: 18px; font-weight: 650; }
+.dashboard .pairing-copy p { margin: 5px 0 0; font-size: 13px; }
+.dashboard .pairing-copy small { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
+.dashboard .pairing-code, .dashboard .pairing-select { display: flex; flex-direction: column; gap: 5px; font-size: 13px; }
+.dashboard .pairing-code strong { display: block; text-align: center; font-family: ui-monospace, monospace; font-size: 28px; line-height: 36px; letter-spacing: .16em; border: 1px solid #727b87; border-radius: 7px; background: #19232d; white-space: nowrap; }
+.dashboard .pairing-select select { width: 100%; background: #1c2732; }
+.dashboard .pair-button { align-self: end; min-height: 40px; margin-bottom: 1px; }
+.dashboard .device-list { border: 1px solid #626468; border-radius: 11px; background: #202123; }
+.dashboard .device-row { display: grid; grid-template-columns: minmax(210px, 1.6fr) minmax(110px, .65fr) minmax(95px, .6fr) minmax(160px, 1.2fr) minmax(145px, .8fr); align-items: center; gap: 24px; padding: 10px 24px; min-height: 56px; }
+.dashboard .device-row + .device-row { border-top: 1px solid var(--line); }
+.dashboard .device-row.labels { min-height: 36px; padding-top: 9px; padding-bottom: 9px; font-size: 12px; text-transform: uppercase; color: #d4d5d8; }
+.dashboard .device-name { display: flex; align-items: center; gap: 23px; min-width: 0; }
+.dashboard .device-name > div { min-width: 0; }
+.dashboard .device-name button.device-info-link {
+  display: block;
+  min-height: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dashboard .device-name button.device-info-link:hover { color: #91c0ff; background: transparent; text-decoration: underline; }
+.dashboard .device-name small { display: flex; gap: 7px; align-items: center; color: var(--muted); font-size: 12px; margin-top: 3px; }
+.dashboard .device-status { display: inline-flex; align-items: center; gap: 11px; }
+.dashboard .device-status.online { color: #9bf0bc; }
+.dashboard .device-status.standby { color: #ffe18c; }
+.dashboard .device-status.offline { color: #b9bbbf; }
+.dashboard .device-status .dot { background: currentColor; }
+.dashboard .battery { display: inline-flex; gap: 12px; align-items: center; }
+.dashboard .battery.charging svg { color: #9bf0bc; }
+.dashboard .assignment-cell { min-width: 0; }
+.dashboard .screen-assignment { width: 100%; min-width: 0; }
+.dashboard .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.dashboard .device-actions { display: flex; align-items: center; justify-content: flex-end; gap: 24px; }
+.dashboard button.identify { min-height: 32px; padding: 5px 10px; gap: 7px; font-size: 13px; }
+.dashboard .tablet-setup { margin: 0 0 16px; color: var(--muted); font-size: 13px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+.dashboard .tablet-setup > p { margin: 0; display: flex; align-items: center; gap: 9px; }
+.dashboard .setup-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.dashboard .setup-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 9px 15px;
+  min-height: 36px;
+  font: inherit;
+  color: var(--ink);
+  background: #242527;
+  border: 1px solid #66686c;
+  border-radius: 7px;
+  text-decoration: none;
+  transition: background 120ms, border-color 120ms;
+}
+.dashboard .setup-actions a:hover { background: #303338; border-color: #92969d; }
+.dashboard .setup-actions a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.dashboard .kiosk-status { display: inline-flex; align-items: center; color: var(--ink); }
+.dashboard .intercom-panel, .dashboard #adb-panel { margin-bottom: 16px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+@media (min-width: 1760px) { .dashboard-header { padding-inline: max(32px, calc((100vw - 1696px) / 2)); } }
+@media (max-width: 1200px) {
+  .dashboard-header { gap: 14px; padding-inline: 24px; }
+  .dashboard .brand { font-size: 21px; }
+  .dashboard button.nav-tab { padding-inline: 15px; font-size: 16px; }
+  .dashboard .connection { font-size: 12px; gap: 8px; }
+  .dashboard-content { padding-inline: 24px; }
+  .dashboard .section-heading { align-items: flex-start; flex-wrap: wrap; }
+  .dashboard .screens { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard .pairing-row { grid-template-columns: 45px 1fr 170px 190px 80px; gap: 14px; }
+  .dashboard .pairing-copy { padding-left: 14px; }
+  .dashboard .device-row { gap: 14px; padding-inline: 16px; grid-template-columns: minmax(175px, 1.4fr) 95px 80px minmax(130px, 1fr) 140px; }
+  .dashboard .device-name { gap: 12px; }
+  .dashboard .device-actions { gap: 10px; }
+}
+@media (max-width: 900px) {
+  .dashboard-header { flex-wrap: wrap; padding-top: 10px; gap: 8px 14px; }
+  .dashboard-header nav { order: 3; width: 100%; border-left: 0; padding: 0; }
+  .dashboard .connection { margin-left: auto; }
+  .dashboard .connection > svg { display: none; }
+  .dashboard .pairing-code { grid-column: 1 / 2; min-width: 140px; }
+  .dashboard .pairing-row { grid-template-columns: 150px 1fr 90px; }
+  .dashboard .pairing-icon { display: none; }
+  .dashboard .pairing-copy { border-left: 0; padding: 0; grid-column: 1 / -1; }
+  .dashboard .device-row { grid-template-columns: minmax(170px, 1fr) 100px 80px; gap: 12px; }
+  .dashboard .device-row.labels { position: absolute; width: 1px; height: 1px; min-height: 0; padding: 0; overflow: hidden; clip-path: inset(50%); }
+  .dashboard .assignment-cell { grid-column: 1 / 3; }
+  .dashboard .device-actions { grid-column: 3 / 4; gap: 6px; }
+  .dashboard button.identify { font-size: 0; gap: 0; }
+}
+@media (max-width: 650px) {
+  .dashboard-header { padding-inline: 16px; }
+  .dashboard .brand { font-size: 20px; }
+  .dashboard .connection { order: 4; margin: 0 0 10px; width: 100%; }
+  .dashboard button.settings-button { margin-left: auto; }
+  .dashboard-content { padding: 24px 16px; }
+  .dashboard .section-heading { gap: 18px; }
+  .dashboard .section-heading h1 { font-size: 30px; }
+  .dashboard .section-heading h2 { font-size: 26px; }
+  .dashboard .section-heading p { font-size: 14px; }
+  .dashboard .segmented { width: 100%; }
+  .dashboard .segmented button { flex: 1; min-width: 0; padding: 10px 9px; font-size: 13px; gap: 6px; }
+  .dashboard .segmented button svg { width: 17px; height: 17px; flex: none; }
+  .dashboard .screens { grid-template-columns: minmax(0, 1fr); }
+  .dashboard .screen-footer { gap: 8px; }
+  .dashboard .screen-description h2 { font-size: 20px; }
+  .dashboard .screen-tablets { max-width: 45%; }
+  .dashboard .pairing-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .dashboard .pairing-code { min-width: 0; }
+  .dashboard .pairing-code strong { font-size: 23px; letter-spacing: .09em; }
+  .dashboard .pair-button { grid-column: 1 / -1; }
+  .dashboard .device-row { grid-template-columns: minmax(0, 1fr) 86px; padding: 14px; }
+  .dashboard .device-name { grid-column: 1 / 2; }
+  .dashboard .device-status { grid-column: 2 / 3; font-size: 13px; gap: 7px; }
+  .dashboard .battery { grid-column: 1 / 2; font-size: 13px; }
+  .dashboard .assignment-cell { grid-column: 1 / 2; }
+  .dashboard .device-actions { grid-column: 2 / 3; }
+}
+
+@media (max-width: 420px) {
+  .dashboard .pairing-row { grid-template-columns: minmax(0, 1fr); }
+  .dashboard .pairing-code, .dashboard .pairing-select, .dashboard .pair-button { grid-column: 1; }
+}
