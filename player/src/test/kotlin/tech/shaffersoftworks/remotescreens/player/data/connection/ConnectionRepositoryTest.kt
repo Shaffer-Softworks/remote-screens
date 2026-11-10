@@ -104,7 +104,7 @@ class ConnectionRepositoryTest {
             repository.connect("server") { hello() }
             runCurrent()
             assertTrue(hasReconnected)
-            assertEquals(ConnectionStatus.CONNECTED, repository.status.value)
+            assertEquals(ConnectionStatus.CONNECTED, repository.connectionState.value.status)
             assertTrue(repository.trySend(action))
         } finally {
             repository.disconnect()
@@ -148,7 +148,6 @@ class ConnectionRepositoryTest {
             delayedHello = null
             runCurrent()
             assertEquals(replacement, repository.connectionState.value)
-            assertEquals(expectedStatus, repository.status.value)
             val action = PlayerMessage.Ping
             if (reconnect) {
                 val helloFrame = outgoing[1].tryReceive().getOrNull() as Frame.Text
@@ -197,7 +196,7 @@ class ConnectionRepositoryTest {
                 hello()
             }
             runCurrent()
-            assertEquals(ConnectionStatus.CONNECTED, repository.status.value)
+            assertEquals(ConnectionStatus.CONNECTED, repository.connectionState.value.status)
             assertTrue(firstOutgoing.receive() is Frame.Text)
             firstIncoming.send(Frame.Text(Protocol.encode(ServerMessage.Welcome(screenId = "screen"))))
             runCurrent()
@@ -226,7 +225,7 @@ class ConnectionRepositoryTest {
             runCurrent()
             repository.send(action)
             assertEquals(Protocol.encode(action), (secondOutgoing.receive() as Frame.Text).readText())
-            assertEquals(ConnectionStatus.CONNECTED, repository.status.value)
+            assertEquals(ConnectionStatus.CONNECTED, repository.connectionState.value.status)
             assertEquals(secondConnectionId, repository.connectionState.value.connectionId)
         } finally {
             releaseSecondHello.complete(Unit)

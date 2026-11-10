@@ -50,7 +50,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -280,7 +282,7 @@ class PlayerViewModel @Inject constructor(
 
     private fun observeConnectionStatus() {
         viewModelScope.launch {
-            connectionRepository.status.collect { status ->
+            connectionRepository.connectionState.map { it.status }.distinctUntilChanged().collect { status ->
                 val hasMainDocument = _viewState.value.remoteScreen.hasMainDocument
                 when (status) {
                     ConnectionStatus.CONNECTING -> if (!hasMainDocument && !isPaired) {
@@ -330,7 +332,7 @@ class PlayerViewModel @Inject constructor(
 
     private fun observeServerMessages() {
         viewModelScope.launch {
-            connectionRepository.messages.collect { message -> handleServerMessage(message) }
+            connectionRepository.receivedMessages.collect { received -> handleServerMessage(received.message) }
         }
     }
 

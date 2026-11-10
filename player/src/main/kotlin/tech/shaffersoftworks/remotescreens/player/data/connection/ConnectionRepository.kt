@@ -41,9 +41,6 @@ class ConnectionRepository @Inject constructor(
     private val httpClient: HttpClient,
     @IoScope private val ioScope: CoroutineScope,
 ) {
-    private val _status = MutableStateFlow(ConnectionStatus.IDLE)
-    val status: StateFlow<ConnectionStatus> = _status.asStateFlow()
-
     /** A lifecycle snapshot whose ID identifies a single socket attempt. */
     data class ConnectionState(val connectionId: Long?, val status: ConnectionStatus)
     private val _connectionState = MutableStateFlow(ConnectionState(null, ConnectionStatus.IDLE))
@@ -56,10 +53,10 @@ class ConnectionRepository @Inject constructor(
     private val _consecutiveFailures = MutableStateFlow(0)
     val consecutiveFailures: StateFlow<Int> = _consecutiveFailures.asStateFlow()
 
-    /** Every message from the add-on, in order. Collecting suspends the socket, so nothing is dropped. */
-    private val _messages = MutableSharedFlow<ServerMessage>(extraBufferCapacity = MESSAGE_BUFFER_CAPACITY)
-    val messages: SharedFlow<ServerMessage> = _messages.asSharedFlow()
-
+    /**
+     * Every message from the add-on, in order, tagged with the socket attempt it arrived on.
+     * Collecting suspends the socket, so nothing is dropped.
+     */
     data class ReceivedMessage(val connectionId: Long, val message: ServerMessage)
     private val _receivedMessages = MutableSharedFlow<ReceivedMessage>(extraBufferCapacity = MESSAGE_BUFFER_CAPACITY)
     val receivedMessages: SharedFlow<ReceivedMessage> = _receivedMessages.asSharedFlow()
@@ -124,7 +121,6 @@ class ConnectionRepository @Inject constructor(
     /** Called only under connectionLock. */
     private fun updateState(id: Long?, status: ConnectionStatus) {
         _connectionState.value = ConnectionState(id, status)
-        _status.value = status
     }
 
     suspend fun send(message: PlayerMessage) {
@@ -199,10 +195,7 @@ class ConnectionRepository @Inject constructor(
                     for (frame in incoming) {
                         val textFrame = frame as? Frame.Text ?: continue
                         val message = Protocol.decodeServer(textFrame.readText())
-                        if (message != null) {
-                            _receivedMessages.emit(ReceivedMessage(id, message))
-                            _messages.emit(message)
-                        }
+                        if (message != null) _receivedMessages.emit(ReceivedMessage(id, message))
                     }
                 }
             } catch (cancellation: CancellationException) {

@@ -68,14 +68,14 @@ private fun mainDocument(pageCount: Int = 3, homePage: Int = 0) = ServerMessage.
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlayerViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
-    private val connectionStatus = MutableStateFlow(ConnectionStatus.IDLE)
+    private val connectionState = MutableStateFlow(ConnectionRepository.ConnectionState(null, ConnectionStatus.IDLE))
     private val consecutiveFailures = MutableStateFlow(0)
-    private val serverMessages = MutableSharedFlow<ServerMessage>(extraBufferCapacity = 16)
+    private val serverMessages = MutableSharedFlow<ConnectionRepository.ReceivedMessage>(extraBufferCapacity = 16)
     private val connectedServer = MutableStateFlow<String?>("10.0.0.5:8100")
 
     private val connectionRepository: ConnectionRepository = mock {
-        on { status } doReturn connectionStatus
-        on { messages } doReturn serverMessages
+        on { connectionState } doReturn connectionState
+        on { receivedMessages } doReturn serverMessages
         on { server } doReturn connectedServer
         on { consecutiveFailures } doReturn consecutiveFailures
     }
@@ -155,7 +155,7 @@ class PlayerViewModelTest {
 
     private fun receive(message: ServerMessage) {
         runCurrent()
-        serverMessages.tryEmit(message)
+        serverMessages.tryEmit(ConnectionRepository.ReceivedMessage(1L, message))
         runCurrent()
     }
 
@@ -227,7 +227,7 @@ class PlayerViewModelTest {
     @Test
     fun `connecting without a document shows the server`() {
         runCurrent()
-        connectionStatus.value = ConnectionStatus.CONNECTING
+        connectionState.value = ConnectionRepository.ConnectionState(1L, ConnectionStatus.CONNECTING)
         runCurrent()
 
         assertEquals(
