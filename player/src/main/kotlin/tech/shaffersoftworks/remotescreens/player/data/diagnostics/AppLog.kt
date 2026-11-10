@@ -15,8 +15,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.runningFold
@@ -26,6 +26,8 @@ import tech.shaffersoftworks.remotescreens.player.BuildConfig
 import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionRepository
 import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionStatus
 import tech.shaffersoftworks.remotescreens.player.di.IoScope
+import tech.shaffersoftworks.remotescreens.shared.AppLogLevel
+import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Protocol
 import timber.log.Timber
@@ -74,10 +76,10 @@ class AppLog @Inject constructor(
                     state.status == ConnectionStatus.CONNECTED &&
                         it == received?.connectionId &&
                         welcome?.pairingCode == null &&
-                        welcome != null && Protocol.CAPABILITY_APP_LOG_ACK in welcome.features
+                        welcome != null && Protocol.CAPABILITY_APP_LOG in welcome.features
                 }
             }.distinctUntilChanged().collectLatest { connectionId ->
-                if (connectionId != null) sendLog(connectionId)
+                if (connectionId != null) sendLogs(connectionId)
             }
         }
     }
@@ -93,50 +95,49 @@ class AppLog @Inject constructor(
         false
     }
 
-    private suspend fun sendLog(connectionId: Long) {
+    private suspend fun sendLogs(connectionId: Long) {
         var retrySeconds = 1L
         while (true) {
-            val delivered = try {
-                val entry = logs.oldest().filterNotNull().first()
-                if (sendAndAwaitAck(entry, connectionId)) {
-                    logs.acknowledge(entry.eventId)
-                    true
-                } else {
-                    false
-                }
+            val isDelivered = try {
+                val batch = logs.pending(Protocol.MAX_APP_LOG_BATCH).first { it.isNotEmpty() }
+                val acknowledged = sendAndAwaitAck(batch, connectionId)
+                // Entries left out of the acknowledgement stay queued and go in the next batch.
+                if (acknowledged.isNotEmpty()) logs.acknowledge(acknowledged)
+                acknowledged.isNotEmpty()
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (@Suppress("TooGenericExceptionCaught") error: Exception) {
-                Log.e("AppLog", "Could not forward stored log", error)
+                Log.e("AppLog", "Could not forward stored logs", error)
                 false
             }
-            delay(if (delivered) 1.seconds else retrySeconds.seconds)
-            retrySeconds = if (delivered) 1L else (retrySeconds * 2).coerceAtMost(MAX_RETRY_SECONDS)
+            delay(if (isDelivered) 1.seconds else retrySeconds.seconds)
+            retrySeconds = if (isDelivered) 1L else (retrySeconds * 2).coerceAtMost(MAX_RETRY_SECONDS)
         }
     }
 
-    private suspend fun sendAndAwaitAck(entry: StoredLog, connectionId: Long): Boolean =
-        withTimeoutOrNull(5.seconds) {
+    /** Returns the event IDs in [batch] that the add-on acknowledged, or none on a failed send or timeout. */
+    private suspend fun sendAndAwaitAck(batch: List<StoredLog>, connectionId: Long): List<String> {
+        val eventIds = batch.mapTo(HashSet()) { it.eventId }
+        return withTimeoutOrNull(5.seconds) {
             coroutineScope {
                 // Subscribe before sending so a fast acknowledgement cannot be missed.
                 val ack = async(start = CoroutineStart.UNDISPATCHED) {
-                    connection.receivedMessages.first {
-                        it.connectionId == connectionId &&
-                            (it.message as? ServerMessage.AppLogAck)?.eventId == entry.eventId
-                    }
+                    connection.receivedMessages.mapNotNull { received ->
+                        (received.message as? ServerMessage.AppLogAck)
+                            ?.takeIf { received.connectionId == connectionId }
+                            ?.eventIds?.filter { it in eventIds }
+                            ?.takeIf { it.isNotEmpty() }
+                    }.first()
                 }
                 try {
-                    if (connection.trySend(entry.toMessage(), connectionId)) {
-                        ack.await()
-                        true
-                    } else {
-                        false
-                    }
+                    val message = PlayerMessage.AppLog(batch.map { it.toEntry() })
+                    if (connection.trySend(message, connectionId)) ack.await() else emptyList()
                 } finally {
                     ack.cancel()
                 }
             }
-        } ?: false
+        }.orEmpty()
+    }
 
     override fun isLoggable(tag: String?, priority: Int): Boolean = priority >= Log.WARN
 
@@ -164,7 +165,7 @@ class AppLog @Inject constructor(
     private fun entry(priority: Int, tag: String, message: String) = StoredLog(
         eventId = UUID.randomUUID().toString(),
         timestampMs = System.currentTimeMillis(),
-        level = if (priority >= Log.ERROR) "error" else "warning",
+        level = if (priority >= Log.ERROR) AppLogLevel.ERROR else AppLogLevel.WARNING,
         tag = tag.take(MAX_LOG_TAG),
         message = message.take(MAX_LOG_MESSAGE),
     )

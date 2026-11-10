@@ -5,19 +5,34 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class AppLogProtocolTest {
+    private val entry = AppLogEntry(
+        eventId = "event-1",
+        timestampMs = 123L,
+        level = AppLogLevel.ERROR,
+        tag = "Player",
+        message = "failure",
+    )
+
     @Test
-    fun entryAndAcknowledgementRoundTrip() {
-        val entry = PlayerMessage.AppLog(123L, "error", "Player", "failure", "event-1")
-        assertEquals(entry, Protocol.decodePlayer(Protocol.encode(entry)))
-        val ack = ServerMessage.AppLogAck("event-1")
+    fun batchAndAcknowledgementRoundTrip() {
+        val batch = PlayerMessage.AppLog(listOf(entry, entry.copy(eventId = "event-2", level = AppLogLevel.WARNING)))
+        assertEquals(batch, Protocol.decodePlayer(Protocol.encode(batch)))
+        val ack = ServerMessage.AppLogAck(listOf("event-1", "event-2"))
         assertEquals(ack, Protocol.decodeServer(Protocol.encode(ack)))
     }
 
     @Test
-    fun legacyEntryWithoutEventIdStillDecodes() {
-        val entry = Protocol.decodePlayer(
-            """{"type":"app_log","timestampMs":123,"level":"warning","tag":"Player","message":"old build"}""",
-        ) as PlayerMessage.AppLog
-        assertNull(entry.eventId)
+    fun levelsUseLowercaseWireNames() {
+        val text = Protocol.encode(PlayerMessage.AppLog(listOf(entry)))
+        assertEquals(true, text.contains(""""level":"error""""))
+    }
+
+    @Test
+    fun anEntryWithoutAnEventIdIsNotAValidBatch() {
+        assertNull(
+            Protocol.decodePlayer(
+                """{"type":"app_log","entries":[{"timestampMs":1,"level":"warning","tag":"t","message":"m"}]}""",
+            ),
+        )
     }
 }

@@ -1,14 +1,15 @@
 package tech.shaffersoftworks.remotescreens.server.player
 
 import org.slf4j.LoggerFactory
-import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
+import tech.shaffersoftworks.remotescreens.shared.AppLogEntry
+import tech.shaffersoftworks.remotescreens.shared.AppLogLevel
+import tech.shaffersoftworks.remotescreens.shared.Protocol
 
 private const val MAX_DEVICE_ID = 100
 private const val MAX_TAG = 100
 private const val MAX_EVENT_ID = 100
 private const val MAX_MESSAGE = 4_000
 private const val REMEMBERED_EVENTS = 4_096
-private val LEVELS = setOf("error", "warning")
 private val CONTROL_CHARACTERS = Regex("[\\r\\n\\p{Cntrl}]")
 
 /**
@@ -16,34 +17,33 @@ private val CONTROL_CHARACTERS = Regex("[\\r\\n\\p{Cntrl}]")
  * entry is acknowledged without being written twice; the memory is bounded and lasts until the add-on restarts.
  */
 class PlayerAppLogs {
-    enum class Outcome { WRITTEN, DUPLICATE, REJECTED }
-
     private val logger = LoggerFactory.getLogger(PlayerSession::class.java)
     private val written = LinkedHashMap<Pair<String, String>, Unit>()
 
-    /** [canWriteNew] is false while the sending session is over its rate; duplicates are still acknowledged. */
-    fun write(deviceId: String, entry: PlayerMessage.AppLog, canWriteNew: Boolean): Outcome {
-        val eventId = entry.eventId
-        val hasValidId = eventId == null || eventId.isNotBlank() && eventId.length <= MAX_EVENT_ID
-        if (entry.level !in LEVELS || !hasValidId) return Outcome.REJECTED
-        val key = eventId?.let { deviceId to it }
+    /** Returns the event IDs to acknowledge: entries written now or earlier. A batch over the limit gets none. */
+    fun write(deviceId: String, entries: List<AppLogEntry>): List<String> {
+        if (entries.size > Protocol.MAX_APP_LOG_BATCH) return emptyList()
         return synchronized(written) {
-            when {
-                key != null && key in written -> Outcome.DUPLICATE
-                !canWriteNew -> Outcome.REJECTED
-                else -> {
-                    log(deviceId, entry)
-                    key?.let(::remember)
-                    Outcome.WRITTEN
+            entries.filter { entry -> entry.eventId.isNotBlank() && entry.eventId.length <= MAX_EVENT_ID }
+                .onEach { entry ->
+                    val key = deviceId to entry.eventId
+                    if (key !in written) {
+                        log(deviceId, entry)
+                        remember(key)
+                    }
                 }
-            }
+                .map { it.eventId }
+                .distinct()
         }
     }
 
-    private fun log(deviceId: String, entry: PlayerMessage.AppLog) {
+    private fun log(deviceId: String, entry: AppLogEntry) {
         val text = "Tablet ${clean(deviceId, MAX_DEVICE_ID)} [${clean(entry.tag, MAX_TAG)}] " +
             "at ${entry.timestampMs}: ${clean(entry.message, MAX_MESSAGE)}"
-        if (entry.level == "error") logger.error("{}", text) else logger.warn("{}", text)
+        when (entry.level) {
+            AppLogLevel.ERROR -> logger.error("{}", text)
+            AppLogLevel.WARNING -> logger.warn("{}", text)
+        }
     }
 
     /** Called under the [written] lock. */

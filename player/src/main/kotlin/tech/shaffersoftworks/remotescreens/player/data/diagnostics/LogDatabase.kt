@@ -11,7 +11,8 @@ import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
-import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
+import tech.shaffersoftworks.remotescreens.shared.AppLogEntry
+import tech.shaffersoftworks.remotescreens.shared.AppLogLevel
 
 internal const val MAX_STORED_LOGS = 1_000
 
@@ -23,16 +24,16 @@ data class StoredLog(
     @PrimaryKey(autoGenerate = true) val sequence: Long = 0,
     val eventId: String,
     val timestampMs: Long,
-    val level: String,
+    val level: AppLogLevel,
     val tag: String,
     val message: String,
 ) {
-    fun toMessage() = PlayerMessage.AppLog(
+    fun toEntry() = AppLogEntry(
+        eventId = eventId,
         timestampMs = timestampMs,
         level = level,
         tag = tag,
         message = message,
-        eventId = eventId,
     )
 }
 
@@ -54,11 +55,12 @@ abstract class LogDao {
         trim(MAX_STORED_LOGS)
     }
 
-    @Query("SELECT * FROM pending_logs ORDER BY sequence LIMIT 1")
-    abstract fun oldest(): Flow<StoredLog?>
+    /** The oldest [limit] entries, in the order they were queued. */
+    @Query("SELECT * FROM pending_logs ORDER BY sequence LIMIT :limit")
+    abstract fun pending(limit: Int): Flow<List<StoredLog>>
 
-    @Query("DELETE FROM pending_logs WHERE eventId = :eventId")
-    abstract suspend fun acknowledge(eventId: String)
+    @Query("DELETE FROM pending_logs WHERE eventId IN (:eventIds)")
+    abstract suspend fun acknowledge(eventIds: List<String>)
 
     @Query("SELECT COUNT(*) FROM pending_logs")
     abstract suspend fun count(): Int

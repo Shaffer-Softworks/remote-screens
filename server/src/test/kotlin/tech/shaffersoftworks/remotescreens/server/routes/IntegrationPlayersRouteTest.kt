@@ -28,6 +28,8 @@ import tech.shaffersoftworks.remotescreens.server.plugins.ApiJson
 import tech.shaffersoftworks.remotescreens.server.plugins.configureSerialization
 import tech.shaffersoftworks.remotescreens.server.service.CameraStreamService
 import tech.shaffersoftworks.remotescreens.server.service.StreamingHome
+import tech.shaffersoftworks.remotescreens.shared.AppLogEntry
+import tech.shaffersoftworks.remotescreens.shared.AppLogLevel
 import tech.shaffersoftworks.remotescreens.shared.DeviceTelemetry
 import tech.shaffersoftworks.remotescreens.shared.EnvironmentTelemetry
 import tech.shaffersoftworks.remotescreens.shared.LocationTelemetry
@@ -111,7 +113,15 @@ class IntegrationPlayersRouteTest {
         val appender = ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>()
         appender.start()
         logger.addAppender(appender)
-        val entry = PlayerMessage.AppLog(123L, "error", "Test", "persisted-$id\nsecond line", id)
+        val error = AppLogEntry(
+            eventId = id,
+            timestampMs = 123L,
+            level = AppLogLevel.ERROR,
+            tag = "Test",
+            message = "persisted-$id\nsecond line",
+        )
+        val warning = error.copy(eventId = "$id-warning", level = AppLogLevel.WARNING, message = "persisted-$id warn")
+        val entry = PlayerMessage.AppLog(listOf(error, warning))
         try {
             repeat(2) {
                 client.webSocket("/player") {
@@ -126,14 +136,18 @@ class IntegrationPlayersRouteTest {
                             }
                             received
                         }
-                        assertEquals(ServerMessage.AppLogAck(id), ack)
+                        assertEquals(ServerMessage.AppLogAck(listOf(error.eventId, warning.eventId)), ack)
                     }
                 }
             }
             val logged = appender.list.filter { it.formattedMessage.contains("persisted-$id") }
-            assertEquals(1, logged.size)
-            assertTrue(logged.single().formattedMessage.contains("Tablet tablet"))
-            assertTrue(!logged.single().formattedMessage.contains('\n'))
+            assertEquals(2, logged.size)
+            assertTrue(logged.all { it.formattedMessage.contains("Tablet tablet") })
+            assertTrue(logged.none { it.formattedMessage.contains('\n') })
+            assertEquals(
+                listOf(ch.qos.logback.classic.Level.ERROR, ch.qos.logback.classic.Level.WARN),
+                logged.map { it.level },
+            )
         } finally {
             logger.detachAppender(appender)
             appender.stop()

@@ -51,8 +51,6 @@ import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.nanoseconds
-
 /**
  * One connected player: the documents it shows in each [Slot], kept up to date by sending only the values that
  * changed, and its taps turned into actions.
@@ -226,7 +224,7 @@ class PlayerSession(
     @Suppress("CyclomaticComplexMethod") // Exhaustive protocol dispatch.
     suspend fun receive(message: PlayerMessage) {
         when (message) {
-            is PlayerMessage.AppLog -> logPlayerEntry(message)
+            is PlayerMessage.AppLog -> logPlayerEntries(message)
             is PlayerMessage.SentryTestResult -> diagnostics.receive(message)
             is PlayerMessage.Ping -> send(ServerMessage.Pong)
             is PlayerMessage.PageShown -> page = message.index
@@ -258,17 +256,10 @@ class PlayerSession(
         }
     }
 
-    /** [System.nanoTime] of the last entry this session wrote, or null before the first. */
-    private var lastAppLogAt: Long? = null
-
-    private suspend fun logPlayerEntry(entry: PlayerMessage.AppLog) {
+    private suspend fun logPlayerEntries(batch: PlayerMessage.AppLog) {
         if (screenId == null) return
-        val now = System.nanoTime()
-        val canWriteNew = lastAppLogAt.let { last -> last == null || (now - last).nanoseconds >= APP_LOG_INTERVAL }
-        val outcome = context.appLogs.write(hello.deviceId, entry, canWriteNew)
-        if (outcome == PlayerAppLogs.Outcome.WRITTEN) lastAppLogAt = now
-        val eventId = entry.eventId
-        if (outcome != PlayerAppLogs.Outcome.REJECTED && eventId != null) send(ServerMessage.AppLogAck(eventId))
+        val acknowledged = context.appLogs.write(hello.deviceId, batch.entries)
+        if (acknowledged.isNotEmpty()) send(ServerMessage.AppLogAck(acknowledged))
     }
 
     private suspend fun handleAction(message: PlayerMessage.Action) {
@@ -588,8 +579,6 @@ class PlayerSession(
     }
 
     companion object {
-        /** A player sends one entry a second; faster entries go unacknowledged and are retried. */
-        private val APP_LOG_INTERVAL = 500.milliseconds
         val FEATURES = listOf(
             "predictions",
             "bitmaps",
@@ -602,7 +591,6 @@ class PlayerSession(
             Protocol.CAPABILITY_CALENDAR_DIALOGS,
             Protocol.CAPABILITY_TELEMETRY,
             Protocol.CAPABILITY_APP_LOG,
-            Protocol.CAPABILITY_APP_LOG_ACK,
             Protocol.CAPABILITY_INTERCOM,
             Protocol.CAPABILITY_NOTIFICATIONS,
         )

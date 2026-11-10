@@ -16,6 +16,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionRepository
 import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionStatus
+import tech.shaffersoftworks.remotescreens.shared.AppLogLevel
+import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import tech.shaffersoftworks.remotescreens.shared.Protocol
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import kotlin.time.Duration.Companion.seconds
@@ -28,24 +30,26 @@ class AppLogTest {
     private val entry = StoredLog(
         eventId = "event-1",
         timestampMs = 123L,
-        level = "warning",
+        level = AppLogLevel.WARNING,
         tag = "Player",
         message = "low_memory",
     )
-    private val oldest = MutableStateFlow<StoredLog?>(entry)
-    private val welcome = ServerMessage.Welcome(screenId = "screen", features = listOf(Protocol.CAPABILITY_APP_LOG_ACK))
+    private val batch = PlayerMessage.AppLog(listOf(entry.toEntry()))
+    private val pending = MutableStateFlow(listOf(entry))
+    private val entryAck = ConnectionRepository.ReceivedMessage(1L, ServerMessage.AppLogAck(listOf(entry.eventId)))
+    private val welcome = ServerMessage.Welcome(screenId = "screen", features = listOf(Protocol.CAPABILITY_APP_LOG))
 
     private suspend fun setUp(acknowledge: Boolean = false, acceptSend: Boolean = true) {
         whenever(connection.connectionState).thenReturn(state)
         whenever(connection.receivedMessages).thenReturn(messages)
-        whenever(logs.oldest()).thenReturn(oldest)
-        whenever(connection.trySend(entry.toMessage(), 1L)).thenAnswer {
+        whenever(logs.pending(Protocol.MAX_APP_LOG_BATCH)).thenReturn(pending)
+        whenever(connection.trySend(batch, 1L)).thenAnswer {
             if (acknowledge) {
-                messages.tryEmit(ConnectionRepository.ReceivedMessage(1L, ServerMessage.AppLogAck(entry.eventId)))
+                messages.tryEmit(entryAck)
             }
             acceptSend
         }
-        whenever(logs.acknowledge(entry.eventId)).thenAnswer { oldest.value = null; Unit }
+        whenever(logs.acknowledge(listOf(entry.eventId))).thenAnswer { pending.value = emptyList(); Unit }
     }
 
     private suspend fun emit(message: ServerMessage, connectionId: Long = 1L) {
@@ -56,7 +60,7 @@ class AppLogTest {
     fun welcomeBeforeConnectedStateStillStartsAndLateOldWelcomeCannotStopIt() = runTest {
         setUp()
         state.value = ConnectionRepository.ConnectionState(2L, ConnectionStatus.CONNECTING)
-        whenever(connection.trySend(entry.toMessage(), 2L)).thenReturn(true)
+        whenever(connection.trySend(batch, 2L)).thenReturn(true)
         AppLog(connection, backgroundScope, logs).start()
         runCurrent()
         emit(welcome, connectionId = 2L)
@@ -64,27 +68,27 @@ class AppLogTest {
         verify(connection, never()).trySend(any(), any())
         state.value = ConnectionRepository.ConnectionState(2L, ConnectionStatus.CONNECTED)
         runCurrent()
-        verify(connection).trySend(entry.toMessage(), 2L)
+        verify(connection).trySend(batch, 2L)
         emit(welcome.copy(pairingCode = "old"), connectionId = 1L)
         runCurrent()
         advanceTimeBy(6.seconds)
         runCurrent()
-        verify(connection, times(2)).trySend(entry.toMessage(), 2L)
+        verify(connection, times(2)).trySend(batch, 2L)
     }
 
     @Test
     fun aBlockedSocketSendTimesOutAndRetriesWithoutRemovingTheEntry() = runTest {
         setUp()
         org.mockito.kotlin.doSuspendableAnswer { kotlinx.coroutines.awaitCancellation() }
-            .whenever(connection).trySend(entry.toMessage(), 1L)
+            .whenever(connection).trySend(batch, 1L)
         AppLog(connection, backgroundScope, logs).start()
         runCurrent()
         emit(welcome)
         runCurrent()
-        verify(connection).trySend(entry.toMessage(), 1L)
+        verify(connection).trySend(batch, 1L)
         advanceTimeBy(6.seconds)
         runCurrent()
-        verify(connection, times(2)).trySend(entry.toMessage(), 1L)
+        verify(connection, times(2)).trySend(batch, 1L)
         verify(logs, never()).acknowledge(any())
     }
 
@@ -95,12 +99,12 @@ class AppLogTest {
         runCurrent()
         emit(welcome)
         runCurrent()
-        emit(ServerMessage.AppLogAck(entry.eventId), connectionId = 2L)
+        emit(ServerMessage.AppLogAck(listOf(entry.eventId)), connectionId = 2L)
         runCurrent()
         verify(logs, never()).acknowledge(any())
-        emit(ServerMessage.AppLogAck(entry.eventId))
+        emit(ServerMessage.AppLogAck(listOf(entry.eventId)))
         runCurrent()
-        verify(logs).acknowledge(entry.eventId)
+        verify(logs).acknowledge(listOf(entry.eventId))
     }
 
     @Test
@@ -112,13 +116,13 @@ class AppLogTest {
         runCurrent()
         emit(welcome.copy(pairingCode = "123456"))
         runCurrent()
-        emit(welcome.copy(features = listOf(Protocol.CAPABILITY_APP_LOG)))
+        emit(welcome.copy(features = listOf(Protocol.CAPABILITY_TELEMETRY)))
         runCurrent()
         verify(connection, never()).trySend(any(), any())
         emit(welcome)
         runCurrent()
-        verify(connection).trySend(entry.toMessage(), 1L)
-        verify(logs).acknowledge(entry.eventId)
+        verify(connection).trySend(batch, 1L)
+        verify(logs).acknowledge(listOf(entry.eventId))
     }
 
     @Test
@@ -128,12 +132,12 @@ class AppLogTest {
         runCurrent()
         emit(welcome)
         runCurrent()
-        emit(ServerMessage.AppLogAck("other-event"))
+        emit(ServerMessage.AppLogAck(listOf("other-event")))
         runCurrent()
         verify(logs, never()).acknowledge(any())
         advanceTimeBy(6.seconds)
         runCurrent()
-        verify(connection, times(2)).trySend(entry.toMessage(), 1L)
+        verify(connection, times(2)).trySend(batch, 1L)
         verify(logs, never()).acknowledge(any())
     }
 
@@ -147,15 +151,35 @@ class AppLogTest {
         verify(logs, never()).acknowledge(any())
         advanceTimeBy(1.seconds)
         runCurrent()
-        verify(connection, times(2)).trySend(entry.toMessage(), 1L)
-        whenever(connection.trySend(entry.toMessage(), 1L)).thenAnswer {
-            messages.tryEmit(ConnectionRepository.ReceivedMessage(1L, ServerMessage.AppLogAck(entry.eventId)))
+        verify(connection, times(2)).trySend(batch, 1L)
+        whenever(connection.trySend(batch, 1L)).thenAnswer {
+            messages.tryEmit(entryAck)
             true
         }
         advanceTimeBy(2.seconds)
         runCurrent()
-        verify(connection, times(3)).trySend(entry.toMessage(), 1L)
-        verify(logs).acknowledge(entry.eventId)
+        verify(connection, times(3)).trySend(batch, 1L)
+        verify(logs).acknowledge(listOf(entry.eventId))
+    }
+
+    @Test
+    fun queuedEntriesGoInOneBatchAndAPartialAckDeletesOnlyThoseListed() = runTest {
+        val second = entry.copy(sequence = 2, eventId = "event-2", level = AppLogLevel.ERROR)
+        val twoEntries = PlayerMessage.AppLog(listOf(entry.toEntry(), second.toEntry()))
+        setUp()
+        pending.value = listOf(entry, second)
+        whenever(connection.trySend(twoEntries, 1L)).thenAnswer {
+            messages.tryEmit(
+                ConnectionRepository.ReceivedMessage(1L, ServerMessage.AppLogAck(listOf("event-2", "unrelated"))),
+            )
+            true
+        }
+        AppLog(connection, backgroundScope, logs).start()
+        runCurrent()
+        emit(welcome)
+        runCurrent()
+        verify(connection).trySend(twoEntries, 1L)
+        verify(logs).acknowledge(listOf("event-2"))
     }
 
     @Test
@@ -169,14 +193,14 @@ class AppLogTest {
         runCurrent()
         advanceTimeBy(10.seconds)
         runCurrent()
-        verify(connection).trySend(entry.toMessage(), 1L)
+        verify(connection).trySend(batch, 1L)
         verify(logs, never()).acknowledge(any())
         state.value = ConnectionRepository.ConnectionState(2L, ConnectionStatus.CONNECTED)
         runCurrent()
-        verify(connection).trySend(entry.toMessage(), 1L)
-        whenever(connection.trySend(entry.toMessage(), 2L)).thenReturn(true)
+        verify(connection).trySend(batch, 1L)
+        whenever(connection.trySend(batch, 2L)).thenReturn(true)
         emit(welcome, connectionId = 2L)
         runCurrent()
-        verify(connection).trySend(entry.toMessage(), 2L)
+        verify(connection).trySend(batch, 2L)
     }
 }
