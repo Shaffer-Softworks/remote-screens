@@ -1,6 +1,10 @@
 package tech.shaffersoftworks.remotescreens.player.data.diagnostics
 
+import android.app.ActivityManager
+import android.app.ApplicationExitInfo
 import android.content.Context
+import android.os.Build
+import androidx.annotation.RequiresApi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.sentry.Sentry
 import io.sentry.SentryEvent
@@ -31,12 +35,27 @@ import tech.shaffersoftworks.remotescreens.shared.SentrySettings
 import timber.log.Timber
 
 private const val TEST_TIMEOUT_MS = 8_000L
+private const val MAX_EXIT_HISTORY = 32
+private const val EXIT_LOG_TAG = "ProcessExitDiagnostics"
+private const val REPORTED_EXIT_KEY = "last_reported_exit_timestamp"
+private const val LOGGED_EXIT_KEY = "last_logged_exit_timestamp"
+
+/**
+ * The checkpoint after sending exits before [firstUnsent] in ascending [timestamps]. Later exits are compared
+ * with `>`, so an accepted exit sharing the first unsent exit's timestamp stays pending and may repeat.
+ */
+internal fun exitCheckpoint(timestamps: List<Long>, firstUnsent: Int, previous: Long): Long {
+    val unsentAt = timestamps.getOrNull(firstUnsent)
+    val sent = timestamps.take(firstUnsent)
+    return (if (unsentAt == null) sent else sent.filter { it < unsentAt }).lastOrNull() ?: previous
+}
 
 /** Owns the SDK for the whole process, including when the add-on cannot be reached. */
 @Singleton
 class CrashReporter @Inject constructor(
     @ApplicationContext private val context: Context,
     @IoScope private val scope: CoroutineScope,
+    private val appLog: AppLog,
 ) {
     private val mutex = Mutex()
     private val json = Json { ignoreUnknownKeys = true }
@@ -50,6 +69,15 @@ class CrashReporter @Inject constructor(
                     runCatching { json.decodeFromString<SentrySettings>(it).validated() }.getOrNull()
                 } ?: SentrySettings()
                 apply(settings)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    try {
+                        logPreviousExits()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (@Suppress("TooGenericExceptionCaught") error: Exception) {
+                        Timber.tag(EXIT_LOG_TAG).w(error, "Could not log previous process exits")
+                    }
+                }
             }
         }
     }
@@ -107,6 +135,82 @@ class CrashReporter @Inject constructor(
         }
     }
 
+    /** Android retains only a bounded exit history, oldest first here. */
+    @RequiresApi(Build.VERSION_CODES.R)
+    private fun exitHistory(): List<ApplicationExitInfo> = context.getSystemService(ActivityManager::class.java)
+        ?.getHistoricalProcessExitReasons(context.packageName, 0, MAX_EXIT_HISTORY)
+        .orEmpty()
+        .sortedBy { it.timestamp }
+
+    /** Retrospective diagnostics, not crash events from the currently installed release. */
+    @RequiresApi(Build.VERSION_CODES.R)
+    private fun reportPreviousExits() {
+        val prefs = preferences()
+        val lastReported = prefs.getLong(REPORTED_EXIT_KEY, 0L)
+        val exits = exitHistory().filter { it.timestamp > lastReported }
+        // A nonempty ID means the SDK accepted the event for processing, not delivery.
+        val firstRejected = exits.indexOfFirst { exit ->
+            val reason = exitReason(exit.reason)
+            reason != null && Sentry.captureEvent(exitEvent(exit, reason)) == SentryId.EMPTY_ID
+        }
+        val checkpoint = exitCheckpoint(
+            timestamps = exits.map { it.timestamp },
+            firstUnsent = if (firstRejected < 0) exits.size else firstRejected,
+            previous = lastReported,
+        )
+        if (checkpoint != lastReported && !prefs.edit().putLong(REPORTED_EXIT_KEY, checkpoint).commit()) {
+            Timber.w("Could not persist previous process exit checkpoint")
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    private fun exitEvent(exit: ApplicationExitInfo, reason: String) = SentryEvent().apply {
+        level = SentryLevel.WARNING
+        message = Message().apply { formatted = "Previous player process exit: $reason" }
+        fingerprints = listOf("player-process-exit", reason)
+        setTag("diagnostic", "previous-process-exit")
+        setTag("exit_reason", reason)
+        setExtra("exit_timestamp_ms", exit.timestamp)
+        setExtra("exit_pid", exit.pid)
+        setExtra("exit_process", exit.processName)
+        setExtra("exit_importance", exit.importance)
+        setExtra("exit_pss_kb", exit.pss)
+        setExtra("exit_rss_kb", exit.rss)
+        setExtra("exit_status", exit.status)
+        setExtra("retrospective", true)
+    }
+
+    /** Writes to Logcat and the add-on queue whether or not Sentry is configured. */
+    @RequiresApi(Build.VERSION_CODES.R)
+    private suspend fun logPreviousExits() {
+        val prefs = preferences()
+        val lastLogged = prefs.getLong(LOGGED_EXIT_KEY, 0L)
+        val unlogged = exitHistory().filter { it.timestamp > lastLogged }
+        for (exit in unlogged) {
+            val reason = exitReason(exit.reason) ?: continue
+            appLog.persistWarning(
+                tag = EXIT_LOG_TAG,
+                message = "Previous player process exit: reason=$reason timestampMs=${exit.timestamp} " +
+                    "pid=${exit.pid} process=${exit.processName} importance=${exit.importance} " +
+                    "pssKb=${exit.pss} rssKb=${exit.rss} status=${exit.status}",
+                eventId = "$PROCESS_EXIT_EVENT_PREFIX${exit.timestamp}:${exit.pid}",
+            )
+        }
+        unlogged.lastOrNull()?.let { exit ->
+            if (!prefs.edit().putLong(LOGGED_EXIT_KEY, exit.timestamp).commit()) {
+                appLog.warning(EXIT_LOG_TAG, "Could not persist process exit log checkpoint")
+            }
+        }
+    }
+
+    private fun exitReason(reason: Int): String? = when (reason) {
+        ApplicationExitInfo.REASON_LOW_MEMORY -> "low_memory"
+        ApplicationExitInfo.REASON_ANR -> "anr"
+        ApplicationExitInfo.REASON_CRASH -> "jvm_crash"
+        ApplicationExitInfo.REASON_CRASH_NATIVE -> "native_crash"
+        else -> null
+    }
+
     private fun preferences() = context.getSharedPreferences("crash_reporting", Context.MODE_PRIVATE)
 
     private fun apply(settings: SentrySettings) {
@@ -136,6 +240,10 @@ class CrashReporter @Inject constructor(
                 }
             }
             applied = settings
+            if (settings.enabled && Sentry.isEnabled() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                runCatching { reportPreviousExits() }
+                    .onFailure { Timber.tag(EXIT_LOG_TAG).w(it, "Could not report previous process exits") }
+            }
         }.onFailure {
             // A reporting failure must never take the player down or reconnect its socket.
             Timber.w(it, "Could not configure crash reporting")

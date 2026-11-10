@@ -322,11 +322,22 @@ and device/OS details. Default PII collection, breadcrumbs, screenshots, view hi
 session replay, session tracking, and performance tracing are disabled. A full device freeze, abrupt
 power loss, or an early crash before SDK initialization may not produce a report.
 
+On Android 11 and newer, the player also reports why its previous run ended when it starts again.
+Low-memory kills, ANRs, JVM crashes, and native crashes become Sentry warning events tagged
+`diagnostic:previous-process-exit`, with the exit time, reason, and memory use. The event's app
+version is the build that reported it, which may be newer than the one that exited, and the first
+start after updating can include older exits Android still remembers. Later starts skip exits
+already reported.
+The same diagnostics go to Logcat under the tag `ProcessExitDiagnostics` and to the add-on log,
+even when Sentry is disabled. Only exits Android recorded are covered, and only after the app
+restarts; a freeze while the app keeps running is not detected.
+
 Player warnings and errors also appear in **Settings → Apps → Remote Screens → Log** in Home
 Assistant (called Add-ons on older HA versions), prefixed with the tablet ID and original timestamp.
 This works in release builds and without Sentry, once the tablet is paired, and needs a player and
 add-on that both support it. While the add-on is unreachable, the tablet keeps up to 1,000 entries,
-including across restarts, and sends them when it reconnects; when that fills, the oldest are dropped.
+including across restarts, and sends them when it reconnects; when that fills, the oldest are dropped,
+except process-exit diagnostics, which are kept.
 An entry can occasionally appear twice after the add-on restarts, and the last few can be lost if the
 app is killed abruptly. Messages and stack traces are cut at 4,000 characters and shown on one line.
 
