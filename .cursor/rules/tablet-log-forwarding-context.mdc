@@ -1,5 +1,5 @@
 ---
-description: Tablet warnings and errors forwarded to the add-on log — app_log protocol, Room queue, acknowledgements, dedupe (Nov 2026)
+description: Tablet warnings and errors forwarded to the add-on log — app_log protocol, Room queue, acknowledgements, dedupe, previous process exits (Nov 2026)
 globs: shared/src/main/kotlin/tech/shaffersoftworks/remotescreens/shared/Protocol.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/data/diagnostics/*.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/data/connection/ConnectionRepository.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/PlayerViewModel.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/PlayerAppLogs.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/PlayerSession.kt,addon/DOCS.md
 alwaysApply: false
 ---
@@ -23,6 +23,12 @@ Player `Log.WARN` and above reach the add-on log as `Tablet <deviceId> [<tag>] a
 - `ConnectionRepository.logFailure` warns only on the first failed attempt (`Timber.i` after), or an outage would fill the queue with its own retries.
 - Do not log from inside `AppLog`'s storage or send paths through Timber; they use `android.util.Log` so a failure cannot feed itself.
 
+## Previous process exits (`CrashReporter`, API 30+)
+
+- `logPreviousExits()` runs from `start()` whether or not Sentry is on. Each new `ApplicationExitInfo` with a known reason goes through `AppLog.persistWarning` (Logcat, then a direct Room commit, ID `exit:<timestamp>:<pid>`) **before** `LOGGED_EXIT_KEY` advances, so a kill between the two repeats an exit rather than losing it. The unique `eventId` index with an `IGNORE` insert absorbs a repeat still queued; the add-on's ID cache catches one already sent.
+- `reportPreviousExits()` runs only when Sentry is enabled. The checkpoint `REPORTED_EXIT_KEY` advances with `exitCheckpoint` to just before the first exit the SDK rejected; an accepted exit sharing that timestamp may repeat. A non-empty `SentryId` means accepted for processing, not delivered.
+- The two checkpoints are independent: turning Sentry on later still reports exits already logged.
+
 ## Add-on
 
 - `PlayerSession` hands batches to `PlayerSessionContext.appLogs` (`PlayerAppLogs`) only after the tablet has a screen, and acks only a non-empty result.
@@ -34,6 +40,6 @@ Player `Log.WARN` and above reach the add-on log as `Tablet <deviceId> [<tag>] a
 ```bash
 ./gradlew :shared:test --tests '*AppLogProtocolTest' \
   :server:test --tests '*PlayerAppLogsTest' --tests '*IntegrationPlayersRouteTest' \
-  :player:testDebugUnitTest --tests '*AppLogTest' --tests '*LogDatabaseTest' --tests '*PlayerViewModelLogForwardingTest' \
+  :player:testDebugUnitTest --tests '*AppLogTest' --tests '*LogDatabaseTest' --tests '*PlayerViewModelLogForwardingTest' --tests '*ExitCheckpointTest' \
   :shared:detekt :server:detekt :player:detekt
 ```

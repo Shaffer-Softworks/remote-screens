@@ -322,18 +322,15 @@ and device/OS details. Default PII collection, breadcrumbs, screenshots, view hi
 session replay, session tracking, and performance tracing are disabled. A full device freeze, abrupt
 power loss, or an early crash before SDK initialization may not produce a report.
 
-On Android 11 and newer, the player also checks Android's retained process exit history when reporting
-starts. Low-memory kills, ANRs, JVM crashes, and native crashes generate warning events tagged
-`diagnostic:previous-process-exit`, with the exit time, reason, process importance, and available
-memory measurements. These are retrospective diagnostics; the event's app version is the reporting
-build, which may differ from the build that exited. The first check can include older retained exits.
-A local checkpoint prevents repeating processed history on later starts. This is best-effort reporting:
-Android retains limited history, and SDK acceptance does not guarantee delivery. It requires an
-updated player and a restart after the incident; it does not detect a live UI freeze.
-The same exit diagnostics are written at warning level to Android Logcat with the tag
-`ProcessExitDiagnostics`, including in release builds and when Sentry is disabled. They appear in
-recent tablet log downloads while retained in Logcat. A separate checkpoint avoids logging the same
-history on every restart.
+On Android 11 and newer, the player also reports why its previous run ended when it starts again.
+Low-memory kills, ANRs, JVM crashes, and native crashes become Sentry warning events tagged
+`diagnostic:previous-process-exit`, with the exit time, reason, and memory use. The event's app
+version is the build that reported it, which may be newer than the one that exited, and the first
+start after updating can include older exits Android still remembers. Later starts skip exits
+already reported.
+The same diagnostics go to Logcat under the tag `ProcessExitDiagnostics` and to the add-on log,
+even when Sentry is disabled. Only exits Android recorded are covered, and only after the app
+restarts; a freeze while the app keeps running is not detected.
 
 Player warnings and errors also appear in **Settings → Apps → Remote Screens → Log** in Home
 Assistant (called Add-ons on older HA versions), prefixed with the tablet ID and original timestamp.
