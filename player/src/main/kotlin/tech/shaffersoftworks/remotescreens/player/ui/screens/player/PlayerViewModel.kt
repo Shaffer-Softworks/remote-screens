@@ -56,6 +56,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import tech.shaffersoftworks.remotescreens.player.data.diagnostics.AppLog
 import tech.shaffersoftworks.remotescreens.player.data.diagnostics.CrashReporter
 import tech.shaffersoftworks.remotescreens.player.di.HaImageLoaderQualifier
 import tech.shaffersoftworks.remotescreens.shared.SentrySettings
@@ -111,6 +112,7 @@ class PlayerViewModel @Inject constructor(
     private val imageDecoder: ImageDecoder,
     private val telemetryReporter: TelemetryReporter,
     private val crashReporter: CrashReporter,
+    private val appLog: AppLog,
     private val locationAccuracy: LocationAccuracy,
     private val intercomCoordinator: IntercomCoordinator,
     @HaImageLoaderQualifier val haImageLoaderQualifier: ImageLoader,
@@ -199,6 +201,7 @@ class PlayerViewModel @Inject constructor(
         proximityWakeMonitor.stop()
         faceWakeMonitor.stop()
         telemetryReporter.stop()
+        appLog.forwardOn(null)
         connectionRepository.disconnect()
     }
 
@@ -283,6 +286,7 @@ class PlayerViewModel @Inject constructor(
     private fun observeConnectionStatus() {
         viewModelScope.launch {
             connectionRepository.connectionState.map { it.status }.distinctUntilChanged().collect { status ->
+                if (status != ConnectionStatus.CONNECTED) appLog.forwardOn(null)
                 val hasMainDocument = _viewState.value.remoteScreen.hasMainDocument
                 when (status) {
                     ConnectionStatus.CONNECTING -> if (!hasMainDocument && !isPaired) {
@@ -332,8 +336,17 @@ class PlayerViewModel @Inject constructor(
 
     private fun observeServerMessages() {
         viewModelScope.launch {
-            connectionRepository.receivedMessages.collect { received -> handleServerMessage(received.message) }
+            connectionRepository.receivedMessages.collect { received ->
+                handleServerMessage(received.message)
+                (received.message as? ServerMessage.Welcome)?.let { updateLogForwarding(it, received.connectionId) }
+            }
         }
+    }
+
+    /** A Welcome from a replaced socket can arrive late; only the current connection decides forwarding. */
+    private fun updateLogForwarding(welcome: ServerMessage.Welcome, connectionId: Long) {
+        if (connectionId != connectionRepository.connectionState.value.connectionId) return
+        appLog.forwardOn(connectionId.takeIf { isPaired && Protocol.CAPABILITY_APP_LOG in welcome.features })
     }
 
     @Suppress("CyclomaticComplexMethod")
@@ -370,6 +383,7 @@ class PlayerViewModel @Inject constructor(
             is ServerMessage.SentryTest -> viewModelScope.launch {
                 send(PlayerMessage.SentryTestResult(message.requestId, crashReporter.test()))
             }
+            is ServerMessage.AppLogAck -> Unit // AppLog handles delivery acknowledgements.
             ServerMessage.Pong -> Unit
         }
     }

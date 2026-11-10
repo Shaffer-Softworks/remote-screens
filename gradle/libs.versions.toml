@@ -16,6 +16,8 @@ androidxLifecycle = "2.11.0"
 androidxHilt = "1.4.0"
 composeBom = "2026.09.00"
 dataStore = "1.3.0"
+room = "2.8.5"
+robolectric = "4.17"
 hilt = "2.60.1"
 ksp = "2.3.12"
 timber = "5.0.1"
@@ -36,6 +38,9 @@ targetSdk = "37"
 minSdk = "26"
 
 [libraries]
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 remote-core = { module = "androidx.compose.remote:remote-core", version.ref = "remoteCompose" }
 remote-creation-core = { module = "androidx.compose.remote:remote-creation-core", version.ref = "remoteCompose" }
 remote-creation-jvm = { module = "androidx.compose.remote:remote-creation-jvm", version.ref = "remoteCompose" }

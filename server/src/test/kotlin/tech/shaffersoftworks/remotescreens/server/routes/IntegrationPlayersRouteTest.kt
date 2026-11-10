@@ -28,6 +28,8 @@ import tech.shaffersoftworks.remotescreens.server.plugins.ApiJson
 import tech.shaffersoftworks.remotescreens.server.plugins.configureSerialization
 import tech.shaffersoftworks.remotescreens.server.service.CameraStreamService
 import tech.shaffersoftworks.remotescreens.server.service.StreamingHome
+import tech.shaffersoftworks.remotescreens.shared.AppLogEntry
+import tech.shaffersoftworks.remotescreens.shared.AppLogLevel
 import tech.shaffersoftworks.remotescreens.shared.DeviceTelemetry
 import tech.shaffersoftworks.remotescreens.shared.EnvironmentTelemetry
 import tech.shaffersoftworks.remotescreens.shared.LocationTelemetry
@@ -42,6 +44,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 private const val TABLET_TOKEN = "tablet-token"
 private const val POLL_ATTEMPTS = 50
@@ -96,6 +99,59 @@ class IntegrationPlayersRouteTest {
         val response = client.get("/integration/players")
         assertEquals(HttpStatusCode.OK, response.status)
         return ApiJson.decodeFromString(ListSerializer(PlayerStatus.serializer()), response.bodyAsText())
+    }
+
+    @Test
+    fun logsAreAcknowledgedAndDeduplicatedAcrossReconnects() = withRoutes { client ->
+        dependencies.layoutRepository.update { layout ->
+            layout.copy(screens = listOf(tech.shaffersoftworks.remotescreens.shared.Screen("home", "Home")))
+        }
+        val id = java.util.UUID.randomUUID().toString()
+        val logger = org.slf4j.LoggerFactory.getLogger(
+            tech.shaffersoftworks.remotescreens.server.player.PlayerSession::class.java,
+        ) as ch.qos.logback.classic.Logger
+        val appender = ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>()
+        appender.start()
+        logger.addAppender(appender)
+        val error = AppLogEntry(
+            eventId = id,
+            timestampMs = 123L,
+            level = AppLogLevel.ERROR,
+            tag = "Test",
+            message = "persisted-$id\nsecond line",
+        )
+        val warning = error.copy(eventId = "$id-warning", level = AppLogLevel.WARNING, message = "persisted-$id warn")
+        val entry = PlayerMessage.AppLog(listOf(error, warning))
+        try {
+            repeat(2) {
+                client.webSocket("/player") {
+                    send(Frame.Text(Protocol.encode(hello(deviceId = "tablet", token = TABLET_TOKEN))))
+                    repeat(2) {
+                        send(Frame.Text(Protocol.encode(entry)))
+                        val ack = kotlinx.coroutines.withTimeout(5.seconds) {
+                            var received: ServerMessage? = null
+                            while (received !is ServerMessage.AppLogAck) {
+                                val frame = incoming.receive() as? Frame.Text ?: continue
+                                received = Protocol.decodeServer(frame.readText())
+                            }
+                            received
+                        }
+                        assertEquals(ServerMessage.AppLogAck(listOf(error.eventId, warning.eventId)), ack)
+                    }
+                }
+            }
+            val logged = appender.list.filter { it.formattedMessage.contains("persisted-$id") }
+            assertEquals(2, logged.size)
+            assertTrue(logged.all { it.formattedMessage.contains("Tablet tablet") })
+            assertTrue(logged.none { it.formattedMessage.contains('\n') })
+            assertEquals(
+                listOf(ch.qos.logback.classic.Level.ERROR, ch.qos.logback.classic.Level.WARN),
+                logged.map { it.level },
+            )
+        } finally {
+            logger.detachAppender(appender)
+            appender.stop()
+        }
     }
 
     @Test

@@ -40,6 +40,12 @@ object Protocol {
     const val CAPABILITY_NOTIFICATIONS = "notifications"
     const val CAPABILITY_SENTRY_TEST = "sentry_test"
 
+    /** An add-on that writes [PlayerMessage.AppLog] batches to its log and answers with [ServerMessage.AppLogAck]. */
+    const val CAPABILITY_APP_LOG = "app_log"
+
+    /** The most entries in one [PlayerMessage.AppLog]; the add-on rejects a larger batch. */
+    const val MAX_APP_LOG_BATCH = 20
+
     val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = false
@@ -77,6 +83,22 @@ enum class VarType {
     @SerialName("f") FLOAT,
     @SerialName("c") COLOR,
 }
+
+@Serializable
+enum class AppLogLevel {
+    @SerialName("warning") WARNING,
+    @SerialName("error") ERROR,
+}
+
+/** One tablet warning or error. [eventId] is stable across retries, so the add-on writes it once. */
+@Serializable
+data class AppLogEntry(
+    val eventId: String,
+    val timestampMs: Long,
+    val level: AppLogLevel,
+    val tag: String,
+    val message: String,
+)
 
 /** A named remote variable. The document declares it as `USER:<name>`; the player sets it by [name]. */
 @Serializable
@@ -185,6 +207,11 @@ sealed interface PlayerMessage {
     @SerialName("telemetry")
     data class Telemetry(val telemetry: DeviceTelemetry) : PlayerMessage
 
+    /** Up to [Protocol.MAX_APP_LOG_BATCH] queued diagnostics, sent only after a paired Welcome advertises app_log. */
+    @Serializable
+    @SerialName("app_log")
+    data class AppLog(val entries: List<AppLogEntry>) : PlayerMessage
+
     /**
      * The video over [componentId] of document [rev] in [slot] stopped, so the add-on can start the camera's stream
      * again. [httpCode] is the add-on's answer when it was an error, such as 404 once Home Assistant ended the stream.
@@ -267,6 +294,14 @@ data class IntercomStation(
 
 @Serializable
 sealed interface ServerMessage {
+    /**
+     * The [AppLogEntry.eventId]s of one [PlayerMessage.AppLog] that are in the add-on log, written now or by an
+     * earlier delivery. An entry the add-on rejected is left out, so the tablet keeps it.
+     */
+    @Serializable
+    @SerialName("app_log_ack")
+    data class AppLogAck(val eventIds: List<String>) : ServerMessage
+
     /** Explicit nonfatal connectivity check; requires the sentry_test capability. */
     @Serializable
     @SerialName("sentry_test")

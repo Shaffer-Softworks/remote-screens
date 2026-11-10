@@ -51,7 +51,6 @@ import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.milliseconds
-
 /**
  * One connected player: the documents it shows in each [Slot], kept up to date by sending only the values that
  * changed, and its taps turned into actions.
@@ -225,6 +224,7 @@ class PlayerSession(
     @Suppress("CyclomaticComplexMethod") // Exhaustive protocol dispatch.
     suspend fun receive(message: PlayerMessage) {
         when (message) {
+            is PlayerMessage.AppLog -> logPlayerEntries(message)
             is PlayerMessage.SentryTestResult -> diagnostics.receive(message)
             is PlayerMessage.Ping -> send(ServerMessage.Pong)
             is PlayerMessage.PageShown -> page = message.index
@@ -254,6 +254,12 @@ class PlayerSession(
             is PlayerMessage.NotificationAction -> handleNotificationAction(message)
             is PlayerMessage.Hello -> Unit
         }
+    }
+
+    private suspend fun logPlayerEntries(batch: PlayerMessage.AppLog) {
+        if (screenId == null) return
+        val acknowledged = context.appLogs.write(hello.deviceId, batch.entries)
+        if (acknowledged.isNotEmpty()) send(ServerMessage.AppLogAck(acknowledged))
     }
 
     private suspend fun handleAction(message: PlayerMessage.Action) {
@@ -584,6 +590,7 @@ class PlayerSession(
             Protocol.CAPABILITY_MUSIC_SEARCH,
             Protocol.CAPABILITY_CALENDAR_DIALOGS,
             Protocol.CAPABILITY_TELEMETRY,
+            Protocol.CAPABILITY_APP_LOG,
             Protocol.CAPABILITY_INTERCOM,
             Protocol.CAPABILITY_NOTIFICATIONS,
         )

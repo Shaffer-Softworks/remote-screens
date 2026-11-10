@@ -3,6 +3,7 @@ package tech.shaffersoftworks.remotescreens.player
 import android.app.Application
 import tech.shaffersoftworks.remotescreens.player.data.diagnostics.CrashReporter
 import dagger.hilt.android.HiltAndroidApp
+import tech.shaffersoftworks.remotescreens.player.data.diagnostics.AppLog
 import tech.shaffersoftworks.remotescreens.player.data.kiosk.KioskManager
 import tech.shaffersoftworks.remotescreens.player.utils.UnCaughtExceptionHandler
 import timber.log.Timber
@@ -16,9 +17,13 @@ class PlayerApplication : Application() {
     @Inject
     lateinit var crashReporter: CrashReporter
 
+    @Inject
+    lateinit var appLog: AppLog
+
     override fun onCreate() {
         super.onCreate()
         initializeLogging()
+        appLog.start()
         initializeUncaughtExceptionHandler()
         crashReporter.start()
 
@@ -29,6 +34,7 @@ class PlayerApplication : Application() {
     }
 
     private fun initializeLogging() {
+        Timber.plant(appLog)
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }

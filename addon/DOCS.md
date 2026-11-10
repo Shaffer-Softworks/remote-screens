@@ -322,6 +322,14 @@ and device/OS details. Default PII collection, breadcrumbs, screenshots, view hi
 session replay, session tracking, and performance tracing are disabled. A full device freeze, abrupt
 power loss, or an early crash before SDK initialization may not produce a report.
 
+Player warnings and errors also appear in **Settings → Apps → Remote Screens → Log** in Home
+Assistant (called Add-ons on older HA versions), prefixed with the tablet ID and original timestamp.
+This works in release builds and without Sentry, once the tablet is paired, and needs a player and
+add-on that both support it. While the add-on is unreachable, the tablet keeps up to 1,000 entries,
+including across restarts, and sends them when it reconnects; when that fills, the oldest are dropped.
+An entry can occasionally appear twice after the add-on restarts, and the last few can be lost if the
+app is killed abruptly. Messages and stack traces are cut at 4,000 characters and shown on one line.
+
 Release builds use R8. Under **Readable crash reports**, enter your Sentry Cloud organization slug
 and a Sentry organization upload token with the `org:ci` scope for the project in your saved DSN. Choose **Save and
 upload mappings**. The server stores the token separately from layouts in a file readable only by
