@@ -1,0 +1,39 @@
+---
+description: Player WebSocket reconnect after APK update — ownership, CONNECTED-before-Welcome, and the startup watchdog for silent sockets (Nov 2026)
+globs: player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/data/connection/*.kt,player/src/test/kotlin/tech/shaffersoftworks/remotescreens/player/data/connection/*.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/PlayerViewModel.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/di/NetworkModule.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/data/update/*.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/receiver/InstallReceiver.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/PlayerHub.kt
+alwaysApply: false
+---
+
+# APK update reconnect (Nov 2026)
+
+After a self-update the tablet can sit on the Connecting panel until a forced reconnect. A half-open WebSocket looks alive, Hello is sent, status becomes CONNECTED, and no Welcome ever arrives — so the automatic backoff loop never runs.
+
+## Symptom and UI
+
+- Fresh process: `PlayerViewModel.isPaired` starts `false`, no main document. `CONNECTING` sets `InfoPanelState.Connecting`.
+- `publish` marks `CONNECTED` as soon as Hello is sent, before any server reply. The `CONNECTED` branch leaves the info panel alone, so Connecting stays on screen.
+- Welcome never arrives → stuck. Manual `reconnect()` opens a new socket and recovers.
+
+## Ownership (`ConnectionRepository`)
+
+- Each `connect` / `reconnect` owns the loop with a token. Every attempt has a `connectionId`.
+- A replaced or disconnected attempt must not publish its session, overwrite status, or clear its replacement while closing.
+- `connectionState` and `receivedMessages` are the only status/message streams. `trySend` can be scoped to one `connectionId`.
+- Set owner and job before emitting flows: a `Main.immediate` collector can reenter `connect`/`reconnect` inline.
+
+## Startup watchdog
+
+- `HttpTimeout` (15 s) bounds only the HTTP upgrade. It does not bound an upgraded socket waiting for the first application reply.
+- `CONNECTION_START_TIMEOUT_MS` (30 s) runs beside `webSocket { … }`. If no decoded `ServerMessage` arrives, throw and let the backoff loop replace the socket. Cancel the watchdog on the first reply (and in `finally`).
+- Pass `delay(CONNECTION_START_TIMEOUT_MS.milliseconds)` — Duration, not the Long overload.
+- WebSocket client pings (`NetworkModule`, 20 s) do not fix a peer that never answers Hello.
+
+## Add-on
+
+- `PlayerHub.serve` replaces `sessions[deviceId]` and closes the previous session. A clean new Hello should welcome; the hang is on the player when the upgraded socket stays silent.
+
+## Verify
+
+```bash
+./gradlew :player:testDebugUnitTest --tests '*ConnectionRepositoryTest' :player:detekt
+```

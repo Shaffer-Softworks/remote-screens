@@ -23,9 +23,11 @@ import org.junit.Assert.assertFalse
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -35,6 +37,7 @@ import org.junit.Test
 import org.mockito.kotlin.mock
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import tech.shaffersoftworks.remotescreens.shared.Protocol
+import kotlin.time.Duration.Companion.milliseconds
 
 class ConnectionRepositoryTest {
     private fun hello() = PlayerMessage.Hello(
@@ -85,6 +88,39 @@ class ConnectionRepositoryTest {
     }
 
     @Test
+    fun aSocketThatNeverRepliesIsReplacedAutomatically() = runTest {
+        val outgoing = List(2) { Channel<Frame>(Channel.UNLIMITED) }
+        val incoming = List(2) { Channel<Frame>(Channel.UNLIMITED) }
+        val client = socketClient(incoming) { outgoing[it] }
+        val repository = ConnectionRepository(client, backgroundScope)
+        try {
+            repository.connect("server") { hello() }
+            runCurrent()
+            val firstId = repository.connectionState.value.connectionId
+            advanceTimeBy(30_000.milliseconds)
+            runCurrent()
+            assertEquals(ConnectionStatus.DISCONNECTED, repository.connectionState.value.status)
+            assertEquals(1, repository.consecutiveFailures.value)
+            advanceTimeBy(1_000.milliseconds)
+            runCurrent()
+            val replacementId = repository.connectionState.value.connectionId
+            assertTrue(firstId != replacementId)
+            assertTrue(outgoing[1].receive() is Frame.Text)
+            incoming[1].send(Frame.Text(Protocol.encode(ServerMessage.Welcome(screenId = "screen"))))
+            runCurrent()
+            // A healthy socket is retained after the startup deadline.
+            advanceTimeBy(60_000.milliseconds)
+            runCurrent()
+            assertEquals(ConnectionStatus.CONNECTED, repository.connectionState.value.status)
+            assertEquals(replacementId, repository.connectionState.value.connectionId)
+            assertTrue(repository.trySend(action, replacementId))
+        } finally {
+            repository.disconnect()
+            client.close()
+        }
+    }
+
+    @Test
     fun aCollectorReconnectingInsideAStateUpdateLeavesALiveConnection() = runTest {
         val outgoing = List(2) { Channel<Frame>(Channel.UNLIMITED) }
         val incoming = List(2) { Channel<Frame>(Channel.UNLIMITED) }
@@ -129,7 +165,7 @@ class ConnectionRepositoryTest {
                     sent.send(element)
                     if (index == 0 && element is Frame.Text) {
                         // Model IO completing after cancellation, immediately before publication.
-                        kotlin.coroutines.suspendCoroutine<Unit> { delayedHello = it }
+                        suspendCancellableCoroutine { delayedHello = it }
                     }
                 }
             }
