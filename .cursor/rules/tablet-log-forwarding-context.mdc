@@ -1,0 +1,39 @@
+---
+description: Tablet warnings and errors forwarded to the add-on log — app_log protocol, Room queue, acknowledgements, dedupe (Nov 2026)
+globs: shared/src/main/kotlin/tech/shaffersoftworks/remotescreens/shared/Protocol.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/data/diagnostics/*.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/data/connection/ConnectionRepository.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/PlayerViewModel.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/PlayerAppLogs.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/PlayerSession.kt,addon/DOCS.md
+alwaysApply: false
+---
+
+# Tablet log forwarding (Nov 2026)
+
+Player `Log.WARN` and above reach the add-on log as `Tablet <deviceId> [<tag>] at <ms>: <message>`. `addon/DOCS.md` keeps only what a user sees; the numbers below live here.
+
+## Wire
+
+- `Protocol.CAPABILITY_APP_LOG` (`app_log`) is the only capability. The add-on lists it in `PlayerSession.FEATURES`; the player forwards only when `Welcome.features` has it **and** the tablet is paired.
+- `PlayerMessage.AppLog(entries)` carries up to `Protocol.MAX_APP_LOG_BATCH` (20) `AppLogEntry`s. `eventId` is required; `level` is `AppLogLevel` (`"warning"`, `"error"`). An entry without an ID fails to decode.
+- `ServerMessage.AppLogAck(eventIds)` lists the IDs the add-on wrote, now or on an earlier delivery. Anything it leaves out stays queued.
+
+## Player (`data/diagnostics/`)
+
+- `AppLog` is a Timber tree. `log` pushes onto a 128-entry `DROP_OLDEST` channel; `start()` (from `PlayerApplication`) runs the writer into Room. An abrupt exit loses what has not committed.
+- `LogDatabase` / `LogDao`: `StoredLog` rows, trimmed to `MAX_STORED_LOGS` (1,000) after each insert. Event IDs starting with `PROCESS_EXIT_EVENT_PREFIX` (`exit:`) sort ahead of ordinary rows in the trim, so a burst cannot evict them.
+- `PlayerViewModel` decides forwarding, as it does telemetry. On a Welcome from the current `connectionState.connectionId` it calls `appLog.forwardOn(id)` (or `null` when unpaired or without `app_log`); any status other than CONNECTED calls `forwardOn(null)`. A late Welcome from a replaced socket is ignored. Call `forwardOn` from the main thread.
+- `sendLogs` reads `pending(20)`, subscribes to `receivedMessages` **before** `trySend(batch, connectionId)` (UNDISPATCHED), and waits 5 s for an ack on that same connection. Acked IDs are deleted; 1 s between batches, 1–30 s backoff on failure.
+- `ConnectionRepository.logFailure` warns only on the first failed attempt (`Timber.i` after), or an outage would fill the queue with its own retries.
+- Do not log from inside `AppLog`'s storage or send paths through Timber; they use `android.util.Log` so a failure cannot feed itself.
+
+## Add-on
+
+- `PlayerSession` hands batches to `PlayerSessionContext.appLogs` (`PlayerAppLogs`) only after the tablet has a screen, and acks only a non-empty result.
+- `PlayerAppLogs.write` rejects a batch over 20 (empty ack, the player retries), drops blank IDs or IDs over 100 characters, writes each new `(deviceId, eventId)` once, and remembers the last 4,096 keys in memory. The cache resets on restart, so delivery is at least once, not exactly once.
+- Control characters, including newlines, become spaces; device and tag are cut at 100 characters, the message at 4,000. An ack confirms the logger write, not Home Assistant's retention.
+
+## Verify
+
+```bash
+./gradlew :shared:test --tests '*AppLogProtocolTest' \
+  :server:test --tests '*PlayerAppLogsTest' --tests '*IntegrationPlayersRouteTest' \
+  :player:testDebugUnitTest --tests '*AppLogTest' --tests '*LogDatabaseTest' --tests '*PlayerViewModelLogForwardingTest' \
+  :shared:detekt :server:detekt :player:detekt
+```

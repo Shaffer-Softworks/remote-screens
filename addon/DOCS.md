@@ -324,21 +324,11 @@ power loss, or an early crash before SDK initialization may not produce a report
 
 Player warnings and errors also appear in **Settings → Apps → Remote Screens → Log** in Home
 Assistant (called Add-ons on older HA versions), prefixed with the tablet ID and original timestamp.
-This includes release builds and does not require Sentry. Both the player and add-on must support
-`app_log`; forwarding starts only after pairing. Room stores up to 1,000 pending entries on
-the tablet, retaining them across restarts. When the queue is full, the oldest entries are discarded.
-While the add-on is unreachable, only the first failed connection attempt is logged as a warning.
-Entries are sent in batches of up to 20, one batch per second, and each is deleted only after the
-add-on acknowledges writing it to its log. Failed sends and missing acknowledgements retry with
-exponential backoff from 1 to 30 seconds, pausing while disconnected. Older add-ons without log
-support leave the queue intact until updated.
-
-Ordinary Timber messages use a bounded 128-entry memory buffer before background database writes;
-an abrupt exit can still lose entries that have not committed. Each entry has a stable ID, and the
-add-on remembers the last 4,096 IDs across reconnects to suppress duplicate retries. This cache
-resets when the add-on restarts, so delivery is not exactly once. An acknowledgement confirms a
-logger write, not permanent retention by Home Assistant. Messages and stack traces are truncated
-to 4,000 characters and flattened to one line in the add-on log.
+This works in release builds and without Sentry, once the tablet is paired, and needs a player and
+add-on that both support it. While the add-on is unreachable, the tablet keeps up to 1,000 entries,
+including across restarts, and sends them when it reconnects; when that fills, the oldest are dropped.
+An entry can occasionally appear twice after the add-on restarts, and the last few can be lost if the
+app is killed abruptly. Messages and stack traces are cut at 4,000 characters and shown on one line.
 
 Release builds use R8. Under **Readable crash reports**, enter your Sentry Cloud organization slug
 and a Sentry organization upload token with the `org:ci` scope for the project in your saved DSN. Choose **Save and

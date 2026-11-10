@@ -40,6 +40,7 @@ Read the rule whose files you are changing. These describe behavior that is alre
 - `intercom-panel-context.mdc` — tablet intercom page, signaling on port 8766, Home Assistant callers, and why a call or the integration fails to start
 - `music-panel-context.mdc` — RPI music page playhead: snapshot `media_position` plus elapsed since `media_position_updated_at`
 - `tablet-telemetry-context.mdc` — tablet sensors, diagnostics and GPS in Home Assistant
+- `tablet-log-forwarding-context.mdc` — tablet warnings and errors in the add-on log: `app_log` batches, acknowledgements, Room queue
 - `configurable-bars-context.mdc` — top bar, nav bar and navigation drawer
 - `standby-wake-sources-context.mdc` — wake sources
 - `standby-screen-off-context.mdc` — standby countdown and screen off
