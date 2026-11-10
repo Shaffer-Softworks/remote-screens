@@ -322,11 +322,25 @@ and device/OS details. Default PII collection, breadcrumbs, screenshots, view hi
 session replay, session tracking, and performance tracing are disabled. A full device freeze, abrupt
 power loss, or an early crash before SDK initialization may not produce a report.
 
+On Android 11 and newer, the player also checks Android's retained process exit history when reporting
+starts. Low-memory kills, ANRs, JVM crashes, and native crashes generate warning events tagged
+`diagnostic:previous-process-exit`, with the exit time, reason, process importance, and available
+memory measurements. These are retrospective diagnostics; the event's app version is the reporting
+build, which may differ from the build that exited. The first check can include older retained exits.
+A local checkpoint prevents repeating processed history on later starts. This is best-effort reporting:
+Android retains limited history, and SDK acceptance does not guarantee delivery. It requires an
+updated player and a restart after the incident; it does not detect a live UI freeze.
+The same exit diagnostics are written at warning level to Android Logcat with the tag
+`ProcessExitDiagnostics`, including in release builds and when Sentry is disabled. They appear in
+recent tablet log downloads while retained in Logcat. A separate checkpoint avoids logging the same
+history on every restart.
+
 Player warnings and errors also appear in **Settings → Apps → Remote Screens → Log** in Home
 Assistant (called Add-ons on older HA versions), prefixed with the tablet ID and original timestamp.
 This works in release builds and without Sentry, once the tablet is paired, and needs a player and
 add-on that both support it. While the add-on is unreachable, the tablet keeps up to 1,000 entries,
-including across restarts, and sends them when it reconnects; when that fills, the oldest are dropped.
+including across restarts, and sends them when it reconnects; when that fills, the oldest are dropped,
+except process-exit diagnostics, which are kept.
 An entry can occasionally appear twice after the add-on restarts, and the last few can be lost if the
 app is killed abruptly. Messages and stack traces are cut at 4,000 characters and shown on one line.
 
