@@ -370,6 +370,7 @@ class PlayerViewModel @Inject constructor(
             is ServerMessage.SentryTest -> viewModelScope.launch {
                 send(PlayerMessage.SentryTestResult(message.requestId, crashReporter.test()))
             }
+            is ServerMessage.AppLogAck -> Unit // AppLog handles delivery acknowledgements.
             ServerMessage.Pong -> Unit
         }
     }

@@ -86,6 +86,10 @@ android {
     }
 }
 
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 kotlin {
     jvmToolchain(21)
 }
@@ -205,6 +209,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.room.runtime)
+    ksp(libs.room.compiler)
 
     // Compose
     implementation(platform(libs.compose.bom))
@@ -240,6 +246,7 @@ dependencies {
     testImplementation(libs.remote.creation.core)
     testImplementation(libs.remote.creation.jvm)
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
     testImplementation(libs.ktor.client.mock)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.mockito.core)

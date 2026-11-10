@@ -42,6 +42,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 private const val TABLET_TOKEN = "tablet-token"
 private const val POLL_ATTEMPTS = 50
@@ -96,6 +97,47 @@ class IntegrationPlayersRouteTest {
         val response = client.get("/integration/players")
         assertEquals(HttpStatusCode.OK, response.status)
         return ApiJson.decodeFromString(ListSerializer(PlayerStatus.serializer()), response.bodyAsText())
+    }
+
+    @Test
+    fun logsAreAcknowledgedAndDeduplicatedAcrossReconnects() = withRoutes { client ->
+        dependencies.layoutRepository.update { layout ->
+            layout.copy(screens = listOf(tech.shaffersoftworks.remotescreens.shared.Screen("home", "Home")))
+        }
+        val id = java.util.UUID.randomUUID().toString()
+        val logger = org.slf4j.LoggerFactory.getLogger(
+            tech.shaffersoftworks.remotescreens.server.player.PlayerSession::class.java,
+        ) as ch.qos.logback.classic.Logger
+        val appender = ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>()
+        appender.start()
+        logger.addAppender(appender)
+        val entry = PlayerMessage.AppLog(123L, "error", "Test", "persisted-$id\nsecond line", id)
+        try {
+            repeat(2) {
+                client.webSocket("/player") {
+                    send(Frame.Text(Protocol.encode(hello(deviceId = "tablet", token = TABLET_TOKEN))))
+                    repeat(2) {
+                        send(Frame.Text(Protocol.encode(entry)))
+                        val ack = kotlinx.coroutines.withTimeout(5.seconds) {
+                            var received: ServerMessage? = null
+                            while (received !is ServerMessage.AppLogAck) {
+                                val frame = incoming.receive() as? Frame.Text ?: continue
+                                received = Protocol.decodeServer(frame.readText())
+                            }
+                            received
+                        }
+                        assertEquals(ServerMessage.AppLogAck(id), ack)
+                    }
+                }
+            }
+            val logged = appender.list.filter { it.formattedMessage.contains("persisted-$id") }
+            assertEquals(1, logged.size)
+            assertTrue(logged.single().formattedMessage.contains("Tablet tablet"))
+            assertTrue(!logged.single().formattedMessage.contains('\n'))
+        } finally {
+            logger.detachAppender(appender)
+            appender.stop()
+        }
     }
 
     @Test

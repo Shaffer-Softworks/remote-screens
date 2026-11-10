@@ -322,6 +322,24 @@ and device/OS details. Default PII collection, breadcrumbs, screenshots, view hi
 session replay, session tracking, and performance tracing are disabled. A full device freeze, abrupt
 power loss, or an early crash before SDK initialization may not produce a report.
 
+Player warnings and errors also appear in **Settings → Apps → Remote Screens → Log** in Home
+Assistant (called Add-ons on older HA versions), prefixed with the tablet ID and original timestamp.
+This includes release builds and does not require Sentry. Both the player and add-on must support
+`app_log_ack`; forwarding starts only after pairing. Room stores up to 1,000 pending entries on
+the tablet, retaining them across restarts. When the queue is full, the oldest entries are discarded.
+While the add-on is unreachable, only the first failed connection attempt is logged as a warning.
+Entries are sent at one per second and deleted only after the add-on acknowledges writing them to
+its log. Failed sends and missing acknowledgements retry with exponential backoff from 1 to 30
+seconds, pausing while disconnected. Older add-ons without acknowledgement support leave the
+queue intact until updated.
+
+Ordinary Timber messages use a bounded 128-entry memory buffer before background database writes;
+an abrupt exit can still lose entries that have not committed. Each entry has a stable ID, and the
+add-on remembers the last 4,096 IDs across reconnects to suppress duplicate retries. This cache
+resets when the add-on restarts, so delivery is not exactly once. An acknowledgement confirms a
+logger write, not permanent retention by Home Assistant. Messages and stack traces are truncated
+to 4,000 characters and flattened to one line in the add-on log.
+
 Release builds use R8. Under **Readable crash reports**, enter your Sentry Cloud organization slug
 and a Sentry organization upload token with the `org:ci` scope for the project in your saved DSN. Choose **Save and
 upload mappings**. The server stores the token separately from layouts in a file readable only by

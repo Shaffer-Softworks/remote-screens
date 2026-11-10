@@ -39,6 +39,8 @@ object Protocol {
 
     const val CAPABILITY_NOTIFICATIONS = "notifications"
     const val CAPABILITY_SENTRY_TEST = "sentry_test"
+    const val CAPABILITY_APP_LOG = "app_log"
+    const val CAPABILITY_APP_LOG_ACK = "app_log_ack"
 
     val json = Json {
         ignoreUnknownKeys = true
@@ -185,6 +187,17 @@ sealed interface PlayerMessage {
     @SerialName("telemetry")
     data class Telemetry(val telemetry: DeviceTelemetry) : PlayerMessage
 
+    /** Warning/error diagnostics, sent only after a paired Welcome advertises app_log. */
+    @Serializable
+    @SerialName("app_log")
+    data class AppLog(
+        val timestampMs: Long,
+        val level: String,
+        val tag: String,
+        val message: String,
+        val eventId: String? = null,
+    ) : PlayerMessage
+
     /**
      * The video over [componentId] of document [rev] in [slot] stopped, so the add-on can start the camera's stream
      * again. [httpCode] is the add-on's answer when it was an error, such as 404 once Home Assistant ended the stream.
@@ -267,6 +280,11 @@ data class IntercomStation(
 
 @Serializable
 sealed interface ServerMessage {
+    /** Sent after a paired tablet's log entry has been written to the add-on log. */
+    @Serializable
+    @SerialName("app_log_ack")
+    data class AppLogAck(val eventId: String) : ServerMessage
+
     /** Explicit nonfatal connectivity check; requires the sentry_test capability. */
     @Serializable
     @SerialName("sentry_test")

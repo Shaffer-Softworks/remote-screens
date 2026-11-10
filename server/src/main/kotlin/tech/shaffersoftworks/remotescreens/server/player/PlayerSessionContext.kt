@@ -28,4 +28,5 @@ class PlayerSessionContext(
     val scope: CoroutineScope,
     /** OpenStreetMap-style tile URL with `{z}`, `{x}` and `{y}`, for interactive map cards. */
     val mapTileUrl: String = ServerConfig.OPENSTREETMAP_TILE_URL,
+    val appLogs: PlayerAppLogs = PlayerAppLogs(),
 )
