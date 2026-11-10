@@ -11,6 +11,7 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -43,6 +44,11 @@ class ConnectionRepository @Inject constructor(
     private val _status = MutableStateFlow(ConnectionStatus.IDLE)
     val status: StateFlow<ConnectionStatus> = _status.asStateFlow()
 
+    /** A lifecycle snapshot whose ID identifies a single socket attempt. */
+    data class ConnectionState(val connectionId: Long?, val status: ConnectionStatus)
+    private val _connectionState = MutableStateFlow(ConnectionState(null, ConnectionStatus.IDLE))
+    val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+
     private val _server = MutableStateFlow<String?>(null)
     val server: StateFlow<String?> = _server.asStateFlow()
 
@@ -51,75 +57,171 @@ class ConnectionRepository @Inject constructor(
     val consecutiveFailures: StateFlow<Int> = _consecutiveFailures.asStateFlow()
 
     /** Every message from the add-on, in order. Collecting suspends the socket, so nothing is dropped. */
-    private val _messages = MutableSharedFlow<ServerMessage>(
-        extraBufferCapacity = MESSAGE_BUFFER_CAPACITY,
-    )
+    private val _messages = MutableSharedFlow<ServerMessage>(extraBufferCapacity = MESSAGE_BUFFER_CAPACITY)
     val messages: SharedFlow<ServerMessage> = _messages.asSharedFlow()
 
-    private val session = AtomicReference<DefaultClientWebSocketSession?>(null)
+    data class ReceivedMessage(val connectionId: Long, val message: ServerMessage)
+    private val _receivedMessages = MutableSharedFlow<ReceivedMessage>(extraBufferCapacity = MESSAGE_BUFFER_CAPACITY)
+    val receivedMessages: SharedFlow<ReceivedMessage> = _receivedMessages.asSharedFlow()
+
+    private data class ActiveConnection(val id: Long, val socket: DefaultClientWebSocketSession)
+    private val session = AtomicReference<ActiveConnection?>(null)
+    // Ownership, publication, and lifecycle updates share this lock. Never hold it over socket IO.
+    private val connectionLock = Any()
+    private var owner: Any? = null
+    private var nextConnectionId = 0L
     private var connectionJob: Job? = null
     private var helloProvider: (suspend () -> PlayerMessage.Hello)? = null
 
     /** Connects to [server], replacing any connection. [buildHello] is asked again on every (re)connect. */
     fun connect(server: String, buildHello: suspend () -> PlayerMessage.Hello) {
-        _server.value = server
+        val job = synchronized(connectionLock) { newConnection(server, buildHello) }
+        job.start()
+    }
+
+    /**
+     * Called under connectionLock; lazy launch lets us publish ownership before running any IO.
+     * Flows are set last: a Main.immediate collector can run inline here and call [connect] again.
+     */
+    private fun newConnection(server: String, buildHello: suspend () -> PlayerMessage.Hello): Job {
+        val token = Any()
+        owner = token
         helloProvider = buildHello
-        _consecutiveFailures.value = 0
+        session.set(null)
         connectionJob?.cancel()
-        connectionJob = ioScope.launch { runConnectionLoop(server, buildHello) }
+        val job = ioScope.launch(start = CoroutineStart.LAZY) {
+            runConnectionLoop(server, buildHello, token)
+        }
+        connectionJob = job
+        _server.value = server
+        _consecutiveFailures.value = 0
+        updateState(null, ConnectionStatus.CONNECTING)
+        return job
     }
 
     /** Says hello again, as after the screen turned: the add-on builds the documents for the new size. */
     fun reconnect() {
-        val currentServer = _server.value ?: return
-        val buildHello = helloProvider ?: return
-        connect(currentServer, buildHello)
+        val job = synchronized(connectionLock) {
+            val server = _server.value ?: return
+            val buildHello = helloProvider ?: return
+            newConnection(server, buildHello)
+        }
+        job.start()
     }
 
     fun disconnect() {
-        connectionJob?.cancel()
-        connectionJob = null
-        helloProvider = null
-        _consecutiveFailures.value = 0
-        _status.value = ConnectionStatus.IDLE
+        synchronized(connectionLock) {
+            owner = null
+            session.set(null)
+            connectionJob?.cancel()
+            connectionJob = null
+            helloProvider = null
+            _consecutiveFailures.value = 0
+            updateState(null, ConnectionStatus.IDLE)
+        }
+    }
+
+    /** Called only under connectionLock. */
+    private fun updateState(id: Long?, status: ConnectionStatus) {
+        _connectionState.value = ConnectionState(id, status)
+        _status.value = status
     }
 
     suspend fun send(message: PlayerMessage) {
         val currentSession = session.get() ?: return
-        runCatching { currentSession.send(Frame.Text(Protocol.encode(message))) }
-            .onFailure { error -> Timber.w(error, "Could not send %s", message::class.simpleName) }
+        try {
+            currentSession.socket.send(Frame.Text(Protocol.encode(message)))
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (@Suppress("TooGenericExceptionCaught") error: Exception) {
+            Timber.w(error, "Could not send %s", message::class.simpleName)
+        }
     }
 
-    private suspend fun runConnectionLoop(server: String, buildHello: suspend () -> PlayerMessage.Hello) {
+    /** Best-effort transport without logging failures, optionally scoped to a particular socket. */
+    suspend fun trySend(message: PlayerMessage, connectionId: Long? = null): Boolean {
+        val currentSession = session.get()
+            ?.takeIf { connectionId == null || it.id == connectionId } ?: return false
+        return try {
+            currentSession.socket.send(Frame.Text(Protocol.encode(message)))
+            true
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (@Suppress("TooGenericExceptionCaught") _: Exception) {
+            false
+        }
+    }
+
+    private fun beginAttempt(token: Any): Long? = synchronized(connectionLock) {
+        if (owner !== token) null else (++nextConnectionId).also { updateState(it, ConnectionStatus.CONNECTING) }
+    }
+
+    private fun publish(
+        token: Any,
+        activeConnection: ActiveConnection,
+        context: kotlin.coroutines.CoroutineContext,
+    ): Boolean = synchronized(connectionLock) {
+        if (owner !== token || !context.isActive) {
+            false
+        } else {
+            session.set(activeConnection)
+            updateState(activeConnection.id, ConnectionStatus.CONNECTED)
+            _consecutiveFailures.value = 0
+            true
+        }
+    }
+
+    /** Warnings are forwarded to the add-on, so retries during an outage must not fill its queue. */
+    private fun logFailure(server: String, error: Exception) {
+        if (_consecutiveFailures.value == 0) {
+            Timber.w("Connection to %s failed: %s", server, error.message)
+        } else {
+            Timber.i("Connection to %s failed again: %s", server, error.message)
+        }
+    }
+
+    private suspend fun runConnectionLoop(
+        server: String,
+        buildHello: suspend () -> PlayerMessage.Hello,
+        token: Any,
+    ) {
         var backoffMs = INITIAL_BACKOFF_MS
         while (currentCoroutineContext().isActive) {
-            _status.value = ConnectionStatus.CONNECTING
-            var ownedSession: DefaultClientWebSocketSession? = null
+            val id = beginAttempt(token) ?: return
+            var ownedSession: ActiveConnection? = null
             try {
                 httpClient.webSocket("ws://$server/player") {
-                    ownedSession = this
-                    session.set(this)
+                    val activeConnection = ActiveConnection(id, this)
                     send(Frame.Text(Protocol.encode(buildHello())))
-                    _status.value = ConnectionStatus.CONNECTED
-                    _consecutiveFailures.value = 0
+                    if (!publish(token, activeConnection, currentCoroutineContext())) return@webSocket
+                    ownedSession = activeConnection
                     backoffMs = INITIAL_BACKOFF_MS
                     for (frame in incoming) {
                         val textFrame = frame as? Frame.Text ?: continue
                         val message = Protocol.decodeServer(textFrame.readText())
-                        if (message != null) _messages.emit(message)
+                        if (message != null) {
+                            _receivedMessages.emit(ReceivedMessage(id, message))
+                            _messages.emit(message)
+                        }
                     }
                 }
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (@Suppress("TooGenericExceptionCaught") error: Exception) {
-                Timber.w("Connection to %s failed: %s", server, error.message)
+                logFailure(server, error)
             } finally {
-                // An older connection can finish closing after its replacement has connected.
-                session.compareAndSet(ownedSession, null)
+                synchronized(connectionLock) {
+                    if (owner === token) {
+                        session.compareAndSet(ownedSession, null)
+                        updateState(id, ConnectionStatus.DISCONNECTED)
+                    }
+                }
             }
             if (!currentCoroutineContext().isActive) break
-            _status.value = ConnectionStatus.DISCONNECTED
-            _consecutiveFailures.value += 1
+            synchronized(connectionLock) {
+                if (owner !== token) return
+                _consecutiveFailures.value += 1
+            }
             delay(backoffMs.milliseconds)
             backoffMs = min(backoffMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS)
         }
