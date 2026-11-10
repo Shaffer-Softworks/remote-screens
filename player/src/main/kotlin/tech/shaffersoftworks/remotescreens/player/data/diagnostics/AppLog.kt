@@ -13,18 +13,12 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import tech.shaffersoftworks.remotescreens.player.BuildConfig
 import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionRepository
-import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionStatus
 import tech.shaffersoftworks.remotescreens.player.di.IoScope
 import tech.shaffersoftworks.remotescreens.shared.AppLogLevel
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
@@ -46,42 +40,33 @@ class AppLog @Inject constructor(
     private val logs: LogDao,
 ) : Timber.Tree() {
     private var forwardingJob: Job? = null
+    private var forwardingConnectionId: Long? = null
     private var writerJob: Job? = null
     private val writes = Channel<StoredLog>(WRITE_BUFFER_CAPACITY, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     fun start() {
-        if (writerJob?.isActive != true) {
-            writerJob = scope.launch {
-                for (entry in writes) {
-                    var retrySeconds = 1L
-                    while (!persist(entry)) {
-                        delay(retrySeconds.seconds)
-                        retrySeconds = (retrySeconds * 2).coerceAtMost(MAX_RETRY_SECONDS)
-                    }
+        if (writerJob?.isActive == true) return
+        writerJob = scope.launch {
+            for (entry in writes) {
+                var retrySeconds = 1L
+                while (!persist(entry)) {
+                    delay(retrySeconds.seconds)
+                    retrySeconds = (retrySeconds * 2).coerceAtMost(MAX_RETRY_SECONDS)
                 }
             }
         }
-        if (forwardingJob?.isActive == true) return
-        forwardingJob = scope.launch {
-            // Keep the newest Welcome even if an old socket finishes emitting after replacement.
-            val welcomes = connection.receivedMessages
-                .filter { it.message is ServerMessage.Welcome }
-                .runningFold<ConnectionRepository.ReceivedMessage, ConnectionRepository.ReceivedMessage?>(null) {
-                        latest, incoming ->
-                    if (latest == null || incoming.connectionId >= latest.connectionId) incoming else latest
-                }
-            combine(connection.connectionState, welcomes) { state, received ->
-                val welcome = received?.message as? ServerMessage.Welcome
-                state.connectionId?.takeIf {
-                    state.status == ConnectionStatus.CONNECTED &&
-                        it == received?.connectionId &&
-                        welcome?.pairingCode == null &&
-                        welcome != null && Protocol.CAPABILITY_APP_LOG in welcome.features
-                }
-            }.distinctUntilChanged().collectLatest { connectionId ->
-                if (connectionId != null) sendLogs(connectionId)
-            }
-        }
+    }
+
+    /**
+     * Sends the queue on [connectionId] until replaced, or stops sending when it is null. The view model
+     * calls this from the main thread after a paired Welcome that accepts `app_log`, and with null when
+     * the connection drops.
+     */
+    fun forwardOn(connectionId: Long?) {
+        if (connectionId != null && connectionId == forwardingConnectionId && forwardingJob?.isActive == true) return
+        forwardingJob?.cancel()
+        forwardingConnectionId = connectionId
+        forwardingJob = connectionId?.let { id -> scope.launch { sendLogs(id) } }
     }
 
     private suspend fun persist(entry: StoredLog): Boolean = try {

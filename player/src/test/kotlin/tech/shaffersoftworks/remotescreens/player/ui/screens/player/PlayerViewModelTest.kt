@@ -1,24 +1,9 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player
 
 import android.content.IntentSender
-import androidx.lifecycle.SavedStateHandle
 import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionRepository
 import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionStatus
-import tech.shaffersoftworks.remotescreens.player.data.device.BatteryStatus
-import tech.shaffersoftworks.remotescreens.player.data.device.DeviceRepository
 import tech.shaffersoftworks.remotescreens.player.data.device.DisplayInfo
-import tech.shaffersoftworks.remotescreens.player.data.device.FaceWakeMonitor
-import tech.shaffersoftworks.remotescreens.player.data.device.ProximityWakeMonitor
-import tech.shaffersoftworks.remotescreens.player.data.device.ScreenPowerRepository
-import tech.shaffersoftworks.remotescreens.player.data.device.intercom.IntercomCoordinator
-import tech.shaffersoftworks.remotescreens.player.data.device.telemetry.LocationAccuracy
-import tech.shaffersoftworks.remotescreens.player.data.device.telemetry.TelemetryReporter
-import tech.shaffersoftworks.remotescreens.player.data.discovery.DiscoveryRepository
-import tech.shaffersoftworks.remotescreens.player.data.image.ImageDecoder
-import tech.shaffersoftworks.remotescreens.player.data.kiosk.KioskManager
-import tech.shaffersoftworks.remotescreens.player.data.kiosk.KioskState
-import tech.shaffersoftworks.remotescreens.player.data.preferences.PlayerPreferencesRepository
-import tech.shaffersoftworks.remotescreens.player.data.update.UpdateRepository
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import tech.shaffersoftworks.remotescreens.shared.Protocol
@@ -26,24 +11,15 @@ import tech.shaffersoftworks.remotescreens.shared.ScreenSettings
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Slot
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.setMain
 import kotlin.time.Duration.Companion.milliseconds
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeastOnce
@@ -55,7 +31,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyBlocking
 import org.mockito.kotlin.whenever
-import tech.shaffersoftworks.remotescreens.player.data.diagnostics.CrashReporter
 
 private fun mainDocument(pageCount: Int = 3, homePage: Int = 0) = ServerMessage.Document(
     slot = Slot.MAIN,
@@ -66,99 +41,7 @@ private fun mainDocument(pageCount: Int = 3, homePage: Int = 0) = ServerMessage.
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class PlayerViewModelTest {
-    private val testDispatcher = StandardTestDispatcher()
-    private val connectionState = MutableStateFlow(ConnectionRepository.ConnectionState(null, ConnectionStatus.IDLE))
-    private val consecutiveFailures = MutableStateFlow(0)
-    private val serverMessages = MutableSharedFlow<ConnectionRepository.ReceivedMessage>(extraBufferCapacity = 16)
-    private val connectedServer = MutableStateFlow<String?>("10.0.0.5:8100")
-
-    private val connectionRepository: ConnectionRepository = mock {
-        on { connectionState } doReturn connectionState
-        on { receivedMessages } doReturn serverMessages
-        on { server } doReturn connectedServer
-        on { consecutiveFailures } doReturn consecutiveFailures
-    }
-    private val isKioskEnabled = MutableStateFlow(false)
-    private val isKioskSuppressed = MutableStateFlow(false)
-    private val preferencesRepository: PlayerPreferencesRepository = mock {
-        on { server } doReturn flowOf("10.0.0.5:8100")
-        on { token } doReturn flowOf("token")
-        on { screenName } doReturn flowOf("Kitchen")
-        on { deviceId() } doReturn "tablet-1"
-        on { isKioskEnabled } doReturn isKioskEnabled
-        on { isKioskSuppressed } doReturn isKioskSuppressed
-    }
-    private val kioskManager: KioskManager = mock {
-        on { lockTaskState() } doReturn KioskState.OFF
-        on { isDeviceOwner() } doReturn false
-    }
-    private val intercomCoordinator: IntercomCoordinator = mock {
-        on { hasMicrophone() } doReturn false
-    }
-    private val deviceRepository: DeviceRepository = mock {
-        on { batteryStatus() } doReturn BatteryStatus(levelPercent = 50, isCharging = true)
-    }
-    private val discoveryRepository: DiscoveryRepository = mock {
-        on { discoverServers() } doReturn emptyFlow()
-    }
-    private val screenPowerRepository: ScreenPowerRepository = mock()
-    private val proximityWakeMonitor: ProximityWakeMonitor = mock {
-        on { isUsable() } doReturn false
-    }
-    private val faceWakeMonitor: FaceWakeMonitor = mock {
-        on { isUsable() } doReturn false
-        on { hasCameraPermission() } doReturn false
-        on { hasFrontCamera() } doReturn true
-        on { isLowRamDevice() } doReturn false
-    }
-
-    private val telemetryReporter: TelemetryReporter = mock {
-        on { hasLocationPermission() } doReturn false
-    }
-    private val locationAccuracy: LocationAccuracy = mock()
-
-    private val updateRepository: UpdateRepository = mock()
-    private val crashReporter: CrashReporter = mock()
-
-    private lateinit var viewModel: PlayerViewModel
-
-    @Before
-    fun setUp() {
-        Dispatchers.setMain(testDispatcher)
-        viewModel = PlayerViewModel(
-            savedStateHandle = SavedStateHandle(),
-            preferencesRepository = preferencesRepository,
-            connectionRepository = connectionRepository,
-            discoveryRepository = discoveryRepository,
-            updateRepository = updateRepository,
-            deviceRepository = deviceRepository,
-            screenPowerRepository = screenPowerRepository,
-            proximityWakeMonitor = proximityWakeMonitor,
-            faceWakeMonitor = faceWakeMonitor,
-            kioskManager = kioskManager,
-            imageDecoder = mock<ImageDecoder>(),
-            telemetryReporter = telemetryReporter,
-            crashReporter = crashReporter,
-            locationAccuracy = locationAccuracy,
-            intercomCoordinator = intercomCoordinator,
-            haImageLoaderQualifier = mock(),
-        )
-    }
-
-    private fun runCurrent() = testDispatcher.scheduler.runCurrent()
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
-
-    private fun receive(message: ServerMessage) {
-        runCurrent()
-        serverMessages.tryEmit(ConnectionRepository.ReceivedMessage(1L, message))
-        runCurrent()
-    }
-
+class PlayerViewModelTest : PlayerViewModelTestBase() {
     @Test
     fun `first measure connects to the saved server`() {
         viewModel.onDisplayMeasured(DisplayInfo(widthDp = 800, heightDp = 480))

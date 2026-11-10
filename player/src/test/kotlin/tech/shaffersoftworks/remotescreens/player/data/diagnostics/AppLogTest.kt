@@ -15,7 +15,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionRepository
-import tech.shaffersoftworks.remotescreens.player.data.connection.ConnectionStatus
 import tech.shaffersoftworks.remotescreens.shared.AppLogLevel
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import tech.shaffersoftworks.remotescreens.shared.Protocol
@@ -25,7 +24,6 @@ import kotlin.time.Duration.Companion.seconds
 class AppLogTest {
     private val connection = mock<ConnectionRepository>()
     private val logs = mock<LogDao>()
-    private val state = MutableStateFlow(ConnectionRepository.ConnectionState(1L, ConnectionStatus.CONNECTED))
     private val messages = MutableSharedFlow<ConnectionRepository.ReceivedMessage>(extraBufferCapacity = 16)
     private val entry = StoredLog(
         eventId = "event-1",
@@ -37,10 +35,8 @@ class AppLogTest {
     private val batch = PlayerMessage.AppLog(listOf(entry.toEntry()))
     private val pending = MutableStateFlow(listOf(entry))
     private val entryAck = ConnectionRepository.ReceivedMessage(1L, ServerMessage.AppLogAck(listOf(entry.eventId)))
-    private val welcome = ServerMessage.Welcome(screenId = "screen", features = listOf(Protocol.CAPABILITY_APP_LOG))
 
     private suspend fun setUp(acknowledge: Boolean = false, acceptSend: Boolean = true) {
-        whenever(connection.connectionState).thenReturn(state)
         whenever(connection.receivedMessages).thenReturn(messages)
         whenever(logs.pending(Protocol.MAX_APP_LOG_BATCH)).thenReturn(pending)
         whenever(connection.trySend(batch, 1L)).thenAnswer {
@@ -57,23 +53,19 @@ class AppLogTest {
     }
 
     @Test
-    fun welcomeBeforeConnectedStateStillStartsAndLateOldWelcomeCannotStopIt() = runTest {
+    fun forwardingOnANewConnectionReplacesTheOldOne() = runTest {
         setUp()
-        state.value = ConnectionRepository.ConnectionState(2L, ConnectionStatus.CONNECTING)
         whenever(connection.trySend(batch, 2L)).thenReturn(true)
-        AppLog(connection, backgroundScope, logs).start()
+        val appLog = AppLog(connection, backgroundScope, logs)
+        appLog.forwardOn(1L)
         runCurrent()
-        emit(welcome, connectionId = 2L)
-        runCurrent()
-        verify(connection, never()).trySend(any(), any())
-        state.value = ConnectionRepository.ConnectionState(2L, ConnectionStatus.CONNECTED)
+        verify(connection).trySend(batch, 1L)
+        appLog.forwardOn(2L)
         runCurrent()
         verify(connection).trySend(batch, 2L)
-        emit(welcome.copy(pairingCode = "old"), connectionId = 1L)
+        advanceTimeBy(10.seconds)
         runCurrent()
-        advanceTimeBy(6.seconds)
-        runCurrent()
-        verify(connection, times(2)).trySend(batch, 2L)
+        verify(connection).trySend(batch, 1L)
     }
 
     @Test
@@ -81,9 +73,7 @@ class AppLogTest {
         setUp()
         org.mockito.kotlin.doSuspendableAnswer { kotlinx.coroutines.awaitCancellation() }
             .whenever(connection).trySend(batch, 1L)
-        AppLog(connection, backgroundScope, logs).start()
-        runCurrent()
-        emit(welcome)
+        AppLog(connection, backgroundScope, logs).forwardOn(1L)
         runCurrent()
         verify(connection).trySend(batch, 1L)
         advanceTimeBy(6.seconds)
@@ -95,9 +85,7 @@ class AppLogTest {
     @Test
     fun anAcknowledgementFromAnotherConnectionCannotDeleteTheEntry() = runTest {
         setUp()
-        AppLog(connection, backgroundScope, logs).start()
-        runCurrent()
-        emit(welcome)
+        AppLog(connection, backgroundScope, logs).forwardOn(1L)
         runCurrent()
         emit(ServerMessage.AppLogAck(listOf(entry.eventId)), connectionId = 2L)
         runCurrent()
@@ -108,18 +96,11 @@ class AppLogTest {
     }
 
     @Test
-    fun requiresPairedAcknowledgementSupportAndDeletesOnlyAfterAck() = runTest {
+    fun deletesOnlyAfterAckAndRepeatingTheSameConnectionDoesNotResend() = runTest {
         setUp(acknowledge = true)
         val appLog = AppLog(connection, backgroundScope, logs)
-        appLog.start()
-        appLog.start()
-        runCurrent()
-        emit(welcome.copy(pairingCode = "123456"))
-        runCurrent()
-        emit(welcome.copy(features = listOf(Protocol.CAPABILITY_TELEMETRY)))
-        runCurrent()
-        verify(connection, never()).trySend(any(), any())
-        emit(welcome)
+        appLog.forwardOn(1L)
+        appLog.forwardOn(1L)
         runCurrent()
         verify(connection).trySend(batch, 1L)
         verify(logs).acknowledge(listOf(entry.eventId))
@@ -128,9 +109,7 @@ class AppLogTest {
     @Test
     fun missingOrWrongAckKeepsEntryAndRetries() = runTest {
         setUp()
-        AppLog(connection, backgroundScope, logs).start()
-        runCurrent()
-        emit(welcome)
+        AppLog(connection, backgroundScope, logs).forwardOn(1L)
         runCurrent()
         emit(ServerMessage.AppLogAck(listOf("other-event")))
         runCurrent()
@@ -144,9 +123,7 @@ class AppLogTest {
     @Test
     fun retriesFailedSendThenDeletesOnRecoveryWithoutAnotherWelcome() = runTest {
         setUp(acceptSend = false)
-        AppLog(connection, backgroundScope, logs).start()
-        runCurrent()
-        emit(welcome)
+        AppLog(connection, backgroundScope, logs).forwardOn(1L)
         runCurrent()
         verify(logs, never()).acknowledge(any())
         advanceTimeBy(1.seconds)
@@ -174,32 +151,25 @@ class AppLogTest {
             )
             true
         }
-        AppLog(connection, backgroundScope, logs).start()
-        runCurrent()
-        emit(welcome)
+        AppLog(connection, backgroundScope, logs).forwardOn(1L)
         runCurrent()
         verify(connection).trySend(twoEntries, 1L)
         verify(logs).acknowledge(listOf("event-2"))
     }
 
     @Test
-    fun disconnectedEntryRemainsForNextPairedWelcome() = runTest {
+    fun stoppedForwardingKeepsTheEntryForTheNextConnection() = runTest {
         setUp()
-        AppLog(connection, backgroundScope, logs).start()
+        val appLog = AppLog(connection, backgroundScope, logs)
+        appLog.forwardOn(1L)
         runCurrent()
-        emit(welcome)
-        runCurrent()
-        state.value = ConnectionRepository.ConnectionState(1L, ConnectionStatus.DISCONNECTED)
-        runCurrent()
+        appLog.forwardOn(null)
         advanceTimeBy(10.seconds)
         runCurrent()
         verify(connection).trySend(batch, 1L)
         verify(logs, never()).acknowledge(any())
-        state.value = ConnectionRepository.ConnectionState(2L, ConnectionStatus.CONNECTED)
-        runCurrent()
-        verify(connection).trySend(batch, 1L)
         whenever(connection.trySend(batch, 2L)).thenReturn(true)
-        emit(welcome, connectionId = 2L)
+        appLog.forwardOn(2L)
         runCurrent()
         verify(connection).trySend(batch, 2L)
     }
