@@ -13,6 +13,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,12 +25,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.io.IOException
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.min
 import kotlin.time.Duration.Companion.milliseconds
 
+private const val CONNECTION_START_TIMEOUT_MS = 30_000L
 private const val INITIAL_BACKOFF_MS = 1_000L
 private const val MAX_BACKOFF_MS = 30_000L
 private const val BACKOFF_MULTIPLIER = 2
@@ -186,16 +189,31 @@ class ConnectionRepository @Inject constructor(
             val id = beginAttempt(token) ?: return
             var ownedSession: ActiveConnection? = null
             try {
-                httpClient.webSocket("ws://$server/player") {
-                    val activeConnection = ActiveConnection(id, this)
-                    send(Frame.Text(Protocol.encode(buildHello())))
-                    if (!publish(token, activeConnection, currentCoroutineContext())) return@webSocket
-                    ownedSession = activeConnection
-                    backoffMs = INITIAL_BACKOFF_MS
-                    for (frame in incoming) {
-                        val textFrame = frame as? Frame.Text ?: continue
-                        val message = Protocol.decodeServer(textFrame.readText())
-                        if (message != null) _receivedMessages.emit(ReceivedMessage(id, message))
+                coroutineScope {
+                    // HTTP request timeouts do not bound an upgraded WebSocket waiting for its first reply.
+                    // After an APK update the TCP session can look open while the add-on never answers Hello.
+                    val startupWatchdog = launch {
+                        delay(CONNECTION_START_TIMEOUT_MS.milliseconds)
+                        throw IOException("Server did not respond within ${CONNECTION_START_TIMEOUT_MS}ms")
+                    }
+                    try {
+                        httpClient.webSocket("ws://$server/player") {
+                            val activeConnection = ActiveConnection(id, this)
+                            send(Frame.Text(Protocol.encode(buildHello())))
+                            if (!publish(token, activeConnection, currentCoroutineContext())) return@webSocket
+                            ownedSession = activeConnection
+                            backoffMs = INITIAL_BACKOFF_MS
+                            for (frame in incoming) {
+                                val textFrame = frame as? Frame.Text ?: continue
+                                val message = Protocol.decodeServer(textFrame.readText())
+                                if (message != null) {
+                                    startupWatchdog.cancel()
+                                    _receivedMessages.emit(ReceivedMessage(id, message))
+                                }
+                            }
+                        }
+                    } finally {
+                        startupWatchdog.cancel()
                     }
                 }
             } catch (cancellation: CancellationException) {
