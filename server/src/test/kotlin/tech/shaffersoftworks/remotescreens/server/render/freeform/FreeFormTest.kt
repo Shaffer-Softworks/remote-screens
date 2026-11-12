@@ -48,6 +48,7 @@ import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -329,6 +330,39 @@ class FreeFormTest {
         assertTrue(
             doc.docContext.pictures.any { it.name == "img.cam" && it.source == "/api/camera_proxy/camera.front_door" },
         )
+    }
+
+    @Test
+    fun aStreamedCameraImagePlaysLiveVideoAndASecondStreamStaysAStill() {
+        val root = Node(
+            "root",
+            "column",
+            size = NodeSize("fill", "fill"),
+            children = listOf(
+                Node(
+                    "live",
+                    "image",
+                    size = NodeSize("dp:160", "dp:90"),
+                    bind = NodeBinding("camera.front_door"),
+                    props = mapOf("stream" to "true"),
+                ),
+                Node(
+                    "also",
+                    "image",
+                    size = NodeSize("dp:160", "dp:90"),
+                    bind = NodeBinding("camera.driveway"),
+                    props = mapOf("stream" to "true"),
+                ),
+            ),
+        )
+        val doc = ScreenRenderer.render(screen(root), tablet, input())
+        val video = doc.docContext.videos.single()
+        assertEquals("camera.front_door", video.entityId)
+        assertTrue(doc.docContext.declares(Vars.entity("camera.front_door", Vars.KEY_CAM_WAITING)))
+        assertTrue(doc.docContext.declares(Vars.entity("camera.front_door", Vars.KEY_CAM_STILL)))
+        assertFalse(doc.docContext.declares(Vars.entity("camera.driveway", Vars.KEY_CAM_WAITING)))
+        assertTrue(doc.docContext.pictures.any { it.name == "img.live" })
+        assertTrue(doc.docContext.pictures.any { it.name == "img.also" })
     }
 
     private fun ops(list: List<Operation>): List<Operation> = list.flatMap { op -> listOf(

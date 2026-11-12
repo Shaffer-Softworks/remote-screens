@@ -803,21 +803,39 @@ const typeIcon = computed(() =>
           <ColorSwatches v-model="currentNode.style.borderColor" :keys="INK_SWATCHES" />
         </div>
       </template>
-      <label v-if="currentNode.type === 'image'" class="field">
-        Fit
-        <select
-          :value="currentProps.fit ?? 'crop'"
-          @change="
-            setProp(
-              'fit',
-              ($event.target as HTMLSelectElement).value === 'whole' ? 'whole' : undefined,
-            )
-          "
+      <template v-if="currentNode.type === 'image'">
+        <label class="field">
+          Fit
+          <select
+            :value="currentProps.fit ?? 'crop'"
+            @change="
+              setProp(
+                'fit',
+                ($event.target as HTMLSelectElement).value === 'whole' ? 'whole' : undefined,
+              )
+            "
+          >
+            <option value="crop">Fill and crop</option>
+            <option value="whole">Show it whole</option>
+          </select>
+        </label>
+        <label
+          v-if="currentNode.bind?.entityId?.startsWith('camera.')"
+          class="check"
         >
-          <option value="crop">Fill and crop</option>
-          <option value="whole">Show it whole</option>
-        </select>
-      </label>
+          <input
+            type="checkbox"
+            :checked="currentProps.stream === 'true'"
+            @change="
+              setProp(
+                'stream',
+                ($event.target as HTMLInputElement).checked ? 'true' : undefined,
+              )
+            "
+          />
+          Live video (one per page)
+        </label>
+      </template>
       <template v-if="currentNode.type === 'clock'">
         <label class="field">
           Shows

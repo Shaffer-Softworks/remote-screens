@@ -170,10 +170,14 @@ follow. Home, lights, cameras, intercom, and the bedside clock do not need an en
   controls opens its detail from the row. The count under a room is lights that are on; switches and covers
   are not included.
 - **Cameras** lists only the cameras you add under **Cameras** in the tile's settings, with an optional label
-  each. The right side stays blank until a row is tapped, then plays that camera's live stream. The first
-  picture can take several seconds while Home Assistant starts the stream; if the stream fails, the page shows
-  a still. Leaving the page stops the video. A camera card or an alert uses the same decoder, so the page
+  each. The right side stays blank until a row is tapped, then plays that camera's live stream. The add-on
+  starts the HLS stream as soon as you tap (and again when the page is shown with a camera already chosen),
+  so the spinner is shorter once Home Assistant has warmed the worker. If the stream fails, the page shows a
+  still. Leaving the page stops the video. A camera card or an alert uses the same decoder, so the page
   pauses and resumes when that closes. An older player app stays on the spinner: install the current app.
+- **Camera tiles and free-form images** can opt into **Live video** (`stream` on a grid camera tile, or the
+  checkbox on a free-form camera image). Only one live stream plays per page; extra streamed cameras on that
+  page keep snapshot refresh. Cards and alerts still take the decoder while open.
 - **Alarm panel** puts status and zones on the left and a keypad on the right. The tile's own panel is **All
   Zones**; **Zones** in the tile's settings adds other alarm panels, such as Alarmo areas, and arms the one you
   pick. Arming and disarming need a four-digit PIN. An empty or shorter PIN is refused. When Alarmo reports

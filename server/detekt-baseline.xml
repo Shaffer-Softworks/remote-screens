@@ -17,6 +17,7 @@
     <ID>CyclomaticComplexMethod:ThermostatBind.kt:internal fun DocContext.bindThermostat</ID>
     <ID>CyclomaticComplexMethod:TileBox.kt:fun tapRef: ActionRef?</ID>
     <ID>LargeClass:FreeFormTest.kt:FreeFormTest</ID>
+    <ID>LargeClass:RenderTest.kt:RenderTest</ID>
     <ID>LongMethod:Alerts.kt:AlertRenderer$fun render: RenderedDoc</ID>
     <ID>LongMethod:CardRenderer.kt:CardRenderer$fun render: RenderedDoc</ID>
     <ID>LongMethod:ClimateCards.kt:internal fun DocContext.climateCard</ID>

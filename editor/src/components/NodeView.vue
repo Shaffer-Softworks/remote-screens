@@ -843,6 +843,9 @@ function end(): void {
       <span>{{
         node.bind ? (entity?.name ?? node.bind.entityId) : 'Bind a camera or person'
       }}</span>
+      <span v-if="node.props.stream === 'true' && node.bind?.entityId?.startsWith('camera.')" class="hint"
+        >Live video</span
+      >
     </div>
     <div v-else-if="node.type === 'tile' && card" class="card">
       <div class="head">{{ card.name }}</div>
