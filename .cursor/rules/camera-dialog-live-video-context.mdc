@@ -11,7 +11,7 @@ alwaysApply: false
 - **Camera card** (`CardRenderer.cameraCard`): no still as the loading UI. Dark `Role.TRACK` box with `componentId(liveVideo)` + centered `DocContext.spinner` (`Widgets.kt`, arc rotated by `continuousSeconds()` — same clock as analog seconds).
 - **Live overlay:** `LiveVideoView` stays `alpha = 0` until `onRenderedFirstFrame`, then opaque black + HLS. Spinner shows through while buffering. Touches still fall through to the document.
 - **Still fallback only when stream fails:** PictureSlot `cam.card.$entityId` still loads; Image visibility `e.<id>.cam_still` starts **GONE**, spinner `e.<id>.cam_waiting` starts **VISIBLE**. `PlayerSession.showCameraStillFallback` flips those when `!supportsVideo`, `hlsPath` is null, or video restarts are exhausted. Alerts never declare those vars → no-op.
-- **Unchanged:** grid camera tiles, free-form `image` cameras (snapshots only), alert cameras (still under video).
+- **Also live (opt-in):** grid camera tiles with option `stream=true`, free-form `image` with prop `stream=true` on `camera.*`. One `LiveVideo` per page (`DocContext.hasLiveVideoOnCurrentPage`); extras stay snapshots. Alert cameras stay still-under-video.
 
 ## Wiring
 
@@ -20,6 +20,9 @@ tap card → openCard → warmCameraStream + CardRenderer
   → show OVERLAY → sendPictures + sendVideo
   → CameraStreamService HLS → ServerMessage.Video
   → LiveVideoView over componentId bounds
+
+cameras_select → warmCameraStream → rebuild MAIN → show → warm + sendVideo
+grid/free-form stream → liveVideo + spinner (if page has no video yet)
 ```
 
 - Vars: `Vars.KEY_CAM_WAITING` / `Vars.KEY_CAM_STILL` (`cam_waiting` / `cam_still` on the wire).
@@ -29,15 +32,15 @@ tap card → openCard → warmCameraStream + CardRenderer
 
 - Demo / non-HLS cameras: card shows spinner then falls back to still (not endless spinner).
 - Do not put a native `ProgressBar` on `LiveVideoView` for the card path — loading is RC document UI.
-- Free-form cannot DIY a live-video modal today; live video is card + alert only.
+- One decoder: ALERT/OVERLAY beat MAIN; at most one streamed MAIN surface per page.
 - **Cursor trailer:** commits may get `Co-authored-by: Cursor`; strip with `git commit-tree` + `--force-with-lease` on the feature branch only (user must ask). Prefer merge from `main` over rebase on shared PR branches.
 
 ## Verify
 
-`./gradlew :server:test --tests '...RenderTest' :server:detekt` — especially `aCameraCardsVideoPlaysOverItsSpinnerFittedLikeIt` (pictures present, waiting/still declared, video `crop = false`).
+`./gradlew :server:test --tests '...RenderTest' --tests '...FreeFormTest' :server:detekt` — especially `aCameraCardsVideoPlaysOverItsSpinnerFittedLikeIt`, `aStreamedCameraTilePlaysLiveVideoAndASecondStreamStaysAStill`, `aStreamedCameraImagePlaysLiveVideoAndASecondStreamStaysAStill`.
 
 ## Follow-ups / out of scope
 
 - Free-form / catalogue `spinner` leaf for the editor.
 - Alert path: still keep snapshot-under-video (not spinner-first).
-- Live video on grid tiles or free-form images.
+- Multi-decoder / PiP.

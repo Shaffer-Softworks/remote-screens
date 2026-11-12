@@ -257,6 +257,9 @@ data class LiveSearch(
     }
 }
 
+/** True when this page already registered a live stream (one decoder per visible page). */
+fun DocContext.hasLiveVideoOnCurrentPage(): Boolean = videos.any { it.page == renderingPage }
+
 /** The component id to give the box an interactive map of [entityIds] plays over, with `Modifier.componentId`. */
 fun DocContext.liveMap(entityIds: List<String>): Int {
     val componentId = LiveMap.FIRST_COMPONENT_ID + maps.size

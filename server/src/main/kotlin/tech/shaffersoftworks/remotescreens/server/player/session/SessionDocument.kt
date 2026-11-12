@@ -87,7 +87,11 @@ internal class SessionDocument(
             wakeOnShow = wakeOnShow,
             restartTimeout = force,
         )
-        sendLiveAttachments(shown = shown, states = states, isForced = true)
+        sendLiveAttachments(
+            shown = shown,
+            states = states,
+            isForced = true,
+        )
     }
 
     /** Bytes match the document already on screen: keep the revision, push only changed vars and media. */
@@ -103,6 +107,7 @@ internal class SessionDocument(
         sendLiveAttachments(shown = shown, states = states, isForced = false)
     }
 
+    /** Installs a new [ShownDocument] for [slot] and bumps the session revision. */
     private fun adoptShownDocument(
         slot: Slot,
         renderedDoc: RenderedDoc,
@@ -185,7 +190,10 @@ internal class SessionDocument(
         }
     }
 
-    /** Pictures and maps always; when [isForced], also send videos and search overlays. */
+    /**
+     * Pictures and maps always; when [isForced], also warms and sends videos then search overlays
+     * (new document path). Same-content updates skip video/search so a rebuild flash is avoided.
+     */
     private suspend fun sendLiveAttachments(
         shown: ShownDocument,
         states: Map<String, EntityState>,
@@ -196,6 +204,9 @@ internal class SessionDocument(
             media.sendMap(shown, map, states)
         }
         if (!isForced) return
+        for ((entityId) in shown.renderedDoc.docContext.videos) {
+            media.warmCameraStream(entityId = entityId)
+        }
         for (video in shown.renderedDoc.docContext.videos) {
             media.sendVideo(shown, video)
         }

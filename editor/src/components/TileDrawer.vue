@@ -231,6 +231,7 @@ function setOption(key: string, on: boolean): void {
 const OPTION_LABELS: Record<string, string> = {
   graph: 'Show a graph',
   live: 'Live picture',
+  stream: 'Live video (one per page)',
   map: 'Show on a map',
 }
 

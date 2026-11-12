@@ -46,8 +46,6 @@ RPI lists only Frigate cameras (`client_id: frigate`). Here the editor chooses: 
 ## Open items
 
 - `addon/VERSION` is not bumped, so other tablets are not offered the page-aware player.
-- No warm-up of the chosen camera's stream before the tap (see Deviations).
-- Nothing from the cameras work is committed.
 
 ## Deviations from RPI
 
@@ -55,7 +53,7 @@ RPI lists only Frigate cameras (`client_id: frigate`). Here the editor chooses: 
 - RPI's `PlayerViewModel` refresh on HTTP 404 is not ported; `CameraStreamService` and `SessionMedia.restartVideo` already restart a stream.
 - RPI's thumbnails use a hard-coded Home Assistant URL; here the add-on fetches them through Home Assistant's proxy.
 - The row image is 290dp wide and the row height tall, centred. RPI sizes it 290 x 290 and lets it overflow.
-- The page has no warm-up on tap: `sendVideo` asks for the HLS path as soon as the rebuilt document is shown.
+- On `cameras_select`, `PlayerSession` calls `warmCameraStream` before rebuild (same as `openCard`). `SessionDocument.show` also warms every `LiveVideo` before `sendVideo` (return-to-page / reconnect).
 - No `graphicsLayer` (see `alarm-panel-context.mdc`).
 
 ## Editor
