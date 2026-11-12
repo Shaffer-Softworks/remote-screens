@@ -5,7 +5,12 @@ import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.shared.TypeSpec
 
 /** What a tap is about: a tile of the screen, or an entity named by a card. */
-data class TapTarget(val tileId: String, val entityId: String?, val kind: String, val tile: Tile?) {
+data class TapTarget(
+    val tileId: String,
+    val entityId: String?,
+    val kind: String,
+    val tile: Tile?,
+) {
     val spec: TypeSpec? get() = Catalogue.of(kind)
 }
 

@@ -69,7 +69,6 @@ internal object CardChrome {
     const val FAN_PERCENTAGE_FLAG = HaRenderFlags.FAN_PERCENTAGE_FLAG
     const val FAN_OSCILLATE_FLAG = 2
     const val FAN_DIRECTION_FLAG = 4
-    const val CLIMATE_TEMP_RANGE_FLAG = 2
     const val COVER_POSITION_FLAG = HaRenderFlags.COVER_POSITION_FLAG
     const val COVER_TILT_FLAG = HaRenderFlags.COVER_TILT_POSITION_FLAG
     const val DEFAULT_HUMIDITY_MIN = 0.0
@@ -115,9 +114,9 @@ internal object CardChrome {
 }
 
 internal fun ref(entityId: String, verb: String, arg: String = "") = ActionRef(
-    "e:$entityId",
-    verb,
-    arg,
+    tile = "e:$entityId",
+    verb = verb,
+    arg = arg,
 )
 
 internal fun DocContext.header(entityId: String, card: String) {
@@ -133,6 +132,7 @@ internal fun DocContext.header(entityId: String, card: String) {
             widthDp = CardChrome.CLOSE_KEY_DP,
             round = true,
         )
+
         Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
             if (card == "energy") {
                 doc.label(
@@ -158,29 +158,46 @@ internal fun DocContext.header(entityId: String, card: String) {
                 )
             }
         }
+
         Spacer(
             Modifier.size(
-                doc.units.px(CardChrome.CLOSE_KEY_DP),
-                doc.units.px(CardChrome.CLOSE_KEY_DP),
+                width = doc.units.px(CardChrome.CLOSE_KEY_DP),
+                height = doc.units.px(CardChrome.CLOSE_KEY_DP),
             ),
         )
     }
 }
 
-internal fun DocContext.bigToggle(entityId: String, entityState: EntityState?, verb: String = "toggle") {
+internal fun DocContext.bigToggle(
+    entityId: String,
+    entityState: EntityState?,
+    verb: String = "toggle",
+) {
     val spec = Catalogue.of(entityState?.domain ?: "")
     val action = ref(entityId, verb)
     predict(action, entityId)
-    scope.Box(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
+
+    scope.Box(
+        Modifier.fillMaxWidth(),
+        horizontal = RcHorizontalPositioning.Center,
+    ) {
         val doc = this@bigToggle
+
         Box(
             doc.tap(
                 Modifier.size(
-                    doc.units.px(CardChrome.TOGGLE_DP),
-                    doc.units.px(CardChrome.TOGGLE_DP),
+                    width = doc.units.px(CardChrome.TOGGLE_DP),
+                    height = doc.units.px(CardChrome.TOGGLE_DP),
                 ).clip(
                     doc.rounded((CardChrome.TOGGLE_DP) / 2f),
-                ).background(doc.color(Vars.tile(CardRenderer.TILE, Vars.KEY_BG))),
+                ).background(
+                    color = doc.color(
+                        name = Vars.tile(
+                            tileId = CardRenderer.TILE,
+                            key = Vars.KEY_BG,
+                        ),
+                    ),
+                ),
                 action,
             ),
             horizontal = RcHorizontalPositioning.Center,
@@ -191,7 +208,12 @@ internal fun DocContext.bigToggle(entityId: String, entityState: EntityState?, v
                 off = spec?.icon ?: "power",
                 on = spec?.iconOn,
                 sizeDp = CardChrome.TOGGLE_ICON_DP,
-                color = doc.color(Vars.tile(CardRenderer.TILE, Vars.KEY_BG_INK)),
+                color = doc.color(
+                    Vars.tile(
+                        tileId = CardRenderer.TILE,
+                        key = Vars.KEY_BG_INK,
+                    ),
+                ),
             )
         }
     }
@@ -199,7 +221,12 @@ internal fun DocContext.bigToggle(entityId: String, entityState: EntityState?, v
 
 internal fun DocContext.section(title: String) {
     gap(CardChrome.SECTION_TITLE_GAP_DP)
-    label(text = title, sp = Type.BODY, color = role(Role.INK_SOFT), weight = Weight.SEMI_BOLD)
+    label(
+        text = title,
+        sp = Type.BODY,
+        color = role(Role.INK_SOFT),
+        weight = Weight.SEMI_BOLD,
+    )
     gap(CardChrome.FLOW_PAD_DP)
 }
 
@@ -221,9 +248,9 @@ internal fun DocContext.bar(
     ) { step ->
         val value = min + (max - min) * step / CardChrome.LEVEL_STEPS.toDouble()
         val action = ref(
-            entityId,
-            verb,
-            if (value % 1.0 == 0.0) {
+            entityId = entityId,
+            verb = verb,
+            arg = if (value % 1.0 == 0.0) {
                 value.toInt().toString()
             } else {
                 "%.1f".format(
@@ -238,7 +265,10 @@ internal fun DocContext.bar(
 }
 
 internal fun DocContext.swatches(colors: List<Pair<Int, ActionRef>>) {
-    scope.Row(Modifier.fillMaxWidth(), horizontal = RcRowHorizontalPositioning.SpaceBetween) {
+    scope.Row(
+        Modifier.fillMaxWidth(),
+        horizontal = RcRowHorizontalPositioning.SpaceBetween,
+    ) {
         val doc = this@swatches
         for ((argb, r) in colors) {
             Box(
@@ -269,6 +299,7 @@ internal fun DocContext.flowKeys(
         choices = choices.map { it.first },
         chosen = chosen,
     )
+
     if (choices.size in 2..CardChrome.FLOW_KEYS_SEGMENT_MAX) {
         choiceRow(
             scopeId = entityId,
@@ -279,6 +310,7 @@ internal fun DocContext.flowKeys(
         )
         return
     }
+
     scope.Flow(Modifier.fillMaxWidth()) {
         val doc = this@flowKeys
         choices.forEachIndexed { index, (value, word) ->
@@ -293,8 +325,22 @@ internal fun DocContext.flowKeys(
                 doc.key(
                     ref = ref(entityId, verb, value),
                     text = word,
-                    bg = doc.color(Vars.option(scope = entityId, group = verb, index = index, key = Vars.KEY_BG)),
-                    ink = doc.color(Vars.option(scope = entityId, group = verb, index = index, key = Vars.KEY_INK)),
+                    bg = doc.color(
+                        Vars.option(
+                            scope = entityId,
+                            group = verb,
+                            index = index,
+                            key = Vars.KEY_BG,
+                        ),
+                    ),
+                    ink = doc.color(
+                        Vars.option(
+                            scope = entityId,
+                            group = verb,
+                            index = index,
+                            key = Vars.KEY_INK,
+                        ),
+                    ),
                     heightDp = CardChrome.FLOW_KEY_SEG_H_DP,
                 )
             }

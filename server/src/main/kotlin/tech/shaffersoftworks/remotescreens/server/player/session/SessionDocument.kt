@@ -240,6 +240,7 @@ internal class SessionDocument(
             val vars = shown.renderedDoc.vars(states)
             val changed = vars.values.filter { shown.sentVars[it.name] != it }
             if (changed.isEmpty()) continue
+
             shown.sentVars = vars
             host.send(
                 ServerMessage.Vars(
@@ -259,7 +260,10 @@ internal class SessionDocument(
                 }
                 .getOrNull()
         } ?: return
-        if (shownDocuments[shown.slot] === shown) show(shown.slot, renderedDoc, shown.rebuild)
+
+        if (shownDocuments[shown.slot] === shown) {
+            show(shown.slot, renderedDoc, shown.rebuild)
+        }
     }
 
     /** Sends every value again: after a tap whose prediction Home Assistant did not confirm. */
@@ -290,7 +294,11 @@ internal class SessionDocument(
             )
         }
         val renderedDoc = buildMutex.withLock { build() } ?: return
-        show(Slot.OVERLAY, renderedDoc, build)
+        show(
+            slot = Slot.OVERLAY,
+            renderedDoc = renderedDoc,
+            rebuild = build,
+        )
     }
 
     suspend fun showAlert(alert: Alert) {

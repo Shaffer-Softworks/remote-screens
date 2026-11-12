@@ -238,10 +238,12 @@ offers to set the integration up.
 
 Use **Tablets → Send notification**, a tablet's menu, or `remote_screens.send_notification` to send a silent
 banner or modal alert. Select individual tablets, screens (all tablets showing them), or explicitly all paired
-tablets. Offline tablets are skipped; messages are not queued. **Wake screen** is off by default.
+tablets. Offline paired tablets are queued in the add-on and flushed when they reconnect (within the
+notification duration, or up to one hour for until-acknowledged alerts). The queue is in memory only.
+**Wake screen** is off by default.
 
 Update the add-on, player APK, and Home Assistant integration for full support. Restart Home Assistant after
-updating the integration. Delivery results (`sent`, `offline`, `unsupported`, `failed`) describe dispatch to
+updating the integration. Delivery results (`sent`, `queued`, `unsupported`, `failed`) describe dispatch to
 the tablet connection, not whether someone read the message. The [notification guide](https://github.com/Shaffer-Softworks/remote-screens/wiki/Device-notifications)
 has automation examples, persistent alerts, action buttons, and compatibility details.
 

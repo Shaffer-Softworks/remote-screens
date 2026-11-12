@@ -55,18 +55,30 @@ class DemoHome : HomeAssistant {
     private val completedTodos = mutableSetOf<String>()
     private val serviceHandlers = DemoServiceHandlers(::set, completedTodos)
 
-    fun set(entityId: String, state: String, attrs: Map<String, JsonElement> = emptyMap()) {
+    fun set(
+        entityId: String,
+        state: String,
+        attrs: Map<String, JsonElement> = emptyMap(),
+    ) {
         _states.update { all ->
             val old = all[entityId] ?: EntityState(entityId, state)
             all + (entityId to old.with(state, attrs))
         }
     }
 
-    fun fire(type: String, data: JsonObject) {
+    fun fire(
+        type: String,
+        data: JsonObject,
+    ) {
         _events.tryEmit(HomeAssistantEvent(type, data))
     }
 
-    override suspend fun callService(domain: String, service: String, data: JsonObject, returnResponse: Boolean): JsonElement? {
+    override suspend fun callService(
+        domain: String,
+        service: String,
+        data: JsonObject,
+        returnResponse: Boolean,
+    ): JsonElement? {
         calls += Triple(domain, service, data)
         val ids = when (val entityIdValue = data["entity_id"]) {
             is JsonPrimitive -> listOf(entityIdValue.content)
@@ -84,7 +96,10 @@ class DemoHome : HomeAssistant {
         }
     }
 
-    private fun musicAssistant(service: String, data: JsonObject): JsonElement? = when (service) {
+    private fun musicAssistant(
+        service: String,
+        data: JsonObject,
+    ): JsonElement? = when (service) {
         "get_library" -> demoMusicLibrary()
         "search" -> demoMusicSearch(data["name"]?.jsonPrimitive?.contentOrNull.orEmpty())
         "get_queue" -> demoMusicQueue()
@@ -181,7 +196,12 @@ class DemoHome : HomeAssistant {
         )
     }
 
-    private fun apply(id: String, domain: String, service: String, data: JsonObject) {
+    private fun apply(
+        id: String,
+        domain: String,
+        service: String,
+        data: JsonObject,
+    ) {
         val current = _states.value[id] ?: return
         serviceHandlers.apply(entityId = id, domain = domain, service = service, data = data, current = current)
     }
@@ -207,7 +227,10 @@ class DemoHome : HomeAssistant {
     }
 
     @Suppress("CyclomaticComplexMethod")
-    override suspend fun command(type: String, payload: JsonObject): JsonElement? = when (type) {
+    override suspend fun command(
+        type: String,
+        payload: JsonObject,
+    ): JsonElement? = when (type) {
         "fire_event" -> {
             val eventType = payload["event_type"]?.jsonPrimitive?.contentOrNull ?: return null
             fire(eventType, payload["event_data"] as? JsonObject ?: JsonObject(emptyMap()))
@@ -408,7 +431,11 @@ class DemoHome : HomeAssistant {
         })
 
         /** An Alarmo area panel: `arm_mode` beside the state, and `open_sensors` null unless one is open. */
-        private fun alarmoZone(entityId: String, name: String, openSensor: String? = null): EntityState {
+        private fun alarmoZone(
+            entityId: String,
+            name: String,
+            openSensor: String? = null,
+        ): EntityState {
             val base = attrs(
                 "friendly_name" to name,
                 "code_format" to "number",
@@ -784,7 +811,11 @@ class DemoHome : HomeAssistant {
         )
 
         /** A soft gradient, standing in for a camera snapshot or an album cover. */
-        fun picture(seed: Int, w: Int = 320, h: Int = 240): ByteArray {
+        fun picture(
+            seed: Int,
+            w: Int = 320,
+            h: Int = 240,
+        ): ByteArray {
             val img = BufferedImage(w, h, BufferedImage.TYPE_INT_RGB)
             val graphics = img.createGraphics()
             val hue = (seed and 0xff) / 255f

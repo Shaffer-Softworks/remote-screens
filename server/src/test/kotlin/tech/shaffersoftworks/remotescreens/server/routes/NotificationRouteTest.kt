@@ -124,10 +124,21 @@ class NotificationRouteTest {
         }
 
     @Test
-    fun offlineRecipientsAreReportedAndUnpairedTabletsExcluded() = withHub { client, _ ->
+    fun offlineRecipientsAreQueuedAndUnpairedTabletsExcluded() = withHub { client, _ ->
         val result = client.notify(NotificationRequest("Hi", all = true))
         assertEquals(setOf("one", "two"), result.devices.map { it.deviceId }.toSet())
-        assertTrue(result.devices.all { it.status == "offline" })
+        assertTrue(result.devices.all { it.status == "queued" })
+    }
+
+    @Test
+    fun queuedNotificationsFlushWhenTheTabletReconnects() = withHub { client, _ ->
+        val queued = client.notify(NotificationRequest("Laundry", targets = listOf("one")))
+        assertEquals("queued", queued.devices.single().status)
+        client.webSocket("/player") {
+            hello()
+            val banner = untilMessage { it is ServerMessage.NotificationBanner } as ServerMessage.NotificationBanner
+            assertEquals("Laundry", banner.title)
+        }
     }
 
     @Test
@@ -153,7 +164,7 @@ class NotificationRouteTest {
             )
             assertEquals(2, result.devices.size)
             assertEquals("sent", result.devices.first { it.deviceId == "one" }.status)
-            assertEquals("offline", result.devices.first { it.deviceId == "two" }.status)
+            assertEquals("queued", result.devices.first { it.deviceId == "two" }.status)
         }
     }
 

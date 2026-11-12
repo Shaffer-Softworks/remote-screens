@@ -16,6 +16,7 @@ import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.conflate
@@ -26,6 +27,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.slf4j.LoggerFactory
+import tech.shaffersoftworks.remotescreens.shared.CrashTestResult
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -59,14 +61,18 @@ class PlayerHub(
     private val screenClock: ScreenClock = sessionContext.screenClock
     private val scope: CoroutineScope = sessionContext.scope
     private val sessions = ConcurrentHashMap<String, PlayerSession>()
+    private val notificationQueue = NotificationQueue()
 
+    @OptIn(FlowPreview::class)
     fun start() {
         scope.launch {
             homeAssistant.states
                 .debounce(STATE_DEBOUNCE_MS.milliseconds)
                 .conflate()
                 .collect { states ->
-                    for (session in sessions.values) session.refresh(states)
+                    for (session in sessions.values) {
+                        session.refresh(states)
+                    }
                 }
         }
         scope.launch {
@@ -77,7 +83,11 @@ class PlayerHub(
             }
         }
         scope.launch {
-            homeAssistant.isConnected.collectLatest { for (session in sessions.values) session.sendConnected() }
+            homeAssistant.isConnected.collectLatest {
+                for (session in sessions.values) {
+                    session.sendConnected()
+                }
+            }
         }
         scope.launch { runClock() }
         scope.launch { runTicks() }
@@ -96,6 +106,7 @@ class PlayerHub(
             runCatching { socket.close() }
             return
         }
+
         val session = PlayerSession(
             socket = socket,
             hello = hello,
@@ -109,8 +120,22 @@ class PlayerHub(
             hello.deviceId,
             remoteAddress,
         )
+
         try {
             session.welcome()
+            if (session.screenId != null) {
+                for (item in notificationQueue.drain(session.hello.deviceId)) {
+                    val request = notificationQueue.deliveryRequest(item)
+                    runCatching { session.notify(request) }.onFailure { exception ->
+                        if (exception is CancellationException) throw exception
+                        logger.warn(
+                            "Queued notification to {} failed: {}",
+                            session.hello.deviceId,
+                            exception.message,
+                        )
+                    }
+                }
+            }
             for (frame in socket.incoming) {
                 (frame as? Frame.Text)?.let { Protocol.decodePlayer(
                     it.readText(),
@@ -158,13 +183,18 @@ class PlayerHub(
     }
 
     /** Gives the player with [codeOrDeviceId] (its pairing code, or its device id) the screen [screenId]. */
-    suspend fun adopt(codeOrDeviceId: String, screenId: String, name: String? = null): Boolean {
+    suspend fun adopt(
+        codeOrDeviceId: String,
+        screenId: String,
+        name: String? = null,
+    ): Boolean {
         val layout = layoutRepository.layout.value
         val session = sessions.values.firstOrNull { it.pairingCode == codeOrDeviceId } ?: sessions[codeOrDeviceId]
         val deviceId = session?.hello?.deviceId
             ?: layout.players.firstOrNull { it.deviceId == codeOrDeviceId }?.deviceId
         if (deviceId == null || layout.screens.none { it.id == screenId }) return false
         val token = if (session != null) playerTokens.newToken() else null
+
         layoutRepository.update { current ->
             current.copy(
                 players = current.players.map { player ->
@@ -205,13 +235,13 @@ class PlayerHub(
         }
     }
 
-    suspend fun testSentry(deviceId: String): tech.shaffersoftworks.remotescreens.shared.CrashTestResult {
+    suspend fun testSentry(deviceId: String): CrashTestResult {
         val session = sessions[deviceId]?.takeIf { it.screenId != null }
-            ?: return tech.shaffersoftworks.remotescreens.shared.CrashTestResult("offline")
+            ?: return CrashTestResult("offline")
         return if (Protocol.CAPABILITY_SENTRY_TEST in session.hello.capabilities) {
             session.testSentry()
         } else {
-            tech.shaffersoftworks.remotescreens.shared.CrashTestResult("unsupported")
+            CrashTestResult("unsupported")
         }
     }
 
@@ -238,7 +268,8 @@ class PlayerHub(
         val deliveries = recipients.map { player ->
             val session = sessions[player.deviceId]?.takeIf { it.screenId == player.screenId }
             val status = if (session == null) {
-                "offline"
+                notificationQueue.enqueue(player.deviceId, request)
+                "queued"
             } else {
                 runCatching { session.notify(request) }.getOrElse { exception ->
                     if (exception is CancellationException) throw exception
@@ -252,19 +283,27 @@ class PlayerHub(
     }
 
     suspend fun showAlert(alert: Alert) {
-        for (session in sessionsFor(alert.targets)) session.showAlert(alert)
+        for (session in sessionsFor(alert.targets)) {
+            session.showAlert(alert)
+        }
     }
 
     suspend fun openPage(targets: List<String>, page: String) {
-        for (session in sessionsFor(targets)) session.openPage(page)
+        for (session in sessionsFor(targets)) {
+            session.openPage(page)
+        }
     }
 
     suspend fun wake(targets: List<String>, isAwake: Boolean = true) {
-        for (session in sessionsFor(targets)) session.send(ServerMessage.Wake(isAwake))
+        for (session in sessionsFor(targets)) {
+            session.send(ServerMessage.Wake(isAwake))
+        }
     }
 
     suspend fun closeOverlays(targets: List<String>) {
-        for (session in sessionsFor(targets)) session.closeAll()
+        for (session in sessionsFor(targets)) {
+            session.closeAll()
+        }
     }
 
     /** Whether [token] belongs to an adopted player; used for the APK download. */
@@ -311,6 +350,7 @@ class PlayerHub(
             val now = screenClock.now()
             val untilNextMinuteMs = (SECONDS_PER_MINUTE - now.second) * MS_PER_SECOND - now.nano / NANOS_PER_MS
             delay(untilNextMinuteMs.coerceAtLeast(MIN_CLOCK_DELAY_MS).milliseconds)
+
             val clockVars = screenClock.clockVars()
             for (session in sessions.values) {
                 session.sendVars(clockVars)

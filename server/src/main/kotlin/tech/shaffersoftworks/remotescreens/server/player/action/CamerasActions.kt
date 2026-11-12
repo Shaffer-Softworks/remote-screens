@@ -10,6 +10,7 @@ class CamerasActions(
     fun handle(arg: String, target: TapTarget): TapOutcome {
         val tile = target.tile
         val isListed = tile != null && tile.cameraEntries().any { it.entityId == arg }
+
         return if (tile == null || renderData == null || !isListed) {
             TapOutcome.Ignored
         } else {

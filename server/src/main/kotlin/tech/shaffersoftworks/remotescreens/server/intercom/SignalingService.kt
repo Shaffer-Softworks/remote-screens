@@ -46,7 +46,9 @@ class SignalingService(
         sockets[sessionId] = socket
         try {
             for (frame in socket.incoming) {
-                if (frame is Frame.Text) dispatch(hub.handleMessage(sessionId, frame.readText()))
+                if (frame is Frame.Text) {
+                    dispatch(hub.handleMessage(sessionId, frame.readText()))
+                }
             }
         } finally {
             sockets.remove(sessionId, socket)
@@ -56,17 +58,20 @@ class SignalingService(
 
     suspend fun clientsBody(): String {
         val (views, closeSessionIds) = hub.poll()
-        for (sessionId in closeSessionIds) closeSocket(sessionId)
+        for (sessionId in closeSessionIds) {
+            closeSocket(sessionId)
+        }
+
         return buildJsonObject {
             put(
                 "clients",
                 buildJsonArray {
-                    for (view in views) {
+                    for ((clientId, displayName, inCall) in views) {
                         add(
                             buildJsonObject {
-                                put("clientId", view.clientId)
-                                put("displayName", view.displayName?.let { JsonPrimitive(it) } ?: JsonNull)
-                                put("inCall", view.inCall)
+                                put("clientId", clientId)
+                                put("displayName", displayName?.let { JsonPrimitive(it) } ?: JsonNull)
+                                put("inCall", inCall)
                             },
                         )
                     }
@@ -76,12 +81,18 @@ class SignalingService(
     }
 
     private suspend fun dispatch(outcome: SignalingHub.Outcome) {
-        for (send in outcome.sends) deliver(send.sessionId, send.json)
-        for (sessionId in outcome.closeSessionIds) closeSocket(sessionId)
-        for (deferred in outcome.deferred) {
+        for ((sessionId, json) in outcome.sends) {
+            deliver(sessionId, json)
+        }
+
+        for (sessionId in outcome.closeSessionIds) {
+            closeSocket(sessionId)
+        }
+
+        for ((sessionId, json, delayMs) in outcome.deferred) {
             scope.launch {
-                delay(deferred.delayMs.milliseconds)
-                deliver(deferred.sessionId, deferred.json)
+                delay(delayMs.milliseconds)
+                deliver(sessionId, json)
             }
         }
     }
