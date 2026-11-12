@@ -64,8 +64,7 @@ const isHome = computed({
     <div class="field">
       <span class="label">Background image</span>
       <p class="muted note">
-        A JPEG or PNG behind this page. The bars stay on top. Exporting the screen does not include
-        the file.
+        A JPEG or PNG behind this page. The bars stay on top. Export and duplicate keep the file.
       </p>
       <img v-if="page.backgroundImage" class="shot" :src="backgroundUrl" alt="" />
       <div class="add-row">

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { SCREEN_FILE_KIND, isScreenFile, screenFile, screenFileName } from './screenFile'
+import {
+  SCREEN_FILE_KIND,
+  isScreenFile,
+  screenFile,
+  screenFileName,
+  screenWithoutBackgroundTokens,
+} from './screenFile'
 import type { Screen, ScreenSettings, Theme, TopBar } from './types'
 
 const topBar: TopBar = { show: true, clock: true, people: false }
@@ -64,5 +70,17 @@ describe('screen file', () => {
   it('names the download from the screen name', () => {
     expect(screenFileName('Kitchen Tablet')).toBe('kitchen-tablet')
     expect(screenFileName('   ')).toBe('screen')
+  })
+
+  it('clears background tokens and can attach embedded assets', () => {
+    const withToken = sample()
+    withToken.pages[0].backgroundImage = '1700000000000'
+    const cleared = screenWithoutBackgroundTokens(withToken)
+    expect(cleared.pages[0].backgroundImage).toBeUndefined()
+    const file = screenFile(cleared, [], 2, [
+      { pageId: 'home', mime: 'image/jpeg', data: 'abc' },
+    ])
+    expect(file.backgrounds).toEqual([{ pageId: 'home', mime: 'image/jpeg', data: 'abc' }])
+    expect(isScreenFile(file)).toBe(true)
   })
 })

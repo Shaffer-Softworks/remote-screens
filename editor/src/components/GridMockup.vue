@@ -16,6 +16,7 @@ import {
   topBarHeight,
 } from '../model/grid'
 import { intercomStacks } from '../model/intercomLayout'
+import { lightsRoomRows } from '../model/lightsOnCount'
 import { usePreviewPalette } from '../model/palette'
 import { iconOf, nameOf, stateOf } from '../model/tiles'
 import type { Page, Screen, Tile, TileSource } from '../model/types'
@@ -202,13 +203,7 @@ const alarmLayout = computed(() => {
 })
 /** RPI's lights page (LightsPanel.kt): every Home Assistant area on the left, its lights once one is chosen. */
 const isLightsPanel = (tile: Tile) => kindOf(tile) === 'lights' && tile.full === true
-const LIGHTS_SAMPLE_ROOMS = ['Bedroom', 'Garden', 'Kitchen', 'Living Room']
-const lightsRooms = computed(() => {
-  const names = state.areas
-    .map(area => area.name)
-    .sort((nameA, nameB) => nameA.localeCompare(nameB))
-  return names.length ? names : LIGHTS_SAMPLE_ROOMS
-})
+const lightsRooms = computed(() => lightsRoomRows(state.areas, state.entities))
 /** RPI's cameras page (CamerasPanel.kt): the tile's cameras in a list on the left, the chosen one's video on the right. */
 const isCamerasPanel = (tile: Tile) => kindOf(tile) === 'cameras' && tile.full === true
 const isIntercomPanel = (tile: Tile) => kindOf(tile) === 'intercom' && tile.full === true
@@ -710,9 +705,16 @@ const highlight = computed(() => {
           <div class="li-rooms">
             <i class="li-accent" />
             <span class="li-title">LIGHTING CONTROL</span>
-            <span v-for="roomName in lightsRooms" :key="roomName" class="li-room">{{
-              roomName
-            }}</span>
+            <span
+              v-for="lightsRoom in lightsRooms"
+              :key="lightsRoom.areaId"
+              class="li-room"
+            >
+              <span class="li-room-name">{{ lightsRoom.name }}</span>
+              <span v-if="lightsRoom.subtitle" class="li-room-sub">{{
+                lightsRoom.subtitle
+              }}</span>
+            </span>
           </div>
           <div class="li-prompt">
             <MdiIcon name="gesture-tap" :size="64" />
@@ -1418,10 +1420,21 @@ const highlight = computed(() => {
   height: 100px;
   flex: none;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
   padding: 0 10px 0 20px;
-  font-size: 30px;
   color: var(--rc-ink);
+}
+
+.li-room-name {
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+.li-room-sub {
+  font-size: 16px;
+  color: var(--rc-ink-dim);
 }
 
 .li-prompt {

@@ -206,7 +206,7 @@ demo screen includes a Compose page that shows several of them.
 
 A page can be hidden: it has no page dot and is only reached from a navigation tile, with a Back key.
 
-A page can have a JPEG or PNG behind its tiles, and a screen export does not include that file.
+A page can have a JPEG or PNG behind its tiles. Exporting or duplicating a screen embeds those images in the screen file and restores them on import.
 
 ## Themes
 

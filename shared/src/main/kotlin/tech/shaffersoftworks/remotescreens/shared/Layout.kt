@@ -102,7 +102,7 @@ data class Page(
     val root: Node? = null,
     /**
      * Timestamp token of a JPEG or PNG stored beside the layout, drawn behind this page.
-     * Null keeps the theme's page colour. A screen export does not include the file.
+     * Null keeps the theme's page colour. A screen export embeds the file in `ScreenFile.backgrounds`.
      */
     val backgroundImage: String? = null,
 ) {
