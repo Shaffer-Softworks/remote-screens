@@ -12,11 +12,17 @@ import tech.shaffersoftworks.remotescreens.shared.ScreenSettings
 import tech.shaffersoftworks.remotescreens.shared.Theme
 import io.ktor.server.plugins.BadRequestException
 import kotlinx.serialization.SerializationException
+import java.awt.Color
+import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
 import java.nio.file.Files
+import java.util.Base64
+import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -88,7 +94,7 @@ class ScreenServiceTest {
     }
 
     @Test
-    fun importDropsABackgroundImage() {
+    fun importDropsABareBackgroundToken() {
         val (_, service) = opened()
         val original = screen().copy(
             pages = listOf(Page(id = "home", title = "Home", backgroundImage = "1700000000000")),
@@ -100,28 +106,81 @@ class ScreenServiceTest {
     }
 
     @Test
+    fun importRestoresAnEmbeddedBackground() {
+        val opened = opened()
+        val jpeg = sampleJpeg()
+        val original = screen().copy(
+            pages = listOf(Page(id = "home", title = "Home")),
+        )
+
+        val imported = opened.service.importScreen(
+            file(
+                original,
+                backgrounds = listOf(
+                    ScreenBackgroundAsset(
+                        pageId = "home",
+                        mime = "image/jpeg",
+                        data = Base64.getEncoder().encodeToString(jpeg),
+                    ),
+                ),
+            ),
+        )
+
+        val token = assertNotNull(imported.pages.single().backgroundImage)
+        val stored = assertNotNull(opened.store.read(imported.id, "home", token))
+        assertTrue(stored.bytes.isNotEmpty())
+        assertTrue(!stored.isPng)
+    }
+
+    @Test
+    fun importSkipsAnInvalidEmbeddedBackground() {
+        val opened = opened()
+        val imported = opened.service.importScreen(
+            file(
+                screen().copy(pages = listOf(Page(id = "home", title = "Home"))),
+                backgrounds = listOf(
+                    ScreenBackgroundAsset(
+                        pageId = "home",
+                        mime = "image/jpeg",
+                        data = Base64.getEncoder().encodeToString("not a picture".encodeToByteArray()),
+                    ),
+                ),
+            ),
+        )
+
+        assertNull(imported.pages.single().backgroundImage)
+    }
+
+    @Test
     fun importRejectsAFileItCannotUse() {
-        val (repository, service) = opened()
+        val opened = opened()
         val sample = screen()
         assertFailsWith<BadRequestException> {
-            service.importScreen(file(sample).copy(kind = "layout"))
+            opened.service.importScreen(file(sample).copy(kind = "layout"))
         }
         assertFailsWith<BadRequestException> {
-            service.importScreen(file(sample).copy(schemaVersion = SCHEMA_VERSION + 1))
+            opened.service.importScreen(file(sample).copy(schemaVersion = SCHEMA_VERSION + 1))
         }
         assertFailsWith<BadRequestException> {
-            service.importScreen(file(sample.copy(pages = emptyList())))
+            opened.service.importScreen(file(sample.copy(pages = emptyList())))
         }
         assertFailsWith<SerializationException> {
             ApiJson.decodeFromString(ScreenFile.serializer(), """{"kind":"${ScreenFile.KIND}"}""")
         }
-        assertTrue(repository.layout.value.screens.isEmpty())
+        assertTrue(opened.repository.layout.value.screens.isEmpty())
     }
 
-    private fun opened(): Pair<LayoutRepository, ScreenService> {
+    private data class Opened(
+        val repository: LayoutRepository,
+        val service: ScreenService,
+        val store: BackgroundStore,
+    )
+
+    private fun opened(): Opened {
         val directory = Files.createTempDirectory("screen-import").toFile()
         val repository = LayoutRepository(directory)
-        return repository to ScreenService(repository, BackgroundStore(directory))
+        val store = BackgroundStore(directory)
+        return Opened(repository, ScreenService(repository, store), store)
     }
 
     private fun screen(
@@ -136,10 +195,28 @@ class ScreenServiceTest {
         settings = ScreenSettings(theme = theme, darkTheme = darkTheme),
     )
 
-    private fun file(screen: Screen, themes: List<Theme> = emptyList()): ScreenFile = ScreenFile(
+    private fun file(
+        screen: Screen,
+        themes: List<Theme> = emptyList(),
+        backgrounds: List<ScreenBackgroundAsset> = emptyList(),
+    ): ScreenFile = ScreenFile(
         kind = ScreenFile.KIND,
         schemaVersion = SCHEMA_VERSION,
         screen = screen,
         themes = themes,
+        backgrounds = backgrounds,
     )
+
+    private fun sampleJpeg(): ByteArray {
+        val image = BufferedImage(SAMPLE_JPEG_SIZE, SAMPLE_JPEG_SIZE, BufferedImage.TYPE_INT_RGB)
+        val graphics = image.createGraphics()
+        graphics.color = Color.RED
+        graphics.fillRect(0, 0, SAMPLE_JPEG_SIZE, SAMPLE_JPEG_SIZE)
+        graphics.dispose()
+        val output = ByteArrayOutputStream()
+        check(ImageIO.write(image, "jpg", output))
+        return output.toByteArray()
+    }
 }
+
+private const val SAMPLE_JPEG_SIZE = 2

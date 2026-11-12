@@ -1,6 +1,7 @@
 package tech.shaffersoftworks.remotescreens.server.service
 
 import tech.shaffersoftworks.remotescreens.server.data.layout.LayoutRepository
+import tech.shaffersoftworks.remotescreens.server.data.pictures.BackgroundRejected
 import tech.shaffersoftworks.remotescreens.server.data.pictures.BackgroundStore
 import tech.shaffersoftworks.remotescreens.server.service.validation.ScreenValidator
 import tech.shaffersoftworks.remotescreens.server.service.validation.ThemeValidator
@@ -17,6 +18,7 @@ import tech.shaffersoftworks.remotescreens.shared.Theme
 import io.ktor.server.plugins.BadRequestException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
+import java.util.Base64
 import java.util.UUID
 
 private const val SCREEN_ID_PREFIX = "s"
@@ -78,7 +80,8 @@ class ScreenService(
 
     /**
      * Stores [file] as a new screen. The file's screen id is dropped. A name already in use gains a " copy" suffix.
-     * A custom theme is added only when that id is not already stored.
+     * A custom theme is added only when that id is not already stored. Embedded [ScreenFile.backgrounds] are
+     * written for the new screen; bare tokens without assets stay cleared.
      */
     fun importScreen(file: ScreenFile): Screen {
         if (file.kind != ScreenFile.KIND) throw BadRequestException("Not a screen file")
@@ -87,18 +90,46 @@ class ScreenService(
         }
         lateinit var imported: Screen
         layoutRepository.update { layout ->
-            val screen = ScreenValidator.validate(
+            val screenId = newScreenId()
+            val cleared = ScreenValidator.validate(
                 file.screen.copy(
-                    id = newScreenId(),
-                    name = uniqueName(file.screen.name, layout.screens.map { it.name }.toSet()),
+                    id = screenId,
+                    name = uniqueName(file.screen.name, layout.screens.map { screen -> screen.name }.toSet()),
                     pages = file.screen.pages.map { page -> page.copy(backgroundImage = null) },
                 ),
             )
+            val pages = cleared.pages.map { page ->
+                val asset = file.backgrounds.find { background -> background.pageId == page.id }
+                    ?: return@map page
+                val token = restoreBackground(
+                    screenId = screenId,
+                    pageId = page.id,
+                    asset = asset,
+                ) ?: return@map page
+                page.copy(backgroundImage = token)
+            }
+            val screen = cleared.copy(pages = pages)
             val themes = themesToStore(layout.themes, file.themes)
             imported = screen
             layout.copy(screens = layout.screens + screen, themes = themes)
         }
         return imported
+    }
+
+    /** Writes [asset] for [pageId], or null when the bytes are missing or not a JPEG/PNG. */
+    private fun restoreBackground(
+        screenId: String,
+        pageId: String,
+        asset: ScreenBackgroundAsset,
+    ): String? {
+        val bytes = runCatching { Base64.getDecoder().decode(asset.data) }.getOrNull() ?: return null
+        return try {
+            backgroundStore.save(screenId, pageId, bytes)
+        } catch (_: BackgroundRejected) {
+            null
+        } catch (_: IllegalArgumentException) {
+            null
+        }
     }
 
     /** Replaces the screen [screenId]; null when there is no such screen. */

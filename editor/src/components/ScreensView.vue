@@ -2,7 +2,14 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { api } from '../api'
 import { DENSITIES, PRESETS, clampDp, toDp } from '../model/devices'
-import { isScreenFile, screenFile, screenFileName, type ScreenFile } from '../model/screenFile'
+import {
+  isScreenFile,
+  packScreenBackgrounds,
+  screenFile,
+  screenFileName,
+  screenWithoutBackgroundTokens,
+  type ScreenFile,
+} from '../model/screenFile'
 import type { PlayerStatus, Screen } from '../model/types'
 import { attempt, playersOf, refreshLayout, refreshThemes, state, toast } from '../store'
 import EnrollTabletPanel from './EnrollTabletPanel.vue'
@@ -116,11 +123,11 @@ async function importChosen(event: Event): Promise<void> {
 }
 
 async function duplicate(screen: Screen): Promise<void> {
-  await addCopy(screenFile(screen, state.layout?.themes ?? []))
+  await addCopy(await packedScreenFile(screen))
 }
 
-function exportScreen(screen: Screen): void {
-  const file = screenFile(screen, state.layout?.themes ?? [])
+async function exportScreen(screen: Screen): Promise<void> {
+  const file = await packedScreenFile(screen)
   const blob = new Blob([`${JSON.stringify(file, null, 2)}\n`], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -128,6 +135,17 @@ function exportScreen(screen: Screen): void {
   link.download = `${screenFileName(screen.name)}.json`
   link.click()
   URL.revokeObjectURL(url)
+}
+
+/** Themes plus any page wallpapers, with tokens cleared from the screen payload. */
+async function packedScreenFile(screen: Screen): Promise<ScreenFile> {
+  const backgrounds = await packScreenBackgrounds(screen)
+  return screenFile(
+    screenWithoutBackgroundTokens(screen),
+    state.layout?.themes ?? [],
+    undefined,
+    backgrounds,
+  )
 }
 
 async function addCopy(file: ScreenFile): Promise<void> {
