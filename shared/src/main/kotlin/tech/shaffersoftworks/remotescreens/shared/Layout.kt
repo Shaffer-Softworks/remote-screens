@@ -130,7 +130,7 @@ object NodeTypes {
  * `icon` (icon, iconOn, size, color; bound also colorOff and colorOn; while on, `rgb_color` unless colorOn is set),
  * `button` (text, icon, color, ink, fontSize, weight), containers (arrangement, alignment, gap),
  * `slider` (steps, color: active fill, track: inactive well; Style border strokes the pill),
- * `image` (fit), `clock` (show: time, date or both; fontSize, weight, color, align),
+ * `image` (fit; stream: live HLS for camera.* when true, one per page), `clock` (show: time, date or both; fontSize, weight, color, align),
  * `badge` (text, icon, color, fontSize, weight), `avatar` (text, size),
  * `progress` (min, max, color), `graph` (hours, color), `switch` (color), `stepper` (step), `choices` (max),
  * `gauge` (min, max, color, size, caption: words or `@name`), `analog` (size, seconds, numbers: all or quarters),

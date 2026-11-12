@@ -13,12 +13,14 @@ import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
+import androidx.compose.remote.creation.dsl.componentId
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.verticalWeight
+import androidx.compose.remote.creation.dsl.visibility
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
@@ -27,6 +29,7 @@ import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.bindChoices
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
+import tech.shaffersoftworks.remotescreens.server.render.cards.CardChrome
 import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.calendarEvent
 import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.isToday
 import tech.shaffersoftworks.remotescreens.server.render.panels.thermostat.ThermostatMetrics
@@ -43,6 +46,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
 import tech.shaffersoftworks.remotescreens.server.render.widgets.numericLabel
 import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spinner
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.server.render.widgets.weatherStateIcon
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
@@ -670,28 +674,73 @@ internal fun DocContext.cameraTile(tile: Tile, box: TileBox, named: Boolean) {
     val entityId = tile.entityId ?: return
     val w = units.px(box.w).toInt()
     val h = units.px(box.h).toInt()
-    val every = tile.options["live"]?.toIntOrNull()
-        ?.coerceIn(C.CAMERA_LIVE_MIN_S, C.CAMERA_LIVE_MAX_S)
-        ?: C.CAMERA_LIVE_DEFAULT_S
+    val isCropped = tile.options["fit"] != "whole"
+    val contentScale = if (isCropped) RcContentScale.Crop else RcContentScale.Fit
+    val canStream = tile.options["stream"] == "true" && !hasLiveVideoOnCurrentPage()
+    val every = if (canStream) {
+        0
+    } else {
+        tile.options["live"]?.toIntOrNull()
+            ?.coerceIn(C.CAMERA_LIVE_MIN_S, C.CAMERA_LIVE_MAX_S)
+            ?: C.CAMERA_LIVE_DEFAULT_S
+    }
+    val pictureName = "cam.$entityId.${tile.id}"
     picture(
         PictureSlot(
-            name = "cam.$entityId.${tile.id}",
+            name = pictureName,
             source = "/api/camera_proxy/$entityId",
             widthPx = w,
             heightPx = h,
             refreshSeconds = every,
-            crop = tile.options["fit"] != "whole",
+            crop = isCropped,
         ),
     )
+    if (canStream) {
+        val video = liveVideo(entityId, crop = isCropped)
+        val waiting = int(Vars.entity(entityId, Vars.KEY_CAM_WAITING), Vars.VISIBLE)
+        val still = int(Vars.entity(entityId, Vars.KEY_CAM_STILL), Vars.GONE)
+        scope.Box(
+            Modifier.fillMaxSize().background(role(Role.TRACK)).componentId(video),
+            horizontal = RcHorizontalPositioning.Center,
+            vertical = RcVerticalPositioning.Center,
+        ) {
+            val doc = this@cameraTile
+            Image(
+                doc.image(pictureName, w, h),
+                Modifier.fillMaxSize().visibility(still),
+                contentScale = contentScale,
+            )
+            doc.spinner(CardChrome.CAMERA_SPINNER_DP, doc.role(Role.ACCENT), waiting)
+            if (named && tile.options["name"] != "false") {
+                Box(
+                    Modifier.fillMaxSize(),
+                    vertical = RcVerticalPositioning.Bottom,
+                ) {
+                    Box(
+                        Modifier.fillMaxWidth().background(doc.role(Role.SCRIM))
+                            .padding(doc.units.px(C.CARD_CORNER_DP)),
+                    ) {
+                        doc.label(
+                            text = doc.text(Vars.entity(entityId, Vars.KEY_NAME)),
+                            sp = Type.BODY,
+                            color = doc.role(Role.INK),
+                            weight = Weight.SEMI_BOLD,
+                        )
+                    }
+                }
+            }
+        }
+        return
+    }
     scope.Box(
         Modifier.fillMaxSize().background(role(Role.SCRIM)),
         vertical = RcVerticalPositioning.Bottom,
     ) {
         val doc = this@cameraTile
         Image(
-            doc.image("cam.$entityId.${tile.id}", w, h),
+            doc.image(pictureName, w, h),
             Modifier.fillMaxSize(),
-            contentScale = if (tile.options["fit"] == "whole") RcContentScale.Fit else RcContentScale.Crop,
+            contentScale = contentScale,
         )
         if (named && tile.options["name"] != "false") {
             Box(

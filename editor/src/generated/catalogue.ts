@@ -124,7 +124,8 @@ export const CATALOGUE: Record<string, TypeSpec> = {
       "full"
     ],
     "options": [
-      "live"
+      "live",
+      "stream"
     ],
     "verbs": [],
     "needsEntity": true

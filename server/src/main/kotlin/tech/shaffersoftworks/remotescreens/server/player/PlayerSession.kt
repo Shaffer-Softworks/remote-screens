@@ -277,7 +277,14 @@ class PlayerSession(
                 shownDocuments.remove(message.slot)
                 if (message.slot == Slot.ALERT) currentAlert = null
             }
-            else -> handleOutcome(context.actionRouter.handle(ref, screen(), tapMemory))
+            else -> {
+                val outcome = context.actionRouter.handle(ref, screen(), tapMemory)
+                // Start HLS while the cameras page rebuilds, as openCard does for the camera dialog.
+                if (outcome == TapOutcome.Rebuild && ref.verb == "cameras_select") {
+                    media.warmCameraStream(entityId = ref.arg)
+                }
+                handleOutcome(outcome)
+            }
         }
     }
 

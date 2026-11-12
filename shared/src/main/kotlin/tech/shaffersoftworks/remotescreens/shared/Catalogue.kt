@@ -102,7 +102,7 @@ object Catalogue {
             card = "camera",
             controls = listOf(),
             sizes = listOf("1x1", "2x1", "2x2", "full"),
-            options = listOf("live"),
+            options = listOf("live", "stream"),
             actions = mapOf(),
             predict = mapOf(),
             needsEntity = true,

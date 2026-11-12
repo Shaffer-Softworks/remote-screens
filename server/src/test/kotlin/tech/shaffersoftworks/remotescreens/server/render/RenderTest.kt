@@ -27,6 +27,7 @@ import tech.shaffersoftworks.remotescreens.shared.NavBar
 import tech.shaffersoftworks.remotescreens.shared.Page
 import tech.shaffersoftworks.remotescreens.shared.Reflow
 import tech.shaffersoftworks.remotescreens.shared.Screen
+import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.shared.VarType
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonNull
@@ -640,6 +641,41 @@ class RenderTest {
             video,
         )
         assertVideoTargetFound(doc, video.componentId)
+    }
+
+    @Test
+    fun aStreamedCameraTilePlaysLiveVideoAndASecondStreamStaysAStill() {
+        val page = Page(
+            "one",
+            "Cams",
+            tiles = listOf(
+                Tile(
+                    "c1",
+                    entityId = "camera.front_door",
+                    w = 2,
+                    h = 2,
+                    options = mapOf("stream" to "true"),
+                ),
+                Tile(
+                    "c2",
+                    entityId = "camera.driveway",
+                    w = 2,
+                    h = 2,
+                    options = mapOf("stream" to "true"),
+                ),
+            ),
+        )
+        val doc = ScreenRenderer.render(Screen("s", "S", pages = listOf(page)), tablet, input())
+        val video = doc.docContext.videos.single()
+        assertEquals("camera.front_door", video.entityId)
+        assertEquals(0, video.page)
+        assertTrue(doc.docContext.declares(Vars.entity("camera.front_door", Vars.KEY_CAM_WAITING)))
+        assertTrue(doc.docContext.declares(Vars.entity("camera.front_door", Vars.KEY_CAM_STILL)))
+        assertFalse(doc.docContext.declares(Vars.entity("camera.driveway", Vars.KEY_CAM_WAITING)))
+        assertTrue(doc.docContext.pictures.any { it.name == "cam.camera.front_door.c1" })
+        assertTrue(doc.docContext.pictures.any { it.name == "cam.camera.driveway.c2" })
+        assertVideoTargetFound(doc, video.componentId)
+        assertEveryValueIsDeclared(doc)
     }
 
     @Test

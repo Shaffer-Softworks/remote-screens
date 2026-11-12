@@ -180,6 +180,9 @@ class DocContext(
         return componentId
     }
 
+    /** True when this page already registered a live stream (one decoder per visible page). */
+    fun hasLiveVideoOnCurrentPage(): Boolean = videos.any { it.page == renderingPage }
+
     /** The document is built again when [what] of the entity changes, such as its icon or its list of modes. */
     fun structural(entityId: String, what: (EntityState?) -> String) {
         structure += Triple(entityId, what, what(states[entityId]))

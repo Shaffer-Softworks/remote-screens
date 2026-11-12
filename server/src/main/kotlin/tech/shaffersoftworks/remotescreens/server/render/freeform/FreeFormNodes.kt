@@ -32,12 +32,16 @@ import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
+import androidx.compose.remote.creation.dsl.componentId
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.marquee
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
+import androidx.compose.remote.creation.dsl.visibility
 import androidx.compose.remote.creation.dsl.width
+import tech.shaffersoftworks.remotescreens.server.render.cards.CardChrome
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spinner
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Node
 import tech.shaffersoftworks.remotescreens.shared.VarValue
@@ -218,6 +222,8 @@ internal fun DocContext.imageNode(node: Node, self: Dims, axis: Axis, pages: Pag
     val h = units.px(self.h).toInt().coerceAtLeast(1)
     val camera = id.startsWith("camera.")
     val fit = node.props["fit"] == "whole"
+    val contentScale = if (fit) RcContentScale.Fit else RcContentScale.Crop
+    val canStream = camera && node.props["stream"] == "true" && !hasLiveVideoOnCurrentPage()
     val slot = "img.${node.id}"
     picture(
         PictureSlot(
@@ -225,16 +231,39 @@ internal fun DocContext.imageNode(node: Node, self: Dims, axis: Axis, pages: Pag
             source = if (camera) "/api/camera_proxy/$id" else "attr:$id:entity_picture",
             widthPx = w,
             heightPx = h,
-            refreshSeconds = if (camera) Metrics.CAMERA_REFRESH_SEC else 0,
+            refreshSeconds = when {
+                canStream -> 0
+                camera -> Metrics.CAMERA_REFRESH_SEC
+                else -> 0
+            },
             crop = !fit,
         ),
     )
     // Put taps on a Box: Image drops onClick in the document (alpha22), so a camera never opened its card.
+    if (canStream) {
+        val video = liveVideo(id, crop = !fit)
+        val waiting = int(Vars.entity(id, Vars.KEY_CAM_WAITING), Vars.VISIBLE)
+        val still = int(Vars.entity(id, Vars.KEY_CAM_STILL), Vars.GONE)
+        scope.Box(
+            modifier.background(role(Role.TRACK)).componentId(video),
+            horizontal = RcHorizontalPositioning.Center,
+            vertical = RcVerticalPositioning.Center,
+        ) {
+            val doc = this@imageNode
+            Image(
+                doc.image(slot, w, h),
+                Modifier.fillMaxSize().visibility(still),
+                contentScale = contentScale,
+            )
+            doc.spinner(CardChrome.CAMERA_SPINNER_DP, doc.role(Role.ACCENT), waiting)
+        }
+        return
+    }
     scope.Box(modifier) {
         Image(
             this@imageNode.image(slot, w, h),
             Modifier.fillMaxSize(),
-            contentScale = if (fit) RcContentScale.Fit else RcContentScale.Crop,
+            contentScale = contentScale,
         )
     }
 }
