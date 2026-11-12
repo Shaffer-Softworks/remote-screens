@@ -740,7 +740,8 @@ export const CATALOGUE: Record<string, TypeSpec> = {
     "sizes": [
       "1x1",
       "2x1",
-      "2x2"
+      "2x2",
+      "full"
     ],
     "options": [],
     "verbs": [
@@ -969,6 +970,36 @@ export const CATALOGUE: Record<string, TypeSpec> = {
   "lights": {
     "name": "Lights",
     "icon": "lightbulb-group",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "none",
+    "controls": [],
+    "sizes": [
+      "full"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": false
+  },
+  "blinds": {
+    "name": "Blinds",
+    "icon": "blinds",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "none",
+    "controls": [],
+    "sizes": [
+      "full"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": false
+  },
+  "security": {
+    "name": "Security",
+    "icon": "shield-home",
     "iconOn": null,
     "toggle": false,
     "tap": "card",

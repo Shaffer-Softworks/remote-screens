@@ -126,5 +126,22 @@
   "ui.intercom_connecting": "Verbinden…",
   "ui.intercom_online": "Online",
   "ui.intercom_in_call": "Im Gespräch",
-  "ui.intercom_connected": "Verbunden"
+  "ui.intercom_connected": "Verbunden",
+  "ui.blinds_title": "JALOUSIEN",
+  "ui.blinds_select_room": "Raum wählen, um Jalousien zu sehen",
+  "ui.blinds_all_closed": "Alle Jalousien sind geschlossen",
+  "ui.blinds_one_open": "1 Jalousie ist offen",
+  "ui.blinds_many_open": "{count} Jalousien sind offen",
+  "ui.vacuum_title": "STAUBSAUGER",
+  "ui.vacuum_select": "Staubsauger wählen",
+  "ui.security_title": "SICHERHEIT",
+  "ui.security_overview": "Übersicht",
+  "ui.security_overview_sub": "{unlocked} entsperrt · {open} offen",
+  "ui.security_overview_hint": "Alarm-Panel zum Scharfschalten. Hier: Schlösser und Tür-/Fenstersensoren.",
+  "ui.security_locks": "Schlösser",
+  "ui.security_locks_sub": "{count} entsperrt",
+  "ui.security_openings": "Türen & Fenster",
+  "ui.security_openings_sub": "{count} offen",
+  "ui.security_open": "Offen",
+  "ui.security_closed": "Geschlossen"
 }

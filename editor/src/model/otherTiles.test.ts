@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { CATALOGUE } from '../generated/catalogue'
-import { OTHER_TILE_KINDS, PANELS, panelSource } from './otherTiles'
+import { OTHER_TILE_FULL_KINDS, OTHER_TILE_KINDS, PANELS, kindSource, panelSource } from './otherTiles'
 import { newTile } from './tiles'
 import type { EntityInfo } from './types'
 
@@ -55,5 +55,32 @@ describe('other tiles', () => {
 
   it('keeps an entity added without full at its first small size', () => {
     expect(newTile({ entityId: 'weather.home' }, 0, 0).full).toBeUndefined()
+  })
+
+  it('opens energy from Other tiles as a full page', () => {
+    expect(OTHER_TILE_FULL_KINDS).toContain('energy')
+    expect(kindSource('energy')).toEqual({ kind: 'energy', full: true })
+    expect(newTile(kindSource('energy'), 0, 0)).toMatchObject({ kind: 'energy', full: true })
+    expect(kindSource('clock')).toEqual({ kind: 'clock' })
+  })
+
+  it('opens blinds from Other tiles as a full page', () => {
+    expect(OTHER_TILE_FULL_KINDS).toContain('blinds')
+    expect(kindSource('blinds')).toEqual({ kind: 'blinds', full: true })
+    expect(newTile(kindSource('blinds'), 0, 0)).toMatchObject({ kind: 'blinds', full: true })
+  })
+
+  it('opens security from Other tiles as a full page', () => {
+    expect(OTHER_TILE_FULL_KINDS).toContain('security')
+    expect(kindSource('security')).toEqual({ kind: 'security', full: true })
+    expect(newTile(kindSource('security'), 0, 0)).toMatchObject({ kind: 'security', full: true })
+  })
+
+  it('offers a Vacuum panel on the first vacuum entity', () => {
+    const vacuum = PANELS.find(panel => panel.domain === 'vacuum')!
+    expect(panelSource(vacuum, [entity('vacuum.robot')])).toEqual({
+      entityId: 'vacuum.robot',
+      full: true,
+    })
   })
 })

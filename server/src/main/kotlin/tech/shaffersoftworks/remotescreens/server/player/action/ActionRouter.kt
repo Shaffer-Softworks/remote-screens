@@ -41,7 +41,7 @@ class ActionRouter(
     private val logger = LoggerFactory.getLogger(ActionRouter::class.java)
     private val alarmActions = AlarmActions(homeAssistant, i18n, renderData)
     private val lightsActions = LightsActions(homeAssistant, renderData)
-    private val camerasActions = CamerasActions(renderData)
+    private val panelUiActions = PanelUiActions(renderData)
 
     fun target(
         ref: ActionRef,
@@ -126,7 +126,8 @@ class ActionRouter(
         "lights_room", "lights_detail", "lights_dismiss", "lights_mode", "lights_palette",
         "lights_effects", "lights_effect",
         -> lightsActions.handle(verb, ref.arg, target)
-        "cameras_select" -> camerasActions.handle(ref.arg, target)
+        "blinds_room", "vacuum_select", "cameras_select", "security_section" ->
+            panelUiActions.handle(verb, ref.arg, target)
         "intercom_call", "intercom_hangup", "intercom_mute" -> IntercomActions.handle(verb, ref.arg)
         "browse_type", "listen_mode", "primary_tab", "load_more",
         "clear_queue", "play_uri", "enqueue_uri",

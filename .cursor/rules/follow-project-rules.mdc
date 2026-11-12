@@ -59,3 +59,7 @@ Read the rule whose files you are changing. These describe behavior that is alre
 - `ha-weather-icons-context.mdc` — weather icons
 - `editor-sliders-and-theme-preview-context.mdc` — range sliders and Day/Dark preview
 - `editor-other-tiles-context.mdc` — every new full-page panel goes in the library's "Other tiles"
+- `energy-panel-context.mdc` — full-page energy flow from HA energy preferences
+- `blinds-panel-context.mdc` — full blinds page (rooms of covers)
+- `vacuum-panel-context.mdc` — full vacuum page (list + vacuumCard controls)
+- `security-panel-context.mdc` — full security page (locks + door/window sensors; not alarm)

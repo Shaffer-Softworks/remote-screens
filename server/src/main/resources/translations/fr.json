@@ -126,5 +126,22 @@
   "ui.intercom_connecting": "Connexion…",
   "ui.intercom_online": "En ligne",
   "ui.intercom_in_call": "En appel",
-  "ui.intercom_connected": "Connecté"
+  "ui.intercom_connected": "Connecté",
+  "ui.blinds_title": "VOLETS",
+  "ui.blinds_select_room": "Sélectionnez une pièce pour voir ses volets",
+  "ui.blinds_all_closed": "Tous les volets sont fermés",
+  "ui.blinds_one_open": "1 Volet est ouvert",
+  "ui.blinds_many_open": "{count} Volets sont ouverts",
+  "ui.vacuum_title": "ASPIRATEUR",
+  "ui.vacuum_select": "Sélectionnez un aspirateur",
+  "ui.security_title": "SÉCURITÉ",
+  "ui.security_overview": "Aperçu",
+  "ui.security_overview_sub": "{unlocked} déverrouillées · {open} ouvertes",
+  "ui.security_overview_hint": "Utilisez le panneau Alarme pour armer. Ici : serrures et capteurs.",
+  "ui.security_locks": "Serrures",
+  "ui.security_locks_sub": "{count} déverrouillées",
+  "ui.security_openings": "Portes et fenêtres",
+  "ui.security_openings_sub": "{count} ouvertes",
+  "ui.security_open": "Ouvert",
+  "ui.security_closed": "Fermé"
 }

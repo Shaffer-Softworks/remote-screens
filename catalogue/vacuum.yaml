@@ -4,7 +4,7 @@ icon: robot-vacuum
 on_states: [cleaning, returning]
 tap: card
 card: vacuum
-sizes: [1x1, 2x1, 2x2]
+sizes: [1x1, 2x1, 2x2, full]
 actions:
   start: {service: vacuum.start}
   pause: {service: vacuum.pause}

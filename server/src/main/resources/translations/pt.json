@@ -126,5 +126,22 @@
   "ui.intercom_connecting": "A ligar…",
   "ui.intercom_online": "Online",
   "ui.intercom_in_call": "Em chamada",
-  "ui.intercom_connected": "Ligado"
+  "ui.intercom_connected": "Ligado",
+  "ui.blinds_title": "ESTORES",
+  "ui.blinds_select_room": "Selecione uma divisão para ver os estores",
+  "ui.blinds_all_closed": "Todos os estores estão fechados",
+  "ui.blinds_one_open": "1 Estore está aberto",
+  "ui.blinds_many_open": "{count} Estores estão abertos",
+  "ui.vacuum_title": "ASPIRADOR",
+  "ui.vacuum_select": "Selecione um aspirador",
+  "ui.security_title": "SEGURANÇA",
+  "ui.security_overview": "Resumo",
+  "ui.security_overview_sub": "{unlocked} destrancadas · {open} abertos",
+  "ui.security_overview_hint": "Use o painel de Alarme para armar. Aqui: fechaduras e sensores.",
+  "ui.security_locks": "Fechaduras",
+  "ui.security_locks_sub": "{count} destrancadas",
+  "ui.security_openings": "Portas e janelas",
+  "ui.security_openings_sub": "{count} abertos",
+  "ui.security_open": "Aberto",
+  "ui.security_closed": "Fechado"
 }

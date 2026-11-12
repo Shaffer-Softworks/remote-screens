@@ -126,5 +126,22 @@
   "ui.intercom_connecting": "Łączenie…",
   "ui.intercom_online": "Online",
   "ui.intercom_in_call": "W rozmowie",
-  "ui.intercom_connected": "Połączono"
+  "ui.intercom_connected": "Połączono",
+  "ui.blinds_title": "ROLETY",
+  "ui.blinds_select_room": "Wybierz pokój, aby zobaczyć rolety",
+  "ui.blinds_all_closed": "Wszystkie rolety są zamknięte",
+  "ui.blinds_one_open": "1 Roleta jest otwarta",
+  "ui.blinds_many_open": "Otwarte rolety: {count}",
+  "ui.vacuum_title": "ODKURZACZ",
+  "ui.vacuum_select": "Wybierz odkurzacz",
+  "ui.security_title": "BEZPIECZEŃSTWO",
+  "ui.security_overview": "Przegląd",
+  "ui.security_overview_sub": "{unlocked} odblokowanych · {open} otwartych",
+  "ui.security_overview_hint": "Użyj panelu Alarmu do uzbrojenia. Tu: zamki i czujniki.",
+  "ui.security_locks": "Zamki",
+  "ui.security_locks_sub": "Odblokowane: {count}",
+  "ui.security_openings": "Drzwi i okna",
+  "ui.security_openings_sub": "Otwarte: {count}",
+  "ui.security_open": "Otwarte",
+  "ui.security_closed": "Zamknięte"
 }

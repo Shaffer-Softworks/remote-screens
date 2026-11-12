@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { CATALOGUE } from '../generated/catalogue'
 import { dragged } from '../model/drag'
-import { OTHER_TILE_KINDS, PANELS, panelSource } from '../model/otherTiles'
+import { OTHER_TILE_KINDS, PANELS, kindSource, panelSource } from '../model/otherTiles'
 import { newTile } from '../model/tiles'
 import type { EntityInfo, Page, TileSource } from '../model/types'
 import { state } from '../store'
@@ -83,9 +83,9 @@ function icon(entity: EntityInfo): string {
         :key="key"
         class="item"
         draggable="true"
-        @dragstart="drag($event, { kind: key })"
+        @dragstart="drag($event, kindSource(key))"
         @dragend="dragged = null"
-        @click="emit('add', { kind: key })"
+        @click="emit('add', kindSource(key))"
       >
         <MdiIcon :name="spec.icon" :size="20" />
         <span class="grow">{{ spec.name }}</span>
