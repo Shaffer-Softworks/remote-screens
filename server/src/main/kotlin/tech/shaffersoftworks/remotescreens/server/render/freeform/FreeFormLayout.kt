@@ -82,33 +82,39 @@ internal fun DocContext.dividerSize(node: Node, axis: Axis): Modifier {
     return modifier
 }
 
-/** Children of a wrapped row/column: fills become wraps so they take content size, not leftover room. */
+/** Children of a wrapped row, column or box: fills become wraps so they take content size, not leftover room. */
 internal fun Node.looseChildren(looseW: Boolean, looseH: Boolean): List<Node> =
-    children.filter { !it.hidden }.map { child ->
-        when {
-            looseW && fills(child.size.width) -> child.copy(size = child.size.copy(width = "wrap"))
-            looseH && fills(
-                child.size.height,
-            ) -> child.copy(size = child.size.copy(height = "wrap"))
-            else -> child
+    children.filter { child -> !child.hidden }.map { child ->
+        var size = child.size
+        if (looseW && fills(size.width)) {
+            size = size.copy(width = "wrap")
+        }
+        if (looseH && fills(size.height)) {
+            size = size.copy(height = "wrap")
+        }
+        if (size == child.size) {
+            child
+        } else {
+            child.copy(size = size)
         }
     }
 
 internal fun DocContext.container(node: Node, given: Dims, axis: Axis, pages: Pages) {
     // A wrapped row is as wide as its children, so one that fills it takes its content's width, as in the editor,
     // rather than a weight that takes all the room the row could grow to and pushes its siblings off; a wrapped
-    // column's children, likewise down it.
-    val looseW = node.type == "row" && node.size.width == "wrap"
-    val looseH = node.type == "column" && node.size.height == "wrap"
-    val children = node.looseChildren(looseW, looseH)
+    // column's children, likewise down it. A wrapped box uses the same rewrite on each wrap axis.
+    val looseW = (node.type == "row" || node.type == "box") && node.size.width == "wrap"
+    val looseH = (node.type == "column" || node.type == "box") && node.size.height == "wrap"
+    val children = node.looseChildren(looseW = looseW, looseH = looseH)
     // A wrapped row whose children fill its height is as tall as its tallest child, so cards side by side match,
     // rather than the fill stretching to the page; a wrapped column whose children fill its width, likewise.
-    val pinH = node.type == "row" && node.size.height == "wrap" && children.any { fills(
-        it.size.height,
-    ) }
-    val pinW = node.type == "column" && node.size.width == "wrap" && children.any { fills(
-        it.size.width,
-    ) }
+    // A wrapped box pins the same way on each wrap axis that still has fill children.
+    val pinH = (node.type == "row" || node.type == "box") &&
+        node.size.height == "wrap" &&
+        children.any { child -> fills(child.size.height) }
+    val pinW = (node.type == "column" || node.type == "box") &&
+        node.size.width == "wrap" &&
+        children.any { child -> fills(child.size.width) }
     val self = if (pinH || pinW) {
         content(
             node,
