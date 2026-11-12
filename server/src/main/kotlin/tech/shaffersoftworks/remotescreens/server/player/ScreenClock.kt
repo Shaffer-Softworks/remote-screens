@@ -33,5 +33,9 @@ class ScreenClock(
 
     /** The theme a screen wears now: its dark one in dark mode or on a dark night, else its day one. */
     fun themeIdFor(settings: ScreenSettings): String =
-        if (settings.isDarkAt(now().toLocalTime())) settings.darkTheme else settings.theme
+        if (settings.isDarkAt(now().toLocalTime())) {
+            settings.darkTheme
+        } else {
+            settings.theme
+        }
 }

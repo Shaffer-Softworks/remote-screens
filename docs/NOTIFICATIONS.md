@@ -6,7 +6,9 @@ player connection; no cloud account or Android notification permission is needed
 
 Choose individual tablets, all tablets showing selected screens, or explicitly **All paired tablets**.
 Selecting one tablet reaches only that tablet, even when others show the same screen. Overlapping
-recipients are deduplicated. Offline tablets are skipped and messages are not replayed on reconnect.
+recipients are deduplicated. Offline paired tablets are **queued** in the add-on and flushed when
+they reconnect, for as long as the notification's duration (or up to one hour for until-acknowledged
+alerts). The queue is in memory only, so an add-on restart drops pending items.
 
 ## Update all three components
 
@@ -33,7 +35,9 @@ If HA reports “Action not found,” check that the updated custom integration 
 
 One banner and one alert can exist on a tablet. New messages replace the previous message of the
 same presentation. An alert hides a banner; the banner's expiry continues while hidden.
-Reconnection clears banners. No history or offline queue is retained.
+Reconnection clears any banner that was already on the tablet, then delivers queued offline
+notifications (at most one pending banner and one pending alert per tablet; the same `tag`
+replaces an earlier queued item). Wake is kept only for items queued within the last five minutes.
 
 ## Home Assistant
 
@@ -78,8 +82,9 @@ Buttons fire the existing `remote_screens_alert_action` event with `action`, opt
 existing server-side Home Assistant action handling. Camera entities are supported on alerts only.
 
 The response contains `devices`, with `deviceId`, `name`, and `status` for each recipient:
-`sent`, `offline`, `unsupported`, or `failed`. Sent means dispatched to the connection,
-not displayed or read. An empty screen can produce an empty result.
+`sent`, `queued`, `unsupported`, or `failed`. Sent means dispatched to the connection,
+not displayed or read. Queued means the tablet was offline and the add-on will flush on
+reconnect within the TTL. An empty screen can produce an empty result.
 
 ## API and compatibility
 

@@ -14,14 +14,28 @@ internal class DemoServiceHandlers(
     private val set: (entityId: String, state: String, attrs: Map<String, JsonElement>) -> Unit,
     private val completedTodos: MutableSet<String>,
 ) {
-    fun apply(entityId: String, domain: String, service: String, data: JsonObject, current: EntityState) {
+    fun apply(
+        entityId: String,
+        domain: String,
+        service: String,
+        data: JsonObject,
+        current: EntityState,
+    ) {
         handlers[service]?.invoke(
-            ServiceCall(entityId = entityId, domain = domain, service = service, data = data, current = current),
+            ServiceCall(
+                entityId = entityId,
+                domain = domain,
+                service = service,
+                data = data,
+                current = current,
+            ),
         )
     }
 
     private fun ServiceCall.setStateFrom(key: String) {
-        str(key)?.let { set(entityId, it, emptyMap()) }
+        str(key)?.let {
+            set(entityId, it, emptyMap())
+        }
     }
 
     private fun ServiceCall.setAttr(key: String) {
@@ -34,7 +48,12 @@ internal class DemoServiceHandlers(
 
     /** Alarmo panels report the mode in `arm_mode` as well as the state; keep both in step. */
     private fun ServiceCall.armAlarm(state: String) {
-        val attrs = if ("arm_mode" in current.attributes) mapOf("arm_mode" to JsonPrimitive(state)) else emptyMap()
+        val attrs = if ("arm_mode" in current.attributes) {
+            mapOf("arm_mode" to JsonPrimitive(state))
+        } else {
+            emptyMap()
+        }
+
         set(entityId, state, attrs)
     }
 
@@ -61,6 +80,7 @@ internal class DemoServiceHandlers(
     private fun ServiceCall.turnOn() {
         if (current.domain == "scene" || current.domain == "script") return
         val attrs = mutableMapOf<String, JsonElement>()
+
         num("brightness_pct")?.let {
             attrs["brightness"] = JsonPrimitive((it * BRIGHTNESS_PCT_SCALE).toInt())
         }
@@ -220,7 +240,16 @@ internal class DemoServiceHandlers(
         const val BRIGHTNESS_PCT_SCALE = 2.55
         const val DEFAULT_TODO_COUNT = 2
 
-        fun on(domain: String) = if (domain == "cover") "open" else "on"
-        fun off(domain: String) = if (domain == "cover") "closed" else "off"
+        fun on(domain: String) = if (domain == "cover") {
+            "open"
+        } else {
+            "on"
+        }
+
+        fun off(domain: String) = if (domain == "cover") {
+            "closed"
+        } else {
+            "off"
+        }
     }
 }

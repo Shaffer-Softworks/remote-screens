@@ -49,7 +49,10 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
+import tech.shaffersoftworks.remotescreens.server.player.session.SessionDiagnostics
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 /**
  * One connected player: the documents it shows in each [Slot], kept up to date by sending only the values that
@@ -116,14 +119,13 @@ class PlayerSession(
     private var currentBanner: Pair<String, Alert>? = null
     private var bannerExpiresAt = 0L
     private val notificationMutex = Mutex()
-    private val sendFailures = java.util.concurrent.atomic.AtomicLong()
+    private val sendFailures = AtomicLong()
 
     private val host = Host()
     private val media = SessionMedia(host)
     private val documents = SessionDocument(host, media)
     private val lifecycle = SessionLifecycle(host, documents)
-    private val diagnostics =
-        tech.shaffersoftworks.remotescreens.server.player.session.SessionDiagnostics(::send)
+    private val diagnostics = SessionDiagnostics(::send)
 
     suspend fun testSentry() = diagnostics.test()
 
@@ -135,7 +137,7 @@ class PlayerSession(
         sendMutex.withLock {
             try {
                 socket.send(Frame.Text(text))
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
                 sendFailures.incrementAndGet()
@@ -221,30 +223,54 @@ class PlayerSession(
 
     suspend fun showPreview(screen: Screen) = lifecycle.showPreview(screen)
 
-    @Suppress("CyclomaticComplexMethod") // Exhaustive protocol dispatch.
+    /** Exhaustive protocol dispatch, split so each branch stays under the complexity budget. */
     suspend fun receive(message: PlayerMessage) {
+        when (message) {
+            is PlayerMessage.Hello -> Unit
+            is PlayerMessage.AppLog,
+            is PlayerMessage.SentryTestResult,
+            is PlayerMessage.Ping,
+            -> receiveControl(message)
+            is PlayerMessage.PageShown,
+            is PlayerMessage.DeviceState,
+            is PlayerMessage.Telemetry,
+            is PlayerMessage.SettingsChanged,
+            -> receiveStatus(message)
+            is PlayerMessage.Action,
+            is PlayerMessage.VideoFailed,
+            is PlayerMessage.SearchQuery,
+            is PlayerMessage.CalendarCreate,
+            is PlayerMessage.CalendarDelete,
+            is PlayerMessage.IntercomReport,
+            is PlayerMessage.NotificationAction,
+            -> receiveInteraction(message)
+        }
+    }
+
+    private suspend fun receiveControl(message: PlayerMessage) {
         when (message) {
             is PlayerMessage.AppLog -> logPlayerEntries(message)
             is PlayerMessage.SentryTestResult -> diagnostics.receive(message)
             is PlayerMessage.Ping -> send(ServerMessage.Pong)
+            else -> error("Unexpected control message: ${message::class.simpleName}")
+        }
+    }
+
+    private suspend fun receiveStatus(message: PlayerMessage) {
+        when (message) {
             is PlayerMessage.PageShown -> page = message.index
-            is PlayerMessage.DeviceState -> {
-                isAwake = message.awake
-                page = message.page
-                battery = message.battery
-                charging = message.charging
-                wifi = message.wifi
-                kiosk = message.kiosk
-                sendVars(deviceVars())
-            }
+            is PlayerMessage.DeviceState -> applyDeviceState(message)
             is PlayerMessage.Telemetry -> {
                 telemetry = message.telemetry
                 telemetryAt = System.currentTimeMillis()
             }
-            is PlayerMessage.SettingsChanged ->
-                screenId?.let { id -> context.screenService.updateSettings(
-                    id,
-                ) { message.settings } }
+            is PlayerMessage.SettingsChanged -> applySettings(message)
+            else -> error("Unexpected status message: ${message::class.simpleName}")
+        }
+    }
+
+    private suspend fun receiveInteraction(message: PlayerMessage) {
+        when (message) {
             is PlayerMessage.Action -> handleAction(message)
             is PlayerMessage.VideoFailed -> media.restartVideo(message)
             is PlayerMessage.SearchQuery -> media.runSearchQuery(message.tileId, message.query)
@@ -252,8 +278,23 @@ class PlayerSession(
             is PlayerMessage.CalendarDelete -> deleteCalendarEvent(message)
             is PlayerMessage.IntercomReport -> applyIntercom(message)
             is PlayerMessage.NotificationAction -> handleNotificationAction(message)
-            is PlayerMessage.Hello -> Unit
+            else -> error("Unexpected interaction message: ${message::class.simpleName}")
         }
+    }
+
+    private suspend fun applyDeviceState(message: PlayerMessage.DeviceState) {
+        isAwake = message.awake
+        page = message.page
+        battery = message.battery
+        charging = message.charging
+        wifi = message.wifi
+        kiosk = message.kiosk
+        sendVars(deviceVars())
+    }
+
+    private fun applySettings(message: PlayerMessage.SettingsChanged) {
+        val id = screenId ?: return
+        context.screenService.updateSettings(id) { message.settings }
     }
 
     private suspend fun logPlayerEntries(batch: PlayerMessage.AppLog) {
@@ -281,10 +322,28 @@ class PlayerSession(
         }
     }
 
-    @Suppress("CyclomaticComplexMethod")
     private suspend fun handleOutcome(outcome: TapOutcome) {
         when (outcome) {
-            is TapOutcome.Card -> documents.openCard(outcome.entityId, outcome.kind)
+            TapOutcome.Ignored -> Unit
+            is TapOutcome.Confirm,
+            is TapOutcome.Code,
+            is TapOutcome.Failed,
+            -> handleFeedback(outcome)
+            is TapOutcome.Card,
+            TapOutcome.Done,
+            TapOutcome.Rebuild,
+            -> handleDocumentOutcome(outcome)
+            is TapOutcome.OpenCalendar,
+            is TapOutcome.AgendaNotice,
+            is TapOutcome.AlarmNotice,
+            is TapOutcome.Intercom,
+            -> handleFeatureOutcome(outcome)
+        }
+        jobs.removeAll { !it.isActive }
+    }
+
+    private suspend fun handleFeedback(outcome: TapOutcome) {
+        when (outcome) {
             is TapOutcome.Confirm -> {
                 send(ServerMessage.Vars(listOf(VarValue.string(outcome.varName, outcome.text))))
                 jobs += context.scope.launch {
@@ -299,14 +358,24 @@ class PlayerSession(
                 send(ServerMessage.Toast(outcome.message))
                 documents.resync()
             }
+            else -> error("Unexpected feedback outcome: ${outcome::class.simpleName}")
+        }
+    }
+
+    private suspend fun handleDocumentOutcome(outcome: TapOutcome) {
+        when (outcome) {
+            is TapOutcome.Card -> documents.openCard(outcome.entityId, outcome.kind)
             TapOutcome.Done -> jobs += context.scope.launch {
                 delay(RESYNC_MS.milliseconds)
                 documents.resync()
             }
-            TapOutcome.Rebuild -> {
-                val main = shownDocuments[Slot.MAIN]
-                if (main != null) documents.rebuild(main)
-            }
+            TapOutcome.Rebuild -> shownDocuments[Slot.MAIN]?.let { documents.rebuild(it) }
+            else -> error("Unexpected document outcome: ${outcome::class.simpleName}")
+        }
+    }
+
+    private suspend fun handleFeatureOutcome(outcome: TapOutcome) {
+        when (outcome) {
             is TapOutcome.OpenCalendar -> send(calendarDialog(outcome))
             is TapOutcome.AgendaNotice -> publishAgendaNotice(outcome.tileId, outcome.message)
             is TapOutcome.AlarmNotice -> {
@@ -314,14 +383,13 @@ class PlayerSession(
                     outcome.tileId,
                     AlarmNotice(outcome.title, outcome.message),
                 )
-                shownDocuments[Slot.MAIN]?.let { main -> documents.rebuild(main) }
+                shownDocuments[Slot.MAIN]?.let { documents.rebuild(it) }
             }
             is TapOutcome.Intercom -> if (supportsIntercom) {
                 send(ServerMessage.IntercomCommand(outcome.verb, outcome.clientId))
             }
-            TapOutcome.Ignored -> Unit
+            else -> error("Unexpected feature outcome: ${outcome::class.simpleName}")
         }
-        jobs.removeAll { !it.isActive }
     }
 
     suspend fun showAlert(alert: Alert) = documents.showAlert(alert)
@@ -329,53 +397,74 @@ class PlayerSession(
     suspend fun notify(request: NotificationRequest): String {
         val supportsNotifications = Protocol.CAPABILITY_NOTIFICATIONS in hello.capabilities
         if (!supportsNotifications && (request.presentation == "banner" || !request.wake)) return "unsupported"
-        val alert = Alert(
-            title = request.title, message = request.message, icon = request.icon, level = request.level,
-            camera = request.camera, timeout = request.duration, tag = request.tag, wake = request.wake,
-            buttons = request.buttons.map {
-                AlertButton(
-                    title = it.title,
-                    service = it.service,
-                    data = it.data,
-                    action = it.action,
-                )
-            }.ifEmpty {
-                if (request.presentation == "alert" && request.duration == 0) {
-                    listOf(AlertButton("Acknowledge", action = "acknowledge"))
-                } else {
-                    emptyList()
-                }
-            },
-        )
+        val alert = alertFromNotification(request)
         notificationMutex.lock()
         try {
             val failuresBefore = sendFailures.get()
             if (request.presentation == "alert") {
                 documents.showAlert(alert)
             } else {
-                val id = UUID.randomUUID().toString()
-                currentBanner = id to alert
-                bannerExpiresAt = System.nanoTime() + request.duration.seconds.inWholeNanoseconds
-                if (request.wake) send(ServerMessage.Wake(true))
-                send(ServerMessage.NotificationBanner(
-                    id = id,
-                    title = alert.title,
-                    message = alert.message,
-                    level = alert.level,
-                    icon = alert.icon,
-                    buttons = alert.buttons.map { it.title },
-                    timeout = alert.timeout,
-                    iconPath = Icons.path(
-                        alert.icon ?: if (alert.level == "info") "bell-ring" else "alert",
-                    ),
-                    topInsetDp = screen()?.let { Grid.topBarHeight(it.topBar) } ?: 0f,
-                ))
+                sendNotificationBanner(alert, wake = request.wake, durationSeconds = request.duration)
             }
             check(sendFailures.get() == failuresBefore) { "Notification dispatch failed" }
         } finally {
             notificationMutex.unlock()
         }
         return "sent"
+    }
+
+    private fun alertFromNotification(request: NotificationRequest): Alert {
+        val buttons = request.buttons.map {
+            AlertButton(
+                title = it.title,
+                service = it.service,
+                data = it.data,
+                action = it.action,
+            )
+        }.ifEmpty {
+            if (request.presentation == "alert" && request.duration == 0) {
+                listOf(AlertButton("Acknowledge", action = "acknowledge"))
+            } else {
+                emptyList()
+            }
+        }
+        return Alert(
+            title = request.title,
+            message = request.message,
+            icon = request.icon,
+            level = request.level,
+            camera = request.camera,
+            timeout = request.duration,
+            tag = request.tag,
+            wake = request.wake,
+            buttons = buttons,
+        )
+    }
+
+    private suspend fun sendNotificationBanner(
+        alert: Alert,
+        wake: Boolean,
+        durationSeconds: Int,
+    ) {
+        val id = UUID.randomUUID().toString()
+        currentBanner = id to alert
+        bannerExpiresAt = System.nanoTime() + durationSeconds.seconds.inWholeNanoseconds
+        if (wake) send(ServerMessage.Wake(true))
+        send(
+            ServerMessage.NotificationBanner(
+                id = id,
+                title = alert.title,
+                message = alert.message,
+                level = alert.level,
+                icon = alert.icon,
+                buttons = alert.buttons.map { it.title },
+                timeout = alert.timeout,
+                iconPath = Icons.path(
+                    alert.icon ?: if (alert.level == "info") "bell-ring" else "alert",
+                ),
+                topInsetDp = screen()?.let { Grid.topBarHeight(it.topBar) } ?: 0f,
+            ),
+        )
     }
 
     private suspend fun handleNotificationAction(message: PlayerMessage.NotificationAction) {
@@ -411,7 +500,9 @@ class PlayerSession(
             ServerMessage.CalendarDialog(
                 mode = CalendarDialogMode.CREATE,
                 tileId = outcome.tileId,
-                calendars = outcome.calendars.map { calendar -> CalendarChoice(calendar.entityId, calendar.name) },
+                calendars = outcome.calendars.map { calendar ->
+                    CalendarChoice(calendar.entityId, calendar.name)
+                },
             )
         }
     }
@@ -426,7 +517,10 @@ class PlayerSession(
         if (!canMutateCalendar(message.tileId)) return
         when (val result = calendarMutations.create(message)) {
             is AgendaMutation.Accepted -> {
-                send(ServerMessage.CalendarDialog(CalendarDialogMode.CLOSE, message.tileId))
+                send(ServerMessage.CalendarDialog(
+                    mode = CalendarDialogMode.CLOSE,
+                    tileId = message.tileId,
+                ))
                 publishAgendaNotice(message.tileId, result.message)
             }
             is AgendaMutation.Rejected -> send(
@@ -442,6 +536,7 @@ class PlayerSession(
     private suspend fun deleteCalendarEvent(message: PlayerMessage.CalendarDelete) {
         if (!canMutateCalendar(message.tileId)) return
         send(ServerMessage.CalendarDialog(CalendarDialogMode.CLOSE, message.tileId))
+
         when (val result = calendarMutations.delete(message)) {
             is AgendaMutation.Accepted -> publishAgendaNotice(message.tileId, result.message)
             is AgendaMutation.Rejected -> publishAgendaNotice(message.tileId, result.message)
@@ -453,6 +548,7 @@ class PlayerSession(
         agendas.setNotice(tileId, message)
         val main = shownDocuments[Slot.MAIN]
         if (main != null) documents.rebuild(main)
+
         jobs += context.scope.launch {
             delay(AGENDA_NOTICE_MS.milliseconds)
             if (agendas.notice(tileId) == message) {
@@ -471,10 +567,13 @@ class PlayerSession(
         currentAlert = null
         shownDocuments.remove(Slot.ALERT)
         send(ServerMessage.Close(Slot.ALERT))
+
         if (ref.verb == "button") {
             alert.buttons.getOrNull(
                 ref.arg.toIntOrNull() ?: -1,
-            )?.let { button -> pressAlertButton(alert, button) }
+            )?.let { button ->
+                pressAlertButton(alert, button)
+            }
         }
     }
 

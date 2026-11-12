@@ -35,7 +35,12 @@ data class EntityState(
 
     val name: String
         get() = attr("friendly_name")
-            ?: entityId.substringAfter('.').replace('_', ' ').replaceFirstChar { it.uppercase() }
+            ?: entityId
+                .substringAfter('.')
+                .replace('_', ' ')
+                .replaceFirstChar {
+                    it.uppercase()
+                }
 
     val isAvailable: Boolean get() = state != "unavailable" && state != "unknown"
 

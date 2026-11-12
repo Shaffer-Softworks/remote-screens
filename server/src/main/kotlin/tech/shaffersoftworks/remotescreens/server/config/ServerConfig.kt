@@ -72,7 +72,10 @@ data class ServerConfig(
         }
 
         /** The Supervisor's token inside the Supervisor, else a token from `HA_TOKEN_FILE` or `HA_TOKEN`. */
-        private fun resolveAccessToken(env: Map<String, String>, supervisorToken: String?): String {
+        private fun resolveAccessToken(
+            env: Map<String, String>,
+            supervisorToken: String?,
+        ): String {
             val tokenFile = env["HA_TOKEN_FILE"]
             return when {
                 supervisorToken != null -> supervisorToken
@@ -82,7 +85,10 @@ data class ServerConfig(
         }
 
         /** Home Assistant's WebSocket and REST URLs: through the Supervisor's proxy, else from `HA_URL`. */
-        private fun homeAssistantUrls(env: Map<String, String>, isSupervisor: Boolean): Pair<String, String> {
+        private fun homeAssistantUrls(
+            env: Map<String, String>,
+            isSupervisor: Boolean,
+        ): Pair<String, String> {
             if (isSupervisor) return SUPERVISOR_WEBSOCKET_URL to SUPERVISOR_REST_URL
             val homeAssistantUrl = (env["HA_URL"] ?: DEFAULT_HOME_ASSISTANT_URL).trimEnd('/')
             return homeAssistantUrl.replaceFirst(
@@ -91,7 +97,10 @@ data class ServerConfig(
             ) + "/api/websocket" to "$homeAssistantUrl/api"
         }
 
-        private fun resolveDataDir(env: Map<String, String>, isSupervisor: Boolean): File {
+        private fun resolveDataDir(
+            env: Map<String, String>,
+            isSupervisor: Boolean,
+        ): File {
             val path = env["REMOTE_SCREENS_DATA"] ?: if (isSupervisor) "/data" else "data"
             return File(path).also { it.mkdirs() }
         }

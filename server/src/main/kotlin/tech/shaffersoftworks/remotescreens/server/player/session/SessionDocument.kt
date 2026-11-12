@@ -14,6 +14,7 @@ import tech.shaffersoftworks.remotescreens.server.render.ScreenRenderer
 import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Slot
+import tech.shaffersoftworks.remotescreens.shared.VarValue
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
@@ -65,54 +66,142 @@ internal class SessionDocument(
         val states = homeAssistant.states.value
         val previous = shownDocuments[slot]
         if (!force && previous != null && previous.renderedDoc.hasSameContent(renderedDoc)) {
-            previous.renderedDoc = renderedDoc
-            previous.rebuild = rebuild
-            val vars = renderedDoc.vars(states)
-            val changed = vars.values.filter { previous.sentVars[it.name] != it }
-            previous.sentVars = vars
-            if (changed.isNotEmpty()) {
-                host.send(ServerMessage.Vars(changed, renderedDoc.predictions(states, host::foresee)))
-            }
-            media.sendPictures(previous, states, isForced = false)
-            for (map in renderedDoc.docContext.maps) media.sendMap(previous, map, states)
+            reuseShownDocument(
+                shown = previous,
+                renderedDoc = renderedDoc,
+                rebuild = rebuild,
+                states = states,
+            )
             return
         }
+        val shown = adoptShownDocument(
+            slot = slot,
+            renderedDoc = renderedDoc,
+            rebuild = rebuild,
+            states = states,
+        )
+        sendDocumentMessage(
+            shown = shown,
+            states = states,
+            timeoutSeconds = timeoutSeconds,
+            wakeOnShow = wakeOnShow,
+            restartTimeout = force,
+        )
+        sendLiveAttachments(shown = shown, states = states, isForced = true)
+    }
+
+    /** Bytes match the document already on screen: keep the revision, push only changed vars and media. */
+    private suspend fun reuseShownDocument(
+        shown: ShownDocument,
+        renderedDoc: RenderedDoc,
+        rebuild: suspend () -> RenderedDoc?,
+        states: Map<String, EntityState>,
+    ) {
+        shown.renderedDoc = renderedDoc
+        shown.rebuild = rebuild
+        sendChangedVars(shown = shown, renderedDoc = renderedDoc, states = states)
+        sendLiveAttachments(shown = shown, states = states, isForced = false)
+    }
+
+    private fun adoptShownDocument(
+        slot: Slot,
+        renderedDoc: RenderedDoc,
+        rebuild: suspend () -> RenderedDoc?,
+        states: Map<String, EntityState>,
+    ): ShownDocument {
         val shown = ShownDocument(
-            slot,
-            renderedDoc,
-            rebuild,
-        ).also { it.revision = ++host.lastRevision }
-        val vars = renderedDoc.vars(states)
-        shown.sentVars = vars
+            slot = slot,
+            renderedDoc = renderedDoc,
+            rebuild = rebuild,
+        ).also { document -> document.revision = ++host.lastRevision }
+        shown.sentVars = renderedDoc.vars(states)
         shownDocuments[slot] = shown
-        val intercomVars = if (slot == Slot.MAIN && host.screen()?.hasIntercomTile() == true) {
-            IntercomVars.values(host.intercomView, context.languageRepository.current())
+        return shown
+    }
+
+    private suspend fun sendDocumentMessage(
+        shown: ShownDocument,
+        states: Map<String, EntityState>,
+        timeoutSeconds: Int,
+        wakeOnShow: Boolean,
+        restartTimeout: Boolean,
+    ) {
+        val renderedDoc = shown.renderedDoc
+        val bytes = if (host.supportsDeflate) {
+            Rc.compress(renderedDoc.bytes)
         } else {
-            emptyList()
+            renderedDoc.bytes
         }
-        val allVars = vars.values + context.screenClock.clockVars() + host.connectedVar() + host.deviceVars() +
-            intercomVars
-        val bytes = if (host.supportsDeflate) Rc.compress(renderedDoc.bytes) else renderedDoc.bytes
         host.send(
             ServerMessage.Document(
-                slot = slot,
+                slot = shown.slot,
                 rev = shown.revision,
                 data = Base64.getEncoder().encodeToString(bytes),
-                vars = allVars,
+                vars = documentVars(shown.slot, renderedDoc, states),
                 predictions = renderedDoc.predictions(states, host::foresee),
                 homePage = renderedDoc.homePage,
                 pageCount = renderedDoc.pageIds.size.coerceAtLeast(1),
                 swipePages = renderedDoc.swipePages,
                 timeout = timeoutSeconds,
                 wakeOnShow = wakeOnShow,
-                restartTimeout = force,
+                restartTimeout = restartTimeout,
                 navigationDrawer = renderedDoc.navigationDrawer,
             ),
         )
-        media.sendPictures(shown, states, isForced = true)
-        for (video in renderedDoc.docContext.videos) media.sendVideo(shown, video)
-        for (map in renderedDoc.docContext.maps) media.sendMap(shown, map, states)
-        for (search in renderedDoc.docContext.searches) media.sendSearch(shown, search)
+    }
+
+    private fun documentVars(
+        slot: Slot,
+        renderedDoc: RenderedDoc,
+        states: Map<String, EntityState>,
+    ): List<VarValue> {
+        val intercomVars = if (slot == Slot.MAIN && host.screen()?.hasIntercomTile() == true) {
+            IntercomVars.values(host.intercomView, context.languageRepository.current())
+        } else {
+            emptyList()
+        }
+        return renderedDoc.vars(states).values +
+            context.screenClock.clockVars() +
+            host.connectedVar() +
+            host.deviceVars() +
+            intercomVars
+    }
+
+    private suspend fun sendChangedVars(
+        shown: ShownDocument,
+        renderedDoc: RenderedDoc,
+        states: Map<String, EntityState>,
+    ) {
+        val vars = renderedDoc.vars(states)
+        val changed = vars.values.filter { shown.sentVars[it.name] != it }
+        shown.sentVars = vars
+        if (changed.isNotEmpty()) {
+            host.send(
+                ServerMessage.Vars(
+                    changed,
+                    renderedDoc.predictions(states, host::foresee),
+                ),
+            )
+        }
+    }
+
+    /** Pictures and maps always; when [isForced], also send videos and search overlays. */
+    private suspend fun sendLiveAttachments(
+        shown: ShownDocument,
+        states: Map<String, EntityState>,
+        isForced: Boolean,
+    ) {
+        media.sendPictures(shown, states, isForced = isForced)
+        for (map in shown.renderedDoc.docContext.maps) {
+            media.sendMap(shown, map, states)
+        }
+        if (!isForced) return
+        for (video in shown.renderedDoc.docContext.videos) {
+            media.sendVideo(shown, video)
+        }
+        for (search in shown.renderedDoc.docContext.searches) {
+            media.sendSearch(shown, search)
+        }
     }
 
     /** Sends what changed in [states]; a document whose structure depends on a changed entity is built again. */
@@ -125,19 +214,8 @@ internal class SessionDocument(
                 rebuild(shown)
                 continue
             }
-            val vars = shown.renderedDoc.vars(states)
-            val changed = vars.values.filter { shown.sentVars[it.name] != it }
-            shown.sentVars = vars
-            if (changed.isNotEmpty()) {
-                host.send(
-                    ServerMessage.Vars(
-                        changed,
-                        shown.renderedDoc.predictions(states, host::foresee),
-                    ),
-                )
-            }
-            media.sendPictures(shown, states, isForced = false)
-            for (map in shown.renderedDoc.docContext.maps) media.sendMap(shown, map, states)
+            sendChangedVars(shown = shown, renderedDoc = shown.renderedDoc, states = states)
+            sendLiveAttachments(shown = shown, states = states, isForced = false)
         }
     }
 
@@ -151,6 +229,7 @@ internal class SessionDocument(
             val vars = shown.renderedDoc.vars(states)
             val changed = vars.values.filter { shown.sentVars[it.name] != it }
             if (changed.isEmpty()) continue
+
             shown.sentVars = vars
             host.send(
                 ServerMessage.Vars(
@@ -170,7 +249,10 @@ internal class SessionDocument(
                 }
                 .getOrNull()
         } ?: return
-        if (shownDocuments[shown.slot] === shown) show(shown.slot, renderedDoc, shown.rebuild)
+
+        if (shownDocuments[shown.slot] === shown) {
+            show(shown.slot, renderedDoc, shown.rebuild)
+        }
     }
 
     /** Sends every value again: after a tap whose prediction Home Assistant did not confirm. */
@@ -201,7 +283,11 @@ internal class SessionDocument(
             )
         }
         val renderedDoc = buildMutex.withLock { build() } ?: return
-        show(Slot.OVERLAY, renderedDoc, build)
+        show(
+            slot = Slot.OVERLAY,
+            renderedDoc = renderedDoc,
+            rebuild = build,
+        )
     }
 
     suspend fun showAlert(alert: Alert) {

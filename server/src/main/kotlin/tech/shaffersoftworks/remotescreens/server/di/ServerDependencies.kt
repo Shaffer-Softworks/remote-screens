@@ -26,6 +26,8 @@ import tech.shaffersoftworks.remotescreens.server.intercom.SignalingService
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import tech.shaffersoftworks.remotescreens.server.service.AdbService
+import tech.shaffersoftworks.remotescreens.server.service.SentryMappingService
 
 /** The composition root: every long-lived object of the server, built once and wired by hand. */
 class ServerDependencies(
@@ -49,6 +51,7 @@ class ServerDependencies(
     val backgroundStore = BackgroundStore(config.dataDir)
     val playerApkRepository = PlayerApkRepository(config.apkDir)
     val apiKeyRepository = ApiKeyRepository(config.dataDir)
+
     private val renderDataRepository = RenderDataRepository(homeAssistant)
     private val pictureRepository = PictureRepository(
         homeAssistant = homeAssistant,
@@ -56,6 +59,7 @@ class ServerDependencies(
         tileUrl = config.mapTileUrl,
         backgroundStore = backgroundStore,
     )
+
     private val languageRepository = LanguageRepository(homeAssistant, layoutRepository)
     private val actionRouter = ActionRouter(
         homeAssistant,
@@ -63,7 +67,7 @@ class ServerDependencies(
         renderDataRepository,
     )
 
-    val sentryMappings = tech.shaffersoftworks.remotescreens.server.service.SentryMappingService(
+    val sentryMappings = SentryMappingService(
         config.dataDir,
         playerApkRepository,
         { layoutRepository.layout.value.preferences.sentry },
@@ -77,7 +81,7 @@ class ServerDependencies(
         playerPort = config.playerPort,
         defaultHost = { siteLocalAddress()?.hostAddress },
     )
-    val adbService = tech.shaffersoftworks.remotescreens.server.service.AdbService(config.dataDir, playerApkRepository)
+    val adbService = AdbService(config.dataDir, playerApkRepository)
     val signaling = SignalingService(scope)
 
     val playerHub = PlayerHub(
@@ -100,15 +104,19 @@ class ServerDependencies(
 
     fun start() {
         homeAssistantClient?.start()
+
         if (config.isDemo && layoutRepository.layout.value.screens.isEmpty()) {
             layoutRepository.update { it.copy(screens = listOf(DemoLayout.screen())) }
         }
+
         sentryMappings.start(scope)
         playerHub.start()
         signaling.start()
         scope.launch {
             homeAssistant.isConnected.collect { isConnected ->
-                if (isConnected) languageRepository.loadHomeAssistantWords()
+                if (isConnected) {
+                    languageRepository.loadHomeAssistantWords()
+                }
             }
         }
     }

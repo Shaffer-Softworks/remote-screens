@@ -10,6 +10,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.statement.readRawBytes
 import io.ktor.http.isSuccess
+import kotlinx.coroutines.CompletableDeferred
 import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
@@ -34,6 +35,7 @@ class PictureRepository(
 ) {
     private val logger = LoggerFactory.getLogger(PictureRepository::class.java)
     private val tileCache = ConcurrentHashMap<String, BufferedImage>()
+    private val inflightLoads = ConcurrentHashMap<String, CompletableDeferred<ByteArray?>>()
     private val mapRenderer = MapRenderer(::tile)
 
     /** What the picture currently comes from: when it changes, the picture is sent again. */
@@ -55,8 +57,32 @@ class PictureRepository(
         else -> slot.source
     }
 
-    /** The picture of [slot] at its size, as JPEG or (when round) PNG; null when it cannot be had. */
-    suspend fun load(slot: PictureSlot, states: Map<String, EntityState>): ByteArray? = runCatching {
+    /**
+     * The picture of [slot] at its size, as JPEG or (when round) PNG; null when it cannot be had.
+     * Concurrent loads of the same source and size share one fetch across tablets.
+     */
+    suspend fun load(slot: PictureSlot, states: Map<String, EntityState>): ByteArray? {
+        val cacheKey = loadCacheKey(slot, states)
+        while (true) {
+            val existing = inflightLoads[cacheKey]
+            if (existing != null) return existing.await()
+            val created = CompletableDeferred<ByteArray?>()
+            if (inflightLoads.putIfAbsent(cacheKey, created) != null) continue
+            try {
+                created.complete(loadOnce(slot, states))
+            } finally {
+                inflightLoads.remove(cacheKey, created)
+            }
+            return created.await()
+        }
+    }
+
+    private fun loadCacheKey(slot: PictureSlot, states: Map<String, EntityState>): String {
+        val source = sourceKey(slot, states) ?: slot.source
+        return "$source|${slot.widthPx}x${slot.heightPx}|${slot.crop}|${slot.round}"
+    }
+
+    private suspend fun loadOnce(slot: PictureSlot, states: Map<String, EntityState>): ByteArray? = runCatching {
         val image = when {
             slot.source.startsWith(BackgroundStore.FILE_PREFIX) ->
                 backgroundStore?.resolve(slot.source)?.let { ImageIO.read(it) }

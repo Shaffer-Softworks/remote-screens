@@ -19,7 +19,11 @@ class LightsActions(
     private val homeAssistant: HomeAssistant,
     private val renderData: RenderDataRepository?,
 ) {
-    suspend fun handle(verb: String, arg: String, target: TapTarget): TapOutcome {
+    suspend fun handle(
+        verb: String,
+        arg: String,
+        target: TapTarget,
+    ): TapOutcome {
         val tileId = target.tile?.id
         val store = renderData?.lightsUi
         val isHandled = when {
@@ -32,10 +36,20 @@ class LightsActions(
             )
             else -> changePage(store = store, tileId = tileId, verb = verb, arg = arg)
         }
-        return if (isHandled) TapOutcome.Rebuild else TapOutcome.Ignored
+
+        return if (isHandled) {
+            TapOutcome.Rebuild
+        } else {
+            TapOutcome.Ignored
+        }
     }
 
-    private fun changePage(store: LightsUiStore, tileId: String, verb: String, arg: String): Boolean {
+    private fun changePage(
+        store: LightsUiStore,
+        tileId: String,
+        verb: String,
+        arg: String,
+    ): Boolean {
         val mode = LightDetailMode.of(arg)
         when (verb) {
             "lights_room" -> store.selectRoom(tileId, arg)
@@ -47,30 +61,50 @@ class LightsActions(
         return verb != "lights_mode" || mode != null
     }
 
-    private suspend fun changeLight(store: LightsUiStore, tileId: String, verb: String, arg: String): Boolean {
+    private suspend fun changeLight(
+        store: LightsUiStore,
+        tileId: String,
+        verb: String,
+        arg: String,
+    ): Boolean {
         if (verb == "lights_effect") {
             store.setEffectMenuOpen(tileId, false)
             turnOnDetailLight(tileId, "effect" to JsonPrimitive(arg))
             return true
         }
         val index = arg.toIntOrNull()
-        if (index != null) pickSwatch(tileId, index)
+        if (index != null) {
+            pickSwatch(tileId, index)
+        }
+
         return index != null
     }
 
     /** RPI's swatch tap: the swatch is ringed, and a light that takes colour turns to it. */
     private suspend fun pickSwatch(tileId: String, index: Int) {
         val colour = Rpi.LightDetailPalette.getOrNull(index) ?: return
-        renderData?.lightsUi?.selectPalette(tileId, index)
+        renderData?.lightsUi?.selectPalette(tileId = tileId, index = index)
         val entityId = renderData?.lightsUi?.state(tileId)?.detailEntityId
+
         if (entityId != null && homeAssistant.states.value[entityId]?.supportsRgbColor() == true) {
-            val channels = listOf(colour.red(), colour.green(), colour.blue()).map { JsonPrimitive(it) }
+            val channels = listOf(
+                colour.red(),
+                colour.green(),
+                colour.blue(),
+            ).map {
+                JsonPrimitive(it)
+            }
+
             turnOnDetailLight(tileId, "rgb_color" to JsonArray(channels))
         }
     }
 
     private suspend fun turnOnDetailLight(tileId: String, field: Pair<String, JsonElement>) {
         val entityId = renderData?.lightsUi?.state(tileId)?.detailEntityId ?: return
-        homeAssistant.callService("light", "turn_on", JsonObject(mapOf("entity_id" to JsonPrimitive(entityId), field)))
+        homeAssistant.callService(
+            domain = "light",
+            service = "turn_on",
+            data = JsonObject(mapOf("entity_id" to JsonPrimitive(entityId), field)),
+        )
     }
 }
