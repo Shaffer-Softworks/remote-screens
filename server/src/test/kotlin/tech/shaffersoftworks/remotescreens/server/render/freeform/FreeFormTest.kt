@@ -449,6 +449,48 @@ class FreeFormTest {
     }
 
     @Test
+    fun aComponentThatFillsAWrappedBoxTakesItsContentsSize() {
+        fun chip(fill: String) = Node(
+            "root",
+            "box",
+            size = NodeSize("wrap", "wrap"),
+            children = listOf(
+                Node(
+                    "words",
+                    "column",
+                    size = NodeSize(fill, fill),
+                    props = mapOf("gap" to "4"),
+                    children = listOf(
+                        Node(
+                            "name",
+                            "text",
+                            size = NodeSize("fill", "wrap"),
+                            props = mapOf("text" to "mike"),
+                        ),
+                        Node(
+                            "where",
+                            "text",
+                            size = NodeSize("fill", "wrap"),
+                            props = mapOf("text" to "home"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val wrapped = ScreenRenderer.render(screen(chip("wrap")), tablet, input()).bytes
+        assertTrue(
+            wrapped.contentEquals(
+                ScreenRenderer.render(screen(chip("fill")), tablet, input()).bytes,
+            ),
+        )
+        assertTrue(
+            wrapped.contentEquals(
+                ScreenRenderer.render(screen(chip("weight:2")), tablet, input()).bytes,
+            ),
+        )
+    }
+
+    @Test
     fun aComponentAlignsOnItsOwnWithinItsParent() {
         fun boxes(place: String?): List<Pair<Int, Int>> {
             val card = Node("card", "column", size = NodeSize("fill", "wrap"), children = listOf(
