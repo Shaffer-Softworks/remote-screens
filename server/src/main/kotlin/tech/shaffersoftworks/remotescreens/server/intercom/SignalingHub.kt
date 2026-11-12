@@ -20,7 +20,11 @@ internal class SignalingHub(
 ) {
     data class Outbound(val sessionId: String, val json: String)
 
-    data class DeferredSend(val sessionId: String, val json: String, val delayMs: Long)
+    data class DeferredSend(
+        val sessionId: String,
+        val json: String,
+        val delayMs: Long
+    )
 
     data class Outcome(
         val sends: List<Outbound> = emptyList(),
@@ -49,10 +53,15 @@ internal class SignalingHub(
         val data = runCatching { Json.parseToJsonElement(text).jsonObject }.getOrNull() ?: return Outcome()
         val type = data.field("type") ?: return Outcome()
         if (type == TYPE_REGISTER) return register(sessionId, data)
-        val info = sessions[sessionId]
-        if (info == null) {
-            return Outcome(sends = listOf(error(sessionId, ERROR_NOT_REGISTERED)))
-        }
+        val info = sessions[sessionId] ?: return Outcome(
+            sends = listOf(
+                error(
+                    sessionId,
+                    ERROR_NOT_REGISTERED
+                )
+            )
+        )
+
         info.lastActivity = now()
         when (type) {
             TYPE_OFFER -> offer(sessionId, info, data)
@@ -86,6 +95,7 @@ internal class SignalingHub(
         val displayName = data.field("displayName")?.trim()?.takeIf { it.isNotEmpty() }
         val previousSessionId = clientSessions[clientId]
         val previous = previousSessionId?.let { sessions[it] }
+
         clientSessions[clientId] = sessionId
         sessions[sessionId] = SessionInfo(
             clientId = clientId,
@@ -93,8 +103,10 @@ internal class SignalingHub(
             lastActivity = now(),
             inCallWith = null,
         )
+
         val sends = mutableListOf<Outbound>()
         val close = mutableListOf<String>()
+
         if (previousSessionId != null && previousSessionId != sessionId) {
             clearPeer(clientId, previous?.inCallWith, sends)
             sessions.remove(previousSessionId)
@@ -207,12 +219,12 @@ internal class SignalingHub(
 
     private fun rosterJson(): String {
         val clients = buildJsonArray {
-            for (view in views()) {
+            for ((clientId, displayName, inCall) in views()) {
                 add(
                     buildJsonObject {
-                        put("clientId", view.clientId)
-                        put("displayName", view.displayName?.let { JsonPrimitive(it) } ?: JsonNull)
-                        put("inCall", view.inCall)
+                        put("clientId", clientId)
+                        put("displayName", displayName?.let { JsonPrimitive(it) } ?: JsonNull)
+                        put("inCall", inCall)
                     },
                 )
             }

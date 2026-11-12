@@ -103,11 +103,14 @@ class HomeAssistantClient(
                 } catch (e: Exception) {
                     logger.warn("Home Assistant connection lost: {}", e.message)
                 }
+
                 _isConnected.value = false
                 session = null
-                pendingCommands.values.forEach { it.completeExceptionally(
-                    IllegalStateException("disconnected"),
-                ) }
+
+                pendingCommands.values.forEach {
+                    it.completeExceptionally(IllegalStateException("disconnected"))
+                }
+
                 pendingCommands.clear()
                 delay(backoffMs.milliseconds)
                 backoffMs = (backoffMs * 2).coerceAtMost(MAX_BACKOFF_MS)
@@ -118,7 +121,9 @@ class HomeAssistantClient(
     private suspend fun connectAndListen() {
         httpClient.webSocket(urlString = webSocketUrl) {
             val greeting = readJson()
+
             check(greeting.type == "auth_required") { "unexpected greeting" }
+
             val auth = buildJsonObject {
                 put("type", "auth")
                 put("access_token", accessToken)
@@ -149,15 +154,35 @@ class HomeAssistantClient(
 
     /** Config, every state, then the events we follow. */
     private suspend fun loadInitialState() {
-        command("get_config")?.jsonObject?.let { haConfig -> _config.value = parseConfig(haConfig) }
+        command("get_config")?.jsonObject?.let {
+            haConfig -> _config.value = parseConfig(haConfig)
+        }
+
         val allStates = command(
             "get_states",
-        )?.jsonArray.orEmpty().mapNotNull { parseState(it.jsonObject) }
+        )?.jsonArray.orEmpty().mapNotNull {
+            parseState(it.jsonObject)
+        }
+
         _states.value = allStates.associateBy { it.entityId }
-        command("subscribe_events", buildJsonObject { put("event_type", "state_changed") })
+        command(
+            type = "subscribe_events",
+            payload = buildJsonObject {
+                put(
+                    key = "event_type",
+                    value = "state_changed"
+                )
+            }
+        )
+
         for (eventType in FOLLOWED_EVENTS) command(
-            "subscribe_events",
-            buildJsonObject { put("event_type", eventType) },
+            type = "subscribe_events",
+            payload = buildJsonObject {
+                put(
+                    key = "event_type",
+                    value = eventType
+                )
+            },
         )
     }
 
@@ -176,7 +201,9 @@ class HomeAssistantClient(
         if (eventType == "state_changed") {
             val entityId = data["entity_id"]?.jsonPrimitive?.content ?: return
             val newState = (data["new_state"] as? JsonObject)?.let(::parseState)
-            _states.update { states -> if (newState == null) states - entityId else states + (entityId to newState) }
+            _states.update {
+                states -> if (newState == null) states - entityId else states + (entityId to newState)
+            }
         }
         _events.tryEmit(HomeAssistantEvent(eventType, data))
     }
@@ -189,7 +216,9 @@ class HomeAssistantClient(
         val body = JsonObject(
             payload + mapOf("id" to JsonPrimitive(id), "type" to JsonPrimitive(type)),
         )
+
         sendMutex.withLock { activeSession.send(Frame.Text(body.toString())) }
+
         val result = withTimeout(COMMAND_TIMEOUT_MS.milliseconds) { response.await() }
         if (result["success"]?.jsonPrimitive?.content != "true") {
             val error = result["error"]?.jsonObject
@@ -198,6 +227,7 @@ class HomeAssistantClient(
                 message = error?.get("message")?.jsonPrimitive?.contentOrNull ?: "failed",
             )
         }
+
         return result["result"]
     }
 
@@ -212,8 +242,14 @@ class HomeAssistantClient(
             put("domain", domain)
             put("service", service)
             put("service_data", JsonObject(data - "entity_id"))
-            if (target != null) put("target", buildJsonObject { put("entity_id", target) })
-            if (returnResponse) put("return_response", true)
+            
+            if (target != null) {
+                put("target", buildJsonObject { put("entity_id", target) })
+            }
+
+            if (returnResponse) {
+                put("return_response", true)
+            }
         }
         return command("call_service", payload)
     }

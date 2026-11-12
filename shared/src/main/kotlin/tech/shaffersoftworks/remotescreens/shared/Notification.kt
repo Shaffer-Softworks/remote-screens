@@ -57,7 +57,10 @@ data class NotificationButton(
     val action: String? = null,
 )
 
-/** sent means dispatched to the connection, not displayed or read. */
+/**
+ * Per-tablet delivery row. `sent` means dispatched on the live connection (not displayed or read).
+ * `queued` means the tablet was offline and the add-on will flush within the notification TTL on reconnect.
+ */
 @Serializable
 data class NotificationDelivery(val deviceId: String, val name: String, val status: String)
 

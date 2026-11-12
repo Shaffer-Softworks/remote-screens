@@ -14,7 +14,6 @@ import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 import java.util.Base64
 
-private const val MS_PER_SECOND = 1000L
 private const val MAP_CARD_PICTURE = "map.card"
 
 /** Camera video streams, interactive maps, music search, and picture bitmaps for a [SessionHost]. */
@@ -35,12 +34,14 @@ internal class SessionMedia(
                 showCameraStillFallback(shown, video)
                 return@launch
             }
+
             val path = context.cameraStreamService.hlsPath(video.entityId)
             if (shownDocuments[shown.slot] !== shown) return@launch
             if (path == null) {
                 showCameraStillFallback(shown, video)
                 return@launch
             }
+
             host.send(
                 ServerMessage.Video(
                     slot = shown.slot,
@@ -55,7 +56,11 @@ internal class SessionMedia(
     }
 
     /** Tells a map-capable player the pins and tile URL for [map]; no-op for older players (they get the still). */
-    fun sendMap(shown: ShownDocument, map: LiveMap, states: Map<String, EntityState>) {
+    fun sendMap(
+        shown: ShownDocument,
+        map: LiveMap,
+        states: Map<String, EntityState>
+    ) {
         if (!host.supportsMap) return
         context.scope.launch {
             if (shownDocuments[shown.slot] !== shown) return@launch
@@ -72,6 +77,7 @@ internal class SessionMedia(
                     picture = pictureName,
                 )
             }
+
             host.send(
                 ServerMessage.LiveMap(
                     slot = shown.slot,
@@ -165,26 +171,47 @@ internal class SessionMedia(
         )
     }
 
-    fun sendPictures(shown: ShownDocument, states: Map<String, EntityState>, isForced: Boolean) {
+    fun sendPictures(
+        shown: ShownDocument,
+        states: Map<String, EntityState>,
+        isForced: Boolean,
+    ) {
         val nowMs = System.currentTimeMillis()
         // Interactive map players draw OSM themselves; skip the server-drawn map still.
         val pictures = shown.renderedDoc.docContext.pictures
             .filterNot { host.supportsMap && it.name == MAP_CARD_PICTURE }
+
         for (picture in pictures) {
             val sourceKey = context.pictureRepository.sourceKey(picture, states)
-            val lastSentMs = shown.pictureSentAtMs[picture.name] ?: 0
-            val isDue = picture.refreshSeconds > 0 && nowMs - lastSentMs >= picture.refreshSeconds * MS_PER_SECOND
-            if (!isForced && !isDue && shown.pictureKeys[picture.name] == sourceKey) continue
-            shown.pictureKeys[picture.name] = sourceKey
-            shown.pictureSentAtMs[picture.name] = nowMs
+            if (!shown.beginPictureFetch(
+                    name = picture.name,
+                    sourceKey = sourceKey,
+                    nowMs = nowMs,
+                    isForced = isForced,
+                    refreshSeconds = picture.refreshSeconds,
+                )
+            ) {
+                continue
+            }
             context.scope.launch {
-                val bytes = context.pictureRepository.load(picture, states) ?: return@launch
-                if (shownDocuments[shown.slot] === shown) {
+                var isSuccess = false
+                try {
+                    val bytes = context.pictureRepository.load(picture, states) ?: return@launch
+                    if (shownDocuments[shown.slot] !== shown) return@launch
+                    if (shown.pictureInflightKeys[picture.name] != sourceKey) return@launch
                     host.send(
                         ServerMessage.Bitmap(
                             picture.name,
                             Base64.getEncoder().encodeToString(bytes),
                         ),
+                    )
+                    isSuccess = true
+                } finally {
+                    shown.finishPictureFetch(
+                        name = picture.name,
+                        sourceKey = sourceKey,
+                        nowMs = System.currentTimeMillis(),
+                        isSuccess = isSuccess,
                     )
                 }
             }
@@ -192,7 +219,11 @@ internal class SessionMedia(
     }
 
     /** Asks Home Assistant for an HLS path in the background so [sendVideo] can reuse a warm stream. */
-    fun warmCameraStream(entityId: String? = null, kind: String? = null, camera: String? = null) {
+    fun warmCameraStream(
+        entityId: String? = null,
+        kind: String? = null,
+        camera: String? = null
+    ) {
         if (!host.supportsVideo) return
         val id = when {
             !camera.isNullOrBlank() -> camera

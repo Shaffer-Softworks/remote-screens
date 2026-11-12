@@ -33,18 +33,25 @@ import tech.shaffersoftworks.remotescreens.shared.Catalogue
  * overlay slot; its taps name the entity as `e:<entity_id>`, so they work whichever tile opened it.
  */
 object CardRenderer {
-    fun render(entityId: String, kind: String?, device: Device, input: RenderInput): RenderedDoc {
+    fun render(
+        entityId: String,
+        kind: String?,
+        device: Device,
+        input: RenderInput
+    ): RenderedDoc {
         val entityState = input.states[entityId]
         val spec = Catalogue.of(kind ?: entityId.substringBefore('.'))
-        val card = when {
-            kind == "history" -> "history"
-            kind == "energy" -> "energy"
+        val card = when (kind) {
+            "history" -> "history"
+            "energy" -> "energy"
             else -> spec?.card ?: "toggle"
         }
+
         val panelW = minOf(
             device.widthDp - CardChrome.PANEL_MARGIN_DP,
             CardChrome.PANEL_MAX_WIDTH_DP,
         )
+
         val panelH = device.heightDp - CardChrome.CLOSE_KEY_DP
         val (bytes, docContext) = DocContext.build(
             widthPx = device.widthPx,
@@ -53,12 +60,14 @@ object CardRenderer {
             newContext = { input.context(device) },
         ) { docContext ->
             if (card != "energy") docContext.bindEntity(entityId)
+
             docContext.bindTileColors(
                 tileId = TILE,
                 entityId = entityId,
                 pastel = Pastel.forDomain(entityState?.domain),
                 alwaysOn = card in setOf("camera", "map", "energy", "history"),
             )
+
             Box(
                 docContext.tap(
                     Modifier.fillMaxSize().background(docContext.role(Role.SCRIM)),
@@ -82,6 +91,7 @@ object CardRenderer {
                 ) {
                     docContext.header(entityId, card)
                     docContext.gap(CardChrome.SECTION_GAP_DP)
+
                     Column(Modifier.fillMaxWidth().verticalWeight(1f).keptVerticalScroll("card.$entityId")) {
                         val body = panelW - CardChrome.CLOSE_KEY_DP
                         when (card) {

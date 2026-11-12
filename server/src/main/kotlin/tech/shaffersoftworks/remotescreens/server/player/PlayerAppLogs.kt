@@ -23,6 +23,7 @@ class PlayerAppLogs {
     /** Returns the event IDs to acknowledge: entries written now or earlier. A batch over the limit gets none. */
     fun write(deviceId: String, entries: List<AppLogEntry>): List<String> {
         if (entries.size > Protocol.MAX_APP_LOG_BATCH) return emptyList()
+
         return synchronized(written) {
             entries.filter { entry -> entry.eventId.isNotBlank() && entry.eventId.length <= MAX_EVENT_ID }
                 .onEach { entry ->

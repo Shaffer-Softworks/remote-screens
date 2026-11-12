@@ -4,6 +4,7 @@ import android.content.Context
 import coil3.EventListener
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
+import coil3.annotation.ExperimentalCoilApi
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.network.cachecontrol.CacheControlCacheStrategy
@@ -25,6 +26,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object ImageLoaderModule {
 
+    @OptIn(ExperimentalCoilApi::class)
     @Provides
     @Singleton
     @HaImageLoaderQualifier

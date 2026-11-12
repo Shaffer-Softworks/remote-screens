@@ -11,7 +11,6 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
 import tech.shaffersoftworks.remotescreens.server.render.panels.thermostat.usesDualSetpoint
-
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcTextAlign
@@ -31,6 +30,7 @@ internal fun DocContext.climateCard(entityId: String, entityState: EntityState?)
         }
     val dualSetpoint = entityState.usesDualSetpoint()
     gap(CardChrome.PANEL_CORNER_DP)
+
     if (dualSetpoint) {
         climateDualSetpoint(entityId, entityState, step)
     } else {
@@ -45,6 +45,7 @@ internal fun DocContext.climateCard(entityId: String, entityState: EntityState?)
                 widthDp = CardChrome.STEPPER_KEY_DP,
                 round = true,
             )
+
             Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
                 doc.label(
                     text = doc.i18n.t("ui.target"),
@@ -77,7 +78,11 @@ internal fun DocContext.climateCard(entityId: String, entityState: EntityState?)
     }
     if (modes.isNotEmpty()) {
         section(i18n.t("ui.mode"))
-        flowKeys(entityId, "mode", modes.map { it to i18n.state("climate", it) }) { it.state }
+        flowKeys(entityId, "mode", modes.map {
+            it to i18n.state("climate", it)
+        }) {
+            it.state
+        }
     }
     val presets = entityState?.list("preset_modes").orEmpty()
     if (presets.isNotEmpty()) {

@@ -29,6 +29,7 @@ internal class SessionLifecycle(
             // Leave the stored screen and token alone; the hub refuses this Hello.
             return
         }
+
         layoutRepository.update { layout ->
             val updated = (record ?: PlayerRecord(host.hello.deviceId, host.hello.deviceName)).copy(
                 widthDp = host.hello.widthDp,
@@ -42,11 +43,13 @@ internal class SessionLifecycle(
                 players = layout.players.filterNot { it.deviceId == host.hello.deviceId } + updated,
             )
         }
+
         val screen = if (isTrusted) {
             layoutRepository.layout.value.screens.firstOrNull { it.id == record?.screenId }
         } else {
             null
         }
+
         if (screen == null) {
             host.screenId = null
             val code = host.pairingCode ?: host.newPairingCode()
@@ -62,6 +65,7 @@ internal class SessionLifecycle(
             )
             return
         }
+
         host.pairingCode = null
         host.screenId = screen.id
         host.send(
@@ -78,7 +82,10 @@ internal class SessionLifecycle(
 
     suspend fun adopted(token: String?) {
         host.pairingCode = null
-        host.screenId = layoutRepository.layout.value.players.firstOrNull { it.deviceId == host.hello.deviceId }?.screenId
+        host.screenId = layoutRepository.layout.value.players.firstOrNull {
+            it.deviceId == host.hello.deviceId
+        }?.screenId
+
         val screen = host.screen() ?: return welcome()
         host.send(
             ServerMessage.Welcome(
@@ -111,17 +118,21 @@ internal class SessionLifecycle(
         context.playerApkRepository.current()
             ?.takeIf { it.versionCode > host.hello.appVersion }
             ?.let { apk -> host.send(
-                ServerMessage.UpdateAvailable(apk.versionCode, apk.versionName, "/player/apk"),
+                ServerMessage.UpdateAvailable(
+                    versionCode = apk.versionCode,
+                    versionName = apk.versionName,
+                    path = "/player/apk"
+                ),
             ) }
     }
 
     /** Rebuilds every document when night switches the screen to or from its dark theme. */
     suspend fun checkNight() {
         val screen = host.screen() ?: return
-        if (applyTheme(
-                screen.settings,
-            )) {
-            for (shown in shownDocuments.values.toList()) documents.rebuild(shown)
+        if (applyTheme(screen.settings)) {
+            for (shown in shownDocuments.values.toList()) {
+                documents.rebuild(shown)
+            }
         }
     }
 
@@ -131,11 +142,17 @@ internal class SessionLifecycle(
             closeAll()
             return welcome()
         }
+
         if (screen == null) return
         val main = shownDocuments[Slot.MAIN]
         applyTheme(screen.settings)
         sendChrome(screen)
-        if (main != null) documents.rebuild(main) else documents.showMain(screen)
+
+        if (main != null) {
+            documents.rebuild(main)
+        } else {
+            documents.showMain(screen)
+        }
     }
 
     suspend fun showPreview(screen: Screen) {
@@ -162,7 +179,10 @@ internal class SessionLifecycle(
     }
 
     private suspend fun sendChrome(screen: Screen) {
-        host.send(ServerMessage.Settings(screen.settings, layoutRepository.layout.value.preferences.sentry))
+        host.send(ServerMessage.Settings(
+            settings = screen.settings,
+            sentry = layoutRepository.layout.value.preferences.sentry
+        ))
         host.send(intercomConfig(screen))
     }
 
@@ -182,7 +202,9 @@ internal class SessionLifecycle(
 
     suspend fun closeAll() {
         for (slot in listOf(Slot.OVERLAY, Slot.ALERT)) {
-            if (shownDocuments.remove(slot) != null) host.send(ServerMessage.Close(slot))
+            if (shownDocuments.remove(slot) != null) {
+                host.send(ServerMessage.Close(slot))
+            }
         }
         host.currentAlert = null
     }

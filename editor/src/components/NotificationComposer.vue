@@ -139,7 +139,13 @@ async function send(): Promise<void> {
         <p v-else>Dispatch results (sent means sent to the connection, not read):</p>
         <ul>
           <li v-for="device in result.devices" :key="device.deviceId">
-            {{ device.name }}: {{ device.status === 'unsupported' ? 'Unsupported · update the player or use an alert with wake enabled' : device.status }}
+            {{ device.name }}: {{
+              device.status === 'unsupported'
+                ? 'Unsupported · update the player or use an alert with wake enabled'
+                : device.status === 'queued'
+                  ? 'Queued · will deliver when the tablet reconnects'
+                  : device.status
+            }}
           </li>
         </ul>
       </section>

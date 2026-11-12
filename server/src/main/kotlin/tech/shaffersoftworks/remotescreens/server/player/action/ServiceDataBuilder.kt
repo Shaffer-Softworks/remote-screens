@@ -136,7 +136,11 @@ object ServiceDataBuilder {
         }
 
     /** An argument of `+0.5` or `-10` counts from the entity's current value, within its limits. */
-    fun resolveArg(action: ActionSpec, arg: String, entity: EntityState?): String {
+    fun resolveArg(
+        action: ActionSpec,
+        arg: String,
+        entity: EntityState?
+    ): String {
         val relativeTo = action.relative
         val delta = arg.takeIf { it.startsWith('+') || it.startsWith('-') }?.toDoubleOrNull()
         if (relativeTo == null || entity == null || delta == null) return arg
@@ -152,6 +156,7 @@ object ServiceDataBuilder {
         }
         val (_, operator, factor) = parseExpression(expression)
         val number = arg.toDoubleOrNull()
+
         return if (number == null) {
             JsonPrimitive(arg)
         } else {

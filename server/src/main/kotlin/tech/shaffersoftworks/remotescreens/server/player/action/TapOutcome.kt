@@ -20,7 +20,11 @@ sealed interface TapOutcome {
     data class Confirm(val varName: String, val text: String) : TapOutcome
 
     /** A key of a keypad was pressed; [shown] is the code so far, masked. [extra] lights an alarm page's pin dots. */
-    data class Code(val varName: String, val shown: String, val extra: List<VarValue> = emptyList()) : TapOutcome
+    data class Code(
+        val varName: String,
+        val shown: String,
+        val extra: List<VarValue> = emptyList()
+    ) : TapOutcome
 
     data class Failed(val message: String) : TapOutcome
 
@@ -36,7 +40,11 @@ sealed interface TapOutcome {
     data class AgendaNotice(val tileId: String, val message: String) : TapOutcome
 
     /** Show RPI's dialog with [title] and [message] over the alarm page of [tileId] until it is dismissed. */
-    data class AlarmNotice(val tileId: String, val title: String, val message: String) : TapOutcome
+    data class AlarmNotice(
+        val tileId: String,
+        val title: String,
+        val message: String
+    ) : TapOutcome
 
     /** Tell this tablet to call, hang up, or mute. [clientId] is the station to call. */
     data class Intercom(val verb: String, val clientId: String) : TapOutcome

@@ -21,7 +21,7 @@ export interface NotificationRequest {
 }
 
 export interface NotificationResult {
-  devices: { deviceId: string; name: string; status: 'sent' | 'offline' | 'unsupported' | 'failed' }[]
+  devices: { deviceId: string; name: string; status: 'sent' | 'queued' | 'offline' | 'unsupported' | 'failed' }[]
 }
 
 export function notificationError(request: NotificationRequest): string | undefined {

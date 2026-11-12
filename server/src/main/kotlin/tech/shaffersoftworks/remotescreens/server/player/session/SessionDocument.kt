@@ -70,18 +70,34 @@ internal class SessionDocument(
             val vars = renderedDoc.vars(states)
             val changed = vars.values.filter { previous.sentVars[it.name] != it }
             previous.sentVars = vars
+
             if (changed.isNotEmpty()) {
                 host.send(ServerMessage.Vars(changed, renderedDoc.predictions(states, host::foresee)))
             }
-            media.sendPictures(previous, states, isForced = false)
-            for (map in renderedDoc.docContext.maps) media.sendMap(previous, map, states)
+
+            media.sendPictures(
+                shown = previous,
+                states = states,
+                isForced = false
+            )
+
+            for (map in renderedDoc.docContext.maps) {
+                media.sendMap(
+                    shown = previous,
+                    map = map,
+                    states = states
+                )
+            }
+
             return
         }
+
         val shown = ShownDocument(
             slot,
             renderedDoc,
             rebuild,
         ).also { it.revision = ++host.lastRevision }
+
         val vars = renderedDoc.vars(states)
         shown.sentVars = vars
         shownDocuments[slot] = shown
@@ -90,9 +106,11 @@ internal class SessionDocument(
         } else {
             emptyList()
         }
+
         val allVars = vars.values + context.screenClock.clockVars() + host.connectedVar() + host.deviceVars() +
             intercomVars
         val bytes = if (host.supportsDeflate) Rc.compress(renderedDoc.bytes) else renderedDoc.bytes
+
         host.send(
             ServerMessage.Document(
                 slot = slot,
@@ -109,10 +127,22 @@ internal class SessionDocument(
                 navigationDrawer = renderedDoc.navigationDrawer,
             ),
         )
-        media.sendPictures(shown, states, isForced = true)
-        for (video in renderedDoc.docContext.videos) media.sendVideo(shown, video)
-        for (map in renderedDoc.docContext.maps) media.sendMap(shown, map, states)
-        for (search in renderedDoc.docContext.searches) media.sendSearch(shown, search)
+
+        media.sendPictures(
+            shown = shown,
+            states = states,
+            isForced = true
+        )
+
+        for (video in renderedDoc.docContext.videos) {
+            media.sendVideo(shown, video)
+        }
+        for (map in renderedDoc.docContext.maps) {
+            media.sendMap(shown, map, states)
+        }
+        for (search in renderedDoc.docContext.searches) {
+            media.sendSearch(shown, search)
+        }
     }
 
     /** Sends what changed in [states]; a document whose structure depends on a changed entity is built again. */
@@ -125,9 +155,11 @@ internal class SessionDocument(
                 rebuild(shown)
                 continue
             }
+
             val vars = shown.renderedDoc.vars(states)
             val changed = vars.values.filter { shown.sentVars[it.name] != it }
             shown.sentVars = vars
+
             if (changed.isNotEmpty()) {
                 host.send(
                     ServerMessage.Vars(
@@ -137,7 +169,14 @@ internal class SessionDocument(
                 )
             }
             media.sendPictures(shown, states, isForced = false)
-            for (map in shown.renderedDoc.docContext.maps) media.sendMap(shown, map, states)
+
+            for (map in shown.renderedDoc.docContext.maps) {
+                media.sendMap(
+                    shown = shown,
+                    map = map,
+                    states = states
+                )
+            }
         }
     }
 
@@ -151,6 +190,7 @@ internal class SessionDocument(
             val vars = shown.renderedDoc.vars(states)
             val changed = vars.values.filter { shown.sentVars[it.name] != it }
             if (changed.isEmpty()) continue
+
             shown.sentVars = vars
             host.send(
                 ServerMessage.Vars(
@@ -170,7 +210,10 @@ internal class SessionDocument(
                 }
                 .getOrNull()
         } ?: return
-        if (shownDocuments[shown.slot] === shown) show(shown.slot, renderedDoc, shown.rebuild)
+
+        if (shownDocuments[shown.slot] === shown) {
+            show(shown.slot, renderedDoc, shown.rebuild)
+        }
     }
 
     /** Sends every value again: after a tap whose prediction Home Assistant did not confirm. */
@@ -201,7 +244,11 @@ internal class SessionDocument(
             )
         }
         val renderedDoc = buildMutex.withLock { build() } ?: return
-        show(Slot.OVERLAY, renderedDoc, build)
+        show(
+            slot = Slot.OVERLAY,
+            renderedDoc = renderedDoc,
+            rebuild = build
+        )
     }
 
     suspend fun showAlert(alert: Alert) {

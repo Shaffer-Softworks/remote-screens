@@ -20,7 +20,10 @@ private const val SUPERVISOR_URL = "http://supervisor"
 private const val DISCOVERY_LOG_LENGTH = 200
 
 /** The Home Assistant Supervisor's API, for an add-on running under it. */
-class SupervisorClient(private val httpClient: HttpClient, private val supervisorToken: String) {
+class SupervisorClient(
+    private val httpClient: HttpClient,
+    private val supervisorToken: String
+) {
     private val logger = LoggerFactory.getLogger(SupervisorClient::class.java)
 
     /**
@@ -30,17 +33,24 @@ class SupervisorClient(private val httpClient: HttpClient, private val superviso
     suspend fun ingressPort(): Int? = runCatching {
         val body = httpClient.get(
             "$SUPERVISOR_URL/addons/self/info",
-        ) { bearerAuth(supervisorToken) }.bodyAsText()
+        ) {
+            bearerAuth(supervisorToken)
+        }.bodyAsText()
+
         Json.parseToJsonElement(body).jsonObject["data"]?.jsonObject
             ?.get("ingress_port")?.jsonPrimitive?.int
             ?.takeIf { it > 0 }
+
     }.onFailure { logger.warn(
         "Could not ask the Supervisor for the ingress port: {}",
         it.message,
     ) }.getOrNull()
 
     /** Tells Home Assistant the add-on is here, so the integration sets itself up with the key. */
-    suspend fun announce(playerPort: Int, apiKey: String) {
+    suspend fun announce(
+        playerPort: Int,
+        apiKey: String
+    ) {
         val body = buildJsonObject {
             put("service", "remote_screens")
             put(
