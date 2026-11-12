@@ -294,4 +294,12 @@ object DemoLayout {
         tiles = listOf(Tile("ic1", kind = "intercom", full = true)),
         icon = "phone",
     )
+
+    /** HA-style Energy dashboard page. Added where it is wanted, like [lightsPage]. */
+    fun energyDashboardPage(): Page = Page(
+        id = "energy_dashboard",
+        title = "Energy",
+        tiles = listOf(Tile("ed1", kind = "energy_dashboard", full = true)),
+        icon = "chart-box",
+    )
 }

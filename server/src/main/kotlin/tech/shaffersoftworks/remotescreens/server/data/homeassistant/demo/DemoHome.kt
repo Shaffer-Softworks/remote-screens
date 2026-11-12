@@ -280,7 +280,14 @@ class DemoHome : HomeAssistant {
                 add(
                     buildJsonObject { put("type", "solar"); put("stat_rate", "sensor.solar_power") },
                 )
-                add(buildJsonObject { put("type", "grid"); put("stat_rate", "sensor.grid_power") })
+                add(
+                    buildJsonObject {
+                        put("type", "grid")
+                        put("stat_rate", "sensor.grid_power")
+                        put("stat_energy_from", "sensor.grid_energy")
+                        put("number_energy_price", 0.22)
+                    },
+                )
                 add(
                     buildJsonObject { put(
                         "type",
@@ -296,6 +303,10 @@ class DemoHome : HomeAssistant {
                     ); put("stat_rate", "sensor.heat_pump_power"); put("name", "Heat pump") },
                 )
             })
+        }
+        "recorder/statistics_during_period" -> demoEnergyStatistics()
+        "energy/fossil_energy_consumption" -> buildJsonObject {
+            put("sensor.grid_energy", 0.58)
         }
         "media_player/browse_media" -> buildJsonObject {
             put("title", "Library")
@@ -327,6 +338,25 @@ class DemoHome : HomeAssistant {
     override suspend fun fetch(path: String): ByteArray? {
         calendarPayload(path)?.let { return it.toByteArray(Charsets.UTF_8) }
         return picture(path.hashCode())
+    }
+
+    private fun demoEnergyStatistics(): JsonObject {
+        val now = System.currentTimeMillis()
+        val hourMs = 3_600_000L
+        fun series(seed: Double): JsonArray = buildJsonArray {
+            for (index in 0 until 24) {
+                add(
+                    buildJsonObject {
+                        put("start", now - (24 - index) * hourMs)
+                        put("change", seed + 0.15 * sin(index / 3.0))
+                    },
+                )
+            }
+        }
+        return buildJsonObject {
+            put("sensor.grid_energy", series(1.2))
+            put("sensor.heat_pump_energy", series(0.4))
+        }
     }
 
     private fun calendarPayload(path: String): String? {

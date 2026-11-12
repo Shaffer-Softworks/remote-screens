@@ -81,6 +81,8 @@ data class RemoteScreenState(
     val maps: Map<Slot, SlotMap> = emptyMap(),
     /** Native music search overlay for a shown document; it goes with the document. */
     val searches: Map<Slot, SlotSearch> = emptyMap(),
+    /** Native Energy dashboard payloads for a shown document; they go with the document. */
+    val energyDashboards: Map<Slot, List<SlotEnergyDashboard>> = emptyMap(),
     /** Named integers the player sets itself (free-form tabs), kept across document rebuilds. */
     val localInts: Map<String, Int> = emptyMap(),
     val page: Int = 0,
@@ -134,6 +136,13 @@ data class RemoteScreenState(
             documents[slot]?.revision == search.revision && search.isShowingOn(page)
         }?.let { it.key to it.value }
 
+    /** Energy dashboard for the current main page, matching the document revision. */
+    val playingEnergyDashboard: SlotEnergyDashboard?
+        get() = energyDashboards[Slot.MAIN]
+            ?.firstOrNull { dashboard ->
+                dashboard.revision == documents[Slot.MAIN]?.revision && dashboard.page == page
+            }
+
     /** The page to show after a new main document: the same one if it still exists, otherwise home. */
     val pageAfterNewDocument: Int get() = if (page < pageCount) page else homePage
 
@@ -150,6 +159,7 @@ data class RemoteScreenState(
             videos = videos - message.slot,
             maps = maps - message.slot,
             searches = searches - message.slot,
+            energyDashboards = energyDashboards - message.slot,
         )
         if (message.slot != Slot.MAIN) return updated
         val newPageCount = message.pageCount.coerceAtLeast(1)
@@ -248,6 +258,12 @@ data class RemoteScreenState(
         )
     }
 
+    fun withEnergyDashboard(slot: Slot, dashboard: SlotEnergyDashboard): RemoteScreenState {
+        if (documents[slot]?.revision != dashboard.revision) return this
+        val existing = energyDashboards[slot].orEmpty().filterNot { it.page == dashboard.page }
+        return copy(energyDashboards = energyDashboards + (slot to (existing + dashboard)))
+    }
+
     fun withPage(index: Int): RemoteScreenState = copy(page = index.coerceIn(0, pageCount - 1))
 
     fun withLocalInt(name: String, value: Int): RemoteScreenState = copy(
@@ -269,6 +285,7 @@ data class RemoteScreenState(
                 videos = videos - slot,
                 maps = maps - slot,
                 searches = searches - slot,
+                energyDashboards = energyDashboards - slot,
             )
         }
 
@@ -280,11 +297,20 @@ data class RemoteScreenState(
             videos = emptyMap(),
             maps = emptyMap(),
             searches = emptyMap(),
+            energyDashboards = emptyMap(),
             localInts = emptyMap(),
             calendarDialog = null,
             navigationDrawer = null,
         )
 }
+
+/** Native Energy dashboard for [page] of document [revision]. */
+data class SlotEnergyDashboard(
+    val revision: Int,
+    val page: Int,
+    val tileId: String,
+    val message: ServerMessage.EnergyDashboard,
+)
 
 /** The native calendar dialog the add-on asked the tablet to show. */
 data class CalendarDialogState(

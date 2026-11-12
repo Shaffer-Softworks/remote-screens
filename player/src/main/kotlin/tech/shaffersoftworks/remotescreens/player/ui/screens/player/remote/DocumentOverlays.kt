@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import coil3.ImageLoader
+import tech.shaffersoftworks.remotescreens.player.ui.screens.player.energy.EnergyDashboardScreen
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 import tech.shaffersoftworks.remotescreens.shared.Slot
 
@@ -22,6 +23,7 @@ internal fun DocumentOverlays(
     onSearchQuery: (String, String) -> Unit,
     onSearchPlay: (String, String) -> Unit,
     onSearchEnqueue: (String, String) -> Unit,
+    onEnergyAction: (tileId: String, verb: String) -> Unit = { _, _ -> },
     imageLoader: ImageLoader,
 ) {
     Box(modifier) {
@@ -50,6 +52,18 @@ internal fun DocumentOverlays(
                 }
             }
         }
+        state.playingEnergyDashboard
+            ?.takeIf { slot == Slot.MAIN }
+            ?.let { dashboard ->
+                key(dashboard.tileId, dashboard.revision, dashboard.page) {
+                    DocumentOverlay(bounds.energy) {
+                        EnergyDashboardScreen(
+                            message = dashboard.message,
+                            onAction = { verb -> onEnergyAction(dashboard.tileId, verb) },
+                        )
+                    }
+                }
+            }
     }
 }
 
@@ -69,6 +83,7 @@ private fun DocumentOverlaysPreview() {
             onSearchQuery = { _, _ -> },
             onSearchPlay = { _, _ -> },
             onSearchEnqueue = { _, _ -> },
+            onEnergyAction = { _, _ -> },
             imageLoader = previewLoader,
         )
     }

@@ -263,6 +263,16 @@ class RenderTest {
         return doc to String(doc.bytes, Charsets.ISO_8859_1)
     }
 
+    private val energyDashboardScreen = DemoLayout.screen().let {
+        it.copy(pages = it.pages + DemoLayout.energyDashboardPage())
+    }
+
+    private fun renderEnergyDashboard(): Pair<RenderedDoc, String> {
+        val data = runBlocking { RenderDataRepository(ha).forScreen(energyDashboardScreen) }
+        val doc = ScreenRenderer.render(energyDashboardScreen, tablet, input(data))
+        return doc to String(doc.bytes, Charsets.ISO_8859_1)
+    }
+
     private fun assertEveryValueIsDeclared(doc: RenderedDoc) {
         val core = parse(doc.bytes)
         val declared = listOf(
@@ -273,6 +283,17 @@ class RenderTest {
         ).flatMap { core.getNamedVariables(it).toList() }.toSet()
         val unread = doc.vars(ha.states.value).keys.filter { "USER:$it" !in declared && !it.startsWith("sys.") }
         assertTrue(unread.isEmpty(), "values sent but never declared: $unread")
+    }
+
+    @Test
+    fun aFullEnergyDashboardTileRegistersNativeOverlayAndUpdateStub() {
+        val (doc, text) = renderEnergyDashboard()
+        assertContains(text, "Update the tablet app for the Energy dashboard")
+        val dashboard = doc.docContext.energyDashboards.single()
+        assertEquals("ed1", dashboard.tileId)
+        assertTrue(dashboard.componentId >= 0x5F_0000)
+        assertTrue(doc.docContext.data.energyDashboards.containsKey("ed1"))
+        assertEveryValueIsDeclared(doc)
     }
 
     @Test

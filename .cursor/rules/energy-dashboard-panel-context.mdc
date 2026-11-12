@@ -1,0 +1,44 @@
+---
+description: HA-style Energy dashboard full page (player-native charts)
+globs: server/src/main/kotlin/**/energy*/**,server/src/main/kotlin/**/energydashboard/**,player/src/main/kotlin/**/energy/**,shared/src/main/kotlin/**/Protocol.kt,editor/src/model/otherTiles.ts,catalogue/_kinds.yaml
+alwaysApply: false
+---
+
+# Energy dashboard panel
+
+Full-page kind `energy_dashboard` (Other tiles). Charts are **player-native Compose** over a Remote Compose `componentId` hole. The existing `energy` “Energy now” live power-flow tile is unchanged.
+
+## Wiring
+
+- Catalogue: `energy_dashboard` in `_kinds.yaml` (`sizes: [full]`, `card: none`).
+- Editor: `OTHER_TILE_KINDS`, `TileDrawer` edge-to-edge, `GridMockup` static mock.
+- Server: `Tile.edgeToEdge` + `Tiles.kt` → `energyDashboardPanel` (`render/panels/energydashboard/`).
+- Stub RC page shows “Update the tablet app…”; capable players overlay `EnergyDashboardScreen`.
+- Data: `EnergyDashboardRepository` (`energy/get_prefs`, `recorder/statistics_during_period`, `energy/fossil_energy_consumption`) + area map for Sankey. Prefetch in `RenderDataRepository.forScreen` when the kind is present.
+- Period UI: `EnergyDashboardUiStore` + verbs `energy_dash_prev` / `next` / `now` / `period` → `EnergyDashboardActions` → Rebuild.
+- Protocol: `CAPABILITY_ENERGY_DASHBOARD`, `ServerMessage.EnergyDashboard` (page, componentId, series, totals, sankey, …).
+- Player: Hello capability; `RemoteScreenState.energyDashboards` / `playingEnergyDashboard`; `DocumentOverlays` places `EnergyDashboardScreen` on MAIN page bounds.
+
+## Charts
+
+Player-native UI split:
+
+- `EnergyDashboardScreen.kt` — page shell + period bar.
+- `EnergyDashboardCards.kt` — totals, rank, distribution, gauge, Sankey, electricity/devices cards.
+- `EnergyDashboardCharts.kt` — Vico column charts (electricity + stacked devices) with shared thickness/spacing and preview-safe synchronous models.
+
+Compose rows/Canvas cover rank, gauge, distribution, and Sankey. Every UI composable has a same-file `@Preview`. Vico samples use ≈24 day buckets so content-zoom does not fatten columns. Devices detail charts when `series` is non-empty (labels optional).
+
+Vico deps: `compose` / `core` / `compose-m3` (see player `build.gradle.kts`).
+
+## Verify
+
+```bash
+python3 tools/generate_catalogue.py --check
+./gradlew :shared:test --tests '*EnergyDashboardProtocolTest' --tests '*ProjectRuleIndexTest*'
+./gradlew :server:test --tests '*EnergyDashboardBuilderTest' --tests '*RenderTest.aFullEnergyDashboard*'
+./gradlew :shared:detekt :server:detekt :player:detekt
+cd editor && npm test -- otherTiles.test.ts
+```
+
+Matching APK required on the tablet (same as cameras page-aware video).

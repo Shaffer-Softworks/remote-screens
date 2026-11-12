@@ -37,6 +37,7 @@ const edgeToEdge = computed(
         'lights',
         'cameras',
         'intercom',
+        'energy_dashboard',
       ].includes(kindOf(props.tile))),
 )
 

@@ -31,6 +31,9 @@ object Protocol {
     /** A player that can show the native calendar create and delete dialogs ([ServerMessage.CalendarDialog]). */
     const val CAPABILITY_CALENDAR_DIALOGS = "calendar_dialogs"
 
+    /** A player that can show the native Energy dashboard ([ServerMessage.EnergyDashboard]). */
+    const val CAPABILITY_ENERGY_DASHBOARD = "energy_dashboard"
+
     /** A player that reports its sensors and diagnostics ([PlayerMessage.Telemetry]) once the add-on accepts them. */
     const val CAPABILITY_TELEMETRY = "telemetry"
 
@@ -509,7 +512,96 @@ sealed interface ServerMessage {
         val event: CalendarDeleteTarget? = null,
         val error: String? = null,
     ) : ServerMessage
+
+    /**
+     * Native Energy dashboard for page [page] of document [rev] in [slot].
+     * Only for players with [Protocol.CAPABILITY_ENERGY_DASHBOARD]; it ends when the document goes.
+     */
+    @Serializable
+    @SerialName("energy_dashboard")
+    data class EnergyDashboard(
+        val slot: Slot,
+        val rev: Int,
+        val page: Int,
+        val tileId: String,
+        val componentId: Int,
+        val periodLabel: String,
+        val isNow: Boolean = true,
+        val electricity: EnergyBarSeries = EnergyBarSeries(),
+        val totals: List<EnergyTotalRow> = emptyList(),
+        val devicesDetail: List<EnergyNamedSeries> = emptyList(),
+        val devicesRank: List<EnergyRankBar> = emptyList(),
+        val distribution: EnergyDistribution = EnergyDistribution(),
+        val lowCarbonPercent: Double = 0.0,
+        val sankey: EnergySankey = EnergySankey(),
+        val supportsNative: Boolean = true,
+    ) : ServerMessage
 }
+
+/** One electricity / source total in [ServerMessage.EnergyDashboard.totals]. */
+@Serializable
+data class EnergyTotalRow(
+    val source: String,
+    val energyKwh: Double,
+    val cost: Double? = null,
+)
+
+/** A labelled bar series (hourly or daily) for electricity or a device stack. */
+@Serializable
+data class EnergyBarSeries(
+    val title: String = "",
+    val totalKwh: Double = 0.0,
+    val unit: String = "kWh",
+    val labels: List<String> = emptyList(),
+    val values: List<Double> = emptyList(),
+)
+
+/** One named series in a stacked device chart. */
+@Serializable
+data class EnergyNamedSeries(
+    val name: String,
+    val colorArgb: Long,
+    val values: List<Double> = emptyList(),
+)
+
+/** One horizontal ranking bar. */
+@Serializable
+data class EnergyRankBar(
+    val name: String,
+    val kwh: Double,
+    val colorArgb: Long,
+)
+
+/** Low-carbon / grid / home nodes for the distribution card. */
+@Serializable
+data class EnergyDistribution(
+    val lowCarbonKwh: Double = 0.0,
+    val gridKwh: Double = 0.0,
+    val homeKwh: Double = 0.0,
+    val homeName: String = "Home",
+)
+
+/** Sankey nodes and links for the energy flow card. */
+@Serializable
+data class EnergySankey(
+    val nodes: List<EnergySankeyNode> = emptyList(),
+    val links: List<EnergySankeyLink> = emptyList(),
+)
+
+@Serializable
+data class EnergySankeyNode(
+    val id: String,
+    val label: String,
+    val column: Int,
+    val colorArgb: Long = 0L,
+)
+
+@Serializable
+data class EnergySankeyLink(
+    val fromId: String,
+    val toId: String,
+    val kwh: Double,
+)
 
 /** A calendar the create dialog can write to. */
 @Serializable

@@ -207,6 +207,7 @@ const lightsRooms = computed(() => lightsRoomRows(state.areas, state.entities))
 /** RPI's cameras page (CamerasPanel.kt): the tile's cameras in a list on the left, the chosen one's video on the right. */
 const isCamerasPanel = (tile: Tile) => kindOf(tile) === 'cameras' && tile.full === true
 const isIntercomPanel = (tile: Tile) => kindOf(tile) === 'intercom' && tile.full === true
+const isEnergyDashboardPanel = (tile: Tile) => kindOf(tile) === 'energy_dashboard' && tile.full === true
 const intercomPage = computed(() => ({
   w: props.device.w,
   h: props.device.h - gridLayout.value.topBar - gridLayout.value.navBar,
@@ -581,6 +582,7 @@ const highlight = computed(() => {
           'intercom-panel': isIntercomPanel(placement.tile),
           'intercom-compact': isIntercomPanel(placement.tile) && intercomIsStacked,
           'intercom-narrow': isIntercomPanel(placement.tile) && intercomIsNarrow,
+          'energy-dashboard-panel': isEnergyDashboardPanel(placement.tile),
           'calendar-panel': isCalendarPanel(placement),
           selected: placement.tile.id === selectedId,
           moved: moved.has(placement.tile.id),
@@ -763,6 +765,20 @@ const highlight = computed(() => {
               <span class="ic-who"><span>Kitchen</span><small>In Call</small></span>
               <span class="ic-button ic-call"><MdiIcon name="phone-outline" :size="28" />Call</span>
             </span>
+          </div>
+        </template>
+        <template v-else-if="isEnergyDashboardPanel(placement.tile)">
+          <div class="ed-page">
+            <div class="ed-card">
+              <span class="ed-title">Electricity</span>
+              <span class="ed-bars">
+                <i v-for="n in 8" :key="n" :style="{ height: `${30 + (n % 4) * 12}%` }" />
+              </span>
+            </div>
+            <div class="ed-side">
+              <div class="ed-card ed-gauge"><span>42%</span><small>Low-carbon</small></div>
+              <div class="ed-card"><span class="ed-title">Energy distribution</span></div>
+            </div>
           </div>
         </template>
         <template v-else-if="isThermostatPanel(placement.tile)">
@@ -1465,6 +1481,77 @@ const highlight = computed(() => {
   border: none;
   border-radius: 0;
   color: #fff;
+}
+
+.tile.energy-dashboard-panel {
+  flex-direction: row;
+  align-items: stretch;
+  padding: 12px;
+  background: #121212;
+  border: none;
+  border-radius: 0;
+  color: #e8e8e8;
+}
+
+.ed-page {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+}
+
+.ed-page > .ed-card {
+  flex: 2;
+}
+
+.ed-side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ed-card {
+  background: #1c1c1c;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ed-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ed-bars {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.ed-bars i {
+  flex: 1;
+  background: #03a9f4;
+  border-radius: 3px 3px 0 0;
+  min-height: 20%;
+}
+
+.ed-gauge {
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+}
+
+.ed-gauge span {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.ed-gauge small {
+  color: #9e9e9e;
 }
 
 .ic-side {

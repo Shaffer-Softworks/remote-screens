@@ -1,6 +1,7 @@
 package tech.shaffersoftworks.remotescreens.server.player.session
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
+import tech.shaffersoftworks.remotescreens.server.render.LiveEnergyDashboard
 import tech.shaffersoftworks.remotescreens.server.render.LiveMap
 import tech.shaffersoftworks.remotescreens.server.render.LiveSearch
 import tech.shaffersoftworks.remotescreens.server.render.LiveVideo
@@ -86,6 +87,34 @@ internal class SessionMedia(
                     tileUrl = context.mapTileUrl,
                     dark = map.dark,
                     markers = markers,
+                ),
+            )
+        }
+    }
+
+    /** Sends the native Energy dashboard payload; older players keep the RC update stub. */
+    fun sendEnergyDashboard(shown: ShownDocument, dashboard: LiveEnergyDashboard) {
+        if (!host.supportsEnergyDashboard) return
+        context.scope.launch {
+            if (shownDocuments[shown.slot] !== shown) return@launch
+            val snapshot = shown.renderedDoc.docContext.data.energyDashboards[dashboard.tileId] ?: return@launch
+            host.send(
+                ServerMessage.EnergyDashboard(
+                    slot = shown.slot,
+                    rev = shown.revision,
+                    page = dashboard.page,
+                    tileId = dashboard.tileId,
+                    componentId = dashboard.componentId,
+                    periodLabel = snapshot.periodLabel,
+                    isNow = snapshot.isNow,
+                    electricity = snapshot.electricity,
+                    totals = snapshot.totals,
+                    devicesDetail = snapshot.devicesDetail,
+                    devicesRank = snapshot.devicesRank,
+                    distribution = snapshot.distribution,
+                    lowCarbonPercent = snapshot.lowCarbonPercent,
+                    sankey = snapshot.sankey,
+                    supportsNative = true,
                 ),
             )
         }

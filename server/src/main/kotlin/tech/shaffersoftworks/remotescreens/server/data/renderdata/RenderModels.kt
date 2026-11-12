@@ -2,6 +2,8 @@ package tech.shaffersoftworks.remotescreens.server.data.renderdata
 
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmUiState
 import tech.shaffersoftworks.remotescreens.server.data.cameras.CamerasUiState
+import tech.shaffersoftworks.remotescreens.server.data.energy.EnergyDashboardSnapshot
+import tech.shaffersoftworks.remotescreens.server.data.energy.EnergyDashboardUiState
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsRoom
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiState
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicListRow
@@ -51,6 +53,10 @@ data class RenderData(
     val lightsUi: Map<String, LightsUiState> = emptyMap(),
     /** Chosen camera of each cameras page, keyed by tile id. */
     val camerasUi: Map<String, CamerasUiState> = emptyMap(),
+    /** Chart snapshots for each Energy dashboard page, keyed by tile id. */
+    val energyDashboards: Map<String, EnergyDashboardSnapshot> = emptyMap(),
+    /** Period UI for each Energy dashboard page, keyed by tile id. */
+    val energyDashboardUi: Map<String, EnergyDashboardUiState> = emptyMap(),
 )
 
 /** One calendar the agenda can read, and whether Home Assistant allows creating or deleting on it. */

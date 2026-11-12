@@ -40,6 +40,7 @@ internal fun RemoteDocumentStack(
     onSearchQuery: (String, String) -> Unit,
     onSearchPlay: (String, String) -> Unit,
     onSearchEnqueue: (String, String) -> Unit,
+    onEnergyAction: (tileId: String, verb: String) -> Unit = { _, _ -> },
     imageLoader: ImageLoader,
 ) {
     val context = LocalContext.current
@@ -99,6 +100,7 @@ internal fun RemoteDocumentStack(
                     onSearchQuery = onSearchQuery,
                     onSearchPlay = onSearchPlay,
                     onSearchEnqueue = onSearchEnqueue,
+                    onEnergyAction = onEnergyAction,
                     imageLoader = imageLoader,
                 )
             }
@@ -127,11 +129,13 @@ internal data class OverlayBounds(
     val video: Rect? = null,
     val map: Rect? = null,
     val search: Rect? = null,
+    val energy: Rect? = null,
 )
 
 private fun overlayBounds(controller: RemoteDocumentController, state: RemoteScreenState): OverlayBounds {
     fun bounds(slot: Slot, id: Int): Rect? = componentBounds(controller.documentPlayer(slot), id)
     val search = state.playingSearch
+    val energy = state.playingEnergyDashboard
     return OverlayBounds(
         video = state.playingVideo?.let { (slot, video) -> bounds(slot, video.componentId) },
         map = state.playingMap?.let { (slot, map) -> bounds(slot, map.componentId) },
@@ -142,6 +146,7 @@ private fun overlayBounds(controller: RemoteDocumentController, state: RemoteScr
                 bounds(slot, field.componentId)
             }
         },
+        energy = energy?.let { dashboard -> bounds(Slot.MAIN, dashboard.message.componentId) },
     )
 }
 

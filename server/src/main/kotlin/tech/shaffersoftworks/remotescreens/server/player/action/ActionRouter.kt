@@ -42,6 +42,7 @@ class ActionRouter(
     private val alarmActions = AlarmActions(homeAssistant, i18n, renderData)
     private val lightsActions = LightsActions(homeAssistant, renderData)
     private val camerasActions = CamerasActions(renderData)
+    private val energyDashboardActions = EnergyDashboardActions(renderData)
 
     fun target(
         ref: ActionRef,
@@ -127,6 +128,8 @@ class ActionRouter(
         "lights_effects", "lights_effect",
         -> lightsActions.handle(verb, ref.arg, target)
         "cameras_select" -> camerasActions.handle(ref.arg, target)
+        "energy_dash_prev", "energy_dash_next", "energy_dash_now", "energy_dash_period" ->
+            energyDashboardActions.handle(verb, target)
         "intercom_call", "intercom_hangup", "intercom_mute" -> IntercomActions.handle(verb, ref.arg)
         "browse_type", "listen_mode", "primary_tab", "load_more",
         "clear_queue", "play_uri", "enqueue_uri",

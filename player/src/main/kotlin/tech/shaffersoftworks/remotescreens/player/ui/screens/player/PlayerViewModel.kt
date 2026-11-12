@@ -27,6 +27,7 @@ import tech.shaffersoftworks.remotescreens.player.data.preferences.PlayerPrefere
 import tech.shaffersoftworks.remotescreens.player.data.update.UpdateRepository
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.CalendarCreateForm
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteScreenState
+import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotEnergyDashboard
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotMap
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotSearch
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotVideo
@@ -86,6 +87,7 @@ private val PLAYER_CAPABILITIES =
         Protocol.CAPABILITY_MAP,
         Protocol.CAPABILITY_MUSIC_SEARCH,
         Protocol.CAPABILITY_CALENDAR_DIALOGS,
+        Protocol.CAPABILITY_ENERGY_DASHBOARD,
         Protocol.CAPABILITY_TELEMETRY,
         Protocol.CAPABILITY_INTERCOM,
         Protocol.CAPABILITY_NOTIFICATIONS,
@@ -376,6 +378,7 @@ class PlayerViewModel @Inject constructor(
             is ServerMessage.LiveSearch -> onLiveSearch(message)
             is ServerMessage.SearchResults -> onSearchResults(message)
             is ServerMessage.CalendarDialog -> updateRemoteScreen { it.withCalendarDialog(message) }
+            is ServerMessage.EnergyDashboard -> onEnergyDashboard(message)
             is ServerMessage.IntercomConfig -> onIntercomConfig(message)
             is ServerMessage.IntercomCommand -> intercomCoordinator.command(message.verb, message.clientId)
             is ServerMessage.NotificationBanner -> showNotificationBanner(message)
@@ -510,6 +513,25 @@ class PlayerViewModel @Inject constructor(
 
     private fun onSearchResults(message: ServerMessage.SearchResults) {
         updateRemoteScreen { it.withSearchResults(message.tileId, message.rows) }
+    }
+
+    private fun onEnergyDashboard(message: ServerMessage.EnergyDashboard) {
+        updateRemoteScreen {
+            it.withEnergyDashboard(
+                message.slot,
+                SlotEnergyDashboard(
+                    revision = message.rev,
+                    page = message.page,
+                    tileId = message.tileId,
+                    message = message,
+                ),
+            )
+        }
+    }
+
+    fun onEnergyDashboardAction(tileId: String, verb: String) {
+        val revision = _viewState.value.remoteScreen.documents[Slot.MAIN]?.revision ?: return
+        sendAction(Slot.MAIN, revision, ActionRef(tileId, verb).encode())
     }
 
     fun dismissCalendarDialog() {
