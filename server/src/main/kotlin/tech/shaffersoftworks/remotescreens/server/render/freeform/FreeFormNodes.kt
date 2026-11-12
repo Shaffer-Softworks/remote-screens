@@ -12,6 +12,7 @@ import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
+import tech.shaffersoftworks.remotescreens.server.render.hasLiveVideoOnCurrentPage
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.initials
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label

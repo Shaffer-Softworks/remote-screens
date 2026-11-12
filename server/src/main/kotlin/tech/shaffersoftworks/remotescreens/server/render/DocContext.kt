@@ -180,9 +180,6 @@ class DocContext(
         return componentId
     }
 
-    /** True when this page already registered a live stream (one decoder per visible page). */
-    fun hasLiveVideoOnCurrentPage(): Boolean = videos.any { it.page == renderingPage }
-
     /** The document is built again when [what] of the entity changes, such as its icon or its list of modes. */
     fun structural(entityId: String, what: (EntityState?) -> String) {
         structure += Triple(entityId, what, what(states[entityId]))
@@ -259,6 +256,9 @@ data class LiveSearch(
         const val FIRST_COMPONENT_ID = 0x5E_0000
     }
 }
+
+/** True when this page already registered a live stream (one decoder per visible page). */
+fun DocContext.hasLiveVideoOnCurrentPage(): Boolean = videos.any { it.page == renderingPage }
 
 /** The component id to give the box an interactive map of [entityIds] plays over, with `Modifier.componentId`. */
 fun DocContext.liveMap(entityIds: List<String>): Int {

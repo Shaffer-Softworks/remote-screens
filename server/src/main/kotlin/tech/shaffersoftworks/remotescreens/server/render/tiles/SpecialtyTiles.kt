@@ -29,6 +29,7 @@ import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.bindChoices
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
+import tech.shaffersoftworks.remotescreens.server.render.hasLiveVideoOnCurrentPage
 import tech.shaffersoftworks.remotescreens.server.render.cards.CardChrome
 import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.calendarEvent
 import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.isToday
@@ -672,12 +673,12 @@ internal fun DocContext.mediaTile(tile: Tile, box: TileBox, entityState: EntityS
 
 internal fun DocContext.cameraTile(tile: Tile, box: TileBox, named: Boolean) {
     val entityId = tile.entityId ?: return
-    val w = units.px(box.w).toInt()
-    val h = units.px(box.h).toInt()
+    val widthPx = units.px(box.w).toInt()
+    val heightPx = units.px(box.h).toInt()
     val isCropped = tile.options["fit"] != "whole"
     val contentScale = if (isCropped) RcContentScale.Crop else RcContentScale.Fit
     val canStream = tile.options["stream"] == "true" && !hasLiveVideoOnCurrentPage()
-    val every = if (canStream) {
+    val refreshSeconds = if (canStream) {
         0
     } else {
         tile.options["live"]?.toIntOrNull()
@@ -689,60 +690,98 @@ internal fun DocContext.cameraTile(tile: Tile, box: TileBox, named: Boolean) {
         PictureSlot(
             name = pictureName,
             source = "/api/camera_proxy/$entityId",
-            widthPx = w,
-            heightPx = h,
-            refreshSeconds = every,
+            widthPx = widthPx,
+            heightPx = heightPx,
+            refreshSeconds = refreshSeconds,
             crop = isCropped,
         ),
     )
     if (canStream) {
-        val video = liveVideo(entityId, crop = isCropped)
-        val waiting = int(Vars.entity(entityId, Vars.KEY_CAM_WAITING), Vars.VISIBLE)
-        val still = int(Vars.entity(entityId, Vars.KEY_CAM_STILL), Vars.GONE)
-        scope.Box(
-            Modifier.fillMaxSize().background(role(Role.TRACK)).componentId(video),
-            horizontal = RcHorizontalPositioning.Center,
-            vertical = RcVerticalPositioning.Center,
-        ) {
-            val doc = this@cameraTile
-            Image(
-                doc.image(pictureName, w, h),
-                Modifier.fillMaxSize().visibility(still),
-                contentScale = contentScale,
-            )
-            doc.spinner(CardChrome.CAMERA_SPINNER_DP, doc.role(Role.ACCENT), waiting)
-            if (named && tile.options["name"] != "false") {
+        cameraStreamTile(
+            entityId = entityId,
+            pictureName = pictureName,
+            widthPx = widthPx,
+            heightPx = heightPx,
+            isCropped = isCropped,
+            contentScale = contentScale,
+            showName = named && tile.options["name"] != "false",
+        )
+        return
+    }
+    cameraSnapshotTile(
+        entityId = entityId,
+        pictureName = pictureName,
+        widthPx = widthPx,
+        heightPx = heightPx,
+        contentScale = contentScale,
+        showName = named && tile.options["name"] != "false",
+    )
+}
+
+private fun DocContext.cameraStreamTile(
+    entityId: String,
+    pictureName: String,
+    widthPx: Int,
+    heightPx: Int,
+    isCropped: Boolean,
+    contentScale: RcContentScale,
+    showName: Boolean,
+) {
+    val video = liveVideo(entityId, crop = isCropped)
+    val waiting = int(Vars.entity(entityId, Vars.KEY_CAM_WAITING), Vars.VISIBLE)
+    val still = int(Vars.entity(entityId, Vars.KEY_CAM_STILL), Vars.GONE)
+    scope.Box(
+        Modifier.fillMaxSize().background(role(Role.TRACK)).componentId(video),
+        horizontal = RcHorizontalPositioning.Center,
+        vertical = RcVerticalPositioning.Center,
+    ) {
+        val doc = this@cameraStreamTile
+        Image(
+            doc.image(pictureName, widthPx, heightPx),
+            Modifier.fillMaxSize().visibility(still),
+            contentScale = contentScale,
+        )
+        doc.spinner(CardChrome.CAMERA_SPINNER_DP, doc.role(Role.ACCENT), waiting)
+        if (showName) {
+            Box(
+                Modifier.fillMaxSize(),
+                vertical = RcVerticalPositioning.Bottom,
+            ) {
                 Box(
-                    Modifier.fillMaxSize(),
-                    vertical = RcVerticalPositioning.Bottom,
+                    Modifier.fillMaxWidth().background(doc.role(Role.SCRIM))
+                        .padding(doc.units.px(C.CARD_CORNER_DP)),
                 ) {
-                    Box(
-                        Modifier.fillMaxWidth().background(doc.role(Role.SCRIM))
-                            .padding(doc.units.px(C.CARD_CORNER_DP)),
-                    ) {
-                        doc.label(
-                            text = doc.text(Vars.entity(entityId, Vars.KEY_NAME)),
-                            sp = Type.BODY,
-                            color = doc.role(Role.INK),
-                            weight = Weight.SEMI_BOLD,
-                        )
-                    }
+                    doc.label(
+                        text = doc.text(Vars.entity(entityId, Vars.KEY_NAME)),
+                        sp = Type.BODY,
+                        color = doc.role(Role.INK),
+                        weight = Weight.SEMI_BOLD,
+                    )
                 }
             }
         }
-        return
     }
+}
+
+private fun DocContext.cameraSnapshotTile(
+    entityId: String,
+    pictureName: String,
+    widthPx: Int,
+    heightPx: Int,
+    contentScale: RcContentScale,
+    showName: Boolean,
+) {
     scope.Box(
         Modifier.fillMaxSize().background(role(Role.SCRIM)),
         vertical = RcVerticalPositioning.Bottom,
     ) {
-        val doc = this@cameraTile
+        val doc = this@cameraSnapshotTile
         Image(
-            doc.image(pictureName, w, h),
+            doc.image(pictureName, widthPx, heightPx),
             Modifier.fillMaxSize(),
             contentScale = contentScale,
         )
-        if (named && tile.options["name"] != "false") {
+        if (showName) {
             Box(
                 Modifier.fillMaxWidth().background(
                     doc.role(Role.SCRIM),
