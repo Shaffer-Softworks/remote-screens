@@ -39,7 +39,7 @@ export function blindsRoomRows(areas: AreaInfo[], entities: EntityInfo[]): Blind
   }
   return [...areas]
     .sort((areaA, areaB) => areaA.name.localeCompare(areaB.name))
-    .map(area => {
+    .map((area): BlindsRoomRow | null => {
       const covers = entities.filter(
         entity => entity.domain === 'cover' && entity.area === area.id,
       )
