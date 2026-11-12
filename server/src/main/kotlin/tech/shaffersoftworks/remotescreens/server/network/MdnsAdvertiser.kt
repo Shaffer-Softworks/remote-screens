@@ -8,7 +8,7 @@ import javax.jmdns.ServiceInfo
 /** Lets tablets on the network find the add-on without typing an address. */
 class MdnsAdvertiser(
     private val playerPort: Int,
-    private val serverVersion: String
+    private val serverVersion: String,
 ) {
     private val logger = LoggerFactory.getLogger(MdnsAdvertiser::class.java)
     private var jmdns: JmDNS? = null

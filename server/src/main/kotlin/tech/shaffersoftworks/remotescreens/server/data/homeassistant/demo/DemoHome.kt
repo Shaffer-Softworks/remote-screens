@@ -58,7 +58,7 @@ class DemoHome : HomeAssistant {
     fun set(
         entityId: String,
         state: String,
-        attrs: Map<String, JsonElement> = emptyMap()
+        attrs: Map<String, JsonElement> = emptyMap(),
     ) {
         _states.update { all ->
             val old = all[entityId] ?: EntityState(entityId, state)
@@ -68,7 +68,7 @@ class DemoHome : HomeAssistant {
 
     fun fire(
         type: String,
-        data: JsonObject
+        data: JsonObject,
     ) {
         _events.tryEmit(HomeAssistantEvent(type, data))
     }
@@ -77,7 +77,7 @@ class DemoHome : HomeAssistant {
         domain: String,
         service: String,
         data: JsonObject,
-        returnResponse: Boolean
+        returnResponse: Boolean,
     ): JsonElement? {
         calls += Triple(domain, service, data)
         val ids = when (val entityIdValue = data["entity_id"]) {
@@ -98,7 +98,7 @@ class DemoHome : HomeAssistant {
 
     private fun musicAssistant(
         service: String,
-        data: JsonObject
+        data: JsonObject,
     ): JsonElement? = when (service) {
         "get_library" -> demoMusicLibrary()
         "search" -> demoMusicSearch(data["name"]?.jsonPrimitive?.contentOrNull.orEmpty())
@@ -200,7 +200,7 @@ class DemoHome : HomeAssistant {
         id: String,
         domain: String,
         service: String,
-        data: JsonObject
+        data: JsonObject,
     ) {
         val current = _states.value[id] ?: return
         serviceHandlers.apply(entityId = id, domain = domain, service = service, data = data, current = current)
@@ -229,7 +229,7 @@ class DemoHome : HomeAssistant {
     @Suppress("CyclomaticComplexMethod")
     override suspend fun command(
         type: String,
-        payload: JsonObject
+        payload: JsonObject,
     ): JsonElement? = when (type) {
         "fire_event" -> {
             val eventType = payload["event_type"]?.jsonPrimitive?.contentOrNull ?: return null
@@ -434,7 +434,7 @@ class DemoHome : HomeAssistant {
         private fun alarmoZone(
             entityId: String,
             name: String,
-            openSensor: String? = null
+            openSensor: String? = null,
         ): EntityState {
             val base = attrs(
                 "friendly_name" to name,
@@ -814,7 +814,7 @@ class DemoHome : HomeAssistant {
         fun picture(
             seed: Int,
             w: Int = 320,
-            h: Int = 240
+            h: Int = 240,
         ): ByteArray {
             val img = BufferedImage(w, h, BufferedImage.TYPE_INT_RGB)
             val graphics = img.createGraphics()

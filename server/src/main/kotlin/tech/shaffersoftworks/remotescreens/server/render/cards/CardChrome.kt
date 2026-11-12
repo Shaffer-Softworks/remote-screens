@@ -171,7 +171,7 @@ internal fun DocContext.header(entityId: String, card: String) {
 internal fun DocContext.bigToggle(
     entityId: String,
     entityState: EntityState?,
-    verb: String = "toggle"
+    verb: String = "toggle",
 ) {
     val spec = Catalogue.of(entityState?.domain ?: "")
     val action = ref(entityId, verb)
@@ -179,7 +179,7 @@ internal fun DocContext.bigToggle(
 
     scope.Box(
         Modifier.fillMaxWidth(),
-        horizontal = RcHorizontalPositioning.Center
+        horizontal = RcHorizontalPositioning.Center,
     ) {
         val doc = this@bigToggle
 
@@ -194,9 +194,9 @@ internal fun DocContext.bigToggle(
                     color = doc.color(
                         name = Vars.tile(
                             tileId = CardRenderer.TILE,
-                            key = Vars.KEY_BG
-                        )
-                    )
+                            key = Vars.KEY_BG,
+                        ),
+                    ),
                 ),
                 action,
             ),
@@ -211,8 +211,8 @@ internal fun DocContext.bigToggle(
                 color = doc.color(
                     Vars.tile(
                         tileId = CardRenderer.TILE,
-                        key = Vars.KEY_BG_INK
-                    )
+                        key = Vars.KEY_BG_INK,
+                    ),
                 ),
             )
         }
@@ -225,7 +225,7 @@ internal fun DocContext.section(title: String) {
         text = title,
         sp = Type.BODY,
         color = role(Role.INK_SOFT),
-        weight = Weight.SEMI_BOLD
+        weight = Weight.SEMI_BOLD,
     )
     gap(CardChrome.FLOW_PAD_DP)
 }
@@ -267,7 +267,7 @@ internal fun DocContext.bar(
 internal fun DocContext.swatches(colors: List<Pair<Int, ActionRef>>) {
     scope.Row(
         Modifier.fillMaxWidth(),
-        horizontal = RcRowHorizontalPositioning.SpaceBetween
+        horizontal = RcRowHorizontalPositioning.SpaceBetween,
     ) {
         val doc = this@swatches
         for ((argb, r) in colors) {
@@ -330,16 +330,16 @@ internal fun DocContext.flowKeys(
                             scope = entityId,
                             group = verb,
                             index = index,
-                            key = Vars.KEY_BG
-                        )
+                            key = Vars.KEY_BG,
+                        ),
                     ),
                     ink = doc.color(
                         Vars.option(
                             scope = entityId,
                             group = verb,
                             index = index,
-                            key = Vars.KEY_INK
-                        )
+                            key = Vars.KEY_INK,
+                        ),
                     ),
                     heightDp = CardChrome.FLOW_KEY_SEG_H_DP,
                 )

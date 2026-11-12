@@ -22,7 +22,7 @@ class AlarmActions(
         verb: String,
         arg: String,
         target: TapTarget,
-        memory: TapMemory
+        memory: TapMemory,
     ): TapOutcome {
         val tile = target.tile
         val entityId = target.entityId
@@ -46,7 +46,7 @@ class AlarmActions(
         tile: Tile,
         entityId: String,
         zoneEntityId: String,
-        memory: TapMemory
+        memory: TapMemory,
     ): TapOutcome {
         if (tile.alarmZones().none { it.entityId == zoneEntityId }) return TapOutcome.Ignored
         renderData?.alarmUi?.selectZone(tile.id, zoneEntityId)
@@ -62,7 +62,7 @@ class AlarmActions(
         tile: Tile,
         entityId: String,
         verb: String,
-        memory: TapMemory
+        memory: TapMemory,
     ): TapOutcome {
         val action = Catalogue.of("alarm_control_panel")?.actions?.get(verb) ?: return TapOutcome.Ignored
         val code = memory.codes.remove(entityId).orEmpty()

@@ -45,7 +45,7 @@ class ActionRouter(
 
     fun target(
         ref: ActionRef,
-        screen: Screen?
+        screen: Screen?,
     ): TapTarget? = when {
         ref.tile.startsWith(ENTITY_TILE_PREFIX) -> {
             val entityId = ref.tile.removePrefix(ENTITY_TILE_PREFIX)
@@ -53,7 +53,7 @@ class ActionRouter(
                 tileId = ref.tile,
                 entityId = entityId,
                 kind = entityId.substringBefore('.'),
-                tile = null
+                tile = null,
             )
         }
         ref.tile == "card" -> null
@@ -139,14 +139,14 @@ class ActionRouter(
     fun resolveArg(
         action: ActionSpec,
         arg: String,
-        entity: EntityState?
+        entity: EntityState?,
     ): String = ServiceDataBuilder.resolveArg(action, arg, entity)
 
     /** The state Home Assistant will most likely report once [ref] is done, or null when it cannot be told. */
     fun foresee(
         ref: ActionRef,
         target: TapTarget?,
-        entity: EntityState
+        entity: EntityState,
     ): EntityState? {
         val spec = target?.spec ?: Catalogue.of(entity.domain)
         val verb = resolveVerb(
@@ -184,7 +184,7 @@ class ActionRouter(
         prediction: PredictSpec,
         spec: TypeSpec,
         entity: EntityState,
-        arg: String
+        arg: String,
     ): String =
         when (val predicted = prediction.state) {
             null -> entity.state
@@ -200,17 +200,17 @@ class ActionRouter(
     private fun resolveVerb(
         verb: String,
         target: TapTarget,
-        entity: EntityState?
+        entity: EntityState?,
     ): String = when (target.kind) {
         "lock" if verb == "toggle" -> if (entity?.state == "locked") "unlock" else "lock"
         // cover.toggle needs open and close. A tilt-only blind (slats, no shade travel) rejects it.
         "cover" if verb == "toggle" &&
-                entity?.supports(HaRenderFlags.COVER_OPEN_FLAG) != true &&
-                entity?.supports(HaRenderFlags.COVER_CLOSE_FLAG) != true &&
-                (
-                        entity?.supports(HaRenderFlags.COVER_OPEN_TILT_FLAG) == true ||
-                                entity?.supports(HaRenderFlags.COVER_CLOSE_TILT_FLAG) == true
-                        ) ->
+            entity?.supports(HaRenderFlags.COVER_OPEN_FLAG) != true &&
+            entity?.supports(HaRenderFlags.COVER_CLOSE_FLAG) != true &&
+            (
+                entity?.supports(HaRenderFlags.COVER_OPEN_TILT_FLAG) == true ||
+                    entity?.supports(HaRenderFlags.COVER_CLOSE_TILT_FLAG) == true
+                ) ->
             if (entity.state == "open" || entity.state == "opening") "close_tilt" else "open_tilt"
         else -> verb
     }
@@ -256,7 +256,7 @@ class ActionRouter(
     private fun handleCalendar(
         verb: String,
         ref: ActionRef,
-        target: TapTarget
+        target: TapTarget,
     ): TapOutcome {
         val agendas = renderData?.calendarAgenda ?: return TapOutcome.Ignored
         val snapshot = agendas.latest
@@ -274,7 +274,7 @@ class ActionRouter(
     private fun deleteDialog(
         arg: String,
         tileId: String,
-        snapshot: AgendaSnapshot
+        snapshot: AgendaSnapshot,
     ): TapOutcome {
         val parts = arg.split(AGENDA_FIELD_SEPARATOR)
         val entityId = parts.getOrNull(0).orEmpty()
@@ -296,7 +296,7 @@ class ActionRouter(
     private suspend fun handleMusic(
         verb: String,
         ref: ActionRef,
-        target: TapTarget
+        target: TapTarget,
     ): TapOutcome {
         val tileId = target.tileId
         val entityId = target.entityId
@@ -311,7 +311,7 @@ class ActionRouter(
                 target = target,
                 tileId = tileId,
                 entityId = entityId,
-                repo = repo
+                repo = repo,
             )
         }
     }
@@ -475,7 +475,7 @@ class ActionRouter(
         verb: String,
         arg: String,
         target: TapTarget,
-        memory: TapMemory
+        memory: TapMemory,
     ): TapOutcome {
         val entityId = target.entityId ?: return TapOutcome.Ignored
         val typed = memory.codes[entityId].orEmpty()

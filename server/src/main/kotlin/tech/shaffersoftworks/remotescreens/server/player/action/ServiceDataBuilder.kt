@@ -139,7 +139,7 @@ object ServiceDataBuilder {
     fun resolveArg(
         action: ActionSpec,
         arg: String,
-        entity: EntityState?
+        entity: EntityState?,
     ): String {
         val relativeTo = action.relative
         val delta = arg.takeIf { it.startsWith('+') || it.startsWith('-') }?.toDoubleOrNull()

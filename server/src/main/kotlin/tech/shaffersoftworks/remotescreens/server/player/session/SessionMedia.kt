@@ -59,7 +59,7 @@ internal class SessionMedia(
     fun sendMap(
         shown: ShownDocument,
         map: LiveMap,
-        states: Map<String, EntityState>
+        states: Map<String, EntityState>,
     ) {
         if (!host.supportsMap) return
         context.scope.launch {
@@ -222,7 +222,7 @@ internal class SessionMedia(
     fun warmCameraStream(
         entityId: String? = null,
         kind: String? = null,
-        camera: String? = null
+        camera: String? = null,
     ) {
         if (!host.supportsVideo) return
         val id = when {

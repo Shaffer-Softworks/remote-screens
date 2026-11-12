@@ -19,7 +19,7 @@ internal class DemoServiceHandlers(
         domain: String,
         service: String,
         data: JsonObject,
-        current: EntityState
+        current: EntityState,
     ) {
         handlers[service]?.invoke(
             ServiceCall(
@@ -27,7 +27,7 @@ internal class DemoServiceHandlers(
                 domain = domain,
                 service = service,
                 data = data,
-                current = current
+                current = current,
             ),
         )
     }

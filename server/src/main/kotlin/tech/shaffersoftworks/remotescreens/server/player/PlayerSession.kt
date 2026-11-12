@@ -229,18 +229,21 @@ class PlayerSession(
             is PlayerMessage.Hello -> Unit
             is PlayerMessage.AppLog,
             is PlayerMessage.SentryTestResult,
-            is PlayerMessage.Ping -> receiveControl(message)
+            is PlayerMessage.Ping,
+            -> receiveControl(message)
             is PlayerMessage.PageShown,
             is PlayerMessage.DeviceState,
             is PlayerMessage.Telemetry,
-            is PlayerMessage.SettingsChanged -> receiveStatus(message)
+            is PlayerMessage.SettingsChanged,
+            -> receiveStatus(message)
             is PlayerMessage.Action,
             is PlayerMessage.VideoFailed,
             is PlayerMessage.SearchQuery,
             is PlayerMessage.CalendarCreate,
             is PlayerMessage.CalendarDelete,
             is PlayerMessage.IntercomReport,
-            is PlayerMessage.NotificationAction -> receiveInteraction(message)
+            is PlayerMessage.NotificationAction,
+            -> receiveInteraction(message)
         }
     }
 
@@ -324,14 +327,17 @@ class PlayerSession(
             TapOutcome.Ignored -> Unit
             is TapOutcome.Confirm,
             is TapOutcome.Code,
-            is TapOutcome.Failed -> handleFeedback(outcome)
+            is TapOutcome.Failed,
+            -> handleFeedback(outcome)
             is TapOutcome.Card,
             TapOutcome.Done,
-            TapOutcome.Rebuild -> handleDocumentOutcome(outcome)
+            TapOutcome.Rebuild,
+            -> handleDocumentOutcome(outcome)
             is TapOutcome.OpenCalendar,
             is TapOutcome.AgendaNotice,
             is TapOutcome.AlarmNotice,
-            is TapOutcome.Intercom -> handleFeatureOutcome(outcome)
+            is TapOutcome.Intercom,
+            -> handleFeatureOutcome(outcome)
         }
         jobs.removeAll { !it.isActive }
     }
@@ -391,7 +397,38 @@ class PlayerSession(
     suspend fun notify(request: NotificationRequest): String {
         val supportsNotifications = Protocol.CAPABILITY_NOTIFICATIONS in hello.capabilities
         if (!supportsNotifications && (request.presentation == "banner" || !request.wake)) return "unsupported"
-        val alert = Alert(
+        val alert = alertFromNotification(request)
+        notificationMutex.lock()
+        try {
+            val failuresBefore = sendFailures.get()
+            if (request.presentation == "alert") {
+                documents.showAlert(alert)
+            } else {
+                sendNotificationBanner(alert, wake = request.wake, durationSeconds = request.duration)
+            }
+            check(sendFailures.get() == failuresBefore) { "Notification dispatch failed" }
+        } finally {
+            notificationMutex.unlock()
+        }
+        return "sent"
+    }
+
+    private fun alertFromNotification(request: NotificationRequest): Alert {
+        val buttons = request.buttons.map {
+            AlertButton(
+                title = it.title,
+                service = it.service,
+                data = it.data,
+                action = it.action,
+            )
+        }.ifEmpty {
+            if (request.presentation == "alert" && request.duration == 0) {
+                listOf(AlertButton("Acknowledge", action = "acknowledge"))
+            } else {
+                emptyList()
+            }
+        }
+        return Alert(
             title = request.title,
             message = request.message,
             icon = request.icon,
@@ -400,54 +437,34 @@ class PlayerSession(
             timeout = request.duration,
             tag = request.tag,
             wake = request.wake,
-            buttons = request.buttons.map {
-                AlertButton(
-                    title = it.title,
-                    service = it.service,
-                    data = it.data,
-                    action = it.action,
-                )
-            }.ifEmpty {
-                if (request.presentation == "alert" && request.duration == 0) {
-                    listOf(AlertButton("Acknowledge", action = "acknowledge"))
-                } else {
-                    emptyList()
-                }
-            },
+            buttons = buttons,
         )
-        notificationMutex.lock()
-        try {
-            val failuresBefore = sendFailures.get()
-            if (request.presentation == "alert") {
-                documents.showAlert(alert)
-            } else {
-                val id = UUID.randomUUID().toString()
-                currentBanner = id to alert
-                bannerExpiresAt = System.nanoTime() + request.duration.seconds.inWholeNanoseconds
-                if (request.wake) send(ServerMessage.Wake(true))
-                send(ServerMessage.NotificationBanner(
-                    id = id,
-                    title = alert.title,
-                    message = alert.message,
-                    level = alert.level,
-                    icon = alert.icon,
-                    buttons = alert.buttons.map { it.title },
-                    timeout = alert.timeout,
-                    iconPath = Icons.path(
-                        alert.icon ?: if (alert.level == "info") {
-                            "bell-ring"
-                        } else {
-                            "alert"
-                        },
-                    ),
-                    topInsetDp = screen()?.let { Grid.topBarHeight(it.topBar) } ?: 0f,
-                ))
-            }
-            check(sendFailures.get() == failuresBefore) { "Notification dispatch failed" }
-        } finally {
-            notificationMutex.unlock()
-        }
-        return "sent"
+    }
+
+    private suspend fun sendNotificationBanner(
+        alert: Alert,
+        wake: Boolean,
+        durationSeconds: Int,
+    ) {
+        val id = UUID.randomUUID().toString()
+        currentBanner = id to alert
+        bannerExpiresAt = System.nanoTime() + durationSeconds.seconds.inWholeNanoseconds
+        if (wake) send(ServerMessage.Wake(true))
+        send(
+            ServerMessage.NotificationBanner(
+                id = id,
+                title = alert.title,
+                message = alert.message,
+                level = alert.level,
+                icon = alert.icon,
+                buttons = alert.buttons.map { it.title },
+                timeout = alert.timeout,
+                iconPath = Icons.path(
+                    alert.icon ?: if (alert.level == "info") "bell-ring" else "alert",
+                ),
+                topInsetDp = screen()?.let { Grid.topBarHeight(it.topBar) } ?: 0f,
+            ),
+        )
     }
 
     private suspend fun handleNotificationAction(message: PlayerMessage.NotificationAction) {
@@ -502,7 +519,7 @@ class PlayerSession(
             is AgendaMutation.Accepted -> {
                 send(ServerMessage.CalendarDialog(
                     mode = CalendarDialogMode.CLOSE,
-                    tileId = message.tileId
+                    tileId = message.tileId,
                 ))
                 publishAgendaNotice(message.tileId, result.message)
             }

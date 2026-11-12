@@ -23,7 +23,7 @@ internal class SignalingHub(
     data class DeferredSend(
         val sessionId: String,
         val json: String,
-        val delayMs: Long
+        val delayMs: Long,
     )
 
     data class Outcome(
@@ -57,9 +57,9 @@ internal class SignalingHub(
             sends = listOf(
                 error(
                     sessionId,
-                    ERROR_NOT_REGISTERED
-                )
-            )
+                    ERROR_NOT_REGISTERED,
+                ),
+            ),
         )
 
         info.lastActivity = now()

@@ -186,7 +186,7 @@ class PlayerHub(
     suspend fun adopt(
         codeOrDeviceId: String,
         screenId: String,
-        name: String? = null
+        name: String? = null,
     ): Boolean {
         val layout = layoutRepository.layout.value
         val session = sessions.values.firstOrNull { it.pairingCode == codeOrDeviceId } ?: sessions[codeOrDeviceId]

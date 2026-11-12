@@ -121,7 +121,7 @@ internal class SessionLifecycle(
                 ServerMessage.UpdateAvailable(
                     versionCode = apk.versionCode,
                     versionName = apk.versionName,
-                    path = "/player/apk"
+                    path = "/player/apk",
                 ),
             ) }
     }
@@ -181,7 +181,7 @@ internal class SessionLifecycle(
     private suspend fun sendChrome(screen: Screen) {
         host.send(ServerMessage.Settings(
             settings = screen.settings,
-            sentry = layoutRepository.layout.value.preferences.sentry
+            sentry = layoutRepository.layout.value.preferences.sentry,
         ))
         host.send(intercomConfig(screen))
     }

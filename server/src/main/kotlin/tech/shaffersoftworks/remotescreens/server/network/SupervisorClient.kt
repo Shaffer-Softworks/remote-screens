@@ -22,7 +22,7 @@ private const val DISCOVERY_LOG_LENGTH = 200
 /** The Home Assistant Supervisor's API, for an add-on running under it. */
 class SupervisorClient(
     private val httpClient: HttpClient,
-    private val supervisorToken: String
+    private val supervisorToken: String,
 ) {
     private val logger = LoggerFactory.getLogger(SupervisorClient::class.java)
 
@@ -49,7 +49,7 @@ class SupervisorClient(
     /** Tells Home Assistant the add-on is here, so the integration sets itself up with the key. */
     suspend fun announce(
         playerPort: Int,
-        apiKey: String
+        apiKey: String,
     ) {
         val body = buildJsonObject {
             put("service", "remote_screens")

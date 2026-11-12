@@ -23,7 +23,7 @@ sealed interface TapOutcome {
     data class Code(
         val varName: String,
         val shown: String,
-        val extra: List<VarValue> = emptyList()
+        val extra: List<VarValue> = emptyList(),
     ) : TapOutcome
 
     data class Failed(val message: String) : TapOutcome
@@ -43,7 +43,7 @@ sealed interface TapOutcome {
     data class AlarmNotice(
         val tileId: String,
         val title: String,
-        val message: String
+        val message: String,
     ) : TapOutcome
 
     /** Tell this tablet to call, hang up, or mute. [clientId] is the station to call. */

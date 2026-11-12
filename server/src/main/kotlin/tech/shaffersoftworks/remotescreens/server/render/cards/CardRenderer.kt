@@ -37,7 +37,7 @@ object CardRenderer {
         entityId: String,
         kind: String?,
         device: Device,
-        input: RenderInput
+        input: RenderInput,
     ): RenderedDoc {
         val entityState = input.states[entityId]
         val spec = Catalogue.of(kind ?: entityId.substringBefore('.'))

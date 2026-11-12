@@ -22,7 +22,7 @@ class LightsActions(
     suspend fun handle(
         verb: String,
         arg: String,
-        target: TapTarget
+        target: TapTarget,
     ): TapOutcome {
         val tileId = target.tile?.id
         val store = renderData?.lightsUi
@@ -48,7 +48,7 @@ class LightsActions(
         store: LightsUiStore,
         tileId: String,
         verb: String,
-        arg: String
+        arg: String,
     ): Boolean {
         val mode = LightDetailMode.of(arg)
         when (verb) {
@@ -65,7 +65,7 @@ class LightsActions(
         store: LightsUiStore,
         tileId: String,
         verb: String,
-        arg: String
+        arg: String,
     ): Boolean {
         if (verb == "lights_effect") {
             store.setEffectMenuOpen(tileId, false)
@@ -90,7 +90,7 @@ class LightsActions(
             val channels = listOf(
                 colour.red(),
                 colour.green(),
-                colour.blue()
+                colour.blue(),
             ).map {
                 JsonPrimitive(it)
             }
@@ -104,7 +104,7 @@ class LightsActions(
         homeAssistant.callService(
             domain = "light",
             service = "turn_on",
-            data = JsonObject(mapOf("entity_id" to JsonPrimitive(entityId), field))
+            data = JsonObject(mapOf("entity_id" to JsonPrimitive(entityId), field)),
         )
     }
 }

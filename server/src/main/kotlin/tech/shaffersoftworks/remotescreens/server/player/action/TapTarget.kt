@@ -9,7 +9,7 @@ data class TapTarget(
     val tileId: String,
     val entityId: String?,
     val kind: String,
-    val tile: Tile?
+    val tile: Tile?,
 ) {
     val spec: TypeSpec? get() = Catalogue.of(kind)
 }

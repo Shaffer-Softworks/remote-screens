@@ -155,7 +155,7 @@ class HomeAssistantClient(
     /** Config, every state, then the events we follow. */
     private suspend fun loadInitialState() {
         command("get_config")?.jsonObject?.let {
-            haConfig -> _config.value = parseConfig(haConfig)
+                haConfig -> _config.value = parseConfig(haConfig)
         }
 
         val allStates = command(
@@ -170,9 +170,9 @@ class HomeAssistantClient(
             payload = buildJsonObject {
                 put(
                     key = "event_type",
-                    value = "state_changed"
+                    value = "state_changed",
                 )
-            }
+            },
         )
 
         for (eventType in FOLLOWED_EVENTS) command(
@@ -180,7 +180,7 @@ class HomeAssistantClient(
             payload = buildJsonObject {
                 put(
                     key = "event_type",
-                    value = eventType
+                    value = eventType,
                 )
             },
         )
@@ -202,7 +202,7 @@ class HomeAssistantClient(
             val entityId = data["entity_id"]?.jsonPrimitive?.content ?: return
             val newState = (data["new_state"] as? JsonObject)?.let(::parseState)
             _states.update {
-                states -> if (newState == null) states - entityId else states + (entityId to newState)
+                    states -> if (newState == null) states - entityId else states + (entityId to newState)
             }
         }
         _events.tryEmit(HomeAssistantEvent(eventType, data))
