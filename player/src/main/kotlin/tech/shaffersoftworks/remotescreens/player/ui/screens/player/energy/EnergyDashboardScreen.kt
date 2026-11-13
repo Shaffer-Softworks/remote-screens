@@ -113,7 +113,7 @@ private fun PeriodBar(
     }
 }
 
-@Preview(widthDp = 800, heightDp = 600)
+@Preview(widthDp = 800, heightDp = 480)
 @Composable
 private fun EnergyDashboardScreenPreview() {
     RemoteScreensTheme {
