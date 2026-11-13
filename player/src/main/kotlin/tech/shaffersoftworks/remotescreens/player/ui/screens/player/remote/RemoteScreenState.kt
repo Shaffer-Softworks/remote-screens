@@ -136,12 +136,17 @@ data class RemoteScreenState(
             documents[slot]?.revision == search.revision && search.isShowingOn(page)
         }?.let { it.key to it.value }
 
-    /** Energy dashboard for the current main page, matching the document revision. */
+    /**
+     * Energy dashboard for the current main page. A rebuild keeps the previous one visible until
+     * the payload for the new document arrives, so the charts are not torn down and drawn again.
+     */
     val playingEnergyDashboard: SlotEnergyDashboard?
-        get() = energyDashboards[Slot.MAIN]
-            ?.firstOrNull { dashboard ->
-                dashboard.revision == documents[Slot.MAIN]?.revision && dashboard.page == page
-            }
+        get() {
+            val onPage = energyDashboards[Slot.MAIN].orEmpty().filter { it.page == page }
+            if (onPage.isEmpty()) return null
+            val revision = documents[Slot.MAIN]?.revision
+            return onPage.firstOrNull { it.revision == revision } ?: onPage.last()
+        }
 
     /** The page to show after a new main document: the same one if it still exists, otherwise home. */
     val pageAfterNewDocument: Int get() = if (page < pageCount) page else homePage
@@ -159,7 +164,7 @@ data class RemoteScreenState(
             videos = videos - message.slot,
             maps = maps - message.slot,
             searches = searches - message.slot,
-            energyDashboards = energyDashboards - message.slot,
+            energyDashboards = retainedEnergyDashboards(message),
         )
         if (message.slot != Slot.MAIN) return updated
         val newPageCount = message.pageCount.coerceAtLeast(1)
@@ -302,6 +307,26 @@ data class RemoteScreenState(
             calendarDialog = null,
             navigationDrawer = null,
         )
+}
+
+/**
+ * Keeps an Energy dashboard across a main-document rebuild when [message] still has that page.
+ * A missing list is an older add-on: keep whatever is already showing.
+ */
+private fun RemoteScreenState.retainedEnergyDashboards(
+    message: ServerMessage.Document,
+): Map<Slot, List<SlotEnergyDashboard>> {
+    val pages = message.energyPages
+    val kept = when {
+        message.slot != Slot.MAIN -> emptyList()
+        pages == null -> energyDashboards[message.slot].orEmpty()
+        else -> energyDashboards[message.slot].orEmpty().filter { it.page in pages }
+    }
+    return if (message.slot != Slot.MAIN || kept.isEmpty() && pages != null) {
+        energyDashboards - message.slot
+    } else {
+        energyDashboards + (message.slot to kept)
+    }
 }
 
 /** Native Energy dashboard for [page] of document [revision]. */

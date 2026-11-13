@@ -55,7 +55,7 @@ internal fun DocumentOverlays(
         state.playingEnergyDashboard
             ?.takeIf { slot == Slot.MAIN }
             ?.let { dashboard ->
-                key(dashboard.tileId, dashboard.revision, dashboard.page) {
+                key(dashboard.tileId, dashboard.page) {
                     DocumentOverlay(bounds.energy) {
                         EnergyDashboardScreen(
                             message = dashboard.message,

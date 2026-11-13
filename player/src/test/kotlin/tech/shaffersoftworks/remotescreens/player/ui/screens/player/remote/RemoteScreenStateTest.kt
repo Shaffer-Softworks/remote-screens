@@ -389,4 +389,51 @@ class RemoteScreenStateTest {
             ).calendarDialog,
         )
     }
+
+    @Test
+    fun aRebuildKeepsTheEnergyDashboardUntilItsNewPayloadArrives() {
+        val showing = energyState(revision = 1)
+        val rebuilt = showing.withDocument(mainDocument().copy(rev = 2), byteArrayOf(9))
+
+        assertEquals(1, rebuilt.playingEnergyDashboard?.revision)
+        assertEquals("Nov 13", rebuilt.playingEnergyDashboard?.message?.periodLabel)
+
+        val updated = rebuilt.withEnergyDashboard(Slot.MAIN, energyDashboard(revision = 2, periodLabel = "Nov 14"))
+        assertEquals(2, updated.playingEnergyDashboard?.revision)
+        assertEquals("Nov 14", updated.playingEnergyDashboard?.message?.periodLabel)
+    }
+
+    @Test
+    fun aScreenWithoutAnEnergyPageDropsTheDashboard() {
+        val showing = energyState(revision = 1)
+        val rebuilt = showing.withDocument(
+            mainDocument().copy(rev = 2, energyPages = emptyList()),
+            byteArrayOf(9),
+        )
+
+        assertNull(rebuilt.playingEnergyDashboard)
+    }
+
+    private fun energyState(revision: Int): RemoteScreenState =
+        RemoteScreenState(page = ENERGY_PAGE)
+            .withDocument(mainDocument(), documentBytes)
+            .copy(energyDashboards = mapOf(Slot.MAIN to listOf(energyDashboard(revision, "Nov 13"))))
+
+    private fun energyDashboard(revision: Int, periodLabel: String) = SlotEnergyDashboard(
+        revision = revision,
+        page = ENERGY_PAGE,
+        tileId = "energy",
+        message = ServerMessage.EnergyDashboard(
+            slot = Slot.MAIN,
+            rev = revision,
+            page = ENERGY_PAGE,
+            tileId = "energy",
+            componentId = 1,
+            periodLabel = periodLabel,
+        ),
+    )
+
+    private companion object {
+        const val ENERGY_PAGE = 2
+    }
 }

@@ -52,6 +52,8 @@ internal fun RemoteDocumentStack(
     var bounds by remember { mutableStateOf(OverlayBounds()) }
     SideEffect {
         controller.onAction = onAction
+        // This composition recorded the new stacking. Hide the old buffer before the frame draws.
+        controller.hideReplacedMainPlayer()
     }
     LaunchedEffect(controller, state) {
         controller.render(state)

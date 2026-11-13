@@ -6,6 +6,9 @@ import tech.shaffersoftworks.remotescreens.server.render.LiveMap
 import tech.shaffersoftworks.remotescreens.server.render.LiveSearch
 import tech.shaffersoftworks.remotescreens.server.render.LiveVideo
 import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
+import tech.shaffersoftworks.remotescreens.shared.EnergyDashboardTheme
 import tech.shaffersoftworks.remotescreens.shared.MapMarker
 import tech.shaffersoftworks.remotescreens.shared.MusicSearchRow
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
@@ -16,6 +19,7 @@ import org.slf4j.LoggerFactory
 import java.util.Base64
 
 private const val MAP_CARD_PICTURE = "map.card"
+private const val ARGB_MASK = 0xFFFFFFFFL
 
 /** Camera video streams, interactive maps, music search, and picture bitmaps for a [SessionHost]. */
 internal class SessionMedia(
@@ -115,6 +119,7 @@ internal class SessionMedia(
                     lowCarbonPercent = snapshot.lowCarbonPercent,
                     sankey = snapshot.sankey,
                     supportsNative = true,
+                    theme = shown.renderedDoc.docContext.palette.toEnergyTheme(),
                 ),
             )
         }
@@ -269,3 +274,14 @@ internal class SessionMedia(
         const val MAX_VIDEO_RESTARTS = 3
     }
 }
+
+private fun Palette.toEnergyTheme(): EnergyDashboardTheme = EnergyDashboardTheme(
+    page = argb(Role.PAGE),
+    card = argb(Role.CARD),
+    ink = argb(Role.INK),
+    inkDim = argb(Role.INK_DIM),
+    accent = argb(Role.ACCENT),
+    track = argb(Role.TRACK),
+)
+
+private fun Palette.argb(role: Role): Long = this[role].toLong() and ARGB_MASK

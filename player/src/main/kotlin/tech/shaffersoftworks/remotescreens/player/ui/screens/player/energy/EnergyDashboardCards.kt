@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 import tech.shaffersoftworks.remotescreens.shared.EnergyBarSeries
+import tech.shaffersoftworks.remotescreens.shared.EnergyDashboardTheme
 import tech.shaffersoftworks.remotescreens.shared.EnergyDistribution
 import tech.shaffersoftworks.remotescreens.shared.EnergyNamedSeries
 import tech.shaffersoftworks.remotescreens.shared.EnergyRankBar
@@ -43,12 +44,6 @@ import tech.shaffersoftworks.remotescreens.shared.EnergyTotalRow
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Slot
 
-private val PAGE_BG = Color(0xFF121212)
-private val CARD_BG = Color(0xFF1C1C1C)
-private val INK = Color(0xFFE8E8E8)
-private val INK_DIM = Color(0xFF9E9E9E)
-private val ACCENT = Color(0xFF03A9F4)
-private val GAUGE_TRACK = Color(0xFF333333)
 private const val CARD_RADIUS_DP = 12
 private const val GAUGE_SWEEP_DEG = 180f
 private const val GAUGE_START_DEG = 180f
@@ -60,10 +55,10 @@ internal fun ElectricityCard(series: EnergyBarSeries) {
     val locale = LocalLocale.current.platformLocale
     EnergyCard {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Electricity", color = INK, fontWeight = FontWeight.SemiBold)
+            Text("Electricity", color = LocalEnergyColors.current.ink, fontWeight = FontWeight.SemiBold)
             Text(
                 text = String.format(locale, "%.2f %s", series.totalKwh, series.unit),
-                color = INK_DIM,
+                color = LocalEnergyColors.current.inkDim,
             )
         }
         Spacer(Modifier.height(8.dp))
@@ -75,27 +70,32 @@ internal fun ElectricityCard(series: EnergyBarSeries) {
 internal fun TotalsCard(rows: List<EnergyTotalRow>) {
     val locale = LocalLocale.current.platformLocale
     EnergyCard {
-        Text("Totals", color = INK, fontWeight = FontWeight.SemiBold)
+        Text("Totals", color = LocalEnergyColors.current.ink, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Source", color = INK_DIM, fontSize = 12.sp)
-            Text("Energy", color = INK_DIM, fontSize = 12.sp)
-            Text("Cost", color = INK_DIM, fontSize = 12.sp)
+            Text("Source", color = LocalEnergyColors.current.inkDim, fontSize = 12.sp)
+            Text("Energy", color = LocalEnergyColors.current.inkDim, fontSize = 12.sp)
+            Text("Cost", color = LocalEnergyColors.current.inkDim, fontSize = 12.sp)
         }
         rows.forEach { row ->
             Row(
                 Modifier.fillMaxWidth().padding(top = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(row.source, color = INK, fontSize = 13.sp, modifier = Modifier.width(80.dp))
+                Text(
+                    text = row.source,
+                    color = LocalEnergyColors.current.ink,
+                    fontSize = 13.sp,
+                    modifier = Modifier.width(80.dp),
+                )
                 Text(
                     text = String.format(locale, "%.2f kWh", row.energyKwh),
-                    color = INK,
+                    color = LocalEnergyColors.current.ink,
                     fontSize = 13.sp,
                 )
                 Text(
                     text = row.cost?.let { String.format(locale, "$%.2f", it) } ?: "—",
-                    color = INK,
+                    color = LocalEnergyColors.current.ink,
                     fontSize = 13.sp,
                 )
             }
@@ -106,10 +106,10 @@ internal fun TotalsCard(rows: List<EnergyTotalRow>) {
 @Composable
 internal fun DevicesDetailCard(series: List<EnergyNamedSeries>) {
     EnergyCard {
-        Text("Individual devices detail", color = INK, fontWeight = FontWeight.SemiBold)
+        Text("Individual devices detail", color = LocalEnergyColors.current.ink, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
         if (series.isEmpty()) {
-            Text("No device data", color = INK_DIM)
+            Text("No device data", color = LocalEnergyColors.current.inkDim)
             return@EnergyCard
         }
         DevicesStackedChart(series)
@@ -128,7 +128,7 @@ internal fun DevicesDetailCard(series: List<EnergyNamedSeries>) {
                     Spacer(Modifier.width(4.dp))
                     Text(
                         text = named.name,
-                        color = INK_DIM,
+                        color = LocalEnergyColors.current.inkDim,
                         fontSize = 11.sp,
                         autoSize = TextAutoSize.StepBased(
                             minFontSize = 8.sp,
@@ -148,7 +148,7 @@ internal fun DevicesRankCard(bars: List<EnergyRankBar>) {
     EnergyCard {
         Text(
             text = "Individual devices",
-            color = INK,
+            color = LocalEnergyColors.current.ink,
             fontWeight = FontWeight.SemiBold,
             autoSize = TextAutoSize.StepBased(
                 minFontSize = 8.sp,
@@ -165,12 +165,17 @@ internal fun DevicesRankCard(bars: List<EnergyRankBar>) {
                 Modifier.fillMaxWidth().padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(bar.name, color = INK, fontSize = 13.sp, modifier = Modifier.width(140.dp))
+                Text(
+                    text = bar.name,
+                    color = LocalEnergyColors.current.ink,
+                    fontSize = 13.sp,
+                    modifier = Modifier.width(140.dp),
+                )
                 Box(
                     Modifier
                         .weight(1f)
                         .height(14.dp)
-                        .background(Color(0xFF2A2A2A), RoundedCornerShape(4.dp)),
+                        .background(LocalEnergyColors.current.track, RoundedCornerShape(4.dp)),
                 ) {
                     Box(
                         Modifier
@@ -181,7 +186,7 @@ internal fun DevicesRankCard(bars: List<EnergyRankBar>) {
                 }
                 Text(
                     text = String.format(locale, "%.1f", bar.kwh),
-                    color = INK_DIM,
+                    color = LocalEnergyColors.current.inkDim,
                     fontSize = 12.sp,
                     modifier = Modifier.width(48.dp).padding(start = 8.dp),
                 )
@@ -193,11 +198,11 @@ internal fun DevicesRankCard(bars: List<EnergyRankBar>) {
 @Composable
 internal fun DistributionCard(distribution: EnergyDistribution) {
     EnergyCard {
-        Text("Energy distribution", color = INK, fontWeight = FontWeight.SemiBold)
+        Text("Energy distribution", color = LocalEnergyColors.current.ink, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(12.dp))
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             DistNode("Low-carbon", distribution.lowCarbonKwh, Color(0xFF4CAF50))
-            DistNode(distribution.homeName.ifBlank { "Home" }, distribution.homeKwh, ACCENT)
+            DistNode(distribution.homeName.ifBlank { "Home" }, distribution.homeKwh, LocalEnergyColors.current.accent)
             DistNode("Grid", distribution.gridKwh, Color(0xFF90CAF9))
         }
     }
@@ -209,8 +214,8 @@ internal fun DistNode(label: String, kwh: Double, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(10.dp).background(color, RoundedCornerShape(50)))
         Spacer(Modifier.width(8.dp))
-        Text(label, color = INK, modifier = Modifier.weight(1f))
-        Text(String.format(locale, "%.1f kWh", kwh), color = INK_DIM)
+        Text(label, color = LocalEnergyColors.current.ink, modifier = Modifier.weight(1f))
+        Text(String.format(locale, "%.1f kWh", kwh), color = LocalEnergyColors.current.inkDim)
     }
 }
 
@@ -218,15 +223,16 @@ internal fun DistNode(label: String, kwh: Double, color: Color) {
 internal fun GaugeCard(percent: Double) {
     val locale = LocalLocale.current.platformLocale
     EnergyCard {
-        Text("Low-carbon electricity consumed", color = INK, fontWeight = FontWeight.SemiBold)
+        Text("Low-carbon electricity consumed", color = LocalEnergyColors.current.ink, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
+        val colors = LocalEnergyColors.current
         Box(Modifier.fillMaxWidth().height(140.dp), contentAlignment = Alignment.Center) {
             Canvas(Modifier.size(160.dp)) {
                 val stroke = 18.dp.toPx()
                 val arcSize = Size(size.width - stroke, size.height - stroke)
                 val topLeft = Offset(stroke / 2f, stroke / 2f)
                 drawArc(
-                    color = GAUGE_TRACK,
+                    color = colors.track,
                     startAngle = GAUGE_START_DEG,
                     sweepAngle = GAUGE_SWEEP_DEG,
                     useCenter = false,
@@ -235,7 +241,7 @@ internal fun GaugeCard(percent: Double) {
                     style = Stroke(width = stroke, cap = StrokeCap.Round),
                 )
                 drawArc(
-                    color = ACCENT,
+                    color = colors.accent,
                     startAngle = GAUGE_START_DEG,
                     sweepAngle = (GAUGE_SWEEP_DEG * (percent / 100.0).coerceIn(0.0, 1.0)).toFloat(),
                     useCenter = false,
@@ -246,7 +252,7 @@ internal fun GaugeCard(percent: Double) {
             }
             Text(
                 text = String.format(locale, "%.0f%%", percent),
-                color = INK,
+                color = LocalEnergyColors.current.ink,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 24.dp),
@@ -261,7 +267,7 @@ internal fun SankeyCard(sankey: EnergySankey) {
     EnergyCard {
         Text(
             text = "Energy flow",
-            color = INK,
+            color = LocalEnergyColors.current.ink,
             fontWeight = FontWeight.SemiBold,
             autoSize = TextAutoSize.StepBased(
                 minFontSize = 8.sp,
@@ -273,7 +279,7 @@ internal fun SankeyCard(sankey: EnergySankey) {
         Spacer(Modifier.height(8.dp))
 
         if (sankey.nodes.isEmpty()) {
-            Text("No flow data", color = INK_DIM)
+            Text("No flow data", color = LocalEnergyColors.current.inkDim)
             return@EnergyCard
         }
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -282,7 +288,7 @@ internal fun SankeyCard(sankey: EnergySankey) {
                 val to = sankey.nodes.firstOrNull { it.id == link.toId }?.label ?: link.toId
                 Text(
                     text = String.format(locale, "%s → %s  %.1f kWh", from, to, link.kwh),
-                    color = INK_DIM,
+                    color = LocalEnergyColors.current.inkDim,
                     fontSize = 12.sp,
                 )
             }
@@ -295,7 +301,7 @@ internal fun EnergyCard(content: @Composable () -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(CARD_BG, RoundedCornerShape(CARD_RADIUS_DP.dp))
+            .background(LocalEnergyColors.current.card, RoundedCornerShape(CARD_RADIUS_DP.dp))
             .padding(12.dp),
     ) {
         content()
@@ -343,13 +349,21 @@ internal fun previewDashboardMessage(): ServerMessage.EnergyDashboard =
                 EnergySankeyLink("home", "garage", 5.0),
             ),
         ),
+        theme = EnergyDashboardTheme(
+            page = 0xFF494949,
+            card = 0xFF333333,
+            ink = 0xFFFFFFFF,
+            inkDim = 0xFF939393,
+            accent = 0xFF14E1BA,
+            track = 0xFF1B1B1B,
+        ),
     )
 
 @Preview(name = "Electricity card", widthDp = 520, heightDp = 220)
 @Composable
 private fun ElectricityCardPreview() {
     RemoteScreensTheme {
-        Box(Modifier.background(PAGE_BG).padding(12.dp)) {
+        Box(Modifier.background(LocalEnergyColors.current.page).padding(12.dp)) {
             ElectricityCard(
                 series = EnergyBarSeries(
                     title = "Electricity",
@@ -366,7 +380,7 @@ private fun ElectricityCardPreview() {
 @Composable
 private fun TotalsCardPreview() {
     RemoteScreensTheme {
-        Box(Modifier.background(PAGE_BG).padding(12.dp)) {
+        Box(Modifier.background(LocalEnergyColors.current.page).padding(12.dp)) {
             TotalsCard(
                 rows = listOf(
                     EnergyTotalRow("Grid", 33.44, 7.2),
@@ -381,7 +395,7 @@ private fun TotalsCardPreview() {
 @Composable
 private fun DevicesDetailCardPreview() {
     RemoteScreensTheme {
-        Box(Modifier.background(PAGE_BG).padding(12.dp)) {
+        Box(Modifier.background(LocalEnergyColors.current.page).padding(12.dp)) {
             DevicesDetailCard(series = PREVIEW_DEVICE_SERIES)
         }
     }
@@ -391,7 +405,7 @@ private fun DevicesDetailCardPreview() {
 @Composable
 private fun DevicesDetailCardEmptyPreview() {
     RemoteScreensTheme {
-        Box(Modifier.background(PAGE_BG).padding(12.dp)) {
+        Box(Modifier.background(LocalEnergyColors.current.page).padding(12.dp)) {
             DevicesDetailCard(series = emptyList())
         }
     }
@@ -401,7 +415,7 @@ private fun DevicesDetailCardEmptyPreview() {
 @Composable
 private fun DevicesRankCardPreview() {
     RemoteScreensTheme {
-        Box(Modifier.background(PAGE_BG).padding(12.dp)) {
+        Box(Modifier.background(LocalEnergyColors.current.page).padding(12.dp)) {
             DevicesRankCard(bars = previewDashboardMessage().devicesRank)
         }
     }
@@ -411,7 +425,7 @@ private fun DevicesRankCardPreview() {
 @Composable
 private fun DistributionCardPreview() {
     RemoteScreensTheme {
-        Box(Modifier.background(PAGE_BG).padding(12.dp)) {
+        Box(Modifier.background(LocalEnergyColors.current.page).padding(12.dp)) {
             DistributionCard(
                 distribution = EnergyDistribution(13.9, 33.4, 33.4, "Shaffer Home"),
             )
@@ -423,7 +437,7 @@ private fun DistributionCardPreview() {
 @Composable
 private fun DistNodePreview() {
     RemoteScreensTheme {
-        Box(Modifier.background(CARD_BG).padding(12.dp)) {
+        Box(Modifier.background(LocalEnergyColors.current.card).padding(12.dp)) {
             DistNode("Low-carbon", 13.9, Color(0xFF4CAF50))
         }
     }
@@ -433,7 +447,7 @@ private fun DistNodePreview() {
 @Composable
 private fun GaugeCardPreview() {
     RemoteScreensTheme {
-        Box(Modifier.background(PAGE_BG).padding(12.dp)) {
+        Box(Modifier.background(LocalEnergyColors.current.page).padding(12.dp)) {
             GaugeCard(percent = 42.0)
         }
     }
@@ -443,7 +457,7 @@ private fun GaugeCardPreview() {
 @Composable
 private fun SankeyCardPreview() {
     RemoteScreensTheme {
-        Box(Modifier.background(PAGE_BG).padding(12.dp)) {
+        Box(Modifier.background(LocalEnergyColors.current.page).padding(12.dp)) {
             SankeyCard(sankey = previewDashboardMessage().sankey)
         }
     }
@@ -453,9 +467,9 @@ private fun SankeyCardPreview() {
 @Composable
 private fun EnergyCardPreview() {
     RemoteScreensTheme {
-        Box(Modifier.background(PAGE_BG).padding(12.dp)) {
+        Box(Modifier.background(LocalEnergyColors.current.page).padding(12.dp)) {
             EnergyCard {
-                Text("Card chrome", color = INK)
+                Text("Card chrome", color = LocalEnergyColors.current.ink)
             }
         }
     }

@@ -11,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -39,10 +38,6 @@ import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 import tech.shaffersoftworks.remotescreens.shared.EnergyBarSeries
 import tech.shaffersoftworks.remotescreens.shared.EnergyNamedSeries
-
-internal val ENERGY_CHART_ACCENT = Color(0xFF03A9F4)
-internal val ENERGY_CHART_CARD_BG = Color(0xFF1C1C1C)
-internal val ENERGY_CHART_INK_DIM = Color(0xFF9E9E9E)
 
 private const val CHART_HEIGHT_DP = 160
 private const val STACKED_CHART_HEIGHT_DP = 140
@@ -80,7 +75,7 @@ internal val PREVIEW_DEVICE_SERIES = listOf(
 internal fun ElectricityChart(series: EnergyBarSeries) {
     val values = series.values.ifEmpty { listOf(0.0) }
     val column = rememberLineComponent(
-        fill = fill(ENERGY_CHART_ACCENT),
+        fill = fill(LocalEnergyColors.current.accent),
         thickness = COLUMN_THICKNESS_DP.dp,
         shape = CorneredShape.rounded(allPercent = COLUMN_CORNER_PERCENT),
     )
@@ -145,7 +140,7 @@ internal fun EnergyColumnChartHost(
     producerKeys: Any?,
     modifier: Modifier,
 ) {
-    val axisLabel = rememberAxisLabelComponent(color = ENERGY_CHART_INK_DIM)
+    val axisLabel = rememberAxisLabelComponent(color = LocalEnergyColors.current.inkDim)
     val chart = rememberCartesianChart(
         rememberColumnCartesianLayer(
             columnProvider = columnProvider,
@@ -181,7 +176,7 @@ internal fun EnergyColumnChartHost(
 @Composable
 private fun ElectricityChartPreview() {
     RemoteScreensTheme {
-        Box(Modifier.background(ENERGY_CHART_CARD_BG).padding(12.dp)) {
+        Box(Modifier.background(LocalEnergyColors.current.card).padding(12.dp)) {
             ElectricityChart(
                 series = EnergyBarSeries(
                     title = "Electricity",
@@ -198,7 +193,7 @@ private fun ElectricityChartPreview() {
 @Composable
 private fun DevicesStackedChartPreview() {
     RemoteScreensTheme {
-        Box(Modifier.background(ENERGY_CHART_CARD_BG).padding(12.dp)) {
+        Box(Modifier.background(LocalEnergyColors.current.card).padding(12.dp)) {
             DevicesStackedChart(series = PREVIEW_DEVICE_SERIES)
         }
     }
@@ -208,9 +203,9 @@ private fun DevicesStackedChartPreview() {
 @Composable
 private fun EnergyColumnChartHostPreview() {
     RemoteScreensTheme {
-        Box(Modifier.background(ENERGY_CHART_CARD_BG).padding(12.dp)) {
+        Box(Modifier.background(LocalEnergyColors.current.card).padding(12.dp)) {
             val column = rememberLineComponent(
-                fill = fill(ENERGY_CHART_ACCENT),
+                fill = fill(LocalEnergyColors.current.accent),
                 thickness = COLUMN_THICKNESS_DP.dp,
                 shape = CorneredShape.rounded(allPercent = COLUMN_CORNER_PERCENT),
             )

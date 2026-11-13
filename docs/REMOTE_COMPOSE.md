@@ -97,8 +97,9 @@ Android Studio's **Split** or **Design** view. See [the preview guide](../previe
 - `RemoteDocumentStack` owns the Compose layout: MAIN's two document buffers, OVERLAY, and ALERT. Each slot's
   `DocumentOverlays` sits immediately above that slot. A search field on MAIN cannot cover an alert.
 - `RemoteDocumentController` owns document loading, named values and bitmaps, page selection, scroll restoration,
-  and buffer reveals. Both MAIN renderers stay mounted so replacement documents can draw at alpha zero before
-  swapping. Queued reveals check that their document is still current and are invalidated on disposal.
+  and buffer reveals. Both MAIN renderers stay mounted. A replacement is drawn at full alpha behind the current
+  page, then raised; the old buffer is hidden only after that. Queued reveals check that their document is still
+  current and are invalidated on disposal.
 - Overlay bounds come from the active document before drawing. `DocumentOverlay` measures and places children
   in physical document pixels, avoiding a second density conversion. Search uses the add-on's explicit rectangle
   when supplied, because its remote component can be unmeasured.

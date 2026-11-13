@@ -345,6 +345,11 @@ sealed interface ServerMessage {
         val restartTimeout: Boolean = true,
         /** Present only for a main screen with a native modal navigation drawer. */
         val navigationDrawer: NavigationDrawer? = null,
+        /**
+         * Pages that have a native Energy dashboard. Null means an older add-on did not say,
+         * so the player keeps the dashboard it already has. An empty list means this screen has none.
+         */
+        val energyPages: List<Int>? = null,
     ) : ServerMessage
 
     @Serializable
@@ -515,7 +520,8 @@ sealed interface ServerMessage {
 
     /**
      * Native Energy dashboard for page [page] of document [rev] in [slot].
-     * Only for players with [Protocol.CAPABILITY_ENERGY_DASHBOARD]; it ends when the document goes.
+     * Only for players with [Protocol.CAPABILITY_ENERGY_DASHBOARD]. A document rebuild keeps the
+     * previous dashboard on screen until this message replaces it.
      */
     @Serializable
     @SerialName("energy_dashboard")
@@ -535,7 +541,32 @@ sealed interface ServerMessage {
         val lowCarbonPercent: Double = 0.0,
         val sankey: EnergySankey = EnergySankey(),
         val supportsNative: Boolean = true,
+        /** Page, card, ink, and accent from the screen theme. Older add-ons omit it. */
+        val theme: EnergyDashboardTheme = EnergyDashboardTheme(),
     ) : ServerMessage
+}
+
+/**
+ * Resolved theme roles for the native Energy dashboard.
+ * Defaults are the previous fixed colours, so an older add-on that omits them still paints.
+ */
+@Serializable
+data class EnergyDashboardTheme(
+    val page: Long = PAGE,
+    val card: Long = CARD,
+    val ink: Long = INK,
+    val inkDim: Long = INK_DIM,
+    val accent: Long = ACCENT,
+    val track: Long = TRACK,
+) {
+    companion object {
+        const val PAGE = 0xFF121212L
+        const val CARD = 0xFF1C1C1CL
+        const val INK = 0xFFE8E8E8L
+        const val INK_DIM = 0xFF9E9E9EL
+        const val ACCENT = 0xFF03A9F4L
+        const val TRACK = 0xFF333333L
+    }
 }
 
 /** One electricity / source total in [ServerMessage.EnergyDashboard.totals]. */

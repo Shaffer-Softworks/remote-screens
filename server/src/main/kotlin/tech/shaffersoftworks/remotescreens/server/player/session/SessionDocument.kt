@@ -151,6 +151,11 @@ internal class SessionDocument(
                 wakeOnShow = wakeOnShow,
                 restartTimeout = restartTimeout,
                 navigationDrawer = renderedDoc.navigationDrawer,
+                energyPages = if (shown.slot == Slot.MAIN) {
+                    renderedDoc.docContext.energyDashboards.map { it.page }.distinct()
+                } else {
+                    null
+                },
             ),
         )
     }

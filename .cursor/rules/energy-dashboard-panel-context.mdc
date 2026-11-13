@@ -18,6 +18,7 @@ Full-page kind `energy_dashboard` (Other tiles). Charts are **player-native Comp
 - Period UI: `EnergyDashboardUiStore` + verbs `energy_dash_prev` / `next` / `now` / `period` → `EnergyDashboardActions` → Rebuild.
 - Protocol: `CAPABILITY_ENERGY_DASHBOARD`, `ServerMessage.EnergyDashboard` (page, componentId, series, totals, sankey, …).
 - Player: Hello capability; `RemoteScreenState.energyDashboards` / `playingEnergyDashboard`; `DocumentOverlays` places `EnergyDashboardScreen` on MAIN page bounds.
+- Chrome (page, card, ink, accent, gauge track, electricity columns, period bar) comes from `EnergyDashboard.theme`, resolved from the screen palette (`Role.PAGE`, `CARD`, `INK`, `INK_DIM`, `ACCENT`, `TRACK`). Low-carbon green, grid blue, and per-device colours stay categorical. An older add-on that omits `theme` keeps the previous fixed dark dashboard.
 
 ## Charts
 
