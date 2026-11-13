@@ -110,7 +110,7 @@ internal fun DevicesDetailCard(series: List<EnergyNamedSeries>) {
 
         Column (
             Modifier.fillMaxWidth().padding(top = 8.dp),
-            horizontalAlignment = Alignment.Start
+            horizontalAlignment = Alignment.Start,
         ) {
             series.take(LEGEND_MAX).forEach { named ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -127,7 +127,7 @@ internal fun DevicesDetailCard(series: List<EnergyNamedSeries>) {
                         autoSize = TextAutoSize.StepBased(
                             minFontSize = 8.sp,
                             maxFontSize = 12.sp,
-                            stepSize = 2.sp // optional step increment (defaults to 0.25.sp)
+                            stepSize = 2.sp, // optional step increment (defaults to 0.25.sp)
                         ),
                     )
                 }
@@ -146,7 +146,7 @@ internal fun DevicesRankCard(bars: List<EnergyRankBar>) {
             autoSize = TextAutoSize.StepBased(
                 minFontSize = 8.sp,
                 maxFontSize = 12.sp,
-                stepSize = 2.sp // optional step increment (defaults to 0.25.sp)
+                stepSize = 2.sp, // optional step increment (defaults to 0.25.sp)
             ),
         )
 
@@ -256,8 +256,8 @@ internal fun SankeyCard(sankey: EnergySankey) {
             autoSize = TextAutoSize.StepBased(
                 minFontSize = 8.sp,
                 maxFontSize = 12.sp,
-                stepSize = 2.sp // optional step increment (defaults to 0.25.sp)
-            )
+                stepSize = 2.sp, // optional step increment (defaults to 0.25.sp)
+            ),
         )
 
         Spacer(Modifier.height(8.dp))

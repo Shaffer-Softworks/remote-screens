@@ -73,7 +73,7 @@ internal val PREVIEW_DEVICE_SERIES = listOf(
     EnergyNamedSeries("Garage", 0xFF795548, PREVIEW_DEVICE_GARAGE),
     EnergyNamedSeries("Garage", 0xFF795548, PREVIEW_DEVICE_GARAGE),
     EnergyNamedSeries("Garage", 0xFF795548, PREVIEW_DEVICE_GARAGE),
-    EnergyNamedSeries("Garage", 0xFF795548, PREVIEW_DEVICE_GARAGE)
+    EnergyNamedSeries("Garage", 0xFF795548, PREVIEW_DEVICE_GARAGE),
 )
 
 @Composable
