@@ -10,6 +10,8 @@
   --danger: #ff8b86;
   --shadow: 0 2px 6px rgb(0 0 0 / 24%), 0 8px 20px rgb(0 0 0 / 30%);
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   color-scheme: dark;
   background: var(--bg);
   color: var(--ink);
@@ -99,7 +101,17 @@
 .dashboard .dot.on { background: #94efbd; }
 .dashboard button.settings-button { padding: 8px; border: none; background: transparent; }
 .dashboard .demo-badge { font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; color: var(--muted); }
-.dashboard-content { max-width: 1760px; margin: 0 auto; padding: 28px 32px 36px; }
+.dashboard-content { flex: 1; width: 100%; max-width: 1760px; margin: 0 auto; padding: 28px 32px 36px; box-sizing: border-box; }
+.dashboard-footer {
+  padding: 16px 32px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+.dashboard-footer p { margin: 0; }
+.dashboard-footer a { color: #86bbff; text-decoration: none; }
+.dashboard-footer a:hover { text-decoration: underline; }
 .dashboard .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
 .dashboard .section-heading h1 { font-size: 28px; line-height: 1.2; font-weight: 500; letter-spacing: -.3px; }
 .dashboard .section-heading h2 { font-size: 24px; line-height: 1.25; font-weight: 500; letter-spacing: -.2px; }
@@ -221,6 +233,7 @@
   .dashboard button.nav-tab { padding-inline: 15px; font-size: 16px; }
   .dashboard .connection { font-size: 12px; gap: 8px; }
   .dashboard-content { padding-inline: 24px; }
+  .dashboard-footer { padding-inline: 24px; }
   .dashboard .section-heading { align-items: flex-start; flex-wrap: wrap; }
   .dashboard .screens { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard .pairing-row { grid-template-columns: 45px 1fr 170px 190px 80px; gap: 14px; }
@@ -250,6 +263,7 @@
   .dashboard .connection { order: 4; margin: 0 0 10px; width: 100%; }
   .dashboard button.settings-button { margin-left: auto; }
   .dashboard-content { padding: 24px 16px; }
+  .dashboard-footer { padding-inline: 16px; }
   .dashboard .section-heading { gap: 18px; }
   .dashboard .section-heading h1 { font-size: 26px; }
   .dashboard .section-heading h2 { font-size: 22px; }

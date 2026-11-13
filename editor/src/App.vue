@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted } from 'vue'
 import ScreensView from './components/ScreensView.vue'
 import ScreenEditor from './components/ScreenEditor.vue'
-import ThemesView from './components/ThemesView.vue'
 import { dirty, editing, load, open, pollPlayers, state } from './store'
 import type { Screen } from './model/types'
-
-const theming = ref(false)
 
 function edit(screen: Screen | null): void {
   if (screen === null && dirty.value && !confirm('Leave without saving?')) return
@@ -34,8 +31,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
     </div>
     <p v-else-if="!state.layout" class="muted loading">Loading…</p>
     <ScreenEditor v-else-if="editing" :key="editing.id" @close="edit(null)" />
-    <ThemesView v-else-if="theming" @close="theming = false" />
-    <ScreensView v-else @edit="edit" @themes="theming = true" />
+    <ScreensView v-else @edit="edit" />
     <div v-if="state.toast" class="toast">{{ state.toast }}</div>
   </div>
 </template>

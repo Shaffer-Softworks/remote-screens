@@ -8,8 +8,6 @@ import { attempt, refreshThemes, state, toast } from '../store'
 import ColorInput from './ColorInput.vue'
 import MdiIcon from './MdiIcon.vue'
 
-const emit = defineEmits<{ close: [] }>()
-
 const builtins = computed(() => themes.value.filter(theme => theme.builtin))
 const selectedId = ref(themes.value[0]?.id ?? '')
 const selected = computed(() => themes.value.find(theme => theme.id === selectedId.value))
@@ -20,6 +18,8 @@ const stored = computed(() =>
   selected.value && !selected.value.builtin ? JSON.stringify(toTheme(selected.value)) : '',
 )
 const dirty = computed(() => draft.value !== null && JSON.stringify(draft.value) !== stored.value)
+
+defineExpose({ isDirty: dirty })
 
 function toTheme(resolved: ResolvedTheme): Theme {
   return {
@@ -139,18 +139,19 @@ const vars = computed(() => themeVars(shown.value))
 
 <template>
   <div class="page">
-    <header class="row">
-      <button class="icon" title="Back to screens" @click="emit('close')">
-        <MdiIcon name="arrow-left" />
-      </button>
-      <MdiIcon name="palette-outline" :size="28" />
-      <h1 class="grow">Themes</h1>
-    </header>
-    <p class="muted intro">
-      A screen wears one theme by day and another in dark mode and at night (pick them in the
-      screen's settings). Duplicate a theme to make your own; its colours are laid over the theme it
-      was made from. Each role below names where that colour lands on the tablet.
-    </p>
+    <div class="section-heading themes-heading">
+      <div>
+        <h1 id="themes-title" class="themes-title">
+          <MdiIcon name="palette-outline" :size="28" />
+          Themes
+        </h1>
+        <p class="muted intro">
+          A screen wears one theme by day and another in dark mode and at night (pick them in the
+          screen's settings). Duplicate a theme to make your own; its colours are laid over the theme it
+          was made from. Each role below names where that colour lands on the tablet.
+        </p>
+      </div>
+    </div>
 
     <div class="layout">
       <aside class="card list">
@@ -337,10 +338,16 @@ const vars = computed(() => themeVars(shown.value))
 .page {
   max-width: 1040px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.themes-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .intro,
