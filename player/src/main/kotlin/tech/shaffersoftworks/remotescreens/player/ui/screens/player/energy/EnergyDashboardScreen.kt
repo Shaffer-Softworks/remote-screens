@@ -48,7 +48,7 @@ fun EnergyDashboardScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
-                Modifier.fillMaxWidth().height(280.dp),
+                Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Column(
@@ -114,7 +114,7 @@ private fun PeriodBar(
     }
 }
 
-@Preview(widthDp = 800, heightDp = 480)
+@Preview(widthDp = 800, heightDp = 600)
 @Composable
 private fun EnergyDashboardScreenPreview() {
     RemoteScreensTheme {

@@ -62,6 +62,13 @@ object EnergyDashboardParser {
         return if (values.isEmpty()) FULL_FOSSIL else values.average().coerceIn(0.0, FULL_FOSSIL)
     }
 
+    fun fossilKwh(response: JsonElement?): Double =
+        (response as? JsonObject)
+            ?.values
+            ?.mapNotNull { (it as? JsonPrimitive)?.doubleOrNull }
+            ?.sum()
+            ?: 0.0
+
     private fun JsonObject.text(key: String): String? = (this[key] as? JsonPrimitive)?.contentOrNull
 
     private fun JsonObject.number(key: String): Double? = (this[key] as? JsonPrimitive)?.doubleOrNull

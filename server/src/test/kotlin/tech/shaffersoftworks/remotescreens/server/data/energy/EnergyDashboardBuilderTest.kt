@@ -32,7 +32,7 @@ class EnergyDashboardBuilderTest {
                     EnergyStatPoint(1L, 1.5),
                 ),
             ),
-            fossilFraction = 0.6,
+            fossilKwh = 3.0,
             nowMs = 0L,
         )
 
