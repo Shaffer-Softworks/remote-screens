@@ -4,8 +4,16 @@ import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmUiStore
 import tech.shaffersoftworks.remotescreens.server.data.blinds.BlindsUiStore
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
 import tech.shaffersoftworks.remotescreens.server.data.cameras.CamerasUiStore
+import tech.shaffersoftworks.remotescreens.server.data.energy.EnergyDashboardPeriod
+import tech.shaffersoftworks.remotescreens.server.data.energy.EnergyDashboardRepository
+import tech.shaffersoftworks.remotescreens.server.data.energy.EnergyDashboardSnapshot
+import tech.shaffersoftworks.remotescreens.server.data.energy.EnergyDashboardUiState
+import tech.shaffersoftworks.remotescreens.server.data.energy.EnergyDashboardUiStore
 import tech.shaffersoftworks.remotescreens.server.data.lights.BLINDS_DOMAINS
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsRoomsRepository
+import tech.shaffersoftworks.remotescreens.shared.EnergyBarSeries
+import tech.shaffersoftworks.remotescreens.shared.EnergyDistribution
+import tech.shaffersoftworks.remotescreens.shared.EnergySankey
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiStore
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicAssistantClient
 import tech.shaffersoftworks.remotescreens.server.data.security.SecurityUiStore
@@ -50,10 +58,12 @@ class RenderDataRepository(
     val alarmUi: AlarmUiStore = AlarmUiStore(),
     val lightsUi: LightsUiStore = LightsUiStore(),
     val camerasUi: CamerasUiStore = CamerasUiStore(),
+    val energyDashboardUi: EnergyDashboardUiStore = EnergyDashboardUiStore(),
     val blindsUi: BlindsUiStore = BlindsUiStore(),
     val vacuumUi: VacuumUiStore = VacuumUiStore(),
     val securityUi: SecurityUiStore = SecurityUiStore(),
     private val lightsRooms: LightsRoomsRepository = LightsRoomsRepository(homeAssistant),
+    private val energyDashboard: EnergyDashboardRepository = EnergyDashboardRepository(homeAssistant),
 ) {
     private val logger = LoggerFactory.getLogger(RenderDataRepository::class.java)
 
@@ -86,6 +96,7 @@ class RenderDataRepository(
         val needsAgenda = tiles.any { it.full && it.effectiveKind() == "calendar" }
         val needsEnergy = tiles.any { it.effectiveKind() == "energy" }
         val needsLights = tiles.any { it.effectiveKind() == "lights" }
+        val energyDashboardTiles = tiles.filter { it.effectiveKind() == "energy_dashboard" }
         val needsBlinds = tiles.any { it.effectiveKind() == "blinds" }
         val historyHours = tiles.firstOrNull { it.effectiveKind() == "history" }
             ?.options?.get("hours")?.toIntOrNull()
@@ -95,6 +106,14 @@ class RenderDataRepository(
         val musicPayload = musicPayload(musicTiles)
         val zone = runCatching { ZoneId.of(homeAssistant.config.value.timeZone) }.getOrDefault(ZoneId.of("UTC"))
         val agenda = if (needsAgenda) calendarAgenda.snapshot(homeAssistant.states.value, zone) else null
+        val homeName = homeAssistant.config.value.locationName.takeIf { it.isNotBlank() } ?: "Home"
+        val energyDashboards = energyDashboardTiles.associate { tile ->
+            val ui = energyDashboardUi.state(tile.id)
+            tile.id to (
+                energyDashboard.snapshot(ui = ui, zone = zone, homeName = homeName)
+                    ?: emptyEnergyDashboard(ui)
+                )
+        }
         return RenderData(
             forecasts = weatherEntities.associateWith { forecast(it) },
             history = graphedEntities.associateWith { history(it, historyHours) },
@@ -112,12 +131,31 @@ class RenderDataRepository(
             lightsRooms = if (needsLights) lightsRooms.rooms() else emptyList(),
             lightsUi = lightsUi.snapshot(),
             camerasUi = camerasUi.snapshot(),
+            energyDashboards = energyDashboards,
+            energyDashboardUi = energyDashboardUi.snapshot(),
             blindsRooms = if (needsBlinds) lightsRooms.rooms(BLINDS_DOMAINS) else emptyList(),
             blindsUi = blindsUi.snapshot(),
             vacuumUi = vacuumUi.snapshot(),
             securityUi = securityUi.snapshot(),
         )
     }
+
+    private fun emptyEnergyDashboard(ui: EnergyDashboardUiState): EnergyDashboardSnapshot =
+        EnergyDashboardSnapshot(
+            periodLabel = when (ui.period) {
+                EnergyDashboardPeriod.DAY -> "Today"
+                EnergyDashboardPeriod.WEEK -> "This week"
+                EnergyDashboardPeriod.MONTH -> "This month"
+            },
+            isNow = ui.offset == 0,
+            electricity = EnergyBarSeries(title = "Electricity"),
+            totals = emptyList(),
+            devicesDetail = emptyList(),
+            devicesRank = emptyList(),
+            distribution = EnergyDistribution(),
+            lowCarbonPercent = 0.0,
+            sankey = EnergySankey(),
+        )
 
     /** What the card of [entityId], or of a [kind] with no entity such as energy, needs. */
     suspend fun forCard(entityId: String?, kind: String?): RenderData = when {

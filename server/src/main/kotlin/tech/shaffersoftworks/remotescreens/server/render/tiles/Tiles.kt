@@ -16,6 +16,7 @@ import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.calenda
 import tech.shaffersoftworks.remotescreens.server.render.panels.home.homeTile
 import tech.shaffersoftworks.remotescreens.server.render.panels.cameras.camerasPanel
 import tech.shaffersoftworks.remotescreens.server.render.panels.energy.energyPanel
+import tech.shaffersoftworks.remotescreens.server.render.panels.energydashboard.energyDashboardPanel
 import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.intercomPanel
 import tech.shaffersoftworks.remotescreens.server.render.panels.blinds.blindsPanel
 import tech.shaffersoftworks.remotescreens.server.render.panels.lights.lightsPanel
@@ -73,6 +74,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
             "cameras",
             "intercom",
             "energy",
+            "energy_dashboard",
         )
         val pageTap = if (hasOwnTaps) null else tapRef
         val pageHold = if (hasOwnTaps) null else holdRef
@@ -93,6 +95,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
                 "cameras" -> this@tile.camerasPanel(tile, box)
                 "intercom" -> this@tile.intercomPanel(tile, box)
                 "energy" -> this@tile.energyPanel(tile, box)
+                "energy_dashboard" -> this@tile.energyDashboardPanel(tile, box)
                 else -> this@tile.weatherPanel(tile, box)
             }
         } }

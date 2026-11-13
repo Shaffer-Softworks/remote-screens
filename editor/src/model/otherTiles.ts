@@ -10,6 +10,7 @@ export const OTHER_TILE_KINDS = [
   'bedside',
   'nav',
   'energy',
+  'energy_dashboard',
   'map',
   'lights',
   'blinds',
@@ -31,6 +32,7 @@ export const OTHER_TILE_FULL_KINDS = [
   'cameras',
   'intercom',
   'energy',
+  'energy_dashboard',
 ]
 
 /** Source for an Other-tiles kind click or drag. */

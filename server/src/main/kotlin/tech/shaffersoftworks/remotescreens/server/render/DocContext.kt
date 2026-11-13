@@ -62,6 +62,8 @@ class DocContext(
     val maps = mutableListOf<LiveMap>()
     /** Music Assistant search overlays for players with CAPABILITY_MUSIC_SEARCH. */
     val searches = mutableListOf<LiveSearch>()
+    /** Energy dashboard pages for players with CAPABILITY_ENERGY_DASHBOARD. */
+    val energyDashboards = mutableListOf<LiveEnergyDashboard>()
     /** Page index currently being drawn, so a search overlay can hide on the other pages. */
     var renderingPage: Int = 0
     /** Action metadata to the action and the entity it changes. */
@@ -254,6 +256,18 @@ data class LiveSearch(
     companion object {
         /** Next to [LiveMap.FIRST_COMPONENT_ID], so search, map, and video targets never share an id. */
         const val FIRST_COMPONENT_ID = 0x5E_0000
+    }
+}
+
+/** A native Energy dashboard for [tileId] on document [page] over [componentId]. */
+data class LiveEnergyDashboard(
+    val tileId: String,
+    val page: Int,
+    val componentId: Int,
+) {
+    companion object {
+        /** Next to [LiveSearch.FIRST_COMPONENT_ID]. */
+        const val FIRST_COMPONENT_ID = 0x5F_0000
     }
 }
 

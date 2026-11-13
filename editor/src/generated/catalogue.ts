@@ -904,6 +904,21 @@ export const CATALOGUE: Record<string, TypeSpec> = {
     "verbs": [],
     "needsEntity": false
   },
+  "energy_dashboard": {
+    "name": "Energy dashboard",
+    "icon": "chart-box",
+    "iconOn": null,
+    "toggle": false,
+    "tap": "card",
+    "card": "none",
+    "controls": [],
+    "sizes": [
+      "full"
+    ],
+    "options": [],
+    "verbs": [],
+    "needsEntity": false
+  },
   "map": {
     "name": "Map",
     "icon": "map",

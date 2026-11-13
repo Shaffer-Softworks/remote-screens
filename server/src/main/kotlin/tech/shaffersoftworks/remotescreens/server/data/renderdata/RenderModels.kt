@@ -3,6 +3,8 @@ package tech.shaffersoftworks.remotescreens.server.data.renderdata
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmUiState
 import tech.shaffersoftworks.remotescreens.server.data.blinds.BlindsUiState
 import tech.shaffersoftworks.remotescreens.server.data.cameras.CamerasUiState
+import tech.shaffersoftworks.remotescreens.server.data.energy.EnergyDashboardSnapshot
+import tech.shaffersoftworks.remotescreens.server.data.energy.EnergyDashboardUiState
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsRoom
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiState
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicListRow
@@ -54,6 +56,10 @@ data class RenderData(
     val lightsUi: Map<String, LightsUiState> = emptyMap(),
     /** Chosen camera of each cameras page, keyed by tile id. */
     val camerasUi: Map<String, CamerasUiState> = emptyMap(),
+    /** Chart snapshots for each Energy dashboard page, keyed by tile id. */
+    val energyDashboards: Map<String, EnergyDashboardSnapshot> = emptyMap(),
+    /** Period UI for each Energy dashboard page, keyed by tile id. */
+    val energyDashboardUi: Map<String, EnergyDashboardUiState> = emptyMap(),
     /** Home Assistant's areas with covers, when the screen has a blinds page. */
     val blindsRooms: List<LightsRoom> = emptyList(),
     /** Chosen room of each blinds page, keyed by tile id. */

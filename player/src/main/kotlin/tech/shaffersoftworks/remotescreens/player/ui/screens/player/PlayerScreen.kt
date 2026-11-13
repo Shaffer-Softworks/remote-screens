@@ -40,6 +40,7 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
         onSearchQuery = viewModel::onSearchQuery,
         onSearchPlay = viewModel::onSearchPlay,
         onSearchEnqueue = viewModel::onSearchEnqueue,
+        onEnergyAction = viewModel::onEnergyDashboardAction,
         onEnterAddress = viewModel::openAddressDialog,
         onAllowUnrestrictedBattery = viewModel::onAllowUnrestrictedBatteryRequested,
         imageLoader = viewModel.haImageLoaderQualifier,
@@ -84,6 +85,7 @@ internal fun PlayerScreenContent(
     onSearchQuery: (String, String) -> Unit = { _, _ -> },
     onSearchPlay: (String, String) -> Unit = { _, _ -> },
     onSearchEnqueue: (String, String) -> Unit = { _, _ -> },
+    onEnergyAction: (String, String) -> Unit = { _, _ -> },
     onEnterAddress: () -> Unit = {},
     onAllowUnrestrictedBattery: () -> Unit = {},
     imageLoader: ImageLoader,
@@ -121,6 +123,7 @@ internal fun PlayerScreenContent(
                 onSearchQuery = onSearchQuery,
                 onSearchPlay = onSearchPlay,
                 onSearchEnqueue = onSearchEnqueue,
+                onEnergyAction = onEnergyAction,
                 imageLoader = imageLoader,
             )
         }

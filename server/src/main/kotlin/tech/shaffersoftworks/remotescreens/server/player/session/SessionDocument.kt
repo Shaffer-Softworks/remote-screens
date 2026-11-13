@@ -203,6 +203,9 @@ internal class SessionDocument(
         for (map in shown.renderedDoc.docContext.maps) {
             media.sendMap(shown, map, states)
         }
+        for (dashboard in shown.renderedDoc.docContext.energyDashboards) {
+            media.sendEnergyDashboard(shown, dashboard)
+        }
         if (!isForced) return
         for ((entityId) in shown.renderedDoc.docContext.videos) {
             media.warmCameraStream(entityId = entityId)

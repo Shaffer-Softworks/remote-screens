@@ -190,6 +190,11 @@ dependencies {
     implementation(libs.osm.android)
     implementation(libs.osm.compose)
 
+    // Energy dashboard charts
+    implementation(libs.vico.core)
+    implementation(libs.vico.compose)
+    implementation(libs.vico.compose.m3)
+
     // Front-camera face wake
     implementation(libs.camera.core)
     implementation(libs.camera.camera2)
