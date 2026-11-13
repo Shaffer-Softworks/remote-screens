@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
@@ -56,11 +57,12 @@ private const val RANK_BAR_MAX = 10
 
 @Composable
 internal fun ElectricityCard(series: EnergyBarSeries) {
+    val locale = LocalLocale.current.platformLocale
     EnergyCard {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Electricity", color = INK, fontWeight = FontWeight.SemiBold)
             Text(
-                text = String.format("%.2f %s", series.totalKwh, series.unit),
+                text = String.format(locale, "%.2f %s", series.totalKwh, series.unit),
                 color = INK_DIM,
             )
         }
@@ -71,6 +73,7 @@ internal fun ElectricityCard(series: EnergyBarSeries) {
 
 @Composable
 internal fun TotalsCard(rows: List<EnergyTotalRow>) {
+    val locale = LocalLocale.current.platformLocale
     EnergyCard {
         Text("Totals", color = INK, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
@@ -84,13 +87,16 @@ internal fun TotalsCard(rows: List<EnergyTotalRow>) {
                 Modifier.fillMaxWidth().padding(top = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(row.source, color = INK, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                Text(String.format("%.2f kWh", row.energyKwh), color = INK, fontSize = 13.sp)
+                Text(row.source, color = INK, fontSize = 13.sp, modifier = Modifier.width(80.dp))
                 Text(
-                    text = row.cost?.let { String.format("$%.2f", it) } ?: "—",
+                    text = String.format(locale, "%.2f kWh", row.energyKwh),
                     color = INK,
                     fontSize = 13.sp,
-                    modifier = Modifier.width(64.dp),
+                )
+                Text(
+                    text = row.cost?.let { String.format(locale, "$%.2f", it) } ?: "—",
+                    color = INK,
+                    fontSize = 13.sp,
                 )
             }
         }
@@ -138,6 +144,7 @@ internal fun DevicesDetailCard(series: List<EnergyNamedSeries>) {
 
 @Composable
 internal fun DevicesRankCard(bars: List<EnergyRankBar>) {
+    val locale = LocalLocale.current.platformLocale
     EnergyCard {
         Text(
             text = "Individual devices",
@@ -173,7 +180,7 @@ internal fun DevicesRankCard(bars: List<EnergyRankBar>) {
                     )
                 }
                 Text(
-                    text = String.format("%.1f", bar.kwh),
+                    text = String.format(locale, "%.1f", bar.kwh),
                     color = INK_DIM,
                     fontSize = 12.sp,
                     modifier = Modifier.width(48.dp).padding(start = 8.dp),
@@ -198,16 +205,18 @@ internal fun DistributionCard(distribution: EnergyDistribution) {
 
 @Composable
 internal fun DistNode(label: String, kwh: Double, color: Color) {
+    val locale = LocalLocale.current.platformLocale
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(10.dp).background(color, RoundedCornerShape(50)))
         Spacer(Modifier.width(8.dp))
         Text(label, color = INK, modifier = Modifier.weight(1f))
-        Text(String.format("%.1f kWh", kwh), color = INK_DIM)
+        Text(String.format(locale, "%.1f kWh", kwh), color = INK_DIM)
     }
 }
 
 @Composable
 internal fun GaugeCard(percent: Double) {
+    val locale = LocalLocale.current.platformLocale
     EnergyCard {
         Text("Low-carbon electricity consumed", color = INK, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
@@ -236,7 +245,7 @@ internal fun GaugeCard(percent: Double) {
                 )
             }
             Text(
-                text = String.format("%.0f%%", percent),
+                text = String.format(locale, "%.0f%%", percent),
                 color = INK,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
@@ -248,6 +257,7 @@ internal fun GaugeCard(percent: Double) {
 
 @Composable
 internal fun SankeyCard(sankey: EnergySankey) {
+    val locale = LocalLocale.current.platformLocale
     EnergyCard {
         Text(
             text = "Energy flow",
@@ -271,7 +281,7 @@ internal fun SankeyCard(sankey: EnergySankey) {
                 val from = sankey.nodes.firstOrNull { it.id == link.fromId }?.label ?: link.fromId
                 val to = sankey.nodes.firstOrNull { it.id == link.toId }?.label ?: link.toId
                 Text(
-                    text = String.format("%s → %s  %.1f kWh", from, to, link.kwh),
+                    text = String.format(locale, "%s → %s  %.1f kWh", from, to, link.kwh),
                     color = INK_DIM,
                     fontSize = 12.sp,
                 )
