@@ -144,7 +144,7 @@ private fun DocContext.cameraRow(tileId: String, camera: CameraEntry, layout: Ca
             contentScale = RcContentScale.Crop,
         )
         Box(
-            Modifier.fillMaxWidth().height(doc.units.px(layout.dp(M.ITEM_BAR_H_DP))).background(barColor),
+            Modifier.width(imageW).height(doc.units.px(layout.dp(M.ITEM_BAR_H_DP))).background(barColor),
             vertical = RcVerticalPositioning.Center,
         ) {
             doc.label(

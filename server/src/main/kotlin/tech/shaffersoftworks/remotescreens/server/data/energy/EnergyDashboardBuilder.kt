@@ -51,7 +51,7 @@ object EnergyDashboardBuilder {
         zone: ZoneId,
         gridPoints: List<EnergyStatPoint>,
         devicePoints: Map<String, List<EnergyStatPoint>>,
-        fossilFraction: Double,
+        fossilKwh: Double?,
         nowMs: Long = System.currentTimeMillis(),
     ): EnergyDashboardSnapshot {
         val labels = bucketLabels(ui.period, gridPoints, zone)
@@ -61,7 +61,15 @@ object EnergyDashboardBuilder {
         val deviceSeries = deviceSeries(config, devicePoints, labels.size)
         val deviceTotals = deviceTotals(deviceSeries)
         val untracked = max(0.0, gridTotal - deviceTotals.sumOf { it.kwh })
-        val lowCarbonShare = (1.0 - fossilFraction).coerceIn(0.0, 1.0)
+
+        val totalConsumed = gridTotal  // later: + max(0, solar - toGrid)
+        val lowCarbonKwh = fossilKwh?.let { (totalConsumed - it).coerceAtLeast(0.0) }
+        val lowCarbonPercent = if (fossilKwh != null && totalConsumed > 0.0) {
+            (1.0 - fossilKwh / totalConsumed).coerceIn(0.0, 1.0) * PERCENT
+        } else {
+            null  // or 0.0 until protocol/UI support “not calculated”
+        }
+
         return EnergyDashboardSnapshot(
             periodLabel = periodLabel(ui, zone, nowMs),
             isNow = ui.offset == 0,
@@ -75,12 +83,12 @@ object EnergyDashboardBuilder {
             devicesDetail = deviceSeries,
             devicesRank = deviceTotals,
             distribution = EnergyDistribution(
-                lowCarbonKwh = gridTotal * lowCarbonShare,
+                lowCarbonKwh = lowCarbonKwh ?: 0.0,  // or keep nullable if you extend the type
                 gridKwh = gridTotal,
                 homeKwh = gridTotal,
                 homeName = config.homeName,
             ),
-            lowCarbonPercent = lowCarbonShare * PERCENT,
+            lowCarbonPercent = lowCarbonPercent ?: 0.0,
             sankey = buildSankey(
                 config = config,
                 gridTotal = gridTotal,

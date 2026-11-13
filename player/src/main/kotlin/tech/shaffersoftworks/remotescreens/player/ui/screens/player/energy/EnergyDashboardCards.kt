@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -106,9 +107,10 @@ internal fun DevicesDetailCard(series: List<EnergyNamedSeries>) {
             return@EnergyCard
         }
         DevicesStackedChart(series)
-        Row(
+
+        Column (
             Modifier.fillMaxWidth().padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalAlignment = Alignment.Start,
         ) {
             series.take(LEGEND_MAX).forEach { named ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -118,7 +120,16 @@ internal fun DevicesDetailCard(series: List<EnergyNamedSeries>) {
                             .background(Color(named.colorArgb.toInt()), RoundedCornerShape(2.dp)),
                     )
                     Spacer(Modifier.width(4.dp))
-                    Text(named.name, color = INK_DIM, fontSize = 11.sp)
+                    Text(
+                        text = named.name,
+                        color = INK_DIM,
+                        fontSize = 11.sp,
+                        autoSize = TextAutoSize.StepBased(
+                            minFontSize = 8.sp,
+                            maxFontSize = 12.sp,
+                            stepSize = 2.sp, // optional step increment (defaults to 0.25.sp)
+                        ),
+                    )
                 }
             }
         }
@@ -128,8 +139,19 @@ internal fun DevicesDetailCard(series: List<EnergyNamedSeries>) {
 @Composable
 internal fun DevicesRankCard(bars: List<EnergyRankBar>) {
     EnergyCard {
-        Text("Individual devices", color = INK, fontWeight = FontWeight.SemiBold)
+        Text(
+            text = "Individual devices",
+            color = INK,
+            fontWeight = FontWeight.SemiBold,
+            autoSize = TextAutoSize.StepBased(
+                minFontSize = 8.sp,
+                maxFontSize = 12.sp,
+                stepSize = 2.sp, // optional step increment (defaults to 0.25.sp)
+            ),
+        )
+
         Spacer(Modifier.height(8.dp))
+
         val maxKwh = bars.maxOfOrNull { it.kwh }?.coerceAtLeast(0.01) ?: 1.0
         bars.take(RANK_BAR_MAX).forEach { bar ->
             Row(
@@ -227,8 +249,19 @@ internal fun GaugeCard(percent: Double) {
 @Composable
 internal fun SankeyCard(sankey: EnergySankey) {
     EnergyCard {
-        Text("Energy flow", color = INK, fontWeight = FontWeight.SemiBold)
+        Text(
+            text = "Energy flow",
+            color = INK,
+            fontWeight = FontWeight.SemiBold,
+            autoSize = TextAutoSize.StepBased(
+                minFontSize = 8.sp,
+                maxFontSize = 12.sp,
+                stepSize = 2.sp, // optional step increment (defaults to 0.25.sp)
+            ),
+        )
+
         Spacer(Modifier.height(8.dp))
+
         if (sankey.nodes.isEmpty()) {
             Text("No flow data", color = INK_DIM)
             return@EnergyCard

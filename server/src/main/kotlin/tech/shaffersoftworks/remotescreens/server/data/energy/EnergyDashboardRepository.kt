@@ -77,7 +77,7 @@ class EnergyDashboardRepository(private val homeAssistant: HomeAssistant) {
             zone = zone,
             gridPoints = gridPoints,
             devicePoints = devicePoints,
-            fossilFraction = fossilFraction,
+            fossilKwh = fossilFraction,
         )
     }
 
@@ -113,12 +113,12 @@ class EnergyDashboardRepository(private val homeAssistant: HomeAssistant) {
                         "energy_statistic_ids",
                         buildJsonArray { statisticIds.forEach { add(JsonPrimitive(it)) } },
                     )
-                    put("energy_unit", "kWh")
                     put("period", period)
+                    put("co2_statistic_id", "sensor.electricity_maps_grid_fossil_fuel_percentage")
                 },
             )
         }.onFailure { logger.debug("Fossil energy failed: {}", it.message) }.getOrNull()
-        return EnergyDashboardParser.fossilFraction(response)
+        return EnergyDashboardParser.fossilKwh(response)
     }
 
     /** statistic_id → (areaId, areaName). */

@@ -66,6 +66,14 @@ internal val PREVIEW_DEVICE_GARAGE = listOf(
 internal val PREVIEW_DEVICE_SERIES = listOf(
     EnergyNamedSeries("Rack AC", 0xFF03A9F4, PREVIEW_DEVICE_AC),
     EnergyNamedSeries("Garage", 0xFF795548, PREVIEW_DEVICE_GARAGE),
+    EnergyNamedSeries("Garage", 0xFF795548, PREVIEW_DEVICE_GARAGE),
+    EnergyNamedSeries("Garage", 0xFF795548, PREVIEW_DEVICE_GARAGE),
+    EnergyNamedSeries("Garage", 0xFF795548, PREVIEW_DEVICE_GARAGE),
+    EnergyNamedSeries("Garage", 0xFF795548, PREVIEW_DEVICE_GARAGE),
+    EnergyNamedSeries("Garage", 0xFF795548, PREVIEW_DEVICE_GARAGE),
+    EnergyNamedSeries("Garage", 0xFF795548, PREVIEW_DEVICE_GARAGE),
+    EnergyNamedSeries("Garage", 0xFF795548, PREVIEW_DEVICE_GARAGE),
+    EnergyNamedSeries("Garage", 0xFF795548, PREVIEW_DEVICE_GARAGE),
 )
 
 @Composable
