@@ -1,0 +1,35 @@
+---
+description: Full blinds page — Other-tiles blinds kind, rooms of covers, open-count subtitles
+globs: server/src/main/kotlin/**/render/panels/blinds/**/*.kt,server/src/main/kotlin/**/data/blinds/**/*.kt,server/src/main/kotlin/**/data/lights/LightsRooms.kt,server/src/main/kotlin/**/player/action/BlindsActions.kt,server/src/main/kotlin/**/render/tiles/Tiles.kt,server/src/main/kotlin/**/render/tiles/TileBox.kt,catalogue/_kinds.yaml,editor/src/model/otherTiles.ts,editor/src/model/blindsOpenCount.ts,editor/src/components/GridMockup.vue,editor/src/components/TileDrawer.vue
+alwaysApply: false
+---
+
+# Blinds panel
+
+A full `blinds` tile is an edge-to-edge page of Home Assistant areas that have covers: room list on the left, covers of the chosen room on the right. Rows reuse the lights page's cover row (tilt slider + open/close switch). Alarm stays its own page; this is covers only.
+
+## Wiring
+
+- Catalogue kind `blinds` in `_kinds.yaml`: sizes `[full]`, card `none`, no entity.
+- `OTHER_TILE_KINDS` / `OTHER_TILE_FULL_KINDS` include `blinds`. `kindSource('blinds')` opens a full page.
+- `Tile.edgeToEdge()` and `Tiles.kt` dispatch to `blindsPanel`. `hasOwnTaps` includes `blinds`.
+- Rooms: `LightsRoomsRepository.rooms(BLINDS_DOMAINS)` (`cover` only). Empty rooms are filtered out. Cached per domain set. Loaded into `RenderData.blindsRooms` when the screen has a blinds tile.
+- UI state: `BlindsUiStore` / `RenderData.blindsUi` (chosen room). Verb `blinds_room` → `BlindsActions` → Rebuild.
+- Cover taps go through catalogue verbs on `e:<entity>` (tilt, open_tilt, close_tilt, …).
+
+## Room subtitle
+
+Count of `cover.*` in the room that are `open`: `ui.blinds_one_open`, `ui.blinds_many_open`, `ui.blinds_all_closed`. Bound like lights-on counts.
+
+## Editor
+
+`GridMockup.vue` draws the same chrome as lights with title `BLINDS` and `blindsRoomRows` (`blindsOpenCount.ts`). `TileDrawer.vue` treats full blinds as edge-to-edge.
+
+## Verify
+
+```bash
+python3 tools/generate_catalogue.py --check
+./gradlew :server:detekt :server:test --tests '*RenderTest.aFullBlinds*' --tests '*RenderTest.aChosenBlinds*'
+cd editor && npm run lint && npm test -- --run src/model/otherTiles.test.ts
+./gradlew :shared:test --tests '*ProjectRuleIndexTest'
+```

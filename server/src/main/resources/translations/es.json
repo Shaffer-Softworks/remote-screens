@@ -126,5 +126,22 @@
   "ui.intercom_connecting": "Conectando…",
   "ui.intercom_online": "En línea",
   "ui.intercom_in_call": "En llamada",
-  "ui.intercom_connected": "Conectado"
+  "ui.intercom_connected": "Conectado",
+  "ui.blinds_title": "PERSIANAS",
+  "ui.blinds_select_room": "Selecciona una habitación para ver sus persianas",
+  "ui.blinds_all_closed": "Todas las persianas están cerradas",
+  "ui.blinds_one_open": "1 Persiana está abierta",
+  "ui.blinds_many_open": "{count} Persianas están abiertas",
+  "ui.vacuum_title": "ASPIRADORA",
+  "ui.vacuum_select": "Selecciona una aspiradora",
+  "ui.security_title": "SEGURIDAD",
+  "ui.security_overview": "Resumen",
+  "ui.security_overview_sub": "{unlocked} abiertas · {open} abiertos",
+  "ui.security_overview_hint": "Usa el panel de alarma para armar. Aquí: cerraduras y sensores.",
+  "ui.security_locks": "Cerraduras",
+  "ui.security_locks_sub": "{count} abiertas",
+  "ui.security_openings": "Puertas y ventanas",
+  "ui.security_openings_sub": "{count} abiertos",
+  "ui.security_open": "Abierto",
+  "ui.security_closed": "Cerrado"
 }

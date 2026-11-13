@@ -35,8 +35,12 @@ const edgeToEdge = computed(
         'calendar',
         'alarm_control_panel',
         'lights',
+        'blinds',
+        'vacuum',
+        'security',
         'cameras',
         'intercom',
+        'energy',
       ].includes(kindOf(props.tile))),
 )
 

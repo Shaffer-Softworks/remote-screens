@@ -1,0 +1,29 @@
+---
+description: Full security page — locks and door/window sensors; Alarm panel stays separate
+globs: server/src/main/kotlin/**/render/panels/security/**/*.kt,server/src/main/kotlin/**/data/security/**/*.kt,server/src/main/kotlin/**/player/action/SecurityActions.kt,server/src/main/kotlin/**/render/tiles/Tiles.kt,server/src/main/kotlin/**/render/tiles/TileBox.kt,catalogue/_kinds.yaml,editor/src/model/otherTiles.ts,editor/src/components/GridMockup.vue,editor/src/components/TileDrawer.vue
+alwaysApply: false
+---
+
+# Security panel
+
+A full `security` tile lists locks and door/window binary sensors. It does **not** include the alarm keypad or arm modes — that remains the Alarm panel under Other tiles.
+
+## Wiring
+
+- Catalogue kind `security` in `_kinds.yaml`: sizes `[full]`, card `none`.
+- `OTHER_TILE_KINDS` / `OTHER_TILE_FULL_KINDS` include `security`.
+- `Tile.edgeToEdge()` and `Tiles.kt` dispatch to `securityPanel`. `hasOwnTaps` includes `security`.
+- UI: `SecurityUiStore` / `RenderData.securityUi` with sections `overview`, `locks`, `openings`. Verb `security_section` → Rebuild.
+- Openings: `binary_sensor` with device class `door`, `window`, `garage_door`, or `opening`. Read-only open/closed. Locks use catalogue `lock` / `unlock`.
+
+## Editor
+
+`GridMockup.vue` draws Overview / Locks / Doors & windows. Opening sensors in the mockup are matched by entity id (door/window/garage) because editor entities omit device class.
+
+## Verify
+
+```bash
+./gradlew :server:detekt :server:test --tests '*RenderTest.aFullSecurity*' --tests '*RenderTest.aSecurity*'
+cd editor && npm test -- --run src/model/otherTiles.test.ts
+./gradlew :shared:test --tests '*ProjectRuleIndexTest'
+```

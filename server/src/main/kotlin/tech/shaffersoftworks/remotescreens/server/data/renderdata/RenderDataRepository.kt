@@ -1,11 +1,15 @@
 package tech.shaffersoftworks.remotescreens.server.data.renderdata
 
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmUiStore
+import tech.shaffersoftworks.remotescreens.server.data.blinds.BlindsUiStore
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
 import tech.shaffersoftworks.remotescreens.server.data.cameras.CamerasUiStore
+import tech.shaffersoftworks.remotescreens.server.data.lights.BLINDS_DOMAINS
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsRoomsRepository
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiStore
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicAssistantClient
+import tech.shaffersoftworks.remotescreens.server.data.security.SecurityUiStore
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiStore
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicListRow
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicQueueSnapshot
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
@@ -46,6 +50,9 @@ class RenderDataRepository(
     val alarmUi: AlarmUiStore = AlarmUiStore(),
     val lightsUi: LightsUiStore = LightsUiStore(),
     val camerasUi: CamerasUiStore = CamerasUiStore(),
+    val blindsUi: BlindsUiStore = BlindsUiStore(),
+    val vacuumUi: VacuumUiStore = VacuumUiStore(),
+    val securityUi: SecurityUiStore = SecurityUiStore(),
     private val lightsRooms: LightsRoomsRepository = LightsRoomsRepository(homeAssistant),
 ) {
     private val logger = LoggerFactory.getLogger(RenderDataRepository::class.java)
@@ -79,6 +86,7 @@ class RenderDataRepository(
         val needsAgenda = tiles.any { it.full && it.effectiveKind() == "calendar" }
         val needsEnergy = tiles.any { it.effectiveKind() == "energy" }
         val needsLights = tiles.any { it.effectiveKind() == "lights" }
+        val needsBlinds = tiles.any { it.effectiveKind() == "blinds" }
         val historyHours = tiles.firstOrNull { it.effectiveKind() == "history" }
             ?.options?.get("hours")?.toIntOrNull()
             ?: DEFAULT_HISTORY_HOURS
@@ -104,6 +112,10 @@ class RenderDataRepository(
             lightsRooms = if (needsLights) lightsRooms.rooms() else emptyList(),
             lightsUi = lightsUi.snapshot(),
             camerasUi = camerasUi.snapshot(),
+            blindsRooms = if (needsBlinds) lightsRooms.rooms(BLINDS_DOMAINS) else emptyList(),
+            blindsUi = blindsUi.snapshot(),
+            vacuumUi = vacuumUi.snapshot(),
+            securityUi = securityUi.snapshot(),
         )
     }
 

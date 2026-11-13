@@ -1,0 +1,30 @@
+---
+description: Full vacuum page — PANELS Vacuum panel, list of vacuums, vacuumCard controls
+globs: server/src/main/kotlin/**/render/panels/vacuum/**/*.kt,server/src/main/kotlin/**/data/vacuum/**/*.kt,server/src/main/kotlin/**/player/action/VacuumActions.kt,server/src/main/kotlin/**/render/cards/ToggleCards.kt,server/src/main/kotlin/**/render/tiles/Tiles.kt,server/src/main/kotlin/**/render/tiles/TileBox.kt,catalogue/vacuum.yaml,editor/src/model/otherTiles.ts,editor/src/components/GridMockup.vue,editor/src/components/TileDrawer.vue
+alwaysApply: false
+---
+
+# Vacuum panel
+
+A full `vacuum` tile is an edge-to-edge page: every `vacuum.*` in a list on the left, and start / pause / dock / locate plus fan speeds of the chosen one on the right (`vacuumCard`).
+
+## Wiring
+
+- Catalogue `vacuum.yaml`: sizes include `full`.
+- Other tiles: `PANELS` entry `{ name: 'Vacuum panel', icon: 'robot-vacuum', domain: 'vacuum' }` — first vacuum entity, `full: true`.
+- `Tile.edgeToEdge()` and `Tiles.kt` dispatch full vacuum to `vacuumPanel`. `hasOwnTaps` includes `vacuum`.
+- UI state: `VacuumUiStore` / `RenderData.vacuumUi`. Verb `vacuum_select` → Rebuild.
+- Selection: tile's entity, else the only vacuum, else the last `vacuum_select`. Controls reuse `vacuumCard` catalogue verbs on `e:<entity>`.
+
+## Editor
+
+`GridMockup.vue` draws list + Start/Pause/Dock/Locate. `TileDrawer.vue` treats full vacuum as edge-to-edge.
+
+## Verify
+
+```bash
+python3 tools/generate_catalogue.py --check
+./gradlew :server:detekt :server:test --tests '*RenderTest.aFullVacuum*'
+cd editor && npm test -- --run src/model/otherTiles.test.ts
+./gradlew :shared:test --tests '*ProjectRuleIndexTest'
+```

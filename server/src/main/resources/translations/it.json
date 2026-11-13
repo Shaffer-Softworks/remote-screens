@@ -126,5 +126,22 @@
   "ui.intercom_connecting": "Connessione…",
   "ui.intercom_online": "Online",
   "ui.intercom_in_call": "In chiamata",
-  "ui.intercom_connected": "Connesso"
+  "ui.intercom_connected": "Connesso",
+  "ui.blinds_title": "TENDE",
+  "ui.blinds_select_room": "Seleziona una stanza per vedere le tende",
+  "ui.blinds_all_closed": "Tutte le tende sono chiuse",
+  "ui.blinds_one_open": "1 Tenda è aperta",
+  "ui.blinds_many_open": "{count} Tende sono aperte",
+  "ui.vacuum_title": "ASPIRAPOLVERE",
+  "ui.vacuum_select": "Seleziona un aspirapolvere",
+  "ui.security_title": "SICUREZZA",
+  "ui.security_overview": "Panoramica",
+  "ui.security_overview_sub": "{unlocked} sbloccate · {open} aperte",
+  "ui.security_overview_hint": "Usa il pannello Allarme per armare. Qui: serrature e sensori.",
+  "ui.security_locks": "Serrature",
+  "ui.security_locks_sub": "{count} sbloccate",
+  "ui.security_openings": "Porte e finestre",
+  "ui.security_openings_sub": "{count} aperte",
+  "ui.security_open": "Aperto",
+  "ui.security_closed": "Chiuso"
 }
