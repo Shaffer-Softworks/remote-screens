@@ -98,8 +98,11 @@ Android Studio's **Split** or **Design** view. See [the preview guide](../previe
   `DocumentOverlays` sits immediately above that slot. A search field on MAIN cannot cover an alert.
 - `RemoteDocumentController` owns document loading, named values and bitmaps, page selection, scroll restoration,
   and buffer reveals. Both MAIN renderers stay mounted. A replacement is drawn at full alpha behind the current
-  page, then raised; the old buffer is hidden only after that. Queued reveals check that their document is still
-  current and are invalidated on disposal.
+  page (with page and scroll restored before that covered draw, plus a second covered frame for long lists), then
+  raised; the old buffer is hidden only after Compose has recorded the new zIndex (`SideEffect` in
+  `RemoteDocumentStack`). A later render must not hide it in that gap. Queued reveals check that their document is
+  still current and are invalidated on disposal. The native Energy dashboard is kept across MAIN rebuilds until its
+  follow-up message arrives; its chrome colours come from `EnergyDashboard.theme` (screen palette roles).
 - Overlay bounds come from the active document before drawing. `DocumentOverlay` measures and places children
   in physical document pixels, avoiding a second density conversion. Search uses the add-on's explicit rectangle
   when supplied, because its remote component can be unmeasured.
