@@ -126,5 +126,22 @@
   "ui.intercom_connecting": "Verbinden…",
   "ui.intercom_online": "Online",
   "ui.intercom_in_call": "In gesprek",
-  "ui.intercom_connected": "Verbonden"
+  "ui.intercom_connected": "Verbonden",
+  "ui.blinds_title": "JALOEZIEËN",
+  "ui.blinds_select_room": "Kies een kamer om jaloezieën te zien",
+  "ui.blinds_all_closed": "Alle jaloezieën zijn gesloten",
+  "ui.blinds_one_open": "1 Jaloezie is open",
+  "ui.blinds_many_open": "{count} Jaloezieën zijn open",
+  "ui.vacuum_title": "STOFZUIGER",
+  "ui.vacuum_select": "Kies een stofzuiger",
+  "ui.security_title": "BEVEILIGING",
+  "ui.security_overview": "Overzicht",
+  "ui.security_overview_sub": "{unlocked} ontgrendeld · {open} open",
+  "ui.security_overview_hint": "Gebruik het Alarmpaneel om in te schakelen. Hier: sloten en sensoren.",
+  "ui.security_locks": "Sloten",
+  "ui.security_locks_sub": "{count} ontgrendeld",
+  "ui.security_openings": "Deuren & ramen",
+  "ui.security_openings_sub": "{count} open",
+  "ui.security_open": "Open",
+  "ui.security_closed": "Dicht"
 }

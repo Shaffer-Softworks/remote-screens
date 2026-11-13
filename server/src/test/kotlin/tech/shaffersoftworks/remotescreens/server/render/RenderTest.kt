@@ -7,9 +7,13 @@ import androidx.compose.remote.core.RemoteComposeBuffer
 import androidx.compose.remote.core.operations.NamedVariable
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmNotice
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmUiState
+import tech.shaffersoftworks.remotescreens.server.data.blinds.BlindsUiState
 import tech.shaffersoftworks.remotescreens.server.data.cameras.CamerasUiState
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightDetailMode
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiState
+import tech.shaffersoftworks.remotescreens.server.data.security.SecuritySection
+import tech.shaffersoftworks.remotescreens.server.data.security.SecurityUiState
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiState
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
@@ -319,6 +323,118 @@ class RenderTest {
         assertTrue(doc.docContext.declares("e.camera.driveway.cam_still"))
         assertTrue(doc.docContext.pictures.any { it.name == "cam.card.camera.driveway" })
         assertContains(text, "Driveway camera")
+        assertEveryValueIsDeclared(doc)
+    }
+
+    @Test
+    fun aFullEnergyTileIsTheEnergyPage() {
+        val screen = DemoLayout.screen().let {
+            it.copy(pages = it.pages + DemoLayout.energyPage())
+        }
+        val data = runBlocking { RenderDataRepository(ha).forScreen(screen) }
+        val doc = ScreenRenderer.render(screen, tablet, input(data))
+        val text = String(doc.bytes, Charsets.ISO_8859_1)
+        for (word in listOf("Solar", "Grid", "Battery", "Home")) {
+            assertContains(text, word)
+        }
+        assertFalse("en1|card|" in text, "the page itself opens no card")
+        assertEveryValueIsDeclared(doc)
+    }
+
+    private val blindsScreen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.blindsPage()) }
+
+    private fun renderBlinds(ui: BlindsUiState? = null): Pair<RenderedDoc, String> {
+        val data = runBlocking { RenderDataRepository(ha).forScreen(blindsScreen) }
+        val withUi = if (ui == null) data else data.copy(blindsUi = mapOf("bl1" to ui))
+        val doc = ScreenRenderer.render(blindsScreen, tablet, input(withUi))
+        return doc to String(doc.bytes, Charsets.ISO_8859_1)
+    }
+
+    @Test
+    fun aFullBlindsTileIsTheBlindsPage() {
+        val (doc, text) = renderBlinds()
+        for (word in listOf("BLINDS", "Select a room to see its blinds", "Living room")) {
+            assertContains(text, word)
+        }
+        assertContains(text, "bl1|blinds_room|living_room")
+        assertFalse("bl1|card|" in text, "the page itself opens no card")
+        assertFalse("bl1|blinds_room|bedroom" in text, "rooms without covers stay off the list")
+        assertEveryValueIsDeclared(doc)
+
+        val vars = doc.vars(ha.states.value)
+        assertEquals("1 Blind is open", vars["t.bl1.blindsOpen.living_room"]?.value)
+    }
+
+    @Test
+    fun aChosenBlindsRoomListsItsCovers() {
+        val (doc, text) = renderBlinds(BlindsUiState(selectedAreaId = "living_room"))
+        assertContains(text, "Living room")
+        assertContains(text, "e:cover.living_room_curtains|open_tilt|")
+        assertContains(text, "e:cover.living_room_curtains|close_tilt|")
+        assertFalse("e:light.living_room|" in text, "lights stay on the lights page")
+        assertEveryValueIsDeclared(doc)
+    }
+
+    private val vacuumScreen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.vacuumPage()) }
+
+    private fun renderVacuum(ui: VacuumUiState? = null): Pair<RenderedDoc, String> {
+        val data = runBlocking { RenderDataRepository(ha).forScreen(vacuumScreen) }
+        val withUi = if (ui == null) data else data.copy(vacuumUi = mapOf("va1" to ui))
+        val doc = ScreenRenderer.render(vacuumScreen, tablet, input(withUi))
+        return doc to String(doc.bytes, Charsets.ISO_8859_1)
+    }
+
+    @Test
+    fun aFullVacuumTileIsTheVacuumPage() {
+        val (doc, text) = renderVacuum()
+        for (word in listOf("VACUUM", "Robot", "docked")) {
+            assertContains(text, word)
+        }
+        assertContains(text, "va1|vacuum_select|vacuum.robot")
+        assertContains(text, "e:vacuum.robot|start|")
+        assertContains(text, "e:vacuum.robot|dock|")
+        assertFalse("va1|card|" in text, "the page itself opens no card")
+        assertEveryValueIsDeclared(doc)
+    }
+
+    private val securityScreen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.securityPage()) }
+
+    private fun renderSecurity(ui: SecurityUiState? = null): Pair<RenderedDoc, String> {
+        val data = runBlocking { RenderDataRepository(ha).forScreen(securityScreen) }
+        val withUi = if (ui == null) data else data.copy(securityUi = mapOf("se1" to ui))
+        val doc = ScreenRenderer.render(securityScreen, tablet, input(withUi))
+        return doc to String(doc.bytes, Charsets.ISO_8859_1)
+    }
+
+    @Test
+    fun aFullSecurityTileIsTheSecurityPage() {
+        val (doc, text) = renderSecurity()
+        for (word in listOf("SECURITY", "Overview", "Locks", "Doors & windows")) {
+            assertContains(text, word)
+        }
+        assertContains(text, "se1|security_section|locks")
+        assertContains(text, "se1|security_section|openings")
+        assertFalse("se1|card|" in text, "the page itself opens no card")
+        assertFalse("Arm Away" in text, "alarm arming stays on the Alarm panel")
+        assertEveryValueIsDeclared(doc)
+    }
+
+    @Test
+    fun aSecurityLocksSectionListsLocks() {
+        val (doc, text) = renderSecurity(SecurityUiState(selectedSection = SecuritySection.LOCKS))
+        assertContains(text, "Front door")
+        assertContains(text, "e:lock.front_door|lock|")
+        assertContains(text, "e:lock.front_door|unlock|")
+        assertEveryValueIsDeclared(doc)
+    }
+
+    @Test
+    fun aSecurityOpeningsSectionListsDoorAndWindowSensors() {
+        val (doc, text) = renderSecurity(SecurityUiState(selectedSection = SecuritySection.OPENINGS))
+        assertContains(text, "Garage side door")
+        assertContains(text, "Living room window")
+        assertContains(text, "Open")
+        assertContains(text, "Closed")
         assertEveryValueIsDeclared(doc)
     }
 

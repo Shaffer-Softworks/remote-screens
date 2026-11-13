@@ -302,4 +302,36 @@ object DemoLayout {
         tiles = listOf(Tile("ed1", kind = "energy_dashboard", full = true)),
         icon = "chart-box",
     )
+
+    /** Full-page energy flow from Home Assistant energy preferences. */
+    fun energyPage(): Page = Page(
+        id = "energy",
+        title = "Energy",
+        tiles = listOf(Tile("en1", kind = "energy", full = true)),
+        icon = "lightning-bolt",
+    )
+
+    /** Full blinds page over demo covers. Added where it is wanted, like [lightsPage]. */
+    fun blindsPage(): Page = Page(
+        id = "blinds",
+        title = "Blinds",
+        tiles = listOf(Tile("bl1", kind = "blinds", full = true)),
+        icon = "blinds",
+    )
+
+    /** Full vacuum page over the demo robot. Added where it is wanted, like [camerasPage]. */
+    fun vacuumPage(): Page = Page(
+        id = "vacuum",
+        title = "Vacuum",
+        tiles = listOf(Tile("va1", entityId = "vacuum.robot", kind = "vacuum", full = true)),
+        icon = "robot-vacuum",
+    )
+
+    /** Full security page for locks and door/window sensors. Added where it is wanted, like [lightsPage]. */
+    fun securityPage(): Page = Page(
+        id = "security",
+        title = "Security",
+        tiles = listOf(Tile("se1", kind = "security", full = true)),
+        icon = "shield-home",
+    )
 }

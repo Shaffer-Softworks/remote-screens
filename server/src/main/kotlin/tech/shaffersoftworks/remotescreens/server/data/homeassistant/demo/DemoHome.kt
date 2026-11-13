@@ -632,6 +632,16 @@ class DemoHome : HomeAssistant {
                 attrs("friendly_name" to "Front door", "device_class" to "door"),
             ),
             EntityState(
+                "binary_sensor.garage_side_door",
+                "on",
+                attrs("friendly_name" to "Garage side door", "device_class" to "door"),
+            ),
+            EntityState(
+                "binary_sensor.living_room_window",
+                "off",
+                attrs("friendly_name" to "Living room window", "device_class" to "window"),
+            ),
+            EntityState(
                 "scene.movie_night",
                 "2026-01-01T00:00:00+00:00",
                 attrs("friendly_name" to "Movie night", "icon" to "mdi:movie"),

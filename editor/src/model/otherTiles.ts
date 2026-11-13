@@ -13,9 +13,32 @@ export const OTHER_TILE_KINDS = [
   'energy_dashboard',
   'map',
   'lights',
+  'blinds',
+  'security',
   'cameras',
   'intercom',
 ]
+
+/**
+ * Kinds listed under Other tiles that should open as a full page even when the catalogue also
+ * allows a smaller size (energy still offers 2×2 from the size picker).
+ */
+export const OTHER_TILE_FULL_KINDS = [
+  'home',
+  'bedside',
+  'lights',
+  'blinds',
+  'security',
+  'cameras',
+  'intercom',
+  'energy',
+  'energy_dashboard',
+]
+
+/** Source for an Other-tiles kind click or drag. */
+export function kindSource(kind: string): TileSource {
+  return OTHER_TILE_FULL_KINDS.includes(kind) ? { kind, full: true } : { kind }
+}
 
 export interface PanelSpec {
   name: string
@@ -33,6 +56,7 @@ export const PANELS: PanelSpec[] = [
   { name: 'Thermostat panel', icon: 'thermostat', domain: 'climate' },
   { name: 'Music panel', icon: 'music', domain: 'media_player', kind: 'music' },
   { name: 'Calendar panel', icon: 'calendar', domain: 'calendar' },
+  { name: 'Vacuum panel', icon: 'robot-vacuum', domain: 'vacuum' },
 ]
 
 /** A full tile of the panel on the first entity of its domain, or undefined when there is none. */

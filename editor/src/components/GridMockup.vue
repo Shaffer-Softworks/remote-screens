@@ -16,6 +16,7 @@ import {
   topBarHeight,
 } from '../model/grid'
 import { intercomStacks } from '../model/intercomLayout'
+import { blindsRoomRows } from '../model/blindsOpenCount'
 import { lightsRoomRows } from '../model/lightsOnCount'
 import { usePreviewPalette } from '../model/palette'
 import { iconOf, nameOf, stateOf } from '../model/tiles'
@@ -203,7 +204,26 @@ const alarmLayout = computed(() => {
 })
 /** RPI's lights page (LightsPanel.kt): every Home Assistant area on the left, its lights once one is chosen. */
 const isLightsPanel = (tile: Tile) => kindOf(tile) === 'lights' && tile.full === true
+const isBlindsPanel = (tile: Tile) => kindOf(tile) === 'blinds' && tile.full === true
+const isVacuumPanel = (tile: Tile) => kindOf(tile) === 'vacuum' && tile.full === true
+const isSecurityPanel = (tile: Tile) => kindOf(tile) === 'security' && tile.full === true
+const isEnergyPanel = (tile: Tile) => kindOf(tile) === 'energy' && tile.full === true
+const vacuumEntities = computed(() =>
+  state.entities.filter(entity => entity.domain === 'vacuum'),
+)
+const securityLocks = computed(() =>
+  state.entities.filter(entity => entity.domain === 'lock'),
+)
+/** Editor entities lack device_class; match common door/window entity ids for the mockup. */
+const securityOpenings = computed(() =>
+  state.entities.filter(entity => {
+    if (entity.domain !== 'binary_sensor') return false
+    const id = entity.entityId.toLowerCase()
+    return id.includes('door') || id.includes('window') || id.includes('garage')
+  }),
+)
 const lightsRooms = computed(() => lightsRoomRows(state.areas, state.entities))
+const blindsRooms = computed(() => blindsRoomRows(state.areas, state.entities))
 /** RPI's cameras page (CamerasPanel.kt): the tile's cameras in a list on the left, the chosen one's video on the right. */
 const isCamerasPanel = (tile: Tile) => kindOf(tile) === 'cameras' && tile.full === true
 const isIntercomPanel = (tile: Tile) => kindOf(tile) === 'intercom' && tile.full === true
@@ -251,6 +271,11 @@ function place(placement: { tile: Tile; col: number; row: number; w: number; h: 
     isMusicPanel(placement.tile) ||
     isAlarmPanel(placement.tile) ||
     isLightsPanel(placement.tile) ||
+    isBlindsPanel(placement.tile) ||
+    isVacuumPanel(placement.tile) ||
+    isSecurityPanel(placement.tile) ||
+    isEnergyPanel(placement.tile) ||
+    isEnergyDashboardPanel(placement.tile) ||
     isCalendarPanel(placement)
   ) {
     return {
@@ -578,6 +603,10 @@ const highlight = computed(() => {
           'music-panel': isMusicPanel(placement.tile),
           'alarm-panel': isAlarmPanel(placement.tile),
           'lights-panel': isLightsPanel(placement.tile),
+          'blinds-panel': isBlindsPanel(placement.tile),
+          'vacuum-panel': isVacuumPanel(placement.tile),
+          'security-panel': isSecurityPanel(placement.tile),
+          'energy-panel': isEnergyPanel(placement.tile),
           'cameras-panel': isCamerasPanel(placement.tile),
           'intercom-panel': isIntercomPanel(placement.tile),
           'intercom-compact': isIntercomPanel(placement.tile) && intercomIsStacked,
@@ -721,6 +750,117 @@ const highlight = computed(() => {
           <div class="li-prompt">
             <MdiIcon name="gesture-tap" :size="64" />
             <span>Select a room to see its lights</span>
+          </div>
+        </template>
+        <template v-else-if="isBlindsPanel(placement.tile)">
+          <div class="li-rooms">
+            <i class="li-accent" />
+            <span class="li-title">BLINDS</span>
+            <span
+              v-for="blindsRoom in blindsRooms"
+              :key="blindsRoom.areaId"
+              class="li-room"
+            >
+              <span class="li-room-name">{{ blindsRoom.name }}</span>
+              <span v-if="blindsRoom.subtitle" class="li-room-sub">{{
+                blindsRoom.subtitle
+              }}</span>
+            </span>
+          </div>
+          <div class="li-prompt">
+            <MdiIcon name="gesture-tap" :size="64" />
+            <span>Select a room to see its blinds</span>
+          </div>
+        </template>
+        <template v-else-if="isVacuumPanel(placement.tile)">
+          <div class="va-list">
+            <i class="va-accent" />
+            <span class="va-title">VACUUM</span>
+            <span
+              v-for="vacuum in vacuumEntities"
+              :key="vacuum.entityId"
+              class="va-row"
+            >
+              <MdiIcon name="robot-vacuum" :size="36" />
+              <span class="va-row-text">
+                <span class="va-row-name">{{ vacuum.name }}</span>
+                <span class="va-row-sub">{{ vacuum.state }}</span>
+              </span>
+            </span>
+          </div>
+          <div class="va-detail">
+            <span class="va-detail-name">{{
+              vacuumEntities[0]?.name || 'Select a vacuum'
+            }}</span>
+            <span class="va-keys">
+              <span>Start</span><span>Pause</span><span>Dock</span>
+            </span>
+            <span class="va-locate">Locate</span>
+          </div>
+        </template>
+        <template v-else-if="isSecurityPanel(placement.tile)">
+          <div class="se-list">
+            <i class="se-accent" />
+            <span class="se-title">SECURITY</span>
+            <span class="se-section se-section-on">
+              <MdiIcon name="shield-home" :size="28" />
+              <span class="se-section-text">
+                <span>Overview</span>
+                <span class="se-section-sub"
+                  >{{ securityLocks.length }} locks · {{ securityOpenings.length }} sensors</span
+                >
+              </span>
+            </span>
+            <span class="se-section">
+              <MdiIcon name="lock" :size="28" />
+              <span class="se-section-text">
+                <span>Locks</span>
+                <span class="se-section-sub">{{ securityLocks.length }} listed</span>
+              </span>
+            </span>
+            <span class="se-section">
+              <MdiIcon name="door-open" :size="28" />
+              <span class="se-section-text">
+                <span>Doors &amp; windows</span>
+                <span class="se-section-sub">{{ securityOpenings.length }} listed</span>
+              </span>
+            </span>
+          </div>
+          <div class="se-detail">
+            <span class="se-detail-title">Overview</span>
+            <span class="se-detail-line"
+              >{{ securityLocks.filter(l => l.state !== 'locked').length }} unlocked</span
+            >
+            <span class="se-detail-line"
+              >{{ securityOpenings.filter(o => o.state === 'on').length }} open</span
+            >
+            <span class="se-detail-hint"
+              >Use the Alarm panel to arm or disarm. This page lists locks and door or window
+              sensors.</span
+            >
+          </div>
+        </template>
+        <template v-else-if="isEnergyPanel(placement.tile)">
+          <div class="en-flow">
+            <span class="en-node en-solar">
+              <MdiIcon name="solar-power-variant" :size="36" />
+              <span>Solar</span>
+            </span>
+            <span class="en-node en-grid">
+              <MdiIcon name="transmission-tower" :size="36" />
+              <span>Grid</span>
+            </span>
+            <span class="en-node en-battery">
+              <MdiIcon name="home-battery" :size="36" />
+              <span>Battery</span>
+            </span>
+            <span class="en-node en-home">
+              <MdiIcon name="home" :size="36" />
+              <span>Home</span>
+            </span>
+            <i class="en-line en-line-solar" />
+            <i class="en-line en-line-grid" />
+            <i class="en-line en-line-battery" />
           </div>
         </template>
         <template v-else-if="isCamerasPanel(placement.tile)">
@@ -1396,13 +1536,114 @@ const highlight = computed(() => {
   min-height: 0;
 }
 
-.tile.lights-panel {
+.tile.lights-panel,
+.tile.blinds-panel,
+.tile.vacuum-panel,
+.tile.security-panel {
   flex-direction: row;
   align-items: stretch;
   padding: 0;
   background: var(--rc-page);
   border: none;
   border-radius: 0;
+}
+
+.tile.energy-panel {
+  padding: 0;
+  background: var(--rc-page);
+  border: none;
+  border-radius: 0;
+}
+
+.en-flow {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.en-node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 88px;
+  color: var(--rc-ink);
+  font-size: 14px;
+}
+
+.en-node :deep(svg) {
+  padding: 18px;
+  border-radius: 50%;
+  color: var(--rc-key-on-ink, #fff);
+  background: var(--rc-pastel-grey, #6b7280);
+}
+
+.en-solar {
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.en-solar :deep(svg) {
+  background: var(--rc-pastel-yellow, #eab308);
+}
+
+.en-grid {
+  top: 45%;
+  left: 8%;
+  transform: translateY(-50%);
+}
+
+.en-grid :deep(svg) {
+  background: var(--rc-pastel-blue, #3b82f6);
+}
+
+.en-battery {
+  top: 45%;
+  right: 8%;
+  transform: translateY(-50%);
+}
+
+.en-battery :deep(svg) {
+  background: var(--rc-pastel-green, #22c55e);
+}
+
+.en-home {
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.en-line {
+  position: absolute;
+  background: var(--rc-divider);
+  transform-origin: top left;
+}
+
+.en-line-solar,
+.en-line-grid,
+.en-line-battery {
+  width: 2px;
+  height: 28%;
+  top: 28%;
+  left: 50%;
+  opacity: 0.7;
+}
+
+.en-line-grid {
+  top: 48%;
+  left: 18%;
+  height: 2px;
+  width: 32%;
+}
+
+.en-line-battery {
+  top: 48%;
+  left: 50%;
+  height: 2px;
+  width: 32%;
 }
 
 .li-rooms {
@@ -1462,6 +1703,166 @@ const highlight = computed(() => {
   gap: 16px;
   font-size: 20px;
   color: var(--rc-ink-dim);
+}
+
+.va-list {
+  width: 350px;
+  flex: none;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 28px 20px 20px;
+  overflow-y: auto;
+  background: var(--rc-strip);
+}
+
+.va-accent {
+  width: 100px;
+  height: 10px;
+  background: var(--rc-accent-dark);
+}
+
+.va-title {
+  font-size: 15px;
+  color: var(--rc-ink);
+}
+
+.va-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  color: var(--rc-ink);
+}
+
+.va-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.va-row-name {
+  font-size: 18px;
+}
+
+.va-row-sub {
+  font-size: 14px;
+  color: var(--rc-ink-dim);
+  text-transform: capitalize;
+}
+
+.va-detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+}
+
+.va-detail-name {
+  font-size: 22px;
+  color: var(--rc-ink);
+}
+
+.va-keys {
+  display: flex;
+  gap: 8px;
+}
+
+.va-keys span,
+.va-locate {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  border-radius: 8px;
+  background: var(--rc-strip);
+  color: var(--rc-ink);
+  font-size: 16px;
+}
+
+.va-locate {
+  flex: none;
+  width: 100%;
+}
+
+.se-list {
+  width: 350px;
+  flex: none;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 28px 0 0;
+  overflow-y: auto;
+  background: var(--rc-strip);
+}
+
+.se-accent {
+  width: 100px;
+  height: 10px;
+  margin-left: 20px;
+  background: var(--rc-accent-dark);
+}
+
+.se-title {
+  margin: 10px 0 8px 20px;
+  font-size: 15px;
+  color: var(--rc-ink);
+}
+
+.se-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 88px;
+  padding: 0 20px;
+  color: var(--rc-ink);
+}
+
+.se-section-on {
+  color: var(--rc-accent);
+}
+
+.se-section-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 22px;
+}
+
+.se-section-sub {
+  font-size: 14px;
+  color: var(--rc-ink-dim);
+}
+
+.se-detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 28px;
+}
+
+.se-detail-title {
+  font-size: 22px;
+  color: var(--rc-ink);
+}
+
+.se-detail-line {
+  font-size: 18px;
+  color: var(--rc-ink);
+}
+
+.se-detail-hint {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--rc-ink-dim);
+  max-width: 36em;
 }
 
 .tile.cameras-panel {

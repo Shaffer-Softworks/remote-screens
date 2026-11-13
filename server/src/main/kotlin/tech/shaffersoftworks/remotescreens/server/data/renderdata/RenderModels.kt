@@ -1,6 +1,7 @@
 package tech.shaffersoftworks.remotescreens.server.data.renderdata
 
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmUiState
+import tech.shaffersoftworks.remotescreens.server.data.blinds.BlindsUiState
 import tech.shaffersoftworks.remotescreens.server.data.cameras.CamerasUiState
 import tech.shaffersoftworks.remotescreens.server.data.energy.EnergyDashboardSnapshot
 import tech.shaffersoftworks.remotescreens.server.data.energy.EnergyDashboardUiState
@@ -9,6 +10,8 @@ import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiState
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicListRow
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicQueueSnapshot
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
+import tech.shaffersoftworks.remotescreens.server.data.security.SecurityUiState
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiState
 import java.time.Instant
 
 /** A picture the add-on fetches and sends as a `bitmap` message. */
@@ -57,6 +60,14 @@ data class RenderData(
     val energyDashboards: Map<String, EnergyDashboardSnapshot> = emptyMap(),
     /** Period UI for each Energy dashboard page, keyed by tile id. */
     val energyDashboardUi: Map<String, EnergyDashboardUiState> = emptyMap(),
+    /** Home Assistant's areas with covers, when the screen has a blinds page. */
+    val blindsRooms: List<LightsRoom> = emptyList(),
+    /** Chosen room of each blinds page, keyed by tile id. */
+    val blindsUi: Map<String, BlindsUiState> = emptyMap(),
+    /** Chosen vacuum of each vacuum page, keyed by tile id. */
+    val vacuumUi: Map<String, VacuumUiState> = emptyMap(),
+    /** Chosen section of each security page, keyed by tile id. */
+    val securityUi: Map<String, SecurityUiState> = emptyMap(),
 )
 
 /** One calendar the agenda can read, and whether Home Assistant allows creating or deleting on it. */

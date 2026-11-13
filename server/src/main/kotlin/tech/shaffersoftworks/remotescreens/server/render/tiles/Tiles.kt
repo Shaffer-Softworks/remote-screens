@@ -15,9 +15,13 @@ import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
 import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.calendarPanel
 import tech.shaffersoftworks.remotescreens.server.render.panels.home.homeTile
 import tech.shaffersoftworks.remotescreens.server.render.panels.cameras.camerasPanel
+import tech.shaffersoftworks.remotescreens.server.render.panels.energy.energyPanel
 import tech.shaffersoftworks.remotescreens.server.render.panels.energydashboard.energyDashboardPanel
 import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.intercomPanel
+import tech.shaffersoftworks.remotescreens.server.render.panels.blinds.blindsPanel
 import tech.shaffersoftworks.remotescreens.server.render.panels.lights.lightsPanel
+import tech.shaffersoftworks.remotescreens.server.render.panels.security.securityPanel
+import tech.shaffersoftworks.remotescreens.server.render.panels.vacuum.vacuumPanel
 import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.server.render.panels.music.musicPanel
@@ -64,8 +68,12 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
             "calendar",
             "alarm_control_panel",
             "lights",
+            "blinds",
+            "vacuum",
+            "security",
             "cameras",
             "intercom",
+            "energy",
             "energy_dashboard",
         )
         val pageTap = if (hasOwnTaps) null else tapRef
@@ -81,8 +89,12 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
                 "calendar" -> this@tile.calendarPanel(tile, box)
                 "alarm_control_panel" -> this@tile.alarmPanel(tile, box)
                 "lights" -> this@tile.lightsPanel(tile, box)
+                "blinds" -> this@tile.blindsPanel(tile, box)
+                "vacuum" -> this@tile.vacuumPanel(tile, box)
+                "security" -> this@tile.securityPanel(tile, box)
                 "cameras" -> this@tile.camerasPanel(tile, box)
                 "intercom" -> this@tile.intercomPanel(tile, box)
+                "energy" -> this@tile.energyPanel(tile, box)
                 "energy_dashboard" -> this@tile.energyDashboardPanel(tile, box)
                 else -> this@tile.weatherPanel(tile, box)
             }
