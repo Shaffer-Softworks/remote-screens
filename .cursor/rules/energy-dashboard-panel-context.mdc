@@ -1,6 +1,6 @@
 ---
-description: HA-style Energy dashboard full page (player-native charts)
-globs: server/src/main/kotlin/**/energy*/**,server/src/main/kotlin/**/energydashboard/**,player/src/main/kotlin/**/energy/**,shared/src/main/kotlin/**/Protocol.kt,editor/src/model/otherTiles.ts,catalogue/_kinds.yaml
+description: HA-style Energy dashboard full page (player-native charts, theme roles, rebuild retention)
+globs: server/src/main/kotlin/**/energy*/**,server/src/main/kotlin/**/energydashboard/**,server/src/main/kotlin/**/session/SessionMedia.kt,player/src/main/kotlin/**/energy/**,shared/src/main/kotlin/**/Protocol.kt,editor/src/model/otherTiles.ts,catalogue/_kinds.yaml
 alwaysApply: false
 ---
 
@@ -12,20 +12,30 @@ Full-page kind `energy_dashboard` (Other tiles). Charts are **player-native Comp
 
 - Catalogue: `energy_dashboard` in `_kinds.yaml` (`sizes: [full]`, `card: none`).
 - Editor: `OTHER_TILE_KINDS`, `TileDrawer` edge-to-edge, `GridMockup` static mock.
-- Server: `Tile.edgeToEdge` + `Tiles.kt` → `energyDashboardPanel` (`render/panels/energydashboard/`).
+- Server: `Tile.edgeToEdge` + `Tiles.kt` → `energyDashboardPanel` (`render/panels/energydashboard/`). Stub RC hole uses `Role.PAGE`.
 - Stub RC page shows “Update the tablet app…”; capable players overlay `EnergyDashboardScreen`.
 - Data: `EnergyDashboardRepository` (`energy/get_prefs`, `recorder/statistics_during_period`, `energy/fossil_energy_consumption`) + area map for Sankey. Prefetch in `RenderDataRepository.forScreen` when the kind is present.
 - Period UI: `EnergyDashboardUiStore` + verbs `energy_dash_prev` / `next` / `now` / `period` → `EnergyDashboardActions` → Rebuild.
-- Protocol: `CAPABILITY_ENERGY_DASHBOARD`, `ServerMessage.EnergyDashboard` (page, componentId, series, totals, sankey, …).
-- Player: Hello capability; `RemoteScreenState.energyDashboards` / `playingEnergyDashboard`; `DocumentOverlays` places `EnergyDashboardScreen` on MAIN page bounds.
+- Protocol: `CAPABILITY_ENERGY_DASHBOARD`, `ServerMessage.EnergyDashboard` (page, componentId, series, totals, sankey, `theme`, …). `Document.energyPages` lists MAIN pages that have a dashboard (null = older add-on).
+- Player: Hello capability; `RemoteScreenState.energyDashboards` / `playingEnergyDashboard`; `DocumentOverlays` places `EnergyDashboardScreen` on MAIN page bounds. Keep the overlay across document rebuilds until a matching-revision payload arrives (see `session-document-rebuild-context.mdc`).
+- `SessionMedia.sendEnergyDashboard` is async after the document; do not clear the previous dashboard on `withDocument` or the charts blink.
+
+## Theme colours (from the server)
+
+Chrome is **not** the player’s `RemoteScreensTheme` Material scheme. The add-on resolves the screen `Palette` and sends it on the message:
+
+- `SessionMedia`: `theme = shown.renderedDoc.docContext.palette.toEnergyTheme()` → `EnergyDashboardTheme` (`page`, `card`, `ink`, `inkDim`, `accent`, `track` from `Role.PAGE` / `CARD` / `INK` / `INK_DIM` / `ACCENT` / `TRACK`).
+- Player: `message.theme.toEnergyColors()` + `LocalEnergyColors` (`EnergyColors.kt`). Electricity columns, gauge arc, “Now”, period bar, cards, and page background read that local.
+- Low-carbon green, grid blue, and per-device / Sankey categorical colours stay fixed so series stay distinct.
+- Defaults on `EnergyDashboardTheme` are the previous hardcoded dark/blue values. An older add-on that omits `theme` (or a tablet before this player) still paints that dashboard. **Redeploy the add-on** before expecting teal accent parity with the RC nav on a live tablet.
 
 ## Charts
 
 Player-native UI split:
 
-- `EnergyDashboardScreen.kt` — page shell + period bar.
+- `EnergyDashboardScreen.kt` — page shell + period bar + `CompositionLocalProvider`.
 - `EnergyDashboardCards.kt` — totals, rank, distribution, gauge, Sankey, electricity/devices cards.
-- `EnergyDashboardCharts.kt` — Vico column charts (electricity + stacked devices) with shared thickness/spacing and preview-safe synchronous models.
+- `EnergyDashboardCharts.kt` — Vico column charts (electricity + stacked devices) with shared thickness/spacing and preview-safe synchronous models. `remember(series)` so equal data does not reset the model.
 
 Compose rows/Canvas cover rank, gauge, distribution, and Sankey. Every UI composable has a same-file `@Preview`. Vico samples use ≈24 day buckets so content-zoom does not fatten columns. Devices detail charts when `series` is non-empty (labels optional).
 
@@ -37,8 +47,9 @@ Vico deps: `compose` / `core` / `compose-m3` (see player `build.gradle.kts`).
 python3 tools/generate_catalogue.py --check
 ./gradlew :shared:test --tests '*EnergyDashboardProtocolTest' --tests '*ProjectRuleIndexTest*'
 ./gradlew :server:test --tests '*EnergyDashboardBuilderTest' --tests '*RenderTest.aFullEnergyDashboard*'
+./gradlew :player:testDebugUnitTest --tests '*RemoteScreenStateTest' --tests '*RemoteDocumentControllerTest'
 ./gradlew :shared:detekt :server:detekt :player:detekt
 cd editor && npm test -- otherTiles.test.ts
 ```
 
-Matching APK required on the tablet (same as cameras page-aware video).
+Matching APK **and** add-on build required for theme colours on the tablet (same as cameras page-aware video for the overlay itself).

@@ -52,8 +52,10 @@ internal class RemoteDocumentController(
     private var isTouchActive = false
     private var needsRenderAfterTouch = false
     private var appliedTimeZone: String? = null
-    /** After a MAIN rebuild into the back buffer, swap once PAGE has been drawn off-screen. */
+    /** After a MAIN rebuild into the back buffer, swap once PAGE has been drawn behind the current page. */
     private var pendingMainSwap: SlotDocument? = null
+    /** Previous main buffer, hidden only after Compose has placed the replacement in front of it. */
+    private var replacedMainPlayer: RemoteComposePlayer? = null
     /** Scroll offsets copied off the document a rebuild is about to replace. */
     private var pendingMainScroll: List<DocumentScroll.Mark> = emptyList()
     /** First MAIN document: draw once at alpha 0 so PAGE sticks before it is shown. */
@@ -92,6 +94,7 @@ internal class RemoteDocumentController(
         loadedDocuments.clear()
         pendingMainSwap = null
         pendingMainFirstReveal = null
+        replacedMainPlayer = null
     }
 
     fun render(state: RemoteScreenState) {
@@ -105,6 +108,7 @@ internal class RemoteDocumentController(
         if (Slot.MAIN !in state.documents) {
             pendingMainSwap = null
             pendingMainFirstReveal = null
+            replacedMainPlayer = null
             pendingMainScroll = emptyList()
         }
         val newlyLoaded = loadNewDocuments(state)
@@ -152,7 +156,9 @@ internal class RemoteDocumentController(
             // and ignores touches. The main page stays at 0 until its own reveal.
             if (isShown && slot != Slot.MAIN) slotPlayer.alpha = 1f
         }
-        if (pendingMainSwap == null) mainInactive().visibility = View.GONE
+        // Leave the outgoing page up until Compose has raised its replacement. Hiding it here, in the
+        // gap after the swap is decided and before that composition, is the blank frame.
+        if (pendingMainSwap == null && replacedMainPlayer == null) mainInactive().visibility = View.GONE
     }
 
     /** A value set from outside a touch is not drawn until the player is asked to. */
@@ -180,45 +186,61 @@ internal class RemoteDocumentController(
         if (slot == Slot.MAIN && pendingMainSwap != null) mainInactive() else player(slot)
 
     /**
-     * A hidden player never applies `page`, so the first visible frame is home.
-     * Draw the new document at alpha 0 (under the current page) for a frame, then show it.
+     * Draw the replacement at full alpha behind the page already on screen, then raise it.
+     * The old buffer stays visible until Compose stacks the new one in front.
      */
     private fun revealMainSwap(document: SlotDocument) {
         if (mainSwapPosted) return
         mainSwapPosted = true
         val newFront = mainInactive()
         val oldFront = player(Slot.MAIN)
-        prepareHiddenDraw(newFront)
-        newFront.post {
+        prepareHiddenDraw(player = newFront, coverCurrentPage = true)
+        newFront.postOnAnimation {
             if (!swapStillPending(document)) {
                 mainSwapPosted = false
                 pendingMainSwap?.takeIf(::swapStillPending)?.let(::revealMainSwap)
-                return@post
+                return@postOnAnimation
             }
+            // Before this frame draws. The current page still covers it, and the draw keeps page and scroll.
+            DocumentScroll.restore(newFront, pendingMainScroll)
             newFront.setUserLocalInt(PAGE_VARIABLE, appliedPage ?: 0)
             newFront.invalidate()
-            newFront.post {
+            newFront.postOnAnimation {
                 if (!swapStillPending(document)) {
                     mainSwapPosted = false
                     pendingMainSwap?.takeIf(::swapStillPending)?.let(::revealMainSwap)
-                    return@post
+                    return@postOnAnimation
                 }
-                if (isTouchActive) {
-                    needsRenderAfterTouch = true
-                    mainSwapPosted = false
-                    return@post
-                }
-                DocumentScroll.restore(newFront, pendingMainScroll)
-                pendingMainScroll = emptyList()
-                newFront.alpha = 1f
-                oldFront.visibility = View.GONE
-                oldFront.alpha = 1f
-                mainFrontIsPrimary = !mainFrontIsPrimary
-                pendingMainSwap = null
-                mainSwapPosted = false
+                // A second covered draw lets a long list finish layout before anyone sees it.
                 newFront.invalidate()
+                newFront.postOnAnimation {
+                    if (!swapStillPending(document)) {
+                        mainSwapPosted = false
+                        pendingMainSwap?.takeIf(::swapStillPending)?.let(::revealMainSwap)
+                        return@postOnAnimation
+                    }
+                    if (isTouchActive) {
+                        needsRenderAfterTouch = true
+                        mainSwapPosted = false
+                        return@postOnAnimation
+                    }
+                    pendingMainScroll = emptyList()
+                    replacedMainPlayer = oldFront
+                    mainFrontIsPrimary = !mainFrontIsPrimary
+                    pendingMainSwap = null
+                    mainSwapPosted = false
+                }
             }
         }
+    }
+
+    /** Hides the buffer a swap replaced, once Compose has stacked the new one above it. */
+    fun hideReplacedMainPlayer() {
+        val replaced = replacedMainPlayer ?: return
+        if (pendingMainSwap != null || replaced !== mainInactive()) return
+        replacedMainPlayer = null
+        replaced.visibility = View.GONE
+        replaced.alpha = 1f
     }
 
     private fun revealMainFirst(document: SlotDocument) {
@@ -253,8 +275,10 @@ internal class RemoteDocumentController(
         }
     }
 
-    private fun prepareHiddenDraw(player: RemoteComposePlayer) {
-        player.alpha = 0f
+    private fun prepareHiddenDraw(player: RemoteComposePlayer, coverCurrentPage: Boolean = false) {
+        // Covered swaps paint at full alpha behind the current page. The first document has nothing
+        // behind it, so it stays transparent until page has been applied.
+        player.alpha = if (coverCurrentPage) 1f else 0f
         player.visibility = View.VISIBLE
         player.setUserLocalInt(PAGE_VARIABLE, appliedPage ?: 0)
         player.invalidate()
@@ -268,6 +292,7 @@ internal class RemoteDocumentController(
             loadedDocuments.clear()
             pendingMainSwap = null
             pendingMainFirstReveal = null
+            replacedMainPlayer = null
             pendingMainScroll = emptyList()
             mainSwapPosted = false
             mainFirstPosted = false
@@ -291,7 +316,7 @@ internal class RemoteDocumentController(
             else -> DocumentScroll.capture(player(slot))
         }
         if (slot == Slot.MAIN) pendingMainScroll = marks
-        // Rebuilds load under the current page. Alpha 0 still draws, so PAGE can stick before reveal.
+        // Stays invisible until the covered draw turns it opaque behind the current page.
         val target = if (hadMain) mainInactive() else player(slot)
         target.alpha = 0f
         target.visibility = View.INVISIBLE

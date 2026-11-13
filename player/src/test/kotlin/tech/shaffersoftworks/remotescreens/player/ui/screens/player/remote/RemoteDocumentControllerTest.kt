@@ -3,6 +3,7 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote
 
 import android.content.Context
+import android.view.View
 import androidx.compose.remote.core.CoreDocument
 import androidx.compose.remote.core.RcProfiles
 import androidx.compose.remote.core.operations.Header
@@ -39,6 +40,10 @@ class RemoteDocumentControllerTest {
                 posted.add(invocation.getArgument(0))
                 true
             }
+            whenever(player.postOnAnimation(any())).doAnswer { invocation ->
+                posted.add(invocation.getArgument(0))
+                Unit
+            }
         }
     }
 
@@ -57,6 +62,42 @@ class RemoteDocumentControllerTest {
         controller.render(initial.copy(values = mapOf("title" to VarValue.string("title", "Next"))))
         verify(front).setUserLocalString("title", "Next")
         verify(front, never()).setDocument(any<RemoteDocument>())
+    }
+
+    @Test
+    fun replacementStaysVisibleUntilComposeHasRaisedTheNewBuffer() {
+        controller.render(state(document(1)))
+        drainFrames()
+        val oldFront = controller.primaryPlayer(Slot.MAIN)
+        clearInvocations(oldFront)
+
+        controller.render(state(document(2)).copy(page = 2))
+        verify(oldFront, never()).setVisibility(View.GONE)
+        verify(controller.mainBackPlayer).setAlpha(1f)
+
+        drainFrames()
+        assertFalse(controller.mainFrontIsPrimary)
+        verify(oldFront, never()).setVisibility(View.GONE)
+
+        controller.hideReplacedMainPlayer()
+        verify(oldFront).setVisibility(View.GONE)
+    }
+
+    @Test
+    fun renderBeforeTheStackCommitsLeavesTheOldPageUp() {
+        controller.render(state(document(1)))
+        drainFrames()
+        val oldFront = controller.primaryPlayer(Slot.MAIN)
+        val replacement = state(document(2))
+        controller.render(replacement)
+        drainFrames()
+        clearInvocations(oldFront)
+
+        controller.render(replacement)
+        verify(oldFront, never()).setVisibility(View.GONE)
+
+        controller.hideReplacedMainPlayer()
+        verify(oldFront).setVisibility(View.GONE)
     }
 
     @Test

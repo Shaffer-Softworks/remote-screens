@@ -22,6 +22,14 @@ class EnergyDashboardProtocolTest {
             ),
             totals = listOf(EnergyTotalRow(source = "Grid", energyKwh = 10.5, cost = 2.1)),
             lowCarbonPercent = 42.0,
+            theme = EnergyDashboardTheme(
+                page = 0xFF494949,
+                card = 0xFF333333,
+                ink = 0xFFFFFFFF,
+                inkDim = 0xFF939393,
+                accent = 0xFF14E1BA,
+                track = 0xFF1B1B1B,
+            ),
         )
 
         assertEquals(message, Protocol.decodeServer(Protocol.encode(message)))
