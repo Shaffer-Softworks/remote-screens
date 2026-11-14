@@ -414,6 +414,15 @@ class RemoteScreenStateTest {
         assertNull(rebuilt.playingEnergyDashboard)
     }
 
+    @Test
+    fun anIdenticalEnergyPayloadDoesNotReplaceTheDashboard() {
+        val showing = energyState(revision = 1)
+        val same = energyDashboard(revision = 1, periodLabel = "Nov 13")
+        val updated = showing.withEnergyDashboard(Slot.MAIN, same)
+
+        assertSame(showing.playingEnergyDashboard, updated.playingEnergyDashboard)
+    }
+
     private fun energyState(revision: Int): RemoteScreenState =
         RemoteScreenState(page = ENERGY_PAGE)
             .withDocument(mainDocument(), documentBytes)

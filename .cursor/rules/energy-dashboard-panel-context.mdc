@@ -13,7 +13,7 @@ Full-page kind `energy_dashboard` (Other tiles). Charts are **player-native Comp
 - Catalogue: `energy_dashboard` in `_kinds.yaml` (`sizes: [full]`, `card: none`).
 - Editor: `OTHER_TILE_KINDS`, `TileDrawer` edge-to-edge, `GridMockup` static mock.
 - Server: `Tile.edgeToEdge` + `Tiles.kt` → `energyDashboardPanel` (`render/panels/energydashboard/`). Stub RC hole uses `Role.PAGE`.
-- Stub RC page shows “Update the tablet app…”; capable players overlay `EnergyDashboardScreen`.
+- Stub RC hole: blank PAGE colour when `supportsEnergyDashboard`; “Update the tablet app…” only for older APKs. Capable players overlay `EnergyDashboardScreen`.
 - Data: `EnergyDashboardRepository` (`energy/get_prefs`, `recorder/statistics_during_period`, `energy/fossil_energy_consumption`) + area map for Sankey. Prefetch in `RenderDataRepository.forScreen` when the kind is present.
 - Period UI: `EnergyDashboardUiStore` + verbs `energy_dash_prev` / `next` / `now` / `period` → `EnergyDashboardActions` → Rebuild.
 - Protocol: `CAPABILITY_ENERGY_DASHBOARD`, `ServerMessage.EnergyDashboard` (page, componentId, series, totals, sankey, `theme`, …). `Document.energyPages` lists MAIN pages that have a dashboard (null = older add-on).

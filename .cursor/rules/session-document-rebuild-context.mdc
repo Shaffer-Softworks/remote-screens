@@ -30,6 +30,11 @@ A MAIN rebuild used to clear `energyDashboards`, so the native charts vanished u
 - `RemoteScreenState.withDocument` uses `retainedEnergyDashboards(message)` instead of always dropping.
 - `playingEnergyDashboard` prefers the dashboard whose revision matches the current document, else the last one on that page.
 - Overlay key is `key(tileId, page)` only — do not key by revision or the composable remounts.
+- Overlay bounds for Energy: measure the visible MAIN buffer first, then `documentPlayer`. Keep the last non-null Energy `Rect` while the dashboard is still playing. If bounds are still null, paint the dashboard `fillMaxSize` so the RC hole stays covered.
+- `DocumentOverlays` keeps a sticky last Energy dashboard for the current page across a brief `playingEnergyDashboard == null` gap after a MAIN rebuild.
+- Compose overlays are composed **after** every Remote Compose `AndroidView` (not interleaved). A MAIN buffer swap otherwise drew the Energy stub over the native dashboard for a frame.
+- Capable players get a blank PAGE-coloured Energy hole (`supportsEnergyDashboard`); the update prompt is only for older APKs.
+- `withEnergyDashboard` ignores a wrong-rev or identical re-send (same-content refresh still pushes Energy); only a changed payload replaces the message.
 
 ## Helpers
 

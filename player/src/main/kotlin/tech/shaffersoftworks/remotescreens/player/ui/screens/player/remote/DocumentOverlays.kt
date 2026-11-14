@@ -1,8 +1,14 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,6 +32,22 @@ internal fun DocumentOverlays(
     onEnergyAction: (tileId: String, verb: String) -> Unit = { _, _ -> },
     imageLoader: ImageLoader,
 ) {
+    // A MAIN rebuild can briefly clear playingEnergyDashboard before the follow-up payload.
+    // Keep the last dashboard for this page so the RC stub never shows through.
+    var stickyEnergy by remember { mutableStateOf<SlotEnergyDashboard?>(null) }
+    val playingEnergy = state.playingEnergyDashboard
+    SideEffect {
+        when {
+            playingEnergy != null -> stickyEnergy = playingEnergy
+            stickyEnergy?.page != state.page -> stickyEnergy = null
+        }
+    }
+    val energyDashboard = when {
+        slot != Slot.MAIN -> null
+        playingEnergy != null -> playingEnergy
+        else -> stickyEnergy?.takeIf { it.page == state.page }
+    }
+
     Box(modifier) {
         state.playingVideo?.takeIf { it.first == slot && isVideoAllowed }?.second?.let { video ->
             key(slot, video) {
@@ -52,11 +74,18 @@ internal fun DocumentOverlays(
                 }
             }
         }
-        state.playingEnergyDashboard
-            ?.takeIf { slot == Slot.MAIN }
-            ?.let { dashboard ->
-                key(dashboard.tileId, dashboard.page) {
+        energyDashboard?.let { dashboard ->
+            key(dashboard.tileId, dashboard.page) {
+                // Full-screen cover when the hole is not laid out yet (swap), so the RC stub stays hidden.
+                if (bounds.energy != null) {
                     DocumentOverlay(bounds.energy) {
+                        EnergyDashboardScreen(
+                            message = dashboard.message,
+                            onAction = { verb -> onEnergyAction(dashboard.tileId, verb) },
+                        )
+                    }
+                } else {
+                    Box(Modifier.fillMaxSize()) {
                         EnergyDashboardScreen(
                             message = dashboard.message,
                             onAction = { verb -> onEnergyAction(dashboard.tileId, verb) },
@@ -64,6 +93,7 @@ internal fun DocumentOverlays(
                     }
                 }
             }
+        }
     }
 }
 

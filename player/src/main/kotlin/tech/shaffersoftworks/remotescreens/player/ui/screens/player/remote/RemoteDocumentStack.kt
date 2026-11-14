@@ -62,7 +62,13 @@ internal fun RemoteDocumentStack(
         val observer = host.viewTreeObserver
         val listener = ViewTreeObserver.OnPreDrawListener {
             controller.beforeDraw()
-            bounds = overlayBounds(controller, currentState)
+            val measured = overlayBounds(controller, currentState)
+            // Keep the last Energy hole while the dashboard is still playing. A MAIN swap measures
+            // the incoming buffer before layout and would otherwise shrink the overlay to 0×0.
+            bounds = measured.copy(
+                energy = measured.energy
+                    ?: bounds.energy.takeIf { currentState.playingEnergyDashboard != null },
+            )
             true
         }
         observer.addOnPreDrawListener(listener)
@@ -74,7 +80,8 @@ internal fun RemoteDocumentStack(
     Box(
         Modifier.fillMaxSize().deferDocumentUpdatesDuringTouch(controller),
     ) {
-        // Both MAIN renderers stay mounted so the next document can draw before it is revealed.
+        // Remote Compose AndroidViews first, then Compose overlays. Interleaving let a MAIN buffer
+        // swap draw the Energy stub over the native dashboard for a frame.
         Slot.entries.forEach { slot ->
             val base = slot.ordinal * SLOT_LAYER_SPACING
             if (slot == Slot.MAIN) {
@@ -91,12 +98,15 @@ internal fun RemoteDocumentStack(
                     base + if (slot == Slot.MAIN && !controller.mainFrontIsPrimary) -1f else 0f,
                 ),
             )
-            if (active) {
+        }
+        if (active) {
+            Slot.entries.forEach { slot ->
+                val base = slot.ordinal * SLOT_LAYER_SPACING
                 DocumentOverlays(
                     slot = slot,
                     state = state,
                     bounds = bounds,
-                    modifier = Modifier.zIndex(base + 1f),
+                    modifier = Modifier.zIndex(base + OVERLAY_ABOVE_DOCUMENTS),
                     isVideoAllowed = isVideoAllowed,
                     onVideoFailed = onVideoFailed,
                     onSearchQuery = onSearchQuery,
@@ -126,6 +136,8 @@ private fun Modifier.deferDocumentUpdatesDuringTouch(controller: RemoteDocumentC
     }
 
 private const val SLOT_LAYER_SPACING = 10f
+/** Keep Compose overlays above every Remote Compose AndroidView in the stack. */
+private const val OVERLAY_ABOVE_DOCUMENTS = 5f
 
 internal data class OverlayBounds(
     val video: Rect? = null,
@@ -136,6 +148,15 @@ internal data class OverlayBounds(
 
 private fun overlayBounds(controller: RemoteDocumentController, state: RemoteScreenState): OverlayBounds {
     fun bounds(slot: Slot, id: Int): Rect? = componentBounds(controller.documentPlayer(slot), id)
+    // Visible MAIN buffer first during a swap: documentPlayer is the incoming one and may not
+    // have laid out the Energy hole yet (null bounds → 0×0 overlay flash / RC stub).
+    fun energyBounds(id: Int): Rect? {
+        val front = controller.primaryPlayer(Slot.MAIN)
+        val back = controller.mainBackPlayer
+        val visible = if (controller.mainFrontIsPrimary) front else back
+        return componentBounds(visible, id)
+            ?: componentBounds(controller.documentPlayer(Slot.MAIN), id)
+    }
     val search = state.playingSearch
     val energy = state.playingEnergyDashboard
     return OverlayBounds(
@@ -148,7 +169,7 @@ private fun overlayBounds(controller: RemoteDocumentController, state: RemoteScr
                 bounds(slot, field.componentId)
             }
         },
-        energy = energy?.let { dashboard -> bounds(Slot.MAIN, dashboard.message.componentId) },
+        energy = energy?.let { dashboard -> energyBounds(dashboard.message.componentId) },
     )
 }
 
