@@ -2,6 +2,7 @@
 
 package tech.shaffersoftworks.remotescreens.server.render.cards
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.render.Device
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
@@ -33,7 +34,6 @@ import tech.shaffersoftworks.remotescreens.shared.Catalogue
  * overlay slot; its taps name the entity as `e:<entity_id>`, so they work whichever tile opened it.
  */
 object CardRenderer {
-    @Suppress("LongMethod", "LongParameterList")
     fun render(
         entityId: String,
         kind: String?,
@@ -43,12 +43,7 @@ object CardRenderer {
         bottomInsetDp: Float = 0f,
     ): RenderedDoc {
         val entityState = input.states[entityId]
-        val spec = Catalogue.of(kind ?: entityId.substringBefore('.'))
-        val card = when (kind) {
-            "history" -> "history"
-            "energy" -> "energy"
-            else -> spec?.card ?: "toggle"
-        }
+        val card = resolveCardType(kind = kind, entityId = entityId)
 
         val panelW = minOf(
             device.widthDp - CardChrome.PANEL_MARGIN_DP,
@@ -69,7 +64,7 @@ object CardRenderer {
                 tileId = TILE,
                 entityId = entityId,
                 pastel = Pastel.forDomain(entityState?.domain),
-                alwaysOn = card in setOf("camera", "map", "energy", "history"),
+                alwaysOn = card in ALWAYS_ON_CARDS,
             )
 
             Column(
@@ -98,56 +93,13 @@ object CardRenderer {
                     docContext.gap(CardChrome.SECTION_GAP_DP)
 
                     Column(Modifier.fillMaxWidth().verticalWeight(1f).keptVerticalScroll("card.$entityId")) {
-                        val body = panelW - CardChrome.CLOSE_KEY_DP
-                        when (card) {
-                            "light" -> docContext.lightCard(entityId, entityState, body)
-                            "fan" -> docContext.fanCard(entityId, entityState, body)
-                            "humidifier" -> docContext.humidifierCard(entityId, entityState, body)
-                            "cover" -> docContext.coverCard(entityId, entityState, body)
-                            "lock" -> docContext.lockCard(entityId, entityState)
-                            "climate" -> docContext.climateCard(entityId, entityState)
-                            "media" -> docContext.mediaCard(entityId, entityState, body)
-                            "weather" -> docContext.weatherCard(entityId, entityState, body)
-                            "history" -> docContext.historyCard(
-                                entityId,
-                                body,
-                                panelH - CardChrome.HISTORY_RESERVE_DP,
-                            )
-                            "camera" -> docContext.cameraCard(
-                                entityId,
-                                body,
-                                panelH - CardChrome.CAMERA_RESERVE_DP,
-                            )
-                            "alarm" -> docContext.alarmCard(entityId, entityState, body)
-                            "select" -> docContext.selectCard(entityId, entityState)
-                            "number" -> docContext.numberCard(entityId, entityState, body)
-                            "vacuum" -> docContext.vacuumCard(entityId, entityState)
-                            "lawn_mower" -> docContext.lawnMowerCard(entityId)
-                            "calendar" -> docContext.calendarCard(entityId, entityState)
-                            "todo" -> docContext.todoCard(entityId)
-                            "timer" -> docContext.timerCard(entityId, entityState)
-                            "counter" -> docContext.counterCard(entityId, entityState)
-                            "water_heater" -> docContext.waterHeaterCard(
-                                entityId,
-                                entityState,
-                                body,
-                            )
-                            "valve" -> docContext.valveCard(entityId, entityState, body)
-                            "siren" -> docContext.sirenCard(entityId, entityState)
-                            "input_text" -> docContext.inputTextCard(entityId, entityState)
-                            "input_datetime" -> docContext.inputDatetimeCard(entityId, entityState)
-                            "map" -> docContext.mapCard(
-                                entityId,
-                                body,
-                                panelH - CardChrome.CAMERA_RESERVE_DP,
-                            )
-                            "energy" -> docContext.energyFlow(
-                                body,
-                                panelH - CardChrome.CAMERA_RESERVE_DP,
-                                compact = false,
-                            )
-                            else -> docContext.toggleCard(entityId, entityState)
-                        }
+                        docContext.renderCardBody(
+                            card = card,
+                            entityId = entityId,
+                            entityState = entityState,
+                            bodyWidthDp = panelW - CardChrome.CLOSE_KEY_DP,
+                            panelHeightDp = panelH,
+                        )
                     }
                 }
                 Spacer(Modifier.verticalWeight(1f))
@@ -159,4 +111,74 @@ object CardRenderer {
 
     /** Colours a card reads, under a tile id of its own. */
     const val TILE = "card"
+
+    private val ALWAYS_ON_CARDS = setOf("camera", "map", "energy", "history")
+
+    private fun resolveCardType(kind: String?, entityId: String): String {
+        val spec = Catalogue.of(kind ?: entityId.substringBefore('.'))
+        return when (kind) {
+            "history" -> "history"
+            "energy" -> "energy"
+            else -> spec?.card ?: "toggle"
+        }
+    }
+
+    @Suppress("CyclomaticComplexMethod")
+    private fun DocContext.renderCardBody(
+        card: String,
+        entityId: String,
+        entityState: EntityState?,
+        bodyWidthDp: Float,
+        panelHeightDp: Float,
+    ) {
+        when (card) {
+            "light" -> lightCard(entityId, entityState, bodyWidthDp)
+            "fan" -> fanCard(entityId, entityState, bodyWidthDp)
+            "humidifier" -> humidifierCard(entityId, entityState, bodyWidthDp)
+            "cover" -> coverCard(entityId, entityState, bodyWidthDp)
+            "lock" -> lockCard(entityId, entityState)
+            "climate" -> climateCard(entityId, entityState)
+            "media" -> mediaCard(entityId, entityState, bodyWidthDp)
+            "weather" -> weatherCard(entityId, entityState, bodyWidthDp)
+            "history" -> historyCard(
+                entityId,
+                bodyWidthDp,
+                panelHeightDp - CardChrome.HISTORY_RESERVE_DP,
+            )
+            "camera" -> cameraCard(
+                entityId,
+                bodyWidthDp,
+                panelHeightDp - CardChrome.CAMERA_RESERVE_DP,
+            )
+            "alarm" -> alarmCard(entityId, entityState, bodyWidthDp)
+            "select" -> selectCard(entityId, entityState)
+            "number" -> numberCard(entityId, entityState, bodyWidthDp)
+            "vacuum" -> vacuumCard(entityId, entityState)
+            "lawn_mower" -> lawnMowerCard(entityId)
+            "calendar" -> calendarCard(entityId, entityState)
+            "todo" -> todoCard(entityId)
+            "timer" -> timerCard(entityId, entityState)
+            "counter" -> counterCard(entityId, entityState)
+            "water_heater" -> waterHeaterCard(
+                entityId,
+                entityState,
+                bodyWidthDp,
+            )
+            "valve" -> valveCard(entityId, entityState, bodyWidthDp)
+            "siren" -> sirenCard(entityId, entityState)
+            "input_text" -> inputTextCard(entityId, entityState)
+            "input_datetime" -> inputDatetimeCard(entityId, entityState)
+            "map" -> mapCard(
+                entityId,
+                bodyWidthDp,
+                panelHeightDp - CardChrome.CAMERA_RESERVE_DP,
+            )
+            "energy" -> energyFlow(
+                bodyWidthDp,
+                panelHeightDp - CardChrome.CAMERA_RESERVE_DP,
+                compact = false,
+            )
+            else -> toggleCard(entityId, entityState)
+        }
+    }
 }

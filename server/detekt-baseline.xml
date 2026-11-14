@@ -2,7 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>CyclomaticComplexMethod:CardRenderer.kt:CardRenderer$fun render: RenderedDoc</ID>
     <ID>CyclomaticComplexMethod:EntityTile.kt:internal fun DocContext.entityTile</ID>
     <ID>CyclomaticComplexMethod:FreeForm.kt:internal fun DocContext.node</ID>
     <ID>CyclomaticComplexMethod:FreeForm.kt:internal fun DocContext.styled: Modifier</ID>
@@ -19,7 +18,6 @@
     <ID>LargeClass:FreeFormTest.kt:FreeFormTest</ID>
     <ID>LargeClass:RenderTest.kt:RenderTest</ID>
     <ID>LongMethod:Alerts.kt:AlertRenderer$fun render: RenderedDoc</ID>
-    <ID>LongMethod:CardRenderer.kt:CardRenderer$fun render: RenderedDoc</ID>
     <ID>LongMethod:ClimateCards.kt:internal fun DocContext.climateCard</ID>
     <ID>LongMethod:ClimateCards.kt:internal fun DocContext.climateDualSetpoint</ID>
     <ID>LongMethod:DemoHome.kt:DemoHome$@Suppress("CyclomaticComplexMethod") override suspend fun command: JsonElement?</ID>
