@@ -38,10 +38,14 @@ fun DocContext.energyDashboardPanel(tile: Tile, box: TileBox) {
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
     ) {
-        label(
-            text = "Update the tablet app for the Energy dashboard",
-            sp = Type.BODY,
-            color = role(Role.INK_DIM),
-        )
+        // Capable players cover this hole natively; the update prompt only matters for older APKs.
+        // A blank PAGE-coloured hole also hides a one-frame swap when the overlay is briefly under RC.
+        if (!supportsEnergyDashboard) {
+            label(
+                text = "Update the tablet app for the Energy dashboard",
+                sp = Type.BODY,
+                color = role(Role.INK_DIM),
+            )
+        }
     }
 }

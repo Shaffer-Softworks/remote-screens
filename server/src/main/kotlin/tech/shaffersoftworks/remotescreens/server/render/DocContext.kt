@@ -40,6 +40,8 @@ class DocContext(
     val data: RenderData,
     /** When false, the calendar page hides the add button and the hold-to-delete hint. */
     val supportsCalendarDialogs: Boolean = false,
+    /** When true, the Energy page hole stays blank; the player paints the native dashboard over it. */
+    val supportsEnergyDashboard: Boolean = false,
     /** The intercom page for this tablet. Null on a document that has no intercom tile. */
     val intercom: IntercomView? = null,
 ) {

@@ -38,6 +38,7 @@ internal class SessionDocument(
         data = renderData,
         palette = host.palette,
         supportsCalendarDialogs = host.supportsCalendarDialogs,
+        supportsEnergyDashboard = host.supportsEnergyDashboard,
         intercom = host.intercomView,
     )
 

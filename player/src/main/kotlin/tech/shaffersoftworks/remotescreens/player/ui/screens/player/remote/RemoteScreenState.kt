@@ -264,9 +264,13 @@ data class RemoteScreenState(
     }
 
     fun withEnergyDashboard(slot: Slot, dashboard: SlotEnergyDashboard): RemoteScreenState {
-        if (documents[slot]?.revision != dashboard.revision) return this
-        val existing = energyDashboards[slot].orEmpty().filterNot { it.page == dashboard.page }
-        return copy(energyDashboards = energyDashboards + (slot to (existing + dashboard)))
+        val documentRevision = documents[slot]?.revision
+        val existing = energyDashboards[slot].orEmpty()
+        val previous = existing.firstOrNull { it.page == dashboard.page }
+        // Wrong rev, or same payload re-sent on every same-content refresh — keep what is showing.
+        val shouldKeep = documentRevision != dashboard.revision || previous?.message == dashboard.message
+        val forSlot = existing.filterNot { it.page == dashboard.page } + dashboard
+        return if (shouldKeep) this else copy(energyDashboards = energyDashboards + (slot to forSlot))
     }
 
     fun withPage(index: Int): RemoteScreenState = copy(page = index.coerceIn(0, pageCount - 1))
