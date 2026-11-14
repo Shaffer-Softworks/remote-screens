@@ -4,6 +4,7 @@
     <string name="searching">Looking for Remote Screens on your network…</string>
     <string name="connecting">Connecting to %1$s…</string>
     <string name="disconnected">Lost the connection. Trying again…</string>
+    <string name="retry">Retry</string>
     <string name="pair_title">Add this screen</string>
     <string name="pair_body">Open Remote Screens in Home Assistant, choose Players, and enter this code.</string>
     <string name="enter_address">Enter address</string>

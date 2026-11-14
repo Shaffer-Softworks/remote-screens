@@ -20,6 +20,11 @@ val DialogTeal = Color(0xFF03DAC5)
 val DialogWhite = Color(0xFFFFFFFF)
 
 /**
+ * Snakbar
+ */
+val WarningAmber = Color(0xFFFFB74D)
+
+/**
  * Live Search
  */
 val LiveSearchTeal = Color(0xFF14E1BA)
