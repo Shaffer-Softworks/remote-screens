@@ -167,6 +167,41 @@ class PlayerViewModelTest : PlayerViewModelTestBase() {
     }
 
     @Test
+    fun `disconnecting with a document keeps the disconnected info panel until reconnect`() {
+        receive(mainDocument())
+        connectionState.value = ConnectionRepository.ConnectionState(1L, ConnectionStatus.DISCONNECTED)
+        runCurrent()
+
+        assertEquals(InfoPanelState.Disconnected, viewModel.viewState.value.infoPanel)
+        assertTrue(viewModel.viewState.value.remoteScreen.hasMainDocument)
+
+        connectionState.value = ConnectionRepository.ConnectionState(2L, ConnectionStatus.CONNECTED)
+        runCurrent()
+
+        assertNull(viewModel.viewState.value.infoPanel)
+    }
+
+    @Test
+    fun `retry asks the connection to reconnect`() {
+        receive(mainDocument())
+        connectionState.value = ConnectionRepository.ConnectionState(1L, ConnectionStatus.DISCONNECTED)
+        runCurrent()
+
+        viewModel.onReconnectRequested()
+
+        verify(connectionRepository).reconnect()
+    }
+
+    @Test
+    fun `disconnecting without a document keeps the full info panel`() {
+        connectionState.value = ConnectionRepository.ConnectionState(1L, ConnectionStatus.DISCONNECTED)
+        runCurrent()
+
+        assertEquals(InfoPanelState.Disconnected, viewModel.viewState.value.infoPanel)
+        assertFalse(viewModel.viewState.value.remoteScreen.hasMainDocument)
+    }
+
+    @Test
     fun `a local page action changes page without asking the add-on`() {
         receive(mainDocument())
 

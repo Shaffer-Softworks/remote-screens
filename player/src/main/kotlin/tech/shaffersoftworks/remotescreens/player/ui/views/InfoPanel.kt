@@ -39,7 +39,7 @@ private val BODY_TEXT_SIZE = 18.sp
 private val NOTE_TEXT_SIZE = 14.sp
 private val CODE_LETTER_SPACING = 0.1.em
 
-/** What the screen shows while there is no document yet: searching, connecting, or the code to pair with. */
+/** Searching, connecting, pairing, or a lost link — full screen, or a snackbar when a document stays up. */
 @Composable
 fun InfoPanel(
     state: InfoPanelState,
@@ -47,12 +47,33 @@ fun InfoPanel(
     modifier: Modifier = Modifier,
     canOfferUnrestrictedBattery: Boolean = false,
     onAllowUnrestrictedBattery: () -> Unit = {},
+    asSnackbar: Boolean = false,
+    onRetry: () -> Unit = {},
+) {
+    if (state is InfoPanelState.Disconnected && asSnackbar) {
+        DisconnectedSnackbar(onRetry = onRetry, modifier = modifier)
+    } else {
+        InfoPanelFullScreen(
+            state = state,
+            onEnterAddress = onEnterAddress,
+            modifier = modifier,
+            canOfferUnrestrictedBattery = canOfferUnrestrictedBattery,
+            onAllowUnrestrictedBattery = onAllowUnrestrictedBattery,
+        )
+    }
+}
+
+@Composable
+private fun InfoPanelFullScreen(
+    state: InfoPanelState,
+    onEnterAddress: () -> Unit,
+    modifier: Modifier,
+    canOfferUnrestrictedBattery: Boolean,
+    onAllowUnrestrictedBattery: () -> Unit,
 ) {
     val pairingCode = (state as? InfoPanelState.Pairing)?.code
     val title = if (pairingCode != null) {
-        stringResource(
-            R.string.pair_title,
-        )
+        stringResource(R.string.pair_title)
     } else {
         stringResource(R.string.app_name)
     }
@@ -149,6 +170,18 @@ private fun InfoPanelDisconnectedPreview() {
         InfoPanel(
             state = InfoPanelState.Disconnected,
             onEnterAddress = {},
+        )
+    }
+}
+
+@Preview(widthDp = 800, heightDp = 480)
+@Composable
+private fun InfoPanelDisconnectedSnackbarPreview() {
+    RemoteScreensTheme {
+        InfoPanel(
+            state = InfoPanelState.Disconnected,
+            onEnterAddress = {},
+            asSnackbar = true,
         )
     }
 }
