@@ -52,7 +52,8 @@ object CardRenderer {
             CardChrome.PANEL_MAX_WIDTH_DP,
         )
 
-        val panelH = device.heightDp - CardChrome.CLOSE_KEY_DP
+        // Match lights/alerts: inset from the screen edges so the card reads as a dialog.
+        val panelH = device.heightDp - 2 * CardChrome.PANEL_MARGIN_V_DP
         val (bytes, docContext) = DocContext.build(
             widthPx = device.widthPx,
             heightPx = device.heightPx,
@@ -79,9 +80,8 @@ object CardRenderer {
                 Column(
                     docContext.tap(
                         Modifier.size(
-                            // TODO add space above and below the popup
                             docContext.units.px(panelW),
-                            docContext.units.px(panelH - CARD_HEIGHT_SPACE),
+                            docContext.units.px(panelH),
                         ).clip(
                             docContext.rounded(CardChrome.PANEL_CORNER_DP),
                         ).background(docContext.role(Role.CARD)),
@@ -152,5 +152,4 @@ object CardRenderer {
 
     /** Colours a card reads, under a tile id of its own. */
     const val TILE = "card"
-    private const val CARD_HEIGHT_SPACE = 3
 }
