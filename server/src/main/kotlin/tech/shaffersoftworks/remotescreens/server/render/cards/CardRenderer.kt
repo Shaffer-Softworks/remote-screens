@@ -2,6 +2,7 @@
 
 package tech.shaffersoftworks.remotescreens.server.render.cards
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.render.Device
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
@@ -16,7 +17,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.server.render.tiles.energyFlow
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
-import androidx.compose.remote.creation.dsl.RcVerticalPositioning
+import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
 import androidx.compose.remote.creation.dsl.fillMaxSize
@@ -38,22 +39,19 @@ object CardRenderer {
         kind: String?,
         device: Device,
         input: RenderInput,
+        topInsetDp: Float = 0f,
+        bottomInsetDp: Float = 0f,
     ): RenderedDoc {
         val entityState = input.states[entityId]
-        val spec = Catalogue.of(kind ?: entityId.substringBefore('.'))
-        val card = when (kind) {
-            "history" -> "history"
-            "energy" -> "energy"
-            else -> spec?.card ?: "toggle"
-        }
+        val card = resolveCardType(kind = kind, entityId = entityId)
 
         val panelW = minOf(
             device.widthDp - CardChrome.PANEL_MARGIN_DP,
             CardChrome.PANEL_MAX_WIDTH_DP,
         )
 
-        // Match lights/alerts: inset from the screen edges so the card reads as a dialog.
-        val panelH = device.heightDp - 2 * CardChrome.PANEL_MARGIN_V_DP
+        // Same vertical inset as the lights detail dialog, measured in the page area between the bars.
+        val panelH = device.heightDp - topInsetDp - bottomInsetDp - 2 * CardChrome.PANEL_MARGIN_V_DP
         val (bytes, docContext) = DocContext.build(
             widthPx = device.widthPx,
             heightPx = device.heightPx,
@@ -66,17 +64,19 @@ object CardRenderer {
                 tileId = TILE,
                 entityId = entityId,
                 pastel = Pastel.forDomain(entityState?.domain),
-                alwaysOn = card in setOf("camera", "map", "energy", "history"),
+                alwaysOn = card in ALWAYS_ON_CARDS,
             )
 
-            Box(
+            Column(
                 docContext.tap(
                     Modifier.fillMaxSize().background(docContext.role(Role.SCRIM)),
                     ActionRef("_", "close"),
                 ),
                 horizontal = RcHorizontalPositioning.Center,
-                vertical = RcVerticalPositioning.Center,
             ) {
+                // Centre the card in the page area; the scrim still covers the bars.
+                Spacer(Modifier.height(docContext.units.px(topInsetDp)))
+                Spacer(Modifier.verticalWeight(1f))
                 Column(
                     docContext.tap(
                         Modifier.size(
@@ -93,58 +93,17 @@ object CardRenderer {
                     docContext.gap(CardChrome.SECTION_GAP_DP)
 
                     Column(Modifier.fillMaxWidth().verticalWeight(1f).keptVerticalScroll("card.$entityId")) {
-                        val body = panelW - CardChrome.CLOSE_KEY_DP
-                        when (card) {
-                            "light" -> docContext.lightCard(entityId, entityState, body)
-                            "fan" -> docContext.fanCard(entityId, entityState, body)
-                            "humidifier" -> docContext.humidifierCard(entityId, entityState, body)
-                            "cover" -> docContext.coverCard(entityId, entityState, body)
-                            "lock" -> docContext.lockCard(entityId, entityState)
-                            "climate" -> docContext.climateCard(entityId, entityState)
-                            "media" -> docContext.mediaCard(entityId, entityState, body)
-                            "weather" -> docContext.weatherCard(entityId, entityState, body)
-                            "history" -> docContext.historyCard(
-                                entityId,
-                                body,
-                                panelH - CardChrome.HISTORY_RESERVE_DP,
-                            )
-                            "camera" -> docContext.cameraCard(
-                                entityId,
-                                body,
-                                panelH - CardChrome.CAMERA_RESERVE_DP,
-                            )
-                            "alarm" -> docContext.alarmCard(entityId, entityState, body)
-                            "select" -> docContext.selectCard(entityId, entityState)
-                            "number" -> docContext.numberCard(entityId, entityState, body)
-                            "vacuum" -> docContext.vacuumCard(entityId, entityState)
-                            "lawn_mower" -> docContext.lawnMowerCard(entityId)
-                            "calendar" -> docContext.calendarCard(entityId, entityState)
-                            "todo" -> docContext.todoCard(entityId)
-                            "timer" -> docContext.timerCard(entityId, entityState)
-                            "counter" -> docContext.counterCard(entityId, entityState)
-                            "water_heater" -> docContext.waterHeaterCard(
-                                entityId,
-                                entityState,
-                                body,
-                            )
-                            "valve" -> docContext.valveCard(entityId, entityState, body)
-                            "siren" -> docContext.sirenCard(entityId, entityState)
-                            "input_text" -> docContext.inputTextCard(entityId, entityState)
-                            "input_datetime" -> docContext.inputDatetimeCard(entityId, entityState)
-                            "map" -> docContext.mapCard(
-                                entityId,
-                                body,
-                                panelH - CardChrome.CAMERA_RESERVE_DP,
-                            )
-                            "energy" -> docContext.energyFlow(
-                                body,
-                                panelH - CardChrome.CAMERA_RESERVE_DP,
-                                compact = false,
-                            )
-                            else -> docContext.toggleCard(entityId, entityState)
-                        }
+                        docContext.renderCardBody(
+                            card = card,
+                            entityId = entityId,
+                            entityState = entityState,
+                            bodyWidthDp = panelW - CardChrome.CLOSE_KEY_DP,
+                            panelHeightDp = panelH,
+                        )
                     }
                 }
+                Spacer(Modifier.verticalWeight(1f))
+                Spacer(Modifier.height(docContext.units.px(bottomInsetDp)))
             }
         }
         return RenderedDoc(bytes, docContext)
@@ -152,4 +111,74 @@ object CardRenderer {
 
     /** Colours a card reads, under a tile id of its own. */
     const val TILE = "card"
+
+    private val ALWAYS_ON_CARDS = setOf("camera", "map", "energy", "history")
+
+    private fun resolveCardType(kind: String?, entityId: String): String {
+        val spec = Catalogue.of(kind ?: entityId.substringBefore('.'))
+        return when (kind) {
+            "history" -> "history"
+            "energy" -> "energy"
+            else -> spec?.card ?: "toggle"
+        }
+    }
+
+    @Suppress("CyclomaticComplexMethod")
+    private fun DocContext.renderCardBody(
+        card: String,
+        entityId: String,
+        entityState: EntityState?,
+        bodyWidthDp: Float,
+        panelHeightDp: Float,
+    ) {
+        when (card) {
+            "light" -> lightCard(entityId, entityState, bodyWidthDp)
+            "fan" -> fanCard(entityId, entityState, bodyWidthDp)
+            "humidifier" -> humidifierCard(entityId, entityState, bodyWidthDp)
+            "cover" -> coverCard(entityId, entityState, bodyWidthDp)
+            "lock" -> lockCard(entityId, entityState)
+            "climate" -> climateCard(entityId, entityState)
+            "media" -> mediaCard(entityId, entityState, bodyWidthDp)
+            "weather" -> weatherCard(entityId, entityState, bodyWidthDp)
+            "history" -> historyCard(
+                entityId,
+                bodyWidthDp,
+                panelHeightDp - CardChrome.HISTORY_RESERVE_DP,
+            )
+            "camera" -> cameraCard(
+                entityId,
+                bodyWidthDp,
+                panelHeightDp - CardChrome.CAMERA_RESERVE_DP,
+            )
+            "alarm" -> alarmCard(entityId, entityState, bodyWidthDp)
+            "select" -> selectCard(entityId, entityState)
+            "number" -> numberCard(entityId, entityState, bodyWidthDp)
+            "vacuum" -> vacuumCard(entityId, entityState)
+            "lawn_mower" -> lawnMowerCard(entityId)
+            "calendar" -> calendarCard(entityId, entityState)
+            "todo" -> todoCard(entityId)
+            "timer" -> timerCard(entityId, entityState)
+            "counter" -> counterCard(entityId, entityState)
+            "water_heater" -> waterHeaterCard(
+                entityId,
+                entityState,
+                bodyWidthDp,
+            )
+            "valve" -> valveCard(entityId, entityState, bodyWidthDp)
+            "siren" -> sirenCard(entityId, entityState)
+            "input_text" -> inputTextCard(entityId, entityState)
+            "input_datetime" -> inputDatetimeCard(entityId, entityState)
+            "map" -> mapCard(
+                entityId,
+                bodyWidthDp,
+                panelHeightDp - CardChrome.CAMERA_RESERVE_DP,
+            )
+            "energy" -> energyFlow(
+                bodyWidthDp,
+                panelHeightDp - CardChrome.CAMERA_RESERVE_DP,
+                compact = false,
+            )
+            else -> toggleCard(entityId, entityState)
+        }
+    }
 }

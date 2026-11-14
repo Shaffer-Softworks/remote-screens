@@ -61,8 +61,8 @@ internal object CardChrome {
     const val ROW_GAP_DP = 6f
     const val FLOW_PAD_DP = 8f
     const val PANEL_MARGIN_DP = 32f
-    /** Space above and below the card so it reads as a dialog, like lights/alerts. */
-    const val PANEL_MARGIN_V_DP = 48f
+    /** Space above and below the card, matching the lights detail dialog. */
+    const val PANEL_MARGIN_V_DP = 24f
     const val PANEL_MAX_WIDTH_DP = 620f
     const val LEVEL_STEPS = HaRenderFlags.CARD_LEVEL_STEPS
     const val LEVEL_DEFAULT_MAX = 100.0
