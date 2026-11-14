@@ -43,6 +43,7 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
         onEnergyAction = viewModel::onEnergyDashboardAction,
         onEnterAddress = viewModel::openAddressDialog,
         onAllowUnrestrictedBattery = viewModel::onAllowUnrestrictedBatteryRequested,
+        onReconnect = viewModel::onReconnectRequested,
         imageLoader = viewModel.haImageLoaderQualifier,
         onNotificationAction = viewModel::dismissNotificationBanner,
     )
@@ -88,6 +89,7 @@ internal fun PlayerScreenContent(
     onEnergyAction: (String, String) -> Unit = { _, _ -> },
     onEnterAddress: () -> Unit = {},
     onAllowUnrestrictedBattery: () -> Unit = {},
+    onReconnect: () -> Unit = {},
     imageLoader: ImageLoader,
     onNotificationAction: (Int?) -> Unit = {},
 ) {
@@ -127,31 +129,51 @@ internal fun PlayerScreenContent(
                 imageLoader = imageLoader,
             )
         }
-        if (Slot.ALERT !in viewState.remoteScreen.documents && !viewState.isAnyDialogVisible) {
-            viewState.notificationBanner?.let { banner ->
-                tech.shaffersoftworks.remotescreens.player.ui.views.NotificationBanner(
-                    banner = banner,
-                    onAction = onNotificationAction,
-                )
-            }
-        }
-        viewState.infoPanel?.let { infoPanel ->
-            InfoPanel(
-                state = infoPanel,
-                onEnterAddress = onEnterAddress,
-                // Lock task hides the system dialog the button opens.
-                canOfferUnrestrictedBattery = viewState.isBatteryRestricted && viewState.isKioskWanted != true,
-                onAllowUnrestrictedBattery = onAllowUnrestrictedBattery,
+        PlayerChromeOverlays(
+            viewState = viewState,
+            onEnterAddress = onEnterAddress,
+            onAllowUnrestrictedBattery = onAllowUnrestrictedBattery,
+            onReconnect = onReconnect,
+            onNotificationAction = onNotificationAction,
+        )
+    }
+}
+
+@Composable
+private fun PlayerChromeOverlays(
+    viewState: PlayerViewModel.ViewState,
+    onEnterAddress: () -> Unit,
+    onAllowUnrestrictedBattery: () -> Unit,
+    onReconnect: () -> Unit,
+    onNotificationAction: (Int?) -> Unit,
+) {
+    if (Slot.ALERT !in viewState.remoteScreen.documents && !viewState.isAnyDialogVisible) {
+        viewState.notificationBanner?.let { banner ->
+            tech.shaffersoftworks.remotescreens.player.ui.views.NotificationBanner(
+                banner = banner,
+                onAction = onNotificationAction,
             )
         }
-        viewState.identifyScreenName?.let { screenName -> IdentifyBadge(screenName = screenName) }
-        if (viewState.isBlackout) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(Color.Black),
-            )
+    }
+    viewState.infoPanel?.let { infoPanel ->
+        val disconnectedOverDocument =
+            infoPanel is InfoPanelState.Disconnected && viewState.remoteScreen.hasMainDocument
+        if (disconnectedOverDocument && (viewState.isAnyDialogVisible || viewState.isBlackout)) {
+            return@let
         }
+        InfoPanel(
+            state = infoPanel,
+            onEnterAddress = onEnterAddress,
+            // Lock task hides the system dialog the button opens.
+            canOfferUnrestrictedBattery = viewState.isBatteryRestricted && viewState.isKioskWanted != true,
+            onAllowUnrestrictedBattery = onAllowUnrestrictedBattery,
+            asSnackbar = disconnectedOverDocument,
+            onRetry = onReconnect,
+        )
+    }
+    viewState.identifyScreenName?.let { screenName -> IdentifyBadge(screenName = screenName) }
+    if (viewState.isBlackout) {
+        Box(Modifier.fillMaxSize().background(Color.Black))
     }
 }
 
@@ -203,6 +225,20 @@ private fun PlayerScreenBlackoutPreview() {
         PlayerScreenContent(
             viewState = PlayerViewModel.ViewState(isAwake = false),
             imageLoader = previewLoader,
+        )
+    }
+}
+
+@Preview(widthDp = 800, heightDp = 480)
+@Composable
+private fun PlayerChromeOverlaysPreview() {
+    RemoteScreensTheme {
+        PlayerChromeOverlays(
+            viewState = PlayerViewModel.ViewState(infoPanel = InfoPanelState.Searching),
+            onEnterAddress = {},
+            onAllowUnrestrictedBattery = {},
+            onReconnect = {},
+            onNotificationAction = {},
         )
     }
 }

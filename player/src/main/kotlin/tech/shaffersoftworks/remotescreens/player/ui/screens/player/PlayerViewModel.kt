@@ -295,13 +295,24 @@ class PlayerViewModel @Inject constructor(
                         val server = connectionRepository.server.value.orEmpty()
                         _viewState.update { it.copy(infoPanel = InfoPanelState.Connecting(server)) }
                     }
-                    ConnectionStatus.DISCONNECTED -> if (!hasMainDocument) {
+                    ConnectionStatus.DISCONNECTED ->
                         _viewState.update { it.copy(infoPanel = InfoPanelState.Disconnected) }
-                    }
-                    ConnectionStatus.IDLE, ConnectionStatus.CONNECTED -> Unit
+                    ConnectionStatus.IDLE, ConnectionStatus.CONNECTED ->
+                        _viewState.update { state ->
+                            if (state.infoPanel is InfoPanelState.Disconnected) {
+                                state.copy(infoPanel = null)
+                            } else {
+                                state
+                            }
+                        }
                 }
             }
         }
+    }
+
+    /** Forces another hello while the snackbar is up; the connection loop already retries on its own. */
+    fun onReconnectRequested() {
+        connectionRepository.reconnect()
     }
 
     private fun send(message: PlayerMessage) {
