@@ -185,3 +185,17 @@ private fun InfoPanelDisconnectedSnackbarPreview() {
         )
     }
 }
+
+@Preview(widthDp = 800, heightDp = 480)
+@Composable
+private fun InfoPanelFullScreenPreview() {
+    RemoteScreensTheme {
+        InfoPanelFullScreen(
+            state = InfoPanelState.Searching,
+            onEnterAddress = {},
+            modifier = Modifier,
+            canOfferUnrestrictedBattery = true,
+            onAllowUnrestrictedBattery = {},
+        )
+    }
+}

@@ -231,6 +231,20 @@ private fun PlayerScreenBlackoutPreview() {
 
 @Preview(widthDp = 800, heightDp = 480)
 @Composable
+private fun PlayerChromeOverlaysPreview() {
+    RemoteScreensTheme {
+        PlayerChromeOverlays(
+            viewState = PlayerViewModel.ViewState(infoPanel = InfoPanelState.Searching),
+            onEnterAddress = {},
+            onAllowUnrestrictedBattery = {},
+            onReconnect = {},
+            onNotificationAction = {},
+        )
+    }
+}
+
+@Preview(widthDp = 800, heightDp = 480)
+@Composable
 private fun RemoteScreenPreview() {
     val previewLoader = ImageLoader.Builder(LocalContext.current).build()
 
