@@ -16,7 +16,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.server.render.tiles.energyFlow
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
-import androidx.compose.remote.creation.dsl.RcVerticalPositioning
+import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
 import androidx.compose.remote.creation.dsl.fillMaxSize
@@ -33,11 +33,14 @@ import tech.shaffersoftworks.remotescreens.shared.Catalogue
  * overlay slot; its taps name the entity as `e:<entity_id>`, so they work whichever tile opened it.
  */
 object CardRenderer {
+    @Suppress("LongMethod", "LongParameterList")
     fun render(
         entityId: String,
         kind: String?,
         device: Device,
         input: RenderInput,
+        topInsetDp: Float = 0f,
+        bottomInsetDp: Float = 0f,
     ): RenderedDoc {
         val entityState = input.states[entityId]
         val spec = Catalogue.of(kind ?: entityId.substringBefore('.'))
@@ -52,8 +55,8 @@ object CardRenderer {
             CardChrome.PANEL_MAX_WIDTH_DP,
         )
 
-        // Match lights/alerts: inset from the screen edges so the card reads as a dialog.
-        val panelH = device.heightDp - 2 * CardChrome.PANEL_MARGIN_V_DP
+        // Same vertical inset as the lights detail dialog, measured in the page area between the bars.
+        val panelH = device.heightDp - topInsetDp - bottomInsetDp - 2 * CardChrome.PANEL_MARGIN_V_DP
         val (bytes, docContext) = DocContext.build(
             widthPx = device.widthPx,
             heightPx = device.heightPx,
@@ -69,14 +72,16 @@ object CardRenderer {
                 alwaysOn = card in setOf("camera", "map", "energy", "history"),
             )
 
-            Box(
+            Column(
                 docContext.tap(
                     Modifier.fillMaxSize().background(docContext.role(Role.SCRIM)),
                     ActionRef("_", "close"),
                 ),
                 horizontal = RcHorizontalPositioning.Center,
-                vertical = RcVerticalPositioning.Center,
             ) {
+                // Centre the card in the page area; the scrim still covers the bars.
+                Spacer(Modifier.height(docContext.units.px(topInsetDp)))
+                Spacer(Modifier.verticalWeight(1f))
                 Column(
                     docContext.tap(
                         Modifier.size(
@@ -145,6 +150,8 @@ object CardRenderer {
                         }
                     }
                 }
+                Spacer(Modifier.verticalWeight(1f))
+                Spacer(Modifier.height(docContext.units.px(bottomInsetDp)))
             }
         }
         return RenderedDoc(bytes, docContext)

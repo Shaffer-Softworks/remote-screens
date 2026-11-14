@@ -11,6 +11,7 @@ import tech.shaffersoftworks.remotescreens.server.render.Rc
 import tech.shaffersoftworks.remotescreens.server.render.RenderInput
 import tech.shaffersoftworks.remotescreens.server.render.RenderedDoc
 import tech.shaffersoftworks.remotescreens.server.render.ScreenRenderer
+import tech.shaffersoftworks.remotescreens.shared.Grid
 import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Slot
@@ -295,11 +296,15 @@ internal class SessionDocument(
         media.warmCameraStream(entityId = entityId, kind = kind)
         val build: suspend () -> RenderedDoc? = {
             val renderData = context.renderDataRepository.forCard(entityId, kind)
+            val screen = host.screen()
+            // The page area: the card sits between the bars like the page's own dialogs do.
             CardRenderer.render(
                 entityId = entityId ?: "card.$kind",
                 kind = kind,
                 device = host.device,
                 input = renderInput(renderData),
+                topInsetDp = screen?.let { Grid.topBarHeight(it.topBar) } ?: 0f,
+                bottomInsetDp = screen?.let { Grid.navBarHeight(it.navBar, host.device.widthDp.toFloat()) } ?: 0f,
             )
         }
         val renderedDoc = buildMutex.withLock { build() } ?: return
