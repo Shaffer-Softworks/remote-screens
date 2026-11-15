@@ -172,6 +172,6 @@ the same key. The workflow reads it from these repository secrets:
 | `PLAYER_KEY_ALIAS` | The key's alias |
 | `PLAYER_KEY_PASSWORD` | The key's password |
 
-## Third-party material
+## License
 
-See [NOTICE](NOTICE).
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
