@@ -3,6 +3,7 @@ package tech.shaffersoftworks.remotescreens.player.data.image
 import android.content.Context
 import android.graphics.Bitmap
 import coil3.ImageLoader
+import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
@@ -14,7 +15,6 @@ import kotlinx.coroutines.withContext
 import tech.shaffersoftworks.remotescreens.player.di.DefaultDispatcher
 import tech.shaffersoftworks.remotescreens.player.di.HaImageLoaderQualifier
 import tech.shaffersoftworks.remotescreens.player.utils.decodeBase64OrNull
-import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,13 +30,13 @@ class ImageDecoder @Inject constructor(
             val bytes = decodeBase64OrNull(base64Data)
                 ?: return@withContext null
 
-            val contentHash = MessageDigest.getInstance("SHA-256")
-                .digest(bytes)
-                .joinToString("") { "%02x".format(it) }
-
+            // Named bitmaps are already held in RemoteScreenState / Remote Compose. Caching by
+            // content hash retained every camera still refresh (up to Coil's 12% RAM cap) and
+            // drove LMK on low-RAM tablets (ANDROID-43 / BLU M8L).
             val request = ImageRequest.Builder(context)
                 .data(bytes)
-                .memoryCacheKey("remote-bitmap:$contentHash")
+                .memoryCachePolicy(CachePolicy.DISABLED)
+                .diskCachePolicy(CachePolicy.DISABLED)
                 .allowHardware(false)
                 .size(Size.ORIGINAL)
                 .build()
