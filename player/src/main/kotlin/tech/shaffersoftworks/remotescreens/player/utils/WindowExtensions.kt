@@ -61,6 +61,15 @@ fun Activity.setWindowBrightness(brightnessPercent: Int) {
     }
 }
 
+/** Current display rotation as a `Surface.ROTATION_*` value for `Settings.System.USER_ROTATION`. */
+fun Activity.displayRotation(): Int {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        display?.rotation?.let { return it }
+    }
+    @Suppress("DEPRECATION")
+    return windowManager.defaultDisplay.rotation
+}
+
 /** 0 follows the device, 1 locks portrait, 2 locks landscape (see `ScreenSettings.orientation`). */
 fun Activity.applyScreenOrientation(orientationSetting: Int) {
     val targetOrientation = when (orientationSetting) {

@@ -15,6 +15,8 @@ import javax.inject.Singleton
 
 private const val PERCENT = 100
 private const val WIFI_LEVELS = 5
+private const val AUTO_ROTATE_DISABLED = 0
+private const val AUTO_ROTATE_ENABLED = 1
 
 data class BatteryStatus(val levelPercent: Int?, val isCharging: Boolean?)
 
@@ -88,4 +90,20 @@ class DeviceRepository @Inject constructor(
         context.getSystemService(
             PowerManager::class.java,
         ).isIgnoringBatteryOptimizations(context.packageName)
+
+    /**
+     * Pins [userRotation] and turns off system auto-rotate. Used before lock task so a package replace or reboot
+     * does not flip the panel; not restored when the kiosk unlocks.
+     */
+    fun disableSystemAutoRotate(userRotation: Int): Boolean =
+        runCatching {
+            val resolver = context.contentResolver
+            Settings.System.putInt(resolver, Settings.System.USER_ROTATION, userRotation)
+            Settings.System.putInt(resolver, Settings.System.ACCELEROMETER_ROTATION, AUTO_ROTATE_DISABLED)
+            Settings.System.getInt(
+                resolver,
+                Settings.System.ACCELEROMETER_ROTATION,
+                AUTO_ROTATE_ENABLED,
+            ) == AUTO_ROTATE_DISABLED
+        }.getOrDefault(false)
 }
