@@ -123,128 +123,17 @@ internal fun RemoteDocumentStack(
 /** Observe without consuming: Remote Compose still owns clicks and scrolling. */
 private fun Modifier.deferDocumentUpdatesDuringTouch(controller: RemoteDocumentController): Modifier =
     pointerInput(controller) {
-        // #region agent log
-        var pressX = 0f
-        var pressY = 0f
-        var pressPage = -1
-        var pressScroll = emptyList<DocumentScroll.Mark>()
-        var wasPressed = false
-        // #endregion
         try {
             awaitPointerEventScope {
                 while (true) {
                     val event = awaitPointerEvent(PointerEventPass.Initial)
-                    val isPressed = event.changes.any { it.pressed }
-                    // #region agent log
-                    val change = event.changes.firstOrNull()
-                    if (isPressed && !wasPressed && change != null) {
-                        pressX = change.position.x
-                        pressY = change.position.y
-                        pressPage = controller.debugPage()
-                        pressScroll = DocumentScroll.capture(controller.documentPlayer(Slot.MAIN))
-                        agentDebugLog(
-                            hypothesisId = "H2",
-                            location = "RemoteDocumentStack.kt:press",
-                            message = "touch press",
-                            data = mapOf(
-                                "x" to pressX,
-                                "y" to pressY,
-                                "page" to pressPage,
-                                "scroll" to pressScroll.map {
-                                    mapOf("id" to it.componentId, "off" to it.offset, "max" to it.max)
-                                },
-                                "navBand" to (pressY > size.height - NAV_HIT_BAND_PX),
-                            ),
-                        )
-                    } else if (!isPressed && wasPressed && change != null) {
-                        val releasePage = controller.debugPage()
-                        val releaseScroll = DocumentScroll.capture(controller.documentPlayer(Slot.MAIN))
-                        agentDebugLog(
-                            hypothesisId = "H2",
-                            location = "RemoteDocumentStack.kt:release",
-                            message = "touch release",
-                            data = mapOf(
-                                "pressX" to pressX,
-                                "pressY" to pressY,
-                                "releaseX" to change.position.x,
-                                "releaseY" to change.position.y,
-                                "pressPage" to pressPage,
-                                "releasePage" to releasePage,
-                                "pageChanged" to (pressPage != releasePage),
-                                "pressScroll" to pressScroll.map {
-                                    mapOf("id" to it.componentId, "off" to it.offset, "max" to it.max)
-                                },
-                                "releaseScroll" to releaseScroll.map {
-                                    mapOf("id" to it.componentId, "off" to it.offset, "max" to it.max)
-                                },
-                                "scrollMoved" to (pressScroll != releaseScroll),
-                                "startedInNavBand" to (pressY > size.height - NAV_HIT_BAND_PX),
-                            ),
-                        )
-                    }
-                    wasPressed = isPressed
-                    // #endregion
-                    controller.setTouchActive(isPressed)
+                    controller.setTouchActive(event.changes.any { it.pressed })
                 }
             }
         } finally {
             controller.setTouchActive(false)
         }
     }
-
-// #region agent log
-private const val NAV_HIT_BAND_PX = 160f
-
-private fun agentDebugLog(
-    hypothesisId: String,
-    location: String,
-    message: String,
-    data: Map<String, Any?>,
-) {
-    val payload = buildString {
-        append('{')
-        append("\"sessionId\":\"6f8e9e\",")
-        append("\"runId\":\"gesture\",")
-        append("\"hypothesisId\":\"").append(hypothesisId).append("\",")
-        append("\"location\":\"").append(location).append("\",")
-        append("\"message\":\"").append(message).append("\",")
-        append("\"timestamp\":").append(System.currentTimeMillis()).append(',')
-        append("\"data\":")
-        append(agentDebugJson(data))
-        append('}')
-    }
-    android.util.Log.w("DBG6f8e9e", payload)
-    Thread({
-        runCatching {
-            val url = java.net.URL(
-                "http://127.0.0.1:7400/ingest/9c510629-c1bd-4bee-a63e-8946759f819b",
-            )
-            val connection = url.openConnection() as java.net.HttpURLConnection
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.setRequestProperty("X-Debug-Session-Id", "6f8e9e")
-            connection.doOutput = true
-            connection.connectTimeout = 500
-            connection.readTimeout = 500
-            connection.outputStream.use { stream ->
-                stream.write(payload.toByteArray(Charsets.UTF_8))
-            }
-            connection.responseCode
-            connection.disconnect()
-        }
-    }, "dbg-6f8e9e").apply { isDaemon = true }.start()
-}
-
-private fun agentDebugJson(value: Any?): String = when (value) {
-    null -> "null"
-    is Number, is Boolean -> value.toString()
-    is Map<*, *> -> value.entries.joinToString(prefix = "{", postfix = "}") { (key, entry) ->
-        "\"$key\":${agentDebugJson(entry)}"
-    }
-    is Iterable<*> -> value.joinToString(prefix = "[", postfix = "]") { agentDebugJson(it) }
-    else -> "\"${value.toString().replace("\\", "\\\\").replace("\"", "\\\"")}\""
-}
-// #endregion
 
 private const val SLOT_LAYER_SPACING = 10f
 /** Keep Compose overlays above every Remote Compose AndroidView in the stack. */
