@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.62
+
+- See the [v0.1.62](https://github.com/Shaffer-Softworks/remote-screens/releases/tag/v0.1.62) release notes; replace this line with curated notes before merging.
+
 ## 0.1.61
 
 - See the [v0.1.61](https://github.com/Shaffer-Softworks/remote-screens/releases/tag/v0.1.61) release notes; replace this line with curated notes before merging.
