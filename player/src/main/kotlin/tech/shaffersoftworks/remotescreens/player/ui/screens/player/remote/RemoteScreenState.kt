@@ -303,6 +303,7 @@ data class RemoteScreenState(
         copy(
             documents = emptyMap(),
             values = emptyMap(),
+            bitmaps = emptyMap(),
             videos = emptyMap(),
             maps = emptyMap(),
             searches = emptyMap(),
