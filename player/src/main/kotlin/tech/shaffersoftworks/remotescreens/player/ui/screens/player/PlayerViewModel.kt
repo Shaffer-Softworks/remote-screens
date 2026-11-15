@@ -665,6 +665,16 @@ class PlayerViewModel @Inject constructor(
     fun onDocumentAction(slot: Slot, revision: Int, metadata: String) {
         onUserInteraction()
         val actionRef = ActionRef.decode(metadata) ?: return
+        // #region agent log
+        if (actionRef.verb == "page" || actionRef.verb == "lights_room") {
+            android.util.Log.w(
+                "DBG6f8e9e",
+                "{\"sessionId\":\"6f8e9e\",\"hypothesisId\":\"H5\",\"location\":\"PlayerViewModel.kt:onDocumentAction\"," +
+                    "\"message\":\"action\",\"timestamp\":${System.currentTimeMillis()}," +
+                    "\"data\":{\"verb\":\"${actionRef.verb}\",\"arg\":\"${actionRef.arg}\",\"page\":${_viewState.value.remoteScreen.page}}}",
+            )
+        }
+        // #endregion
         if (tech.shaffersoftworks.remotescreens.player.BuildConfig.DEBUG) {
             Timber.tag("InputDiagnostics").d(
                 "documentAction slot=%s revision=%d verb=%s local=%b",

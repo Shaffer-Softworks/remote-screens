@@ -88,6 +88,11 @@ internal class RemoteDocumentController(
         }
     }
 
+    // #region agent log
+    /** Current main page index for gesture debug logs. */
+    fun debugPage(): Int = latestState?.page ?: -1
+    // #endregion
+
     fun dispose() {
         latestState = null
         // Invalidate queued reveal callbacks when this screen leaves composition.

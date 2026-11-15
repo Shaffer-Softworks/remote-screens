@@ -68,6 +68,15 @@ internal class LightsLayout(val scale: Float, val pageW: Float, val pageH: Float
     /** [roomsHeaderHeight] plus the empty top of a room row, so a scrolled name cannot reach the title. */
     fun roomsPlateHeight(): Float = roomsHeaderHeight() + roomNameTopInset()
 
+    /**
+     * Strip above the nav. Remote Compose paints rows past the list clip; without this they land in the nav hit
+     * band, so a drag on the last visible room changes page instead of scrolling.
+     */
+    fun roomsBottomInset(): Float = dp(M.ROOM_H_DP / 2f)
+
+    /** List viewport: full page height minus the bottom bleed strip. */
+    fun roomsListHeight(): Float = (pageH - roomsBottomInset()).coerceAtLeast(0f)
+
     /** The room name and the gap under it. The device list's first row starts here. */
     fun devicesHeaderHeight(): Float = line(M.ROOM_TITLE_SP) + dp(M.TITLE_GAP_DP)
 
@@ -130,20 +139,24 @@ private fun DocContext.roomsColumn(
     layout: LightsLayout,
 ) {
     val headerH = layout.roomsHeaderHeight()
+    val bottomInset = layout.roomsBottomInset()
     scope.Box(Modifier.width(units.px(layout.roomsW)).fillMaxHeight().background(role(Role.STRIP))) {
         val doc = this@roomsColumn
         if (rooms.isEmpty()) {
             doc.roomsSpinner(layout)
         } else {
-            Column(doc.scrollingList("lights.$tileId.rooms", layout.pageH)) {
+            Column(doc.scrollingList("lights.$tileId.rooms", layout.roomsListHeight())) {
                 Spacer(Modifier.height(doc.units.px(headerH)))
                 rooms.forEachIndexed { index, room ->
                     if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.ROOM_GAP_DP))))
                     doc.roomRow(tileId = tileId, room = room, isSelected = room == selected, layout = layout)
                 }
+                // So the last room can leave the clip edge instead of sitting in the nav overflow band.
+                Spacer(Modifier.height(doc.units.px(bottomInset)))
             }
         }
         doc.roomsHeader(layout, layout.roomsPlateHeight())
+        doc.roomsBottomPlate(bottomInset)
     }
 }
 
@@ -175,6 +188,18 @@ private fun DocContext.roomsHeader(layout: LightsLayout, headerH: Float) {
                 bottom = 0f,
             )
                 .height(doc.units.px(layout.line(M.TITLE_SP))),
+        )
+    }
+}
+
+/** Opaque strip at the foot of the rooms column so overflow paint stays in-tile, not under the nav. */
+private fun DocContext.roomsBottomPlate(plateH: Float) {
+    scope.Column(
+        Modifier.fillMaxWidth().fillMaxHeight(),
+        vertical = RcColumnVerticalPositioning.Bottom,
+    ) {
+        Box(
+            Modifier.fillMaxWidth().height(units.px(plateH)).background(role(Role.STRIP)),
         )
     }
 }
