@@ -20,6 +20,9 @@ import tech.shaffersoftworks.remotescreens.player.di.IoScope
 import tech.shaffersoftworks.remotescreens.player.receiver.LockTaskDeviceAdminReceiver
 import tech.shaffersoftworks.remotescreens.player.utils.normalizeServerAddress
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -61,6 +64,11 @@ class KioskManager @Inject constructor(
 
     private val permissionGrantMutex = Mutex()
 
+    private val _lockTaskChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /** Android confirmed lock task started or ended. `stopLockTask()` returns before [lockTaskState] reads OFF. */
+    val lockTaskChanges: SharedFlow<Unit> = _lockTaskChanges.asSharedFlow()
+
     val adminComponent = ComponentName(context, LockTaskDeviceAdminReceiver::class.java)
 
     fun isDeviceOwner(): Boolean = devicePolicyManager.isDeviceOwnerApp(context.packageName)
@@ -79,11 +87,20 @@ class KioskManager @Inject constructor(
             .onFailure { exception -> Timber.e(exception, "startLockTask failed") }
     }
 
+    /**
+     * Leaves lock task before clearing its package list. Emptying that list while still locked makes Android finish
+     * this activity and start home again, which drops the connection.
+     */
     fun stopLockTaskMode(activity: Activity) {
-        if (isDeviceOwner()) setKioskPolicies(enable = false)
         runCatching { activity.stopLockTask() }
             .onSuccess { Timber.i("Lock task stopped") }
             .onFailure { exception -> Timber.e(exception, "stopLockTask failed") }
+        if (isDeviceOwner()) setKioskPolicies(enable = false)
+    }
+
+    /** Called by the device owner admin when Android enters or leaves lock task. */
+    fun onLockTaskModeChanged() {
+        _lockTaskChanges.tryEmit(Unit)
     }
 
     /** Applies [isKioskWanted] to [activity], doing nothing when it already holds. */

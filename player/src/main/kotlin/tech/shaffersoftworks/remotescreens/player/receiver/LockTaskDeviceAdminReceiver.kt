@@ -20,11 +20,13 @@ class LockTaskDeviceAdminReceiver : DeviceAdminReceiver() {
     override fun onLockTaskModeEntering(context: Context, intent: Intent, packageName: String) {
         super.onLockTaskModeEntering(context, intent, packageName)
         Timber.i("onLockTaskModeEntering")
+        kioskManager.onLockTaskModeChanged()
     }
 
     override fun onLockTaskModeExiting(context: Context, intent: Intent) {
         super.onLockTaskModeExiting(context, intent)
         Timber.i("onLockTaskModeExiting")
+        kioskManager.onLockTaskModeChanged()
         kioskManager.relaunchKioskIfUnlocked(reason = "lock_task_exiting")
     }
 

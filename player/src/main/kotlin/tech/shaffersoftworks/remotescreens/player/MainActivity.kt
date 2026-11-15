@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import tech.shaffersoftworks.remotescreens.player.data.kiosk.KioskManager
+import tech.shaffersoftworks.remotescreens.player.data.kiosk.KioskState
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.PlayerScreen
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.PlayerViewModel
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.unrestrictedBatteryIntent
@@ -35,6 +36,9 @@ class MainActivity : ComponentActivity() {
     private val viewModel: PlayerViewModel by viewModels()
     private var displayMeasureScheduled = false
     private var reloadAfterDisplayMeasure = false
+
+    /** Lock task state the screen was last laid out for. Android can report a stop after `stopLockTask()` returns. */
+    private var laidOutKioskState: KioskState? = null
 
     @Inject
     lateinit var kioskManager: KioskManager
@@ -121,15 +125,26 @@ class MainActivity : ComponentActivity() {
                         if (isKioskWanted && kioskManager.consumeBatteryPrompt() && requestUnrestrictedBattery()) {
                             return@collect
                         }
-                        val previousKioskState = kioskManager.lockTaskState()
+                        laidOutKioskState = kioskManager.lockTaskState()
                         kioskManager.applyKiosk(this@MainActivity, isKioskWanted)
-                        viewModel.onKioskStateChanged()
-                        if (previousKioskState != kioskManager.lockTaskState()) {
-                            hideSystemBars()
-                            scheduleDisplayMeasure(forceReload = true)
-                        }
+                        onLockTaskStateChanged()
                     }
             }
+        }
+        lifecycleScope.launch {
+            kioskManager.lockTaskChanges.collect { onLockTaskStateChanged() }
+        }
+    }
+
+    /** Reports the lock task state, and lays the screen out again when it differs from [laidOutKioskState]. */
+    private fun onLockTaskStateChanged() {
+        val previousKioskState = laidOutKioskState
+        val kioskState = kioskManager.lockTaskState()
+        laidOutKioskState = kioskState
+        viewModel.onKioskStateChanged()
+        if (previousKioskState != null && previousKioskState != kioskState) {
+            hideSystemBars()
+            scheduleDisplayMeasure(forceReload = true)
         }
     }
 

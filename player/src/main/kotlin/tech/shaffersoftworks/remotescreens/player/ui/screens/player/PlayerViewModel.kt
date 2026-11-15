@@ -204,7 +204,7 @@ class PlayerViewModel @Inject constructor(
         faceWakeMonitor.stop()
         telemetryReporter.stop()
         appLog.forwardOn(null)
-        connectionRepository.disconnect()
+        connectionRepository.disconnect(this)
     }
 
     // region Display and connection
@@ -267,7 +267,7 @@ class PlayerViewModel @Inject constructor(
 
     private fun connect(server: String) {
         discoveryJob?.cancel()
-        connectionRepository.connect(server, ::buildHello)
+        connectionRepository.connect(server, this, ::buildHello)
     }
 
     private suspend fun buildHello(): PlayerMessage.Hello {

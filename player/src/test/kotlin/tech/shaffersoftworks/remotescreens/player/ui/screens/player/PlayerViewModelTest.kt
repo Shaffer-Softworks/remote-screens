@@ -47,7 +47,7 @@ class PlayerViewModelTest : PlayerViewModelTestBase() {
         viewModel.onDisplayMeasured(DisplayInfo(widthDp = 800, heightDp = 480))
         runCurrent()
 
-        verify(connectionRepository).connect(eq("10.0.0.5:8100"), any())
+        verify(connectionRepository).connect(eq("10.0.0.5:8100"), eq(viewModel), any())
     }
 
     @Test
@@ -88,7 +88,7 @@ class PlayerViewModelTest : PlayerViewModelTestBase() {
         viewModel.onDisplayMeasured(DisplayInfo(widthDp = 0, heightDp = 0))
         runCurrent()
 
-        verify(connectionRepository, never()).connect(any(), any())
+        verify(connectionRepository, never()).connect(any(), any(), any())
     }
 
     @Test
@@ -103,7 +103,7 @@ class PlayerViewModelTest : PlayerViewModelTestBase() {
         discovery.tryEmit("10.0.0.9:8100")
         runCurrent()
 
-        verify(connectionRepository).connect(eq("10.0.0.9:8100"), any())
+        verify(connectionRepository).connect(eq("10.0.0.9:8100"), eq(viewModel), any())
         verifyBlocking(preferencesRepository) { setServer("10.0.0.9:8100") }
     }
 
