@@ -131,6 +131,9 @@ private fun pageScale(box: TileBox): Float =
  * The grey list: RPI's teal bar, "LIGHTING CONTROL", and a row per area, or a spinner until there are any.
  * The title is drawn after the list. A scroll translates rows above the list, and that clip does not keep them
  * there, so an opaque title covers whatever slides under it.
+ *
+ * The bottom inset is a layout sibling under the list (as cameras pads its scroller), not a full-height overlay.
+ * A `fillMaxHeight` plate pinned with `Bottom` sat above the scroller for hit-testing and blocked every drag.
  */
 private fun DocContext.roomsColumn(
     tileId: String,
@@ -140,23 +143,30 @@ private fun DocContext.roomsColumn(
 ) {
     val headerH = layout.roomsHeaderHeight()
     val bottomInset = layout.roomsBottomInset()
-    scope.Box(Modifier.width(units.px(layout.roomsW)).fillMaxHeight().background(role(Role.STRIP))) {
+    val listH = layout.roomsListHeight()
+    scope.Column(
+        Modifier.width(units.px(layout.roomsW)).fillMaxHeight().background(role(Role.STRIP)),
+    ) {
         val doc = this@roomsColumn
-        if (rooms.isEmpty()) {
-            doc.roomsSpinner(layout)
-        } else {
-            Column(doc.scrollingList("lights.$tileId.rooms", layout.roomsListHeight())) {
-                Spacer(Modifier.height(doc.units.px(headerH)))
-                rooms.forEachIndexed { index, room ->
-                    if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.ROOM_GAP_DP))))
-                    doc.roomRow(tileId = tileId, room = room, isSelected = room == selected, layout = layout)
+        Box(Modifier.fillMaxWidth().height(doc.units.px(listH))) {
+            if (rooms.isEmpty()) {
+                doc.roomsSpinner(layout)
+            } else {
+                Column(doc.scrollingList("lights.$tileId.rooms", listH)) {
+                    Spacer(Modifier.height(doc.units.px(headerH)))
+                    rooms.forEachIndexed { index, room ->
+                        if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.ROOM_GAP_DP))))
+                        doc.roomRow(tileId = tileId, room = room, isSelected = room == selected, layout = layout)
+                    }
+                    // So the last room can leave the clip edge instead of sitting on the bleed strip.
+                    Spacer(Modifier.height(doc.units.px(bottomInset)))
                 }
-                // So the last room can leave the clip edge instead of sitting in the nav overflow band.
-                Spacer(Modifier.height(doc.units.px(bottomInset)))
             }
+            doc.roomsHeader(layout, layout.roomsPlateHeight())
         }
-        doc.roomsHeader(layout, layout.roomsPlateHeight())
-        doc.roomsBottomPlate(bottomInset)
+        Box(
+            Modifier.fillMaxWidth().height(doc.units.px(bottomInset)).background(doc.role(Role.STRIP)),
+        )
     }
 }
 
@@ -188,18 +198,6 @@ private fun DocContext.roomsHeader(layout: LightsLayout, headerH: Float) {
                 bottom = 0f,
             )
                 .height(doc.units.px(layout.line(M.TITLE_SP))),
-        )
-    }
-}
-
-/** Opaque strip at the foot of the rooms column so overflow paint stays in-tile, not under the nav. */
-private fun DocContext.roomsBottomPlate(plateH: Float) {
-    scope.Column(
-        Modifier.fillMaxWidth().fillMaxHeight(),
-        vertical = RcColumnVerticalPositioning.Bottom,
-    ) {
-        Box(
-            Modifier.fillMaxWidth().height(units.px(plateH)).background(role(Role.STRIP)),
         )
     }
 }

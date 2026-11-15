@@ -47,7 +47,7 @@ The plate is taller than that spacer (`roomsPlateHeight`, `devicesPlateHeight`).
 
 A plate edge cannot hide a subtitle laid out below its name without also covering the first row at rest. At the end of the list, "All lights are off" can sit under the title with its room name already under the plate. A device switch can sit under the room name the same way. Leave that. Making the plate taller than the spacer covers the first row and the subtitle still peeks once the name has passed the edge.
 
-**Bottom bleed (Nov 2026):** the same unclipped paint lets the last room (e.g. Basement) sit under the nav. Drags that start on that overlap hit HOME/LIGHTS instead of the scroller. The rooms list height is `roomsListHeight()` = `pageH - roomsBottomInset()` (half a room row). A trailing spacer of the same inset lets the last room scroll off that edge. `roomsBottomPlate` is a later sibling pinned with `RcColumnVerticalPositioning.Bottom` on `Role.STRIP`, so overflow stays in-tile.
+**Bottom bleed (Nov 2026):** the same unclipped paint lets the last room (e.g. Basement) sit under the nav. Drags that start on that overlap hit HOME/LIGHTS instead of the scroller. The rooms column is a `Column`: a fixed-height list `Box` (`roomsListHeight()` = `pageH - roomsBottomInset()`, half a room row) then a short `Role.STRIP` sibling under it (cameras-style padding), plus a trailing spacer in the scroller so the last room can leave the clip edge. Do **not** pin a `fillMaxHeight` plate with `RcColumnVerticalPositioning.Bottom` over the list — that overlay wins hit-testing for the whole column and blocks every drag (top/mid/bottom).
 
 The editor room list (`.li-rooms`) needs `height: 100%`, `min-height: 0` and `overflow-y: auto`. `overflow: hidden` never scrolled.
 
