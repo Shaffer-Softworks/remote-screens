@@ -149,6 +149,36 @@ class ConnectionRepositoryTest {
     }
 
     @Test
+    fun aFinishedScreenCannotCloseItsReplacementsConnection() = runTest {
+        val outgoing = List(2) { Channel<Frame>(Channel.UNLIMITED) }
+        val incoming = List(2) { Channel<Frame>(Channel.UNLIMITED) }
+        val client = socketClient(incoming) { index -> outgoing[index] }
+        val repository = ConnectionRepository(client, backgroundScope)
+        val oldScreen = Any()
+        val newScreen = Any()
+        try {
+            repository.connect("server", oldScreen) { hello() }
+            runCurrent()
+            repository.connect("server", newScreen) { hello() }
+            runCurrent()
+            val replacement = repository.connectionState.value
+            assertEquals(ConnectionStatus.CONNECTED, replacement.status)
+
+            repository.disconnect(oldScreen)
+            runCurrent()
+            assertEquals(replacement, repository.connectionState.value)
+            assertTrue(repository.trySend(action, replacement.connectionId))
+
+            repository.disconnect(newScreen)
+            runCurrent()
+            assertEquals(ConnectionStatus.IDLE, repository.connectionState.value.status)
+        } finally {
+            repository.disconnect()
+            client.close()
+        }
+    }
+
+    @Test
     fun aCancelledHelloCannotPublishAfterItsReplacementConnects() = checkDelayedHello(reconnect = true)
 
     @Test

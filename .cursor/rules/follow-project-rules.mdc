@@ -46,6 +46,7 @@ Read the rule whose files you are changing. These describe behavior that is alre
 - `configurable-bars-context.mdc` — top bar, nav bar and navigation drawer
 - `standby-wake-sources-context.mdc` — wake sources
 - `standby-screen-off-context.mdc` — standby countdown and screen off
+- `tablet-wake-orientation-context.mdc` — large-tablet wake stays portrait unless the device honors the landscape lock
 - `theme-roles-editor-context.mdc` — theme roles
 - `session-document-rebuild-context.mdc` — document rebuild versus vars
 - `kiosk-lock-context.mdc` — kiosk lock and enrollment

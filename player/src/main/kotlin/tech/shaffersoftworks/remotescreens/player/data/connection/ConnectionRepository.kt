@@ -69,13 +69,18 @@ class ConnectionRepository @Inject constructor(
     // Ownership, publication, and lifecycle updates share this lock. Never hold it over socket IO.
     private val connectionLock = Any()
     private var owner: Any? = null
+    /** The activity that opened the socket. A dying activity must not close a replacement's socket. */
+    private var client: Any? = null
     private var nextConnectionId = 0L
     private var connectionJob: Job? = null
     private var helloProvider: (suspend () -> PlayerMessage.Hello)? = null
 
     /** Connects to [server], replacing any connection. [buildHello] is asked again on every (re)connect. */
-    fun connect(server: String, buildHello: suspend () -> PlayerMessage.Hello) {
-        val job = synchronized(connectionLock) { newConnection(server, buildHello) }
+    fun connect(server: String, client: Any = Any(), buildHello: suspend () -> PlayerMessage.Hello) {
+        val job = synchronized(connectionLock) {
+            this.client = client
+            newConnection(server, buildHello)
+        }
         job.start()
     }
 
@@ -109,8 +114,14 @@ class ConnectionRepository @Inject constructor(
         job.start()
     }
 
-    fun disconnect() {
+    /**
+     * Closes the socket. When [client] is set, a call from an activity that no longer owns the connection does
+     * nothing, so finishing the old screen cannot drop the replacement that just connected.
+     */
+    fun disconnect(client: Any? = null) {
         synchronized(connectionLock) {
+            if (client != null && this.client !== client) return
+            this.client = null
             owner = null
             session.set(null)
             connectionJob?.cancel()

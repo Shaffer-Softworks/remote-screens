@@ -1,0 +1,38 @@
+---
+description: Large-tablet wake stays portrait unless the device honors the player's landscape lock
+globs: player/src/main/kotlin/**/utils/WindowExtensions.kt,player/src/main/kotlin/**/MainActivity.kt,player/src/main/AndroidManifest.xml,player/src/main/kotlin/**/data/kiosk/KioskManager.kt,player/src/main/kotlin/**/data/device/DeviceRepository.kt
+alwaysApply: false
+---
+
+# Wake orientation on a large tablet
+
+The garage panel is a Samsung Galaxy Tab S7 FE (SM-T733, `R52W10EJK2T`), Android 16, smallest width 753 dp. Its natural orientation is portrait (1600×2560). The player locks landscape with `Activity.applyScreenOrientation` (`ScreenSettings.orientation` 2 → `SCREEN_ORIENTATION_LANDSCAPE`).
+
+## The setting that keeps it landscape
+
+```
+adb -s R52W10EJK2T shell wm set-ignore-orientation-request false
+```
+
+With that override, dumpsys shows `ignoreOrientationRequest false` and `mCurrentAppOrientation=SCREEN_ORIENTATION_LANDSCAPE`. Screen-off still forces natural portrait (`lastOrientation=5`, `SCREEN_ORIENTATION_NOSENSOR`) and can save `user_rotation` back to 0. Wake then returns to rotation 90 (2560×1600) because the landscape request is honored. Confirmed on this tablet 15 Nov 2026.
+
+The large-screen default is `ignoreOrientationRequest true`. `mHasSetIgnoreOrientationRequest=false` means no override is saved. The activity can still report `requestedOrientation=SCREEN_ORIENTATION_LANDSCAPE` while the display orientation stays `UNSPECIFIED` and rotation 0, so wake stays portrait. `wm set-ignore-orientation-request reset` restores that default. Do not reset it on this tablet.
+
+## What does not fix this tablet
+
+- `setRequestedOrientation` alone on targetSdk 37. `UNIVERSAL_RESIZABLE_BY_DEFAULT` (target 36+) marks the activity `RESIZE_MODE_RESIZEABLE_VIA_SDK_VERSION` at sw≥600. Turning that compat change off makes the activity `RESIZE_MODE_UNRESIZEABLE`, and the display still ignores the request while `ignoreOrientationRequest` is true.
+- Player 0.1.63 pins `USER_ROTATION` to the current rotation and sets `ACCELEROMETER_ROTATION` to 0 before lock task (`fix/kiosk-disable-auto-rotate`). `WRITE_SETTINGS` is in the manifest, but the app-op stays `default` and the put is rejected (`Could not disable system auto-rotate before lock task`). A manifest permission is not a grant.
+- A `user_rotation=1` pin is overridden on screen-off: `rotation changed to 0 from 1, lastOrientation=5 userRotationMode=1 userRotation=1`. Wake stays landscape only when the app request is honored.
+- Samsung `accelerometer_rotation_angles=10` (90° and 270° only) is already set here. It does nothing while auto-rotate is off. Turning auto-rotate on left a flat tablet in portrait after wake (`USER_ROTATION_FREE`). Leave auto-rotate off.
+
+## Other tablets
+
+BLU M8L 2022 (`4070306023037966`), Android 12, sw533 dp: `ignoreOrientationRequest` is already false, and `SCREEN_ORIENTATION_LANDSCAPE` survives sleep. A power-button sleep can show the portrait keyguard; bringing `MainActivity` forward rotates back to landscape. That tablet does not need the Samsung command.
+
+## Check
+
+```
+adb -s R52W10EJK2T shell wm get-ignore-orientation-request
+```
+
+Honored looks like `ignoreOrientationRequest false for displayId=0`.
