@@ -14,6 +14,8 @@ DEFAULT_PORT: Final = 8100
 INTERCOM_PORT: Final = 8766
 
 SCAN_INTERVAL: Final = timedelta(seconds=30)
+# The add-on fires this when a tablet connects, disconnects, or changes awake, page, kiosk or charging.
+EVENT_PLAYERS_CHANGED: Final = "remote_screens_players_changed"
 
 SERVICE_SHOW_ALERT: Final = "show_alert"
 SERVICE_OPEN_PAGE: Final = "open_page"

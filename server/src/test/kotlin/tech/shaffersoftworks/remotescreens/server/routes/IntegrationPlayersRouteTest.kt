@@ -15,13 +15,21 @@ import io.ktor.server.websocket.WebSockets
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.builtins.ListSerializer
 import tech.shaffersoftworks.remotescreens.server.config.ServerConfig
 import tech.shaffersoftworks.remotescreens.server.di.ServerDependencies
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistantEvent
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoHome
+import tech.shaffersoftworks.remotescreens.server.player.PLAYERS_CHANGED_EVENT
 import tech.shaffersoftworks.remotescreens.server.player.PlayerStatus
 import tech.shaffersoftworks.remotescreens.server.player.PlayerTokens
 import tech.shaffersoftworks.remotescreens.server.plugins.ApiJson
@@ -49,6 +57,8 @@ import kotlin.time.Duration.Companion.seconds
 private const val TABLET_TOKEN = "tablet-token"
 private const val POLL_ATTEMPTS = 50
 private const val POLL_DELAY_MS = 20L
+private val EVENT_TIMEOUT = 5.seconds
+private val QUIET_PERIOD = 1.seconds
 
 class IntegrationPlayersRouteTest {
     private val config = ServerConfig(
@@ -195,6 +205,37 @@ class IntegrationPlayersRouteTest {
             assertEquals(telemetry, reported.telemetry)
             assertNotNull(reported.telemetryAt)
             assertNull(players(client).first { it.deviceId == "spare" }.telemetry)
+        }
+    }
+
+    @Test
+    fun homeAssistantHearsAConnectAndAKioskChangeButNotABatteryLevel() = withRoutes { client ->
+        dependencies.layoutRepository.update { layout ->
+            layout.copy(screens = listOf(tech.shaffersoftworks.remotescreens.shared.Screen("home", "Home")))
+        }
+        dependencies.playerHub.start()
+        val home = dependencies.homeAssistant as DemoHome
+        val fired = Channel<HomeAssistantEvent>(Channel.UNLIMITED)
+        val listener = CoroutineScope(Dispatchers.Default).launch(start = CoroutineStart.UNDISPATCHED) {
+            home.events.filter { event -> event.type == PLAYERS_CHANGED_EVENT }.collect { fired.send(it) }
+        }
+        try {
+            client.webSocket("/player") {
+                send(Frame.Text(Protocol.encode(hello(deviceId = "tablet", token = TABLET_TOKEN))))
+                withTimeout(EVENT_TIMEOUT) { fired.receive() }
+
+                val locked = PlayerMessage.DeviceState(awake = true, page = 0, battery = 80, kiosk = "locked")
+                send(Frame.Text(Protocol.encode(locked)))
+                withTimeout(EVENT_TIMEOUT) { fired.receive() }
+
+                send(Frame.Text(Protocol.encode(locked.copy(battery = 79))))
+                assertNull(withTimeoutOrNull(QUIET_PERIOD) { fired.receive() })
+
+                send(Frame.Text(Protocol.encode(locked.copy(kiosk = "off"))))
+                withTimeout(EVENT_TIMEOUT) { fired.receive() }
+            }
+        } finally {
+            listener.cancel()
         }
     }
 

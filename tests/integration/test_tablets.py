@@ -10,7 +10,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.remote_screens.api import RemoteScreensNotFoundError
-from custom_components.remote_screens.const import DOMAIN, SCAN_INTERVAL
+from custom_components.remote_screens.const import DOMAIN, EVENT_PLAYERS_CHANGED, SCAN_INTERVAL
 from homeassistant.util import dt as dt_util
 
 from .test_init import setup
@@ -54,6 +54,33 @@ async def test_diagnostics_are_reported(hass: HomeAssistant, client: AsyncMock, 
     assert hass.states.get("sensor.pixel_tablet_kiosk").state == "locked"
     assert hass.states.get("sensor.pixel_tablet_android_version").state == "14"
     assert er.async_get(hass).async_get("sensor.pixel_tablet_battery_power").disabled_by is er.RegistryEntryDisabler.INTEGRATION
+
+
+async def test_a_players_changed_event_refreshes_without_waiting_for_the_poll(
+    hass: HomeAssistant, client: AsyncMock, entry
+) -> None:
+    await setup(hass, entry)
+    client.players_data[0]["kiosk"] = "off"
+
+    hass.bus.async_fire(EVENT_PLAYERS_CHANGED)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.pixel_tablet_kiosk").state == "off"
+
+
+async def test_a_players_changed_event_right_after_a_settings_refresh_is_not_held_back(
+    hass: HomeAssistant, client: AsyncMock, entry
+) -> None:
+    await setup(hass, entry)
+    # Toggling a switch refreshes at once and starts the coordinator's 10 s request cooldown.
+    await entry.runtime_data.async_request_refresh()
+    await hass.async_block_till_done()
+    client.players_data[0]["kiosk"] = "off"
+
+    hass.bus.async_fire(EVENT_PLAYERS_CHANGED)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.pixel_tablet_kiosk").state == "off"
 
 
 async def test_permissions_report_granted_and_denied_and_refresh(hass: HomeAssistant, client: AsyncMock, entry) -> None:

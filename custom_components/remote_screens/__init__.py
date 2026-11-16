@@ -7,7 +7,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
-from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
+from homeassistant.core import Event, HomeAssistant, ServiceCall, SupportsResponse, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv, device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -27,6 +27,7 @@ from .const import (
     ATTR_TITLE,
     CONF_API_KEY,
     DOMAIN,
+    EVENT_PLAYERS_CHANGED,
     LEVELS,
     MANUFACTURER,
     SERVICE_CLOSE,
@@ -191,8 +192,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: RemoteScreensConfigEntry
                 model="Screen",
             )
 
+    @callback
+    def players_changed(_event: Event) -> None:
+        """The add-on pushes tablet changes, so they show without waiting for the next poll.
+
+        Not async_request_refresh: its 10 s cooldown would hold back the change a switch toggle just caused. The
+        add-on already debounces this event.
+        """
+        entry.async_create_background_task(hass, coordinator.async_refresh(), name=f"{DOMAIN} players changed")
+
     register_screens()
     entry.async_on_unload(coordinator.async_add_listener(register_screens))
+    entry.async_on_unload(hass.bus.async_listen(EVENT_PLAYERS_CHANGED, players_changed))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
