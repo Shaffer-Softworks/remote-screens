@@ -57,6 +57,7 @@ workflow** on `main` with the new version. Player signing secrets are listed in 
 - Notifications: [`docs/NOTIFICATIONS.md`](docs/NOTIFICATIONS.md)
 - Intercom: [`docs/INTERCOM.md`](docs/INTERCOM.md)
 - ADB tasks and editor tablet management: [`docs/ADB.md`](docs/ADB.md)
+- Screen orientation and large-tablet wake: [`docs/ORIENTATION.md`](docs/ORIENTATION.md)
 - Verification: [`docs/TESTING.md`](docs/TESTING.md)
 - Server UI previews: [`preview/README.md`](preview/README.md)
 

@@ -120,6 +120,7 @@ python -m pip install -r requirements_test.txt && python -m pytest   # the integ
 ```
 
 [ADB integration](docs/ADB.md) covers Android Studio deployment tasks and wireless tablet management from the editor.
+[Screen orientation](docs/ORIENTATION.md) covers the portrait and landscape lock, and large tablets that ignore it after wake.
 
 A made-up home makes it possible to work without Home Assistant — see [docs/DEMO.md](docs/DEMO.md):
 
