@@ -7,6 +7,7 @@ import tech.shaffersoftworks.remotescreens.server.data.lights.LightDetailMode
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AGENDA_FIELD_SEPARATOR
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.VACUUM_CLEAN_AREA_FEATURE
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.server.render.HaRenderFlags
 import tech.shaffersoftworks.remotescreens.server.render.Vars
@@ -289,6 +290,47 @@ class ActionRouterTest {
         val ui = renderData.vacuumUi.state("va1")
         assertTrue(!ui.roomsDialogOpen)
         assertTrue(ui.selectedRooms.isEmpty())
+    }
+
+    @Test
+    fun aVacuumCardOpensRoomsUnderItsEntityTile() {
+        assertEquals(TapOutcome.Rebuild, vacuumTap("e:vacuum.robot|vacuum_rooms|"))
+        assertTrue(renderData.vacuumUi.state("e:vacuum.robot").roomsDialogOpen)
+        assertEquals(TapOutcome.Rebuild, vacuumTap("e:vacuum.robot|vacuum_rooms_toggle|19"))
+        assertEquals(TapOutcome.Rebuild, vacuumTap("e:vacuum.robot|vacuum_rooms_clean|"))
+        val (_, service, data) = ha.calls.last()
+        assertEquals("send_command", service)
+        assertEquals(listOf(19), data.getValue("params").jsonArray.map { it.jsonPrimitive.int })
+    }
+
+    @Test
+    fun aCleanAreaVacuumCleansTheChosenHomeAssistantAreas() {
+        val robot = ha.states.value.getValue("vacuum.robot")
+        val features = checkNotNull(robot.number("supported_features")).toInt() or VACUUM_CLEAN_AREA_FEATURE
+        ha.set("vacuum.robot", robot.state, mapOf("supported_features" to JsonPrimitive(features)))
+        assertEquals(TapOutcome.Rebuild, vacuumTap("va1|vacuum_rooms|"))
+        vacuumTap("va1|vacuum_rooms_toggle|living_room")
+        vacuumTap("va1|vacuum_rooms_toggle|kitchen")
+        vacuumTap("va1|vacuum_rooms_toggle|garden")
+        assertEquals(TapOutcome.Rebuild, vacuumTap("va1|vacuum_rooms_clean|"))
+        val (domain, service, data) = ha.calls.last()
+        assertEquals("vacuum" to "clean_area", domain to service)
+        assertEquals(
+            listOf("kitchen", "living_room"),
+            data.getValue("cleaning_area_id").jsonArray.map { it.jsonPrimitive.content },
+        )
+        assertEquals("cleaning", ha.states.value["vacuum.robot"]?.state)
+    }
+
+    @Test
+    fun aVacuumPageWithoutAnEntityOpensRoomsOfTheOnlyVacuum() {
+        val page = Page("vacuum2", "Vacuum", listOf(Tile("va2", kind = "vacuum", full = true)))
+        val noEntityScreen = screen.copy(pages = screen.pages + page)
+        val outcome = runBlocking {
+            router.handle(checkNotNull(ActionRef.decode("va2|vacuum_rooms|")), noEntityScreen, TapMemory(), 0)
+        }
+        assertEquals(TapOutcome.Rebuild, outcome)
+        assertTrue(renderData.vacuumUi.state("va2").roomsDialogOpen)
     }
 
     @Test

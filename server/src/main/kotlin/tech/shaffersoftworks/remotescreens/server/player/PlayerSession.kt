@@ -331,7 +331,15 @@ class PlayerSession(
                     media.warmCameraStream(entityId = ref.arg)
                 }
                 handleOutcome(outcome)
+                rebuildTappedOverlay(outcome = outcome, slot = message.slot)
             }
+        }
+    }
+
+    /** A card's own state (vacuum rooms dialog) lives in the overlay, which a MAIN rebuild leaves alone. */
+    private suspend fun rebuildTappedOverlay(outcome: TapOutcome, slot: Slot) {
+        if (outcome == TapOutcome.Rebuild && slot != Slot.MAIN) {
+            shownDocuments[slot]?.let { documents.rebuild(it) }
         }
     }
 

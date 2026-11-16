@@ -3,6 +3,7 @@
 package tech.shaffersoftworks.remotescreens.server.render.panels.vacuum
 
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumRoom
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumRooms
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiState
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
@@ -32,43 +33,21 @@ import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import tech.shaffersoftworks.remotescreens.server.render.panels.vacuum.VacuumDialogMetrics as D
 
-/** Metrics of the vacuum rooms dialog, aligned with the lights detail dialog chrome. */
-internal object VacuumDialogMetrics {
-    const val CARD_W_DP = 420f
-    const val DIALOG_PAD_H_DP = 20f
-    const val CARD_CORNER_DP = 28f
-    const val CARD_PAD_DP = 20f
-    const val CLOSE_DP = 40f
-    const val TITLE_SP = 20f
-    const val SUB_SP = 14f
-    const val TITLE_SUB_GAP_DP = 8f
-    const val ROW_H_DP = 48f
-    const val CHECK_DP = 24f
-    const val CHECK_ICON_RATIO = 0.65f
-    const val ROW_GAP_DP = 4f
-    const val ROW_ICON_GAP_DP = 14f
-    const val FOOTER_GAP_DP = 16f
-    const val KEY_GAP_DP = 10f
-    const val KEY_H_DP = 52f
-    const val CAPTION_GAP_DP = 8f
-    const val CAPTION_SP = 12f
-    const val LIST_MAX_H_DP = 320f
-    const val HEADER_EXTRA_DP = 12f
-}
-
 /**
- * Select-rooms dialog over a scrim: checklist of [rooms], Cancel, and Clean N rooms.
+ * Select-rooms dialog over a scrim: checklist of [vacuumRooms], Cancel, and Clean N rooms.
  * [screenW] sizes the card; the scrim fills the document so it covers the bars like the lights dialog.
  */
 fun DocContext.vacuumRoomsDialog(
     tileId: String,
     vacuumName: String,
-    rooms: List<VacuumRoom>,
+    vacuumRooms: VacuumRooms,
     ui: VacuumUiState,
     screenW: Float,
 ) {
     val dismiss = ActionRef(tileId, "vacuum_rooms_dismiss")
+    val rooms = vacuumRooms.rooms
     val selected = ui.selectedRooms
+    val selectedCount = vacuumRooms.selectedIds(selected).size
     val cardW = minOf(D.CARD_W_DP, screenW - 2 * D.DIALOG_PAD_H_DP)
     val listH = minOf(D.LIST_MAX_H_DP, rooms.size * (D.ROW_H_DP + D.ROW_GAP_DP))
     val cardH = D.CARD_PAD_DP * 2 + D.CLOSE_DP + D.TITLE_SUB_GAP_DP + D.SUB_SP +
@@ -105,7 +84,7 @@ fun DocContext.vacuumRoomsDialog(
                 }
             }
             Spacer(Modifier.height(doc.units.px(D.FOOTER_GAP_DP)))
-            doc.roomsDialogFooter(tileId = tileId, selectedCount = selected.size)
+            doc.roomsDialogFooter(tileId = tileId, selectedCount = selectedCount)
         }
     }
 }
@@ -174,7 +153,11 @@ private fun DocContext.roomsDialogFooter(tileId: String, selectedCount: Int) {
         Spacer(Modifier.width(doc.units.px(D.KEY_GAP_DP)))
         doc.key(
             ref = ActionRef(tileId, "vacuum_rooms_clean"),
-            text = doc.i18n.t("ui.rooms_clean", "count" to selectedCount),
+            text = if (selectedCount == 1) {
+                doc.i18n.t("ui.rooms_clean_one")
+            } else {
+                doc.i18n.t("ui.rooms_clean_many", "count" to selectedCount)
+            },
             heightDp = D.KEY_H_DP,
             bg = doc.role(if (canClean) Role.ACCENT else Role.KEY),
             ink = doc.role(if (canClean) Role.INK_DARK else Role.INK_DIM),

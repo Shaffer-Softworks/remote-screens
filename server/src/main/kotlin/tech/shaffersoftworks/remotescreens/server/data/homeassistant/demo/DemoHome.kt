@@ -241,13 +241,25 @@ class DemoHome : HomeAssistant {
         }
         "config/entity_registry/get" -> {
             val entityId = payload["entity_id"]?.jsonPrimitive?.contentOrNull
-            if (entityId == "media_player.living_room") {
-                buildJsonObject {
+            when (entityId) {
+                "media_player.living_room" -> buildJsonObject {
                     put("entity_id", entityId)
                     put("config_entry_id", "demo_music_assistant")
                 }
-            } else {
-                null
+                "vacuum.robot" -> buildJsonObject {
+                    put("entity_id", entityId)
+                    put("options", buildJsonObject {
+                        put("vacuum", buildJsonObject {
+                            put("area_mapping", buildJsonObject {
+                                for ((area, segment) in VACUUM_AREA_SEGMENTS) {
+                                    put(area, buildJsonArray { add(JsonPrimitive(segment)) })
+                                }
+                                put("garden", buildJsonArray { })
+                            })
+                        })
+                    })
+                }
+                else -> null
             }
         }
         "config/device_registry/list" -> buildJsonArray {
@@ -449,6 +461,14 @@ class DemoHome : HomeAssistant {
         /** Entities that take their area from their device, as most in a real home do. */
         val ENTITY_DEVICES = listOf("switch.hallway_light" to "hallway_switch")
         val DEVICE_AREAS = listOf("hallway_switch" to "hallway")
+
+        /** `vacuum.robot`'s area → segment mapping, used once it advertises `CLEAN_AREA`. Garden maps to none. */
+        val VACUUM_AREA_SEGMENTS = listOf(
+            "living_room" to "16",
+            "kitchen" to "17",
+            "hallway" to "18",
+            "bedroom" to "19",
+        )
 
         private fun attrs(vararg pairs: Pair<String, Any?>): JsonObject = JsonObject(pairs.associate { (k, v) ->
             k to when (v) {

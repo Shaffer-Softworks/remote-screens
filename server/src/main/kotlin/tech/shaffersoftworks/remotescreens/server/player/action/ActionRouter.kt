@@ -128,8 +128,7 @@ class ActionRouter(
         "lights_effects", "lights_effect",
         -> lightsActions.handle(verb, ref.arg, target)
         "blinds_room", "cameras_select", "security_section",
-        "vacuum_select", "vacuum_rooms", "vacuum_rooms_dismiss", "vacuum_rooms_toggle",
-        "vacuum_rooms_clear", "vacuum_rooms_clean",
+        "vacuum_select", "vacuum_rooms", "vacuum_rooms_dismiss", "vacuum_rooms_toggle", "vacuum_rooms_clean",
         -> panelUiActions.handle(verb, ref.arg, target)
         "energy_dash_prev", "energy_dash_next", "energy_dash_now", "energy_dash_period" ->
             energyDashboardActions.handle(verb, target)

@@ -13,6 +13,7 @@ import tech.shaffersoftworks.remotescreens.server.data.lights.LightDetailMode
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiState
 import tech.shaffersoftworks.remotescreens.server.data.security.SecuritySection
 import tech.shaffersoftworks.remotescreens.server.data.security.SecurityUiState
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.VACUUM_CLEAN_AREA_FEATURE
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiState
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
@@ -422,16 +423,69 @@ class RenderTest {
     }
 
     @Test
+    fun aVacuumRoomsCountIgnoresRoomsTheVacuumNoLongerHas() {
+        val (_, text) = renderVacuum(
+            VacuumUiState(
+                selectedVacuum = "vacuum.robot",
+                roomsDialogOpen = true,
+                selectedRooms = setOf("16", "99"),
+            ),
+        )
+        assertContains(text, "Clean 1 room")
+        assertContains(text, "1 selected")
+        assertFalse("Clean 2 rooms" in text)
+    }
+
+    @Test
+    fun aVacuumCardOpensItsRoomsDialogInTheCard() {
+        val repository = RenderDataRepository(ha)
+        val closed = CardRenderer.render(
+            "vacuum.robot",
+            null,
+            tablet,
+            input(runBlocking { repository.forCard("vacuum.robot", null) }),
+        )
+        val closedText = String(closed.bytes, Charsets.ISO_8859_1)
+        assertContains(closedText, "e:vacuum.robot|vacuum_rooms|")
+        assertFalse("e:vacuum.robot|vacuum_rooms_toggle|" in closedText)
+
+        repository.vacuumUi.openRooms("e:vacuum.robot")
+        repository.vacuumUi.toggleRoom("e:vacuum.robot", "17")
+        val open = CardRenderer.render(
+            "vacuum.robot",
+            null,
+            tablet,
+            input(runBlocking { repository.forCard("vacuum.robot", null) }),
+        )
+        val openText = String(open.bytes, Charsets.ISO_8859_1)
+        assertContains(openText, "Select rooms")
+        assertContains(openText, "e:vacuum.robot|vacuum_rooms_toggle|16")
+        assertContains(openText, "Clean 1 room")
+        assertEveryValueIsDeclared(open)
+    }
+
+    @Test
+    fun aCleanAreaVacuumListsItsMappedHomeAssistantAreas() {
+        val robot = ha.states.value.getValue("vacuum.robot")
+        val features = checkNotNull(robot.number("supported_features")).toInt() or VACUUM_CLEAN_AREA_FEATURE
+        ha.set("vacuum.robot", robot.state, mapOf("supported_features" to JsonPrimitive(features)))
+        val (_, text) = renderVacuum(VacuumUiState(selectedVacuum = "vacuum.robot", roomsDialogOpen = true))
+        assertContains(text, "va1|vacuum_rooms_toggle|living_room")
+        assertContains(text, "va1|vacuum_rooms_toggle|kitchen")
+        assertFalse("va1|vacuum_rooms_toggle|garden" in text, "an area mapped to no segment is not a room")
+        assertFalse("va1|vacuum_rooms_toggle|16" in text, "attribute rooms give way to mapped areas")
+    }
+
+    @Test
     fun aVacuumPageUpdatesStatusWithoutRebuild() {
         val (doc, _) = renderVacuum()
         val states = ha.states.value
         val robot = states.getValue("vacuum.robot")
-        val cleaning = states + (
-            robot.entityId to robot.with(
-                state = "cleaning",
-                attrs = mapOf("battery_level" to JsonPrimitive(84)),
-            )
+        val cleaningRobot = robot.with(
+            state = "cleaning",
+            attrs = mapOf("battery_level" to JsonPrimitive(84)),
         )
+        val cleaning = states + (robot.entityId to cleaningRobot)
         assertFalse(
             doc.structureChanged(cleaning),
             "status and battery are bound vars, not structure",

@@ -4,7 +4,8 @@ package tech.shaffersoftworks.remotescreens.server.render.panels.vacuum
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiState
-import tech.shaffersoftworks.remotescreens.server.data.vacuum.vacuumRooms
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.VACUUM_PREFIX
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.selectedVacuumId
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
@@ -48,9 +49,7 @@ private class VacuumLayout(val scale: Float, val pageW: Float, val pageH: Float)
 fun DocContext.vacuumPanel(tile: Tile, box: TileBox) {
     val ui = data.vacuumUi[tile.id] ?: VacuumUiState()
     val vacuums = vacuumEntityIds(tile.entityId)
-    val selectedId = ui.selectedVacuum?.takeIf { it in vacuums }
-        ?: tile.entityId?.takeIf { it in vacuums }
-        ?: vacuums.singleOrNull()
+    val selectedId = selectedVacuumId(chosen = ui.selectedVacuum, tileEntityId = tile.entityId, vacuumIds = vacuums)
     val selected = selectedId?.let { states[it] }
     val layout = VacuumLayout(pageScale(box), box.w, box.h)
     scope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
@@ -65,22 +64,23 @@ fun DocContext.vacuumPanel(tile: Tile, box: TileBox) {
  * [screenW] sizes the card; the scrim fills the document.
  */
 fun DocContext.vacuumDialogLayer(tile: Tile, screenW: Float) {
-    val ui = data.vacuumUi[tile.id] ?: return
-    if (!ui.roomsDialogOpen) return
-    val vacuums = vacuumEntityIds(tile.entityId)
-    val selectedId = ui.selectedVacuum?.takeIf { it in vacuums }
-        ?: tile.entityId?.takeIf { it in vacuums }
-        ?: vacuums.singleOrNull()
-    val entityState = selectedId?.let { states[it] }
-    val rooms = entityState?.vacuumRooms().orEmpty()
-    if (entityState == null || rooms.isEmpty()) return
-    vacuumRoomsDialog(
-        tileId = tile.id,
-        vacuumName = entityState.name.ifBlank { selectedId },
-        rooms = rooms,
-        ui = ui,
-        screenW = screenW,
+    val ui = data.vacuumUi[tile.id]?.takeIf { it.roomsDialogOpen } ?: return
+    val selectedId = selectedVacuumId(
+        chosen = ui.selectedVacuum,
+        tileEntityId = tile.entityId,
+        vacuumIds = vacuumEntityIds(tile.entityId),
     )
+    val entityState = selectedId?.let { states[it] }
+    val vacuumRooms = selectedId?.let { data.vacuumRooms[it] }
+    if (entityState != null && vacuumRooms != null) {
+        vacuumRoomsDialog(
+            tileId = tile.id,
+            vacuumName = entityState.name.ifBlank { entityState.entityId },
+            vacuumRooms = vacuumRooms,
+            ui = ui,
+            screenW = screenW,
+        )
+    }
 }
 
 private fun pageScale(box: TileBox): Float =
@@ -88,7 +88,7 @@ private fun pageScale(box: TileBox): Float =
 
 /** All vacuums, with the tile's entity first when it is one. */
 private fun DocContext.vacuumEntityIds(preferred: String?): List<String> {
-    val all = states.keys.filter { it.startsWith("vacuum.") }.sorted()
+    val all = states.keys.filter { it.startsWith(VACUUM_PREFIX) }.sorted()
     if (preferred == null || preferred !in all) return all
     return listOf(preferred) + all.filter { it != preferred }
 }

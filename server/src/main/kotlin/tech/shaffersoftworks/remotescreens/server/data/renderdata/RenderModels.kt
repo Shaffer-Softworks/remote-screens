@@ -11,6 +11,7 @@ import tech.shaffersoftworks.remotescreens.server.data.music.MusicListRow
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicQueueSnapshot
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
 import tech.shaffersoftworks.remotescreens.server.data.security.SecurityUiState
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumRooms
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiState
 import java.time.Instant
 
@@ -64,8 +65,10 @@ data class RenderData(
     val blindsRooms: List<LightsRoom> = emptyList(),
     /** Chosen room of each blinds page, keyed by tile id. */
     val blindsUi: Map<String, BlindsUiState> = emptyMap(),
-    /** Chosen vacuum of each vacuum page, keyed by tile id. */
+    /** Chosen vacuum and rooms dialog of each vacuum page or card, keyed by tile id (`e:<entity>` on a card). */
     val vacuumUi: Map<String, VacuumUiState> = emptyMap(),
+    /** The rooms each vacuum can clean selectively, keyed by entity id; absent when it has none. */
+    val vacuumRooms: Map<String, VacuumRooms> = emptyMap(),
     /** Chosen section of each security page, keyed by tile id. */
     val securityUi: Map<String, SecurityUiState> = emptyMap(),
 )

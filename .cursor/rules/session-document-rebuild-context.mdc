@@ -36,6 +36,10 @@ A MAIN rebuild used to clear `energyDashboards`, so the native charts vanished u
 - Capable players get a blank PAGE-coloured Energy hole (`supportsEnergyDashboard`); the update prompt is only for older APKs.
 - `withEnergyDashboard` ignores a wrong-rev or identical re-send (same-content refresh still pushes Energy); only a changed payload replaces the message.
 
+## Rebuild and the card overlay
+
+`TapOutcome.Rebuild` rebuilds `Slot.MAIN`. A card is its own document in `Slot.OVERLAY` (`SessionDocument.openCard`), so card-local UI state changed by a tap is not redrawn by that alone. `PlayerSession.rebuildTappedOverlay` also rebuilds the slot the tap came from when it is not MAIN; `show` skips the send when the bytes are unchanged. A card that reads session UI state also needs it from `RenderDataRepository.forCard`, which returns only what each card kind asks for (the vacuum card gets `vacuumUi` and `vacuumRooms`).
+
 ## Helpers
 
 - `RenderedDoc.structureChanged` / `isTimedRefreshDue` — split from `stale` for clearer session host logic.

@@ -19,7 +19,6 @@ class PanelUiActions(
         "vacuum_rooms",
         "vacuum_rooms_dismiss",
         "vacuum_rooms_toggle",
-        "vacuum_rooms_clear",
         "vacuum_rooms_clean",
         -> vacuumActions.handle(verb, arg, target)
         "cameras_select" -> camerasActions.handle(arg, target)

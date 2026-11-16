@@ -19,7 +19,8 @@ import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiState
-import tech.shaffersoftworks.remotescreens.server.data.vacuum.vacuumRooms
+import tech.shaffersoftworks.remotescreens.server.render.widgets.KEY_CORNER_DIVISOR
+import tech.shaffersoftworks.remotescreens.server.render.widgets.KEY_ICON_DP
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
@@ -110,33 +111,7 @@ internal fun DocContext.vacuumCard(
         )
     }
     gap(CardChrome.PANEL_CORNER_DP)
-    val rooms = entityState?.vacuumRooms().orEmpty()
-    if (rooms.isNotEmpty()) {
-        structural(entityId) {
-            listOf(
-                it?.list("room_list")?.joinToString().orEmpty(),
-                it?.list("room_ids")?.joinToString().orEmpty(),
-            ).joinToString("|")
-        }
-    }
-    scope.Row(Modifier.fillMaxWidth()) {
-        val doc = this@vacuumCard
-        doc.key(
-            ref = ref(entityId, "locate"),
-            text = doc.i18n.t("ui.locate"),
-            icon = "map-marker",
-            heightDp = CardChrome.FLOW_KEY_H_DP,
-            modifier = Modifier.horizontalWeight(1f),
-        )
-        if (rooms.isNotEmpty()) {
-            Spacer(Modifier.width(doc.units.px(CardChrome.PANEL_CORNER_DP)))
-            doc.roomsKey(
-                tileId = uiTileId,
-                selectedCount = ui.selectedRooms.size,
-                modifier = Modifier.horizontalWeight(1f),
-            )
-        }
-    }
+    vacuumLocateRow(entityId = entityId, uiTileId = uiTileId, ui = ui)
     val speeds = entityState?.list("fan_speed_list").orEmpty()
     if (speeds.isNotEmpty()) {
         structural(entityId) { it?.list("fan_speed_list")?.joinToString() ?: "" }
@@ -145,16 +120,46 @@ internal fun DocContext.vacuumCard(
     }
 }
 
+/** Locate, and beside it a Rooms key when the vacuum has rooms to choose from. */
+private fun DocContext.vacuumLocateRow(entityId: String, uiTileId: String, ui: VacuumUiState) {
+    // Segment rooms come from attributes; a changed list must rebuild the key and the dialog.
+    structural(entityId) {
+        listOf(
+            it?.list("room_list")?.joinToString().orEmpty(),
+            it?.list("room_ids")?.joinToString().orEmpty(),
+        ).joinToString("|")
+    }
+    val vacuumRooms = data.vacuumRooms[entityId]
+    scope.Row(Modifier.fillMaxWidth()) {
+        val doc = this@vacuumLocateRow
+        doc.key(
+            ref = ref(entityId, "locate"),
+            text = doc.i18n.t("ui.locate"),
+            icon = "map-marker",
+            heightDp = CardChrome.FLOW_KEY_H_DP,
+            modifier = Modifier.horizontalWeight(1f),
+        )
+        if (vacuumRooms != null) {
+            Spacer(Modifier.width(doc.units.px(CardChrome.PANEL_CORNER_DP)))
+            doc.roomsKey(
+                tileId = uiTileId,
+                selectedCount = vacuumRooms.selectedIds(ui.selectedRooms).size,
+                modifier = Modifier.horizontalWeight(1f),
+            )
+        }
+    }
+}
+
 /** Equal-weight Rooms key beside Locate: title plus how many rooms are selected. */
 private fun DocContext.roomsKey(tileId: String, selectedCount: Int, modifier: Modifier) {
     val ink = role(Role.INK)
     val soft = role(Role.INK_DIM)
-    val height = units.px(CardChrome.FLOW_KEY_H_DP)
+    val pad = units.px(CardChrome.FLOW_PAD_DP)
     val box = tap(
-        modifier.height(height)
-            .clip(rounded(CardChrome.FLOW_KEY_H_DP / 2.5f))
+        modifier.height(units.px(CardChrome.FLOW_KEY_H_DP))
+            .clip(rounded(CardChrome.FLOW_KEY_H_DP / KEY_CORNER_DIVISOR))
             .background(role(Role.KEY))
-            .padding(start = units.px(CardChrome.FLOW_PAD_DP), top = 0f, end = units.px(CardChrome.FLOW_PAD_DP), bottom = 0f),
+            .padding(start = pad, top = 0f, end = pad, bottom = 0f),
         ActionRef(tileId, "vacuum_rooms"),
     )
     scope.Row(
@@ -168,7 +173,7 @@ private fun DocContext.roomsKey(tileId: String, selectedCount: Int, modifier: Mo
             vertical = RcColumnVerticalPositioning.Center,
         ) {
             Row(vertical = RcVerticalPositioning.Center) {
-                doc.icon("floor-plan", 18f, ink)
+                doc.icon("floor-plan", KEY_ICON_DP, ink)
                 Spacer(Modifier.width(doc.units.px(CardChrome.PANEL_CORNER_DP)))
                 doc.label(
                     text = doc.i18n.t("ui.rooms"),

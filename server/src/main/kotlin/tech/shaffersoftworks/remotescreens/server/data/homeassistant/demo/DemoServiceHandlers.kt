@@ -231,6 +231,7 @@ internal class DemoServiceHandlers(
                 set(call.entityId, "cleaning", emptyMap())
             }
         },
+        "clean_area" to { call -> set(call.entityId, "cleaning", emptyMap()) },
         "locate" to { /* demo: no state change */ },
     )
 

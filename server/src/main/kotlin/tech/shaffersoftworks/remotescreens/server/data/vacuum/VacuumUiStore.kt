@@ -48,10 +48,6 @@ class VacuumUiStore {
         byTile[tileId] = current.copy(selectedRooms = next)
     }
 
-    fun clearRooms(tileId: String) {
-        byTile[tileId] = state(tileId).copy(selectedRooms = emptySet())
-    }
-
     /** Closes the dialog and clears the selection after a selective clean starts. */
     fun afterClean(tileId: String) {
         byTile[tileId] = state(tileId).copy(roomsDialogOpen = false, selectedRooms = emptySet())
