@@ -35,6 +35,7 @@ Each tablet is its own HA device with environment sensors, RPI-style diagnostics
 
 ## Integration
 
+- Besides the 30 s poll, the add-on fires `remote_screens_players_changed` (`PlayersChangedEvent`, debounced 500 ms) when a tablet connects, is adopted, renamed or forgotten, or changes awake, page, kiosk or charging. A disconnect waits 5 s and is dropped if the tablet is back; a poll that lands in the gap of an app update still shows offline until the reconnect fires. Battery level, Wi-Fi level and telemetry do not fire it. `__init__` listens and calls `coordinator.async_refresh()`, not `async_request_refresh()`: that one's 10 s cooldown held back the kiosk change right after the switch's own refresh. An add-on that never fires it still works on the poll.
 - `coordinator.data` is still screens by id; `coordinator.players` is tablets by device id. An add-on without `/players` (404 → `RemoteScreensNotFoundError`) falls back to the players embedded in screens.
 - Tablet device: identifier `(DOMAIN, "player_<deviceId>")`, `via_device` the screen. `__init__` registers screen devices before platforms load so `via_device` always exists. Service targets map a tablet device to its `screenId`.
 - `RemoteScreensTabletEntity` is unavailable while the tablet is offline, except the `online` binary sensor.
@@ -43,7 +44,7 @@ Each tablet is its own HA device with environment sensors, RPI-style diagnostics
 
 ## Gotchas
 
-- Motion relies on the 60 s latch because HA polls every 30 s. A real-time push (`remote_screens_tablet_moved` event) is out of scope for now.
+- Motion relies on the 60 s latch because telemetry reaches HA only on the 30 s poll; `remote_screens_players_changed` does not fire for telemetry.
 - `BatteryManager.BATTERY_PLUGGED_DOCK` is API 33; `DiagnosticsReader` uses its value (8) as a constant. Cycle count reads `android.os.extra.CYCLE_COUNT` on API 34+.
 - `TelemetryReporter` restarts only when the effective location sharing changes, so repeated `Settings` messages do not reset the schedule. The share flag is still recomputed on every report.
 - A null `location` group with a visible Wi-Fi SSID means permission is granted and sharing may be on, but Android has not returned a fix. Check Location accuracy before changing `LocationMonitor`.
