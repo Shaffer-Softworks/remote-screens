@@ -3,7 +3,10 @@
 package tech.shaffersoftworks.remotescreens.server.render.cards
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiState
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.vacuumRooms
 import tech.shaffersoftworks.remotescreens.server.render.Device
+import tech.shaffersoftworks.remotescreens.server.render.panels.vacuum.vacuumRoomsDialog
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.RenderInput
@@ -67,43 +70,56 @@ object CardRenderer {
                 alwaysOn = card in ALWAYS_ON_CARDS,
             )
 
-            Column(
-                docContext.tap(
-                    Modifier.fillMaxSize().background(docContext.role(Role.SCRIM)),
-                    ActionRef("_", "close"),
-                ),
-                horizontal = RcHorizontalPositioning.Center,
-            ) {
-                // Centre the card in the page area; the scrim still covers the bars.
-                Spacer(Modifier.height(docContext.units.px(topInsetDp)))
-                Spacer(Modifier.verticalWeight(1f))
+            Box(Modifier.fillMaxSize()) {
                 Column(
                     docContext.tap(
-                        Modifier.size(
-                            docContext.units.px(panelW),
-                            docContext.units.px(panelH),
-                        ).clip(
-                            docContext.rounded(CardChrome.PANEL_CORNER_DP),
-                        ).background(docContext.role(Role.CARD)),
-                        ActionRef("_", "noop"),
-                    )
-                        .padding(docContext.units.px(CardChrome.PANEL_PAD_DP)),
+                        Modifier.fillMaxSize().background(docContext.role(Role.SCRIM)),
+                        ActionRef("_", "close"),
+                    ),
+                    horizontal = RcHorizontalPositioning.Center,
                 ) {
-                    docContext.header(entityId, card)
-                    docContext.gap(CardChrome.SECTION_GAP_DP)
-
-                    Column(Modifier.fillMaxWidth().verticalWeight(1f).keptVerticalScroll("card.$entityId")) {
-                        docContext.renderCardBody(
-                            card = card,
-                            entityId = entityId,
-                            entityState = entityState,
-                            bodyWidthDp = panelW - CardChrome.CLOSE_KEY_DP,
-                            panelHeightDp = panelH,
+                    // Centre the card in the page area; the scrim still covers the bars.
+                    Spacer(Modifier.height(docContext.units.px(topInsetDp)))
+                    Spacer(Modifier.verticalWeight(1f))
+                    Column(
+                        docContext.tap(
+                            Modifier.size(
+                                docContext.units.px(panelW),
+                                docContext.units.px(panelH),
+                            ).clip(
+                                docContext.rounded(CardChrome.PANEL_CORNER_DP),
+                            ).background(docContext.role(Role.CARD)),
+                            ActionRef("_", "noop"),
                         )
+                            .padding(docContext.units.px(CardChrome.PANEL_PAD_DP)),
+                    ) {
+                        docContext.header(entityId, card)
+                        docContext.gap(CardChrome.SECTION_GAP_DP)
+
+                        Column(Modifier.fillMaxWidth().verticalWeight(1f).keptVerticalScroll("card.$entityId")) {
+                            docContext.renderCardBody(
+                                card = card,
+                                entityId = entityId,
+                                entityState = entityState,
+                                bodyWidthDp = panelW - CardChrome.CLOSE_KEY_DP,
+                                panelHeightDp = panelH,
+                            )
+                        }
                     }
+                    Spacer(Modifier.verticalWeight(1f))
+                    Spacer(Modifier.height(docContext.units.px(bottomInsetDp)))
                 }
-                Spacer(Modifier.verticalWeight(1f))
-                Spacer(Modifier.height(docContext.units.px(bottomInsetDp)))
+                val roomsUi = input.data.vacuumUi["e:$entityId"]
+                val rooms = entityState?.vacuumRooms().orEmpty()
+                if (card == "vacuum" && roomsUi?.roomsDialogOpen == true && rooms.isNotEmpty()) {
+                    docContext.vacuumRoomsDialog(
+                        tileId = "e:$entityId",
+                        vacuumName = entityState?.name?.ifBlank { entityId } ?: entityId,
+                        rooms = rooms,
+                        ui = roomsUi,
+                        screenW = device.widthDp.toFloat(),
+                    )
+                }
             }
         }
         return RenderedDoc(bytes, docContext)
@@ -153,7 +169,12 @@ object CardRenderer {
             "alarm" -> alarmCard(entityId, entityState, bodyWidthDp)
             "select" -> selectCard(entityId, entityState)
             "number" -> numberCard(entityId, entityState, bodyWidthDp)
-            "vacuum" -> vacuumCard(entityId, entityState)
+            "vacuum" -> vacuumCard(
+                entityId = entityId,
+                entityState = entityState,
+                uiTileId = "e:$entityId",
+                ui = data.vacuumUi["e:$entityId"] ?: VacuumUiState(),
+            )
             "lawn_mower" -> lawnMowerCard(entityId)
             "calendar" -> calendarCard(entityId, entityState)
             "todo" -> todoCard(entityId)

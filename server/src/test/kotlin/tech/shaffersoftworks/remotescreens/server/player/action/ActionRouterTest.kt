@@ -264,6 +264,33 @@ class ActionRouterTest {
         router.handle(checkNotNull(ActionRef.decode(meta)), camerasScreen, TapMemory(), 0)
     }
 
+    private val vacuumScreen = screen.copy(pages = screen.pages + DemoLayout.vacuumPage())
+
+    private fun vacuumTap(meta: String) = runBlocking {
+        router.handle(checkNotNull(ActionRef.decode(meta)), vacuumScreen, TapMemory(), 0)
+    }
+
+    @Test
+    fun aVacuumPageOpensRoomsDialogAndCleansSelectedRooms() {
+        assertEquals(TapOutcome.Rebuild, vacuumTap("va1|vacuum_rooms|"))
+        assertTrue(renderData.vacuumUi.state("va1").roomsDialogOpen)
+        assertEquals(TapOutcome.Rebuild, vacuumTap("va1|vacuum_rooms_toggle|16"))
+        assertEquals(TapOutcome.Rebuild, vacuumTap("va1|vacuum_rooms_toggle|17"))
+        assertEquals(setOf("16", "17"), renderData.vacuumUi.state("va1").selectedRooms)
+        assertEquals(TapOutcome.Rebuild, vacuumTap("va1|vacuum_rooms_clean|"))
+        assertEquals("cleaning", ha.states.value["vacuum.robot"]?.state)
+        val (_, service, data) = ha.calls.last()
+        assertEquals("send_command", service)
+        assertEquals("app_segment_clean", (data["command"] as JsonPrimitive).content)
+        assertEquals(
+            listOf(16, 17),
+            data.getValue("params").jsonArray.map { it.jsonPrimitive.int },
+        )
+        val ui = renderData.vacuumUi.state("va1")
+        assertTrue(!ui.roomsDialogOpen)
+        assertTrue(ui.selectedRooms.isEmpty())
+    }
+
     @Test
     fun aCamerasPageChoosesOnlyACameraItLists() {
         assertEquals(null, renderData.camerasUi.state("cm1").selectedCamera)

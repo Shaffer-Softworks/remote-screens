@@ -25,6 +25,7 @@ fun main(args: Array<String>) = runBlocking {
         DemoLayout.lightsPage(),
         DemoLayout.camerasPage(),
         DemoLayout.intercomPage(),
+        DemoLayout.vacuumPage(),
         Page("calendar", "Calendar", listOf(Tile("calendar", "calendar.family", full = true))),
     )
     val repository = RenderDataRepository(home)

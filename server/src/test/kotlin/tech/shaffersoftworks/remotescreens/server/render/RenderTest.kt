@@ -387,14 +387,57 @@ class RenderTest {
     @Test
     fun aFullVacuumTileIsTheVacuumPage() {
         val (doc, text) = renderVacuum()
-        for (word in listOf("VACUUM", "Robot", "docked")) {
-            assertContains(text, word)
-        }
+        assertContains(text, "VACUUM")
         assertContains(text, "va1|vacuum_select|vacuum.robot")
         assertContains(text, "e:vacuum.robot|start|")
         assertContains(text, "e:vacuum.robot|dock|")
+        assertContains(text, "e:vacuum.robot|locate|")
+        assertContains(text, "va1|vacuum_rooms|")
+        assertContains(text, "Rooms")
         assertFalse("va1|card|" in text, "the page itself opens no card")
+        assertFalse("va1|vacuum_rooms_toggle|" in text, "no rooms dialog until opened")
+        val vars = doc.vars(ha.states.value)
+        assertEquals("Robot", vars["e.vacuum.robot.name"]?.value)
+        assertEquals("Docked · 100%", vars["e.vacuum.robot.state"]?.value)
         assertEveryValueIsDeclared(doc)
+    }
+
+    @Test
+    fun aVacuumRoomsDialogListsRoomsToClean() {
+        val (doc, text) = renderVacuum(
+            VacuumUiState(
+                selectedVacuum = "vacuum.robot",
+                roomsDialogOpen = true,
+                selectedRooms = setOf("16", "17", "18"),
+            ),
+        )
+        assertContains(text, "Select rooms")
+        assertContains(text, "Living Room")
+        assertContains(text, "Kitchen")
+        assertContains(text, "va1|vacuum_rooms_toggle|16")
+        assertContains(text, "va1|vacuum_rooms_clean|")
+        assertContains(text, "va1|vacuum_rooms_dismiss|")
+        assertContains(text, "Clean 3 rooms")
+        assertEveryValueIsDeclared(doc)
+    }
+
+    @Test
+    fun aVacuumPageUpdatesStatusWithoutRebuild() {
+        val (doc, _) = renderVacuum()
+        val states = ha.states.value
+        val robot = states.getValue("vacuum.robot")
+        val cleaning = states + (
+            robot.entityId to robot.with(
+                state = "cleaning",
+                attrs = mapOf("battery_level" to JsonPrimitive(84)),
+            )
+        )
+        assertFalse(
+            doc.structureChanged(cleaning),
+            "status and battery are bound vars, not structure",
+        )
+        val vars = doc.vars(cleaning)
+        assertEquals("Cleaning · 84%", vars["e.vacuum.robot.state"]?.value)
     }
 
     private val securityScreen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.securityPage()) }
