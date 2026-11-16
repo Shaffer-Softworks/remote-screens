@@ -1,5 +1,6 @@
 // Captures the README / wiki editor screenshots from a demo server (see docs/DEMO.md).
 // Usage: npm i --no-save playwright && npx playwright install chromium
+//        python3 tools/docs_demo_layout.py append   # optional docs panels
 //        node tools/capture_screenshots.mjs [http://localhost:18099]
 import { chromium } from 'playwright'
 import { mkdirSync } from 'node:fs'
@@ -19,39 +20,80 @@ const shot = async (name) => {
 }
 const home = async () => {
   await page.goto(base)
-  await page.getByText('Living room tablet').waitFor()
+  await page.getByRole('heading', { name: 'Living room tablet' }).waitFor()
+}
+const openScreen = async () => {
+  await home()
+  await page.getByRole('button', { name: 'Edit Living room tablet' }).click()
+  await page.getByRole('button', { name: 'Save' }).waitFor()
+}
+const PAGE_IDS = {
+  Home: 'home',
+  'Living room': 'living',
+  Rooms: 'rooms',
+  More: 'more',
+  Extras: 'extras',
+  Compose: 'compose',
+  Weather: 'weather',
+  Thermostat: 'thermostat',
+  Music: 'music',
+  Lights: 'lights',
+  Cameras: 'cameras',
+  Blinds: 'blinds',
+  Security: 'security',
+  Vacuum: 'vacuum',
+  Energy: 'energy_dashboard',
+}
+const selectPage = async (title) => {
+  const picker = page.locator('select[aria-label="Page"]')
+  if (!(await picker.count())) return false
+  const pageId = PAGE_IDS[title]
+  if (!pageId) return false
+  try {
+    await picker.selectOption(pageId)
+    return true
+  } catch (error) {
+    console.warn(`select ${title}: ${error}`)
+    return false
+  }
+}
+const shotPage = async (title, file) => {
+  if (!(await selectPage(title))) {
+    console.warn(`skip ${file}.png (no page "${title}")`)
+    return
+  }
+  await page.waitForTimeout(600)
+  await shot(file)
 }
 
 await home()
 await shot('screens')
 
-await page.getByText('Living room tablet').click()
-await page.getByRole('button', { name: 'Add tiles' }).waitFor()
+await openScreen()
 await shot('editor')
 
-await page.getByRole('button', { name: 'Living room', exact: true }).click()
-await shot('editor-room')
+if (await selectPage('Living room')) {
+  await shot('editor-room')
+  await page.locator('.room .tile').first().click()
+  await shot('editor-tile')
+}
 
-await page.locator('.room .tile').first().click()
-await shot('editor-tile')
+await shotPage('Extras', 'editor-extras')
+if (await page.locator('.room .tile').count()) {
+  await page.locator('.room .tile').filter({ hasText: /humid|bedroom/i }).first().click().catch(async () => {
+    await page.locator('.room .tile').nth(0).click()
+  })
+  await shot('editor-card')
+}
 
-await page.getByRole('button', { name: 'Extras', exact: true }).click()
-await page.waitForTimeout(400)
-await shot('editor-extras')
-
-// Detail-style view: humidifier tile selected on Extras (inspector + domain tile).
-await page.locator('.room .tile').filter({ hasText: /humid|bedroom/i }).first().click().catch(async () => {
-  await page.locator('.room .tile').nth(8).click()
-})
-await shot('editor-card')
-
-await page.getByRole('button', { name: 'Compose', exact: true }).click()
-await page.waitForTimeout(500)
-await shot('editor-compose')
-
-await page.getByRole('navigation').getByRole('button', { name: 'Thermostat', exact: true }).click()
-await page.waitForTimeout(500)
-await shot('editor-thermostat')
+await shotPage('Compose', 'editor-compose')
+await shotPage('Thermostat', 'editor-thermostat')
+await shotPage('Lights', 'editor-lights')
+await shotPage('Cameras', 'editor-cameras')
+await shotPage('Blinds', 'editor-blinds')
+await shotPage('Security', 'editor-security')
+await shotPage('Vacuum', 'editor-vacuum')
+await shotPage('Energy', 'editor-energy-dashboard')
 
 await home()
 await page.getByRole('button', { name: 'Themes' }).click()
@@ -59,7 +101,6 @@ await page.getByRole('button', { name: 'Duplicate to edit' }).waitFor()
 await shot('themes')
 
 await home()
-// Enroll only appears when the demo server hands out an APK (REMOTE_SCREENS_APK=...).
 const enroll = page.getByRole('button', { name: 'Enroll a tablet' })
 if (await enroll.count()) {
   await enroll.click()

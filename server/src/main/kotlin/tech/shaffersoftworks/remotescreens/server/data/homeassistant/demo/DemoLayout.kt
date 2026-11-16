@@ -242,6 +242,19 @@ object DemoLayout {
     )
 
     /**
+     * Demo pages used for documentation screenshots. Kept off [screen] so the default demo document
+     * stays small enough for the player; capture tools append these via the editor API.
+     */
+    fun docsCapturePages(): List<Page> = listOf(
+        lightsPage(),
+        camerasPage(),
+        blindsPage(),
+        securityPage(),
+        vacuumPage(),
+        energyDashboardPage(),
+    )
+
+    /**
      * RPI's alarm page over the house panel and its three Alarmo zones, added where it is wanted.
      */
     fun alarmPage(): Page = Page(

@@ -49,13 +49,17 @@ The fixture is [`DemoLayout`](../server/src/main/kotlin/tech/shaffersoftworks/re
 | Home | Full home page (weather, next event, presence) |
 | Living room | Grid of lights, climate, media, lock, scenes |
 | Rooms | Covers, fan, graphs, … |
-| More | Extra grid tiles |
+| More | Extra grid tiles (hidden; reached from Living room nav) |
 | Extras | Newer domains (calendar, todo, timer, humidifier, …) |
 | Compose | Free-form page (dial, countdown, QR, tabs, media bar, …) |
 | Weather | Weather-focused page |
 | Thermostat | Full climate / RPI-style thermostat page |
+| Music | Music Assistant page |
 
-Themes and the entity library come from the same demo home.
+Themes and the entity library come from the same demo home. Helper builders
+(`lightsPage()`, `camerasPage()`, `blindsPage()`, `securityPage()`, `vacuumPage()`,
+`energyDashboardPage()`, `alarmPage()`, `energyPage()`, …) stay available for tests, previews,
+and documentation capture without sitting on the default demo screen.
 
 ## Pair a tablet or emulator
 

@@ -24,26 +24,21 @@ The editor, opened through ingress, with the made-up [demo home](docs/DEMO.md):
 | --- | --- |
 | ![The Living room page of a screen](docs/screenshots/editor-room.png) | ![Editing a tile's entity, colours, size and actions](docs/screenshots/editor-tile.png) |
 | Lay out tiles on a grid, page by page | Pick a tile's entity, icon, colours, size and actions |
-| ![The list of screens and paired tablets](docs/screenshots/screens.png) | ![The built-in themes and their colours](docs/screenshots/themes.png) |
-| Screens and the tablets showing them | Themes, built-in or your own |
+| ![Vacuum page in the editor](docs/screenshots/editor-vacuum.png) | ![Lights page in the editor](docs/screenshots/editor-lights.png) |
+| Vacuum panel | Lights panel |
 
-Newer pages in the editor:
-
-| | |
-| --- | --- |
-| ![Extras page with domain tiles](docs/screenshots/editor-extras.png) | ![Free-form Compose page](docs/screenshots/editor-compose.png) |
-| Domain tiles (calendar, todo, timer, …) | Free-form dial, countdown, QR, tabs and media |
-| ![Thermostat page in the editor](docs/screenshots/editor-thermostat.png) | ![Tile inspector on Extras](docs/screenshots/editor-card.png) |
-| Thermostat / climate page | Tile settings and detail-style inspector |
-
-On the tablet (Pixel Tablet emulator against the demo home):
+On the tablet (demo home):
 
 | | |
 | --- | --- |
-| ![Home page on the player](docs/screenshots/player-home.png) | ![Free-form Compose on the player](docs/screenshots/player-compose.png) |
-| Home page | Free-form Compose page |
+| ![Home page on the player](docs/screenshots/player-home.png) | ![Vacuum page on the player](docs/screenshots/player-vacuum.png) |
+| Home page | Vacuum panel |
+| ![Lights page on the player](docs/screenshots/player-lights.png) | ![Energy dashboard on the player](docs/screenshots/player-energy-dashboard.png) |
+| Lights panel | Energy dashboard |
 
-`tools/capture_screenshots.mjs` and `tools/capture_player_screenshots.sh` retake them; see
+More editor and player shots (blinds, security, cameras, free-form, themes, pairing) are on the
+[wiki Screenshots page](https://github.com/Shaffer-Softworks/remote-screens/wiki/Screenshots).
+Retake them with `tools/capture_screenshots.mjs` and the player capture flow in
 [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md).
 
 ## What is in this repository
@@ -147,31 +142,8 @@ tiles, cards, panels and free-form components. Build it with `./gradlew :preview
 and the workarounds the code relies on. Architecture notes are on the
 [wiki](https://github.com/Shaffer-Softworks/remote-screens/wiki/Architecture).
 
-### Releases
-
-1. Run [the release workflow](.github/workflows/addon.yml) from **Actions → Release → Run workflow** on
-   `main` and enter the new version (e.g. `0.1.14`). You do not need to bump version files first.
-2. The workflow tags `v<version>` on the current `main` tip, builds the signed player app (stamping that
-   version into the build), packages the add-on, pushes
-   `ghcr.io/<owner>/remote-screens-{amd64,aarch64}`, and attaches the APK to the GitHub release.
-3. When `main` still has an older `addon/VERSION` / `config.yaml`, it opens a sync PR so those files (and a
-   changelog stub, if missing) match the tag. Merge that PR so the repo stays aligned with the published
-   add-on. Optionally edit the changelog in that PR for curated notes next time.
-
-You can still push tag `v<version>` yourself; the same build runs, and a sync PR is opened if needed.
-
-For curated GitHub release notes, add a `## <version>` section to `addon/CHANGELOG.md` on `main` before
-step 1; otherwise the release uses GitHub’s generated notes.
-
-Tablets only accept an update signed with the key the app was first installed with, so every release must use
-the same key. The workflow reads it from these repository secrets:
-
-| Secret | What |
-| ------ | ---- |
-| `PLAYER_KEYSTORE_BASE64` | The keystore, base64 encoded |
-| `PLAYER_KEYSTORE_PASSWORD` | Its password |
-| `PLAYER_KEY_ALIAS` | The key's alias |
-| `PLAYER_KEY_PASSWORD` | The key's password |
+How to cut a release (workflow, sync PR, player signing secrets) is in
+[CONTRIBUTING.md](CONTRIBUTING.md#releases).
 
 ## License
 
