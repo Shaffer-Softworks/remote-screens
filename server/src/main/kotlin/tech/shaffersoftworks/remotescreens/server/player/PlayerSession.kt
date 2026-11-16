@@ -65,6 +65,8 @@ class PlayerSession(
     private val context: PlayerSessionContext,
     /** A pairing code no other connected player shows. */
     private val newPairingCode: () -> String,
+    /** Awake, page, kiosk or charging changed. Battery and Wi-Fi level do not count. */
+    private val onStatusChanged: () -> Unit = {},
 ) {
     private val logger = LoggerFactory.getLogger(PlayerSession::class.java)
     private val homeAssistant = context.homeAssistant
@@ -284,12 +286,15 @@ class PlayerSession(
     }
 
     private suspend fun applyDeviceState(message: PlayerMessage.DeviceState) {
+        val hasStatusChanged = isAwake != message.awake || page != message.page || kiosk != message.kiosk ||
+            charging != message.charging
         isAwake = message.awake
         page = message.page
         battery = message.battery
         charging = message.charging
         wifi = message.wifi
         kiosk = message.kiosk
+        if (hasStatusChanged) onStatusChanged()
         sendVars(deviceVars())
     }
 

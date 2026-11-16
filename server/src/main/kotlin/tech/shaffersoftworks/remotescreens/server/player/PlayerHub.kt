@@ -31,13 +31,6 @@ import tech.shaffersoftworks.remotescreens.shared.CrashTestResult
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.milliseconds
 
-private suspend fun receiveHello(socket: WebSocketSession): PlayerMessage.Hello? {
-    val firstFrame = socket.incoming.receiveCatching().getOrNull() as? Frame.Text
-    return firstFrame
-        ?.let { Protocol.decodePlayer(it.readText()) as? PlayerMessage.Hello }
-        ?.takeIf { it.protocol >= 1 }
-}
-
 private const val STATE_DEBOUNCE_MS = 80L
 private const val TICK_INTERVAL_MS = 1000L
 private const val MIN_CLOCK_DELAY_MS = 200L
@@ -62,9 +55,11 @@ class PlayerHub(
     private val scope: CoroutineScope = sessionContext.scope
     private val sessions = ConcurrentHashMap<String, PlayerSession>()
     private val notificationQueue = NotificationQueue()
+    private val playersChanged = PlayersChangedEvent(homeAssistant, scope)
 
     @OptIn(FlowPreview::class)
     fun start() {
+        playersChanged.start()
         scope.launch {
             homeAssistant.states
                 .debounce(STATE_DEBOUNCE_MS.milliseconds)
@@ -99,7 +94,7 @@ class PlayerHub(
 
     /** Serves one player's WebSocket until it closes. The first message must be its [PlayerMessage.Hello]. */
     suspend fun serve(socket: WebSocketSession, remoteAddress: String) {
-        val hello = receiveHello(socket) ?: return
+        val hello = socket.receiveHello() ?: return
         val record = layoutRepository.layout.value.players.firstOrNull { it.deviceId == hello.deviceId }
         if (!PlayerAuth.mayConnect(hello, record)) {
             logger.warn("Player {} presented invalid credentials", hello.deviceId)
@@ -112,14 +107,11 @@ class PlayerHub(
             hello = hello,
             context = sessionContext,
             newPairingCode = ::newPairingCode,
+            onStatusChanged = playersChanged::notifyChanged,
         )
         sessions.put(hello.deviceId, session)?.close()
-        logger.info(
-            "Player {} ({}) connected from {}",
-            hello.deviceName,
-            hello.deviceId,
-            remoteAddress,
-        )
+        playersChanged.notifyChanged()
+        logger.info("Player {} ({}) connected from {}", hello.deviceName, hello.deviceId, remoteAddress)
 
         try {
             session.welcome()
@@ -156,6 +148,7 @@ class PlayerHub(
                 )
             }
             logger.info("Player {} disconnected", hello.deviceName)
+            playersChanged.notifyDisconnected { sessions.containsKey(hello.deviceId) }
         }
     }
 
@@ -211,6 +204,7 @@ class PlayerHub(
             )
         }
         session?.adopted(token)
+        playersChanged.notifyChanged()
         return true
     }
 
@@ -219,6 +213,7 @@ class PlayerHub(
             layout.copy(players = layout.players.filterNot { it.deviceId == deviceId })
         }
         sessions[deviceId]?.welcome()
+        playersChanged.notifyChanged()
     }
 
     fun rename(deviceId: String, name: String) {
@@ -233,6 +228,7 @@ class PlayerHub(
                 } },
             )
         }
+        playersChanged.notifyChanged()
     }
 
     suspend fun testSentry(deviceId: String): CrashTestResult {
