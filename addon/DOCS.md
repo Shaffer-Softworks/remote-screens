@@ -75,6 +75,11 @@ menu cannot leave it. Turn it on with the screen's **Kiosk lock** switch in Home
 this screen** in the editor. The lock is strongest on a tablet enrolled as a kiosk (Android calls this the *device
 owner*); any other tablet gets Android's screen pinning instead.
 
+Starting the lock also tries to pin the current rotation and turn Android auto-rotate off, so a reboot does not
+flip the panel while the app is not running. That write needs permission to change system settings, which a
+normal install often lacks, and is then skipped. When it succeeds, auto-rotate stays off after you unlock. The
+screen's own **Orientation** is separate; see [Orientation](#orientation).
+
 ### Enroll with a QR code
 
 No computer is needed. The tablet must be factory reset (or new), with no Google account added.
@@ -139,6 +144,18 @@ both. Choose under the screen’s settings, **Navigation drawer**:
 With a drawer on, **Show the bottom bar** can be turned off to give the grid its height. Without a drawer, the
 bottom bar always shows, as it is the only way to the other pages and Settings.
 
+## Orientation
+
+Each screen has **Orientation** in its settings: follow the tablet, portrait, or landscape. The player asks
+Android for that again after the screen wakes and after a configuration change. When the window is still the
+other way up, it clears the request and sets it again, because some tablets ignore a request that did not change.
+
+On a large tablet (smallest width about 600 dp or more), Android can ignore the app and stay in the tablet's
+natural orientation after the screen turns off. Check with `adb shell wm get-ignore-orientation-request`. When
+that reports true, `adb shell wm set-ignore-orientation-request false` lets a portrait or landscape lock survive
+wake. `wm set-ignore-orientation-request reset` puts the large-screen default back. Smaller tablets often already
+honor the lock.
+
 ## Tiles
 
 Every tile follows its entity live. A tap does the obvious thing for its type (toggle a light, open a cover's
@@ -160,15 +177,19 @@ stay as still images.
 **Other tiles** in the library includes pages that fill the tablet on their own. Drop one onto an empty page.
 The editor refuses it on a page that already has tiles ("A full-page tile needs a page of its own").
 
-Panels that follow an entity — alarm, weather, thermostat, music, and calendar — use the first entity of that
-domain. They stay unavailable until Home Assistant has one, and the tile's settings change which entity they
-follow. Home, lights, cameras, intercom, and the bedside clock do not need an entity.
+Panels that follow an entity — alarm, weather, thermostat, music, calendar, and vacuum — use the first entity of
+that domain. They stay unavailable until Home Assistant has one, and the tile's settings change which entity they
+follow. Home, lights, blinds, security, cameras, intercom, energy, the energy dashboard, and the bedside clock do
+not need an entity.
 
 - **Home** shows the first weather entity, the next event across every calendar, and who is home.
 - **Lights** lists Home Assistant areas. A light, switch, or cover uses its own area, or its device's area when
   it has none. Choose a room, then a row, to switch it, set brightness, or tilt a cover. A light with more
   controls opens its detail from the row. The count under a room is lights that are on; switches and covers
   are not included.
+- **Blinds** lists areas that have covers, the same way Lights lists rooms. Choose a room, then tilt a cover or
+  open and close it. The count under a room is covers that are open. Lights and switches are not on this page,
+  and it does not arm an alarm.
 - **Cameras** lists only the cameras you add under **Cameras** in the tile's settings, with an optional label
   each. The right side stays blank until a row is tapped, then plays that camera's live stream. The add-on
   starts the HLS stream as soon as you tap (and again when the page is shown with a camera already chosen),
@@ -182,6 +203,9 @@ follow. Home, lights, cameras, intercom, and the bedside clock do not need an en
   Zones**; **Zones** in the tile's settings adds other alarm panels, such as Alarmo areas, and arms the one you
   pick. Arming and disarming need a four-digit PIN. An empty or shorter PIN is refused. When Alarmo reports
   open sensors, arming is refused and disarming still works. Switching zone clears the PIN.
+- **Security** lists locks and door, window, garage-door, and opening sensors. The left side is Overview, Locks,
+  and Doors & windows. Each lock has Lock and Unlock. Opening sensors show open or closed and do not change from
+  this page. It does not arm or disarm; that stays on the Alarm panel, and the overview says so.
 - **Weather** is the current conditions and forecast for its weather entity. When the page is taller than it
   is wide, that same content stacks vertically and the forecast becomes a scrolling list of days.
 - **Thermostat** adjusts its climate entity. Heat/Cool, and Auto when the entity has a low and a high, uses
@@ -193,6 +217,25 @@ follow. Home, lights, cameras, intercom, and the bedside clock do not need an en
   or the track changes.
 - **Calendar** lists upcoming events. On a current player, an add button creates an event when that calendar
   allows it, and holding a row deletes the event when it can be deleted.
+- **Vacuum** lists every vacuum. The right side is start, pause, return to dock, locate, and fan speed for the
+  one you pick. With only one vacuum it is already selected. The tile follows the first vacuum until its settings
+  name another; that one is listed first.
+- **Energy now** is the live solar, grid, and battery diagram from Home Assistant's energy settings, drawn edge
+  to edge. The 2×2 energy tile is the same diagram inside a card. A source you have not configured is left out.
+  A long press on solar, the grid, or the battery opens that source's history.
+- **Energy dashboard** is the history page: electricity over the period, the grid total, device charts, a
+  low-carbon gauge, and a flow from the grid through the home into areas and devices. It reads the grid
+  consumption statistic and the individual devices in Home Assistant's energy settings, in the home's time zone.
+  It does not show live solar or battery power (that is Energy now), and solar production is not added into the
+  totals. Cost is the grid kilowatt-hours times a fixed price from those settings, when a price is set. Grid
+  energy that no listed device accounts for is labelled Untracked consumption. The bar at the bottom names the
+  period. Tap that label to cycle day, week (Monday through Sunday), and month. **Now** returns to the current
+  period; the arrows step to earlier periods and back, and stop at now. The low-carbon share is grid energy
+  minus fossil kilowatt-hours from Home Assistant (`energy/fossil_energy_consumption`), which uses
+  `sensor.electricity_maps_grid_fossil_fuel_percentage`. Without that sensor the fossil figure is zero, so the
+  gauge reads 100%. The charts are drawn by the player app. An older app shows "Update the tablet app for the
+  Energy dashboard". Update the add-on and the player together so the page uses the screen's theme colours. If
+  the energy settings cannot be read, the charts stay empty and the bar reads Today, This week, or This month.
 
 The intercom is one of these pages too. See [Intercom](#intercom).
 
@@ -214,7 +257,7 @@ A screen wears a theme: RPI dark (the default), Light, OLED black, High contrast
 screen's settings, pick its **Theme** and its **Dark theme**; the dark theme is worn in dark mode and, with
 **Dark at night**, during the night hours. The editor's Day / Dark switch previews both.
 
-To make your own, open **Themes** on the editor's home page, duplicate any theme and change its colours. Each
+To make your own, open the **Themes** tab beside **Screens**, duplicate any theme and change its colours. Each
 colour you leave alone follows the theme it was made from. The Themes page groups roles (chrome, surfaces, ink,
 accents, keys, and so on) and says where each colour lands on the tablet; the preview above the list shows the
 main bands. Saving sends the change to every tablet wearing it; deleting it puts those screens back on RPI dark.
@@ -264,7 +307,11 @@ them, and only for the hardware it has:
 Two switches per screen control this: **Report tablet sensors** (on by default) and **Share tablet location**
 (off by default). The editor has the same checkboxes under **Tablet sensors**. Tablets report every minute, and at
 once when the light changes a lot, something comes near, the tablet moves, or its location changes. Home Assistant
-polls every 30 seconds.
+polls every 30 seconds. The add-on also fires `remote_screens_players_changed` when a tablet connects, is paired,
+renamed or forgotten, or changes awake, page, kiosk or charging, and the integration refreshes then. A disconnect
+waits about 5 seconds and is skipped if the tablet is already back, so an app update does not flash offline.
+Battery level, Wi-Fi and the sensor readings still wait for the poll. An integration that does not listen for the
+event still updates on the poll.
 
 Location needs Android's location permission. The tablet asks for it when sharing is turned on, or from its
 settings (long press the top bar). Without it, the Wi‑Fi network name is hidden too, as Android only gives it
@@ -306,8 +353,9 @@ A tablet enrolled as a kiosk has to be factory reset and enrolled again.
 
 ## Sentry crash reporting
 
-Open **Sentry crash reporting** on the editor's main page. Enter your Sentry Android project's public
-DSN (Project Settings → Client Keys), choose an environment, enable reporting, then save. This applies
+Open **Settings** (the gear beside the Screens and Themes tabs), then **Sentry crash reporting**. Enter your
+Sentry Android project's public DSN (Project Settings → Client Keys), choose an environment, enable reporting,
+then save. This applies
 to all paired tablets running a player build with Sentry support; older players ignore the setting.
 The public DSN is not an auth token. Upload credentials belong only in **Readable crash reports** below.
 
