@@ -53,6 +53,6 @@ Especially: `aHeatCoolLowStepSendsBothRangeTargets`, `aHeatCoolHighStepSendsBoth
 
 ## Out of scope / follow-ups
 
-- No continuous dial drag until Remote Compose supports it.
+- **TODO (blocked on Remote Compose):** continuous HVAC dial knob drag. Verified Nov 2026 on tablet: knobs are Canvas-only (no hit targets); pointer drag never fires `temperature*` actions; +/− keys work. Same RC limit as brightness/colour-wheel stepped taps (`docs/REMOTE_COMPOSE.md`). When alpha reports a drag value (or we add a native player overlay like the map), wire RPI-style `detectDragGestures` on single and dual knobs (`CustomCircularProgressIndicator`). Until then keep +/−.
 - Bedroom `climate.bedroom` is dual but unused by the Thermostat page; living_room is the demo target.
 - Outreach paste drafts were intentionally **not** committed (`docs/outreach/` removed from the tree).

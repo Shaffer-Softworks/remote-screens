@@ -5,6 +5,10 @@ import android.app.Activity
 import android.app.ActivityManager
 import android.app.admin.DevicePolicyManager
 import android.content.Context
+import android.view.Display
+import android.view.Surface
+import android.view.WindowManager
+import tech.shaffersoftworks.remotescreens.player.data.device.DeviceRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -23,6 +27,9 @@ class KioskManagerTest {
     private val dispatcher = StandardTestDispatcher(scheduler)
     private val devicePolicyManager: DevicePolicyManager = mock()
     private val activityManager: ActivityManager = mock()
+    private val deviceRepository: DeviceRepository = mock {
+        on { disableSystemAutoRotate(any()) } doReturn true
+    }
     private val context: Context = mock {
         on { packageName } doReturn PACKAGE
         on { getSystemService(DevicePolicyManager::class.java) } doReturn devicePolicyManager
@@ -57,7 +64,7 @@ class KioskManagerTest {
             devicePolicyManager.setPermissionGrantState(any(), any(), any(), any()),
         ).thenReturn(true)
 
-        manager().startLockTaskMode(mock<Activity>())
+        manager().startLockTaskMode(activity())
         scheduler.runCurrent()
 
         verify(devicePolicyManager).setPermissionGrantState(
@@ -66,6 +73,15 @@ class KioskManagerTest {
             eq(Manifest.permission.RECORD_AUDIO),
             eq(DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED),
         )
+    }
+
+    @Test
+    fun lockTaskDisablesSystemAutoRotateBeforeStarting() {
+        whenever(devicePolicyManager.isDeviceOwnerApp(PACKAGE)).thenReturn(false)
+
+        manager().startLockTaskMode(activity(rotation = Surface.ROTATION_90))
+
+        verify(deviceRepository).disableSystemAutoRotate(Surface.ROTATION_90)
     }
 
     @Test
@@ -94,9 +110,21 @@ class KioskManagerTest {
     private fun manager(): KioskManager = KioskManager(
         context,
         mock(),
-        mock(),
+        deviceRepository,
         CoroutineScope(SupervisorJob() + dispatcher),
     )
+
+    private fun activity(rotation: Int = Surface.ROTATION_0): Activity {
+        val display: Display = mock {
+            on { getRotation() } doReturn rotation
+        }
+        val windowManager: WindowManager = mock {
+            on { defaultDisplay } doReturn display
+        }
+        return mock {
+            on { getWindowManager() } doReturn windowManager
+        }
+    }
 
     private companion object {
         const val PACKAGE = "tech.shaffersoftworks.remotescreens.player"

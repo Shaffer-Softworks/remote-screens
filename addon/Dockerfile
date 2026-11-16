@@ -24,4 +24,4 @@ LABEL \
     io.hass.arch="${BUILD_ARCH}" \
     io.hass.version="${BUILD_VERSION}" \
     org.opencontainers.image.source="https://github.com/Shaffer-Softworks/remote-screens" \
-    org.opencontainers.image.licenses="MIT"
+    org.opencontainers.image.licenses="Apache-2.0"

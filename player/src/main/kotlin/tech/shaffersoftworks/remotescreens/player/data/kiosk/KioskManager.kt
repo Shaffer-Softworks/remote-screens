@@ -18,6 +18,7 @@ import tech.shaffersoftworks.remotescreens.player.data.device.DeviceRepository
 import tech.shaffersoftworks.remotescreens.player.data.preferences.PlayerPreferencesRepository
 import tech.shaffersoftworks.remotescreens.player.di.IoScope
 import tech.shaffersoftworks.remotescreens.player.receiver.LockTaskDeviceAdminReceiver
+import tech.shaffersoftworks.remotescreens.player.utils.displayRotation
 import tech.shaffersoftworks.remotescreens.player.utils.normalizeServerAddress
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -49,8 +50,8 @@ private val KIOSK_USER_RESTRICTIONS = listOf(
 
 /**
  * Keeps the player in front. As the device owner it uses lock task mode with the kiosk policies (home app, no status
- * bar, no lock screen); otherwise `startLockTask` falls back to screen pinning. Every policy set here is undone by
- * [stopLockTaskMode].
+ * bar, no lock screen); otherwise `startLockTask` falls back to screen pinning. Device-owner policies set here are
+ * undone by [stopLockTaskMode]. System auto-rotate is turned off before lock task and is left off on unlock.
  */
 @Singleton
 class KioskManager @Inject constructor(
@@ -81,10 +82,24 @@ class KioskManager @Inject constructor(
 
     /** Must be called while [activity] is in front. */
     fun startLockTaskMode(activity: Activity) {
+        disableSystemAutoRotate(activity)
         if (isDeviceOwner()) setKioskPolicies(enable = true)
         runCatching { activity.startLockTask() }
             .onSuccess { Timber.i("Lock task started (device owner: %b)", isDeviceOwner()) }
             .onFailure { exception -> Timber.e(exception, "startLockTask failed") }
+    }
+
+    /**
+     * Pins the current rotation and turns off system auto-rotate before lock task, so an APK replace or reboot does
+     * not flip the panel. Intentionally not restored by [stopLockTaskMode].
+     */
+    private fun disableSystemAutoRotate(activity: Activity) {
+        val userRotation = activity.displayRotation()
+        if (deviceRepository.disableSystemAutoRotate(userRotation)) {
+            Timber.i("System auto-rotate disabled (user_rotation=%d)", userRotation)
+        } else {
+            Timber.w("Could not disable system auto-rotate before lock task")
+        }
     }
 
     /**
