@@ -46,8 +46,29 @@ Domain tiles and cards are YAML under `catalogue/`. Regenerate Kotlin/TS with
 
 ## Releases
 
-GitHub Actions workflow [`.github/workflows/addon.yml`](.github/workflows/addon.yml): **Actions → Release → Run
-workflow** on `main` with the new version. Player signing secrets are listed in the README.
+1. Run [the release workflow](.github/workflows/addon.yml) from **Actions → Release → Run workflow** on
+   `main` and enter the new version (e.g. `0.1.14`). You do not need to bump version files first.
+2. The workflow tags `v<version>` on the current `main` tip, builds the signed player app (stamping that
+   version into the build), packages the add-on, pushes
+   `ghcr.io/<owner>/remote-screens-{amd64,aarch64}`, and attaches the APK to the GitHub release.
+3. When `main` still has an older `addon/VERSION` / `config.yaml`, it opens a sync PR so those files (and a
+   changelog stub, if missing) match the tag. Merge that PR so the repo stays aligned with the published
+   add-on. Optionally edit the changelog in that PR for curated notes next time.
+
+You can still push tag `v<version>` yourself; the same build runs, and a sync PR is opened if needed.
+
+For curated GitHub release notes, add a `## <version>` section to `addon/CHANGELOG.md` on `main` before
+step 1; otherwise the release uses GitHub’s generated notes.
+
+Tablets only accept an update signed with the key the app was first installed with, so every release must use
+the same key. The workflow reads it from these repository secrets:
+
+| Secret | What |
+| ------ | ---- |
+| `PLAYER_KEYSTORE_BASE64` | The keystore, base64 encoded |
+| `PLAYER_KEYSTORE_PASSWORD` | Its password |
+| `PLAYER_KEY_ALIAS` | The key's alias |
+| `PLAYER_KEY_PASSWORD` | The key's password |
 
 ## Docs
 

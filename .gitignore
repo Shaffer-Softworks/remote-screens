@@ -20,3 +20,5 @@ server/src/main/resources/static/
 *.jks
 # Unrelated file that predates this project
 /tools.yaml
+# Local concept mockups — product shots live under docs/screenshots/
+/docs/mockups/

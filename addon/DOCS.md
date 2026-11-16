@@ -219,7 +219,9 @@ not need an entity.
   allows it, and holding a row deletes the event when it can be deleted.
 - **Vacuum** lists every vacuum. The right side is start, pause, return to dock, locate, and fan speed for the
   one you pick. With only one vacuum it is already selected. The tile follows the first vacuum until its settings
-  name another; that one is listed first.
+  name another; that one is listed first. **Rooms** opens a dialog to pick rooms for a selective clean: vacuums
+  that support Home Assistant's `vacuum.clean_area` use mapped areas; others fall back to room segment ids via
+  `vacuum.send_command` / `app_segment_clean`. The same Rooms control is on a vacuum's detail card.
 - **Energy now** is the live solar, grid, and battery diagram from Home Assistant's energy settings, drawn edge
   to edge. The 2×2 energy tile is the same diagram inside a card. A source you have not configured is left out.
   A long press on solar, the grid, or the battery opens that source's history.
