@@ -225,6 +225,14 @@ internal class DemoServiceHandlers(
         "set_value" to { it.setStateFrom("value") },
         "set_datetime" to { it.setStateFrom("datetime") },
         "update_item" to { it.updateTodoItem() },
+        "set_fan_speed" to { it.setAttr("fan_speed") },
+        "send_command" to { call ->
+            if (call.str("command") == "app_segment_clean") {
+                set(call.entityId, "cleaning", emptyMap())
+            }
+        },
+        "clean_area" to { call -> set(call.entityId, "cleaning", emptyMap()) },
+        "locate" to { /* demo: no state change */ },
     )
 
     private companion object {

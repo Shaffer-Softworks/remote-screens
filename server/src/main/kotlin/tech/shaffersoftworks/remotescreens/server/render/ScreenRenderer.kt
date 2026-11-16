@@ -40,6 +40,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
 import tech.shaffersoftworks.remotescreens.server.render.widgets.at
 import tech.shaffersoftworks.remotescreens.server.render.panels.lights.lightsDialogLayer
+import tech.shaffersoftworks.remotescreens.server.render.panels.vacuum.vacuumDialogLayer
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
@@ -261,6 +262,11 @@ object ScreenRenderer {
                     screenW = spec.widthDp,
                     screenH = spec.heightDp,
                 )
+            }
+        }
+        for (placement in placed.filter { it.tile.effectiveKind() == "vacuum" && it.tile.edgeToEdge() }) {
+            at(0f, 0f) {
+                vacuumDialogLayer(tile = placement.tile, screenW = spec.widthDp)
             }
         }
         if (screen.drawer.modal) {

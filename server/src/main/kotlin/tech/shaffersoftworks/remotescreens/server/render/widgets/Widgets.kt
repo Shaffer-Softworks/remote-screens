@@ -57,9 +57,9 @@ object Weight {
 
 /** Icon paths are drawn on the Material 24 × 24 grid. */
 private const val ICON_VIEWPORT = 24f
-private const val KEY_CORNER_DIVISOR = 2.6f
-private const val KEY_PADDING_DP = 12f
-private const val KEY_ICON_DP = 20f
+internal const val KEY_CORNER_DIVISOR = 2.6f
+internal const val KEY_PADDING_DP = 12f
+internal const val KEY_ICON_DP = 20f
 private const val KEY_ICON_ONLY_RATIO = 0.5f
 private const val KEY_ICON_GAP_DP = 8f
 private const val INITIALS_TEXT_RATIO = 0.38f

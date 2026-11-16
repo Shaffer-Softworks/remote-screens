@@ -17,6 +17,9 @@ import tech.shaffersoftworks.remotescreens.shared.EnergySankey
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiStore
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicAssistantClient
 import tech.shaffersoftworks.remotescreens.server.data.security.SecurityUiStore
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.VACUUM_PREFIX
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumRooms
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumRoomsRepository
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiStore
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicListRow
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicQueueSnapshot
@@ -64,6 +67,7 @@ class RenderDataRepository(
     val securityUi: SecurityUiStore = SecurityUiStore(),
     private val lightsRooms: LightsRoomsRepository = LightsRoomsRepository(homeAssistant),
     private val energyDashboard: EnergyDashboardRepository = EnergyDashboardRepository(homeAssistant),
+    private val vacuumRoomsRepository: VacuumRoomsRepository = VacuumRoomsRepository(homeAssistant),
 ) {
     private val logger = LoggerFactory.getLogger(RenderDataRepository::class.java)
 
@@ -136,9 +140,21 @@ class RenderDataRepository(
             blindsRooms = if (needsBlinds) lightsRooms.rooms(BLINDS_DOMAINS) else emptyList(),
             blindsUi = blindsUi.snapshot(),
             vacuumUi = vacuumUi.snapshot(),
+            vacuumRooms = if (tiles.any(::isVacuumPage)) allVacuumRooms() else emptyMap(),
             securityUi = securityUi.snapshot(),
         )
     }
+
+    /** The rooms [entityId] can clean selectively, or null when it has none. */
+    suspend fun vacuumRooms(entityId: String): VacuumRooms? = vacuumRoomsRepository.rooms(entityId)
+
+    private suspend fun allVacuumRooms(): Map<String, VacuumRooms> =
+        homeAssistant.states.value.keys
+            .filter { it.startsWith(VACUUM_PREFIX) }
+            .mapNotNull { entityId -> vacuumRooms(entityId)?.let { entityId to it } }
+            .toMap()
+
+    private fun isVacuumPage(tile: Tile): Boolean = tile.full && tile.effectiveKind() == "vacuum"
 
     private fun emptyEnergyDashboard(ui: EnergyDashboardUiState): EnergyDashboardSnapshot =
         EnergyDashboardSnapshot(
@@ -171,6 +187,10 @@ class RenderDataRepository(
             "media_player.",
         ) -> RenderData(browse = mapOf(entityId to browse(entityId)))
         entityId.startsWith("todo.") -> RenderData(todos = mapOf(entityId to todoItems(entityId)))
+        entityId.startsWith(VACUUM_PREFIX) -> RenderData(
+            vacuumUi = vacuumUi.snapshot(),
+            vacuumRooms = vacuumRooms(entityId)?.let { mapOf(entityId to it) }.orEmpty(),
+        )
         else -> RenderData()
     }
 
@@ -261,6 +281,7 @@ class RenderDataRepository(
         energyPreferences = null
         calendarAgenda.clear()
         lightsRooms.clear()
+        vacuumRoomsRepository.clear()
     }
 
     private data class MusicPayload(

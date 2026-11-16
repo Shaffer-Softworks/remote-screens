@@ -1,6 +1,6 @@
 ---
-description: Full vacuum page — PANELS Vacuum panel, list of vacuums, vacuumCard controls
-globs: server/src/main/kotlin/**/render/panels/vacuum/**/*.kt,server/src/main/kotlin/**/data/vacuum/**/*.kt,server/src/main/kotlin/**/player/action/VacuumActions.kt,server/src/main/kotlin/**/render/cards/ToggleCards.kt,server/src/main/kotlin/**/render/tiles/Tiles.kt,server/src/main/kotlin/**/render/tiles/TileBox.kt,catalogue/vacuum.yaml,editor/src/model/otherTiles.ts,editor/src/components/GridMockup.vue,editor/src/components/TileDrawer.vue
+description: Full vacuum page and vacuum card — list of vacuums, vacuumCard controls, Rooms dialog and selective clean (clean_area / app_segment_clean)
+globs: server/src/main/kotlin/**/render/panels/vacuum/**/*.kt,server/src/main/kotlin/**/data/vacuum/**/*.kt,server/src/main/kotlin/**/player/action/VacuumActions.kt,server/src/main/kotlin/**/render/cards/ToggleCards.kt,server/src/main/kotlin/**/render/cards/CardRenderer.kt,server/src/main/kotlin/**/data/renderdata/RenderDataRepository.kt,server/src/main/kotlin/**/render/tiles/Tiles.kt,server/src/main/kotlin/**/render/tiles/TileBox.kt,catalogue/vacuum.yaml,editor/src/model/otherTiles.ts,editor/src/components/GridMockup.vue,editor/src/components/TileDrawer.vue
 alwaysApply: false
 ---
 
@@ -14,7 +14,35 @@ A full `vacuum` tile is an edge-to-edge page: every `vacuum.*` in a list on the 
 - Other tiles: `PANELS` entry `{ name: 'Vacuum panel', icon: 'robot-vacuum', domain: 'vacuum' }` — first vacuum entity, `full: true`.
 - `Tile.edgeToEdge()` and `Tiles.kt` dispatch full vacuum to `vacuumPanel`. `hasOwnTaps` includes `vacuum`.
 - UI state: `VacuumUiStore` / `RenderData.vacuumUi`. Verb `vacuum_select` → Rebuild.
-- Selection: tile's entity, else the only vacuum, else the last `vacuum_select`. Controls reuse `vacuumCard` catalogue verbs on `e:<entity>`.
+- Selection: the last `vacuum_select`, else the tile's entity, else the only vacuum (`selectedVacuumId`, shared by the page and `VacuumActions`). Controls reuse `vacuumCard` catalogue verbs on `e:<entity>`.
+
+## Rooms (selective clean)
+
+- `VacuumRoomsRepository` picks the source. A vacuum with `VACUUM_CLEAN_AREA_FEATURE` (16384) lists the Home Assistant areas in its registry `options.vacuum.area_mapping` that map to at least one segment, and cleans with `vacuum.clean_area` / `cleaning_area_id`. Any other falls back to `room_ids` + `room_list` attributes and `vacuum.send_command` / `app_segment_clean` with a flat id list. The core Roborock integration exposes no room attributes, so real vacuums use the area path.
+- Rooms reach the renderer as `RenderData.vacuumRooms` (by entity): `forScreen` loads them when the screen has a full vacuum tile, `forCard` for a vacuum card.
+- A Rooms key sits beside Locate. Verbs `vacuum_rooms`, `vacuum_rooms_toggle`, `vacuum_rooms_dismiss`, `vacuum_rooms_clean` → `Rebuild`. State is `VacuumUiStore` under the page tile id, or `e:<entity>` from a card.
+- Counts use `VacuumRooms.selectedIds`, so a selected room the vacuum no longer has is not counted or sent.
+- The dialog draws over the whole screen (`vacuumDialogLayer`, like the lights dialog) or the whole card document. A card lives in `Slot.OVERLAY`; `PlayerSession.rebuildTappedOverlay` rebuilds the tapped overlay on `Rebuild`, since that outcome otherwise only rebuilds MAIN.
+- Name and status on the page are bound vars (`bindEntity`, `Vars.KEY_NAME` / `KEY_STATE`); `Present.view` already formats vacuum state as "Docked · 100%". Do not bake them as strings: they would not update on `state_changed`.
+
+## Home Assistant facts (checked Nov 16, 2026 on the live HA)
+
+- `vacuum.roborock_q10_pf` (core `roborock`): attributes are only `fan_speed`, `fan_speed_list`, `supported_features` 29500 (includes 16384). No `room_list` / `room_ids`.
+- Its entity registry `options.vacuum` has `area_mapping` (`{area_id: [segment ids]}`) and `last_seen_segments` (`[{id, name, group}]`). The repository reads only `area_mapping` and takes names from `config/area_registry/list`.
+- `vacuum.clean_area` takes `cleaning_area_id` (list of area ids) and targets vacuums with feature 16384.
+- `app_segment_clean`: Roborock accepts a flat list `[16, 17]` and the documented `[{"segments": [...], "repeat": 1}]`; `xiaomi_miio` takes the flat list. The fallback sends the flat list.
+- Not yet tried on a real vacuum through the add-on (it would start cleaning). Deploy to the dev add-on and run one clean before release.
+
+## Demo
+
+`vacuum.robot` has `room_list` / `room_ids` (16–21) and `supported_features` 13180 (no clean-area), so the demo and previews use the segment path. `DemoHome` answers `config/entity_registry/get` for it with an `area_mapping` (`VACUUM_AREA_SEGMENTS`; `garden` maps to no segment). Tests switch to the area path by OR-ing `VACUUM_CLEAN_AREA_FEATURE` into its `supported_features`. `DemoServiceHandlers` sets the vacuum `cleaning` on `clean_area` and on `send_command` `app_segment_clean`.
+
+## Gotchas
+
+- Detekt: `ReturnCount` is 2. Tap handlers compute an `isHandled` boolean and return `Rebuild`/`Ignored` once. `CardRenderer.render` is near `LongMethod`; card chrome lives in `cardPanel`, the rooms overlay in `vacuumRoomsLayer`.
+- `VacuumDialogMetrics` has its own file (`MatchingDeclarationName`).
+- The Rooms key reuses `KEY_CORNER_DIVISOR` / `KEY_ICON_DP` from `Widgets.kt` (internal) to match `key`.
+- Every `ui.*` string must be in all eight `translations/*.json` (`I18nTest`). Plurals are `_one` / `_many` keys; Polish uses the "Label: {count}" form.
 
 ## Editor
 
@@ -24,7 +52,8 @@ A full `vacuum` tile is an edge-to-edge page: every `vacuum.*` in a list on the 
 
 ```bash
 python3 tools/generate_catalogue.py --check
-./gradlew :server:detekt :server:test --tests '*RenderTest.aFullVacuum*'
+./gradlew :server:detekt :server:test --tests '*RenderTest.aFullVacuum*' --tests '*RenderTest.aVacuum*' \
+  --tests '*RenderTest.aCleanAreaVacuum*' --tests '*ActionRouterTest.*Vacuum*'
 cd editor && npm test -- --run src/model/otherTiles.test.ts
 ./gradlew :shared:test --tests '*ProjectRuleIndexTest'
 ```

@@ -8,6 +8,7 @@ import tech.shaffersoftworks.remotescreens.server.data.lights.LightDetailMode
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiState
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaSnapshot
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiState
 import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.IntercomView
 import tech.shaffersoftworks.remotescreens.shared.IntercomStation
 
@@ -16,6 +17,7 @@ internal fun PreviewSession.panels() {
     alarmStates()
     intercomStates()
     lightDialogs()
+    vacuumRoomsDialog()
     noticesAndCamera()
     musicStates()
     calendarStates()
@@ -80,6 +82,24 @@ private fun PreviewSession.lightDialogs() {
         label = "Light · effects",
         page = DemoLayout.lightsPage(),
         renderInput = input(renderData = effects),
+    )
+}
+
+private fun PreviewSession.vacuumRoomsDialog() {
+    val rooms = data.copy(
+        vacuumUi = mapOf(
+            "va1" to VacuumUiState(
+                selectedVacuum = "vacuum.robot",
+                roomsDialogOpen = true,
+                selectedRooms = setOf("16", "17"),
+            ),
+        ),
+    )
+    page(
+        group = "Dialogs",
+        label = "Vacuum · rooms",
+        page = DemoLayout.vacuumPage(),
+        renderInput = input(renderData = rooms),
     )
 }
 

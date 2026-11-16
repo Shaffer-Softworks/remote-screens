@@ -4,7 +4,11 @@ package tech.shaffersoftworks.remotescreens.server.render.panels.vacuum
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiState
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.VACUUM_PREFIX
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.selectedVacuumId
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.cards.vacuumCard
 import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
@@ -45,15 +49,37 @@ private class VacuumLayout(val scale: Float, val pageW: Float, val pageH: Float)
 fun DocContext.vacuumPanel(tile: Tile, box: TileBox) {
     val ui = data.vacuumUi[tile.id] ?: VacuumUiState()
     val vacuums = vacuumEntityIds(tile.entityId)
-    val selectedId = ui.selectedVacuum?.takeIf { it in vacuums }
-        ?: tile.entityId?.takeIf { it in vacuums }
-        ?: vacuums.singleOrNull()
+    val selectedId = selectedVacuumId(chosen = ui.selectedVacuum, tileEntityId = tile.entityId, vacuumIds = vacuums)
     val selected = selectedId?.let { states[it] }
     val layout = VacuumLayout(pageScale(box), box.w, box.h)
     scope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@vacuumPanel
         doc.vacuumList(tileId = tile.id, vacuums = vacuums, selectedId = selectedId, layout = layout)
-        doc.vacuumDetail(selected = selected, layout = layout)
+        doc.vacuumDetail(tileId = tile.id, selected = selected, ui = ui, layout = layout)
+    }
+}
+
+/**
+ * Rooms dialog over the whole screen, bars included, as the lights dialog is drawn.
+ * [screenW] sizes the card; the scrim fills the document.
+ */
+fun DocContext.vacuumDialogLayer(tile: Tile, screenW: Float) {
+    val ui = data.vacuumUi[tile.id]?.takeIf { it.roomsDialogOpen } ?: return
+    val selectedId = selectedVacuumId(
+        chosen = ui.selectedVacuum,
+        tileEntityId = tile.entityId,
+        vacuumIds = vacuumEntityIds(tile.entityId),
+    )
+    val entityState = selectedId?.let { states[it] }
+    val vacuumRooms = selectedId?.let { data.vacuumRooms[it] }
+    if (entityState != null && vacuumRooms != null) {
+        vacuumRoomsDialog(
+            tileId = tile.id,
+            vacuumName = entityState.name.ifBlank { entityState.entityId },
+            vacuumRooms = vacuumRooms,
+            ui = ui,
+            screenW = screenW,
+        )
     }
 }
 
@@ -62,7 +88,7 @@ private fun pageScale(box: TileBox): Float =
 
 /** All vacuums, with the tile's entity first when it is one. */
 private fun DocContext.vacuumEntityIds(preferred: String?): List<String> {
-    val all = states.keys.filter { it.startsWith("vacuum.") }.sorted()
+    val all = states.keys.filter { it.startsWith(VACUUM_PREFIX) }.sorted()
     if (preferred == null || preferred !in all) return all
     return listOf(preferred) + all.filter { it != preferred }
 }
@@ -125,9 +151,8 @@ private fun DocContext.vacuumRow(
     isSelected: Boolean,
     layout: VacuumLayout,
 ) {
-    val entityState = states[entityId]
-    val name = entityState?.name.orEmpty().ifBlank { entityId }
-    val status = entityState?.state.orEmpty()
+    // Live name / status via bindEntity vars — baking strings here never updates on state_changed.
+    bindEntity(entityId)
     scope.Row(
         tap(
             Modifier.fillMaxWidth().height(units.px(layout.dp(M.ITEM_H_DP))),
@@ -139,14 +164,27 @@ private fun DocContext.vacuumRow(
         doc.icon("robot-vacuum", layout.dp(M.ITEM_ICON_DP), doc.role(if (isSelected) Role.ACCENT else Role.INK))
         Spacer(Modifier.width(doc.units.px(layout.dp(M.ITEM_ICON_GAP_DP))))
         Column(Modifier.horizontalWeight(1f)) {
-            doc.label(name, layout.sp(M.ITEM_LABEL_SP), doc.role(if (isSelected) Role.ACCENT else Role.INK))
+            doc.label(
+                text = doc.text(Vars.entity(entityId, Vars.KEY_NAME)),
+                sp = layout.sp(M.ITEM_LABEL_SP),
+                color = doc.role(if (isSelected) Role.ACCENT else Role.INK),
+            )
             Spacer(Modifier.height(doc.units.px(layout.dp(M.ITEM_SUB_GAP_DP))))
-            doc.label(status, layout.sp(M.ITEM_SUB_SP), doc.role(Role.INK_DIM))
+            doc.label(
+                text = doc.text(Vars.entity(entityId, Vars.KEY_STATE)),
+                sp = layout.sp(M.ITEM_SUB_SP),
+                color = doc.role(Role.INK_DIM),
+            )
         }
     }
 }
 
-private fun DocContext.vacuumDetail(selected: EntityState?, layout: VacuumLayout) {
+private fun DocContext.vacuumDetail(
+    tileId: String,
+    selected: EntityState?,
+    ui: VacuumUiState,
+    layout: VacuumLayout,
+) {
     val pad = units.px(layout.dp(M.DETAIL_PAD_DP))
     scope.Column(
         Modifier.horizontalWeight(1f).fillMaxHeight().padding(start = pad, top = pad, end = pad, bottom = pad),
@@ -156,8 +194,9 @@ private fun DocContext.vacuumDetail(selected: EntityState?, layout: VacuumLayout
             doc.selectVacuumPrompt(layout)
             return@Column
         }
+        doc.bindEntity(selected.entityId)
         doc.label(
-            text = selected.name.ifBlank { selected.entityId },
+            text = doc.text(Vars.entity(selected.entityId, Vars.KEY_NAME)),
             sp = layout.sp(M.DETAIL_NAME_SP),
             color = doc.role(Role.INK),
             modifier = Modifier.padding(
@@ -168,15 +207,19 @@ private fun DocContext.vacuumDetail(selected: EntityState?, layout: VacuumLayout
             ),
         )
         Spacer(Modifier.height(doc.units.px(layout.dp(M.BATTERY_GAP_DP))))
-        val battery = selected.number("battery_level")?.toInt()
-        val statusLine = if (battery != null) {
-            "${selected.state} · $battery%"
-        } else {
-            selected.state
-        }
-        doc.label(statusLine, layout.sp(M.DETAIL_STATUS_SP), doc.role(Role.INK_DIM))
+        // Present.view already formats vacuum as "state · battery%"; keep it on KEY_STATE for live pushes.
+        doc.label(
+            text = doc.text(Vars.entity(selected.entityId, Vars.KEY_STATE)),
+            sp = layout.sp(M.DETAIL_STATUS_SP),
+            color = doc.role(Role.INK_DIM),
+        )
         Spacer(Modifier.height(doc.units.px(layout.dp(M.DETAIL_GAP_DP))))
-        doc.vacuumCard(selected.entityId, selected)
+        doc.vacuumCard(
+            entityId = selected.entityId,
+            entityState = selected,
+            uiTileId = tileId,
+            ui = ui,
+        )
     }
 }
 
