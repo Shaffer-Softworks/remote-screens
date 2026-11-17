@@ -1,10 +1,7 @@
 package tech.shaffersoftworks.remotescreens.server.data.apk
 
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.int
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 
 /** A newer player app, offered to tablets that run an older one. */
@@ -28,19 +25,29 @@ class PlayerApkRepository(private val apkDir: File?) {
     fun current(): PlayerApk? {
         val file = apkDir?.let { File(it, APK_FILE_NAME) }?.takeIf { it.isFile } ?: return null
         return runCatching {
-            val meta = Json.parseToJsonElement(
+            val meta = META_JSON.decodeFromString(
+                ApkVersion.serializer(),
                 File(file.parentFile, "version.json").readText(),
-            ).jsonObject
+            )
             PlayerApk(
-                versionCode = checkNotNull(meta["versionCode"]).jsonPrimitive.int,
-                versionName = meta["versionName"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                versionCode = meta.versionCode,
+                versionName = meta.versionName,
                 file = file,
-                signatureChecksum = meta["signatureChecksum"]?.jsonPrimitive?.contentOrNull?.ifBlank { null },
+                signatureChecksum = meta.signatureChecksum?.ifBlank { null },
             )
         }.getOrNull()
     }
 
+    /** `apk/version.json`, written by `tools/package_addon.sh`. */
+    @Serializable
+    private data class ApkVersion(
+        val versionCode: Int,
+        val versionName: String = "",
+        val signatureChecksum: String? = null,
+    )
+
     companion object {
         const val APK_FILE_NAME = "remote-screens.apk"
+        private val META_JSON = Json { ignoreUnknownKeys = true }
     }
 }

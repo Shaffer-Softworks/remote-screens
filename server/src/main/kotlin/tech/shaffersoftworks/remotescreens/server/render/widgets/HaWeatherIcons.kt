@@ -1,8 +1,8 @@
 package tech.shaffersoftworks.remotescreens.server.render.widgets
 
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Home Assistant frontend weather state SVGs (`src/data/weather.ts` `getWeatherStateSVG`):
@@ -77,7 +77,7 @@ internal object HaWeatherIcons {
             HaWeatherIcons::class.java.getResourceAsStream("/ha-weather-paths.json"),
         ) { "ha-weather-paths.json is not bundled" }
         val text = stream.bufferedReader().use { it.readText() }
-        Json.parseToJsonElement(text).jsonObject.mapValues { it.value.jsonPrimitive.content }
+        Json.decodeFromString(MapSerializer(String.serializer(), String.serializer()), text)
     }
 
     private fun path(key: String): String = checkNotNull(paths[key]) { "missing weather path $key" }

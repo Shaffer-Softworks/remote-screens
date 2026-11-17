@@ -1,9 +1,9 @@
 package tech.shaffersoftworks.remotescreens.server.config
 
 import tech.shaffersoftworks.remotescreens.shared.Protocol
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonObject
 import java.io.File
 
 private const val DEFAULT_HOME_ASSISTANT_URL = "http://127.0.0.1:8123"
@@ -66,7 +66,7 @@ data class ServerConfig(
                 hostname = env["HOSTNAME"] ?: "localhost",
                 version = implementationVersion(),
                 mapTileUrl = mapTileUrlOrDefault(
-                    env["REMOTE_SCREENS_MAP_TILES"] ?: addonOptions["map_tiles"],
+                    env["REMOTE_SCREENS_MAP_TILES"] ?: addonOptions.mapTiles,
                 ),
             )
         }
@@ -135,10 +135,14 @@ data class ServerConfig(
         private fun existingDirectory(path: String): File? = File(path).takeIf { it.isDirectory }
 
         /** The options the Supervisor writes from the add-on's configuration tab. */
-        private fun readAddonOptions(file: File): Map<String, String> = runCatching {
-            Json.parseToJsonElement(file.readText()).jsonObject
-                .mapNotNull { (key, value) -> (value as? JsonPrimitive)?.content?.let { key to it } }
-                .toMap()
-        }.getOrDefault(emptyMap())
+        private fun readAddonOptions(file: File): AddonOptions = runCatching {
+            OPTIONS_JSON.decodeFromString(AddonOptions.serializer(), file.readText())
+        }.getOrDefault(AddonOptions())
+
+        private val OPTIONS_JSON = Json { ignoreUnknownKeys = true }
     }
 }
+
+/** `options.json`, as `addon/config.yaml`'s `schema` describes it. */
+@Serializable
+private data class AddonOptions(@SerialName("map_tiles") val mapTiles: String? = null)

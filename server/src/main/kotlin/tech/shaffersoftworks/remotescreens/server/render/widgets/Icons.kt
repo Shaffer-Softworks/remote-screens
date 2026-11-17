@@ -1,8 +1,7 @@
 package tech.shaffersoftworks.remotescreens.server.render.widgets
 
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 /** Material Design Icons, the icon set Home Assistant uses, as SVG path data on a 24 by 24 grid. */
 object Icons {
@@ -11,11 +10,14 @@ object Icons {
             Icons::class.java.getResourceAsStream("/mdi.json"),
         ) { "mdi.json is not bundled" }
         val text = stream.bufferedReader().use { it.readText() }
-        val root = Json.parseToJsonElement(text).jsonObject
-        checkNotNull(
-            root["icons"],
-        ) { "mdi.json has no icons" }.jsonObject.mapValues { it.value.jsonPrimitive.content }
+        MDI_JSON.decodeFromString(MdiFile.serializer(), text).icons
     }
+
+    /** `mdi.json`: the set's version and each icon's path data by name. */
+    @Serializable
+    private data class MdiFile(val icons: Map<String, String>)
+
+    private val MDI_JSON = Json { ignoreUnknownKeys = true }
 
     const val FALLBACK = "help-circle-outline"
 

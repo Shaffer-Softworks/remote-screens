@@ -5,10 +5,9 @@ import tech.shaffersoftworks.remotescreens.shared.SCHEMA_VERSION
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -40,7 +39,8 @@ class LayoutRepository(dataDir: File) {
     private fun load(): LayoutData {
         if (!file.exists()) return LayoutData()
         val raw = JSON.parseToJsonElement(file.readText()).jsonObject
-        val version = (raw["schemaVersion"] as? JsonPrimitive)?.intOrNull ?: 1
+        val version = runCatching { JSON.decodeFromJsonElement(SchemaHeader.serializer(), raw) }
+            .getOrNull()?.schemaVersion ?: 1
         return if (version > SCHEMA_VERSION) setAsideNewerLayout(version) else migrate(raw, version)
     }
 
@@ -57,6 +57,10 @@ class LayoutRepository(dataDir: File) {
         )
         return LayoutData()
     }
+
+    /** The one field read before [migrate], to tell which schema the rest of the file is. */
+    @Serializable
+    private data class SchemaHeader(val schemaVersion: Int = 1)
 
     private fun migrate(raw: JsonObject, version: Int): LayoutData {
         val migrated = LayoutMigrations.migrate(raw)

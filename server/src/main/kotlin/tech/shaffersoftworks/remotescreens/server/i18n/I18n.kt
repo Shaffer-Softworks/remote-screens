@@ -1,8 +1,8 @@
 package tech.shaffersoftworks.remotescreens.server.i18n
 
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonObject
 import java.text.NumberFormat
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -89,10 +89,10 @@ class I18n(
             val stream = I18n::class.java.getResourceAsStream(
                 "/translations/$language.json",
             ) ?: return emptyMap()
-            val translations = Json.parseToJsonElement(
-                stream.bufferedReader().readText(),
-            ).jsonObject
-            return translations.mapValues { (it.value as JsonPrimitive).content }
+            return Json.decodeFromString(
+                MapSerializer(String.serializer(), String.serializer()),
+                stream.bufferedReader().use { it.readText() },
+            )
         }
 
         /** 24 hours unless the language's own time format has AM/PM. */
