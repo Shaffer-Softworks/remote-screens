@@ -74,13 +74,13 @@ private fun small(base: Float, layoutScale: Float) = maxOf(base * layoutScale, M
  * all calendars and all people when left out.
  */
 fun DocContext.homeTile(tile: Tile, box: TileBox) {
-    fun listed(key: String, domain: String) = tile.options[key]?.split(
+    fun listed(key: String, domain: Domain) = tile.options[key]?.split(
         ',',
     )?.map { it.trim() }?.filter { it.isNotEmpty() }
-        ?: states.keys.filter { it.startsWith("$domain.") }.sorted()
-    val weather = tile.entityId ?: states.keys.sorted().firstOrNull { it.startsWith("weather.") }
-    val calendars = listed("calendars", "calendar")
-    val people = listed("people", "person")
+        ?: states.keys.filter(domain::owns).sorted()
+    val weather = tile.entityId ?: states.keys.sorted().firstOrNull(Domain.WEATHER::owns)
+    val calendars = listed("calendars", Domain.CALENDAR)
+    val people = listed("people", Domain.PERSON)
 
     val stripH = if (people.isEmpty()) 0f else minOf(STRIP_MAX_H_DP, box.h * STRIP_H_SHARE)
     val upperH = box.h - stripH

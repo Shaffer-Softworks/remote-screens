@@ -20,6 +20,7 @@ import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.VarValue
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 internal fun DocContext.climateCard(entityId: String, entityState: EntityState?) {
     val step = entityState?.climate?.targetTempStep
@@ -81,7 +82,7 @@ internal fun DocContext.climateCard(entityId: String, entityState: EntityState?)
     if (modes.isNotEmpty()) {
         section(i18n.t("ui.mode"))
         flowKeys(entityId, "mode", modes.map {
-            it to i18n.state("climate", it)
+            it to i18n.state(Domain.CLIMATE.value, it)
         }) {
             it.state
         }

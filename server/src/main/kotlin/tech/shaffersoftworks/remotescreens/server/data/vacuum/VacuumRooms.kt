@@ -5,8 +5,6 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 /** `VacuumEntityFeature.CLEAN_AREA`: the vacuum takes `vacuum.clean_area` with Home Assistant area ids. */
 const val VACUUM_CLEAN_AREA_FEATURE = 16384
 
-const val VACUUM_PREFIX = "vacuum."
-
 /** How a vacuum cleans the rooms chosen in its dialog. */
 enum class VacuumCleanMethod {
     /** `vacuum.clean_area` with the Home Assistant areas mapped to the vacuum's segments. */

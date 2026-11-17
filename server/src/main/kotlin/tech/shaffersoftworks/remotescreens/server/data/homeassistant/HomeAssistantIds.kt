@@ -22,6 +22,9 @@ value class EntityId(val value: String) {
 value class Domain(val value: String) {
     override fun toString(): String = value
 
+    /** [entityId] is one of this domain's, such as `light.kitchen` for [LIGHT]. */
+    fun owns(entityId: String): Boolean = entityId.startsWith("$value.")
+
     companion object {
         val ALARM_PANEL = Domain("alarm_control_panel")
         val BINARY_SENSOR = Domain("binary_sensor")
@@ -31,6 +34,7 @@ value class Domain(val value: String) {
         val CLIMATE = Domain("climate")
         val COUNTER = Domain("counter")
         val COVER = Domain("cover")
+        val DEVICE_TRACKER = Domain("device_tracker")
         val FAN = Domain("fan")
         val HUMIDIFIER = Domain("humidifier")
         val INPUT_BOOLEAN = Domain("input_boolean")

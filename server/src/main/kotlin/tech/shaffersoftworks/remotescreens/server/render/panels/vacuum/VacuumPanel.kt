@@ -4,7 +4,6 @@ package tech.shaffersoftworks.remotescreens.server.render.panels.vacuum
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiState
-import tech.shaffersoftworks.remotescreens.server.data.vacuum.VACUUM_PREFIX
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.selectedVacuumId
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Vars
@@ -34,6 +33,7 @@ import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.render.panels.vacuum.VacuumMetrics as M
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 /** The page's scale and the width of its vacuum list, in dp. */
 private class VacuumLayout(val scale: Float, val pageW: Float, val pageH: Float) {
@@ -88,7 +88,7 @@ private fun pageScale(box: TileBox): Float =
 
 /** All vacuums, with the tile's entity first when it is one. */
 private fun DocContext.vacuumEntityIds(preferred: String?): List<String> {
-    val all = states.keys.filter { it.startsWith(VACUUM_PREFIX) }.sorted()
+    val all = states.keys.filter(Domain.VACUUM::owns).sorted()
     if (preferred == null || preferred !in all) return all
     return listOf(preferred) + all.filter { it != preferred }
 }

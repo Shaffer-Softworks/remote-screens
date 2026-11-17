@@ -17,7 +17,6 @@ import tech.shaffersoftworks.remotescreens.shared.EnergySankey
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiStore
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicAssistantClient
 import tech.shaffersoftworks.remotescreens.server.data.security.SecurityUiStore
-import tech.shaffersoftworks.remotescreens.server.data.vacuum.VACUUM_PREFIX
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumRooms
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumRoomsRepository
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiStore
@@ -38,6 +37,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HistoryDuri
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EnergyGetPrefs
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.BrowseMedia
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 private const val MS_PER_MINUTE = 60_000L
 private const val SECONDS_PER_HOUR = 3600L
@@ -152,7 +152,7 @@ class RenderDataRepository(
 
     private suspend fun allVacuumRooms(): Map<String, VacuumRooms> =
         homeAssistant.states.value.keys
-            .filter { it.startsWith(VACUUM_PREFIX) }
+            .filter(Domain.VACUUM::owns)
             .mapNotNull { entityId -> vacuumRooms(entityId)?.let { entityId to it } }
             .toMap()
 
@@ -178,18 +178,12 @@ class RenderDataRepository(
     /** What the card of [entityId], or of a [kind] with no entity such as energy, needs. */
     suspend fun forCard(entityId: String?, kind: String?): RenderData = when {
         entityId == null -> RenderData(energy = if (kind == "energy") energy() else null)
-        entityId.startsWith(
-            "weather.",
-        ) -> RenderData(forecasts = mapOf(entityId to forecast(entityId)))
-        kind == "history" || entityId.startsWith(
-            "sensor.",
-        ) || entityId.startsWith("binary_sensor.") ->
+        Domain.WEATHER.owns(entityId) -> RenderData(forecasts = mapOf(entityId to forecast(entityId)))
+        kind == "history" || Domain.SENSOR.owns(entityId) || Domain.BINARY_SENSOR.owns(entityId) ->
             RenderData(history = mapOf(entityId to history(entityId, DEFAULT_HISTORY_HOURS)))
-        entityId.startsWith(
-            "media_player.",
-        ) -> RenderData(browse = mapOf(entityId to browse(entityId)))
-        entityId.startsWith("todo.") -> RenderData(todos = mapOf(entityId to todoItems(entityId)))
-        entityId.startsWith(VACUUM_PREFIX) -> RenderData(
+        Domain.MEDIA_PLAYER.owns(entityId) -> RenderData(browse = mapOf(entityId to browse(entityId)))
+        Domain.TODO.owns(entityId) -> RenderData(todos = mapOf(entityId to todoItems(entityId)))
+        Domain.VACUUM.owns(entityId) -> RenderData(
             vacuumUi = vacuumUi.snapshot(),
             vacuumRooms = vacuumRooms(entityId)?.let { mapOf(entityId to it) }.orEmpty(),
         )

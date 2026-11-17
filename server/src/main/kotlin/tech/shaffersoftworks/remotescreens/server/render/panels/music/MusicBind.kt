@@ -10,6 +10,7 @@ import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.Instant
 import java.time.OffsetDateTime
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaPlayerState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 /** Now-playing vars and transport predictions for a Music Assistant tile. */
 internal fun DocContext.bindMusicNowPlaying(tileId: String, entityId: String) {
@@ -19,7 +20,7 @@ internal fun DocContext.bindMusicNowPlaying(tileId: String, entityId: String) {
         val artist = entityState?.mediaPlayer?.mediaArtist.orEmpty()
         val album = entityState?.mediaPlayer?.mediaAlbumName.orEmpty()
         val artistLine = artist.ifEmpty {
-            i18n.state("media_player", entityState?.state ?: "off")
+            i18n.state(Domain.MEDIA_PLAYER.value, entityState?.state ?: MediaPlayerState.OFF.wire)
         }
         val playing = entityState?.mediaPlayerState == MediaPlayerState.PLAYING
         val duration = entityState?.mediaPlayer?.mediaDuration

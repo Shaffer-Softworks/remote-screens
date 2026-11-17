@@ -37,6 +37,8 @@ import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.ZoneId
 import kotlin.math.roundToInt
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Availability
 
 private const val TEMP_WEIGHT = 100f
 private const val CONDITION_ICON_DP = 110f
@@ -222,7 +224,7 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
             )
         }
         doc.label(
-            text = doc.i18n.state("weather", entityState?.state ?: "unknown"),
+            text = doc.i18n.state(Domain.WEATHER.value, entityState?.state ?: Availability.UNKNOWN.wire),
             sp = small(CONDITION_LABEL_SP, layoutScale),
             color = ink,
             align = RcTextAlign.Center,
@@ -274,7 +276,7 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
                         )
                         Spacer(Modifier.height(doc.units.px(FORECAST_GAP_DP * layoutScale)))
                         doc.label(
-                            text = doc.i18n.state("weather", day.condition),
+                            text = doc.i18n.state(Domain.WEATHER.value, day.condition),
                             sp = small(CONDITION_SP, layoutScale),
                             color = soft,
                             align = RcTextAlign.Center,
@@ -374,7 +376,7 @@ private fun DocContext.portraitHero(page: PortraitPage) {
         }
         Spacer(Modifier.height(doc.units.px(PortraitFit.AFTER_TEMP_DP)))
         doc.label(
-            text = doc.i18n.state("weather", page.entityState?.state ?: "unknown"),
+            text = doc.i18n.state(Domain.WEATHER.value, page.entityState?.state ?: Availability.UNKNOWN.wire),
             sp = PortraitFit.NOW_CONDITION_SP,
             color = page.ink,
             align = RcTextAlign.Center,
@@ -464,7 +466,7 @@ private fun DocContext.portraitDay(page: PortraitPage, day: Forecast) {
         doc.weatherStateIcon(day.condition, PortraitFit.ROW_ICON_DP, fallbackColor = page.ink)
         Spacer(Modifier.width(doc.units.px(PortraitFit.ROW_GAP_DP)))
         doc.label(
-            text = doc.i18n.state("weather", day.condition),
+            text = doc.i18n.state(Domain.WEATHER.value, day.condition),
             sp = CONDITION_SP,
             color = page.soft,
             modifier = Modifier.horizontalWeight(1f),

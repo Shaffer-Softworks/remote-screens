@@ -53,6 +53,8 @@ import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 /** A ring three quarters round that fills with the entity's level, its value in the middle. */
 internal fun DocContext.gaugeNode(node: Node, axis: Axis, pages: Pages) {
@@ -66,7 +68,7 @@ internal fun DocContext.gaugeNode(node: Node, axis: Axis, pages: Pages) {
     val inset = stroke / 2f
     val fill = node.props["color"]?.let { paint(
         it,
-    ) } ?: fixed(Pastel.forDomain(id?.substringBefore('.')).argb)
+    ) } ?: fixed(Pastel.forDomain(id?.let { EntityId(it).domain.value }).argb)
     val track = role(Role.TRACK)
     if (id != null) {
         bindEntity(id)
@@ -252,17 +254,17 @@ internal fun DocContext.iconButtonNode(node: Node, axis: Axis, pages: Pages) {
         Metrics.ICON_BUTTON_MAX_DP,
     ) ?: Metrics.ICON_BUTTON_DEFAULT_DP
     val id = node.bind?.entityId
-    val domain = id?.substringBefore('.')
+    val domain = id?.let { EntityId(it).domain }
     val (bg, ink) = if (id != null) {
         bindEntity(id)
-        bindTileColors(node.id, id, accent(node.props["color"], Pastel.forDomain(domain)))
+        bindTileColors(node.id, id, accent(node.props["color"], Pastel.forDomain(domain?.value)))
         color(Vars.tile(node.id, Vars.KEY_BG)) to color(Vars.tile(node.id, Vars.KEY_BG_INK))
     } else {
         (node.props["color"]?.let { paint(it) } ?: role(Role.KEY)) to role(Role.INK)
     }
     val name = node.props["icon"]?.takeIf { it.isNotEmpty() }
         ?: id?.let { states[it]?.common?.icon }
-        ?: domain?.let { Catalogue.of(it)?.icon }
+        ?: domain?.let { Catalogue.of(it.value)?.icon }
         ?: "gesture-tap"
     var base = sized(node, axis)
     if (node.size.width == "wrap" && node.size.height == "wrap") {
@@ -295,35 +297,35 @@ internal fun DocContext.iconButtonNode(node: Node, axis: Axis, pages: Pages) {
 }
 
 /** The keys an entity's remote has: a player's transport, a cover's open, stop and close, a vacuum's, a lock's. */
-internal fun DocContext.keysOf(entityState: EntityState?, domain: String?): List<Pair<String, String>> = when (domain) {
-    "media_player" -> listOf(
+internal fun DocContext.keysOf(entityState: EntityState?, domain: Domain?): List<Pair<String, String>> = when (domain) {
+    Domain.MEDIA_PLAYER -> listOf(
         "previous" to "skip-previous",
         "play_pause" to "play-pause",
         "next" to "skip-next",
     )
-    "cover" -> listOf("open" to "arrow-up", "stop" to "stop", "close" to "arrow-down")
-    "vacuum" -> listOf(
+    Domain.COVER -> listOf("open" to "arrow-up", "stop" to "stop", "close" to "arrow-down")
+    Domain.VACUUM -> listOf(
         "start" to "play",
         "pause" to "pause",
         "dock" to "home-import-outline",
         "locate" to "map-marker-outline",
     )
-    "lock" -> listOf("lock" to "lock", "unlock" to "lock-open-variant")
-    "alarm_control_panel" -> (entityState?.features() ?: 0).let { features ->
+    Domain.LOCK -> listOf("lock" to "lock", "unlock" to "lock-open-variant")
+    Domain.ALARM_PANEL -> (entityState?.features() ?: 0).let { features ->
         listOfNotNull(
             ("arm_home" to "shield-home").takeIf { features and Metrics.ALARM_FEAT_ARM_HOME != 0 },
             ("arm_away" to "shield-lock").takeIf { features and Metrics.ALARM_FEAT_ARM_AWAY != 0 },
             ("arm_night" to "shield-moon").takeIf { features and Metrics.ALARM_FEAT_ARM_NIGHT != 0 },
         ) + ("disarm" to "shield-off")
     }
-    "light" -> listOf("off" to "lightbulb-off-outline", "on" to "lightbulb-on")
+    Domain.LIGHT -> listOf("off" to "lightbulb-off-outline", "on" to "lightbulb-on")
     else -> emptyList()
 }
 
 /** A row of the entity's remote keys; a lock asks for a second tap before it opens, as on its tile. */
 internal fun DocContext.keysNode(node: Node, axis: Axis, pages: Pages) {
     val id = node.bind?.entityId
-    val domain = id?.substringBefore('.')
+    val domain = id?.let { EntityId(it).domain }
     val keys = id?.let { keysOf(states[it], domain) }.orEmpty()
     val sizeDp = node.props["size"]?.toFloatOrNull()?.coerceIn(
         Metrics.KEYS_MIN_DP,
@@ -340,7 +342,7 @@ internal fun DocContext.keysNode(node: Node, axis: Axis, pages: Pages) {
         return
     }
     bindEntity(id)
-    val spec = Catalogue.of(id.substringBefore('.'))
+    val spec = Catalogue.of(EntityId(id).domain.value)
     val stretch = node.size.width != "wrap"
     rcScope.Column(modifier, horizontal = RcHorizontalPositioning.Center) {
         val doc = this@keysNode
@@ -363,7 +365,7 @@ internal fun DocContext.keysNode(node: Node, axis: Axis, pages: Pages) {
                 )
             }
         }
-        if (domain == "lock") {
+        if (domain == Domain.LOCK) {
             doc.label(
                 text = doc.text(Vars.tile(node.id, Vars.KEY_CONFIRM)),
                 sp = Type.CAPTION,
@@ -477,7 +479,7 @@ internal fun DocContext.keypadNode(node: Node, axis: Axis, pages: Pages) {
 @Suppress("CyclomaticComplexMethod")
 internal fun DocContext.dialNode(node: Node, axis: Axis, pages: Pages) {
     val id = node.bind?.entityId
-    val domain = id?.substringBefore('.')
+    val domain = id?.let { EntityId(it).domain }
     val sizeDp = node.props["size"]?.toFloatOrNull()?.coerceIn(
         Metrics.DIAL_MIN_DP,
         Metrics.DIAL_MAX_DP,
@@ -486,7 +488,7 @@ internal fun DocContext.dialNode(node: Node, axis: Axis, pages: Pages) {
     val px = units.px(sizeDp)
     val stroke = px * Metrics.DIAL_STROKE_RATIO
     val inset = stroke / 2f
-    val fill = node.props["color"]?.let { paint(it) } ?: fixed(Pastel.forDomain(domain).argb)
+    val fill = node.props["color"]?.let { paint(it) } ?: fixed(Pastel.forDomain(domain?.value).argb)
     val how = id?.let { stepOf(node, states[it], domain) }
     if (id != null) {
         bindEntity(id)
@@ -502,9 +504,7 @@ internal fun DocContext.dialNode(node: Node, axis: Axis, pages: Pages) {
     } }
     val down = how?.let { ActionRef(node.id, it.first, "-$step") }
     val up = how?.let { ActionRef(node.id, it.first, "+$step") }
-    val isPredictable = how != null && domain?.let { Catalogue.of(
-        it,
-    ) }?.predict?.containsKey(how.first) == true
+    val isPredictable = how != null && domain?.let { Catalogue.of(it.value) }?.predict?.containsKey(how.first) == true
     if (id != null && isPredictable) {
         down?.let { predict(it, id) }
         up?.let { predict(it, id) }

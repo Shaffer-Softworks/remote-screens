@@ -33,6 +33,7 @@ import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaPlayerState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 internal fun DocContext.mediaCard(
     entityId: String,
@@ -223,10 +224,10 @@ internal fun DocContext.cameraCard(entityId: String, w: Float, h: Float) {
 internal fun DocContext.mapCard(entityId: String, w: Float, h: Float) {
     val pw = units.px(w).toInt()
     val ph = units.px(h).toInt()
-    val who = if (entityId.startsWith("person.") || entityId.startsWith("device_tracker.")) {
+    val who = if (Domain.PERSON.owns(entityId) || Domain.DEVICE_TRACKER.owns(entityId)) {
         listOf(entityId)
     } else {
-        states.keys.filter { it.startsWith("person.") }
+        states.keys.filter(Domain.PERSON::owns)
     }
 
     for (personId in who) {

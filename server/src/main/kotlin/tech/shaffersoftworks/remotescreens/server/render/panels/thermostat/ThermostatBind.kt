@@ -6,6 +6,8 @@ import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.shared.VarValue
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HvacMode
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 /** Readings, dial colours/sweeps, action, dual setpoints, fan word, and which mode is lit. */
 internal fun DocContext.bindThermostat(tileId: String, entityId: String, modes: List<String>, dual: Boolean) {
@@ -54,7 +56,7 @@ internal fun DocContext.bindThermostat(tileId: String, entityId: String, modes: 
             ),
             VarValue.string(
                 Vars.tile(tileId, "action"),
-                action?.let { actionWord(it) } ?: i18n.state("climate", state ?: "off"),
+                action?.let { actionWord(it) } ?: i18n.state(Domain.CLIMATE.value, state ?: HvacMode.OFF.wire),
             ),
             VarValue.color(Vars.tile(tileId, "dial"), tintArgb),
             VarValue.color(

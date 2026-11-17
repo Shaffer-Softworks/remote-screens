@@ -11,6 +11,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.Icons
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Availability
 
 /** How an entity reads on a tile: its name, the line under it, a big value, whether it is on, and a level. */
 data class EntityView(
@@ -100,7 +101,7 @@ object Present {
 
     fun view(entityState: EntityState?, i18n: I18n, nameOverride: String? = null, iconOverride: String? = null): EntityView {
         if (entityState == null) {
-            val unavailable = i18n.state("", "unavailable")
+            val unavailable = i18n.state("", Availability.UNAVAILABLE.wire)
             return EntityView(
                 name = nameOverride ?: "?",
                 stateText = unavailable,

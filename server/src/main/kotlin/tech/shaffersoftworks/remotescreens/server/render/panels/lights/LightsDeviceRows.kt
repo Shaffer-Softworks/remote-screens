@@ -134,7 +134,7 @@ internal fun DocContext.deviceRow(tileId: String, entityId: String, layout: Ligh
  * drag that reports a value, so the slider is a row of steps, as [levelBar] is.
  */
 private fun DocContext.rowSlider(entityId: String, widthDp: Float, layout: LightsLayout) {
-    val isCover = entityId.substringBefore('.') == "cover"
+    val isCover = Domain.COVER.owns(entityId)
     val steps = if (isCover) M.TILT_STEPS else M.BRIGHTNESS_STEPS
     val verb = if (isCover) "tilt" else "brightness"
     val w = units.px(widthDp)

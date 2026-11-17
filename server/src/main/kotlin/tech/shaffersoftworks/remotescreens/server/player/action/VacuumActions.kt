@@ -6,10 +6,10 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.VacuumClean
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.VacuumSegmentClean
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.call
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
-import tech.shaffersoftworks.remotescreens.server.data.vacuum.VACUUM_PREFIX
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumCleanMethod
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiStore
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.selectedVacuumId
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 /**
  * Verbs of a full vacuum page / vacuum card: choosing a vacuum, opening the rooms dialog, toggling rooms, and
@@ -25,7 +25,7 @@ class VacuumActions(
         val tileId = target.tileId
         val isHandled = when (verb) {
             "vacuum_select" -> {
-                val isVacuum = arg.startsWith(VACUUM_PREFIX)
+                val isVacuum = Domain.VACUUM.owns(arg)
                 if (isVacuum) store.selectVacuum(tileId, arg)
                 isVacuum
             }
@@ -73,6 +73,6 @@ class VacuumActions(
     private fun roomsEntityId(store: VacuumUiStore, target: TapTarget): String? = selectedVacuumId(
         chosen = store.state(target.tileId).selectedVacuum,
         tileEntityId = target.entityId,
-        vacuumIds = homeAssistant.states.value.keys.filter { it.startsWith(VACUUM_PREFIX) },
+        vacuumIds = homeAssistant.states.value.keys.filter(Domain.VACUUM::owns),
     )
 }

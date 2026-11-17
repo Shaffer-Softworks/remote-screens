@@ -13,6 +13,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.SwitchState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.CoverState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.PresenceState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaPlayerState
 
 /**
  * Applies Home Assistant service calls to demo entity state — one handler per service name.
@@ -170,7 +171,11 @@ internal class DemoServiceHandlers(
         "media_play_pause" to {
             set(
                 it.entityId,
-                if (it.current.state == "playing") "paused" else "playing",
+                if (it.current.mediaPlayerState == MediaPlayerState.PLAYING) {
+                    MediaPlayerState.PAUSED.wire
+                } else {
+                    MediaPlayerState.PLAYING.wire
+                },
                 emptyMap(),
             )
         },

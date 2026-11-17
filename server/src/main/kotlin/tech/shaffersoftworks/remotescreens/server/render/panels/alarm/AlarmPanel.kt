@@ -230,9 +230,9 @@ private fun DocContext.armingFade(): RcFloat {
 }
 
 /** RPI reads Alarmo's `arm_mode`: secure in any armed mode, blank while arming, otherwise not secure. */
-private fun DocContext.secureText(armMode: String?): String = when (armMode) {
-    "arming" -> ""
-    "armed_home", "armed_away", "armed_night" -> i18n.t("ui.alarm_secure")
+private fun DocContext.secureText(armMode: String?): String = when (AlarmState.of(armMode)) {
+    AlarmState.ARMING -> ""
+    AlarmState.ARMED_HOME, AlarmState.ARMED_AWAY, AlarmState.ARMED_NIGHT -> i18n.t("ui.alarm_secure")
     else -> i18n.t("ui.alarm_not_secure")
 }
 

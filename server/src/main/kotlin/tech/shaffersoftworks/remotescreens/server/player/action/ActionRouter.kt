@@ -37,6 +37,7 @@ import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.LockState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaPlayerState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.SwitchState
 
 private const val MAX_CODE_LENGTH = 12
 private const val ENTITY_TILE_PREFIX = "e:"
@@ -62,7 +63,7 @@ class ActionRouter(
             TapTarget(
                 tileId = ref.tile,
                 entityId = entityId,
-                kind = entityId.substringBefore('.'),
+                kind = EntityId(entityId).domain.value,
                 tile = null,
             )
         }
@@ -202,8 +203,16 @@ class ActionRouter(
     ): String =
         when (val predicted = prediction.state) {
             null -> entity.state
-            "!" -> if (entity.state in spec.onStates) "off" else spec.onStates.firstOrNull() ?: "on"
-            "play_pause" -> if (entity.mediaPlayerState == MediaPlayerState.PLAYING) "paused" else "playing"
+            "!" -> if (entity.state in spec.onStates) {
+                SwitchState.OFF.wire
+            } else {
+                spec.onStates.firstOrNull() ?: SwitchState.ON.wire
+            }
+            "play_pause" -> if (entity.mediaPlayerState == MediaPlayerState.PLAYING) {
+                MediaPlayerState.PAUSED.wire
+            } else {
+                MediaPlayerState.PLAYING.wire
+            }
             else -> if (ServiceDataBuilder.isArgExpression(predicted)) {
                 ServiceDataBuilder.argValue(predicted, arg).contentOrNull ?: entity.state
             } else {

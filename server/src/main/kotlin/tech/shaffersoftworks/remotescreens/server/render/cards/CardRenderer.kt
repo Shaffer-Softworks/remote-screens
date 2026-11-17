@@ -30,6 +30,7 @@ import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import androidx.compose.remote.creation.dsl.verticalWeight
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
 
 /**
  * The card a long press opens: the whole of one entity, on a panel over the page. A card is its own document in the
@@ -148,7 +149,7 @@ object CardRenderer {
     private val ALWAYS_ON_CARDS = setOf("camera", "map", "energy", "history")
 
     private fun resolveCardType(kind: String?, entityId: String): String {
-        val spec = Catalogue.of(kind ?: entityId.substringBefore('.'))
+        val spec = Catalogue.of(kind ?: EntityId(entityId).domain.value)
         return when (kind) {
             "history" -> "history"
             "energy" -> "energy"

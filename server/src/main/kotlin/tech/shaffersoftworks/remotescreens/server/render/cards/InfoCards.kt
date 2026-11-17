@@ -32,6 +32,8 @@ import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.ZoneId
 import kotlin.math.roundToInt
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.TimerState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.AlarmState
 
 internal fun DocContext.weatherCard(entityId: String, entityState: EntityState?, width: Float) {
     structural(entityId) { it?.state ?: "" }
@@ -203,8 +205,8 @@ internal fun DocContext.alarmCard(entityId: String, entityState: EntityState?, w
                 doc.key(
                     ref = ref(entityId, mode),
                     text = doc.i18n.state(
-                        "alarm_control_panel",
-                        if (mode == "disarm") "disarmed" else mode.replace("arm_", "armed_"),
+                        Domain.ALARM_PANEL.value,
+                        if (mode == "disarm") AlarmState.DISARMED.wire else mode.replace("arm_", "armed_"),
                     ),
                     icon = if (mode == "disarm") "shield-off" else "shield-lock",
                     heightDp = CardChrome.LEVEL_BAR_H_DP,

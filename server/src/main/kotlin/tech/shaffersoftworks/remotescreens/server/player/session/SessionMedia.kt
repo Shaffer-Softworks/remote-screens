@@ -17,6 +17,7 @@ import tech.shaffersoftworks.remotescreens.shared.VarValue
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 import java.util.Base64
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 private const val MAP_CARD_PICTURE = "map.card"
 private const val ARGB_MASK = 0xFFFFFFFFL
@@ -261,7 +262,7 @@ internal class SessionMedia(
         if (!host.supportsVideo) return
         val id = when {
             !camera.isNullOrBlank() -> camera
-            entityId?.startsWith("camera.") == true -> entityId
+            entityId != null && Domain.CAMERA.owns(entityId) -> entityId
             kind == "camera" && !entityId.isNullOrBlank() -> entityId
             else -> return
         }

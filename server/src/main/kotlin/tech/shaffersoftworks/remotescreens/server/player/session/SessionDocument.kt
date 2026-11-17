@@ -20,6 +20,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
 import java.util.Base64
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 /** Builds and publishes documents for each [Slot] on a [SessionHost]. */
 internal class SessionDocument(
@@ -340,5 +341,5 @@ internal class SessionDocument(
 
 private fun calendarStructureChanged(rendered: RenderedDoc, states: Map<String, EntityState>): Boolean =
     rendered.docContext.structure.any { (entityId, what, was) ->
-        entityId.startsWith("calendar.") && what(states[entityId]) != was
+        Domain.CALENDAR.owns(entityId) && what(states[entityId]) != was
     }

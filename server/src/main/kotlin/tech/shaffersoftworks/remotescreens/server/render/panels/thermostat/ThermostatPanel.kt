@@ -32,6 +32,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HvacMode
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 private fun small(base: Float, layoutScale: Float) = maxOf(
     base * layoutScale,
@@ -52,15 +53,15 @@ internal fun EntityState?.usesDualSetpoint(): Boolean =
 /**
  * Modes in HA more-info order (Heat/Cool, Heat, Cool, Off). Prefers `heat_cool`, else `auto`.
  */
-private val HA_MODES = listOf("heat_cool", "heat", "cool", "off")
+private val HA_MODES = listOf(HvacMode.HEAT_COOL, HvacMode.HEAT, HvacMode.COOL, HvacMode.OFF).map { it.wire }
 
 /** Icons as Home Assistant's climate mode row draws them. */
 private val HA_MODE_ICONS = mapOf(
-    "auto" to "sun-snowflake-variant",
-    "heat_cool" to "sun-snowflake-variant",
-    "heat" to "fire",
-    "cool" to "snowflake",
-    "off" to "power",
+    HvacMode.AUTO.wire to "sun-snowflake-variant",
+    HvacMode.HEAT_COOL.wire to "sun-snowflake-variant",
+    HvacMode.HEAT.wire to "fire",
+    HvacMode.COOL.wire to "snowflake",
+    HvacMode.OFF.wire to "power",
 )
 
 /**
@@ -362,7 +363,7 @@ private fun DocContext.thermostatModes(
                                     ),
                                 )
                                 doc.label(
-                                    doc.i18n.state("climate", mode),
+                                    doc.i18n.state(Domain.CLIMATE.value, mode),
                                     small(ThermostatMetrics.MODE_LABEL_SP, layoutScale),
                                     ink,
                                 )
@@ -433,15 +434,11 @@ private val RANGE_MODES = setOf(HvacMode.HEAT_COOL, HvacMode.AUTO)
 
 /** Heat/Cool · Heat · Cool · Off from the entity's modes (`auto` stands in when there is no `heat_cool`). */
 private fun haModes(available: List<String>): List<String> {
-    if (available.isEmpty()) return listOf("heat_cool", "heat", "cool", "off")
-    val autoMode = when {
-        "heat_cool" in available -> "heat_cool"
-        "auto" in available -> "auto"
-        else -> null
-    }
+    if (available.isEmpty()) return HA_MODES
+    val autoMode = listOf(HvacMode.HEAT_COOL.wire, HvacMode.AUTO.wire).firstOrNull { it in available }
     return buildList {
         if (autoMode != null) add(autoMode)
-        for (mode in listOf("heat", "cool", "off")) if (mode in available) add(mode)
+        for (mode in HA_MODES.drop(1)) if (mode in available) add(mode)
     }.ifEmpty { available.take(HA_MODES.size) }
 }
 

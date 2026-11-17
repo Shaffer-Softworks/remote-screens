@@ -701,7 +701,7 @@ object ScreenRenderer {
             }
             listOf(VarValue.string(Vars.TEMP, text))
         }
-        for (personId in states.keys.filter { it.startsWith("person.") }) {
+        for (personId in states.keys.filter(Domain.PERSON::owns)) {
             bind(personId) { emptyList() }
         }
         bind(null) { states ->

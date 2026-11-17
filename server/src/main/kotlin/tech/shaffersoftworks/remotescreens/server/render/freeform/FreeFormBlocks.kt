@@ -50,6 +50,7 @@ import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.ZoneId
 import kotlin.math.roundToInt
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaPlayerState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 private object BlockMetrics {
     const val TIMER_KEY_H_DP = 52f
@@ -251,7 +252,7 @@ private fun DocContext.todoListNode(node: Node, self: Dims, axis: Axis, pages: P
 private fun DocContext.eventsNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
     val max = node.props["max"]?.toIntOrNull()?.coerceIn(1, BlockMetrics.EVENT_MAX)
         ?: BlockMetrics.EVENT_DEFAULT_MAX
-    val calendars = listedEntities(node, "calendars", "calendar")
+    val calendars = listedEntities(node, "calendars", Domain.CALENDAR)
     val zone = runCatching { ZoneId.of(
         homeAssistantConfig.timeZone,
     ) }.getOrDefault(ZoneId.of("UTC"))
@@ -458,7 +459,9 @@ private fun DocContext.bindMediaBar(node: Node, id: String) {
         val artist = listOfNotNull(
             entityState?.mediaPlayer?.mediaArtist,
             entityState?.mediaPlayer?.mediaAlbumName,
-        ).joinToString(" · ").ifEmpty { i18n.state("media_player", entityState?.state ?: "off") }
+        ).joinToString(
+            " · ",
+        ).ifEmpty { i18n.state(Domain.MEDIA_PLAYER.value, entityState?.state ?: MediaPlayerState.OFF.wire) }
         val playing = entityState?.mediaPlayerState == MediaPlayerState.PLAYING
         val duration = entityState?.mediaPlayer?.mediaDuration
         val position = entityState.mediaPosition()
@@ -551,7 +554,7 @@ private fun DocContext.forecastNode(node: Node, self: Dims, axis: Axis, pages: P
 
 /** Person chips: photo, name, HOME/AWAY. `people` lists entity ids; otherwise every person. */
 private fun DocContext.presenceNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
-    val people = listedEntities(node, "people", "person")
+    val people = listedEntities(node, "people", Domain.PERSON)
     val photo = BlockMetrics.PRESENCE_PHOTO_DP
     val ink = node.props["ink"]?.let { paint(it) } ?: role(Role.INK)
     val where = node.props["color"]?.let { paint(it) } ?: role(Role.ACCENT_SOFT)
@@ -676,7 +679,7 @@ private fun DocContext.bindWeatherNow(node: Node, id: String) {
 
 /** Next calendar event card: left-stacked day, large time, title, calendar · location (RPI home style). */
 private fun DocContext.nextEventNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
-    val calendars = listedEntities(node, "calendars", "calendar")
+    val calendars = listedEntities(node, "calendars", Domain.CALENDAR)
     val zone = runCatching { ZoneId.of(
         homeAssistantConfig.timeZone,
     ) }.getOrDefault(ZoneId.of("UTC"))
@@ -823,12 +826,12 @@ private fun DocContext.ledNode(node: Node, axis: Axis, pages: Pages) {
 }
 
 /** Entity ids from [prop] (comma-separated), else the bound entity, else every entity of [domain]. */
-private fun DocContext.listedEntities(node: Node, prop: String, domain: String): List<String> {
+private fun DocContext.listedEntities(node: Node, prop: String, domain: Domain): List<String> {
     val fromProp = node.props[prop]?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }
-    val bound = node.bind?.entityId?.takeIf { it.startsWith("$domain.") }?.let { listOf(it) }
+    val bound = node.bind?.entityId?.takeIf(domain::owns)?.let { listOf(it) }
     return when {
         !fromProp.isNullOrEmpty() -> fromProp
         bound != null -> bound
-        else -> states.keys.filter { it.startsWith("$domain.") }.sorted()
+        else -> states.keys.filter(domain::owns).sorted()
     }
 }
