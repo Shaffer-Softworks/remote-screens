@@ -13,11 +13,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
+import kotlinx.serialization.Serializable
+import tech.shaffersoftworks.remotescreens.shared.SignalingClient
+import tech.shaffersoftworks.remotescreens.shared.SignalingFrame
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.milliseconds
@@ -33,7 +31,7 @@ class SignalingService(
         scope.launch {
             while (isActive) {
                 delay(APP_PING_INTERVAL_MS.milliseconds)
-                val ping = """{"type":"ping","ts":${System.currentTimeMillis()}}"""
+                val ping = SignalingFrame.encode(SignalingFrame.Ping(System.currentTimeMillis()))
                 for (socket in sockets.values) {
                     runCatching { socket.send(Frame.Text(ping)) }
                 }
@@ -62,23 +60,12 @@ class SignalingService(
             closeSocket(sessionId)
         }
 
-        return buildJsonObject {
-            put(
-                "clients",
-                buildJsonArray {
-                    for ((clientId, displayName, inCall) in views) {
-                        add(
-                            buildJsonObject {
-                                put("clientId", clientId)
-                                put("displayName", displayName?.let { JsonPrimitive(it) } ?: JsonNull)
-                                put("inCall", inCall)
-                            },
-                        )
-                    }
-                },
-            )
-        }.toString()
+        return SignalingFrame.JSON.encodeToString(ClientsBody.serializer(), ClientsBody(views.map { it.toClient() }))
     }
+
+    /** `/api/clients`: the roster without a `type`. */
+    @Serializable
+    private data class ClientsBody(val clients: List<SignalingClient>)
 
     private suspend fun dispatch(outcome: SignalingHub.Outcome) {
         for ((sessionId, json) in outcome.sends) {

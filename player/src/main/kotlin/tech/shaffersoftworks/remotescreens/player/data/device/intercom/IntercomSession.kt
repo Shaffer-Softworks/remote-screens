@@ -12,6 +12,7 @@ import tech.shaffersoftworks.remotescreens.shared.IntercomStation
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import tech.shaffersoftworks.remotescreens.shared.SignalingFrame
 
 /**
  * One tablet's intercom: stay registered while the page is on the screen, place a call, and answer one that arrives.
@@ -133,7 +134,7 @@ internal class IntercomSession(
             is IntercomFrame.Candidate -> audio.addCandidate(frame.candidate, frame.sdpMid, frame.sdpMLineIndex)
             is IntercomFrame.Hangup -> endCall(notifyPeer = false, nextStatus = CALL_ENDED)
             is IntercomFrame.Unavailable -> onUnavailable(frame)
-            is IntercomFrame.Failed -> if (frame.message == NOT_REGISTERED) throw NeedsReconnect()
+            is IntercomFrame.Failed -> if (frame.message == SignalingFrame.ERROR_NOT_REGISTERED) throw NeedsReconnect()
             IntercomFrame.Replaced -> throw NeedsReconnect()
             is IntercomFrame.Roster -> onRoster(frame)
             is IntercomFrame.Ping -> emit(IntercomWire.pong(frame.sentAt))
@@ -187,7 +188,13 @@ internal class IntercomSession(
 
     private suspend fun onUnavailable(frame: IntercomFrame.Unavailable) {
         if (peerId != frame.targetId) return
-        val nextStatus = if (frame.reason == BUSY) "${nameOf(frame.targetId)} is busy" else NO_ANSWER
+        val nextStatus = if (frame.reason == SignalingFrame.REASON_BUSY) {
+            "${nameOf(
+                frame.targetId,
+            )} is busy"
+        } else {
+            NO_ANSWER
+        }
         endCall(notifyPeer = true, nextStatus = nextStatus)
     }
 
@@ -294,8 +301,6 @@ internal class IntercomSession(
         const val CALL_ENDED = "Call ended"
         const val CALL_FAILED = "Call failed"
         const val NO_ANSWER = "No answer"
-        const val BUSY = "busy"
-        const val NOT_REGISTERED = "not_registered"
         const val CALL = "call"
         const val HANGUP = "hangup"
         const val MUTE = "mute"

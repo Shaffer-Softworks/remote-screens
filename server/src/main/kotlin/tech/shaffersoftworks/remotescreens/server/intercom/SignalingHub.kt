@@ -1,14 +1,12 @@
 package tech.shaffersoftworks.remotescreens.server.intercom
 
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.put
+import tech.shaffersoftworks.remotescreens.shared.SignalingClient
+import tech.shaffersoftworks.remotescreens.shared.SignalingFrame
+import tech.shaffersoftworks.remotescreens.shared.SignalingFrame.Companion.ERROR_MISSING_CLIENT
+import tech.shaffersoftworks.remotescreens.shared.SignalingFrame.Companion.ERROR_MISSING_TO
+import tech.shaffersoftworks.remotescreens.shared.SignalingFrame.Companion.ERROR_NOT_REGISTERED
+import tech.shaffersoftworks.remotescreens.shared.SignalingFrame.Companion.REASON_BUSY
+import tech.shaffersoftworks.remotescreens.shared.SignalingFrame.Companion.REASON_OFFLINE
 
 /**
  * The intercom signaling router. Tablets on port 8766 and the Home Assistant panel on ingress share one instance.
@@ -36,7 +34,9 @@ internal class SignalingHub(
         val clientId: String,
         val displayName: String?,
         val inCall: Boolean,
-    )
+    ) {
+        fun toClient(): SignalingClient = SignalingClient(clientId, displayName, inCall)
+    }
 
     private data class SessionInfo(
         val clientId: String,
@@ -49,27 +49,20 @@ internal class SignalingHub(
     private val sessions = mutableMapOf<String, SessionInfo>()
     private val lock = Any()
 
+    /** A frame of a `type` this hub does not know still marks a registered station active. */
     fun handleMessage(sessionId: String, text: String): Outcome = synchronized(lock) {
-        val data = runCatching { Json.parseToJsonElement(text).jsonObject }.getOrNull() ?: return Outcome()
-        val type = data.field("type") ?: return Outcome()
-        if (type == TYPE_REGISTER) return register(sessionId, data)
-        val info = sessions[sessionId] ?: return Outcome(
-            sends = listOf(
-                error(
-                    sessionId,
-                    ERROR_NOT_REGISTERED,
-                ),
-            ),
-        )
+        val frame = SignalingFrame.decode(text)
+        if (frame is SignalingFrame.Register) return register(sessionId, frame)
+        if (frame == null && SignalingFrame.typeOf(text) == null) return Outcome()
+        val info = sessions[sessionId] ?: return Outcome(sends = listOf(error(sessionId, ERROR_NOT_REGISTERED)))
 
         info.lastActivity = now()
-        when (type) {
-            TYPE_OFFER -> offer(sessionId, info, data)
-            TYPE_ANSWER -> forward(info, data, TYPE_ANSWER)
-            TYPE_CANDIDATE -> forward(info, data, TYPE_CANDIDATE)
-            TYPE_HANGUP -> hangup(info, data)
-            TYPE_GET_CLIENTS -> clientsFor(sessionId)
-            TYPE_HEARTBEAT, TYPE_PONG -> Outcome()
+        when (frame) {
+            is SignalingFrame.Offer -> offer(sessionId, info, frame)
+            is SignalingFrame.Answer -> forward(info, frame.to) { frame.copy(from = info.clientId) }
+            is SignalingFrame.Candidate -> forward(info, frame.to) { frame.copy(from = info.clientId) }
+            is SignalingFrame.Hangup -> hangup(info, frame)
+            SignalingFrame.GetClients -> clientsFor(sessionId)
             else -> Outcome()
         }
     }
@@ -89,10 +82,10 @@ internal class SignalingHub(
         views() to closed
     }
 
-    private fun register(sessionId: String, data: JsonObject): Outcome {
-        val clientId = data.field("clientId")?.trim().orEmpty()
+    private fun register(sessionId: String, frame: SignalingFrame.Register): Outcome {
+        val clientId = frame.clientId.trim()
         if (clientId.isEmpty()) return Outcome(sends = listOf(error(sessionId, ERROR_MISSING_CLIENT)))
-        val displayName = data.field("displayName")?.trim()?.takeIf { it.isNotEmpty() }
+        val displayName = frame.displayName?.trim()?.takeIf { it.isNotEmpty() }
         val previousSessionId = clientSessions[clientId]
         val previous = previousSessionId?.let { sessions[it] }
 
@@ -110,11 +103,11 @@ internal class SignalingHub(
         if (previousSessionId != null && previousSessionId != sessionId) {
             clearPeer(clientId, previous?.inCallWith, sends)
             sessions.remove(previousSessionId)
-            sends += Outbound(previousSessionId, json(TYPE_REPLACED, "bySession" to sessionId))
+            sends += Outbound(previousSessionId, SignalingFrame.encode(SignalingFrame.Replaced(bySession = sessionId)))
             close += previousSessionId
         }
         close += pruneStale()
-        val registered = json(TYPE_REGISTERED, "clientId" to clientId)
+        val registered = SignalingFrame.encode(SignalingFrame.Registered(clientId))
         sends += Outbound(sessionId, registered)
         sends += rosterBroadcast()
         val deferred = listOf(
@@ -127,9 +120,9 @@ internal class SignalingHub(
     private fun offer(
         sessionId: String,
         info: SessionInfo,
-        data: JsonObject,
+        frame: SignalingFrame.Offer,
     ): Outcome {
-        val targetId = data.field("to")?.trim().orEmpty()
+        val targetId = frame.to?.trim().orEmpty()
         val targetSessionId = clientSessions[targetId]
         val target = targetSessionId?.let { sessions[it] }
         val refused = when {
@@ -141,32 +134,22 @@ internal class SignalingHub(
         if (refused != null) return Outcome(sends = listOf(refused))
         info.inCallWith = targetId
         target?.inCallWith = info.clientId
-        val offer = buildJsonObject {
-            put("type", TYPE_OFFER)
-            put("sdp", data["sdp"] ?: JsonPrimitive(""))
-            put("to", targetId)
-            put("from", info.clientId)
-        }.toString()
+        val offer = SignalingFrame.encode(frame.copy(to = targetId, from = info.clientId))
         val delivered = targetSessionId?.let { Outbound(it, offer) }
         return Outcome(sends = listOfNotNull(delivered) + rosterBroadcast())
     }
 
+    /** An answer or candidate, passed on as the sender wrote it, stamped [fromSender]. */
     private fun forward(
         info: SessionInfo,
-        data: JsonObject,
-        type: String,
+        to: String?,
+        fromSender: () -> SignalingFrame,
     ): Outcome {
-        val targetId = data.field("to")?.trim().orEmpty()
+        val targetId = to?.trim().orEmpty()
         val targetSessionId = clientSessions[targetId]
         val sender = clientSessions[info.clientId]
         val sends = if (targetId.isNotEmpty() && targetSessionId != null) {
-            val forwarded = JsonObject(
-                data + mapOf(
-                    "type" to JsonPrimitive(type),
-                    "from" to JsonPrimitive(info.clientId),
-                ),
-            ).toString()
-            listOf(Outbound(targetSessionId, forwarded))
+            listOf(Outbound(targetSessionId, SignalingFrame.encode(fromSender())))
         } else if (sender != null) {
             listOf(unavailable(sender, targetId, REASON_OFFLINE))
         } else {
@@ -175,12 +158,13 @@ internal class SignalingHub(
         return Outcome(sends = sends)
     }
 
-    private fun hangup(info: SessionInfo, data: JsonObject): Outcome {
-        val targetId = data.field("to")?.trim()?.takeIf { it.isNotEmpty() } ?: info.inCallWith
+    private fun hangup(info: SessionInfo, frame: SignalingFrame.Hangup): Outcome {
+        val targetId = frame.to?.trim()?.takeIf { it.isNotEmpty() } ?: info.inCallWith
         val sends = mutableListOf<Outbound>()
         if (targetId != null) {
             clientSessions[targetId]?.let { targetSessionId ->
-                sends += Outbound(targetSessionId, json(TYPE_HANGUP, "to" to targetId, "from" to info.clientId))
+                val hangup = SignalingFrame.Hangup(to = targetId, from = info.clientId)
+                sends += Outbound(targetSessionId, SignalingFrame.encode(hangup))
                 sessions[targetSessionId]?.inCallWith = null
             }
             info.inCallWith = null
@@ -203,7 +187,7 @@ internal class SignalingHub(
         if (peerId == null) return
         val peerSessionId = clientSessions[peerId] ?: return
         sessions[peerSessionId]?.takeIf { it.inCallWith == clientId }?.inCallWith = null
-        sends += Outbound(peerSessionId, json(TYPE_HANGUP, "from" to clientId))
+        sends += Outbound(peerSessionId, SignalingFrame.encode(SignalingFrame.Hangup(from = clientId)))
     }
 
     private fun pruneStale(): List<String> {
@@ -225,56 +209,16 @@ internal class SignalingHub(
         return clientSessions.values.distinct().map { Outbound(it, json) }
     }
 
-    private fun rosterJson(): String {
-        val clients = buildJsonArray {
-            for ((clientId, displayName, inCall) in views()) {
-                add(
-                    buildJsonObject {
-                        put("clientId", clientId)
-                        put("displayName", displayName?.let { JsonPrimitive(it) } ?: JsonNull)
-                        put("inCall", inCall)
-                    },
-                )
-            }
-        }
-        return buildJsonObject {
-            put("type", TYPE_CLIENTS_LIST)
-            put("clients", clients)
-        }.toString()
-    }
+    private fun rosterJson(): String = SignalingFrame.encode(SignalingFrame.ClientsList(views().map { it.toClient() }))
 
     companion object {
         const val STALE_CLIENT_MS = 90_000L
         private const val REGISTERED_REPEAT_SHORT_MS = 100L
         private const val REGISTERED_REPEAT_LONG_MS = 250L
-        private const val TYPE_REGISTER = "register"
-        private const val TYPE_REGISTERED = "registered"
-        private const val TYPE_OFFER = "offer"
-        private const val TYPE_ANSWER = "answer"
-        private const val TYPE_CANDIDATE = "candidate"
-        private const val TYPE_HANGUP = "hangup"
-        private const val TYPE_GET_CLIENTS = "getClients"
-        private const val TYPE_CLIENTS_LIST = "clientsList"
-        private const val TYPE_HEARTBEAT = "heartbeat"
-        private const val TYPE_PONG = "pong"
-        private const val TYPE_REPLACED = "replaced"
-        private const val ERROR_NOT_REGISTERED = "not_registered"
-        private const val ERROR_MISSING_CLIENT = "missing_client_id"
-        private const val ERROR_MISSING_TO = "missing_to_field"
-        private const val REASON_OFFLINE = "offline"
-        private const val REASON_BUSY = "busy"
-
-        private fun JsonObject.field(key: String): String? = (this[key] as? JsonPrimitive)?.contentOrNull
-
         private fun error(sessionId: String, message: String): Outbound =
-            Outbound(sessionId, json("error", "message" to message))
+            Outbound(sessionId, SignalingFrame.encode(SignalingFrame.Error(message)))
 
         private fun unavailable(sessionId: String, targetId: String, reason: String): Outbound =
-            Outbound(sessionId, json("unavailable", "targetId" to targetId, "reason" to reason))
-
-        private fun json(type: String, vararg fields: Pair<String, String>): String = buildJsonObject {
-            put("type", type)
-            for ((key, value) in fields) put(key, value)
-        }.toString()
+            Outbound(sessionId, SignalingFrame.encode(SignalingFrame.Unavailable(targetId, reason)))
     }
 }
