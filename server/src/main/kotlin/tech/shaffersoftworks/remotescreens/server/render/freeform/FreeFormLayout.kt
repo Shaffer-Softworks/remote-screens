@@ -159,7 +159,7 @@ internal fun DocContext.container(node: Node, given: Dims, axis: Axis, pages: Pa
     fun drawChildren() {
         children.forEachIndexed { i, child ->
             if (i > 0 && gap > 0f) {
-                scope.Spacer(
+                rcScope.Spacer(
                     if (mine == Axis.ROW) {
                         Modifier.width(
                             units.px(gap),
@@ -186,7 +186,7 @@ internal fun DocContext.container(node: Node, given: Dims, axis: Axis, pages: Pa
     val arrangement = node.props["arrangement"]
     if (node.type == "flow") {
         // A flow has no spacing of its own: each child carries the gap after it and below it.
-        scope.Flow(
+        rcScope.Flow(
             modifier,
             horizontal = horizontal(alignment),
             vertical = RcVerticalPositioning.Top,
@@ -200,12 +200,12 @@ internal fun DocContext.container(node: Node, given: Dims, axis: Axis, pages: Pa
         return
     }
     when (mine) {
-        Axis.COLUMN -> scope.Column(
+        Axis.COLUMN -> rcScope.Column(
             modifier,
             horizontal = horizontal(alignment),
             vertical = columnArrangement(arrangement),
         ) { drawChildren() }
-        Axis.ROW -> scope.Row(
+        Axis.ROW -> rcScope.Row(
             modifier,
             horizontal = rowArrangement(arrangement),
             vertical = vertical(alignment),
@@ -213,7 +213,7 @@ internal fun DocContext.container(node: Node, given: Dims, axis: Axis, pages: Pa
         Axis.BOX -> {
             val parts = (alignment ?: "top-start").split('-')
             val (vertAlign, horizAlign) = if (parts.size == 2) parts[0] to parts[1] else parts[0] to parts[0]
-            scope.Box(
+            rcScope.Box(
                 modifier,
                 horizontal = horizontal(horizAlign),
                 vertical = vertical(vertAlign),
@@ -239,7 +239,7 @@ internal fun DocContext.placed(child: Node, place: String, self: Dims, axis: Axi
     val parts = place.split('-')
     val (vertAlign, horizAlign) = if (parts.size == 2) parts[0] to parts[1] else parts[0] to parts[0]
     when (axis) {
-        Axis.COLUMN -> scope.Box(
+        Axis.COLUMN -> rcScope.Box(
             main(
                 spec = child.size.height,
                 weight = { Modifier.verticalWeight(it) },
@@ -249,7 +249,7 @@ internal fun DocContext.placed(child: Node, place: String, self: Dims, axis: Axi
             horizontal = horizontal(place),
             vertical = RcVerticalPositioning.Top,
         ) { doc.node(node = child, self = self, axis = Axis.BOX, pages = pages) }
-        Axis.ROW -> scope.Box(
+        Axis.ROW -> rcScope.Box(
             main(
                 spec = child.size.width,
                 weight = { Modifier.horizontalWeight(it) },
@@ -259,7 +259,7 @@ internal fun DocContext.placed(child: Node, place: String, self: Dims, axis: Axi
             horizontal = RcHorizontalPositioning.Start,
             vertical = vertical(place),
         ) { doc.node(node = child, self = self, axis = Axis.BOX, pages = pages) }
-        Axis.BOX -> scope.Box(
+        Axis.BOX -> rcScope.Box(
             Modifier.fillMaxSize(),
             horizontal = horizontal(horizAlign),
             vertical = vertical(vertAlign),

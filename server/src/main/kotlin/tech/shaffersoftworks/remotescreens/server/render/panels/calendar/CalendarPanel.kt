@@ -96,7 +96,7 @@ fun DocContext.calendarPanel(tile: Tile, box: TileBox) {
     refreshEvery(AGENDA_REFRESH_SECONDS)
     val background = fixed(AgendaColor.BACKGROUND)
     val showAdd = supportsCalendarDialogs && snapshot.calendars.any { it.canCreate }
-    scope.Box(Modifier.size(units.px(box.w), units.px(box.h)).background(background)) {
+    rcScope.Box(Modifier.size(units.px(box.w), units.px(box.h)).background(background)) {
         this@calendarPanel.agendaColumn(tile.id, snapshot, zone)
         if (showAdd) this@calendarPanel.agendaAddButton(tile.id)
     }
@@ -105,7 +105,7 @@ fun DocContext.calendarPanel(tile: Tile, box: TileBox) {
 private fun DocContext.agendaColumn(tileId: String, snapshot: AgendaSnapshot, zone: ZoneId) {
     val teal = fixed(AgendaColor.TEAL)
     val white = fixed(AgendaColor.WHITE)
-    scope.Column(
+    rcScope.Column(
         Modifier.fillMaxSize().padding(
             start = units.px(AgendaLayout.PAD_H),
             top = units.px(AgendaLayout.PAD_V),
@@ -142,7 +142,7 @@ private fun DocContext.agendaBody(tileId: String, snapshot: AgendaSnapshot, zone
 
 private fun DocContext.agendaStatus(message: String, showSpinner: Boolean) {
     val color = fixed(if (showSpinner) AgendaColor.SECONDARY else AgendaColor.WHITE)
-    scope.Box(
+    rcScope.Box(
         Modifier.fillMaxWidth().verticalWeight(1f),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -164,7 +164,7 @@ private fun DocContext.agendaList(tileId: String, events: List<AgendaEvent>, zon
         val label = agendaDay(event, zone)
         grouped[label] = grouped[label].orEmpty() + event
     }
-    scope.Column(Modifier.fillMaxWidth().verticalWeight(1f).keptVerticalScroll("calendar.$tileId")) {
+    rcScope.Column(Modifier.fillMaxWidth().verticalWeight(1f).keptVerticalScroll("calendar.$tileId")) {
         val doc = this@agendaList
         var shown = 0
         for ((label, dayEvents) in grouped) {
@@ -212,7 +212,7 @@ private fun DocContext.agendaRow(tileId: String, event: AgendaEvent, zone: ZoneI
             end = units.px(AgendaLayout.ROW_PAD_H),
             bottom = units.px(AgendaLayout.ROW_PAD_V),
         )
-    scope.Row(tap(row, null, hold), vertical = RcVerticalPositioning.Center) {
+    rcScope.Row(tap(row, null, hold), vertical = RcVerticalPositioning.Center) {
         val doc = this@agendaRow
         doc.label(
             text = agendaTime(event, zone),
@@ -235,7 +235,7 @@ private fun DocContext.agendaRow(tileId: String, event: AgendaEvent, zone: ZoneI
 
 private fun DocContext.agendaAddButton(tileId: String) {
     val inset = units.px(AgendaLayout.FAB_INSET)
-    scope.Box(
+    rcScope.Box(
         Modifier.fillMaxSize().padding(start = inset, top = inset, end = inset, bottom = inset),
         horizontal = RcHorizontalPositioning.End,
         vertical = RcVerticalPositioning.Bottom,

@@ -124,7 +124,11 @@ internal class SignalingHub(
         return Outcome(sends, deferred, close)
     }
 
-    private fun offer(sessionId: String, info: SessionInfo, data: JsonObject): Outcome {
+    private fun offer(
+        sessionId: String,
+        info: SessionInfo,
+        data: JsonObject
+    ): Outcome {
         val targetId = data.field("to")?.trim().orEmpty()
         val targetSessionId = clientSessions[targetId]
         val target = targetSessionId?.let { sessions[it] }
@@ -147,7 +151,11 @@ internal class SignalingHub(
         return Outcome(sends = listOfNotNull(delivered) + rosterBroadcast())
     }
 
-    private fun forward(info: SessionInfo, data: JsonObject, type: String): Outcome {
+    private fun forward(
+        info: SessionInfo,
+        data: JsonObject,
+        type: String
+    ): Outcome {
         val targetId = data.field("to")?.trim().orEmpty()
         val targetSessionId = clientSessions[targetId]
         val sender = clientSessions[info.clientId]

@@ -19,10 +19,10 @@ object EnergyDashboardParser {
         entityAreas: Map<String, Pair<String, String>>,
         homeName: String = DEFAULT_HOME_NAME,
     ): EnergyDashboardConfig {
-        val sources = (preferences["energy_sources"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
+        val sources = (preferences["energy_sources"] as? JsonArray).orEmpty().filterIsInstance<JsonObject>()
         val grid = sources.firstOrNull { it.text("type") == "grid" }
         val devices = (preferences["device_consumption"] as? JsonArray).orEmpty()
-            .mapNotNull { it as? JsonObject }
+            .filterIsInstance<JsonObject>()
             .mapNotNull { device ->
                 val stat = device.text("stat_consumption") ?: return@mapNotNull null
                 val area = entityAreas[stat]

@@ -7,7 +7,7 @@ import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
-import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spacer
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
 import tech.shaffersoftworks.remotescreens.server.render.panels.thermostat.usesDualSetpoint
@@ -29,14 +29,14 @@ internal fun DocContext.climateCard(entityId: String, entityState: EntityState?)
             CardChrome.TEMP_STEP_C
         }
     val dualSetpoint = entityState.usesDualSetpoint()
-    gap(CardChrome.PANEL_CORNER_DP)
+    spacer(CardChrome.PANEL_CORNER_DP)
 
     if (dualSetpoint) {
         climateDualSetpoint(entityId, entityState, step)
     } else {
         predict(ref(entityId, "temperature", "+$step"), entityId)
         predict(ref(entityId, "temperature", "-$step"), entityId)
-        scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+        rcScope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
             val doc = this@climateCard
             doc.key(
                 ref = ref(entityId, "temperature", "-$step"),
@@ -135,7 +135,7 @@ internal fun DocContext.climateDualSetpoint(
     predict(ref(entityId, "temperature_low", "-$step"), entityId)
     predict(ref(entityId, "temperature_high", "+$step"), entityId)
     predict(ref(entityId, "temperature_high", "-$step"), entityId)
-    scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+    rcScope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@climateDualSetpoint
         doc.key(
             ref = ref(entityId, "temperature_low", "-$step"),
@@ -167,8 +167,8 @@ internal fun DocContext.climateDualSetpoint(
             round = true,
         )
     }
-    gap(CardChrome.PANEL_CORNER_DP)
-    scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+    spacer(CardChrome.PANEL_CORNER_DP)
+    rcScope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@climateDualSetpoint
         doc.key(
             ref = ref(entityId, "temperature_high", "-$step"),
@@ -208,8 +208,8 @@ internal fun DocContext.waterHeaterCard(entityId: String, entityState: EntitySta
     val step = entityState?.number("target_temp_step") ?: 1.0
     predict(ref(entityId, "temperature", "+$step"), entityId)
     predict(ref(entityId, "temperature", "-$step"), entityId)
-    gap(CardChrome.PANEL_CORNER_DP)
-    scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+    spacer(CardChrome.PANEL_CORNER_DP)
+    rcScope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@waterHeaterCard
         doc.key(
             ref = ref(entityId, "temperature", "-$step"),
@@ -241,7 +241,7 @@ internal fun DocContext.waterHeaterCard(entityId: String, entityState: EntitySta
             round = true,
         )
     }
-    gap(CardChrome.CARD_GAP_DP)
+    spacer(CardChrome.CARD_GAP_DP)
     bar(entityId = entityId, verb = "temperature", width = w, min = min, max = max)
     val modes = entityState?.list("operation_list").orEmpty()
     if (modes.isNotEmpty()) {
@@ -258,8 +258,8 @@ internal fun DocContext.waterHeaterCard(entityId: String, entityState: EntitySta
 }
 
 internal fun DocContext.valveCard(entityId: String, entityState: EntityState?, w: Float) {
-    gap(CardChrome.FLOW_PAD_DP)
-    scope.Row(Modifier.fillMaxWidth()) {
+    spacer(CardChrome.FLOW_PAD_DP)
+    rcScope.Row(Modifier.fillMaxWidth()) {
         val doc = this@valveCard
         doc.key(
             ref = ref(entityId, "open"),

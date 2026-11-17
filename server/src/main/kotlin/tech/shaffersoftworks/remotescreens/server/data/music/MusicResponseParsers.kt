@@ -15,10 +15,10 @@ internal object MusicResponseParsers {
     fun parseSearch(element: JsonElement): List<MusicListRow> {
         val payload = unwrapServicePayload(element)
         return buildList {
-            for (kind in SEARCH_KINDS) {
-                val items = payload[kind.first] as? JsonArray ?: continue
+            for ((first, second) in SEARCH_KINDS) {
+                val items = payload[first] as? JsonArray ?: continue
                 for (item in items) {
-                    (item as? JsonObject)?.toRow(kind.second)?.let(::add)
+                    (item as? JsonObject)?.toRow(second)?.let(::add)
                 }
             }
         }
@@ -32,8 +32,10 @@ internal object MusicResponseParsers {
 
     fun parseQueue(element: JsonElement, playerEntityId: String): MusicQueueSnapshot {
         val payload = unwrapServicePayload(element)
-        val queue = extractQueuePayload(payload, playerEntityId)
-        if (queue == null) return MusicQueueSnapshot(emptyList(), 0)
+        val queue = extractQueuePayload(payload, playerEntityId) ?: return MusicQueueSnapshot(
+            emptyList(),
+            0
+        )
         val itemsEl = queue["items"]
         val currentIndex = queue["current_index"]?.jsonPrimitive?.intOrNull
         val currentObj = queue["current_item"] as? JsonObject
@@ -146,20 +148,11 @@ internal object MusicResponseParsers {
      * Some REST/demo bodies use `service_response` instead.
      */
     private fun unwrapServicePayload(element: JsonElement): JsonObject {
-        var current = element.jsonObject
-        for (depth in 0 until UNWRAP_DEPTH) {
-            val wrapped = current["response"] ?: current["service_response"]
-            if (wrapped != null) {
-                current = wrapped.jsonObject
-            }
-            val isLeaf = current.containsKey("queue_id") ||
-                current.containsKey("current_item") ||
-                current.keys.any { it in SEARCH_KEYS || it == "items" }
-            val nested = current.values.singleOrNull() as? JsonObject
-            if (isLeaf || nested == null || current.size != 1) {
-                break
-            }
-            current = nested
+        var current = element as? JsonObject ?: return JsonObject(emptyMap())
+        repeat(UNWRAP_DEPTH) {
+            ((current["response"] ?: current["service_response"]) as? JsonObject)?.let { current = it }
+            if (current.keys.any { it in LEAF_KEYS }) return current
+            current = current.values.singleOrNull() as? JsonObject ?: return current
         }
         return current
     }
@@ -215,4 +208,5 @@ internal object MusicResponseParsers {
         "audiobooks",
         "podcasts",
     )
+    private val LEAF_KEYS = SEARCH_KEYS + setOf("queue_id", "current_item", "items")
 }

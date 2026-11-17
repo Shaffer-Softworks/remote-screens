@@ -31,7 +31,7 @@ fun DocContext.numericLabel(
     glyphs: Int = READING_GLYPHS,
 ) {
     val doc = this
-    scope.FitBox(horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
+    rcScope.FitBox(horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
         for (scale in listOf(1f, COMPACT_SCALE, MINIMUM_SCALE)) {
             val fontPx = doc.units.sp(sp * scale)
             val width = fontPx * DIGIT_ADVANCE * glyphs
@@ -57,7 +57,7 @@ fun DocContext.numericLabel(
 /** Prefer full-size text, then a smaller label before ellipsizing. Width is a conservative hint. */
 fun DocContext.fittingLabel(text: RcText, sample: String, sp: Float, color: RcColor) {
     val doc = this
-    scope.FitBox {
+    rcScope.FitBox {
         doc.label(
             text = text,
             sp = sp,

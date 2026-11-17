@@ -44,7 +44,12 @@ private val MARKER_COLOURS = listOf(
 /** Draws a map of the people in a picture slot from map tiles, with a marker with their initials for each. */
 class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> BufferedImage?) {
 
-    suspend fun draw(entities: List<EntityState>, width: Int, height: Int, isDark: Boolean): BufferedImage {
+    suspend fun draw(
+        entities: List<EntityState>,
+        width: Int,
+        height: Int,
+        isDark: Boolean
+    ): BufferedImage {
         val people = entities.mapNotNull { entity ->
             val latitude = entity.number("latitude")
             val longitude = entity.number("longitude")
@@ -72,23 +77,45 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
         graphics.fillRect(0, 0, width, height)
 
         val view = viewOf(people, width, height)
-        drawTiles(graphics = graphics, view = view, width = width, height = height)
+        drawTiles(
+            graphics = graphics,
+            view = view,
+            width = width,
+            height = height
+        )
         if (isDark) {
             graphics.color = Color(0, 0, 0, DARK_OVERLAY_ALPHA)
             graphics.fillRect(0, 0, width, height)
         }
-        drawMarkers(graphics = graphics, people = people, view = view, shortestSide = min(width, height))
+        drawMarkers(
+            graphics = graphics,
+            people = people,
+            view = view,
+            shortestSide = min(width, height)
+        )
         graphics.dispose()
         return image
     }
 
-    private data class PlacedPerson(val name: String, val latitude: Double, val longitude: Double)
+    private data class PlacedPerson(
+        val name: String,
+        val latitude: Double,
+        val longitude: Double
+    )
 
     /** The zoom level and the world pixel of the image's top-left corner. */
-    private data class MapView(val zoom: Int, val left: Double, val top: Double)
+    private data class MapView(
+        val zoom: Int,
+        val left: Double,
+        val top: Double
+    )
 
     /** Centred on everyone, zoomed out until everyone fits. */
-    private fun viewOf(people: List<PlacedPerson>, width: Int, height: Int): MapView {
+    private fun viewOf(
+        people: List<PlacedPerson>,
+        width: Int,
+        height: Int
+    ): MapView {
         val latitudes = people.map { it.latitude }
         val longitudes = people.map { it.longitude }
         val centreLatitude = if (latitudes.isEmpty()) DEFAULT_LATITUDE else (latitudes.min() + latitudes.max()) / 2
@@ -106,7 +133,12 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
         return MapView(zoom, centreX - width / 2.0, centreY - height / 2.0)
     }
 
-    private suspend fun drawTiles(graphics: Graphics2D, view: MapView, width: Int, height: Int) {
+    private suspend fun drawTiles(
+        graphics: Graphics2D,
+        view: MapView,
+        width: Int,
+        height: Int
+    ) {
         val tileCount = 1 shl view.zoom
         val firstColumn = floor(view.left / TILE_SIZE).toInt()
         val lastColumn = floor((view.left + width) / TILE_SIZE).toInt()
@@ -124,7 +156,12 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
         }
     }
 
-    private fun drawMarkers(graphics: Graphics2D, people: List<PlacedPerson>, view: MapView, shortestSide: Int) {
+    private fun drawMarkers(
+        graphics: Graphics2D,
+        people: List<PlacedPerson>,
+        view: MapView,
+        shortestSide: Int
+    ) {
         val radius = max(MIN_MARKER_RADIUS, shortestSide / MARKER_RADIUS_DIVISOR)
         graphics.font = Font(Font.SANS_SERIF, Font.BOLD, (radius * MARKER_FONT_SCALE).roundToInt())
         for ((index, person) in people.withIndex()) {

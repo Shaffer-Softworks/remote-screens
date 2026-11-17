@@ -1,14 +1,12 @@
 package tech.shaffersoftworks.remotescreens.server.data.music
 
 import java.util.concurrent.ConcurrentHashMap
+import tech.shaffersoftworks.remotescreens.server.data.ui.TileUiStore
 
 /** Session-wide Music Assistant UI state keyed by tile id. */
-class MusicUiStore {
-    private val byTile = ConcurrentHashMap<String, MusicUiState>()
+class MusicUiStore : TileUiStore<MusicUiState>(MusicUiState()) {
     private val browseItems = ConcurrentHashMap<String, List<MusicListRow>>()
     private val browseHasMore = ConcurrentHashMap<String, Boolean>()
-
-    fun state(tileId: String): MusicUiState = byTile.getOrPut(tileId) { MusicUiState() }
 
     fun browseItems(tileId: String): List<MusicListRow> = browseItems[tileId].orEmpty()
 
@@ -22,12 +20,6 @@ class MusicUiStore {
     fun clearBrowse(tileId: String) {
         browseItems.remove(tileId)
         browseHasMore[tileId] = true
-    }
-
-    fun update(tileId: String, transform: (MusicUiState) -> MusicUiState): MusicUiState {
-        val next = transform(state(tileId))
-        byTile[tileId] = next
-        return next
     }
 
     fun setBrowseType(tileId: String, mediaType: String): MusicUiState {

@@ -90,7 +90,7 @@ fun DocContext.securityPanel(tile: Tile, box: TileBox) {
         minOf(box.w / Metrics.BASE_W, box.h / Metrics.BASE_H)
             .coerceIn(Metrics.LAYOUT_SCALE_MIN, Metrics.LAYOUT_SCALE_MAX),
     )
-    scope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
+    rcScope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@securityPanel
         doc.sectionList(
             tileId = tile.id,
@@ -115,7 +115,7 @@ private fun DocContext.sectionList(
     openCount: Int,
     layout: Layout,
 ) {
-    scope.Column(
+    rcScope.Column(
         Modifier.width(units.px(layout.listW)).fillMaxHeight().background(role(Role.STRIP))
             .padding(start = 0f, top = units.px(layout.dp(Metrics.LIST_TOP_DP)), end = 0f, bottom = 0f),
     ) {
@@ -185,7 +185,7 @@ private fun DocContext.sectionRow(
     isSelected: Boolean,
     layout: Layout,
 ) {
-    scope.Row(
+    rcScope.Row(
         tap(
             Modifier.fillMaxWidth().height(units.px(layout.dp(Metrics.SECTION_H_DP)))
                 .padding(
@@ -217,7 +217,7 @@ private fun DocContext.detailPane(
     layout: Layout,
 ) {
     val pad = units.px(layout.dp(Metrics.DETAIL_PAD_DP))
-    scope.Column(
+    rcScope.Column(
         Modifier.horizontalWeight(1f).fillMaxHeight()
             .padding(start = pad, top = pad, end = pad, bottom = pad),
     ) {
@@ -248,7 +248,7 @@ private fun DocContext.detailPane(
 private fun DocContext.overviewBody(locks: List<String>, openings: List<String>, layout: Layout) {
     val unlocked = locks.count { states[it]?.state != "locked" }
     val open = openings.count { states[it]?.state == "on" }
-    scope.Column(Modifier.fillMaxWidth()) {
+    rcScope.Column(Modifier.fillMaxWidth()) {
         val doc = this@overviewBody
         doc.label(
             doc.i18n.t("ui.security_locks_sub", "count" to unlocked),
@@ -274,7 +274,7 @@ private fun DocContext.lockRow(entityId: String, layout: Layout) {
     val entityState = states[entityId] ?: return
     val name = entityState.name.ifBlank { entityId }
     val isLocked = entityState.state == "locked"
-    scope.Column(Modifier.fillMaxWidth()) {
+    rcScope.Column(Modifier.fillMaxWidth()) {
         val doc = this@lockRow
         Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
             doc.icon(
@@ -313,7 +313,7 @@ private fun DocContext.openingRow(entityId: String, layout: Layout) {
     val entityState = states[entityId] ?: return
     val name = entityState.name.ifBlank { entityId }
     val isOpen = entityState.state == "on"
-    scope.Row(
+    rcScope.Row(
         Modifier.fillMaxWidth().height(units.px(layout.dp(Metrics.ROW_H_DP))),
         vertical = RcVerticalPositioning.Center,
     ) {

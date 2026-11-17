@@ -20,7 +20,7 @@ import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
-import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spacer
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
@@ -113,7 +113,7 @@ object AlertRenderer {
                     horizontal = RcHorizontalPositioning.Center,
                 ) {
                     docContext.badge(alert)
-                    docContext.gap(TITLE_GAP_DP)
+                    docContext.spacer(TITLE_GAP_DP)
                     docContext.label(
                         text = alert.title,
                         sp = Type.HEADLINE,
@@ -123,7 +123,7 @@ object AlertRenderer {
                         align = RcTextAlign.Center,
                     )
                     if (alert.message.isNotBlank()) {
-                        docContext.gap(MESSAGE_GAP_DP)
+                        docContext.spacer(MESSAGE_GAP_DP)
                         docContext.label(
                             text = alert.message,
                             sp = Type.TITLE,
@@ -139,7 +139,7 @@ object AlertRenderer {
                             camH,
                         )
                     }
-                    docContext.gap(BUTTONS_GAP_DP)
+                    docContext.spacer(BUTTONS_GAP_DP)
                     docContext.buttons(alert.buttons.take(MAX_BUTTONS))
                 }
             }
@@ -157,7 +157,7 @@ object AlertRenderer {
             units.px(BADGE_DP),
             units.px(BADGE_DP),
         ).clip(rounded(BADGE_DP / 2f)).background(role(tone))
-        scope.Box(
+        rcScope.Box(
             badge,
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcVerticalPositioning.Center,
@@ -180,8 +180,8 @@ object AlertRenderer {
             ),
         )
         val video = liveVideo(camera, crop = true)
-        gap(TITLE_GAP_DP)
-        scope.Image(
+        spacer(TITLE_GAP_DP)
+        rcScope.Image(
             image("alert.cam", pw, ph),
             Modifier.size(
                 units.px(widthDp),
@@ -192,7 +192,7 @@ object AlertRenderer {
     }
 
     private fun DocContext.buttons(buttons: List<AlertButton>) {
-        scope.Row(Modifier.fillMaxWidth()) {
+        rcScope.Row(Modifier.fillMaxWidth()) {
             val docContext = this@buttons
             buttons.forEachIndexed { i, b ->
                 if (i > 0) Spacer(Modifier.width(docContext.units.px(BUTTON_SPACING_DP)))

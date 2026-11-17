@@ -16,7 +16,11 @@ val LIGHTS_DOMAINS: Set<String> = setOf("light", "switch", "cover")
 val BLINDS_DOMAINS: Set<String> = setOf("cover")
 
 /** A Home Assistant area and the lights, switches and covers in it, in the order Home Assistant lists states. */
-data class LightsRoom(val areaId: String, val name: String, val entityIds: List<String>)
+data class LightsRoom(
+    val areaId: String,
+    val name: String,
+    val entityIds: List<String>
+)
 
 /**
  * Reads the areas for a lights or blinds page from Home Assistant's registries. An entity is in its own area, or in

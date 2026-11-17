@@ -108,7 +108,7 @@ fun DocContext.thermostatPanel(tile: Tile, box: TileBox) {
         box.w / ThermostatMetrics.BASE_W,
         box.h / ThermostatMetrics.BASE_H,
     ).coerceIn(ThermostatMetrics.LAYOUT_SCALE_MIN, ThermostatMetrics.LAYOUT_SCALE_MAX)
-    scope.Column(Modifier.fillMaxSize().background(role(Role.PAGE))) {
+    rcScope.Column(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@thermostatPanel
         doc.thermostatHeader(layoutScale)
         doc.thermostatBody(
@@ -136,7 +136,7 @@ private fun DocContext.thermostatHeader(layoutScale: Float) {
     val accent = role(Role.ACCENT_DARK)
     val pad = units.px(ThermostatMetrics.PANEL_PAD_DP * layoutScale)
     val top = units.px(ThermostatMetrics.TOP_PAD_DP * layoutScale)
-    scope.Column(Modifier.fillMaxWidth().padding(start = pad, top = top, end = pad, bottom = 0f)) {
+    rcScope.Column(Modifier.fillMaxWidth().padding(start = pad, top = top, end = pad, bottom = 0f)) {
         Box(
             Modifier.size(
                 this@thermostatHeader.units.px(ThermostatMetrics.ACCENT_BAR_WIDTH_DP * layoutScale),
@@ -177,7 +177,7 @@ private fun DocContext.thermostatBody(
         ThermostatMetrics.DIAL_BASE_DP * layoutScale,
         boxH * ThermostatMetrics.DIAL_HEIGHT_SHARE,
     )
-    scope.Row(Modifier.fillMaxWidth().verticalWeight(1f), vertical = RcVerticalPositioning.Center) {
+    rcScope.Row(Modifier.fillMaxWidth().verticalWeight(1f), vertical = RcVerticalPositioning.Center) {
         val doc = this@thermostatBody
         doc.reading(
             caption = doc.i18n.t("ui.current_temp"),
@@ -236,13 +236,13 @@ private fun DocContext.humidityReading(tileId: String, layoutScale: Float, visib
         )
     } else {
         // Keep the dial centered when there is no humidity reading.
-        scope.Spacer(Modifier.horizontalWeight(1f))
+        rcScope.Spacer(Modifier.horizontalWeight(1f))
     }
 }
 
 /** Minus above plus for one setpoint (low or high). */
 private fun DocContext.adjustKeys(tileId: String, verb: String, step: Double, keyDp: Float, layoutScale: Float) {
-    scope.Column(horizontal = RcHorizontalPositioning.Center) {
+    rcScope.Column(horizontal = RcHorizontalPositioning.Center) {
         val doc = this@adjustKeys
         doc.key(
             ref = ActionRef(tileId, verb, "+$step"),
@@ -290,7 +290,7 @@ private fun DocContext.thermostatModes(
         )
     }
     val nextFan = nextFanMode(states[entityId]?.attr("fan_mode"), fans)
-    scope.Box(
+    rcScope.Box(
         Modifier.fillMaxWidth().padding(
             start = 0f,
             top = 0f,
@@ -451,7 +451,7 @@ private fun nextFanMode(current: String?, fans: List<String>): String? {
 
 /** "CURRENT TEMP" in teal over the value, large. */
 private fun DocContext.reading(caption: String, varName: String, layoutScale: Float, modifier: Modifier) {
-    scope.Column(modifier, horizontal = RcHorizontalPositioning.Center) {
+    rcScope.Column(modifier, horizontal = RcHorizontalPositioning.Center) {
         val doc = this@reading
         doc.label(
             text = caption.uppercase(doc.i18n.locale),

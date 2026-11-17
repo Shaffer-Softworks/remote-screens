@@ -302,7 +302,7 @@ object ScreenRenderer {
     /** The message shown on a page with no tiles. */
     private fun DocContext.emptyPage(spec: GridSpec, contentH: Float) {
         at(0f, spec.topBar) {
-            scope.Box(
+            rcScope.Box(
                 Modifier.size(units.px(spec.widthDp), units.px(contentH)),
                 horizontal = RcHorizontalPositioning.Center,
                 vertical = RcVerticalPositioning.Center,
@@ -339,7 +339,7 @@ object ScreenRenderer {
                     crop = true,
                 ),
             )
-            scope.Box(
+            rcScope.Box(
                 Modifier.fillMaxSize().padding(
                     start = units.px(0f),
                     top = units.px(spec.topBar),
@@ -408,7 +408,7 @@ object ScreenRenderer {
         val clockBackground = bar.clockBackground?.let { paint(it) } ?: role(Role.HEADER_DARK)
         val keyDp = minOf(BACK_KEY_BASE_DP * layoutScale, spec.topBar - BACK_KEY_INSET_DP)
         val drawer = screen.drawer
-        scope.Row(
+        rcScope.Row(
             Modifier.size(units.px(spec.widthDp), units.px(spec.topBar)).background(background),
             vertical = RcVerticalPositioning.Center,
         ) {
@@ -465,9 +465,9 @@ object ScreenRenderer {
                     STAT_ICON_DP * layoutScale,
                     fallbackColor = ink,
                 )
-                scope.Spacer(Modifier.width(units.px(STAT_ICON_GAP_DP * layoutScale)))
+                rcScope.Spacer(Modifier.width(units.px(STAT_ICON_GAP_DP * layoutScale)))
                 label(text(Vars.TEMP), headerSp, ink)
-                scope.Spacer(Modifier.width(units.px(STAT_GAP_DP * layoutScale)))
+                rcScope.Spacer(Modifier.width(units.px(STAT_GAP_DP * layoutScale)))
             } else {
                 topBarStat(
                     icon = "thermometer",
@@ -510,15 +510,15 @@ object ScreenRenderer {
         iconColor: RcColor = role(Role.ACCENT_SOFT),
     ) {
         this.icon(icon, STAT_ICON_DP * layoutScale, iconColor)
-        scope.Spacer(Modifier.width(units.px(STAT_ICON_GAP_DP * layoutScale)))
+        rcScope.Spacer(Modifier.width(units.px(STAT_ICON_GAP_DP * layoutScale)))
         label(text(value), headerSp, ink)
-        scope.Spacer(Modifier.width(units.px(STAT_GAP_DP * layoutScale)))
+        rcScope.Spacer(Modifier.width(units.px(STAT_GAP_DP * layoutScale)))
     }
 
     /** Battery level with the idle / charging icons swapped by visibility. */
     private fun DocContext.topBarBattery(headerSp: Float, layoutScale: Float, ink: RcColor) {
         val tint = role(Role.ACCENT_SOFT)
-        scope.Box(
+        rcScope.Box(
             Modifier.size(
                 units.px(STAT_ICON_DP * layoutScale),
                 units.px(STAT_ICON_DP * layoutScale),
@@ -537,9 +537,9 @@ object ScreenRenderer {
                 visible = int(Vars.BATTERY_CHARGING),
             )
         }
-        scope.Spacer(Modifier.width(units.px(STAT_ICON_GAP_DP * layoutScale)))
+        rcScope.Spacer(Modifier.width(units.px(STAT_ICON_GAP_DP * layoutScale)))
         label(text(Vars.BATTERY), headerSp, ink)
-        scope.Spacer(Modifier.width(units.px(STAT_GAP_DP * layoutScale)))
+        rcScope.Spacer(Modifier.width(units.px(STAT_GAP_DP * layoutScale)))
     }
 
     /**
@@ -568,7 +568,7 @@ object ScreenRenderer {
         at(
             0f,
             spec.heightDp - spec.navBar,
-        ) { scope.Column(Modifier.size(units.px(spec.widthDp), units.px(spec.navBar))) {
+        ) { rcScope.Column(Modifier.size(units.px(spec.widthDp), units.px(spec.navBar))) {
             val doc = this@navBar
             Box(
                 Modifier.size(
@@ -621,7 +621,7 @@ object ScreenRenderer {
         val icon = item.icon
         var modifier = Modifier.size(units.px(wDp), units.px(hDp))
         if (item.isCurrent) modifier = modifier.background(style.on)
-        scope.Column(
+        rcScope.Column(
             tap(modifier, item.ref),
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcColumnVerticalPositioning.Center,

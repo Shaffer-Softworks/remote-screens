@@ -13,7 +13,7 @@ import tech.shaffersoftworks.remotescreens.server.render.RenderedDoc
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
-import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spacer
 import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.server.render.tiles.energyFlow
@@ -103,7 +103,7 @@ object CardRenderer {
         panelW: Float,
         panelH: Float,
     ) {
-        scope.Column(
+        rcScope.Column(
             tap(
                 Modifier.size(units.px(panelW), units.px(panelH))
                     .clip(rounded(CardChrome.PANEL_CORNER_DP))
@@ -113,7 +113,7 @@ object CardRenderer {
         ) {
             val doc = this@cardPanel
             doc.header(entityId, card)
-            doc.gap(CardChrome.SECTION_GAP_DP)
+            doc.spacer(CardChrome.SECTION_GAP_DP)
             Column(Modifier.fillMaxWidth().verticalWeight(1f).keptVerticalScroll("card.$entityId")) {
                 doc.renderCardBody(
                     card = card,

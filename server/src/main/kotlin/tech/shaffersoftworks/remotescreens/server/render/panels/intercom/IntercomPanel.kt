@@ -51,7 +51,7 @@ fun DocContext.intercomPanel(tile: Tile, box: TileBox) {
 }
 
 private fun DocContext.widePage(tileId: String, view: IntercomView, layout: IntercomLayout) {
-    scope.Row(Modifier.fillMaxSize().background(fixed(IntercomPaint.PAGE))) {
+    rcScope.Row(Modifier.fillMaxSize().background(fixed(IntercomPaint.PAGE))) {
         val doc = this@widePage
         doc.sideColumn(tileId, view, layout)
         doc.stationList(tileId, view, layout)
@@ -60,7 +60,7 @@ private fun DocContext.widePage(tileId: String, view: IntercomView, layout: Inte
 
 private fun DocContext.stackedPage(tileId: String, view: IntercomView, layout: IntercomLayout) {
     // The list is the full page. The header is drawn after it, so a scroll cannot cover the keys.
-    scope.Box(Modifier.fillMaxSize().background(fixed(IntercomPaint.PAGE))) {
+    rcScope.Box(Modifier.fillMaxSize().background(fixed(IntercomPaint.PAGE))) {
         val doc = this@stackedPage
         doc.stationList(tileId, view, layout)
         doc.stackedHeader(tileId, view, layout)
@@ -75,7 +75,7 @@ private fun DocContext.stackedHeader(tileId: String, view: IntercomView, layout:
     val top = units.px(layout.dp(M.STACK_TOP_DP))
     val bottom = units.px(layout.dp(M.STACK_BOTTOM_DP))
     val band = units.px(layout.headerH)
-    scope.Column(
+    rcScope.Column(
         Modifier.fillMaxWidth().height(band).requiredHeightIn(max = band)
             .background(fixed(IntercomPaint.COLUMN))
             .padding(start = 0f, top = top, end = 0f, bottom = bottom),
@@ -100,7 +100,7 @@ private fun DocContext.stackedHeader(tileId: String, view: IntercomView, layout:
 
 /** The grey column: the accent, "INTERCOM", then the status and the two keys centred under it. */
 private fun DocContext.sideColumn(tileId: String, view: IntercomView, layout: IntercomLayout) {
-    scope.Column(
+    rcScope.Column(
         Modifier.width(units.px(layout.columnW)).fillMaxHeight().background(fixed(IntercomPaint.COLUMN))
             .padding(start = 0f, top = units.px(layout.dp(M.COLUMN_TOP_DP)), end = 0f, bottom = 0f),
     ) {
@@ -130,7 +130,7 @@ private fun DocContext.statusAndKeys(
 ) {
     val modifier = if (center) Modifier.verticalWeight(1f).fillMaxWidth() else Modifier.fillMaxWidth()
     val vertical = if (center) RcColumnVerticalPositioning.Center else RcColumnVerticalPositioning.Top
-    scope.Column(
+    rcScope.Column(
         modifier,
         horizontal = RcHorizontalPositioning.Center,
         vertical = vertical,
@@ -138,7 +138,7 @@ private fun DocContext.statusAndKeys(
         val doc = this@statusAndKeys
         doc.statusLine(view, layout)
         Spacer(Modifier.height(doc.units.px(layout.dp(M.BUTTON_TOP_DP))))
-        scope.Row(vertical = RcVerticalPositioning.Center) {
+        rcScope.Row(vertical = RcVerticalPositioning.Center) {
             doc.muteKey(tileId, view, layout)
             Spacer(Modifier.width(doc.units.px(layout.dp(M.BUTTON_GAP_DP))))
             doc.hangupKey(tileId, view, layout)
@@ -147,7 +147,7 @@ private fun DocContext.statusAndKeys(
 }
 
 private fun DocContext.accentBar(layout: IntercomLayout) {
-    scope.Row {
+    rcScope.Row {
         val doc = this@accentBar
         Spacer(Modifier.width(doc.units.px(layout.dp(M.ACCENT_START_DP))))
         Box(
@@ -197,7 +197,7 @@ private fun DocContext.stationList(tileId: String, view: IntercomView, layout: I
         Modifier.horizontalWeight(1f).fillMaxHeight().keptVerticalScroll("intercom.$tileId")
             .padding(start = start, top = top, end = end, bottom = bottom)
     }
-    scope.Column(scroll) {
+    rcScope.Column(scroll) {
         val doc = this@stationList
         if (layout.isStacked) {
             Spacer(Modifier.height(doc.units.px(layout.headerH) + top))
@@ -218,7 +218,7 @@ private fun DocContext.stationCard(
 ) {
     val corner = layout.dp(M.ROW_CORNER_DP)
     val pad = units.px(layout.dp(M.ROW_PAD_DP))
-    scope.Box(Modifier.fillMaxWidth().height(units.px(layout.dp(M.ROW_H_DP))).padding(pad)) {
+    rcScope.Box(Modifier.fillMaxWidth().height(units.px(layout.dp(M.ROW_H_DP))).padding(pad)) {
         val doc = this@stationCard
         Column(
             Modifier.fillMaxSize().clip(doc.rounded(corner)).background(doc.fixed(IntercomPaint.CARD)).border(
@@ -246,7 +246,7 @@ private fun DocContext.stationBody(
 ) {
     val inset = units.px(layout.dp(M.ROW_INSET_DP))
     val canCall = view.supportsCalls && !view.isBusy && !station.inCall
-    scope.Row(
+    rcScope.Row(
         Modifier.verticalWeight(1f).fillMaxWidth().padding(inset),
         vertical = RcVerticalPositioning.Center,
     ) {
@@ -297,7 +297,7 @@ private fun DocContext.muteGlyph(view: IntercomView, layout: IntercomLayout) {
         return
     }
     val edge = units.px(size)
-    scope.Box(Modifier.size(edge, edge)) {
+    rcScope.Box(Modifier.size(edge, edge)) {
         icon(
             name = "microphone-outline",
             sizeDp = size,
@@ -321,7 +321,7 @@ private fun DocContext.hangupGlyph(view: IntercomView, layout: IntercomLayout) {
     }
     val live = view.connectedId != null
     val edge = units.px(size)
-    scope.Box(Modifier.size(edge, edge)) {
+    rcScope.Box(Modifier.size(edge, edge)) {
         icon(
             name = "phone-hangup",
             sizeDp = size,
@@ -357,7 +357,7 @@ private fun DocContext.controlKey(
             ),
         action,
     )
-    scope.Row(
+    rcScope.Row(
         box,
         horizontal = RcRowHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,

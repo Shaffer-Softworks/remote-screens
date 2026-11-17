@@ -35,7 +35,11 @@ class I18n(
     }
 
     /** Home Assistant's word for [state] of an entity of [domain], with its device class when it has one. */
-    fun state(domain: String, state: String, deviceClass: String? = null): String {
+    fun state(
+        domain: String,
+        state: String,
+        deviceClass: String? = null
+    ): String {
         val deviceClassKey = deviceClass?.let { "component.$domain.entity_component.$it.state.$state" }
         return deviceClassKey?.let(homeAssistantWords::get)
             ?: homeAssistantWords["component.$domain.entity_component._.state.$state"]

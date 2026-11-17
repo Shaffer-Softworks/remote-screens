@@ -41,7 +41,7 @@ fun DocContext.statusIcon(entityId: String, name: String?, sizeDp: Float, color:
             VarValue.int(resting, if (active) Vars.GONE else Vars.VISIBLE),
         )
     }
-    scope.Box(Modifier.size(units.px(sizeDp), units.px(sizeDp))) {
+    rcScope.Box(Modifier.size(units.px(sizeDp), units.px(sizeDp))) {
         val doc = this@statusIcon
         doc.icon(name, sizeDp, color, doc.int(resting, Vars.VISIBLE))
         // Three fan blades repeat every 120 degrees, so the minute-clock wrap is seamless.

@@ -63,7 +63,7 @@ fun DocContext.levelBar(
     val thumb = heightPx * LEVEL_KNOB_SHARE
     val thumbPad = (heightPx - thumb) / 2f
     val barRadius = heightPx / 2f
-    scope.Box(Modifier.size(widthPx, heightPx).clip(rounded(heightDp / 2f)).background(track)) {
+    rcScope.Box(Modifier.size(widthPx, heightPx).clip(rounded(heightDp / 2f)).background(track)) {
         Canvas(Modifier.size(widthPx, heightPx)) {
             // Knob travels in-bounds; fill tip peeks past its right edge by the vertical inset so the
             // stadium end reads past the thumb (knob sits left of the tip).
@@ -144,7 +144,7 @@ fun DocContext.segmentedLevelBar(
     val gapPx = units.px(SEG_LEVEL_GAP_DP)
     val segW = ((widthDp - SEG_LEVEL_GAP_DP * (steps - 1)) / steps).coerceAtLeast(1f)
     val heightPx = units.px(heightDp)
-    scope.Row(Modifier.size(units.px(widthDp), heightPx), vertical = RcVerticalPositioning.Center) {
+    rcScope.Row(Modifier.size(units.px(widthDp), heightPx), vertical = RcVerticalPositioning.Center) {
         val doc = this@segmentedLevelBar
         for (index in 0 until steps) {
             if (index > 0) Spacer(Modifier.width(gapPx))
@@ -176,7 +176,7 @@ fun DocContext.choiceRow(
 ) {
     val corner = heightDp / SEG_CHOICE_CORNER_DIVISOR
     val edge = units.px(SEG_EDGE_DP)
-    scope.Row(
+    rcScope.Row(
         Modifier.fillMaxWidth().height(units.px(heightDp))
             .clip(rounded(corner)).background(role(Role.INK_DIM)).padding(edge),
         horizontal = RcRowHorizontalPositioning.Start,
@@ -218,4 +218,4 @@ fun DocContext.choiceRow(
     }
 }
 
-fun DocContext.gap(dp: Float) = scope.Spacer(Modifier.size(units.px(dp), units.px(dp)))
+fun DocContext.spacer(dp: Float) = rcScope.Spacer(Modifier.size(units.px(dp), units.px(dp)))

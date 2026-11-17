@@ -18,7 +18,12 @@ private const val JPEG_QUALITY = 0.85f
 object ImageEncoder {
 
     /** Scales [source] to cover (crop) or fit within [width]×[height]. */
-    fun fit(source: BufferedImage, width: Int, height: Int, isCropped: Boolean): BufferedImage {
+    fun fit(
+        source: BufferedImage,
+        width: Int,
+        height: Int,
+        isCropped: Boolean
+    ): BufferedImage {
         if (source.width == width && source.height == height) return source
         val widthScale = width / source.width.toDouble()
         val heightScale = height / source.height.toDouble()
@@ -33,12 +38,12 @@ object ImageEncoder {
         )
         graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
         graphics.drawImage(
-            source,
-            (width - scaledWidth) / 2,
-            (height - scaledHeight) / 2,
-            scaledWidth,
-            scaledHeight,
-            null,
+            /* img = */ source,
+            /* x = */ (width - scaledWidth) / 2,
+            /* y = */ (height - scaledHeight) / 2,
+            /* width = */ scaledWidth,
+            /* height = */ scaledHeight,
+            /* observer = */ null,
         )
         graphics.dispose()
         return output
@@ -49,7 +54,11 @@ object ImageEncoder {
         if (isRound) encodeRoundPng(image) else encodeJpeg(image)
 
     private fun encodeRoundPng(image: BufferedImage): ByteArray {
-        val masked = BufferedImage(image.width, image.height, BufferedImage.TYPE_INT_ARGB)
+        val masked = BufferedImage(
+            image.width,
+            image.height,
+            BufferedImage.TYPE_INT_ARGB
+        )
         val graphics = masked.createGraphics()
         graphics.setRenderingHint(
             RenderingHints.KEY_ANTIALIASING,

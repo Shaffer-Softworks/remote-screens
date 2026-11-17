@@ -1,6 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.data.security
 
-import java.util.concurrent.ConcurrentHashMap
+import tech.shaffersoftworks.remotescreens.server.data.ui.TileUiStore
 
 /** Left-column section of the security page. */
 enum class SecuritySection(val key: String) {
@@ -20,14 +20,8 @@ data class SecurityUiState(
 )
 
 /** Session-wide security page UI state keyed by tile id. */
-class SecurityUiStore {
-    private val byTile = ConcurrentHashMap<String, SecurityUiState>()
-
-    fun state(tileId: String): SecurityUiState = byTile[tileId] ?: SecurityUiState()
-
-    fun snapshot(): Map<String, SecurityUiState> = HashMap(byTile)
-
+class SecurityUiStore : TileUiStore<SecurityUiState>(SecurityUiState()) {
     fun selectSection(tileId: String, section: SecuritySection) {
-        byTile[tileId] = state(tileId).copy(selectedSection = section)
+        update(tileId) { it.copy(selectedSection = section) }
     }
 }

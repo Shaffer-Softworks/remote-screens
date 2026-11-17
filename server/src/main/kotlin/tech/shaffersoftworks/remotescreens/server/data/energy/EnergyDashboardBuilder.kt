@@ -112,12 +112,28 @@ object EnergyDashboardBuilder {
 
     private fun deviceTotals(series: List<EnergyNamedSeries>): List<EnergyRankBar> =
         series.map { named ->
-            EnergyRankBar(name = named.name, kwh = named.values.sum(), colorArgb = named.colorArgb)
+            EnergyRankBar(
+                name = named.name,
+                kwh = named.values.sum(),
+                colorArgb = named.colorArgb
+            )
         }.sortedByDescending { it.kwh }
 
-    private fun totalsRows(gridName: String, gridTotal: Double, cost: Double?): List<EnergyTotalRow> = listOf(
-        EnergyTotalRow(source = gridName, energyKwh = gridTotal, cost = cost),
-        EnergyTotalRow(source = "Grid total", energyKwh = gridTotal, cost = cost),
+    private fun totalsRows(
+        gridName: String,
+        gridTotal: Double,
+        cost: Double?
+    ): List<EnergyTotalRow> = listOf(
+        EnergyTotalRow(
+            source = gridName,
+            energyKwh = gridTotal,
+            cost = cost
+        ),
+        EnergyTotalRow(
+            source = "Grid total",
+            energyKwh = gridTotal,
+            cost = cost
+        ),
     )
 
     private fun buildSankey(
@@ -128,13 +144,24 @@ object EnergyDashboardBuilder {
     ): EnergySankey {
         if (gridTotal <= 0.0) return EnergySankey()
         val nodes = mutableListOf(
-            EnergySankeyNode(id = "grid", label = config.gridName, column = 0, colorArgb = COLOR_BLUE),
-            EnergySankeyNode(id = "home", label = config.homeName, column = 1, colorArgb = COLOR_TEAL),
+            EnergySankeyNode(
+                id = "grid",
+                label = config.gridName,
+                column = 0,
+                colorArgb = COLOR_BLUE
+            ),
+            EnergySankeyNode(
+                id = "home",
+                label = config.homeName,
+                column = 1,
+                colorArgb = COLOR_TEAL
+            ),
         )
         val links = mutableListOf(
             EnergySankeyLink(fromId = "grid", toId = "home", kwh = gridTotal),
         )
         val byArea = linkedMapOf<String, Double>()
+
         for (device in config.devices) {
             val total = deviceTotals.firstOrNull { it.name == device.name }?.kwh ?: 0.0
             if (total <= 0.0) continue
@@ -152,10 +179,24 @@ object EnergyDashboardBuilder {
             }
             val deviceId = "device.${device.statConsumption}"
             val color = deviceTotals.firstOrNull { it.name == device.name }?.colorArgb ?: COLOR_BLUE
-            nodes += EnergySankeyNode(id = deviceId, label = device.name, column = 3, colorArgb = color)
-            links += EnergySankeyLink(fromId = "home", toId = areaNodeId, kwh = total)
-            links += EnergySankeyLink(fromId = areaNodeId, toId = deviceId, kwh = total)
+            nodes += EnergySankeyNode(
+                id = deviceId,
+                label = device.name,
+                column = 3,
+                colorArgb = color
+            )
+            links += EnergySankeyLink(
+                fromId = "home",
+                toId = areaNodeId,
+                kwh = total
+            )
+            links += EnergySankeyLink(
+                fromId = areaNodeId,
+                toId = deviceId,
+                kwh = total
+            )
         }
+
         if (untracked > 0.0) {
             nodes += EnergySankeyNode(
                 id = "untracked",
@@ -163,8 +204,13 @@ object EnergyDashboardBuilder {
                 column = 3,
                 colorArgb = COLOR_GRAY,
             )
-            links += EnergySankeyLink(fromId = "home", toId = "untracked", kwh = untracked)
+            links += EnergySankeyLink(
+                fromId = "home",
+                toId = "untracked",
+                kwh = untracked
+            )
         }
+
         return EnergySankey(nodes = nodes, links = links)
     }
 
@@ -188,6 +234,7 @@ object EnergyDashboardBuilder {
             return if (size <= 0) emptyList() else List(size) { 0.0 }
         }
         val values = points.take(size).map { it.change }
+
         return if (values.size >= size) {
             values.take(size)
         } else {
@@ -195,13 +242,18 @@ object EnergyDashboardBuilder {
         }
     }
 
-    private fun periodLabel(ui: EnergyDashboardUiState, zone: ZoneId, nowMs: Long): String {
+    private fun periodLabel(
+        ui: EnergyDashboardUiState,
+        zone: ZoneId,
+        nowMs: Long
+    ): String {
         val zoned = Instant.ofEpochMilli(nowMs).atZone(zone)
         val shifted = when (ui.period) {
             EnergyDashboardPeriod.DAY -> zoned.plusDays(ui.offset.toLong())
             EnergyDashboardPeriod.WEEK -> zoned.plusWeeks(ui.offset.toLong())
             EnergyDashboardPeriod.MONTH -> zoned.plusMonths(ui.offset.toLong())
         }
+
         return when (ui.period) {
             EnergyDashboardPeriod.DAY -> shifted.format(dayLabel)
             EnergyDashboardPeriod.WEEK -> {

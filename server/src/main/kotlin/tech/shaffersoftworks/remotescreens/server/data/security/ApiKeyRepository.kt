@@ -10,7 +10,13 @@ private const val API_KEY_BYTES = 24
 class ApiKeyRepository(dataDir: File) {
     private val file = File(dataDir, "api_key")
 
-    val apiKey: String by lazy { if (file.exists()) file.readText().trim() else createKey() }
+    val apiKey: String by lazy {
+        if (file.exists()) {
+            file.readText().trim()
+        } else {
+            createKey()
+        }
+    }
 
     private fun createKey(): String {
         val bytes = ByteArray(API_KEY_BYTES).also(SecureRandom()::nextBytes)

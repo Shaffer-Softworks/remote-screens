@@ -10,7 +10,7 @@ import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
 import tech.shaffersoftworks.remotescreens.server.render.bindChoices
 import tech.shaffersoftworks.remotescreens.server.render.widgets.choiceRow
-import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spacer
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
 import tech.shaffersoftworks.remotescreens.server.render.widgets.levelBar
@@ -115,7 +115,11 @@ internal object CardChrome {
     const val ALARM_FEAT_ARM_VACATION = 32
 }
 
-internal fun ref(entityId: String, verb: String, arg: String = "") = ActionRef(
+internal fun ref(
+    entityId: String,
+    verb: String,
+    arg: String = ""
+) = ActionRef(
     tile = "e:$entityId",
     verb = verb,
     arg = arg,
@@ -125,7 +129,7 @@ internal fun DocContext.header(entityId: String, card: String) {
     val ink = role(Role.INK)
     val soft = role(Role.INK_SOFT)
     // Mockup: circular close on the left, title centred (balanced by a matching spacer).
-    scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+    rcScope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@header
         doc.key(
             ref = ActionRef("_", "close"),
@@ -179,7 +183,7 @@ internal fun DocContext.bigToggle(
     val action = ref(entityId, verb)
     predict(action, entityId)
 
-    scope.Box(
+    rcScope.Box(
         Modifier.fillMaxWidth(),
         horizontal = RcHorizontalPositioning.Center,
     ) {
@@ -222,14 +226,14 @@ internal fun DocContext.bigToggle(
 }
 
 internal fun DocContext.section(title: String) {
-    gap(CardChrome.SECTION_TITLE_GAP_DP)
+    spacer(CardChrome.SECTION_TITLE_GAP_DP)
     label(
         text = title,
         sp = Type.BODY,
         color = role(Role.INK_SOFT),
         weight = Weight.SEMI_BOLD,
     )
-    gap(CardChrome.FLOW_PAD_DP)
+    spacer(CardChrome.FLOW_PAD_DP)
 }
 
 internal fun DocContext.bar(
@@ -267,7 +271,7 @@ internal fun DocContext.bar(
 }
 
 internal fun DocContext.swatches(colors: List<Pair<Int, ActionRef>>) {
-    scope.Row(
+    rcScope.Row(
         Modifier.fillMaxWidth(),
         horizontal = RcRowHorizontalPositioning.SpaceBetween,
     ) {
@@ -313,7 +317,7 @@ internal fun DocContext.flowKeys(
         return
     }
 
-    scope.Flow(Modifier.fillMaxWidth()) {
+    rcScope.Flow(Modifier.fillMaxWidth()) {
         val doc = this@flowKeys
         choices.forEachIndexed { index, (value, word) ->
             Box(

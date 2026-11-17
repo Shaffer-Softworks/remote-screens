@@ -193,7 +193,7 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
         ((box.w - DETAIL_GAP_BASE_DP) / dayW).toInt().coerceIn(0, FORECAST_DAYS_MAX),
     )
 
-    scope.Column(
+    rcScope.Column(
         Modifier.fillMaxSize().background(role(Role.PAGE)),
         horizontal = RcHorizontalPositioning.Center,
     ) {
@@ -308,7 +308,7 @@ private fun DocContext.portraitWeather(page: PortraitPage) {
 }
 
 private fun DocContext.portraitStack(page: PortraitPage) {
-    scope.Column(
+    rcScope.Column(
         Modifier.fillMaxSize().background(role(Role.PAGE)),
         horizontal = RcHorizontalPositioning.Center,
     ) {
@@ -327,9 +327,9 @@ private fun DocContext.portraitStack(page: PortraitPage) {
 /** The list fills the page and the hero is painted over it, so a scrolled row cannot cover the temperature. */
 private fun DocContext.portraitScroll(page: PortraitPage) {
     val viewport = units.px(page.heightDp)
-    scope.Box(Modifier.fillMaxSize().background(role(Role.PAGE))) {
+    rcScope.Box(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@portraitScroll
-        scope.Column(
+        rcScope.Column(
             Modifier.fillMaxWidth()
                 .height(viewport)
                 .requiredHeightIn(max = viewport)
@@ -347,7 +347,7 @@ private fun DocContext.portraitScroll(page: PortraitPage) {
 }
 
 private fun DocContext.portraitHero(page: PortraitPage) {
-    scope.Column(
+    rcScope.Column(
         Modifier.fillMaxWidth().height(units.px(page.hero)).background(role(Role.PAGE)),
         horizontal = RcHorizontalPositioning.Center,
     ) {
@@ -388,7 +388,7 @@ private fun DocContext.portraitDetails(page: PortraitPage) {
     val block = PortraitFit.LABEL_SP * PortraitFit.LINE +
         PortraitFit.LABEL_GAP_DP +
         PortraitFit.VALUE_SP * PortraitFit.LINE
-    scope.Column(Modifier.fillMaxWidth().height(units.px(PortraitFit.AFTER_CONDITION_DP + block))) {
+    rcScope.Column(Modifier.fillMaxWidth().height(units.px(PortraitFit.AFTER_CONDITION_DP + block))) {
         val doc = this@portraitDetails
         Spacer(Modifier.height(doc.units.px(PortraitFit.AFTER_CONDITION_DP)))
         Row(
@@ -428,7 +428,7 @@ private fun DocContext.portraitDays(
     modifier: Modifier,
     vertical: RcColumnVerticalPositioning,
 ) {
-    scope.Column(
+    rcScope.Column(
         modifier.background(role(Role.STRIP)).padding(
             start = 0f,
             top = units.px(PortraitFit.STRIP_PAD_V_DP),
@@ -443,7 +443,7 @@ private fun DocContext.portraitDays(
 }
 
 private fun DocContext.portraitDay(page: PortraitPage, day: Forecast) {
-    scope.Row(
+    rcScope.Row(
         Modifier.fillMaxWidth().height(units.px(PortraitFit.ROW_H_DP)).padding(
             start = units.px(PortraitFit.STRIP_PAD_H_DP),
             top = 0f,

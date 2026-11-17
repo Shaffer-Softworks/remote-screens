@@ -29,7 +29,6 @@ import androidx.compose.remote.creation.modifiers.RoundedRectShape
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Present
 import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.freeform.paint
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 
@@ -76,7 +75,7 @@ fun DocContext.rounded(dp: Float) = units.px(dp).let { RoundedRectShape(it, it, 
  * was tapped from the layout, so a placed tap target must be moved by padding instead.
  */
 fun DocContext.at(xDp: Float, yDp: Float, content: () -> Unit) {
-    scope.Box(
+    rcScope.Box(
         Modifier.fillMaxSize().padding(start = units.px(xDp), top = units.px(yDp), end = 0f, bottom = 0f),
     ) { content() }
 }
@@ -106,7 +105,7 @@ fun DocContext.icon(
     val iconPath = path(name, scale = px / ICON_VIEWPORT)
     var modifier = Modifier.size(px, px)
     if (visible != null) modifier = modifier.visibility(visible)
-    scope.Canvas(modifier) {
+    rcScope.Canvas(modifier) {
         save {
             motion?.angle?.let { rotate(it, (px / 2f).rf, (px / 2f).rf) }
             // Paint is shared for the whole document. The dial's gradient stays installed
@@ -143,7 +142,7 @@ fun DocContext.weatherStateIcon(
     val layers = pieces.map { piece ->
         path(rawSvg = piece.path, scale = pathScale) to fixed(HaWeatherIcons.color(piece.layer))
     }
-    scope.Canvas(Modifier.size(px, px)) {
+    rcScope.Canvas(Modifier.size(px, px)) {
         save {
             for ((iconPath, color) in layers) {
                 paint {
@@ -165,7 +164,7 @@ fun DocContext.toggleIcon(entityId: String, off: String, on: String?, sizeDp: Fl
         icon(off, sizeDp, color)
         return
     }
-    scope.Box(Modifier.size(units.px(sizeDp), units.px(sizeDp))) {
+    rcScope.Box(Modifier.size(units.px(sizeDp), units.px(sizeDp))) {
         this@toggleIcon.icon(
             name = off,
             sizeDp = sizeDp,
@@ -192,7 +191,7 @@ fun DocContext.spinner(sizeDp: Float, color: RcColor, visible: RcInteger? = null
     val stroke = px * SPINNER_STROKE_RATIO
     var modifier = Modifier.size(px, px)
     if (visible != null) modifier = modifier.visibility(visible)
-    scope.Canvas(modifier) {
+    rcScope.Canvas(modifier) {
         save {
             rotate(continuousSeconds() * SPINNER_DEG_PER_SEC, mid.rf, mid.rf)
             paint {
@@ -222,7 +221,7 @@ fun DocContext.label(
     align: RcTextAlign = RcTextAlign.Start,
     modifier: Modifier = Modifier,
 ) {
-    scope.Text(
+    rcScope.Text(
         text = text,
         modifier = modifier,
         color = color,
@@ -243,7 +242,7 @@ fun DocContext.label(
     align: RcTextAlign = RcTextAlign.Start,
     modifier: Modifier = Modifier,
 ) {
-    scope.Text(
+    rcScope.Text(
         text = text,
         modifier = modifier,
         color = color,
@@ -276,7 +275,7 @@ fun DocContext.key(
     // Fixed padding can leave less room than the icon in small, square keys.
     val horizontalPadding = if (text == null) 0f else units.px(KEY_PADDING_DP)
     val padded = box.padding(start = horizontalPadding, top = 0f, end = horizontalPadding, bottom = 0f)
-    scope.Row(
+    rcScope.Row(
         padded,
         horizontal = RcRowHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -302,7 +301,7 @@ fun DocContext.initials(name: String, sizeDp: Float, bg: RcColor, ink: RcColor) 
         units.px(sizeDp),
         units.px(sizeDp),
     ).clip(rounded(sizeDp / 2f)).background(fixed(0xFF000000.toInt())).padding(1f)
-    scope.Box(circle) {
+    rcScope.Box(circle) {
         Box(
             Modifier.fillMaxSize()
                 .clip(this@initials.rounded((sizeDp / 2f - 1f / units.density).coerceAtLeast(0f)))

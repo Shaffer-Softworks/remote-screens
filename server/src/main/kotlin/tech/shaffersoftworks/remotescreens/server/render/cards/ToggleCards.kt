@@ -7,7 +7,7 @@ import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
-import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spacer
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
 
@@ -34,15 +34,15 @@ import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.padding
 
 internal fun DocContext.toggleCard(entityId: String, entityState: EntityState?) {
-    gap(CardChrome.PANEL_PAD_DP)
+    spacer(CardChrome.PANEL_PAD_DP)
     bigToggle(entityId, entityState)
 }
 
 internal fun DocContext.lockCard(entityId: String, entityState: EntityState?) {
-    gap(CardChrome.CARD_GAP_DP)
+    spacer(CardChrome.CARD_GAP_DP)
     bigToggle(entityId, entityState)
-    gap(CardChrome.PANEL_CORNER_DP)
-    scope.Box(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
+    spacer(CardChrome.PANEL_CORNER_DP)
+    rcScope.Box(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
         this@lockCard.label(
             text = this@lockCard.text(Vars.tile("e:$entityId", Vars.KEY_CONFIRM)),
             sp = Type.TITLE,
@@ -52,7 +52,7 @@ internal fun DocContext.lockCard(entityId: String, entityState: EntityState?) {
         )
     }
     if (entityState?.supports(CardChrome.FAN_PERCENTAGE_FLAG) == true) {
-        gap(CardChrome.HEADER_GAP_DP)
+        spacer(CardChrome.HEADER_GAP_DP)
         key(
             ref = ref(entityId, "open"),
             text = i18n.t("ui.open_door"),
@@ -83,8 +83,8 @@ internal fun DocContext.vacuumCard(
     uiTileId: String,
     ui: VacuumUiState = VacuumUiState(),
 ) {
-    gap(CardChrome.FLOW_PAD_DP)
-    scope.Row(Modifier.fillMaxWidth()) {
+    spacer(CardChrome.FLOW_PAD_DP)
+    rcScope.Row(Modifier.fillMaxWidth()) {
         val doc = this@vacuumCard
         doc.key(
             ref = ref(entityId, "start"),
@@ -110,7 +110,7 @@ internal fun DocContext.vacuumCard(
             modifier = Modifier.horizontalWeight(1f),
         )
     }
-    gap(CardChrome.PANEL_CORNER_DP)
+    spacer(CardChrome.PANEL_CORNER_DP)
     vacuumLocateRow(entityId = entityId, uiTileId = uiTileId, ui = ui)
     val speeds = entityState?.list("fan_speed_list").orEmpty()
     if (speeds.isNotEmpty()) {
@@ -130,7 +130,7 @@ private fun DocContext.vacuumLocateRow(entityId: String, uiTileId: String, ui: V
         ).joinToString("|")
     }
     val vacuumRooms = data.vacuumRooms[entityId]
-    scope.Row(Modifier.fillMaxWidth()) {
+    rcScope.Row(Modifier.fillMaxWidth()) {
         val doc = this@vacuumLocateRow
         doc.key(
             ref = ref(entityId, "locate"),
@@ -162,7 +162,7 @@ private fun DocContext.roomsKey(tileId: String, selectedCount: Int, modifier: Mo
             .padding(start = pad, top = 0f, end = pad, bottom = 0f),
         ActionRef(tileId, "vacuum_rooms"),
     )
-    scope.Row(
+    rcScope.Row(
         box,
         horizontal = RcRowHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -194,8 +194,8 @@ private fun DocContext.roomsKey(tileId: String, selectedCount: Int, modifier: Mo
 }
 
 internal fun DocContext.lawnMowerCard(entityId: String) {
-    gap(CardChrome.FLOW_PAD_DP)
-    scope.Row(Modifier.fillMaxWidth()) {
+    spacer(CardChrome.FLOW_PAD_DP)
+    rcScope.Row(Modifier.fillMaxWidth()) {
         val doc = this@lawnMowerCard
         doc.key(
             ref = ref(entityId, "start"),
