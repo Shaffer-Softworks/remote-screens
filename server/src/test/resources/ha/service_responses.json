@@ -1,0 +1,24 @@
+{
+  "forecast": {
+    "context": {"id": "01J"},
+    "response": {
+      "weather.home": {
+        "forecast": [
+          {"datetime": "2026-11-18T12:00:00+00:00", "condition": "rainy", "temperature": 9, "templow": 4, "precipitation_probability": 80},
+          {"condition": "sunny"},
+          {"datetime": "2026-11-19T12:00:00+00:00", "condition": "sunny", "temperature": "11.5"}
+        ]
+      }
+    }
+  },
+  "todo": {
+    "todo.shopping": {
+      "items": [
+        {"uid": "a", "summary": "Milk", "status": "needs_action"},
+        {"uid": "b", "summary": "Bread", "status": "completed"},
+        {"summary": "Eggs"},
+        {"uid": "c", "status": "needs_action"}
+      ]
+    }
+  }
+}

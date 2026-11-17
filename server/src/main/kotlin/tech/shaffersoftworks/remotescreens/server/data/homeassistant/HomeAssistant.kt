@@ -4,7 +4,6 @@ import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 
 /**
  * What the add-on needs from Home Assistant. [HomeAssistantClient] talks to a real one, [demo.DemoHome] makes one
@@ -16,15 +15,19 @@ interface HomeAssistant {
     val events: SharedFlow<HomeAssistantEvent>
     val config: StateFlow<HomeAssistantConfig>
 
+    /**
+     * Calls [service] on [target], or on the `entity_id` in [data] when [target] is empty. Returns the service's
+     * response when [returnResponse] is set. A fixed call the add-on makes itself goes through [call].
+     */
     suspend fun callService(
-        domain: String,
-        service: String,
-        data: JsonObject,
+        service: ServiceRef,
+        target: List<EntityId> = emptyList(),
+        data: ServiceData = ServiceData.EMPTY,
         returnResponse: Boolean = false,
     ): JsonElement?
 
-    /** Any WebSocket command, such as `config/area_registry/list`. Returns its `result`. */
-    suspend fun command(type: String, payload: JsonObject = JsonObject(emptyMap())): JsonElement?
+    /** A WebSocket command, such as [AreaRegistryList]; returns its `result`. */
+    suspend fun <R> send(request: HaRequest<R>): R
 
     /** A GET on the REST API or a path Home Assistant serves, such as `/api/camera_proxy/camera.door`. */
     suspend fun fetch(path: String): ByteArray?

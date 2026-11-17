@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.player.action
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
@@ -9,8 +10,6 @@ import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.hasOpenSen
 import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.selectedZone
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Tile
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 
 /** The verbs of a full alarm page, as RPI's `AlarmViewModel` handles them. */
 class AlarmActions(
@@ -82,9 +81,7 @@ class AlarmActions(
             TapOutcome.AlarmNotice(tile.id, notice.first, notice.second)
         } else {
             val data = ServiceDataBuilder.build(action = action, verb = verb, arg = "", entity = zoneState, code = code)
-            val (domain, service) = action.service.split('.', limit = 2)
-            homeAssistant.callService(domain, service, JsonObject(data + ("entity_id" to JsonPrimitive(zoneEntityId))))
-            TapOutcome.Done
+            homeAssistant.callNamedService(action.service, target = listOf(EntityId(zoneEntityId)), data = data)
         }
     }
 }

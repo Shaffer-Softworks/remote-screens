@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.data.homeassistant
 
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -7,6 +8,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
 /** An entity id such as `light.kitchen`. */
+@Serializable
 @JvmInline
 value class EntityId(val value: String) {
     val domain: Domain get() = Domain(value.substringBefore('.'))

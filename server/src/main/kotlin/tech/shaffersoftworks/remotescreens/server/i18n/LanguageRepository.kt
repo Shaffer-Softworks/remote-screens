@@ -2,10 +2,8 @@ package tech.shaffersoftworks.remotescreens.server.i18n
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
 import tech.shaffersoftworks.remotescreens.server.data.layout.LayoutRepository
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import java.util.concurrent.ConcurrentHashMap
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.GetTranslations
 
 /** The language of the screens: the add-on's preference, else Home Assistant's, with Home Assistant's own words. */
 class LanguageRepository(
@@ -39,13 +37,14 @@ class LanguageRepository(
         val language = current().language
         if (homeAssistantWords.containsKey(language)) return
         val translations = runCatching {
-            val request = buildJsonObject {
-                put("language", language)
-                put("category", "entity_component")
-            }
-            homeAssistant.command("frontend/get_translations", request) as? JsonObject
+            homeAssistant.send(GetTranslations(language = language, category = ENTITY_COMPONENT))
         }.getOrNull()
-        homeAssistantWords[language] = I18n.haResources(translations)
+        homeAssistantWords[language] = translations?.texts.orEmpty()
         cached = null
+    }
+
+    private companion object {
+        /** Home Assistant's words for entity states, such as `component.light.entity_component._.state.on`. */
+        const val ENTITY_COMPONENT = "entity_component"
     }
 }

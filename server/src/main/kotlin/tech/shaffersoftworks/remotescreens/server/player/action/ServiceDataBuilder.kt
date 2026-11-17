@@ -12,6 +12,7 @@ import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceData
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceRef
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.SwitchState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HvacMode
@@ -40,7 +41,7 @@ object ServiceDataBuilder {
         arg: String,
         entity: EntityState?,
         code: String? = null,
-    ): Map<String, JsonElement> {
+    ): ServiceData {
         var resolvedArg = resolveArg(action, arg, entity)
         val serviceData = LinkedHashMap<String, JsonElement>()
         if (verb == "play_media" && resolvedArg.contains('|')) {
@@ -54,7 +55,7 @@ object ServiceDataBuilder {
             if (filled != JsonNull) serviceData[key] = filled
         }
         completeClimateTemperatureRange(serviceData, action, entity)
-        return serviceData
+        return ServiceData(JsonObject(serviceData))
     }
 
     /**

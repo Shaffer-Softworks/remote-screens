@@ -1,0 +1,22 @@
+{
+  "id": 3,
+  "type": "result",
+  "success": true,
+  "result": [
+    {
+      "entity_id": "light.kitchen",
+      "state": "on",
+      "attributes": {"friendly_name": "Kitchen", "brightness": 180, "supported_color_modes": ["brightness"]},
+      "last_changed": "2026-11-17T08:00:00.000000+00:00",
+      "last_updated": "2026-11-17T08:00:00.000000+00:00",
+      "context": {"id": "01J", "parent_id": null, "user_id": null}
+    },
+    {
+      "entity_id": "sensor.outdoor",
+      "state": "12.5",
+      "attributes": {"unit_of_measurement": "°C"},
+      "last_changed": "2026-11-17T07:00:00.000000+00:00"
+    },
+    {"state": "on"}
+  ]
+}

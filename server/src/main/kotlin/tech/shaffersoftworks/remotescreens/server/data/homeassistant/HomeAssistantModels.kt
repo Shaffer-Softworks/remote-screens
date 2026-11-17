@@ -126,11 +126,12 @@ private const val RGB_MASK = 0xFFFFFF
 /** One demo service invocation: target entity, service name, and payload. */
 data class ServiceCall(
     val entityId: String,
-    val domain: String,
-    val service: String,
-    val data: JsonObject,
+    val service: ServiceRef,
+    val data: ServiceData,
     val current: EntityState,
 ) {
+    val domain: Domain get() = service.domain
+
     fun num(key: String) = (data[key] as? JsonPrimitive)?.doubleOrNull
     fun str(key: String) = (data[key] as? JsonPrimitive)?.contentOrNull
     fun bool(key: String) = (data[key] as? JsonPrimitive)?.booleanOrNull

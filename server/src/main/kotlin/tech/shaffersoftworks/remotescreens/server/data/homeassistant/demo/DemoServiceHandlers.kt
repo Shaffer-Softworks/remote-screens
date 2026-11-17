@@ -2,9 +2,12 @@ package tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceCall
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceData
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceRef
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.TimerState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.VacuumState
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.SwitchState
@@ -18,17 +21,16 @@ internal class DemoServiceHandlers(
     private val set: (entityId: String, state: String, attrs: Map<String, JsonElement>) -> Unit,
     private val completedTodos: MutableSet<String>,
 ) {
+    /** Handlers are keyed by the service's name, which means the same in every domain that has it. */
     fun apply(
         entityId: String,
-        domain: String,
-        service: String,
-        data: JsonObject,
+        service: ServiceRef,
+        data: ServiceData,
         current: EntityState,
     ) {
-        handlers[service]?.invoke(
+        handlers[service.service]?.invoke(
             ServiceCall(
                 entityId = entityId,
-                domain = domain,
                 service = service,
                 data = data,
                 current = current,
@@ -107,9 +109,9 @@ internal class DemoServiceHandlers(
         set(
             entityId,
             when (domain) {
-                "lawn_mower" -> "mowing"
-                "timer" -> "active"
-                else -> "cleaning"
+                Domain.LAWN_MOWER -> "mowing"
+                Domain.TIMER -> TimerState.ACTIVE.wire
+                else -> VacuumState.CLEANING.wire
             },
             emptyMap(),
         )
@@ -119,8 +121,8 @@ internal class DemoServiceHandlers(
         set(
             entityId,
             when (domain) {
-                "vacuum", "lawn_mower" -> "idle"
-                "timer" -> if (service == "pause") "paused" else "idle"
+                Domain.VACUUM, Domain.LAWN_MOWER -> VacuumState.IDLE.wire
+                Domain.TIMER -> if (service.service == "pause") TimerState.PAUSED.wire else TimerState.IDLE.wire
                 else -> current.state
             },
             emptyMap(),

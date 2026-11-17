@@ -1,7 +1,14 @@
 package tech.shaffersoftworks.remotescreens.server.player.action
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.FireEvent
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaPlayerPlayMedia
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaPlayerVolumeStep
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceData
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceRef
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.call
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AGENDA_FIELD_SEPARATOR
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaCopy
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaSnapshot
@@ -250,13 +257,7 @@ class ActionRouter(
                 entity = entity,
                 code = code,
             )
-            val (domain, service) = action.service.split('.', limit = 2)
-            homeAssistant.callService(
-                domain,
-                service,
-                JsonObject(data + ("entity_id" to JsonPrimitive(entityId))),
-            )
-            TapOutcome.Done
+            homeAssistant.callNamedService(action.service, target = listOf(EntityId(entityId)), data = data)
         }
     }
 
@@ -351,8 +352,8 @@ class ActionRouter(
         }
         "play_uri" -> musicPlayUri(repo = repo, entityId = entityId, uri = ref.arg, enqueue = "play")
         "enqueue_uri" -> musicPlayUri(repo = repo, entityId = entityId, uri = ref.arg, enqueue = "add")
-        "volume_up" -> musicVolume(entityId, "volume_up")
-        "volume_down" -> musicVolume(entityId, "volume_down")
+        "volume_up" -> musicVolume(entityId, isUp = true)
+        "volume_down" -> musicVolume(entityId, isUp = false)
         else -> TapOutcome.Ignored
     }
 
@@ -384,12 +385,8 @@ class ActionRouter(
         return TapOutcome.Rebuild
     }
 
-    private suspend fun musicVolume(entityId: String, service: String): TapOutcome {
-        homeAssistant.callService(
-            "media_player",
-            service,
-            buildJsonObject { put("entity_id", entityId) },
-        )
+    private suspend fun musicVolume(entityId: String, isUp: Boolean): TapOutcome {
+        homeAssistant.call(MediaPlayerVolumeStep(EntityId(entityId), isUp = isUp))
         return TapOutcome.Done
     }
 
@@ -430,20 +427,10 @@ class ActionRouter(
             val action = if (ref.arg == ActionRef.ARG_HOLD) tile.hold else tile.tap
             action.takeIf { it.type == TapType.ACTION }
         }
-        val service = tap?.service
-        val serviceParts = service?.split('.', limit = 2)
-        return when {
-            serviceParts == null -> TapOutcome.Ignored
-            serviceParts.size != 2 -> TapOutcome.Failed("Bad service $service")
-            else -> {
-                val data = (tap.data ?: JsonObject(emptyMap())).toMutableMap()
-                if ("entity_id" !in data && target.entityId != null) {
-                    data["entity_id"] = JsonPrimitive(target.entityId)
-                }
-                homeAssistant.callService(serviceParts[0], serviceParts[1], JsonObject(data))
-                TapOutcome.Done
-            }
-        }
+        val serviceText = tap?.service ?: return TapOutcome.Ignored
+        val data = ServiceData(tap.data ?: JsonObject(emptyMap()))
+        val tileTarget = if (data.entityIds.isEmpty()) listOfNotNull(target.entityId?.let(::EntityId)) else emptyList()
+        return homeAssistant.callNamedService(serviceText, target = tileTarget, data = data)
     }
 
     private suspend fun playFavourite(target: TapTarget): TapOutcome {
@@ -451,30 +438,23 @@ class ActionRouter(
         val mediaPlayer = target.entityId
         val contentId = options?.get("content_id")
         if (mediaPlayer == null || contentId == null) return TapOutcome.Ignored
-        val data = mapOf(
-            "entity_id" to JsonPrimitive(mediaPlayer),
-            "media_content_id" to JsonPrimitive(contentId),
-            "media_content_type" to JsonPrimitive(options["content_type"] ?: "music"),
+        homeAssistant.call(
+            MediaPlayerPlayMedia(
+                entityId = EntityId(mediaPlayer),
+                mediaContentId = contentId,
+                mediaContentType = options["content_type"] ?: "music",
+            ),
         )
-        homeAssistant.callService("media_player", "play_media", JsonObject(data))
         return TapOutcome.Done
     }
 
     private suspend fun fireEvent(eventType: String, target: TapTarget): TapOutcome {
         if (eventType.isBlank()) return TapOutcome.Ignored
-        homeAssistant.command(
-            "fire_event",
-            buildJsonObject {
-                put("event_type", eventType)
-                put(
-                    "event_data",
-                    buildJsonObject {
-                        target.entityId?.let { put("entity_id", it) }
-                        put("source", "remote_screens")
-                    },
-                )
-            },
-        )
+        val eventData = buildJsonObject {
+            target.entityId?.let { put(ServiceData.ENTITY_ID, it) }
+            put("source", "remote_screens")
+        }
+        homeAssistant.send(FireEvent(eventType, eventData))
         return TapOutcome.Done
     }
 
@@ -505,4 +485,15 @@ class ActionRouter(
     companion object {
         const val CONFIRM_MS = 4000L
     }
+}
+
+/** Calls a `domain.service` named by the catalogue or a layout; a name without both parts fails the tap. */
+internal suspend fun HomeAssistant.callNamedService(
+    serviceText: String,
+    target: List<EntityId>,
+    data: ServiceData,
+): TapOutcome {
+    val service = ServiceRef.parse(serviceText) ?: return TapOutcome.Failed("Bad service $serviceText")
+    callService(service, target = target, data = data)
+    return TapOutcome.Done
 }

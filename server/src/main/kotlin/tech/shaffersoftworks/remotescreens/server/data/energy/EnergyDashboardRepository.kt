@@ -1,19 +1,22 @@
 package tech.shaffersoftworks.remotescreens.server.data.energy
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.AreaRegistryList
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.DeviceRegistryList
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EnergyGetPrefs
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityRegistryListForDisplay
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.FossilEnergyConsumption
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.put
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.StatisticsDuringPeriod
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.ZoneId
 
 private const val CONFIG_TTL_MS = 30 * 60_000L
 private const val AREAS_TTL_MS = 60_000L
+private const val STATISTIC_CHANGE = "change"
+private const val ENERGY_UNIT = "energy"
+private const val KILOWATT_HOURS = "kWh"
+private const val FOSSIL_SHARE_SENSOR = "sensor.electricity_maps_grid_fossil_fuel_percentage"
 
 /** Loads Energy dashboard prefs, recorder statistics, and fossil share for a period. */
 class EnergyDashboardRepository(private val homeAssistant: HomeAssistant) {
@@ -41,22 +44,15 @@ class EnergyDashboardRepository(private val homeAssistant: HomeAssistant) {
             null
         } else {
             runCatching {
-                homeAssistant.command(
-                    "recorder/statistics_during_period",
-                    buildJsonObject {
-                        put("start_time", Instant.ofEpochMilli(startMs).toString())
-                        put("end_time", Instant.ofEpochMilli(endMs).toString())
-                        put("period", EnergyDashboardBuilder.recorderPeriod(ui))
-                        put(
-                            "statistic_ids",
-                            buildJsonArray { statisticIds.forEach { add(JsonPrimitive(it)) } },
-                        )
-                        put(
-                            "types",
-                            buildJsonArray { add(JsonPrimitive("change")) },
-                        )
-                        put("units", buildJsonObject { put("energy", "kWh") })
-                    },
+                homeAssistant.send(
+                    StatisticsDuringPeriod(
+                        startTime = Instant.ofEpochMilli(startMs).toString(),
+                        endTime = Instant.ofEpochMilli(endMs).toString(),
+                        period = EnergyDashboardBuilder.recorderPeriod(ui),
+                        statisticIds = statisticIds,
+                        types = listOf(STATISTIC_CHANGE),
+                        units = mapOf(ENERGY_UNIT to KILOWATT_HOURS),
+                    ),
                 )
             }.onFailure { logger.debug("Energy statistics failed: {}", it.message) }.getOrNull()
         }
@@ -85,7 +81,7 @@ class EnergyDashboardRepository(private val homeAssistant: HomeAssistant) {
     suspend fun config(homeName: String = "Home"): EnergyDashboardConfig? {
         cachedConfig?.takeIf { System.currentTimeMillis() - it.second < CONFIG_TTL_MS }?.let { return it.first }
         val prefs = runCatching {
-            homeAssistant.command("energy/get_prefs") as? JsonObject
+            homeAssistant.send(EnergyGetPrefs)
         }.onFailure { logger.debug("Energy dashboard prefs failed: {}", it.message) }.getOrNull()
         val value = prefs?.let { EnergyDashboardParser.config(it, entityAreas(), homeName) }
         cachedConfig = value to System.currentTimeMillis()
@@ -105,18 +101,14 @@ class EnergyDashboardRepository(private val homeAssistant: HomeAssistant) {
     ): Double {
         if (statisticIds.isEmpty()) return 1.0
         val response = runCatching {
-            homeAssistant.command(
-                "energy/fossil_energy_consumption",
-                buildJsonObject {
-                    put("start_time", Instant.ofEpochMilli(startMs).toString())
-                    put("end_time", Instant.ofEpochMilli(endMs).toString())
-                    put(
-                        "energy_statistic_ids",
-                        buildJsonArray { statisticIds.forEach { add(JsonPrimitive(it)) } },
-                    )
-                    put("period", period)
-                    put("co2_statistic_id", "sensor.electricity_maps_grid_fossil_fuel_percentage")
-                },
+            homeAssistant.send(
+                FossilEnergyConsumption(
+                    startTime = Instant.ofEpochMilli(startMs).toString(),
+                    endTime = Instant.ofEpochMilli(endMs).toString(),
+                    energyStatisticIds = statisticIds,
+                    period = period,
+                    co2StatisticId = FOSSIL_SHARE_SENSOR,
+                ),
             )
         }.onFailure { logger.debug("Fossil energy failed: {}", it.message) }.getOrNull()
         return EnergyDashboardParser.fossilKwh(response)
@@ -136,32 +128,10 @@ class EnergyDashboardRepository(private val homeAssistant: HomeAssistant) {
     }
 
     private suspend fun fetchEntityAreas(): Map<String, Pair<String, String>> {
-        val areas = (homeAssistant.command("config/area_registry/list") as? JsonArray).orEmpty()
-            .mapNotNull { element ->
-                val area = element as? JsonObject ?: return@mapNotNull null
-                val areaId = area.text("area_id") ?: return@mapNotNull null
-                areaId to (area.text("name") ?: areaId)
-            }
+        val areaNames = homeAssistant.send(AreaRegistryList).associate { area -> area.areaId to area.displayName }
+        val devices = homeAssistant.send(DeviceRegistryList)
+        return homeAssistant.send(EntityRegistryListForDisplay).entityAreaIds(devices)
+            .mapNotNull { (entityId, areaId) -> areaNames[areaId]?.let { entityId to (areaId to it) } }
             .toMap()
-
-        val deviceAreas = (homeAssistant.command("config/device_registry/list") as? JsonArray).orEmpty()
-            .mapNotNull { element ->
-                val device = element as? JsonObject ?: return@mapNotNull null
-                val deviceId = device.text("id") ?: return@mapNotNull null
-                device.text("area_id")?.let { deviceId to it }
-            }
-            .toMap()
-        val registry = homeAssistant.command("config/entity_registry/list_for_display") as? JsonObject
-        val result = HashMap<String, Pair<String, String>>()
-        (registry?.get("entities") as? JsonArray).orEmpty().forEach { element ->
-            val entry = element as? JsonObject ?: return@forEach
-            val entityId = entry.text("ei") ?: return@forEach
-            val areaId = entry.text("ai") ?: entry.text("di")?.let(deviceAreas::get) ?: return@forEach
-            val areaName = areas[areaId] ?: return@forEach
-            result[entityId] = areaId to areaName
-        }
-        return result
     }
-
-    private fun JsonObject.text(key: String): String? = (this[key] as? JsonPrimitive)?.contentOrNull
 }

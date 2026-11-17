@@ -9,9 +9,8 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.FireEvent
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -58,10 +57,7 @@ class PlayersChangedEvent(
 
     private suspend fun fire() {
         runCatching {
-            homeAssistant.command(
-                type = "fire_event",
-                payload = buildJsonObject { put("event_type", PLAYERS_CHANGED_EVENT) },
-            )
+            homeAssistant.send(FireEvent(PLAYERS_CHANGED_EVENT))
         }.onFailure { exception ->
             currentCoroutineContext().ensureActive()
             logger.debug("{} not fired: {}", PLAYERS_CHANGED_EVENT, exception.message)

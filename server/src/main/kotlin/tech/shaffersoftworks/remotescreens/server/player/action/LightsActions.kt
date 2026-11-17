@@ -1,6 +1,9 @@
 package tech.shaffersoftworks.remotescreens.server.player.action
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.LightTurnOn
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.call
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightDetailMode
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiStore
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
@@ -9,10 +12,6 @@ import tech.shaffersoftworks.remotescreens.server.render.panels.lights.green
 import tech.shaffersoftworks.remotescreens.server.render.panels.lights.red
 import tech.shaffersoftworks.remotescreens.server.render.panels.lights.supportsRgbColor
 import tech.shaffersoftworks.remotescreens.server.render.theme.Rpi
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 
 /** The verbs of a full lights page: the chosen room and RPI's light dialog. Light changes go through the catalogue. */
 class LightsActions(
@@ -69,7 +68,7 @@ class LightsActions(
     ): Boolean {
         if (verb == "lights_effect") {
             store.setEffectMenuOpen(tileId, false)
-            turnOnDetailLight(tileId, "effect" to JsonPrimitive(arg))
+            turnOnDetailLight(tileId) { entityId -> LightTurnOn(entityId, effect = arg) }
             return true
         }
         val index = arg.toIntOrNull()
@@ -87,24 +86,13 @@ class LightsActions(
         val entityId = renderData?.lightsUi?.state(tileId)?.detailEntityId
 
         if (entityId != null && homeAssistant.states.value[entityId]?.supportsRgbColor() == true) {
-            val channels = listOf(
-                colour.red(),
-                colour.green(),
-                colour.blue(),
-            ).map {
-                JsonPrimitive(it)
-            }
-
-            turnOnDetailLight(tileId, "rgb_color" to JsonArray(channels))
+            val channels = listOf(colour.red(), colour.green(), colour.blue())
+            turnOnDetailLight(tileId) { entityId -> LightTurnOn(entityId, rgbColor = channels) }
         }
     }
 
-    private suspend fun turnOnDetailLight(tileId: String, field: Pair<String, JsonElement>) {
+    private suspend fun turnOnDetailLight(tileId: String, request: (EntityId) -> LightTurnOn) {
         val entityId = renderData?.lightsUi?.state(tileId)?.detailEntityId ?: return
-        homeAssistant.callService(
-            domain = "light",
-            service = "turn_on",
-            data = JsonObject(mapOf("entity_id" to JsonPrimitive(entityId), field)),
-        )
+        homeAssistant.call(request(EntityId(entityId)))
     }
 }

@@ -27,15 +27,17 @@ import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiStore
 import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.Tile
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.ZoneId
 import java.util.concurrent.ConcurrentHashMap
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.call
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.WeatherGetForecasts
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.TodoGetItems
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HistoryDuringPeriod
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EnergyGetPrefs
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.BrowseMedia
 
 private const val MS_PER_MINUTE = 60_000L
 private const val SECONDS_PER_HOUR = 3600L
@@ -208,38 +210,23 @@ class RenderDataRepository(
         entityId,
         FORECAST_TTL_MS,
     ) {
-        val request = buildJsonObject {
-            put("entity_id", entityId)
-            put("type", "daily")
-        }
-        val result = homeAssistant.callService(
-            domain = "weather",
-            service = "get_forecasts",
-            data = request,
-            returnResponse = true,
-        )
+        val result = homeAssistant.call(WeatherGetForecasts(EntityId(entityId)), returnResponse = true)
         HomeAssistantResponseParser.forecasts(result, entityId)
     }
 
     suspend fun history(entityId: String, hours: Int): List<HistoryPoint> =
         cached(histories, "$entityId@$hours", HISTORY_TTL_MS) {
-            val request = buildJsonObject {
-                put("start_time", Instant.now().minusSeconds(hours * SECONDS_PER_HOUR).toString())
-                put("entity_ids", buildJsonArray { add(JsonPrimitive(entityId)) })
-                put("minimal_response", true)
-                put("no_attributes", true)
-                put("significant_changes_only", false)
-            }
-            val response = homeAssistant.command("history/history_during_period", request)
-            HomeAssistantResponseParser.history(response, entityId)
+            val request = HistoryDuringPeriod(
+                startTime = Instant.now().minusSeconds(hours * SECONDS_PER_HOUR).toString(),
+                entityIds = listOf(entityId),
+            )
+            HomeAssistantResponseParser.history(homeAssistant.send(request), entityId)
         }
 
     suspend fun energy(): EnergyPrefs? {
         energyPreferences?.takeIf { it.isFresh(ENERGY_TTL_MS) }?.let { return it.value }
         val value = runCatching {
-            (homeAssistant.command(
-                "energy/get_prefs",
-            ) as? JsonObject)?.let(HomeAssistantResponseParser::energy)
+            HomeAssistantResponseParser.energy(homeAssistant.send(EnergyGetPrefs))
         }.onFailure { logger.debug("No energy preferences: {}", it.message) }.getOrNull()
         energyPreferences = Cached(value, System.currentTimeMillis())
         return value
@@ -250,10 +237,7 @@ class RenderDataRepository(
         entityId,
         BROWSE_TTL_MS,
     ) {
-        val request = buildJsonObject { put("entity_id", entityId) }
-        HomeAssistantResponseParser.library(
-            homeAssistant.command("media_player/browse_media", request),
-        )
+        HomeAssistantResponseParser.library(homeAssistant.send(BrowseMedia(entityId)))
     }
 
     suspend fun todoItems(entityId: String): List<TodoItem> = cached(
@@ -261,13 +245,7 @@ class RenderDataRepository(
         entityId,
         BROWSE_TTL_MS,
     ) {
-        val request = buildJsonObject { put("entity_id", entityId) }
-        val result = homeAssistant.callService(
-            domain = "todo",
-            service = "get_items",
-            data = request,
-            returnResponse = true,
-        )
+        val result = homeAssistant.call(TodoGetItems(EntityId(entityId)), returnResponse = true)
         HomeAssistantResponseParser.todos(result, entityId)
     }
 

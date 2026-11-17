@@ -1,0 +1,16 @@
+{
+  "id": 2,
+  "type": "result",
+  "success": true,
+  "result": {
+    "latitude": 52.3,
+    "longitude": 4.9,
+    "unit_system": {"length": "km", "temperature": "°F"},
+    "location_name": "Cottage",
+    "time_zone": "Europe/Amsterdam",
+    "components": ["light", "remote_screens", "energy"],
+    "version": "2026.11.2",
+    "language": "nl",
+    "country": "NL"
+  }
+}

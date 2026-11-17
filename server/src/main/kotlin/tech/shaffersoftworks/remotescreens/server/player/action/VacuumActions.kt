@@ -1,16 +1,15 @@
 package tech.shaffersoftworks.remotescreens.server.player.action
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.VacuumCleanArea
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.VacuumSegmentClean
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.call
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VACUUM_PREFIX
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumCleanMethod
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiStore
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.selectedVacuumId
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 
 /**
  * Verbs of a full vacuum page / vacuum card: choosing a vacuum, opening the rooms dialog, toggling rooms, and
@@ -61,15 +60,9 @@ class VacuumActions(
         if (entityId == null || rooms == null || roomIds.isEmpty()) return false
 
         when (rooms.method) {
-            VacuumCleanMethod.AREA -> homeAssistant.callService(
-                domain = "vacuum",
-                service = "clean_area",
-                data = areaCleanData(entityId = entityId, areaIds = roomIds),
-            )
-            VacuumCleanMethod.SEGMENT -> homeAssistant.callService(
-                domain = "vacuum",
-                service = "send_command",
-                data = segmentCleanData(entityId = entityId, segmentIds = roomIds),
+            VacuumCleanMethod.AREA -> homeAssistant.call(VacuumCleanArea(EntityId(entityId), areaIds = roomIds))
+            VacuumCleanMethod.SEGMENT -> homeAssistant.call(
+                VacuumSegmentClean.of(EntityId(entityId), segmentIds = roomIds),
             )
         }
         store.afterClean(target.tileId)
@@ -82,26 +75,4 @@ class VacuumActions(
         tileEntityId = target.entityId,
         vacuumIds = homeAssistant.states.value.keys.filter { it.startsWith(VACUUM_PREFIX) },
     )
-
-    private fun areaCleanData(entityId: String, areaIds: List<String>): JsonObject = buildJsonObject {
-        put("entity_id", entityId)
-        put("cleaning_area_id", JsonArray(areaIds.map(::JsonPrimitive)))
-    }
-
-    private fun segmentCleanData(entityId: String, segmentIds: List<String>): JsonObject = buildJsonObject {
-        put("entity_id", entityId)
-        put("command", SEGMENT_CLEAN_COMMAND)
-        put(
-            "params",
-            JsonArray(
-                segmentIds.map { id ->
-                    id.toIntOrNull()?.let(::JsonPrimitive) ?: JsonPrimitive(id)
-                },
-            ),
-        )
-    }
-
-    private companion object {
-        const val SEGMENT_CLEAN_COMMAND = "app_segment_clean"
-    }
 }

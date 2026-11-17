@@ -32,18 +32,13 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.int
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
+import tech.shaffersoftworks.remotescreens.server.player.FollowedEvent
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.milliseconds
@@ -56,6 +51,8 @@ private const val MAX_BACKOFF_MS = 30_000L
 private const val EVENT_BUFFER_CAPACITY = 64
 private const val REMOTE_SCREENS_DOMAIN = "remote_screens"
 private const val COMPONENT_LOADED_EVENT = "component_loaded"
+private const val STATE_CHANGED_EVENT = "state_changed"
+private const val AUTH = "auth"
 
 /** Home Assistant over its WebSocket API, reconnecting with backoff. States are kept from `state_changed`. */
 class HomeAssistantClient(
@@ -65,7 +62,6 @@ class HomeAssistantClient(
     private val scope: CoroutineScope,
 ) : HomeAssistant {
     private val logger = LoggerFactory.getLogger(HomeAssistantClient::class.java)
-    private val json = Json { ignoreUnknownKeys = true }
     private val httpClient = HttpClient(CIO) {
         install(WebSockets) { pingIntervalMillis = WEBSOCKET_PING_INTERVAL_MS }
         engine { requestTimeout = REQUEST_TIMEOUT_MS }
@@ -83,7 +79,7 @@ class HomeAssistantClient(
     override val config: StateFlow<HomeAssistantConfig> = _config.asStateFlow()
 
     private val nextCommandId = AtomicInteger(1)
-    private val pendingCommands = ConcurrentHashMap<Int, CompletableDeferred<JsonObject>>()
+    private val pendingCommands = ConcurrentHashMap<Int, CompletableDeferred<HaInbound.Result>>()
     private val sendMutex = Mutex()
 
     @Volatile
@@ -122,30 +118,19 @@ class HomeAssistantClient(
 
     private suspend fun connectAndListen() {
         httpClient.webSocket(urlString = webSocketUrl) {
-            val greeting = readJson()
+            check(readInbound() is HaInbound.AuthRequired) { "unexpected greeting" }
 
-            check(greeting.type == "auth_required") { "unexpected greeting" }
-
-            val auth = buildJsonObject {
-                put("type", "auth")
-                put("access_token", accessToken)
-            }
-            send(Frame.Text(auth.toString()))
-            val answer = readJson()
-            check(answer.type == "auth_ok") { "authentication failed: ${answer["message"]}" }
+            send(Frame.Text(outbound(type = AUTH, payload = encodePayload(HaAuth.serializer(), HaAuth(accessToken)))))
+            val answer = readInbound()
+            check(
+                answer is HaInbound.AuthOk,
+            ) { "authentication failed: ${(answer as? HaInbound.AuthInvalid)?.message}" }
             session = this
-            logger.info(
-                "Connected to Home Assistant {}",
-                answer["ha_version"]?.jsonPrimitive?.contentOrNull,
-            )
+            logger.info("Connected to Home Assistant {}", answer.haVersion)
 
             val reader = launch {
                 for (frame in incoming) {
-                    if (frame is Frame.Text) {
-                        handleMessage(
-                            json.parseToJsonElement(frame.readText()).jsonObject,
-                        )
-                    }
+                    if (frame is Frame.Text) decodeInbound(frame.readText())?.let(::handleMessage)
                 }
             }
             loadInitialState()
@@ -156,118 +141,76 @@ class HomeAssistantClient(
 
     /** Config, every state, then the events we follow. */
     private suspend fun loadInitialState() {
-        command(
-            type = "subscribe_events",
-            payload = buildJsonObject {
-                put(
-                    key = "event_type",
-                    value = COMPONENT_LOADED_EVENT,
-                )
-            },
-        )
-        command("get_config")?.jsonObject?.let {
-                haConfig -> _config.value = parseConfig(haConfig)
-        }
-
-        val allStates = command(
-            "get_states",
-        )?.jsonArray.orEmpty().mapNotNull {
-            parseState(it.jsonObject)
-        }
-
-        _states.value = allStates.associateBy { it.entityId }
-        command(
-            type = "subscribe_events",
-            payload = buildJsonObject {
-                put(
-                    key = "event_type",
-                    value = "state_changed",
-                )
-            },
-        )
-
-        for (eventType in FOLLOWED_EVENTS) command(
-            type = "subscribe_events",
-            payload = buildJsonObject {
-                put(
-                    key = "event_type",
-                    value = eventType,
-                )
-            },
-        )
+        send(SubscribeEvents(COMPONENT_LOADED_EVENT))
+        _config.value = send(GetConfig).toConfig(REMOTE_SCREENS_DOMAIN)
+        _states.value = send(GetStates).map(EntityStateDto::toEntityState).associateBy { it.entityId }
+        send(SubscribeEvents(STATE_CHANGED_EVENT))
+        for (eventType in FollowedEvent.TYPES) send(SubscribeEvents(eventType))
     }
 
-    private fun handleMessage(message: JsonObject) {
-        when (message.type) {
-            "result" -> message["id"]?.jsonPrimitive?.int?.let { id -> pendingCommands.remove(
-                id,
-            )?.complete(message) }
-            "event" -> message["event"]?.jsonObject?.let(::handleEvent)
+    private fun handleMessage(message: HaInbound) {
+        when (message) {
+            is HaInbound.Result -> pendingCommands.remove(message.id)?.complete(message)
+            is HaInbound.Event -> handleEvent(message.event)
+            else -> Unit
         }
     }
 
-    private fun handleEvent(event: JsonObject) {
-        val eventType = event["event_type"]?.jsonPrimitive?.content ?: return
-        val data = event["data"]?.jsonObject ?: JsonObject(emptyMap())
-        if (eventType == "state_changed") {
-            val entityId = data["entity_id"]?.jsonPrimitive?.content ?: return
-            val newState = (data["new_state"] as? JsonObject)?.let(::parseState)
-            _states.update {
-                    states -> if (newState == null) states - entityId else states + (entityId to newState)
+    private fun handleEvent(event: HaEventEnvelope) {
+        when (event.eventType) {
+            STATE_CHANGED_EVENT -> readEventData(StateChangedData.serializer(), event)?.let { change ->
+                val newState = change.newState?.toEntityState()
+                _states.update { states ->
+                    if (newState == null) states - change.entityId else states + (change.entityId to newState)
+                }
+            }
+            COMPONENT_LOADED_EVENT -> if (readEventData(ComponentLoadedData.serializer(), event)?.component ==
+                REMOTE_SCREENS_DOMAIN
+            ) {
+                _config.update { homeAssistantConfig -> homeAssistantConfig.copy(isIntegrationLoaded = true) }
             }
         }
-        if (eventType == COMPONENT_LOADED_EVENT &&
-            data["component"]?.jsonPrimitive?.contentOrNull == REMOTE_SCREENS_DOMAIN
-        ) {
-            _config.update { homeAssistantConfig -> homeAssistantConfig.copy(isIntegrationLoaded = true) }
-        }
-        _events.tryEmit(HomeAssistantEvent(eventType, data))
+        _events.tryEmit(HomeAssistantEvent(event.eventType, event.data))
     }
 
-    override suspend fun command(type: String, payload: JsonObject): JsonElement? {
+    private fun <T> readEventData(serializer: KSerializer<T>, event: HaEventEnvelope): T? =
+        runCatching { HA_JSON.decodeFromJsonElement(serializer, event.data) }
+            .onFailure { logger.debug("Unreadable {} event: {}", event.eventType, it.message) }
+            .getOrNull()
+
+    override suspend fun <R> send(request: HaRequest<R>): R {
         val activeSession = checkNotNull(session) { "not connected to Home Assistant" }
         val id = nextCommandId.getAndIncrement()
-        val response = CompletableDeferred<JsonObject>()
+        val response = CompletableDeferred<HaInbound.Result>()
         pendingCommands[id] = response
-        val body = JsonObject(
-            payload + mapOf("id" to JsonPrimitive(id), "type" to JsonPrimitive(type)),
-        )
 
-        sendMutex.withLock { activeSession.send(Frame.Text(body.toString())) }
+        sendMutex.withLock { activeSession.send(Frame.Text(outbound(request.type, request.payload(), id))) }
 
         val result = withTimeout(COMMAND_TIMEOUT_MS.milliseconds) { response.await() }
-        if (result["success"]?.jsonPrimitive?.content != "true") {
-            val error = result["error"]?.jsonObject
-            throw HomeAssistantException(
-                code = error?.get("code")?.jsonPrimitive?.contentOrNull ?: "error",
-                message = error?.get("message")?.jsonPrimitive?.contentOrNull ?: "failed",
-            )
+        if (!result.success) {
+            val error = result.error ?: HaError()
+            throw HomeAssistantException(code = error.code, message = error.message)
         }
 
-        return result["result"]
+        return HA_JSON.decodeFromJsonElement(request.resultSerializer, result.result ?: JsonNull)
     }
 
     override suspend fun callService(
-        domain: String,
-        service: String,
-        data: JsonObject,
+        service: ServiceRef,
+        target: List<EntityId>,
+        data: ServiceData,
         returnResponse: Boolean,
     ): JsonElement? {
-        val target = data["entity_id"]
-        val payload = buildJsonObject {
-            put("domain", domain)
-            put("service", service)
-            put("service_data", JsonObject(data - "entity_id"))
-            
-            if (target != null) {
-                put("target", buildJsonObject { put("entity_id", target) })
-            }
-
-            if (returnResponse) {
-                put("return_response", true)
-            }
-        }
-        return command("call_service", payload)
+        val entityIds = target.ifEmpty { data.entityIds }
+        return send(
+            CallService(
+                domain = service.domain.value,
+                service = service.service,
+                serviceData = data.withoutTarget().fields,
+                target = entityIds.takeIf { it.isNotEmpty() }?.let { ids -> ServiceTarget(ids.map { it.value }) },
+                returnResponse = returnResponse.takeIf { it },
+            ),
+        )
     }
 
     override suspend fun fetch(path: String): ByteArray? {
@@ -293,47 +236,20 @@ class HomeAssistantClient(
             response.status.value
         }
 
-    private suspend fun DefaultClientWebSocketSession.readJson(): JsonObject {
-        val frame = incoming.receive()
-        return json.parseToJsonElement((frame as Frame.Text).readText()).jsonObject
-    }
+    private suspend fun DefaultClientWebSocketSession.readInbound(): HaInbound? =
+        decodeInbound((incoming.receive() as Frame.Text).readText())
 
-    private val JsonObject.type: String? get() = this["type"]?.jsonPrimitive?.content
+    /** Null for a message type this client does not know. */
+    private fun decodeInbound(text: String): HaInbound? =
+        runCatching { HA_JSON.decodeFromString(HaInbound.serializer(), text) }
+            .onFailure { logger.debug("Unread Home Assistant message: {}", it.message) }
+            .getOrNull()
 
-    private fun parseConfig(haConfig: JsonObject): HomeAssistantConfig {
-        fun text(key: String) = haConfig[key]?.jsonPrimitive?.contentOrNull
-        val unitSystem = haConfig["unit_system"]?.jsonObject
-        val isIntegrationLoaded = haConfig["components"]?.jsonArray.orEmpty().any { component ->
-            component.jsonPrimitive.contentOrNull == REMOTE_SCREENS_DOMAIN
+    private fun outbound(type: String, payload: JsonObject, id: Int? = null): String {
+        val header = buildMap {
+            id?.let { put("id", JsonPrimitive(it)) }
+            put("type", JsonPrimitive(type))
         }
-        return HomeAssistantConfig(
-            language = text("language") ?: "en",
-            country = text("country"),
-            timeZone = text("time_zone") ?: "UTC",
-            temperatureUnit = unitSystem?.get("temperature")?.jsonPrimitive?.contentOrNull ?: "°C",
-            locationName = text("location_name") ?: "Home",
-            version = text("version").orEmpty(),
-            isIntegrationLoaded = isIntegrationLoaded,
-        )
-    }
-
-    private fun parseState(stateObject: JsonObject): EntityState? {
-        val entityId = stateObject["entity_id"]?.jsonPrimitive?.content ?: return null
-        return EntityState(
-            entityId = entityId,
-            state = stateObject["state"]?.jsonPrimitive?.content ?: "unknown",
-            attributes = stateObject["attributes"]?.jsonObject ?: JsonObject(emptyMap()),
-            lastChanged = stateObject["last_changed"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-        )
-    }
-
-    companion object {
-        /** Events an automation fires for the screens, for setups without the custom integration. */
-        val FOLLOWED_EVENTS = listOf(
-            "remote_screens_alert",
-            "remote_screens_open_page",
-            "remote_screens_wake",
-            "remote_screens_close",
-        )
+        return JsonObject(payload + header).toString()
     }
 }

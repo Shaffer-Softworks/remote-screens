@@ -54,6 +54,9 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceRef
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceData
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.FireEvent
 /**
  * One connected player: the documents it shows in each [Slot], kept up to date by sending only the values that
  * changed, and its taps turned into actions.
@@ -599,28 +602,21 @@ class PlayerSession(
     }
 
     private suspend fun pressAlertButton(alert: Alert, button: AlertButton) {
-        button.service?.split('.', limit = 2)?.takeIf { it.size == 2 }?.let { (domain, service) ->
+        button.service?.let(ServiceRef::parse)?.let { service ->
             runCatching { homeAssistant.callService(
-                domain,
                 service,
-                button.data ?: JsonObject(emptyMap()),
+                data = ServiceData(button.data ?: JsonObject(emptyMap())),
             ) }
                 .onFailure { send(ServerMessage.Toast(it.message ?: "Failed")) }
         }
         runCatching {
-            val event = buildJsonObject {
-                put("event_type", "remote_screens_alert_action")
-                put(
-                    "event_data",
-                    buildJsonObject {
-                        put("action", button.action ?: button.title)
-                        alert.tag?.let { put("tag", it) }
-                        put("screen", screenId)
-                        put("device", hello.deviceId)
-                    },
-                )
+            val eventData = buildJsonObject {
+                put("action", button.action ?: button.title)
+                alert.tag?.let { put("tag", it) }
+                put("screen", screenId)
+                put("device", hello.deviceId)
             }
-            homeAssistant.command("fire_event", event)
+            homeAssistant.send(FireEvent(FollowedEvent.ALERT_ACTION, eventData))
         }
     }
 
