@@ -61,9 +61,10 @@ Retake them with `tools/capture_screenshots.mjs` and the player capture flow in
 1. **Add-on.** In Home Assistant, Settings, Add-ons, Add-on store, add this repository
    (`https://github.com/Shaffer-Softworks/remote-screens`) and install **Remote Screens**.
 2. **Player app.** Download it from the editor (**Download app**) or from the latest GitHub release.
-3. **Integration** (optional, for automations). In HACS, add this repository as a custom repository of type
-   *Integration*, install **Remote Screens** and restart Home Assistant. The add-on announces itself, so Home
-   Assistant then offers to set it up.
+3. **Integration** (optional, for automations). In the editor, open **Settings** and choose **Install
+   integration** (opens HACS). Or in HACS, add this repository as a custom repository of type *Integration*,
+   install **Remote Screens** and restart Home Assistant. The add-on announces itself, so Home Assistant then
+   offers to set it up. The editor also reminds you when the integration is not loaded yet.
 
 How to pair a tablet and lay out a screen is in [addon/DOCS.md](addon/DOCS.md) and the
 [wiki](https://github.com/Shaffer-Softworks/remote-screens/wiki). Without the Supervisor, see

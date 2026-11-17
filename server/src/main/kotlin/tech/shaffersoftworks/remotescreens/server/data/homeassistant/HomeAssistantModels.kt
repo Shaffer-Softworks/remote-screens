@@ -19,6 +19,8 @@ data class HomeAssistantConfig(
     val temperatureUnit: String = "°C",
     val locationName: String = "Home",
     val version: String = "",
+    /** True when Home Assistant has loaded the Remote Screens custom integration. */
+    val isIntegrationLoaded: Boolean = false,
 )
 
 /** A command Home Assistant answered with `success: false`. */
