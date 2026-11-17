@@ -88,8 +88,8 @@ private fun sliderVerb(domain: String) = when (domain) {
 
 private fun sliderRange(domain: String, entityState: EntityState?): Pair<Double, Double> =
     if (domain in setOf("number", "input_number")) {
-        (entityState?.number("min") ?: 0.0) to
-            (entityState?.number("max") ?: Metrics.LEVEL_RANGE_MAX)
+        (entityState?.input?.min ?: 0.0) to
+            (entityState?.input?.max ?: Metrics.LEVEL_RANGE_MAX)
     } else {
         0.0 to Metrics.LEVEL_RANGE_MAX
     }
@@ -159,7 +159,7 @@ internal fun DocContext.switchNode(node: Node, axis: Axis, pages: Pages) {
 internal fun DocContext.stepOf(node: Node, entityState: EntityState?, domain: String?): Pair<String, Double>? {
     val pair = when (domain) {
         "climate", "water_heater" -> "temperature" to (
-            entityState?.number("target_temp_step")
+            entityState?.climate?.targetTempStep
                 ?: if (homeAssistantConfig.temperatureUnit.contains(
                         "F",
                     )) {
@@ -168,10 +168,8 @@ internal fun DocContext.stepOf(node: Node, entityState: EntityState?, domain: St
                     Metrics.STEP_TEMP_C
                 }
             )
-        "humidifier" -> "humidity" to (entityState?.number(
-            "humidity_step",
-        ) ?: Metrics.STEP_PERCENTAGE)
-        "number", "input_number" -> "value" to (entityState?.number("step") ?: 1.0)
+        "humidifier" -> "humidity" to (entityState?.humidifier?.humidityStep ?: Metrics.STEP_PERCENTAGE)
+        "number", "input_number" -> "value" to (entityState?.input?.step ?: 1.0)
         "light" -> "brightness" to Metrics.STEP_BRIGHTNESS
         "fan" -> "percentage" to Metrics.STEP_PERCENTAGE
         "cover", "valve" -> "position" to Metrics.STEP_POSITION
@@ -277,14 +275,14 @@ internal fun DocContext.choicesOf(entityState: EntityState?, domain: String?): C
     "select", "input_select" -> ChoiceSet(
         verb = "option",
         attribute = "options",
-        choices = entityState?.list("options").orEmpty(),
+        choices = entityState?.input?.options.orEmpty(),
         word = { it },
         chosen = { it.state },
     )
     "climate" -> ChoiceSet(
         verb = "mode",
         attribute = "hvac_modes",
-        choices = entityState?.list("hvac_modes").orEmpty(),
+        choices = entityState?.climate?.hvacModes.orEmpty(),
         word = { i18n.state("climate", it) },
         chosen = { it.state },
         icons = MODE_ICONS,
@@ -292,9 +290,9 @@ internal fun DocContext.choicesOf(entityState: EntityState?, domain: String?): C
     "light" -> ChoiceSet(
         verb = "effect",
         attribute = "effect_list",
-        choices = entityState?.list("effect_list").orEmpty(),
+        choices = entityState?.light?.effectList.orEmpty(),
         word = { it },
-        chosen = { it.attr("effect") },
+        chosen = { it.light.effect },
     )
     else -> null
 }
@@ -310,7 +308,7 @@ internal fun DocContext.choicesNode(node: Node, self: Dims, axis: Axis, pages: P
         )
         return
     }
-    structural(id) { it?.list(set.attribute)?.joinToString() ?: "" }
+    structural(id) { it?.attributeList(set.attribute)?.joinToString() ?: "" }
     val shown = set.choices.take(
         node.props["max"]?.toIntOrNull()?.coerceIn(
             Metrics.CHOICES_MIN,

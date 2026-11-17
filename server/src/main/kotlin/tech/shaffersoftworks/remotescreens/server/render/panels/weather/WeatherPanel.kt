@@ -27,6 +27,7 @@ import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
 import androidx.compose.remote.creation.modifiers.RectShape
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.WeatherAttributes
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.Forecast
 import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
@@ -159,9 +160,9 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
     val entityState = states[id]
     structural(
         id,
-    ) { s -> (listOf(s?.state ?: "") + DETAILS.filter { s?.number(it) != null }).joinToString() }
+    ) { s -> (listOf(s?.state ?: "") + DETAILS.filter { s?.weather?.detail(it) != null }).joinToString() }
     refreshEvery(CardChrome.WEATHER_REFRESH_S)
-    val details = DETAILS.filter { entityState?.number(it) != null }
+    val details = DETAILS.filter { entityState?.weather?.detail(it) != null }
     val zone = runCatching { ZoneId.of(homeAssistantConfig.timeZone) }.getOrDefault(ZoneId.of("UTC"))
     if (box.h > box.w) {
         bindWeatherReadings(tile.id, id, details)
@@ -512,13 +513,16 @@ private fun detailWord(key: String): String = when (key) {
 }
 
 private fun DocContext.reading(entityState: EntityState, key: String): String? = when (key) {
-    "wind_speed" -> measure(entityState = entityState, key = key, unitKey = "wind_speed_unit", fallback = "km/h")
-    "humidity" -> entityState.number(key)?.let { i18n.percent(it.roundToInt()) }
-    else -> measure(entityState = entityState, key = key, unitKey = "pressure_unit", fallback = "hPa")
+    "wind_speed" -> measure(value = entityState.weather.windSpeed, unit = entityState.weather.windSpeedUnit ?: "km/h")
+    "humidity" -> entityState.weather.humidity?.let { i18n.percent(it.roundToInt()) }
+    else -> measure(value = entityState.weather.pressure, unit = entityState.weather.pressureUnit ?: "hPa")
 }
 
-private fun DocContext.measure(entityState: EntityState, key: String, unitKey: String, fallback: String): String? {
-    val value = entityState.number(key) ?: return null
-    val unit = entityState.attr(unitKey) ?: fallback
-    return "${i18n.number(value, if (unit == "inHg") 2 else 0)} $unit"
+private fun WeatherAttributes.detail(key: String): Double? = when (key) {
+    "wind_speed" -> windSpeed
+    "humidity" -> humidity
+    else -> pressure
 }
+
+private fun DocContext.measure(value: Double?, unit: String): String? =
+    value?.let { "${i18n.number(it, if (unit == "inHg") 2 else 0)} $unit" }

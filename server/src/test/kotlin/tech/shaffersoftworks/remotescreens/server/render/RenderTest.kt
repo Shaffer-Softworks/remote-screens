@@ -467,7 +467,7 @@ class RenderTest {
     @Test
     fun aCleanAreaVacuumListsItsMappedHomeAssistantAreas() {
         val robot = ha.states.value.getValue("vacuum.robot")
-        val features = checkNotNull(robot.number("supported_features")).toInt() or VACUUM_CLEAN_AREA_FEATURE
+        val features = checkNotNull(robot.common.supportedFeatureBits).toInt() or VACUUM_CLEAN_AREA_FEATURE
         ha.set("vacuum.robot", robot.state, mapOf("supported_features" to JsonPrimitive(features)))
         val (_, text) = renderVacuum(VacuumUiState(selectedVacuum = "vacuum.robot", roomsDialogOpen = true))
         assertContains(text, "va1|vacuum_rooms_toggle|living_room")

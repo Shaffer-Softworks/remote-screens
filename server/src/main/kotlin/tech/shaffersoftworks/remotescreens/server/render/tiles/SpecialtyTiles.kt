@@ -58,6 +58,8 @@ import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.ZoneId
 import kotlin.math.roundToInt
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileChrome as C
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaPlayerState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.PresenceState
 
 private const val CLOCK_GLYPHS = 8
 
@@ -299,7 +301,7 @@ fun DocContext.photo(
     sizeDp: Float,
     ink: RcColor = role(Role.INK),
 ) {
-    val pic = entityState?.attr("entity_picture")
+    val pic = entityState?.common?.entityPicture
     val px = units.px(sizeDp).toInt()
     if (pic != null) {
         picture(PictureSlot(name = slot, source = pic, widthPx = px, heightPx = px, refreshSeconds = 0, round = true))
@@ -417,15 +419,15 @@ internal fun DocContext.climateTile(tile: Tile, box: TileBox, entityState: Entit
     val entityId = tile.entityId ?: return
     val ink = color(Vars.tile(tile.id, Vars.KEY_INK))
     val ink2 = color(Vars.tile(tile.id, Vars.KEY_INK2))
-    val step = entityState?.number("target_temp_step")
+    val step = entityState?.climate?.targetTempStep
         ?: if (homeAssistantConfig.temperatureUnit.contains("F")) {
             ThermostatMetrics.TEMP_STEP_F
         } else {
             ThermostatMetrics.TEMP_STEP_C
         }
     val stepper = box.w >= C.HEADER_TALL_MIN_DP || box.h >= C.TALL_HEIGHT_DP
-    val modes = entityState?.list("hvac_modes").orEmpty()
-    structural(entityId) { it?.list("hvac_modes")?.joinToString() ?: "" }
+    val modes = entityState?.climate?.hvacModes.orEmpty()
+    structural(entityId) { it?.climate?.hvacModes?.joinToString() ?: "" }
     predict(ActionRef(tile.id, "temperature", "+$step"), entityId)
     predict(ActionRef(tile.id, "temperature", "-$step"), entityId)
     rcScope.Column(Modifier.fillMaxSize().padding(units.px(C.PAD_LG_DP))) {
@@ -560,22 +562,22 @@ internal fun DocContext.mediaTile(tile: Tile, box: TileBox, entityState: EntityS
         listOf(
             VarValue.string(
                 Vars.entity(entityId, "title"),
-                current?.attr("media_title") ?: current?.name ?: "",
+                current?.mediaPlayer?.mediaTitle ?: current?.name ?: "",
             ),
             VarValue.string(
                 Vars.entity(entityId, "artist"),
                 listOfNotNull(
-                    current?.attr("media_artist"),
-                    current?.attr("media_album_name"),
+                    current?.mediaPlayer?.mediaArtist,
+                    current?.mediaPlayer?.mediaAlbumName,
                 ).joinToString(" · ").ifEmpty { i18n.state("media_player", current?.state ?: "off") },
             ),
             VarValue.int(
                 Vars.entity(entityId, "playing"),
-                if (current?.state == "playing") Vars.VISIBLE else Vars.GONE,
+                if (current?.mediaPlayerState == MediaPlayerState.PLAYING) Vars.VISIBLE else Vars.GONE,
             ),
             VarValue.int(
                 Vars.entity(entityId, "notplaying"),
-                if (current?.state == "playing") Vars.GONE else Vars.VISIBLE,
+                if (current?.mediaPlayerState == MediaPlayerState.PLAYING) Vars.GONE else Vars.VISIBLE,
             ),
         )
     }
@@ -927,7 +929,7 @@ internal fun DocContext.mapTile(tile: Tile, box: TileBox, named: Boolean) {
     val who = mapPeople(tile)
     for (personId in who) {
         structural(personId) { person ->
-            "${person?.number("latitude")},${person?.number("longitude")}"
+            "${person?.common?.latitude},${person?.common?.longitude}"
         }
     }
     picture(
@@ -955,7 +957,7 @@ internal fun DocContext.mapTile(tile: Tile, box: TileBox, named: Boolean) {
                 doc.label(
                     text = tile.name ?: doc.i18n.t(
                         "ui.people_home",
-                        "count" to who.count { doc.states[it]?.state == "home" },
+                        "count" to who.count { doc.states[it]?.presenceState == PresenceState.HOME },
                     ),
                     sp = Type.CAPTION + 1f,
                     color = doc.role(Role.INK),

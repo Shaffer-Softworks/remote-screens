@@ -12,7 +12,7 @@ import tech.shaffersoftworks.remotescreens.shared.TypeSpec
 
 internal fun PreviewSession.catalogue() {
     for ((kind, spec) in Catalogue.types.toSortedMap()) {
-        val entity = originalStates.values.firstOrNull { it.domain == kind }?.entityId ?: when (kind) {
+        val entity = originalStates.values.firstOrNull { it.domain.value == kind }?.entityId ?: when (kind) {
             "music", "favourite" -> "media_player.living_room"
             "history" -> "sensor.power"
             else -> if (spec.needsEntity) "$kind.preview" else null

@@ -87,8 +87,8 @@ fun DocContext.calendarPanel(tile: Tile, box: TileBox) {
     for (entityId in calendarIds) {
         structural(entityId) { entity ->
             listOf(
-                entity?.attr("message"),
-                entity?.attr("start_time"),
+                entity?.calendar?.message,
+                entity?.calendar?.startTime,
                 entity?.features()?.toString(),
             ).joinToString("|")
         }

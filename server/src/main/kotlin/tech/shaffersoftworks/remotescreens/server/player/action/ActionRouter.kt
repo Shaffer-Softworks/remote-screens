@@ -28,6 +28,8 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.LockState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaPlayerState
 
 private const val MAX_CODE_LENGTH = 12
 private const val ENTITY_TILE_PREFIX = "e:"
@@ -153,10 +155,10 @@ class ActionRouter(
         target: TapTarget?,
         entity: EntityState,
     ): EntityState? {
-        val spec = target?.spec ?: Catalogue.of(entity.domain)
+        val spec = target?.spec ?: Catalogue.of(entity.domain.value)
         val verb = resolveVerb(
             ref.verb,
-            target ?: TapTarget(tileId = "", entityId = entity.entityId, kind = entity.domain, tile = null),
+            target ?: TapTarget(tileId = "", entityId = entity.entityId, kind = entity.domain.value, tile = null),
             entity,
         )
         val prediction = spec?.predict?.get(verb) ?: return null
@@ -194,7 +196,7 @@ class ActionRouter(
         when (val predicted = prediction.state) {
             null -> entity.state
             "!" -> if (entity.state in spec.onStates) "off" else spec.onStates.firstOrNull() ?: "on"
-            "play_pause" -> if (entity.state == "playing") "paused" else "playing"
+            "play_pause" -> if (entity.mediaPlayerState == MediaPlayerState.PLAYING) "paused" else "playing"
             else -> if (ServiceDataBuilder.isArgExpression(predicted)) {
                 ServiceDataBuilder.argValue(predicted, arg).contentOrNull ?: entity.state
             } else {
@@ -207,7 +209,7 @@ class ActionRouter(
         target: TapTarget,
         entity: EntityState?,
     ): String = when (target.kind) {
-        "lock" if verb == "toggle" -> if (entity?.state == "locked") "unlock" else "lock"
+        "lock" if verb == "toggle" -> if (entity?.lockState == LockState.LOCKED) "unlock" else "lock"
         // cover.toggle needs open and close. A tilt-only blind (slats, no shade travel) rejects it.
         "cover" if verb == "toggle" &&
             entity?.supports(HaRenderFlags.COVER_OPEN_FLAG) != true &&
@@ -216,7 +218,7 @@ class ActionRouter(
                 entity?.supports(HaRenderFlags.COVER_OPEN_TILT_FLAG) == true ||
                     entity?.supports(HaRenderFlags.COVER_CLOSE_TILT_FLAG) == true
                 ) ->
-            if (entity.state == "open" || entity.state == "opening") "close_tilt" else "open_tilt"
+            if (entity.coverState.isOpenOrOpening) "close_tilt" else "open_tilt"
         else -> verb
     }
 

@@ -9,25 +9,26 @@ import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.Instant
 import java.time.OffsetDateTime
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaPlayerState
 
 /** Now-playing vars and transport predictions for a Music Assistant tile. */
 internal fun DocContext.bindMusicNowPlaying(tileId: String, entityId: String) {
     bindEntity(entityId)
     bind(entityId) { states ->
         val entityState = states[entityId]
-        val artist = entityState?.attr("media_artist").orEmpty()
-        val album = entityState?.attr("media_album_name").orEmpty()
+        val artist = entityState?.mediaPlayer?.mediaArtist.orEmpty()
+        val album = entityState?.mediaPlayer?.mediaAlbumName.orEmpty()
         val artistLine = artist.ifEmpty {
             i18n.state("media_player", entityState?.state ?: "off")
         }
-        val playing = entityState?.state == "playing"
-        val duration = entityState?.number("media_duration")
+        val playing = entityState?.mediaPlayerState == MediaPlayerState.PLAYING
+        val duration = entityState?.mediaPlayer?.mediaDuration
         val position = entityState.mediaPosition()
         val progress = mediaProgress(position, duration)
         listOf(
             VarValue.string(
                 Vars.entity(entityId, "title"),
-                entityState?.attr("media_title") ?: entityState?.name ?: "Nothing playing",
+                entityState?.mediaPlayer?.mediaTitle ?: entityState?.name ?: "Nothing playing",
             ),
             VarValue.string(Vars.entity(entityId, "artist"), artistLine),
             VarValue.string(Vars.entity(entityId, "album"), album),
@@ -68,15 +69,16 @@ internal fun DocContext.bindMusicNowPlaying(tileId: String, entityId: String) {
  * elapsed since that stamp is ~0 and this does not double-count.
  */
 internal fun EntityState?.mediaPosition(now: Instant = Instant.now()): Double? {
-    val reported = this?.number("media_position") ?: this?.attr("media_position")?.toDoubleOrNull()
+    val reported = this?.mediaPlayer?.mediaPosition
     val updatedAt = this?.mediaPositionUpdatedAt()
-    val elapsedSeconds = if (this?.state == Playhead.PLAYING && reported != null && updatedAt != null) {
+    val isPlaying = this?.mediaPlayerState == MediaPlayerState.PLAYING
+    val elapsedSeconds = if (isPlaying && reported != null && updatedAt != null) {
         (now.toEpochMilli() - updatedAt.toEpochMilli()).coerceAtLeast(0L) / Playhead.MS_PER_SECOND
     } else {
         0.0
     }
     val raw = reported?.plus(elapsedSeconds)
-    val duration = this?.number("media_duration")
+    val duration = this?.mediaPlayer?.mediaDuration
     return if (raw != null && duration != null && duration > 0.0) {
         minOf(raw, duration)
     } else {
@@ -85,7 +87,7 @@ internal fun EntityState?.mediaPosition(now: Instant = Instant.now()): Double? {
 }
 
 private fun EntityState.mediaPositionUpdatedAt(): Instant? {
-    val stamp = attr("media_position_updated_at") ?: return null
+    val stamp = mediaPlayer.mediaPositionUpdatedAt ?: return null
     return runCatching { OffsetDateTime.parse(stamp).toInstant() }.getOrNull()
         ?: runCatching { Instant.parse(stamp) }.getOrNull()
 }
@@ -104,6 +106,5 @@ internal fun formatMusicTime(seconds: Double): String {
 }
 
 private object Playhead {
-    const val PLAYING = "playing"
     const val MS_PER_SECOND = 1000.0
 }

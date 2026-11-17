@@ -11,6 +11,10 @@ import kotlinx.serialization.json.doubleOrNull
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceRef
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.SwitchState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HvacMode
 
 private const val DEFAULT_CLIMATE_MIN_TEMPERATURE = 5.0
 private const val DEFAULT_CLIMATE_MAX_TEMPERATURE = 35.0
@@ -22,7 +26,7 @@ private const val MAX_WHOLE_NUMBER = 1e9
 private const val ARG_PLACEHOLDER = "\$arg"
 private const val CODE_PLACEHOLDER = "\$code"
 private val ARG_PART = Regex("\\\$arg[0-9]")
-private const val CLIMATE_SET_TEMPERATURE = "climate.set_temperature"
+private val CLIMATE_SET_TEMPERATURE = ServiceRef(Domain.CLIMATE, "set_temperature")
 private const val ATTR_TARGET_TEMP_LOW = "target_temp_low"
 private const val ATTR_TARGET_TEMP_HIGH = "target_temp_high"
 
@@ -63,7 +67,7 @@ object ServiceDataBuilder {
         action: ActionSpec,
         entity: EntityState?,
     ) {
-        if (action.service != CLIMATE_SET_TEMPERATURE || entity == null) return
+        if (ServiceRef.parse(action.service) != CLIMATE_SET_TEMPERATURE || entity == null) return
         when {
             "temperature" in serviceData && entity.usesTemperatureRange() ->
                 rewriteSingleTemperatureToRange(serviceData, entity)
@@ -81,12 +85,12 @@ object ServiceDataBuilder {
         val changedHigh = ATTR_TARGET_TEMP_HIGH in serviceData
         if (!changedLow && !changedHigh) return
         if (!changedLow) {
-            entity.number(ATTR_TARGET_TEMP_LOW)?.let {
+            entity.climate.targetTempLow?.let {
                 serviceData[ATTR_TARGET_TEMP_LOW] = JsonPrimitive(wholeOrDecimal(it))
             }
         }
         if (!changedHigh) {
-            entity.number(ATTR_TARGET_TEMP_HIGH)?.let {
+            entity.climate.targetTempHigh?.let {
                 serviceData[ATTR_TARGET_TEMP_HIGH] = JsonPrimitive(wholeOrDecimal(it))
             }
         }
@@ -99,10 +103,10 @@ object ServiceDataBuilder {
         entity: EntityState,
     ) {
         val newTemp = (serviceData.remove("temperature") as? JsonPrimitive)?.doubleOrNull
-        val low = entity.number(ATTR_TARGET_TEMP_LOW)
-        val high = entity.number(ATTR_TARGET_TEMP_HIGH)
+        val low = entity.climate.targetTempLow
+        val high = entity.climate.targetTempHigh
         if (newTemp == null || low == null || high == null) return
-        val oldTemp = entity.number("temperature") ?: ((low + high) / 2.0)
+        val oldTemp = entity.climate.temperature ?: ((low + high) / 2.0)
         val delta = newTemp - oldTemp
         val limits = limits(entity, "temperature")
         serviceData[ATTR_TARGET_TEMP_LOW] = JsonPrimitive(wholeOrDecimal((low + delta).coerceIn(limits)))
@@ -129,9 +133,9 @@ object ServiceDataBuilder {
     }
 
     private fun EntityState.usesTemperatureRange(): Boolean =
-        when (state) {
-            "heat_cool" -> true
-            "auto" -> number(ATTR_TARGET_TEMP_LOW) != null && number(ATTR_TARGET_TEMP_HIGH) != null
+        when (hvacMode) {
+            HvacMode.HEAT_COOL -> true
+            HvacMode.AUTO -> climate.hasTemperatureRange
             else -> false
         }
 
@@ -199,8 +203,8 @@ object ServiceDataBuilder {
 
     private fun scaledValue(expression: String, entity: EntityState): Double? {
         val (key, operator, factor) = parseExpression(expression)
-        val raw = if (key == "state") entity.numericState() else entity.number(key)
-        raw ?: return if (key == "brightness" && entity.state == "off") 0.0 else null
+        val raw = if (key == "state") entity.numericState() else entity.attributeNumber(key)
+        raw ?: return if (key == "brightness" && entity.switchState == SwitchState.OFF) 0.0 else null
         return when (operator) {
             '*' -> raw * factor
             '/' -> raw / factor
@@ -209,14 +213,14 @@ object ServiceDataBuilder {
     }
 
     private fun limits(entity: EntityState, relativeTo: String): ClosedFloatingPointRange<Double> = when {
-        entity.domain == "climate" || entity.domain == "water_heater" ->
-            (entity.number("min_temp") ?: DEFAULT_CLIMATE_MIN_TEMPERATURE)..
-                (entity.number("max_temp") ?: DEFAULT_CLIMATE_MAX_TEMPERATURE)
-        entity.domain == "humidifier" && relativeTo == "humidity" ->
-            (entity.number("min_humidity") ?: DEFAULT_HUMIDITY_MIN)..
-                (entity.number("max_humidity") ?: DEFAULT_HUMIDITY_MAX)
+        entity.domain == Domain.CLIMATE || entity.domain == Domain.WATER_HEATER ->
+            (entity.climate.minTemp ?: DEFAULT_CLIMATE_MIN_TEMPERATURE)..
+                (entity.climate.maxTemp ?: DEFAULT_CLIMATE_MAX_TEMPERATURE)
+        entity.domain == Domain.HUMIDIFIER && relativeTo == "humidity" ->
+            (entity.humidifier.minHumidity ?: DEFAULT_HUMIDITY_MIN)..
+                (entity.humidifier.maxHumidity ?: DEFAULT_HUMIDITY_MAX)
         relativeTo.startsWith("state") ->
-            (entity.number("min") ?: DEFAULT_MIN_VALUE)..(entity.number("max") ?: DEFAULT_MAX_VALUE)
+            (entity.input.min ?: DEFAULT_MIN_VALUE)..(entity.input.max ?: DEFAULT_MAX_VALUE)
         else -> DEFAULT_MIN_VALUE..DEFAULT_MAX_VALUE
     }
 

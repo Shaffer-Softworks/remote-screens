@@ -50,10 +50,10 @@ class HomeAssistantCatalogService(private val homeAssistant: HomeAssistant) {
                     entityId = entity.entityId,
                     name = entity.name,
                     state = entity.state,
-                    domain = entity.domain,
+                    domain = entity.domain.value,
                     area = areaByEntity[entity.entityId],
-                    icon = entity.attr("icon") ?: iconByEntity[entity.entityId],
-                    unit = entity.attr("unit_of_measurement"),
+                    icon = entity.common.icon ?: iconByEntity[entity.entityId],
+                    unit = entity.common.unitOfMeasurement,
                     rgb = entity.readRgbHex(),
                 )
             }

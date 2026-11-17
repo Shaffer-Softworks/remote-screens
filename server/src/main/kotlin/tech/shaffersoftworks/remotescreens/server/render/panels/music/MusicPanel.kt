@@ -321,7 +321,7 @@ private fun DocContext.nowPlayingProgress(
                 tileId,
                 "seek",
                 (
-                    (doc.states[entityId]?.number("media_duration") ?: 0.0) *
+                    (doc.states[entityId]?.mediaPlayer?.mediaDuration ?: 0.0) *
                         step / MusicMetrics.PROGRESS_STEPS
                     ).roundToInt().toString(),
             )

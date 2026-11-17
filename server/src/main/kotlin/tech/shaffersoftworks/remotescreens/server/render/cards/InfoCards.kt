@@ -31,6 +31,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.ZoneId
 import kotlin.math.roundToInt
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.TimerState
 
 internal fun DocContext.weatherCard(entityId: String, entityState: EntityState?, width: Float) {
     structural(entityId) { it?.state ?: "" }
@@ -52,14 +53,11 @@ internal fun DocContext.weatherCard(entityId: String, entityState: EntityState?,
                 weight = Weight.NORMAL,
             )
             val details = listOfNotNull(
-                entityState?.number(
-                    "humidity",
-                )?.let { doc.i18n.t("ui.humidity", "value" to doc.i18n.percent(it.roundToInt())) },
-                entityState?.number(
-                    "wind_speed",
-                )?.let { doc.i18n.t(
+                entityState?.weather?.humidity
+                    ?.let { doc.i18n.t("ui.humidity", "value" to doc.i18n.percent(it.roundToInt())) },
+                entityState?.weather?.windSpeed?.let { doc.i18n.t(
                     "ui.wind",
-                    "value" to "${it.roundToInt()} ${entityState.attr("wind_speed_unit") ?: "km/h"}",
+                    "value" to "${it.roundToInt()} ${entityState.weather.windSpeedUnit ?: "km/h"}",
                 ) },
             ).joinToString(" · ")
             doc.label(details, Type.BODY, soft)
@@ -151,7 +149,7 @@ internal fun DocContext.historyCard(entityId: String, w: Float, h: Float) {
     if (points.isNotEmpty() && entityState != null) {
         val max = points.maxBy { it.second }
         val min = points.minBy { it.second }
-        val unit = entityState.attr("unit_of_measurement").orEmpty()
+        val unit = entityState.common.unitOfMeasurement.orEmpty()
         rcScope.Row(Modifier.fillMaxWidth()) {
             val doc = this@historyCard
             doc.label(
@@ -214,7 +212,7 @@ internal fun DocContext.alarmCard(entityId: String, entityState: EntityState?, w
             }
         }
     }
-    if (entityState?.attr("code_format") != null) {
+    if (entityState?.alarm?.codeFormat != null) {
         section(i18n.t("ui.code"))
         keypad(entityId, w)
     }
@@ -272,8 +270,8 @@ internal fun DocContext.keypad(entityId: String, w: Float) {
 }
 
 internal fun DocContext.selectCard(entityId: String, entityState: EntityState?) {
-    val options = entityState?.list("options").orEmpty()
-    structural(entityId) { it?.list("options")?.joinToString() ?: "" }
+    val options = entityState?.input?.options.orEmpty()
+    structural(entityId) { it?.input?.options?.joinToString() ?: "" }
     spacer(CardChrome.FLOW_PAD_DP)
     bindChoices(scopeId = entityId, group = "option", entityId = entityId, choices = options) { it.state }
     options.forEachIndexed { i, o ->
@@ -290,9 +288,9 @@ internal fun DocContext.selectCard(entityId: String, entityState: EntityState?) 
 }
 
 internal fun DocContext.numberCard(entityId: String, entityState: EntityState?, w: Float) {
-    val min = entityState?.number("min") ?: 0.0
-    val max = entityState?.number("max") ?: CardChrome.LEVEL_DEFAULT_MAX
-    val step = entityState?.number("step") ?: 1.0
+    val min = entityState?.input?.min ?: 0.0
+    val max = entityState?.input?.max ?: CardChrome.LEVEL_DEFAULT_MAX
+    val step = entityState?.input?.step ?: 1.0
     spacer(CardChrome.PANEL_CORNER_DP)
     rcScope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@numberCard
@@ -408,7 +406,7 @@ internal fun DocContext.timerCard(entityId: String, entityState: EntityState?) {
             modifier = Modifier.horizontalWeight(1f),
         )
     }
-    if (entityState?.state == "active" || entityState?.state == "paused") {
+    if (entityState?.timerState in setOf(TimerState.ACTIVE, TimerState.PAUSED)) {
         spacer(CardChrome.PANEL_CORNER_DP)
         key(
             ref = ref(entityId, "finish"),

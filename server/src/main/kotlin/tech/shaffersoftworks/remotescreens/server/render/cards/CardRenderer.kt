@@ -65,7 +65,7 @@ object CardRenderer {
             docContext.bindTileColors(
                 tileId = TILE,
                 entityId = entityId,
-                pastel = Pastel.forDomain(entityState?.domain),
+                pastel = Pastel.forDomain(entityState?.domain?.value),
                 alwaysOn = card in ALWAYS_ON_CARDS,
             )
 

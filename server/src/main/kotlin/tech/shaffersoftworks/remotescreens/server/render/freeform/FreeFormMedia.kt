@@ -260,9 +260,10 @@ internal fun DocContext.iconButtonNode(node: Node, axis: Axis, pages: Pages) {
     } else {
         (node.props["color"]?.let { paint(it) } ?: role(Role.KEY)) to role(Role.INK)
     }
-    val name = node.props["icon"]?.takeIf { it.isNotEmpty() } ?: id?.let { states[it]?.attr(
-        "icon",
-    ) } ?: domain?.let { Catalogue.of(it)?.icon } ?: "gesture-tap"
+    val name = node.props["icon"]?.takeIf { it.isNotEmpty() }
+        ?: id?.let { states[it]?.common?.icon }
+        ?: domain?.let { Catalogue.of(it)?.icon }
+        ?: "gesture-tap"
     var base = sized(node, axis)
     if (node.size.width == "wrap" && node.size.height == "wrap") {
         base = base.size(

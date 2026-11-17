@@ -28,6 +28,9 @@ import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.LockState
 
 private object Metrics {
     const val BASE_W = 1280f
@@ -79,10 +82,10 @@ private class Layout(val scale: Float) {
  */
 fun DocContext.securityPanel(tile: Tile, box: TileBox) {
     val ui = data.securityUi[tile.id] ?: SecurityUiState()
-    val locks = states.keys.filter { it.startsWith("lock.") }.sorted()
+    val locks = states.keys.filter { EntityId(it).domain == Domain.LOCK }.sorted()
     val openings = states.values
         .filter { entity ->
-            entity.domain == "binary_sensor" && entity.attr("device_class") in OPENING_DEVICE_CLASSES
+            entity.domain == Domain.BINARY_SENSOR && entity.common.deviceClass in OPENING_DEVICE_CLASSES
         }
         .map { it.entityId }
         .sorted()
@@ -95,8 +98,8 @@ fun DocContext.securityPanel(tile: Tile, box: TileBox) {
         doc.sectionList(
             tileId = tile.id,
             selected = ui.selectedSection,
-            unlockedCount = locks.count { states[it]?.state != "locked" },
-            openCount = openings.count { states[it]?.state == "on" },
+            unlockedCount = locks.count { states[it]?.lockState != LockState.LOCKED },
+            openCount = openings.count { states[it]?.isOn == true },
             layout = layout,
         )
         doc.detailPane(
@@ -246,8 +249,8 @@ private fun DocContext.detailPane(
 }
 
 private fun DocContext.overviewBody(locks: List<String>, openings: List<String>, layout: Layout) {
-    val unlocked = locks.count { states[it]?.state != "locked" }
-    val open = openings.count { states[it]?.state == "on" }
+    val unlocked = locks.count { states[it]?.lockState != LockState.LOCKED }
+    val open = openings.count { states[it]?.isOn == true }
     rcScope.Column(Modifier.fillMaxWidth()) {
         val doc = this@overviewBody
         doc.label(
@@ -273,7 +276,7 @@ private fun DocContext.overviewBody(locks: List<String>, openings: List<String>,
 private fun DocContext.lockRow(entityId: String, layout: Layout) {
     val entityState = states[entityId] ?: return
     val name = entityState.name.ifBlank { entityId }
-    val isLocked = entityState.state == "locked"
+    val isLocked = entityState.lockState == LockState.LOCKED
     rcScope.Column(Modifier.fillMaxWidth()) {
         val doc = this@lockRow
         Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
@@ -312,7 +315,7 @@ private fun DocContext.lockRow(entityId: String, layout: Layout) {
 private fun DocContext.openingRow(entityId: String, layout: Layout) {
     val entityState = states[entityId] ?: return
     val name = entityState.name.ifBlank { entityId }
-    val isOpen = entityState.state == "on"
+    val isOpen = entityState.isOn
     rcScope.Row(
         Modifier.fillMaxWidth().height(units.px(layout.dp(Metrics.ROW_H_DP))),
         vertical = RcVerticalPositioning.Center,
@@ -335,8 +338,8 @@ private fun DocContext.openingRow(entityId: String, layout: Layout) {
     }
 }
 
-private fun openingIcon(entityState: EntityState): String = when (entityState.attr("device_class")) {
-    "window" -> if (entityState.state == "on") "window-open" else "window-closed-variant"
+private fun openingIcon(entityState: EntityState): String = when (entityState.common.deviceClass) {
+    "window" -> if (entityState.isOn) "window-open" else "window-closed-variant"
     "garage_door" -> "garage"
-    else -> if (entityState.state == "on") "door-open" else "door-closed"
+    else -> if (entityState.isOn) "door-open" else "door-closed"
 }

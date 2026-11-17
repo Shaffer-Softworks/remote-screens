@@ -706,12 +706,12 @@ class FreeFormTest {
         val states = ha.states.value
         val vars = doc.vars(states)
         val wash = states.getValue("input_select.washing_program")
-        val i = wash.list("options").take(4).indexOf(wash.state)
+        val i = wash.input.options.take(4).indexOf(wash.state)
         assertTrue(i >= 0, "the demo's option is among the first four")
         assertEquals(Role.KEY_ON.argb, vars["o.wash.c.$i.bg"]?.asColor())
         val mode = states.getValue(
             "climate.living_room",
-        ).let { it.list("hvac_modes").take(4).indexOf(it.state) }
+        ).let { it.climate.hvacModes.take(4).indexOf(it.state) }
         assertEquals(Role.KEY_ON.argb, vars["o.modes.c.$mode.bg"]?.asColor())
     }
 

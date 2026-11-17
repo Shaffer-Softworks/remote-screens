@@ -71,8 +71,8 @@ internal class SessionMedia(
             if (shownDocuments[shown.slot] !== shown) return@launch
             val markers = map.entityIds.mapNotNull { entityId ->
                 val entityState = states[entityId] ?: return@mapNotNull null
-                val latitude = entityState.number("latitude") ?: return@mapNotNull null
-                val longitude = entityState.number("longitude") ?: return@mapNotNull null
+                val latitude = entityState.common.latitude ?: return@mapNotNull null
+                val longitude = entityState.common.longitude ?: return@mapNotNull null
                 val pictureName = "${Vars.MAP_PIC_PREFIX}$entityId"
                     .takeIf { name -> shown.renderedDoc.docContext.pictures.any { it.name == name } }
                 MapMarker(

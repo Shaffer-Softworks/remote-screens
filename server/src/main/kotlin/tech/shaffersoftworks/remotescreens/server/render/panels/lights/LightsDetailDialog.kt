@@ -114,12 +114,12 @@ private fun DocContext.bindDetail(tileId: String, entityId: String) {
     structural(entityId) { current ->
         listOf(
             current?.state,
-            current?.attr("color_mode"),
-            current?.list("supported_color_modes")?.joinToString(),
-            current?.list("effect_list")?.joinToString(),
-            current?.attr("effect"),
-            current?.list("rgb_color")?.joinToString(),
-            current?.attr("color_temp_kelvin"),
+            current?.light?.colorMode,
+            current?.light?.supportedColorModes?.joinToString(),
+            current?.light?.effectList?.joinToString(),
+            current?.light?.effect,
+            current?.light?.rgbColor?.joinToString(),
+            current?.light?.colorTempKelvin,
         ).joinToString("|")
     }
     bindDetailLevel(tileId, entityId)
@@ -157,7 +157,7 @@ private fun DocContext.detailHeader(roomName: String, deviceName: String, dismis
 private fun DocContext.detailHeadline(tileId: String, entityState: EntityState, layout: LightsLayout) {
     rcScope.Spacer(Modifier.height(units.px(layout.dp(D.HEADLINE_GAP_DP))))
     val ink = fixed(Rpi.White)
-    if (entityState.state == "on") {
+    if (entityState.isOn) {
         label(
             text = text(Vars.tile(tileId, KEY_HEADLINE)),
             sp = layout.sp(D.HEADLINE_SP),
@@ -315,12 +315,12 @@ private fun DocContext.effectSection(
     entityState: EntityState,
     layout: LightsLayout,
 ) {
-    val effects = entityState.list("effect_list").filter { it.isNotBlank() }
+    val effects = entityState.light.effectList.filter { it.isNotBlank() }
     if (effects.isNotEmpty()) {
         rcScope.Spacer(Modifier.height(units.px(layout.dp(D.EFFECT_GAP_DP))))
         effectButton(tileId, layout)
         if (ui.isEffectMenuOpen) {
-            effectMenu(tileId = tileId, effects = effects, current = entityState.attr("effect"), layout = layout)
+            effectMenu(tileId = tileId, effects = effects, current = entityState.light.effect, layout = layout)
         }
     }
 }

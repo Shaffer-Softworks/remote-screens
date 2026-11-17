@@ -234,7 +234,7 @@ private fun DocContext.bindLightsOnCount(countVar: String, room: LightsRoom) {
     val lightIds = room.entityIds.filter { it.startsWith("light.") }
     for (entityId in lightIds) bind(entityId) { emptyList() }
     bind(null) { current ->
-        val count = lightIds.count { current[it]?.state == "on" }
+        val count = lightIds.count { current[it]?.isOn == true }
         val words = when (count) {
             0 -> i18n.t("ui.lights_all_off")
             1 -> i18n.t("ui.lights_one_on")

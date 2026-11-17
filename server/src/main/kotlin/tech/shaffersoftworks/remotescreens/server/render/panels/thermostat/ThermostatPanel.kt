@@ -31,6 +31,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Tile
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HvacMode
 
 private fun small(base: Float, layoutScale: Float) = maxOf(
     base * layoutScale,
@@ -42,10 +43,9 @@ private fun small(base: Float, layoutScale: Float) = maxOf(
  * Supporting the range feature flag is not enough — Heat and Cool use a single `temperature`.
  */
 internal fun EntityState?.usesDualSetpoint(): Boolean =
-    when (this?.state) {
-        "heat_cool" -> true
-        "auto" ->
-            number("target_temp_low") != null && number("target_temp_high") != null
+    when (this?.hvacMode) {
+        HvacMode.HEAT_COOL -> true
+        HvacMode.AUTO -> climate.hasTemperatureRange
         else -> false
     }
 
@@ -72,23 +72,23 @@ private val HA_MODE_ICONS = mapOf(
 fun DocContext.thermostatPanel(tile: Tile, box: TileBox) {
     val id = tile.entityId ?: return
     val entityState = states[id]
-    val step = entityState?.number("target_temp_step")
+    val step = entityState?.climate?.targetTempStep
         ?: if (homeAssistantConfig.temperatureUnit.contains("F")) {
             ThermostatMetrics.TEMP_STEP_F
         } else {
             ThermostatMetrics.TEMP_STEP_C
         }
     val dual = entityState.usesDualSetpoint()
-    val modes = haModes(entityState?.list("hvac_modes").orEmpty())
-    val fans = entityState?.list("fan_modes").orEmpty()
+    val modes = haModes(entityState?.climate?.hvacModes.orEmpty())
+    val fans = entityState?.climate?.fanModes.orEmpty()
     structural(id) { s ->
         listOf(
             s?.state ?: "",
-            s?.list("hvac_modes")?.joinToString() ?: "",
-            s?.list("fan_modes")?.joinToString() ?: "",
-            s?.attr("fan_mode") ?: "",
+            s?.climate?.hvacModes?.joinToString() ?: "",
+            s?.climate?.fanModes?.joinToString() ?: "",
+            s?.climate?.fanMode ?: "",
             s.usesDualSetpoint().toString(),
-            (s?.number("current_humidity") != null).toString(),
+            (s?.climate?.currentHumidity != null).toString(),
         ).joinToString("|")
     }
     if (dual) {
@@ -117,7 +117,7 @@ fun DocContext.thermostatPanel(tile: Tile, box: TileBox) {
             dual = dual,
             layoutScale = layoutScale,
             boxH = box.h,
-            showHumidity = entityState?.number("current_humidity") != null,
+            showHumidity = entityState?.climate?.currentHumidity != null,
         )
         doc.thermostatModes(
             tileId = tile.id,
@@ -289,7 +289,7 @@ private fun DocContext.thermostatModes(
             (boxW - ThermostatMetrics.MODE_ROW_MARGIN_DP - fanW) / modes.size,
         )
     }
-    val nextFan = nextFanMode(states[entityId]?.attr("fan_mode"), fans)
+    val nextFan = nextFanMode(states[entityId]?.climate?.fanMode, fans)
     rcScope.Box(
         Modifier.fillMaxWidth().padding(
             start = 0f,
@@ -423,10 +423,13 @@ private fun DocContext.thermostatModes(
 }
 
 /** Whether [state] lights the mode cell for [mode] (`auto` ↔ `heat_cool`). */
-private fun modeSelected(state: String?, mode: String): Boolean =
-    state == mode ||
-        (mode == "heat_cool" && state == "auto") ||
-        (mode == "auto" && state == "heat_cool")
+private fun modeSelected(state: String?, mode: String): Boolean = hvacModeSelected(state, mode)
+
+/** Whether a climate in [state] lights the control for [mode]; `auto` and `heat_cool` stand in for each other. */
+internal fun hvacModeSelected(state: String?, mode: String): Boolean =
+    state == mode || setOf(HvacMode.of(state.orEmpty()), HvacMode.of(mode)) == RANGE_MODES
+
+private val RANGE_MODES = setOf(HvacMode.HEAT_COOL, HvacMode.AUTO)
 
 /** Heat/Cool · Heat · Cool · Off from the entity's modes (`auto` stands in when there is no `heat_cool`). */
 private fun haModes(available: List<String>): List<String> {

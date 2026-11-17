@@ -21,7 +21,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import java.awt.Color
 
 internal fun DocContext.lightCard(entityId: String, entityState: EntityState?, w: Float) {
-    val modes = entityState?.list("supported_color_modes").orEmpty()
+    val modes = entityState?.light?.supportedColorModes.orEmpty()
     bigToggle(entityId, entityState)
     if (modes.any { it != "onoff" }) {
         section(i18n.t("ui.brightness"))
@@ -45,15 +45,15 @@ internal fun DocContext.lightCard(entityId: String, entityState: EntityState?, w
             ) to ref(entityId, "kelvin", kelvin.toString()) },
         )
     }
-    val effects = entityState?.list("effect_list").orEmpty()
+    val effects = entityState?.light?.effectList.orEmpty()
     if (effects.isNotEmpty()) {
-        structural(entityId) { it?.list("effect_list")?.joinToString() ?: "" }
+        structural(entityId) { it?.light?.effectList?.joinToString() ?: "" }
         section(i18n.t("ui.effects"))
         flowKeys(
             entityId,
             "effect",
             effects.take(CardChrome.EFFECTS_TAKE).map { it to it },
-        ) { it.attr("effect") }
+        ) { it.light.effect }
     }
 }
 
@@ -65,32 +65,32 @@ internal fun DocContext.fanCard(entityId: String, entityState: EntityState?, w: 
     }
     structural(entityId) {
         listOf(
-            it?.attr("oscillating"),
-            it?.attr("direction"),
-            it?.list("preset_modes")?.joinToString(),
+            it?.fan?.oscillating?.toString(),
+            it?.fan?.direction,
+            it?.fan?.presetModes?.joinToString(),
         ).joinToString("|")
     }
     if (entityState?.supports(
             CardChrome.FAN_OSCILLATE_FLAG,
-        ) == true || entityState?.attr("oscillating") != null) {
+        ) == true || entityState?.fan?.oscillating != null) {
         section(i18n.t("ui.oscillate"))
         flowKeys(
             entityId,
             "oscillate",
             listOf("true" to i18n.t("state.on"), "false" to i18n.t("state.off")),
-        ) { it.attr("oscillating")?.lowercase() }
+        ) { it.fan.oscillating?.toString() }
     }
     if (entityState?.supports(
             CardChrome.FAN_DIRECTION_FLAG,
-        ) == true || entityState?.attr("direction") != null) {
+        ) == true || entityState?.fan?.direction != null) {
         section(i18n.t("ui.direction"))
         flowKeys(
             entityId,
             "direction",
             listOf("forward" to i18n.t("ui.forward"), "reverse" to i18n.t("ui.reverse")),
-        ) { it.attr("direction") }
+        ) { it.fan.direction }
     }
-    val presets = entityState?.list("preset_modes").orEmpty()
+    val presets = entityState?.fan?.presetModes.orEmpty()
     if (presets.isNotEmpty()) {
         section(i18n.t("ui.preset"))
         flowKeys(
@@ -98,15 +98,15 @@ internal fun DocContext.fanCard(entityId: String, entityState: EntityState?, w: 
             "preset",
             presets.map { it to it.replace('_', ' ').replaceFirstChar(Char::uppercase) },
         ) {
-            it.attr("preset_mode")
+            it.fan.presetMode
         }
     }
 }
 
 internal fun DocContext.humidifierCard(entityId: String, entityState: EntityState?, w: Float) {
-    val min = entityState?.number("min_humidity") ?: CardChrome.DEFAULT_HUMIDITY_MIN
-    val max = entityState?.number("max_humidity") ?: CardChrome.DEFAULT_HUMIDITY_MAX
-    val step = entityState?.number("humidity_step") ?: CardChrome.DEFAULT_HUMIDITY_STEP
+    val min = entityState?.humidifier?.minHumidity ?: CardChrome.DEFAULT_HUMIDITY_MIN
+    val max = entityState?.humidifier?.maxHumidity ?: CardChrome.DEFAULT_HUMIDITY_MAX
+    val step = entityState?.humidifier?.humidityStep ?: CardChrome.DEFAULT_HUMIDITY_STEP
     bigToggle(entityId, entityState)
     predict(ref(entityId, "humidity", "+$step"), entityId)
     predict(ref(entityId, "humidity", "-$step"), entityId)
@@ -139,16 +139,16 @@ internal fun DocContext.humidifierCard(entityId: String, entityState: EntityStat
     }
     spacer(CardChrome.CARD_GAP_DP)
     bar(entityId = entityId, verb = "humidity", width = w, min = min, max = max)
-    val modes = entityState?.list("available_modes").orEmpty()
+    val modes = entityState?.humidifier?.availableModes.orEmpty()
     if (modes.isNotEmpty()) {
-        structural(entityId) { it?.list("available_modes")?.joinToString() ?: "" }
+        structural(entityId) { it?.humidifier?.availableModes?.joinToString() ?: "" }
         section(i18n.t("ui.mode"))
         flowKeys(
             entityId,
             "mode",
             modes.map { it to it.replace('_', ' ').replaceFirstChar(Char::uppercase) },
         ) {
-            it.attr("mode")
+            it.humidifier.mode
         }
     }
 }

@@ -49,6 +49,7 @@ import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.ZoneId
 import kotlin.math.roundToInt
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaPlayerState
 
 private object BlockMetrics {
     const val TIMER_KEY_H_DP = 52f
@@ -257,7 +258,7 @@ private fun DocContext.eventsNode(node: Node, self: Dims, axis: Axis, pages: Pag
     for (calendarId in calendars) {
         bindEntity(calendarId)
         structural(calendarId) { s ->
-            listOf(s?.attr("message"), s?.attr("start_time"), s?.attr("all_day")).joinToString("|")
+            listOf(s?.calendar?.message, s?.calendar?.startTime, s?.calendar?.allDay).joinToString("|")
         }
     }
     val events = calendars.mapNotNull { calendarId ->
@@ -417,7 +418,7 @@ private fun DocContext.mediaBarNode(node: Node, self: Dims, axis: Axis, pages: P
                     node.id,
                     "seek",
                     (
-                        (doc.states[id]?.number("media_duration") ?: 0.0) *
+                        (doc.states[id]?.mediaPlayer?.mediaDuration ?: 0.0) *
                             step / BlockMetrics.MEDIA_PROGRESS_STEPS
                         ).roundToInt().toString(),
                 )
@@ -455,17 +456,17 @@ private fun DocContext.bindMediaBar(node: Node, id: String) {
     bind(id) { states ->
         val entityState = states[id]
         val artist = listOfNotNull(
-            entityState?.attr("media_artist"),
-            entityState?.attr("media_album_name"),
+            entityState?.mediaPlayer?.mediaArtist,
+            entityState?.mediaPlayer?.mediaAlbumName,
         ).joinToString(" · ").ifEmpty { i18n.state("media_player", entityState?.state ?: "off") }
-        val playing = entityState?.state == "playing"
-        val duration = entityState?.number("media_duration")
+        val playing = entityState?.mediaPlayerState == MediaPlayerState.PLAYING
+        val duration = entityState?.mediaPlayer?.mediaDuration
         val position = entityState.mediaPosition()
         val progress = mediaProgress(position, duration)
         listOf(
             VarValue.string(
                 Vars.entity(id, "title"),
-                entityState?.attr("media_title") ?: entityState?.name ?: "",
+                entityState?.mediaPlayer?.mediaTitle ?: entityState?.name ?: "",
             ),
             VarValue.string(Vars.entity(id, "artist"), artist),
             VarValue.int(Vars.entity(id, "playing"), if (playing) Vars.VISIBLE else Vars.GONE),
@@ -658,12 +659,12 @@ private fun DocContext.weatherNowNode(node: Node, self: Dims, axis: Axis, pages:
 private fun DocContext.bindWeatherNow(node: Node, id: String) {
     bindEntity(id)
     structural(id) { s ->
-        listOf(s?.state, s?.number("temperature"), s?.attr("temperature_unit")).joinToString("|")
+        listOf(s?.state, s?.weather?.temperature, s?.weather?.temperatureUnit).joinToString("|")
     }
     bind(id) { states ->
         val entityState = states[id]
-        val temp = entityState?.number("temperature")
-        val unit = entityState?.attr("temperature_unit").orEmpty().replace("°", "")
+        val temp = entityState?.weather?.temperature
+        val unit = entityState?.weather?.temperatureUnit.orEmpty().replace("°", "")
         listOf(
             VarValue.string(
                 Vars.tile(node.id, "temp"),
@@ -729,7 +730,7 @@ private fun DocContext.bindNextEventLeaf(
     for (calendarId in calendars) {
         bindEntity(calendarId)
         structural(calendarId) { s ->
-            listOf(s?.attr("message"), s?.attr("start_time"), s?.attr("all_day")).joinToString("|")
+            listOf(s?.calendar?.message, s?.calendar?.startTime, s?.calendar?.allDay).joinToString("|")
         }
     }
     val event = nextCalendarEvent(calendars, states, zone)

@@ -36,6 +36,7 @@ import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.width
 import androidx.compose.remote.creation.modifiers.RectShape
 import tech.shaffersoftworks.remotescreens.server.render.panels.lights.LightsMetrics as M
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.CoverState
 
 private const val KEY_BLINDS_OPEN_PREFIX = "blindsOpen."
 private const val ALPHA_SHIFT = 24
@@ -142,7 +143,7 @@ private fun DocContext.bindBlindsOpenCount(countVar: String, room: LightsRoom) {
     val coverIds = room.entityIds.filter { it.startsWith("cover.") }
     for (entityId in coverIds) bind(entityId) { emptyList() }
     bind(null) { current ->
-        val count = coverIds.count { current[it]?.state == "open" }
+        val count = coverIds.count { current[it]?.coverState == CoverState.OPEN }
         val words = when (count) {
             0 -> i18n.t("ui.blinds_all_closed")
             1 -> i18n.t("ui.blinds_one_open")

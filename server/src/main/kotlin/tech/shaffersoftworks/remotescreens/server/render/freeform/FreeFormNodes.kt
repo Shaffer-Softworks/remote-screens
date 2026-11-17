@@ -90,7 +90,7 @@ internal fun DocContext.textNode(node: Node, axis: Axis, pages: Pages) {
         val raw = when (binding.format) {
             "value" -> view.value
             "name" -> view.name
-            "attribute" -> binding.attribute?.let { entityState?.attr(it) } ?: ""
+            "attribute" -> binding.attribute?.let { entityState?.attributeText(it) } ?: ""
             else -> view.stateText
         }
         listOf(VarValue.string(nodeVar(node.id), binding.prefix + raw + binding.suffix))
@@ -115,9 +115,9 @@ internal fun DocContext.iconNode(node: Node, axis: Axis, pages: Pages) {
     val sizeDp = node.props["size"]?.toFloatOrNull() ?: Metrics.ICON_DEFAULT_DP
     val entityId = node.bind?.entityId
     val domain = entityId?.substringBefore('.')
-    val name = node.props["icon"] ?: entityId?.let { states[it]?.attr(
-        "icon",
-    ) } ?: domain?.let { Catalogue.of(it)?.icon }
+    val name = node.props["icon"]
+        ?: entityId?.let { states[it]?.common?.icon }
+        ?: domain?.let { Catalogue.of(it)?.icon }
     val ink = iconInk(node, entityId, domain)
     rcScope.Box(
         styled(node, axis, pages),
@@ -378,9 +378,9 @@ internal fun DocContext.badgeNode(node: Node, axis: Axis, pages: Pages) {
             it
         }
     }
-    val icon = node.props["icon"]?.takeIf { it.isNotEmpty() } ?: id?.let { states[it]?.attr(
-        "icon",
-    ) } ?: domain?.let { Catalogue.of(it)?.icon }
+    val icon = node.props["icon"]?.takeIf { it.isNotEmpty() }
+        ?: id?.let { states[it]?.common?.icon }
+        ?: domain?.let { Catalogue.of(it)?.icon }
     val sp = node.props["fontSize"]?.toFloatOrNull() ?: Type.BODY
     val weight = node.props["weight"]?.toFloatOrNull() ?: Weight.MEDIUM
     rcScope.Row(
@@ -444,10 +444,8 @@ internal fun DocContext.bindLevel(node: Node, id: String) {
             entityState,
             i18n,
         ).level ?: entityState?.numericState()?.let { value ->
-            val lo = node.props["min"]?.toDoubleOrNull() ?: entityState.number("min") ?: 0.0
-            val hi = node.props["max"]?.toDoubleOrNull() ?: entityState.number(
-                "max",
-            ) ?: Metrics.LEVEL_RANGE_MAX
+            val lo = node.props["min"]?.toDoubleOrNull() ?: entityState.input.min ?: 0.0
+            val hi = node.props["max"]?.toDoubleOrNull() ?: entityState.input.max ?: Metrics.LEVEL_RANGE_MAX
             if (hi > lo) ((value - lo) / (hi - lo)).toFloat() else 0f
         } ?: 0f
         listOf(VarValue.float(nodeLevel(node.id), level.coerceIn(0f, 1f)))

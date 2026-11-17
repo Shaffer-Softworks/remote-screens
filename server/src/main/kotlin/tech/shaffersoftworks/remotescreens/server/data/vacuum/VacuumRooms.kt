@@ -32,15 +32,15 @@ data class VacuumRooms(
 }
 
 fun EntityState.supportsCleanArea(): Boolean =
-    ((number("supported_features")?.toInt() ?: 0) and VACUUM_CLEAN_AREA_FEATURE) != 0
+    supports(VACUUM_CLEAN_AREA_FEATURE)
 
 /**
  * Segment rooms from attributes some integrations publish: parallel `room_ids` + `room_list`, or `room_list`
  * alone (name as id).
  */
 fun EntityState.vacuumSegmentRooms(): List<VacuumRoom> {
-    val ids = list("room_ids")
-    return list("room_list").mapIndexed { index, name ->
+    val ids = vacuum.roomIds
+    return vacuum.roomList.mapIndexed { index, name ->
         VacuumRoom(
             id = ids.getOrNull(index)?.takeIf { it.isNotBlank() } ?: name,
             name = name,

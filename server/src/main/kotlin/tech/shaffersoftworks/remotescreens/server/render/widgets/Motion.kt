@@ -11,6 +11,9 @@ import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import kotlin.math.PI
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HvacMode
 
 private const val STATE_DURATION_SECONDS = 0.25f
 private const val FAN_DEGREES_PER_SECOND = 120f
@@ -24,16 +27,16 @@ fun RcFloat.smooth(): RcFloat = anim(duration = STATE_DURATION_SECONDS, curve = 
 
 /** Motion follows live state, including changes that do not rebuild the document. */
 fun DocContext.statusIcon(entityId: String, name: String?, sizeDp: Float, color: RcColor) {
-    val domain = entityId.substringBefore('.')
+    val domain = EntityId(entityId).domain
     val moving = Vars.entity(entityId, "icon_moving")
     val resting = Vars.entity(entityId, "icon_resting")
     bind(entityId) { states ->
         val entity = states[entityId]
         val active = when (domain) {
-            "fan" -> entity?.state == "on"
-            "climate" -> entity?.state !in setOf(null, "off", "unknown", "unavailable") &&
-                entity?.attr("hvac_action") in setOf("heating", "preheating", "cooling")
-            "alarm_control_panel" -> entity?.state in setOf("arming", "pending", "triggered")
+            Domain.FAN -> entity?.isOn == true
+            Domain.CLIMATE -> entity != null && entity.isAvailable && entity.hvacMode != HvacMode.OFF &&
+                entity.climate.hvacAction in setOf("heating", "preheating", "cooling")
+            Domain.ALARM_PANEL -> entity?.alarmState?.isAlerting == true
             else -> false
         }
         listOf(
@@ -45,8 +48,8 @@ fun DocContext.statusIcon(entityId: String, name: String?, sizeDp: Float, color:
         val doc = this@statusIcon
         doc.icon(name, sizeDp, color, doc.int(resting, Vars.VISIBLE))
         // Three fan blades repeat every 120 degrees, so the minute-clock wrap is seamless.
-        val angle = if (domain == "fan") continuousSeconds() * FAN_DEGREES_PER_SECOND else null
-        val pulse = if (domain != "fan") {
+        val angle = if (domain == Domain.FAN) continuousSeconds() * FAN_DEGREES_PER_SECOND else null
+        val pulse = if (domain != Domain.FAN) {
             PULSE_MIN_ALPHA.rf + (sin(continuousSeconds() * PI.toFloat()) + 1f) * PULSE_AMPLITUDE
         } else {
             null

@@ -2,6 +2,7 @@
 
 package tech.shaffersoftworks.remotescreens.server.render.panels.home
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
@@ -253,7 +254,7 @@ private fun DocContext.bindHomeWeather(tileId: String, weather: String?) {
         val entityState = weather?.let { states[it] }
         val temperature = when {
             entityState == null -> null
-            entityState.domain == "weather" -> entityState.number("temperature")
+            entityState.domain == Domain.WEATHER -> entityState.weather.temperature
             else -> entityState.numericState()
         }
         listOf(

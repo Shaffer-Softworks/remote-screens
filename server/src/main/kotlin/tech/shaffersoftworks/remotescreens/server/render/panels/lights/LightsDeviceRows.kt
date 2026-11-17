@@ -33,6 +33,7 @@ import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.visibility
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.render.panels.lights.LightsMetrics as M
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 private const val KEY_ROW_ON = "lightsOn"
 private const val KEY_ROW_OFF = "lightsOff"
@@ -49,10 +50,10 @@ private fun DocContext.bindRow(entityId: String) {
         val entityState = states[entityId]
         val isOn = entityState.isRowOn()
         val level = when (entityState?.domain) {
-            "cover" -> (entityState.number("current_tilt_position") ?: 0.0) / M.PERCENT
-            else -> (entityState?.number("brightness") ?: 0.0) / M.BRIGHTNESS_MAX
+            Domain.COVER -> (entityState.cover.currentTiltPosition ?: 0.0) / M.PERCENT
+            else -> (entityState?.light?.brightness ?: 0.0) / M.BRIGHTNESS_MAX
         }
-        val tint = if (entityState?.domain == "light") entityState.selectedColor() else Rpi.White
+        val tint = if (entityState?.domain == Domain.LIGHT) entityState.selectedColor() else Rpi.White
         listOf(
             VarValue.int(rowOnVar(entityId), if (isOn) Vars.VISIBLE else Vars.GONE),
             VarValue.int(rowOffVar(entityId), if (isOn) Vars.GONE else Vars.VISIBLE),
@@ -79,8 +80,8 @@ internal fun DocContext.deviceRow(tileId: String, entityId: String, layout: Ligh
         ).joinToString("|")
     }
     bindRow(entityId)
-    val hasSlider = domain == "cover" || (domain == "light" && entityState.hasLightSlider())
-    val detailRef = if (domain == "light" && entityState.supportsLightDetail()) {
+    val hasSlider = domain == Domain.COVER || (domain == Domain.LIGHT && entityState.hasLightSlider())
+    val detailRef = if (domain == Domain.LIGHT && entityState.supportsLightDetail()) {
         ActionRef(tileId, "lights_detail", entityId)
     } else {
         null
@@ -236,10 +237,10 @@ private fun RcCanvasScope.sliderSegment(
  */
 private fun DocContext.rowSwitch(entityState: EntityState, layout: LightsLayout) {
     val entityId = entityState.entityId
-    val (onVerb, offVerb) = if (entityState.domain == "cover") "open_tilt" to "close_tilt" else "on" to "off"
+    val (onVerb, offVerb) = if (entityState.domain == Domain.COVER) "open_tilt" to "close_tilt" else "on" to "off"
     val onRef = ActionRef("e:$entityId", onVerb)
     val offRef = ActionRef("e:$entityId", offVerb)
-    Catalogue.of(entityState.domain)?.predict?.let { predictions ->
+    Catalogue.of(entityState.domain.value)?.predict?.let { predictions ->
         if (onVerb in predictions) predict(onRef, entityId)
         if (offVerb in predictions) predict(offRef, entityId)
     }

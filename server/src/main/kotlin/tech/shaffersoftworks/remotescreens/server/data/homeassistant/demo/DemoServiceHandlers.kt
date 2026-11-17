@@ -6,6 +6,10 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.SwitchState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.CoverState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.PresenceState
 
 /**
  * Applies Home Assistant service calls to demo entity state — one handler per service name.
@@ -70,15 +74,15 @@ internal class DemoServiceHandlers(
     private fun ServiceCall.toggle() {
         val isOn = current.state in ON_STATES
         val next = when (current.domain) {
-            "sun" -> if (isOn) "below_horizon" else "above_horizon"
-            "person" -> if (isOn) "not_home" else "home"
+            Domain.SUN -> if (isOn) "below_horizon" else "above_horizon"
+            Domain.PERSON -> if (isOn) PresenceState.NOT_HOME.wire else PresenceState.HOME.wire
             else -> if (isOn) off(current.domain) else on(current.domain)
         }
         set(entityId, next, emptyMap())
     }
 
     private fun ServiceCall.turnOn() {
-        if (current.domain == "scene" || current.domain == "script") return
+        if (current.domain == Domain.SCENE || current.domain == Domain.SCRIPT) return
         val attrs = mutableMapOf<String, JsonElement>()
 
         num("brightness_pct")?.let {
@@ -248,16 +252,8 @@ internal class DemoServiceHandlers(
         const val BRIGHTNESS_PCT_SCALE = 2.55
         const val DEFAULT_TODO_COUNT = 2
 
-        fun on(domain: String) = if (domain == "cover") {
-            "open"
-        } else {
-            "on"
-        }
+        fun on(domain: Domain): String = if (domain == Domain.COVER) CoverState.OPEN.wire else SwitchState.ON.wire
 
-        fun off(domain: String) = if (domain == "cover") {
-            "closed"
-        } else {
-            "off"
-        }
+        fun off(domain: Domain): String = if (domain == Domain.COVER) CoverState.CLOSED.wire else SwitchState.OFF.wire
     }
 }

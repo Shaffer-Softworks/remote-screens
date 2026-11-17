@@ -18,6 +18,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.shared.TypeSpec
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.PresenceState
 
 internal object TileChrome {
     val ALWAYS_LIT = setOf("scene", "script", "button", "input_button", "nav", "favourite")
@@ -151,7 +152,7 @@ internal fun DocContext.headerTitle(tile: Tile, kind: String, sp: Float) {
             label(
                 tile.name ?: i18n.t(
                     "ui.people_home",
-                    "count" to who.count { states[it]?.state == "home" },
+                    "count" to who.count { states[it]?.presenceState == PresenceState.HOME },
                 ),
                 sp,
                 ink,
@@ -159,7 +160,7 @@ internal fun DocContext.headerTitle(tile: Tile, kind: String, sp: Float) {
         }
         entityId != null && kind != "favourite" -> fittingLabel(
             text(Vars.entity(entityId, Vars.KEY_NAME)),
-            tile.name ?: states[entityId]?.attr("friendly_name") ?: entityId,
+            tile.name ?: states[entityId]?.common?.friendlyName ?: entityId,
             sp,
             ink,
         )
@@ -183,7 +184,7 @@ private fun Tile.hasStatusMotion(): Boolean =
 internal fun DocContext.tileIcon(tile: Tile, spec: TypeSpec?, entityState: EntityState?, sizeDp: Float, colorKey: String = Vars.KEY_ICON) {
     val entityId = tile.entityId
     val ink = color(Vars.tile(tile.id, colorKey))
-    val override = tile.icon ?: entityState?.attr("icon")
+    val override = tile.icon ?: entityState?.common?.icon
     when {
         tile.hasStatusMotion() ->
             statusIcon(requireNotNull(entityId), statusIconName(override, entityState, spec), sizeDp, ink)

@@ -1,7 +1,12 @@
 package tech.shaffersoftworks.remotescreens.server.render
 
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.AlarmState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.CoverState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HvacMode
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.LockState
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Icons
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import kotlin.math.abs
@@ -59,21 +64,21 @@ object Present {
     private val COVER_DEFAULT = "window-shutter-open" to "window-shutter"
 
     private val LOCK_ICONS = mapOf(
-        "locked" to "lock",
-        "jammed" to "lock-alert",
-        "locking" to "lock-clock",
-        "unlocking" to "lock-clock",
+        LockState.LOCKED to "lock",
+        LockState.JAMMED to "lock-alert",
+        LockState.LOCKING to "lock-clock",
+        LockState.UNLOCKING to "lock-clock",
     )
     private val CLIMATE_ICONS = mapOf(
-        "cool" to "snowflake",
-        "heat" to "fire",
-        "off" to "thermostat-off",
+        HvacMode.COOL to "snowflake",
+        HvacMode.HEAT to "fire",
+        HvacMode.OFF to "thermostat-off",
     )
     private val ALARM_ICONS = mapOf(
-        "disarmed" to "shield-off",
-        "triggered" to "bell-ring",
-        "arming" to "shield-sync",
-        "pending" to "shield-sync",
+        AlarmState.DISARMED to "shield-off",
+        AlarmState.TRIGGERED to "bell-ring",
+        AlarmState.ARMING to "shield-sync",
+        AlarmState.PENDING to "shield-sync",
     )
     private val WEATHER_ICONS = mapOf(
         "sunny" to "weather-sunny",
@@ -106,17 +111,17 @@ object Present {
                 icon = iconOverride ?: Icons.FALLBACK,
             )
         }
-        val spec = Catalogue.of(entityState.domain)
-        val on = spec?.onStates?.contains(entityState.state) ?: (entityState.state == "on")
+        val spec = Catalogue.of(entityState.domain.value)
+        val on = spec?.onStates?.contains(entityState.state) ?: entityState.isOn
         val word = i18n.state(
-            entityState.domain,
+            entityState.domain.value,
             entityState.state,
-            entityState.attr("device_class"),
+            entityState.common.deviceClass,
         )
         val level = levelOf(entityState, on)
         val stateText = stateTextOf(entityState = entityState, i18n = i18n, on = on, level = level, word = word)
         val value = valueOf(entityState = entityState, i18n = i18n, stateText = stateText, word = word)
-        val icon = iconOverride ?: entityState.attr("icon") ?: iconFor(entityState, on)
+        val icon = iconOverride ?: entityState.common.icon ?: iconFor(entityState, on)
         return EntityView(
             name = nameOverride ?: entityState.name,
             stateText = stateText,
@@ -131,39 +136,36 @@ object Present {
     // One branch per Home Assistant domain, as a lookup table would be.
     @Suppress("CyclomaticComplexMethod")
     private fun levelOf(entityState: EntityState, on: Boolean): Float? = when (entityState.domain) {
-        "light" -> if (on) {
-            (entityState.number(
-                "brightness",
-            )?.toFloat() ?: MAX_BRIGHTNESS) / MAX_BRIGHTNESS
+        Domain.LIGHT -> if (on) {
+            (entityState.light.brightness?.toFloat() ?: MAX_BRIGHTNESS) / MAX_BRIGHTNESS
         } else {
             0f
         }
-        "cover" -> (
-            entityState.number("current_position")
-                ?: entityState.number("current_tilt_position")
-            )?.toFloat()?.div(PERCENT)
-        "fan" -> if (on) (entityState.number("percentage")?.toFloat() ?: PERCENT) / PERCENT else 0f
-        "humidifier" -> {
-            val humidity = entityState.number("humidity") ?: return null
-            val min = entityState.number("min_humidity") ?: 0.0
-            val max = entityState.number("max_humidity") ?: DEFAULT_NUMBER_MAX
+        Domain.COVER -> (entityState.cover.currentPosition ?: entityState.cover.currentTiltPosition)
+            ?.toFloat()
+            ?.div(PERCENT)
+        Domain.FAN -> if (on) (entityState.fan.percentage?.toFloat() ?: PERCENT) / PERCENT else 0f
+        Domain.HUMIDIFIER -> {
+            val humidity = entityState.humidifier.humidity ?: return null
+            val min = entityState.humidifier.minHumidity ?: 0.0
+            val max = entityState.humidifier.maxHumidity ?: DEFAULT_NUMBER_MAX
             if (max > min) ((humidity - min) / (max - min)).toFloat() else humidity.toFloat() / PERCENT
         }
-        "valve" -> entityState.number("current_position")?.toFloat()?.div(PERCENT)
-        "water_heater" -> {
-            val temperature = entityState.number("temperature") ?: return null
-            val min = entityState.number("min_temp") ?: 0.0
-            val max = entityState.number("max_temp") ?: DEFAULT_NUMBER_MAX
+        Domain.VALVE -> entityState.cover.currentPosition?.toFloat()?.div(PERCENT)
+        Domain.WATER_HEATER -> {
+            val temperature = entityState.climate.temperature ?: return null
+            val min = entityState.climate.minTemp ?: 0.0
+            val max = entityState.climate.maxTemp ?: DEFAULT_NUMBER_MAX
             if (max > min) ((temperature - min) / (max - min)).toFloat() else null
         }
-        "media_player" -> entityState.number("volume_level")?.toFloat()
-        "number", "input_number" -> {
+        Domain.MEDIA_PLAYER -> entityState.mediaPlayer.volumeLevel?.toFloat()
+        Domain.NUMBER, Domain.INPUT_NUMBER -> {
             val numeric = entityState.numericState()
-            val min = entityState.number("min") ?: 0.0
-            val max = entityState.number("max") ?: DEFAULT_NUMBER_MAX
+            val min = entityState.input.min ?: 0.0
+            val max = entityState.input.max ?: DEFAULT_NUMBER_MAX
             if (numeric != null && max > min) ((numeric - min) / (max - min)).toFloat() else null
         }
-        "vacuum" -> entityState.number("battery_level")?.toFloat()?.div(PERCENT)
+        Domain.VACUUM -> entityState.vacuum.batteryLevel?.toFloat()?.div(PERCENT)
         else -> null
     }
 
@@ -171,59 +173,49 @@ object Present {
     @Suppress("CyclomaticComplexMethod")
     private fun stateTextOf(entityState: EntityState, i18n: I18n, on: Boolean, level: Float?, word: String): String =
         when (entityState.domain) {
-            "light" -> entityState.number("brightness")
+            Domain.LIGHT -> entityState.light.brightness
                 ?.takeIf { on }
                 ?.let { i18n.percent(((level ?: 0f) * PERCENT).roundToInt()) }
                 ?: word
-            "cover" -> {
-                val shade = entityState.number("current_position")
-                val tilt = entityState.number("current_tilt_position")
+            Domain.COVER -> {
+                val shade = entityState.cover.currentPosition
+                val tilt = entityState.cover.currentTiltPosition
                 when {
-                    shade != null && entityState.state == "open" -> i18n.percent(shade.roundToInt())
+                    shade != null && entityState.coverState == CoverState.OPEN -> i18n.percent(shade.roundToInt())
                     shade == null && tilt != null -> i18n.percent(tilt.roundToInt())
                     else -> word
                 }
             }
-            "fan" -> entityState.number(
-                "percentage",
-            )?.takeIf { on }?.let { i18n.percent(it.roundToInt()) } ?: word
-            "humidifier" -> entityState.number(
-                "humidity",
-            )?.takeIf { on }?.let { i18n.percent(it.roundToInt()) } ?: word
-            "climate" -> entityState.number("current_temperature")
-                ?.let { "${i18n.number(
-                    it,
-                    1,
-                )} ${entityState.attr("temperature_unit") ?: "°"} · $word" }
+            Domain.FAN -> entityState.fan.percentage?.takeIf { on }?.let { i18n.percent(it.roundToInt()) } ?: word
+            Domain.HUMIDIFIER -> entityState.humidifier.humidity
+                ?.takeIf { on }
+                ?.let { i18n.percent(it.roundToInt()) }
                 ?: word
-            "media_player" -> listOfNotNull(
-                entityState.attr("media_title"),
-                entityState.attr("media_artist"),
+            Domain.CLIMATE -> entityState.climate.currentTemperature
+                ?.let { "${i18n.number(it, 1)} ${entityState.climate.temperatureUnit ?: "°"} · $word" }
+                ?: word
+            Domain.MEDIA_PLAYER -> listOfNotNull(
+                entityState.mediaPlayer.mediaTitle,
+                entityState.mediaPlayer.mediaArtist,
             )
                 .joinToString(" · ")
                 .ifEmpty { word }
-            "sensor", "number", "input_number" -> numberWithUnit(
+            Domain.SENSOR, Domain.NUMBER, Domain.INPUT_NUMBER -> numberWithUnit(
                 entityState,
                 i18n,
             ) ?: entityState.state
-            "weather" -> entityState.number(
-                "temperature",
-            )?.let { "${i18n.number(it, 0)}° · $word" } ?: word
-            "scene", "button", "input_button" -> ""
-            "script" -> if (on) word else ""
-            "vacuum", "lawn_mower" ->
-                entityState.number(
-                    "battery_level",
-                )?.let { "$word · ${i18n.percent(it.roundToInt())}" } ?: word
-            "input_select", "select", "input_text", "input_datetime" -> entityState.state
-            "calendar" -> entityState.attr("message") ?: word
-            "todo", "counter" -> entityState.state
-            "timer" -> entityState.attr("remaining") ?: word
-            "water_heater" -> entityState.number(
-                "temperature",
-            )?.let { "${i18n.number(it, 0)}° · $word" } ?: word
-            "valve" -> entityState.number("current_position")
-                ?.takeIf { entityState.state == "open" }
+            Domain.WEATHER -> entityState.weather.temperature?.let { "${i18n.number(it, 0)}° · $word" } ?: word
+            Domain.SCENE, Domain.BUTTON, Domain.INPUT_BUTTON -> ""
+            Domain.SCRIPT -> if (on) word else ""
+            Domain.VACUUM, Domain.LAWN_MOWER ->
+                entityState.vacuum.batteryLevel?.let { "$word · ${i18n.percent(it.roundToInt())}" } ?: word
+            Domain.INPUT_SELECT, Domain.SELECT, Domain.INPUT_TEXT, Domain.INPUT_DATETIME -> entityState.state
+            Domain.CALENDAR -> entityState.calendar.message ?: word
+            Domain.TODO, Domain.COUNTER -> entityState.state
+            Domain.TIMER -> entityState.timer.remaining ?: word
+            Domain.WATER_HEATER -> entityState.climate.temperature?.let { "${i18n.number(it, 0)}° · $word" } ?: word
+            Domain.VALVE -> entityState.cover.currentPosition
+                ?.takeIf { entityState.coverState == CoverState.OPEN }
                 ?.let { i18n.percent(it.roundToInt()) }
                 ?: word
             else -> word
@@ -231,33 +223,27 @@ object Present {
 
     @Suppress("CyclomaticComplexMethod")
     private fun valueOf(entityState: EntityState, i18n: I18n, stateText: String, word: String): String = when (entityState.domain) {
-        "sensor", "number", "input_number", "counter", "todo" ->
+        Domain.SENSOR, Domain.NUMBER, Domain.INPUT_NUMBER, Domain.COUNTER, Domain.TODO ->
             entityState.numericState()?.let { numberOnly(
                 entityState,
                 it,
                 i18n,
             ) } ?: entityState.state
-        "humidifier" -> entityState.number(
-            "humidity",
-        )?.let { i18n.percent(it.roundToInt()) } ?: word
-        "climate", "water_heater" ->
-            entityState.number(
-                "temperature",
-            )?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + "°" } ?: word
-        "weather" -> entityState.number("temperature")?.let { i18n.number(it, 0) + "°" } ?: word
-        "timer" -> entityState.attr("remaining") ?: word
-        "calendar" -> entityState.attr("message") ?: word
+        Domain.HUMIDIFIER -> entityState.humidifier.humidity?.let { i18n.percent(it.roundToInt()) } ?: word
+        Domain.CLIMATE, Domain.WATER_HEATER ->
+            entityState.climate.temperature?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + "°" } ?: word
+        Domain.WEATHER -> entityState.weather.temperature?.let { i18n.number(it, 0) + "°" } ?: word
+        Domain.TIMER -> entityState.timer.remaining ?: word
+        Domain.CALENDAR -> entityState.calendar.message ?: word
         else -> stateText
     }
 
     private fun numberOnly(entityState: EntityState, v: Double, i18n: I18n): String {
-        val unit = entityState.attr("unit_of_measurement").orEmpty()
+        val unit = entityState.common.unitOfMeasurement.orEmpty()
         val (scaled, _) = scale(v, unit)
         val decimals = when {
             abs(scaled) >= LARGE_VALUE -> 0
-            entityState.attr(
-                "device_class",
-            ) in setOf("temperature", "humidity") || abs(scaled) >= MEDIUM_VALUE -> 1
+            entityState.common.deviceClass in setOf("temperature", "humidity") || abs(scaled) >= MEDIUM_VALUE -> 1
             else -> if (scaled % 1.0 == 0.0) 0 else 1
         }
         return i18n.number(scaled, decimals)
@@ -266,7 +252,7 @@ object Present {
     fun numberWithUnit(entityState: EntityState, i18n: I18n): String? {
         val numeric = entityState.numericState() ?: return null
         val numberText = numberOnly(entityState, numeric, i18n)
-        val (_, unit) = scale(numeric, entityState.attr("unit_of_measurement").orEmpty())
+        val (_, unit) = scale(numeric, entityState.common.unitOfMeasurement.orEmpty())
         return if (unit.isEmpty()) {
             numberText
         } else if (unit == "%") {
@@ -287,18 +273,18 @@ object Present {
     /** Home Assistant's default icon for a state, the common cases of its `domain_icon`. */
     @Suppress("CyclomaticComplexMethod")
     fun iconFor(entityState: EntityState, on: Boolean): String {
-        val dc = entityState.attr("device_class").orEmpty()
-        val spec = Catalogue.of(entityState.domain)
+        val deviceClass = entityState.common.deviceClass.orEmpty()
+        val spec = Catalogue.of(entityState.domain.value)
         fun Pair<String, String>.pick() = if (on) first else second
         return when (entityState.domain) {
-            "sensor" -> SENSOR_ICONS[dc] ?: "eye"
-            "binary_sensor" -> (BINARY_SENSOR_ICONS[dc] ?: BINARY_SENSOR_DEFAULT).pick()
-            "cover" -> (COVER_ICONS[dc] ?: COVER_DEFAULT).pick()
-            "lock" -> LOCK_ICONS[entityState.state] ?: "lock-open-variant"
-            "weather" -> weatherIcon(entityState.state)
-            "climate" -> CLIMATE_ICONS[entityState.state] ?: "thermostat"
-            "alarm_control_panel" -> ALARM_ICONS[entityState.state] ?: "shield-lock"
-            "person" -> if (on) "account" else "account-arrow-right"
+            Domain.SENSOR -> SENSOR_ICONS[deviceClass] ?: "eye"
+            Domain.BINARY_SENSOR -> (BINARY_SENSOR_ICONS[deviceClass] ?: BINARY_SENSOR_DEFAULT).pick()
+            Domain.COVER -> (COVER_ICONS[deviceClass] ?: COVER_DEFAULT).pick()
+            Domain.LOCK -> LOCK_ICONS[entityState.lockState] ?: "lock-open-variant"
+            Domain.WEATHER -> weatherIcon(entityState.state)
+            Domain.CLIMATE -> CLIMATE_ICONS[entityState.hvacMode] ?: "thermostat"
+            Domain.ALARM_PANEL -> ALARM_ICONS[entityState.alarmState] ?: "shield-lock"
+            Domain.PERSON -> if (on) "account" else "account-arrow-right"
             else -> (if (on) spec?.iconOn else null) ?: spec?.icon ?: Icons.FALLBACK
         }
     }

@@ -32,6 +32,7 @@ import androidx.compose.remote.creation.dsl.visibility
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.VarValue
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaPlayerState
 
 internal fun DocContext.mediaCard(
     entityId: String,
@@ -55,21 +56,21 @@ internal fun DocContext.mediaCard(
     bind(entityId) { states ->
         val current = states[entityId]
         listOf(
-            VarValue.string(Vars.entity(entityId, "title"), current?.attr("media_title") ?: ""),
+            VarValue.string(Vars.entity(entityId, "title"), current?.mediaPlayer?.mediaTitle ?: ""),
             VarValue.string(
                 Vars.entity(entityId, "artist"),
                 listOfNotNull(
-                    current?.attr("media_artist"),
-                    current?.attr("media_album_name"),
+                    current?.mediaPlayer?.mediaArtist,
+                    current?.mediaPlayer?.mediaAlbumName,
                 ).joinToString(" · "),
             ),
             VarValue.int(
                 Vars.entity(entityId, "playing"),
-                if (current?.state == "playing") Vars.VISIBLE else Vars.GONE,
+                if (current?.mediaPlayerState == MediaPlayerState.PLAYING) Vars.VISIBLE else Vars.GONE,
             ),
             VarValue.int(
                 Vars.entity(entityId, "notplaying"),
-                if (current?.state == "playing") Vars.GONE else Vars.VISIBLE,
+                if (current?.mediaPlayerState == MediaPlayerState.PLAYING) Vars.GONE else Vars.VISIBLE,
             ),
         )
     }
@@ -156,15 +157,15 @@ internal fun DocContext.mediaCard(
         width = width,
     )
 
-    val sources = entityState?.list("source_list").orEmpty()
+    val sources = entityState?.mediaPlayer?.sourceList.orEmpty()
     if (sources.isNotEmpty()) {
-        structural(entityId) { it?.list("source_list")?.joinToString() ?: "" }
+        structural(entityId) { it?.mediaPlayer?.sourceList?.joinToString() ?: "" }
         section(i18n.t("ui.sources"))
         flowKeys(
             entityId,
             "source",
             sources.take(CardChrome.SOURCES_TAKE).map { it to it },
-        ) { it.attr("source") }
+        ) { it.mediaPlayer.source }
     }
 
     val library = data.browse[entityId].orEmpty()
@@ -229,8 +230,8 @@ internal fun DocContext.mapCard(entityId: String, w: Float, h: Float) {
     }
 
     for (personId in who) {
-        structural(personId) { state -> "${state?.number("latitude")},${state?.number("longitude")}" }
-        val picturePath = states[personId]?.attr("entity_picture")
+        structural(personId) { state -> "${state?.common?.latitude},${state?.common?.longitude}" }
+        val picturePath = states[personId]?.common?.entityPicture
         if (!picturePath.isNullOrBlank()) {
             val markerPx = units.px(CardChrome.MAP_MARKER_DP).toInt().coerceAtLeast(1)
             picture(
