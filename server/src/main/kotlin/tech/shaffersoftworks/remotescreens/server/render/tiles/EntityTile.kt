@@ -8,7 +8,7 @@ import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
-import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spacer
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
 import tech.shaffersoftworks.remotescreens.server.render.widgets.levelBar
 
@@ -60,13 +60,13 @@ internal fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, en
     )
 
     if (box.full) {
-        scope.Column(
+        rcScope.Column(
             Modifier.fillMaxSize().padding(units.px(C.PAD_XXL_DP)),
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcColumnVerticalPositioning.Center,
         ) {
             this@entityTile.tileIcon(tile = tile, spec = spec, entityState = entityState, sizeDp = C.SHORT_HEIGHT_DP)
-            this@entityTile.gap(C.PAD_XL_DP)
+            this@entityTile.spacer(C.PAD_XL_DP)
             if (name != null) {
                 this@entityTile.label(
                     text = name,
@@ -88,7 +88,7 @@ internal fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, en
         return
     }
     if (wide && !hasLevel) {
-        scope.Row(
+        rcScope.Row(
             Modifier.fillMaxSize().padding(units.px(pad)),
             vertical = RcVerticalPositioning.Center,
         ) {
@@ -116,7 +116,7 @@ internal fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, en
         }
         return
     }
-    scope.Column(Modifier.fillMaxSize().padding(units.px(pad))) {
+    rcScope.Column(Modifier.fillMaxSize().padding(units.px(pad))) {
         val doc = this@entityTile
         Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Top) {
             doc.tileIcon(
@@ -165,7 +165,7 @@ internal fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, en
 }
 
 internal fun DocContext.entityTileLevelBar(tile: Tile, entityId: String, entityState: EntityState, widthDp: Float) {
-    gap(C.GAP_10_DP)
+    spacer(C.GAP_10_DP)
     val verb = when (tile.domain) {
         "light" -> "brightness"
         "fan" -> "percentage"

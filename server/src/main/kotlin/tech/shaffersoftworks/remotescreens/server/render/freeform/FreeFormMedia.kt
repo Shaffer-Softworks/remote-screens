@@ -15,7 +15,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
 import tech.shaffersoftworks.remotescreens.server.render.cards.kelvinColor
-import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spacer
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
@@ -82,7 +82,7 @@ internal fun DocContext.gaugeNode(node: Node, axis: Axis, pages: Pages) {
             literal(it)
         }
     }
-    scope.Box(
+    rcScope.Box(
         styled(node, axis, pages),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -159,7 +159,7 @@ internal fun DocContext.analogNode(node: Node, axis: Axis, pages: Pages) {
     val dim = role(Role.INK_DIM)
     val accent = role(Role.ACCENT)
     val seconds = node.props["seconds"] == "true"
-    scope.Box(
+    rcScope.Box(
         styled(node, axis, pages),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -272,7 +272,7 @@ internal fun DocContext.iconButtonNode(node: Node, axis: Axis, pages: Pages) {
     }
     base = base.clip(rounded(if (node.style.corner > 0f) node.style.corner else sizeDp / 2f))
     if (node.style.background == null) base = base.background(bg)
-    scope.Box(
+    rcScope.Box(
         styled(node = node, axis = axis, pages = pages, base = base),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -330,7 +330,7 @@ internal fun DocContext.keysNode(node: Node, axis: Axis, pages: Pages) {
     ) ?: Metrics.KEYS_DEFAULT_DP
     val modifier = styled(node, axis, pages)
     if (id == null || keys.isEmpty()) {
-        scope.Box(
+        rcScope.Box(
             modifier.size(
                 units.px(sizeDp * Metrics.KEYS_COLS + Metrics.KEYS_GAP_TOTAL_DP),
                 units.px(sizeDp),
@@ -341,7 +341,7 @@ internal fun DocContext.keysNode(node: Node, axis: Axis, pages: Pages) {
     bindEntity(id)
     val spec = Catalogue.of(id.substringBefore('.'))
     val stretch = node.size.width != "wrap"
-    scope.Column(modifier, horizontal = RcHorizontalPositioning.Center) {
+    rcScope.Column(modifier, horizontal = RcHorizontalPositioning.Center) {
         val doc = this@keysNode
         Row(
             if (stretch) Modifier.fillMaxWidth() else Modifier,
@@ -392,7 +392,7 @@ internal fun DocContext.swatchesNode(node: Node, axis: Axis, pages: Pages) {
         ) to ActionRef(node.id, "hue", hue.toString()) }
     }
     val stretch = node.size.width != "wrap"
-    scope.Row(
+    rcScope.Row(
         styled(node, axis, pages),
         horizontal = if (stretch) RcRowHorizontalPositioning.SpaceBetween else RcRowHorizontalPositioning.Start,
         vertical = RcVerticalPositioning.Center,
@@ -425,7 +425,7 @@ internal fun DocContext.keypadNode(node: Node, axis: Axis, pages: Pages) {
     val keyW = sizeDp * Metrics.KEYPAD_KEY_WIDTH_RATIO
     val codeVar = Vars.tile("e:${id ?: node.id}", "code")
     if (id != null) bind(id) { listOf(VarValue.string(codeVar, "")) }
-    scope.Column(styled(node, axis, pages), horizontal = RcHorizontalPositioning.Center) {
+    rcScope.Column(styled(node, axis, pages), horizontal = RcHorizontalPositioning.Center) {
         val doc = this@keypadNode
         Box(
             Modifier.height(doc.units.px(Metrics.KEYPAD_DISPLAY_H)),
@@ -508,7 +508,7 @@ internal fun DocContext.dialNode(node: Node, axis: Axis, pages: Pages) {
         down?.let { predict(it, id) }
         up?.let { predict(it, id) }
     }
-    scope.Column(styled(node, axis, pages), horizontal = RcHorizontalPositioning.Center) {
+    rcScope.Column(styled(node, axis, pages), horizontal = RcHorizontalPositioning.Center) {
         val doc = this@dialNode
         Box(
             Modifier.size(px, px),
@@ -563,7 +563,7 @@ internal fun DocContext.dialNode(node: Node, axis: Axis, pages: Pages) {
                 )
             }
         }
-        doc.gap(Metrics.KEYS_GAP_DP)
+        doc.spacer(Metrics.KEYS_GAP_DP)
         Row(vertical = RcVerticalPositioning.Center) {
             fun key(ref: ActionRef?, icon: String) {
                 if (ref != null) {
@@ -599,7 +599,7 @@ internal fun DocContext.countdownNode(node: Node, axis: Axis, pages: Pages) {
     val weight = node.props["weight"]?.toFloatOrNull() ?: Weight.LIGHT
     val alignSpec = node.props["align"] ?: "center"
     val textAlign = align(alignSpec)
-    scope.Box(
+    rcScope.Box(
         styled(node, axis, pages),
         horizontal = horizontal(alignSpec),
         vertical = RcVerticalPositioning.Center,
@@ -654,7 +654,7 @@ internal fun DocContext.qrNode(node: Node, axis: Axis, pages: Pages) {
         .clip(rounded(Metrics.QR_CORNER_DP))
         .background(role(Role.INK))
         .padding(units.px(Metrics.QR_PAD_DP))
-    scope.Box(
+    rcScope.Box(
         plate,
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -673,7 +673,7 @@ internal fun DocContext.markdownNode(node: Node, axis: Axis, pages: Pages) {
     val ink = node.props["color"]?.let { paint(it) } ?: role(Role.INK)
     val sp = node.props["fontSize"]?.toFloatOrNull() ?: Type.BODY
     val textAlign = align(node.props["align"])
-    scope.Column(styled(node, axis, pages), horizontal = horizontal(node.props["align"])) {
+    rcScope.Column(styled(node, axis, pages), horizontal = horizontal(node.props["align"])) {
         val doc = this@markdownNode
         for (line in lines) {
             val weight = when {
@@ -698,7 +698,7 @@ internal fun DocContext.tabsNode(node: Node, self: Dims, axis: Axis, pages: Page
     val stripH = Metrics.TABS_STRIP_H
     val bodyH = (self.h - node.style.padY - stripH - gap).coerceAtLeast(1f)
     val bodyW = (self.w - node.style.padX).coerceAtLeast(1f)
-    scope.Column(styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))) {
+    rcScope.Column(styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))) {
         val doc = this@tabsNode
         doc.tabStrip(shown = shown, tabVar = tabVar, selected = selected, stripH = stripH)
         Spacer(Modifier.height(doc.units.px(gap)))
@@ -719,7 +719,7 @@ internal fun DocContext.tabStrip(
     selected: RcInteger,
     stripH: Float,
 ) {
-    scope.StateLayout(selected, Modifier.fillMaxWidth().height(units.px(stripH))) {
+    rcScope.StateLayout(selected, Modifier.fillMaxWidth().height(units.px(stripH))) {
         for (sel in shown.indices) {
             Row(
                 Modifier.fillMaxWidth(),
@@ -742,7 +742,7 @@ internal fun DocContext.tabStrip(
 
 internal fun DocContext.tabLabel(label: String, active: Boolean, ref: ActionRef) {
     val underlineW = maxOf(label.length * Metrics.TABS_CHAR_W_DP, Metrics.TABS_UNDERLINE_MIN_W)
-    scope.Column(tap(Modifier, ref), horizontal = RcHorizontalPositioning.Center) {
+    rcScope.Column(tap(Modifier, ref), horizontal = RcHorizontalPositioning.Center) {
         val doc = this@tabLabel
         doc.label(
             text = label,

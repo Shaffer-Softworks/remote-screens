@@ -30,9 +30,9 @@ internal class NavItem(val title: String, val icon: String, val ref: ActionRef, 
 /** The remote menu button opens the native Material 3 drawer on the Android player. */
 internal fun DocContext.menuKey(drawer: Drawer, end: Boolean, sizeDp: Float, gapDp: Float): Boolean {
     if (!drawer.modal || drawer.end != end) return false
-    scope.Spacer(Modifier.width(units.px(gapDp)))
+    rcScope.Spacer(Modifier.width(units.px(gapDp)))
     key(ref = OPEN_DRAWER, icon = "menu", heightDp = sizeDp, widthDp = sizeDp, round = true)
-    scope.Spacer(Modifier.width(units.px(gapDp)))
+    rcScope.Spacer(Modifier.width(units.px(gapDp)))
     return true
 }
 

@@ -49,7 +49,11 @@ fun EntityState.vacuumSegmentRooms(): List<VacuumRoom> {
 }
 
 /** The vacuum a page or card shows: the one chosen in its list, else the tile's, else the only one. */
-fun selectedVacuumId(chosen: String?, tileEntityId: String?, vacuumIds: Collection<String>): String? =
+fun selectedVacuumId(
+    chosen: String?,
+    tileEntityId: String?,
+    vacuumIds: Collection<String>,
+): String? =
     chosen?.takeIf { it in vacuumIds }
         ?: tileEntityId?.takeIf { it in vacuumIds }
         ?: vacuumIds.singleOrNull()

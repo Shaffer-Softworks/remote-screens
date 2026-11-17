@@ -31,10 +31,10 @@ internal object HomeAssistantResponseParser {
     }
 
     fun energy(preferences: JsonObject): EnergyPrefs {
-        val sources = (preferences["energy_sources"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
+        val sources = (preferences["energy_sources"] as? JsonArray).orEmpty().filterIsInstance<JsonObject>()
         fun rateOf(type: String) = sources.firstOrNull { it.text("type") == type }?.powerSensor()
         val devices = (preferences["device_consumption"] as? JsonArray).orEmpty()
-            .mapNotNull { it as? JsonObject }
+            .filterIsInstance<JsonObject>()
             .mapNotNull { device -> device.powerSensor()?.let { sensor -> (device.text(
                 "name",
             ) ?: sensor) to sensor } }

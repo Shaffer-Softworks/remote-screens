@@ -35,7 +35,7 @@ import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
-import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spacer
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
@@ -184,7 +184,7 @@ private fun DocContext.timerKeysNode(node: Node, axis: Axis, pages: Pages) {
     val id = node.bind?.entityId
     if (id != null) bindEntity(id)
     val keyH = BlockMetrics.TIMER_KEY_H_DP
-    scope.Row(styled(node, axis, pages), vertical = RcVerticalPositioning.Center) {
+    rcScope.Row(styled(node, axis, pages), vertical = RcVerticalPositioning.Center) {
         val doc = this@timerKeysNode
         fun key(verb: String, word: String, icon: String) {
             val ref = id?.let { ActionRef(node.id, verb) }
@@ -227,13 +227,13 @@ private fun DocContext.todoListNode(node: Node, self: Dims, axis: Axis, pages: P
         refreshEvery(BlockMetrics.TODO_REFRESH_S)
     }
     val items = id?.let { data.todos[it].orEmpty().take(max) }.orEmpty()
-    scope.Column(styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))) {
+    rcScope.Column(styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))) {
         val doc = this@todoListNode
         if (id == null || items.isEmpty()) {
             doc.label(doc.i18n.t("ui.no_todos"), Type.BODY, doc.role(Role.INK_SOFT))
         } else {
             items.forEachIndexed { index, item ->
-                if (index > 0) doc.gap(BlockMetrics.TODO_GAP_DP)
+                if (index > 0) doc.spacer(BlockMetrics.TODO_GAP_DP)
                 doc.key(
                     ref = ActionRef(node.id, "complete", item.uid),
                     text = item.summary,
@@ -266,13 +266,13 @@ private fun DocContext.eventsNode(node: Node, self: Dims, axis: Axis, pages: Pag
             zone,
         )?.let { calendarId to it } }
     }.sortedBy { it.second.start }.take(max)
-    scope.Column(styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))) {
+    rcScope.Column(styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))) {
         val doc = this@eventsNode
         if (events.isEmpty()) {
             doc.label(doc.i18n.t("ui.no_events"), Type.BODY, doc.role(Role.INK_SOFT))
         } else {
             events.forEachIndexed { index, (calendarId, event) ->
-                if (index > 0) doc.gap(BlockMetrics.EVENT_GAP_DP)
+                if (index > 0) doc.spacer(BlockMetrics.EVENT_GAP_DP)
                 val whenText = when {
                     event.allDay && isToday(event, zone) ->
                         doc.i18n.t("ui.today") + " · " + doc.i18n.t("ui.all_day")
@@ -310,7 +310,7 @@ private fun DocContext.mediaBarNode(node: Node, self: Dims, axis: Axis, pages: P
     val openCard = node.props["openCard"] != "false"
     val ink = role(Role.INK)
     val soft = role(Role.INK_SOFT)
-    scope.Column(
+    rcScope.Column(
         styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self)),
         vertical = RcColumnVerticalPositioning.Center,
     ) {
@@ -508,7 +508,7 @@ private fun DocContext.forecastNode(node: Node, self: Dims, axis: Axis, pages: P
     ) }.getOrDefault(ZoneId.of("UTC"))
     val dayInk = node.props["ink"]?.let { paint(it) } ?: role(Role.INK_SOFT)
     val tempInk = node.props["color"]?.let { paint(it) } ?: role(Role.INK)
-    scope.Row(
+    rcScope.Row(
         styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self)),
         horizontal = RcRowHorizontalPositioning.SpaceBetween,
         vertical = RcVerticalPositioning.Center,
@@ -555,7 +555,7 @@ private fun DocContext.presenceNode(node: Node, self: Dims, axis: Axis, pages: P
     val ink = node.props["ink"]?.let { paint(it) } ?: role(Role.INK)
     val where = node.props["color"]?.let { paint(it) } ?: role(Role.ACCENT_SOFT)
     val empty = node.props["ink"]?.let { paint(it) } ?: role(Role.INK_DIM)
-    scope.Row(
+    rcScope.Row(
         styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self)),
         horizontal = RcRowHorizontalPositioning.SpaceEvenly,
         vertical = RcVerticalPositioning.Center,
@@ -610,7 +610,7 @@ private fun DocContext.weatherNowNode(node: Node, self: Dims, axis: Axis, pages:
         ?: i18n.t("ui.temperature_outside_now")
     if (id != null) bindWeatherNow(node, id)
     val cardRef = id?.let { ActionRef("e:$it", "card") }
-    scope.Column(
+    rcScope.Column(
         tap(
             styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))
                 .padding(units.px(BlockMetrics.WEATHER_PAD_DP)),
@@ -685,7 +685,7 @@ private fun DocContext.nextEventNode(node: Node, self: Dims, axis: Axis, pages: 
     val metaInk = node.props["ink"]?.let { paint(it) } ?: role(Role.INK_SOFT)
     val calendarId = bindNextEventLeaf(node, calendars, zone)
     val cardRef = calendarId?.let { ActionRef("e:$it", "card") }
-    scope.Column(
+    rcScope.Column(
         tap(
             styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))
                 .padding(units.px(BlockMetrics.NEXT_EVENT_PAD_DP)),
@@ -776,7 +776,7 @@ private fun DocContext.thermostatNode(node: Node, self: Dims, axis: Axis, pages:
     val contentH = (self.h - node.style.padY).coerceAtLeast(0f)
     val modifier = styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))
     if (entityId == null) {
-        scope.Box(
+        rcScope.Box(
             modifier.background(role(Role.PAGE)),
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcVerticalPositioning.Center,
@@ -785,7 +785,7 @@ private fun DocContext.thermostatNode(node: Node, self: Dims, axis: Axis, pages:
         }
         return
     }
-    scope.Box(modifier) {
+    rcScope.Box(modifier) {
         this@thermostatNode.thermostatPanel(
             Tile(id = node.id, entityId = entityId, full = true),
             TileBox(x = 0f, y = 0f, w = contentW, h = contentH, cols = 1, rows = 1, full = true),
@@ -813,7 +813,7 @@ private fun DocContext.ledNode(node: Node, axis: Axis, pages: Pages) {
         }
     }
     val bg = if (id != null) color(Vars.tile(node.id, Vars.KEY_BG)) else role(Role.INK_DIM)
-    scope.Box(
+    rcScope.Box(
         styled(node, axis, pages)
             .size(units.px(sizeDp), units.px(sizeDp))
             .clip(rounded(sizeDp / BlockMetrics.LED_CORNER_DIVISOR))

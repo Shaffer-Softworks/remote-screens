@@ -7,7 +7,7 @@ import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
-import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spacer
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
 
@@ -111,7 +111,7 @@ internal fun DocContext.humidifierCard(entityId: String, entityState: EntityStat
     predict(ref(entityId, "humidity", "+$step"), entityId)
     predict(ref(entityId, "humidity", "-$step"), entityId)
     section(i18n.t("ui.target_humidity"))
-    scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+    rcScope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@humidifierCard
         doc.key(
             ref = ref(entityId, "humidity", "-$step"),
@@ -137,7 +137,7 @@ internal fun DocContext.humidifierCard(entityId: String, entityState: EntityStat
             round = true,
         )
     }
-    gap(CardChrome.CARD_GAP_DP)
+    spacer(CardChrome.CARD_GAP_DP)
     bar(entityId = entityId, verb = "humidity", width = w, min = min, max = max)
     val modes = entityState?.list("available_modes").orEmpty()
     if (modes.isNotEmpty()) {

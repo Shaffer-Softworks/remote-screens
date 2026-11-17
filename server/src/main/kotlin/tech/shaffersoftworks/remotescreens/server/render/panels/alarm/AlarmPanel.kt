@@ -89,7 +89,7 @@ fun DocContext.alarmPanel(tile: Tile, box: TileBox) {
         keypadW = panelsW * M.KEYPAD_PANEL_WEIGHT / weights,
         cardH = box.h - 2 * M.PAGE_PAD_V_DP * scale,
     )
-    scope.Box(Modifier.fillMaxSize().background(role(Role.PAGE))) {
+    rcScope.Box(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@alarmPanel
         val padH = doc.units.px(layout.dp(M.PAGE_PAD_H_DP))
         val padV = doc.units.px(layout.dp(M.PAGE_PAD_V_DP))
@@ -105,7 +105,7 @@ fun DocContext.alarmPanel(tile: Tile, box: TileBox) {
 private fun DocContext.alarmCard(tileId: String, zones: List<AlarmZone>, zone: AlarmZone, layout: AlarmLayout) {
     val pad = layout.dp(M.ALARM_PAD_DP)
     val rowW = layout.alarmW - 2 * pad
-    scope.Column(
+    rcScope.Column(
         Modifier.size(units.px(layout.alarmW), units.px(layout.cardH))
             .clip(rounded(layout.dp(M.CARD_CORNER_DP)))
             .background(role(Role.HEADER_DARK))
@@ -136,7 +136,7 @@ private fun DocContext.alarmCard(tileId: String, zones: List<AlarmZone>, zone: A
 /** The lock in its ringed circle, the status and whether the system is secure, and the teal bar. */
 private fun DocContext.alarmStatus(zoneState: EntityState?, layout: AlarmLayout) {
     val state = zoneState?.state
-    scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+    rcScope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@alarmStatus
         doc.statusCircle(zoneState, layout)
         Spacer(Modifier.width(doc.units.px(layout.dp(M.STATUS_TEXT_GAP_DP))))
@@ -163,7 +163,7 @@ private fun DocContext.statusCircle(entity: EntityState?, layout: AlarmLayout) {
     val icon = if (entity?.state == "disarmed") "lock-open-variant-outline" else "lock"
     val sizeDp = layout.dp(M.STATUS_CIRCLE_DP)
     val ringDp = maxOf(layout.dp(M.STATUS_RING_DP), 1f)
-    scope.Box(
+    rcScope.Box(
         Modifier.size(units.px(sizeDp), units.px(sizeDp))
             .clip(rounded(sizeDp / 2f))
             .background(role(Role.ACCENT))
@@ -221,8 +221,8 @@ private fun DocContext.armingLabel(word: String, sizeSp: Float) {
 
 /** A triangle on the continuous clock: 1 at the ends of [AlarmMetrics.ARMING_CYCLE_SEC], 0 in the middle. */
 private fun DocContext.armingFade(): RcFloat {
-    val phase = scope.continuousSeconds() % M.ARMING_CYCLE_SEC / M.ARMING_CYCLE_SEC
-    return scope.abs(phase * M.ARMING_WAVE_SPAN - 1f)
+    val phase = rcScope.continuousSeconds() % M.ARMING_CYCLE_SEC / M.ARMING_CYCLE_SEC
+    return rcScope.abs(phase * M.ARMING_WAVE_SPAN - 1f)
 }
 
 /** RPI reads Alarmo's `arm_mode`: secure in any armed mode, blank while arming, otherwise not secure. */
@@ -241,7 +241,7 @@ private fun DocContext.zoneChips(
 ) {
     val gap = layout.dp(M.CHIP_GAP_DP)
     val chipW = minOf(layout.dp(M.CHIP_W_DP), (rowW - gap * (zones.size - 1)) / zones.size)
-    scope.Row(Modifier.fillMaxWidth()) {
+    rcScope.Row(Modifier.fillMaxWidth()) {
         val doc = this@zoneChips
         zones.forEachIndexed { index, zone ->
             if (index > 0) Spacer(Modifier.width(doc.units.px(gap)))
@@ -279,7 +279,7 @@ private fun DocContext.zoneChip(
         "garage" in label.lowercase() || "garage" in zone.entityId -> "garage"
         else -> "home-outline"
     }
-    scope.Box(
+    rcScope.Box(
         Modifier.size(units.px(chipW), units.px(layout.dp(M.CHIP_H_DP)))
             .clip(rounded(corner))
             .background(if (isSelected) fill else role(Role.DIVIDER))
@@ -313,7 +313,7 @@ private fun DocContext.alarmActions(tileId: String, rowW: Float, layout: AlarmLa
     val gap = layout.dp(M.ACTION_GAP_DP)
     val buttonW = (rowW - gap * (ALARM_ACTIONS.size - 1)) / ALARM_ACTIONS.size
     val padH = units.px(layout.dp(M.ACTION_PAD_H_DP))
-    scope.Row(Modifier.fillMaxWidth()) {
+    rcScope.Row(Modifier.fillMaxWidth()) {
         val doc = this@alarmActions
         ALARM_ACTIONS.forEachIndexed { index, action ->
             if (index > 0) Spacer(Modifier.width(doc.units.px(gap)))
@@ -349,7 +349,7 @@ private fun DocContext.keypadCard(tileId: String, entityId: String, layout: Alar
         keyW / M.KEY_ASPECT,
         (layout.cardH - 2 * pad - headerH - rowGap * (M.KEYPAD_ROWS - 1)) / M.KEYPAD_ROWS,
     ).coerceAtLeast(0f)
-    scope.Column(
+    rcScope.Column(
         Modifier.size(units.px(layout.keypadW), units.px(layout.cardH))
             .clip(rounded(layout.dp(M.CARD_CORNER_DP)))
             .background(role(Role.HEADER_DARK))
@@ -381,7 +381,7 @@ private fun DocContext.keypadCard(tileId: String, entityId: String, layout: Alar
 /** Grey dots that light in the nav teal as digits are typed; the add-on flips each one's visibility. */
 private fun DocContext.pinDots(entityId: String, layout: AlarmLayout) {
     val dotDp = layout.dp(M.DOT_DP)
-    scope.Row {
+    rcScope.Row {
         val doc = this@pinDots
         repeat(ALARM_PIN_LENGTH) { index ->
             if (index > 0) Spacer(Modifier.width(doc.units.px(layout.dp(M.DOT_GAP_DP))))
@@ -407,7 +407,7 @@ private fun DocContext.keypadKey(tileId: String, key: String, keyW: Float, keyH:
         KEY_BACK -> ActionRef(tileId, "code_back") to BACKSPACE_GLYPH
         else -> ActionRef(tileId, "code_digit", key) to key
     }
-    scope.Box(
+    rcScope.Box(
         tap(
             Modifier.size(units.px(keyW), units.px(keyH))
                 .clip(rounded(layout.dp(M.KEY_CORNER_DP)))
@@ -429,7 +429,7 @@ private fun DocContext.keypadKey(tileId: String, key: String, keyW: Float, keyH:
 /** RPI's Material 3 `AlertDialog`: icon, title, text, and Dismiss / Confirm, which both close it. */
 private fun DocContext.alarmDialog(tileId: String, notice: AlarmNotice, layout: AlarmLayout) {
     val dismiss = ActionRef(tileId, "alarm_dismiss")
-    scope.Box(
+    rcScope.Box(
         tap(Modifier.fillMaxSize().background(role(Role.SCRIM)), dismiss),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -473,7 +473,7 @@ private fun DocContext.alarmDialog(tileId: String, notice: AlarmNotice, layout: 
 
 private fun DocContext.dialogButton(text: String, ref: ActionRef, layout: AlarmLayout) {
     val padH = units.px(layout.dp(M.DIALOG_GAP_DP))
-    scope.Box(
+    rcScope.Box(
         tap(
             Modifier.height(units.px(layout.dp(M.DIALOG_BUTTON_H_DP)))
                 .padding(start = padH, top = 0f, end = padH, bottom = 0f),

@@ -1,6 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.data.cameras
 
-import java.util.concurrent.ConcurrentHashMap
+import tech.shaffersoftworks.remotescreens.server.data.ui.TileUiStore
 
 /** What a full cameras page shows besides Home Assistant's states: the camera chosen in its list, if any. */
 data class CamerasUiState(
@@ -8,14 +8,8 @@ data class CamerasUiState(
 )
 
 /** Session-wide cameras page UI state keyed by tile id. */
-class CamerasUiStore {
-    private val byTile = ConcurrentHashMap<String, CamerasUiState>()
-
-    fun state(tileId: String): CamerasUiState = byTile[tileId] ?: CamerasUiState()
-
-    fun snapshot(): Map<String, CamerasUiState> = HashMap(byTile)
-
+class CamerasUiStore : TileUiStore<CamerasUiState>(CamerasUiState()) {
     fun selectCamera(tileId: String, entityId: String) {
-        byTile[tileId] = state(tileId).copy(selectedCamera = entityId)
+        update(tileId) { it.copy(selectedCamera = entityId) }
     }
 }

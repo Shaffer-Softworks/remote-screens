@@ -72,7 +72,7 @@ internal fun DocContext.textNode(node: Node, axis: Axis, pages: Pages) {
     }
     val binding = node.bind
     if (binding == null) {
-        scope.Box(
+        rcScope.Box(
             modifier,
         ) { this@textNode.label(
             text = node.props["text"].orEmpty(),
@@ -95,7 +95,7 @@ internal fun DocContext.textNode(node: Node, axis: Axis, pages: Pages) {
         }
         listOf(VarValue.string(nodeVar(node.id), binding.prefix + raw + binding.suffix))
     }
-    scope.Box(
+    rcScope.Box(
         modifier,
     ) { this@textNode.label(
         text = this@textNode.text(nodeVar(node.id)),
@@ -119,7 +119,7 @@ internal fun DocContext.iconNode(node: Node, axis: Axis, pages: Pages) {
         "icon",
     ) } ?: domain?.let { Catalogue.of(it)?.icon }
     val ink = iconInk(node, entityId, domain)
-    scope.Box(
+    rcScope.Box(
         styled(node, axis, pages),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -189,7 +189,7 @@ internal fun DocContext.buttonNode(node: Node, axis: Axis, pages: Pages) {
     val icon = node.props["icon"]?.takeIf { it.isNotEmpty() }
     val sp = node.props["fontSize"]?.toFloatOrNull() ?: Type.BODY
     val weight = node.props["weight"]?.toFloatOrNull() ?: Weight.MEDIUM
-    scope.Row(
+    rcScope.Row(
         modifier,
         horizontal = RcRowHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -216,7 +216,7 @@ internal fun DocContext.imageNode(node: Node, self: Dims, axis: Axis, pages: Pag
     val id = node.bind?.entityId
     val modifier = styled(node, axis, pages)
     if (id == null) {
-        scope.Box(modifier.background(role(Role.TRACK)))
+        rcScope.Box(modifier.background(role(Role.TRACK)))
         return
     }
     val w = units.px(self.w).toInt().coerceAtLeast(1)
@@ -245,7 +245,7 @@ internal fun DocContext.imageNode(node: Node, self: Dims, axis: Axis, pages: Pag
         val video = liveVideo(id, crop = !fit)
         val waiting = int(Vars.entity(id, Vars.KEY_CAM_WAITING), Vars.VISIBLE)
         val still = int(Vars.entity(id, Vars.KEY_CAM_STILL), Vars.GONE)
-        scope.Box(
+        rcScope.Box(
             modifier.background(role(Role.TRACK)).componentId(video),
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcVerticalPositioning.Center,
@@ -260,7 +260,7 @@ internal fun DocContext.imageNode(node: Node, self: Dims, axis: Axis, pages: Pag
         }
         return
     }
-    scope.Box(modifier) {
+    rcScope.Box(modifier) {
         Image(
             this@imageNode.image(slot, w, h),
             Modifier.fillMaxSize(),
@@ -286,7 +286,7 @@ internal fun DocContext.tileNode(node: Node, self: Dims, axis: Axis, pages: Page
     } }
     val lacksEntity = tile?.entityId == null && spec?.needsEntity == true
     if (tile == null || spec == null || lacksEntity) {
-        scope.Box(modifier)
+        rcScope.Box(modifier)
         return
     }
     val named = if (tile.effectiveKind() == "nav" && tile.name == null) {
@@ -296,7 +296,7 @@ internal fun DocContext.tileNode(node: Node, self: Dims, axis: Axis, pages: Page
     } else {
         tile
     }
-    scope.Box(modifier) {
+    rcScope.Box(modifier) {
         this@tileNode.tile(
             named,
             TileBox(x = 0f, y = 0f, w = self.w, h = self.h, cols = 1, rows = 1, full = false),
@@ -312,7 +312,7 @@ internal fun DocContext.clockNode(node: Node, axis: Axis, pages: Pages) {
     val ink = node.props["color"]?.let { paint(it) } ?: role(Role.INK)
     val show = node.props["show"] ?: "time"
     val textAlign = align(node.props["align"])
-    scope.Column(styled(node, axis, pages), horizontal = horizontal(node.props["align"])) {
+    rcScope.Column(styled(node, axis, pages), horizontal = horizontal(node.props["align"])) {
         val doc = this@clockNode
         if (show != "date") {
             doc.label(
@@ -383,7 +383,7 @@ internal fun DocContext.badgeNode(node: Node, axis: Axis, pages: Pages) {
     ) } ?: domain?.let { Catalogue.of(it)?.icon }
     val sp = node.props["fontSize"]?.toFloatOrNull() ?: Type.BODY
     val weight = node.props["weight"]?.toFloatOrNull() ?: Weight.MEDIUM
-    scope.Row(
+    rcScope.Row(
         modifier,
         horizontal = RcRowHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -413,7 +413,7 @@ internal fun DocContext.avatarNode(node: Node, axis: Axis, pages: Pages) {
         Metrics.AVATAR_MAX_DP,
     ) ?: Metrics.AVATAR_DEFAULT_DP
     val id = node.bind?.entityId
-    scope.Box(
+    rcScope.Box(
         styled(node, axis, pages),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -466,7 +466,7 @@ internal fun DocContext.progressNode(node: Node, self: Dims, axis: Axis, pages: 
         it,
     ) } ?: fixed(Pastel.forDomain(id?.substringBefore('.')).argb)
     if (id != null) bindLevel(node, id)
-    scope.Box(styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))) {
+    rcScope.Box(styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))) {
         val doc = this@progressNode
         Box(
             Modifier.size(
@@ -490,14 +490,14 @@ internal fun DocContext.graphNode(node: Node, self: Dims, axis: Axis, pages: Pag
     val id = node.bind?.entityId
     val modifier = styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))
     if (id == null) {
-        scope.Box(modifier.background(role(Role.TRACK)))
+        rcScope.Box(modifier.background(role(Role.TRACK)))
         return
     }
     refreshEvery(Metrics.GRAPH_REFRESH_SEC)
     val line = node.props["color"]?.let { paint(it) } ?: fixed(Pastel.BLUE.argb)
     val w = (self.w - node.style.padX).coerceAtLeast(1f)
     val h = (self.h - node.style.padY).coerceAtLeast(1f)
-    scope.Box(modifier) {
+    rcScope.Box(modifier) {
         val doc = this@graphNode
         doc.graph(
             points = doc.data.history[id].orEmpty(),

@@ -28,7 +28,6 @@ import androidx.compose.remote.creation.dsl.fillMaxHeight
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.horizontalWeight
-import androidx.compose.remote.creation.dsl.max
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.visibility
@@ -87,7 +86,7 @@ internal fun DocContext.deviceRow(tileId: String, entityId: String, layout: Ligh
         null
     }
     val padH = units.px(layout.dp(M.ROW_PAD_H_DP))
-    scope.Column(
+    rcScope.Column(
         Modifier.fillMaxWidth()
             .padding(start = 0f, top = 0f, end = 0f, bottom = units.px(layout.dp(M.ROW_BOTTOM_DP))),
     ) {
@@ -140,7 +139,7 @@ private fun DocContext.rowSlider(entityId: String, widthDp: Float, layout: Light
     val w = units.px(widthDp)
     val h = units.px(layout.dp(M.SLIDER_H_DP))
     val level = float(Vars.entity(entityId, KEY_ROW_LEVEL))
-    scope.Box(Modifier.size(w, h)) {
+    rcScope.Box(Modifier.size(w, h)) {
         val doc = this@rowSlider
         Canvas(Modifier.size(w, h)) {
             val track = doc.units.px(layout.dp(M.SLIDER_TRACK_DP))
@@ -247,7 +246,7 @@ private fun DocContext.rowSwitch(entityState: EntityState, layout: LightsLayout)
     val w = units.px(layout.dp(M.SWITCH_W_DP))
     val trackH = layout.dp(M.SWITCH_H_DP)
     val touchH = units.px(layout.dp(M.SWITCH_TOUCH_H_DP))
-    scope.Box(Modifier.size(w, touchH), vertical = RcVerticalPositioning.Center) {
+    rcScope.Box(Modifier.size(w, touchH), vertical = RcVerticalPositioning.Center) {
         val doc = this@rowSwitch
         doc.switchTrack(entityId = entityId, isOn = true, trackH = trackH, layout = layout, ref = offRef)
         doc.switchTrack(entityId = entityId, isOn = false, trackH = trackH, layout = layout, ref = onRef)
@@ -265,7 +264,7 @@ private fun DocContext.switchTrack(
     val border = if (isOn) 0f else layout.dp(M.SWITCH_BORDER_DP)
     val thumb = layout.dp(if (isOn) M.SWITCH_THUMB_ON_DP else M.SWITCH_THUMB_OFF_DP)
     val thumbPad = units.px((trackH - 2 * border - thumb) / 2f)
-    scope.Box(
+    rcScope.Box(
         tap(
             Modifier.visibility(visible).size(units.px(layout.dp(M.SWITCH_W_DP)), units.px(trackH))
                 .clip(rounded(trackH / 2f))

@@ -45,7 +45,7 @@ class DocContext(
     /** The intercom page for this tablet. Null on a document that has no intercom tile. */
     val intercom: IntercomView? = null,
 ) {
-    lateinit var scope: RcScope
+    lateinit var rcScope: RcScope
 
     private val texts = HashMap<String, RcText>()
     private val ints = HashMap<String, RcInteger>()
@@ -90,37 +90,37 @@ class DocContext(
         }
 
     fun text(name: String): RcText =
-        declare(texts, name, { text(name) }) { scope.remoteNamedText(Rc.USER + name, "") }
+        declare(texts, name, { text(name) }) { rcScope.remoteNamedText(Rc.USER + name, "") }
 
     fun int(name: String, initial: Int = 0): RcInteger =
         declare(
             ints,
             name,
             { int(name, initial) },
-        ) { scope.remoteNamedInteger(Rc.USER + name, initial) }
+        ) { rcScope.remoteNamedInteger(Rc.USER + name, initial) }
 
     fun float(name: String, initial: Float = 0f): RcFloat =
         declare(
             floats,
             name,
             { float(name, initial) },
-        ) { scope.remoteNamedFloat(Rc.USER + name, initial) }
+        ) { rcScope.remoteNamedFloat(Rc.USER + name, initial) }
 
     fun color(name: String, initial: Int = 0): RcColor =
         declare(
             colors,
             name,
             { color(name, initial) },
-        ) { scope.remoteNamedColor(Rc.USER + name, initial) }
+        ) { rcScope.remoteNamedColor(Rc.USER + name, initial) }
 
     /** A fixed text for canvas text operations, which take a declared text rather than a string. */
-    fun literal(s: String): RcText = declare(literals, s, { literal(s) }) { scope.remoteText(s) }
+    fun literal(s: String): RcText = declare(literals, s, { literal(s) }) { rcScope.remoteText(s) }
     fun fixed(argb: Int): RcColor =
         declare(
             colors,
             "#" + argb.toUInt().toString(HEX_RADIX),
             { fixed(argb) },
-        ) { scope.remoteColor(argb) }
+        ) { rcScope.remoteColor(argb) }
 
     fun role(r: Role): RcColor = fixed(palette[r])
     fun pastel(p: Pastel): RcColor = fixed(palette[p])
@@ -145,7 +145,7 @@ class DocContext(
             h.coerceAtLeast(1),
             BufferedImage.TYPE_INT_ARGB,
         )
-        scope.remoteNamedBitmap(Rc.USER + name, placeholder)
+        rcScope.remoteNamedBitmap(Rc.USER + name, placeholder)
     }
 
     /**
@@ -156,13 +156,13 @@ class DocContext(
         val svg = rawSvg ?: Icons.path(icon)
         val key = "${scale.toRawBits()}:$svg"
         return declare(paths, key, { path(icon, rawSvg, scale) }) {
-            scope.remotePathData(Rc.path(svg, scale))
+            rcScope.remotePathData(Rc.path(svg, scale))
         }
     }
 
     fun meta(ref: ActionRef): RcText {
         val encoded = ref.encode()
-        return declare(metas, encoded, { meta(ref) }) { scope.remoteText(encoded) }
+        return declare(metas, encoded, { meta(ref) }) { rcScope.remoteText(encoded) }
     }
 
     fun bind(entityId: String?, compute: (Map<String, EntityState>) -> List<VarValue>) {
@@ -208,12 +208,12 @@ class DocContext(
         ): Pair<ByteArray, DocContext> {
             val dry = newContext()
             Rc.document(widthPx, heightPx, description) {
-                dry.scope = this
+                dry.rcScope = this
                 content(dry)
             }
             val docContext = newContext()
             val bytes = Rc.document(widthPx, heightPx, description) {
-                docContext.scope = this
+                docContext.rcScope = this
                 for (declaration in dry.declarations) declaration(docContext)
                 content(docContext)
             }

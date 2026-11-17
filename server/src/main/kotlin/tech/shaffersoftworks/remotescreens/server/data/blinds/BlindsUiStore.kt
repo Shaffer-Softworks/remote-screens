@@ -1,6 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.data.blinds
 
-import java.util.concurrent.ConcurrentHashMap
+import tech.shaffersoftworks.remotescreens.server.data.ui.TileUiStore
 
 /** What a full blinds page shows besides Home Assistant's states: the chosen room. */
 data class BlindsUiState(
@@ -8,14 +8,8 @@ data class BlindsUiState(
 )
 
 /** Session-wide blinds page UI state keyed by tile id. */
-class BlindsUiStore {
-    private val byTile = ConcurrentHashMap<String, BlindsUiState>()
-
-    fun state(tileId: String): BlindsUiState = byTile[tileId] ?: BlindsUiState()
-
-    fun snapshot(): Map<String, BlindsUiState> = HashMap(byTile)
-
+class BlindsUiStore : TileUiStore<BlindsUiState>(BlindsUiState()) {
     fun selectRoom(tileId: String, areaId: String) {
-        byTile[tileId] = state(tileId).copy(selectedAreaId = areaId)
+        update(tileId) { it.copy(selectedAreaId = areaId) }
     }
 }

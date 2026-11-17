@@ -81,7 +81,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
         at(
             box.x,
             box.y,
-        ) { scope.Box(tap(Modifier.size(units.px(box.w), units.px(box.h)), pageTap, pageHold)) {
+        ) { rcScope.Box(tap(Modifier.size(units.px(box.w), units.px(box.h)), pageTap, pageHold)) {
             when (kind) {
                 "home" -> this@tile.homeTile(tile, box)
                 "climate" -> this@tile.thermostatPanel(tile, box)
@@ -123,7 +123,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
         units.px(box.w),
         units.px(box.h),
     ).clip(rounded(C.CARD_CORNER_DP)).background(edgeOf(tile)).padding(units.px(C.CARD_EDGE))
-    at(box.x, box.y) { scope.Box(tap(modifier, tapRef, holdRef)) {
+    at(box.x, box.y) { rcScope.Box(tap(modifier, tapRef, holdRef)) {
         val docContext = this@tile
         Column(
             Modifier.fillMaxSize().clip(

@@ -5,7 +5,7 @@ package tech.shaffersoftworks.remotescreens.server.render.cards
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.HaRenderFlags
 import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spacer
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 
 import androidx.compose.remote.creation.dsl.Modifier
@@ -16,9 +16,9 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 
 internal fun DocContext.coverCard(entityId: String, entityState: EntityState?, w: Float) {
-    gap(CardChrome.FLOW_PAD_DP)
+    spacer(CardChrome.FLOW_PAD_DP)
     val verbs = coverKeyVerbs(entityState)
-    scope.Row(Modifier.fillMaxWidth()) {
+    rcScope.Row(Modifier.fillMaxWidth()) {
         val doc = this@coverCard
         doc.key(
             ref = ref(entityId, verbs.open),

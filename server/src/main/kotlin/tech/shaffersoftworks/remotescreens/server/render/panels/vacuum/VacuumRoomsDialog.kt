@@ -10,7 +10,7 @@ import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.theme.Rpi
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
-import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spacer
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
@@ -52,7 +52,7 @@ fun DocContext.vacuumRoomsDialog(
     val listH = minOf(D.LIST_MAX_H_DP, rooms.size * (D.ROW_H_DP + D.ROW_GAP_DP))
     val cardH = D.CARD_PAD_DP * 2 + D.CLOSE_DP + D.TITLE_SUB_GAP_DP + D.SUB_SP +
         D.HEADER_EXTRA_DP + listH + D.FOOTER_GAP_DP + D.KEY_H_DP + D.CAPTION_GAP_DP + D.CAPTION_SP
-    scope.Box(
+    rcScope.Box(
         tap(Modifier.fillMaxSize().background(role(Role.SCRIM)), dismiss),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -68,7 +68,7 @@ fun DocContext.vacuumRoomsDialog(
             ).padding(pad),
         ) {
             doc.roomsDialogHeader(vacuumName = vacuumName, dismiss = dismiss)
-            doc.gap(D.TITLE_SUB_GAP_DP)
+            doc.spacer(D.TITLE_SUB_GAP_DP)
             Column(
                 Modifier.fillMaxWidth()
                     .height(doc.units.px(listH))
@@ -90,7 +90,7 @@ fun DocContext.vacuumRoomsDialog(
 }
 
 private fun DocContext.roomsDialogHeader(vacuumName: String, dismiss: ActionRef) {
-    scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+    rcScope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@roomsDialogHeader
         Column(Modifier.horizontalWeight(1f)) {
             doc.label(
@@ -116,7 +116,7 @@ private fun DocContext.roomsDialogHeader(vacuumName: String, dismiss: ActionRef)
 }
 
 private fun DocContext.roomRow(tileId: String, room: VacuumRoom, selected: Boolean) {
-    scope.Row(
+    rcScope.Row(
         tap(
             Modifier.fillMaxWidth().height(units.px(D.ROW_H_DP)),
             ActionRef(tileId, "vacuum_rooms_toggle", room.id),
@@ -142,7 +142,7 @@ private fun DocContext.roomRow(tileId: String, room: VacuumRoom, selected: Boole
 
 private fun DocContext.roomsDialogFooter(tileId: String, selectedCount: Int) {
     val canClean = selectedCount > 0
-    scope.Row(Modifier.fillMaxWidth()) {
+    rcScope.Row(Modifier.fillMaxWidth()) {
         val doc = this@roomsDialogFooter
         doc.key(
             ref = ActionRef(tileId, "vacuum_rooms_dismiss"),
@@ -164,7 +164,7 @@ private fun DocContext.roomsDialogFooter(tileId: String, selectedCount: Int) {
             modifier = Modifier.horizontalWeight(1f),
         )
     }
-    gap(D.CAPTION_GAP_DP)
+    spacer(D.CAPTION_GAP_DP)
     label(
         text = i18n.t("ui.rooms_clears_after_start"),
         sp = D.CAPTION_SP,

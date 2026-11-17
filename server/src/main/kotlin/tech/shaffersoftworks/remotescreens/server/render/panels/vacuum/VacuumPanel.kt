@@ -52,7 +52,7 @@ fun DocContext.vacuumPanel(tile: Tile, box: TileBox) {
     val selectedId = selectedVacuumId(chosen = ui.selectedVacuum, tileEntityId = tile.entityId, vacuumIds = vacuums)
     val selected = selectedId?.let { states[it] }
     val layout = VacuumLayout(pageScale(box), box.w, box.h)
-    scope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
+    rcScope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@vacuumPanel
         doc.vacuumList(tileId = tile.id, vacuums = vacuums, selectedId = selectedId, layout = layout)
         doc.vacuumDetail(tileId = tile.id, selected = selected, ui = ui, layout = layout)
@@ -99,7 +99,7 @@ private fun DocContext.vacuumList(
     selectedId: String?,
     layout: VacuumLayout,
 ) {
-    scope.Column(
+    rcScope.Column(
         Modifier.width(units.px(layout.listW)).fillMaxHeight().background(role(Role.STRIP))
             .padding(start = 0f, top = units.px(layout.dp(M.LIST_TOP_DP)), end = 0f, bottom = 0f),
     ) {
@@ -153,7 +153,7 @@ private fun DocContext.vacuumRow(
 ) {
     // Live name / status via bindEntity vars — baking strings here never updates on state_changed.
     bindEntity(entityId)
-    scope.Row(
+    rcScope.Row(
         tap(
             Modifier.fillMaxWidth().height(units.px(layout.dp(M.ITEM_H_DP))),
             ActionRef(tileId, "vacuum_select", entityId),
@@ -186,7 +186,7 @@ private fun DocContext.vacuumDetail(
     layout: VacuumLayout,
 ) {
     val pad = units.px(layout.dp(M.DETAIL_PAD_DP))
-    scope.Column(
+    rcScope.Column(
         Modifier.horizontalWeight(1f).fillMaxHeight().padding(start = pad, top = pad, end = pad, bottom = pad),
     ) {
         val doc = this@vacuumDetail
@@ -224,7 +224,7 @@ private fun DocContext.vacuumDetail(
 }
 
 private fun DocContext.selectVacuumPrompt(layout: VacuumLayout) {
-    scope.Column(
+    rcScope.Column(
         Modifier.fillMaxSize(),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcColumnVerticalPositioning.Center,

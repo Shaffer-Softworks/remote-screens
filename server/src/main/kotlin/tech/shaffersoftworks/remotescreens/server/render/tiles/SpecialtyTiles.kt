@@ -40,7 +40,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
 import tech.shaffersoftworks.remotescreens.server.render.widgets.at
 import tech.shaffersoftworks.remotescreens.server.render.widgets.choiceRow
-import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spacer
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.initials
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
@@ -65,7 +65,7 @@ internal fun DocContext.clockTile(tile: Tile, box: TileBox) {
     val ink = color(Vars.tile(tile.id, Vars.KEY_INK))
     val ink2 = color(Vars.tile(tile.id, Vars.KEY_INK2))
     val big = minOf(box.h * C.CLOCK_H_SHARE, box.w * C.CLOCK_W_SHARE).coerceAtLeast(Type.HEADLINE)
-    scope.Column(
+    rcScope.Column(
         Modifier.fillMaxSize().padding(units.px(C.PAD_LG_DP)),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcColumnVerticalPositioning.Center,
@@ -93,7 +93,7 @@ internal fun DocContext.bedsideTile(tile: Tile, box: TileBox) {
     val keys = tile.options["keys"].orEmpty().split(
         ',',
     ).map { it.trim() }.filter { it.isNotEmpty() }.take(C.BEDSIDE_KEYS_MAX)
-    scope.Column(
+    rcScope.Column(
         Modifier.fillMaxSize().padding(units.px(C.PAD_XXL_DP)),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcColumnVerticalPositioning.Center,
@@ -106,7 +106,7 @@ internal fun DocContext.bedsideTile(tile: Tile, box: TileBox) {
             weight = C.HEADER_TALL_MIN_DP,
             glyphs = CLOCK_GLYPHS,
         )
-        doc.gap(C.PAD_XXL_DP)
+        doc.spacer(C.PAD_XXL_DP)
         Row(horizontal = RcRowHorizontalPositioning.Center) {
             keys.forEachIndexed { i, entityId ->
                 if (i > 0) Spacer(Modifier.width(doc.units.px(C.LEVEL_BAR_HEIGHT_DP)))
@@ -148,7 +148,7 @@ internal fun DocContext.bedsideTile(tile: Tile, box: TileBox) {
 
 internal fun DocContext.navTile(tile: Tile, box: TileBox, named: Boolean) {
     val ink = color(Vars.tile(tile.id, Vars.KEY_INK))
-    scope.Column(
+    rcScope.Column(
         Modifier.fillMaxSize().padding(units.px(C.PAD_XL_DP)),
         vertical = if (named) RcColumnVerticalPositioning.Top else RcColumnVerticalPositioning.Center,
         horizontal = if (named) RcHorizontalPositioning.Start else RcHorizontalPositioning.Center,
@@ -177,7 +177,7 @@ internal fun DocContext.personTile(tile: Tile, box: TileBox, entityState: Entity
     val ink = color(Vars.tile(tile.id, Vars.KEY_INK))
     bindWhere(Vars.tile(tile.id, "where"), entityId)
     if (box.h < C.PERSON_SHORT_MAX_DP) {
-        scope.Row(
+        rcScope.Row(
             Modifier.fillMaxSize().padding(units.px(C.PAD_MD_DP)),
             horizontal = RcRowHorizontalPositioning.Center,
             vertical = RcVerticalPositioning.Center,
@@ -216,14 +216,14 @@ internal fun DocContext.personTile(tile: Tile, box: TileBox, entityState: Entity
         box.h * C.NAV_ICON_SHARE,
         box.w * C.BEDSIDE_TIME_H,
     ).coerceAtLeast(C.NAV_ICON_NAMED_DP)
-    scope.Column(
+    rcScope.Column(
         Modifier.fillMaxSize().padding(units.px(C.PAD_LG_DP)),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcColumnVerticalPositioning.Center,
     ) {
         val doc = this@personTile
         doc.photo(entityState = entityState, entityId = entityId, slot = "pic.$entityId", sizeDp = photo)
-        doc.gap(C.PAD_SM_DP)
+        doc.spacer(C.PAD_SM_DP)
         doc.label(
             text = doc.text(Vars.entity(entityId, Vars.KEY_NAME)),
             sp = Type.TITLE,
@@ -270,7 +270,7 @@ internal fun DocContext.calendarTile(tile: Tile, box: TileBox, @Suppress(
             VarValue.string(Vars.tile(tile.id, "ev.meta"), event?.location.orEmpty()),
         )
     }
-    scope.Column(Modifier.fillMaxSize().padding(units.px(C.PAD_LG_DP))) {
+    rcScope.Column(Modifier.fillMaxSize().padding(units.px(C.PAD_LG_DP))) {
         val doc = this@calendarTile
         doc.label(doc.text(Vars.tile(tile.id, "ev.day")), Type.CAPTION + 1f, ink2)
         doc.label(
@@ -303,7 +303,7 @@ fun DocContext.photo(
     val px = units.px(sizeDp).toInt()
     if (pic != null) {
         picture(PictureSlot(name = slot, source = pic, widthPx = px, heightPx = px, refreshSeconds = 0, round = true))
-        scope.Box(
+        rcScope.Box(
             Modifier
                 .size(
                     units.px(sizeDp),
@@ -355,7 +355,7 @@ internal fun DocContext.weatherTile(tile: Tile, box: TileBox, entityState: Entit
         box.w >= C.HEADER_TALL_MIN_DP -> C.WEATHER_DAYS_MID
         else -> 0
     }.coerceAtMost(days.size)
-    scope.Column(Modifier.fillMaxSize().padding(units.px(C.PAD_LG_DP))) {
+    rcScope.Column(Modifier.fillMaxSize().padding(units.px(C.PAD_LG_DP))) {
         val doc = this@weatherTile
         Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
             doc.weatherStateIcon(
@@ -428,7 +428,7 @@ internal fun DocContext.climateTile(tile: Tile, box: TileBox, entityState: Entit
     structural(entityId) { it?.list("hvac_modes")?.joinToString() ?: "" }
     predict(ActionRef(tile.id, "temperature", "+$step"), entityId)
     predict(ActionRef(tile.id, "temperature", "-$step"), entityId)
-    scope.Column(Modifier.fillMaxSize().padding(units.px(C.PAD_LG_DP))) {
+    rcScope.Column(Modifier.fillMaxSize().padding(units.px(C.PAD_LG_DP))) {
         val doc = this@climateTile
         Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
             doc.tileIcon(
@@ -462,7 +462,7 @@ internal fun DocContext.climateTile(tile: Tile, box: TileBox, entityState: Entit
                 color = ink,
                 weight = Weight.MEDIUM,
             )
-            doc.gap(C.PAD_SM_DP)
+            doc.spacer(C.PAD_SM_DP)
             Row(
                 Modifier.fillMaxWidth(),
                 horizontal = RcRowHorizontalPositioning.SpaceBetween,
@@ -518,7 +518,7 @@ internal fun DocContext.climateTile(tile: Tile, box: TileBox, entityState: Entit
                 )
             }
             if (box.h >= C.CLIMATE_MODES_MIN_H_DP && modes.isNotEmpty()) {
-                doc.gap(C.CARD_CORNER_DP)
+                doc.spacer(C.CARD_CORNER_DP)
                 doc.bindChoices(scopeId = tile.id, group = "mode", entityId = entityId, choices = modes) { it.state }
                 doc.choiceRow(
                     scopeId = tile.id,
@@ -580,7 +580,7 @@ internal fun DocContext.mediaTile(tile: Tile, box: TileBox, entityState: EntityS
         )
     }
     predict(ActionRef(tile.id, "play_pause"), entityId)
-    scope.Box(Modifier.fillMaxSize()) {
+    rcScope.Box(Modifier.fillMaxSize()) {
         val doc = this@mediaTile
         if (big) {
             val w = doc.units.px(box.w).toInt(); val h = doc.units.px(box.h).toInt()
@@ -617,7 +617,7 @@ internal fun DocContext.mediaTile(tile: Tile, box: TileBox, entityState: EntityS
             )
             doc.label(doc.text(Vars.entity(entityId, "artist")), Type.CAPTION + 1f, ink2)
             if (box.w >= C.HEADER_TALL_MIN_DP || box.h >= C.TALL_HEIGHT_DP) {
-                doc.gap(C.PAD_SM_DP)
+                doc.spacer(C.PAD_SM_DP)
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontal = RcRowHorizontalPositioning.SpaceBetween,
@@ -730,7 +730,7 @@ private fun DocContext.cameraStreamTile(
     val video = liveVideo(entityId, crop = isCropped)
     val waiting = int(Vars.entity(entityId, Vars.KEY_CAM_WAITING), Vars.VISIBLE)
     val still = int(Vars.entity(entityId, Vars.KEY_CAM_STILL), Vars.GONE)
-    scope.Box(
+    rcScope.Box(
         Modifier.fillMaxSize().background(role(Role.TRACK)).componentId(video),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -771,7 +771,7 @@ private fun DocContext.cameraSnapshotTile(
     contentScale: RcContentScale,
     showName: Boolean,
 ) {
-    scope.Box(
+    rcScope.Box(
         Modifier.fillMaxSize().background(role(Role.SCRIM)),
         vertical = RcVerticalPositioning.Bottom,
     ) {
@@ -801,7 +801,7 @@ private fun DocContext.cameraSnapshotTile(
 internal fun DocContext.favouriteTile(tile: Tile, box: TileBox, named: Boolean) {
     val ink = color(Vars.tile(tile.id, Vars.KEY_INK))
     val art = tile.options["image"]
-    scope.Box(Modifier.fillMaxSize()) {
+    rcScope.Box(Modifier.fillMaxSize()) {
         val doc = this@favouriteTile
         if (art != null && box.w >= C.SHORT_HEIGHT_DP) {
             val w = doc.units.px(box.w).toInt(); val h = doc.units.px(box.h).toInt()
@@ -848,7 +848,7 @@ fun DocContext.historyTile(tile: Tile, box: TileBox, named: Boolean = true) {
     val ink2 = color(Vars.tile(tile.id, Vars.KEY_INK2))
     refreshEvery(C.HISTORY_REFRESH_S)
     val points = data.history[entityId].orEmpty()
-    scope.Column(Modifier.fillMaxSize().padding(units.px(C.PAD_LG_DP))) {
+    rcScope.Column(Modifier.fillMaxSize().padding(units.px(C.PAD_LG_DP))) {
         val doc = this@historyTile
         Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
             Column(Modifier.horizontalWeight(1f)) {
@@ -868,7 +868,7 @@ fun DocContext.historyTile(tile: Tile, box: TileBox, named: Boolean = true) {
                 )
             }
         }
-        doc.gap(C.HISTORY_GAP_DP)
+        doc.spacer(C.HISTORY_GAP_DP)
         doc.graph(
             points = points,
             wDp = box.w - C.LEVEL_BAR_HEIGHT_DP,
@@ -885,7 +885,7 @@ fun DocContext.graph(points: List<Pair<Long, Double>>, wDp: Float, hDp: Float, l
     val w = units.px(wDp)
     val h = units.px(hDp)
     if (points.size < 2) {
-        scope.Box(
+        rcScope.Box(
             Modifier.size(w, h),
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcVerticalPositioning.Center,
@@ -904,7 +904,7 @@ fun DocContext.graph(points: List<Pair<Long, Double>>, wDp: Float, hDp: Float, l
     fun px(point: Pair<Long, Double>) =
         ((point.first - t0) / (t1 - t0) * w) to
             (h - stroke - ((point.second - lo) / (hi - lo)).toFloat() * (h - 2 * stroke))
-    scope.Canvas(Modifier.size(w, h)) {
+    rcScope.Canvas(Modifier.size(w, h)) {
         paint { color(line); strokeWidth(stroke); style(RcPaintStyle.Stroke) }
         var prev = px(points.first())
         for (point in points.drop(1)) {
@@ -939,7 +939,7 @@ internal fun DocContext.mapTile(tile: Tile, box: TileBox, named: Boolean) {
             refreshSeconds = 0,
         ),
     )
-    scope.Box(Modifier.fillMaxSize(), vertical = RcVerticalPositioning.Bottom) {
+    rcScope.Box(Modifier.fillMaxSize(), vertical = RcVerticalPositioning.Bottom) {
         val doc = this@mapTile
         Image(
             doc.image("map.${tile.id}", w, h),
@@ -986,7 +986,7 @@ fun DocContext.energyFlow(wDp: Float, hDp: Float, compact: Boolean) {
     )
     val ink = role(Role.INK)
     val ink2 = role(Role.INK_SOFT)
-    scope.Box(Modifier.fillMaxSize()) {
+    rcScope.Box(Modifier.fillMaxSize()) {
         val doc = this@energyFlow
         Canvas(Modifier.fillMaxSize()) {
             paint { color(
@@ -1006,7 +1006,7 @@ fun DocContext.energyFlow(wDp: Float, hDp: Float, compact: Boolean) {
         for ((key, entity, icon) in nodes + Triple("home", "", "home")) {
             val (x, y) = spots.getValue(key)
             val tint = when (key) { "solar" -> Pastel.YELLOW; "grid" -> Pastel.BLUE; "battery" -> Pastel.GREEN; else -> Pastel.GREY }
-            doc.at(x - r, y - r) { doc.scope.Column(
+            doc.at(x - r, y - r) { doc.rcScope.Column(
                 Modifier.size(doc.units.px(2 * r), doc.units.px(2 * r + C.ENERGY_LABEL_EXTRA_DP)),
                 horizontal = RcHorizontalPositioning.Center,
             ) {
@@ -1068,7 +1068,7 @@ fun DocContext.energyFlow(wDp: Float, hDp: Float, compact: Boolean) {
                 C.PAD_MD_DP,
                 hDp - C.SPACE_20_DP -
                     C.ENERGY_LABEL_EXTRA_DP * prefs.devices.size.coerceAtMost(C.ENERGY_DEVICE_MAX),
-            ) { doc.scope.Column {
+            ) { doc.rcScope.Column {
                 for ((name, entity) in prefs.devices.take(C.ENERGY_DEVICE_MAX)) {
                     doc.bindEntity(entity)
                     Row(vertical = RcVerticalPositioning.Center) {

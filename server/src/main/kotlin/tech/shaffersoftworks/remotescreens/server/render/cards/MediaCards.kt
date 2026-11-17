@@ -7,7 +7,7 @@ import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
-import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spacer
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
@@ -15,7 +15,6 @@ import tech.shaffersoftworks.remotescreens.server.render.liveMap
 import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
 import tech.shaffersoftworks.remotescreens.server.render.widgets.spinner
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
-
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcContentScale
@@ -34,9 +33,15 @@ import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 
-internal fun DocContext.mediaCard(entityId: String, entityState: EntityState?, w: Float) {
-    val art = minOf(w, CardChrome.MEDIA_ART_MAX_DP)
+internal fun DocContext.mediaCard(
+    entityId: String,
+    entityState:
+    EntityState?,
+    width: Float,
+) {
+    val art = minOf(width, CardChrome.MEDIA_ART_MAX_DP)
     val px = units.px(art).toInt()
+
     picture(
         PictureSlot(
             name = "art.card.$entityId",
@@ -46,6 +51,7 @@ internal fun DocContext.mediaCard(entityId: String, entityState: EntityState?, w
             refreshSeconds = 0,
         ),
     )
+
     bind(entityId) { states ->
         val current = states[entityId]
         listOf(
@@ -67,8 +73,9 @@ internal fun DocContext.mediaCard(entityId: String, entityState: EntityState?, w
             ),
         )
     }
+
     predict(ref(entityId, "play_pause"), entityId)
-    scope.Column(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
+    rcScope.Column(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
         val doc = this@mediaCard
         Image(
             doc.image("art.card.$entityId", px, px),
@@ -78,7 +85,7 @@ internal fun DocContext.mediaCard(entityId: String, entityState: EntityState?, w
             ).clip(doc.rounded(CardChrome.PANEL_PAD_DP)),
             contentScale = RcContentScale.Crop,
         )
-        doc.gap(CardChrome.HEADER_GAP_DP)
+        doc.spacer(CardChrome.HEADER_GAP_DP)
         doc.label(
             text = doc.text(Vars.entity(entityId, "title")),
             sp = Type.HEADLINE,
@@ -92,7 +99,7 @@ internal fun DocContext.mediaCard(entityId: String, entityState: EntityState?, w
             color = doc.role(Role.INK_SOFT),
             align = RcTextAlign.Center,
         )
-        doc.gap(CardChrome.HEADER_GAP_DP)
+        doc.spacer(CardChrome.HEADER_GAP_DP)
         Row(
             horizontal = RcRowHorizontalPositioning.Center,
             vertical = RcVerticalPositioning.Center,
@@ -142,7 +149,13 @@ internal fun DocContext.mediaCard(entityId: String, entityState: EntityState?, w
         }
     }
     section(i18n.t("ui.volume"))
-    bar(entityId, "volume", w)
+
+    bar(
+        entityId = entityId,
+        verb = "volume",
+        width = width,
+    )
+
     val sources = entityState?.list("source_list").orEmpty()
     if (sources.isNotEmpty()) {
         structural(entityId) { it?.list("source_list")?.joinToString() ?: "" }
@@ -153,18 +166,19 @@ internal fun DocContext.mediaCard(entityId: String, entityState: EntityState?, w
             sources.take(CardChrome.SOURCES_TAKE).map { it to it },
         ) { it.attr("source") }
     }
+
     val library = data.browse[entityId].orEmpty()
     if (library.isNotEmpty()) {
         section(i18n.t("ui.library"))
-        for (item in library.filter { it.canPlay }.take(CardChrome.LIBRARY_TAKE)) {
+        for ((title, contentId, contentType) in library.filter { it.canPlay }.take(CardChrome.LIBRARY_TAKE)) {
             key(
-                ref = ref(entityId, "play_media", "${item.contentType}|${item.contentId}"),
-                text = item.title,
+                ref = ref(entityId, "play_media", "$contentType|$contentId"),
+                text = title,
                 icon = "play-circle-outline",
                 heightDp = CardChrome.FLOW_KEY_H_DP,
                 modifier = Modifier.fillMaxWidth(),
             )
-            gap(CardChrome.ROW_GAP_DP)
+            spacer(CardChrome.ROW_GAP_DP)
         }
     }
 }
@@ -182,6 +196,7 @@ internal fun DocContext.cameraCard(entityId: String, w: Float, h: Float) {
             crop = false,
         ),
     )
+
     val video = liveVideo(entityId, crop = false)
     val waiting = int(Vars.entity(entityId, Vars.KEY_CAM_WAITING), Vars.VISIBLE)
     val still = int(Vars.entity(entityId, Vars.KEY_CAM_STILL), Vars.GONE)
@@ -189,7 +204,7 @@ internal fun DocContext.cameraCard(entityId: String, w: Float, h: Float) {
         .clip(rounded(CardChrome.CARD_GAP_DP))
         .background(role(Role.TRACK))
         .componentId(video)
-    scope.Box(
+    rcScope.Box(
         frame,
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -212,6 +227,7 @@ internal fun DocContext.mapCard(entityId: String, w: Float, h: Float) {
     } else {
         states.keys.filter { it.startsWith("person.") }
     }
+
     for (personId in who) {
         structural(personId) { state -> "${state?.number("latitude")},${state?.number("longitude")}" }
         val picturePath = states[personId]?.attr("entity_picture")
@@ -228,6 +244,7 @@ internal fun DocContext.mapCard(entityId: String, w: Float, h: Float) {
             )
         }
     }
+
     picture(
         PictureSlot(
             name = "map.card",
@@ -237,12 +254,13 @@ internal fun DocContext.mapCard(entityId: String, w: Float, h: Float) {
             refreshSeconds = 0,
         ),
     )
+
     val mapComponent = liveMap(who)
     val frame = Modifier.size(units.px(w), units.px(h))
         .clip(rounded(CardChrome.CARD_GAP_DP))
         .background(role(Role.TRACK))
         .componentId(mapComponent)
-    scope.Box(frame) {
+    rcScope.Box(frame) {
         val doc = this@mapCard
         Image(
             doc.image("map.card", pw, ph),
@@ -250,5 +268,9 @@ internal fun DocContext.mapCard(entityId: String, w: Float, h: Float) {
             contentScale = RcContentScale.Crop,
         )
     }
-    label(i18n.t("ui.map_credit"), Type.CAPTION, role(Role.INK_SOFT))
+    label(
+        text = i18n.t("ui.map_credit"),
+        sp = Type.CAPTION,
+        color = role(Role.INK_SOFT),
+    )
 }

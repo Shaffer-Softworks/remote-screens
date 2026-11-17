@@ -36,6 +36,7 @@ class EnergyDashboardRepository(private val homeAssistant: HomeAssistant) {
             config.gridEnergyFrom?.let(::add)
             config.devices.forEach { add(it.statConsumption) }
         }.distinct()
+
         val statsResponse = if (statisticIds.isEmpty()) {
             null
         } else {
@@ -123,7 +124,10 @@ class EnergyDashboardRepository(private val homeAssistant: HomeAssistant) {
 
     /** statistic_id → (areaId, areaName). */
     private suspend fun entityAreas(): Map<String, Pair<String, String>> {
-        cachedAreas?.takeIf { System.currentTimeMillis() - it.second < AREAS_TTL_MS }?.let { return it.first }
+        cachedAreas?.takeIf {
+            System.currentTimeMillis() - it.second < AREAS_TTL_MS
+        }?.let { return it.first }
+
         val value = runCatching { fetchEntityAreas() }
             .onFailure { logger.debug("Energy area map failed: {}", it.message) }
             .getOrElse { emptyMap() }
@@ -139,6 +143,7 @@ class EnergyDashboardRepository(private val homeAssistant: HomeAssistant) {
                 areaId to (area.text("name") ?: areaId)
             }
             .toMap()
+
         val deviceAreas = (homeAssistant.command("config/device_registry/list") as? JsonArray).orEmpty()
             .mapNotNull { element ->
                 val device = element as? JsonObject ?: return@mapNotNull null

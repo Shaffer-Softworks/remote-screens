@@ -48,7 +48,7 @@ fun DocContext.freeForm(
 ) {
     val pages = Pages(pageIndex, pageTitle)
     at(xDp, yDp) {
-        scope.Box(Modifier.size(units.px(wDp), units.px(hDp))) {
+        rcScope.Box(Modifier.size(units.px(wDp), units.px(hDp))) {
             this@freeForm.node(
                 node = root,
                 self = this@freeForm.resolve(
@@ -214,8 +214,8 @@ internal fun DocContext.node(node: Node, self: Dims, axis: Axis, pages: Pages) {
         "text" -> textNode(node, axis, pages)
         "icon" -> iconNode(node, axis, pages)
         "button" -> buttonNode(node, axis, pages)
-        "spacer" -> scope.Spacer(styled(node = node, axis = axis, pages = pages, base = spacerSize(node, axis)))
-        "divider" -> scope.Box(
+        "spacer" -> rcScope.Spacer(styled(node = node, axis = axis, pages = pages, base = spacerSize(node, axis)))
+        "divider" -> rcScope.Box(
             styled(
                 node = node,
                 axis = axis,

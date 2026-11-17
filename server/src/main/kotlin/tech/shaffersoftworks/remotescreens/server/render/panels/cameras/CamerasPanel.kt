@@ -58,7 +58,7 @@ fun DocContext.camerasPanel(tile: Tile, box: TileBox) {
     val cameras = tile.cameraEntries()
     val selected = cameras.selectedCamera(ui.selectedCamera)
     val layout = CamerasLayout(pageScale(box), box.w, box.h)
-    scope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
+    rcScope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@camerasPanel
         doc.cameraList(tile.id, cameras, layout)
         doc.selectedCameraPane(selected, layout)
@@ -70,7 +70,7 @@ private fun pageScale(box: TileBox): Float =
 
 /** The grey list: RPI's teal bar, "CAMERAS", and a row per camera. */
 private fun DocContext.cameraList(tileId: String, cameras: List<CameraEntry>, layout: CamerasLayout) {
-    scope.Column(
+    rcScope.Column(
         Modifier.width(units.px(layout.listW)).fillMaxHeight().background(role(Role.STRIP))
             .padding(start = 0f, top = units.px(layout.dp(M.LIST_TOP_DP)), end = 0f, bottom = 0f),
     ) {
@@ -129,7 +129,7 @@ private fun DocContext.cameraRow(tileId: String, camera: CameraEntry, layout: Ca
         ),
     )
     val barColor = fixed((M.ITEM_BAR_ALPHA shl ALPHA_SHIFT) or (palette[Role.ACCENT_DARK] and RGB_MASK))
-    scope.Box(
+    rcScope.Box(
         tap(
             Modifier.fillMaxWidth().height(rowH),
             ActionRef(tileId, "cameras_select", camera.entityId),
@@ -165,7 +165,7 @@ private fun DocContext.cameraRow(tileId: String, camera: CameraEntry, layout: Ca
 /** The chosen camera's name over its live video; blank until a camera is chosen, as RPI's right pane is. */
 private fun DocContext.selectedCameraPane(selected: CameraEntry?, layout: CamerasLayout) {
     val pad = units.px(layout.dp(M.DETAIL_PAD_DP))
-    scope.Column(
+    rcScope.Column(
         Modifier.horizontalWeight(1f).fillMaxHeight().padding(start = pad, top = pad, end = pad, bottom = pad),
     ) {
         val doc = this@selectedCameraPane
@@ -207,7 +207,7 @@ private fun DocContext.liveVideoBox(entityId: String, layout: CamerasLayout) {
     val video = liveVideo(entityId, crop = false)
     val waiting = int(Vars.entity(entityId, Vars.KEY_CAM_WAITING), Vars.VISIBLE)
     val still = int(Vars.entity(entityId, Vars.KEY_CAM_STILL), Vars.GONE)
-    scope.Box(
+    rcScope.Box(
         Modifier.fillMaxWidth().verticalWeight(1f).background(role(Role.TRACK)).componentId(video),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,

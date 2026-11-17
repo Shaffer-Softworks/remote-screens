@@ -28,7 +28,6 @@ import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
 import androidx.compose.remote.creation.dsl.fillMaxSize
-import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
@@ -44,7 +43,7 @@ import java.util.Locale
 internal fun DocContext.sliderNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
     val id = node.bind?.entityId
     if (id == null) {
-        scope.Box(styled(node, axis, pages))
+        rcScope.Box(styled(node, axis, pages))
         return
     }
     bindEntity(id)
@@ -64,7 +63,7 @@ internal fun DocContext.sliderNode(node: Node, self: Dims, axis: Axis, pages: Pa
     val h = if (node.size.height == "wrap") Metrics.SLIDER_NATURAL_H else self.h
     val track = node.props["track"]?.let { paint(it) } ?: role(Role.TRACK)
     val borderInk = node.style.borderColor?.let { paint(it) }
-    scope.Box(styled(node = node, axis = axis, pages = pages, applyBorder = false)) {
+    rcScope.Box(styled(node = node, axis = axis, pages = pages, applyBorder = false)) {
         val doc = this@sliderNode
         doc.levelBar(
             level = doc.float(Vars.entity(id, Vars.KEY_LEVEL)),
@@ -114,7 +113,7 @@ internal fun DocContext.switchNode(node: Node, axis: Axis, pages: Pages) {
     } else {
         role(Role.KEY)
     }
-    scope.Box(
+    rcScope.Box(
         styled(node, axis, pages),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -207,7 +206,7 @@ internal fun DocContext.stepperNode(node: Node, axis: Axis, pages: Pages) {
         down?.let { predict(it, id) }
         up?.let { predict(it, id) }
     }
-    scope.Row(
+    rcScope.Row(
         styled(node, axis, pages),
         horizontal = RcRowHorizontalPositioning.SpaceBetween,
         vertical = RcVerticalPositioning.Center,
@@ -306,7 +305,7 @@ internal fun DocContext.choicesNode(node: Node, self: Dims, axis: Axis, pages: P
     val modifier = styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))
     val set = id?.let { choicesOf(states[it], it.substringBefore('.')) }
     if (id == null || set == null || set.choices.isEmpty()) {
-        scope.Box(
+        rcScope.Box(
             modifier.clip(rounded(Metrics.CHOICES_EMPTY_CORNER_DP)).background(role(Role.TRACK)),
         )
         return
@@ -320,7 +319,7 @@ internal fun DocContext.choicesNode(node: Node, self: Dims, axis: Axis, pages: P
     )
     bindChoices(scopeId = node.id, group = "c", entityId = id, choices = shown, chosen = set.chosen)
     val h = (self.h - node.style.padY).coerceAtLeast(Metrics.CHOICES_MIN_H)
-    scope.Box(modifier, vertical = RcVerticalPositioning.Center) {
+    rcScope.Box(modifier, vertical = RcVerticalPositioning.Center) {
         this@choicesNode.choiceRow(
             scopeId = node.id,
             group = "c",

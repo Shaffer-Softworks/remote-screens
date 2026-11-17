@@ -55,7 +55,7 @@ internal fun DocContext.bindDetailLevel(tileId: String, entityId: String) {
 
 /** A tall rounded slider of [stepCount] taps from top to bottom, sending what [refAt] gives each (top first). */
 private fun DocContext.verticalTaps(widthPx: Float, heightPx: Float, refAt: (Int) -> ActionRef?) {
-    scope.Column(Modifier.size(widthPx, heightPx)) {
+    rcScope.Column(Modifier.size(widthPx, heightPx)) {
         val doc = this@verticalTaps
         for (index in 0 until D.SLIDER_STEPS) {
             Box(doc.tap(Modifier.fillMaxWidth().verticalWeight(1f), refAt(index)))
@@ -75,7 +75,7 @@ internal fun DocContext.verticalBrightnessSlider(tileId: String, entityState: En
     val fill = liftedForTrack(entityState.selectedColor())
     val canSet = entityState.supportsBrightness()
     val track = Modifier.size(w, h).clip(rounded(layout.dp(D.SLIDER_CORNER_DP))).background(fixed(Rpi.LightDetailTrack))
-    scope.Box(track) {
+    rcScope.Box(track) {
         val doc = this@verticalBrightnessSlider
         Canvas(Modifier.size(w, h).visibility(doc.int(detailFilledVar(tileId), Vars.GONE))) {
             val fillTop = level * -h + h
@@ -116,7 +116,7 @@ internal fun DocContext.verticalTemperatureSlider(entityState: EntityState, layo
     val span = (range.last - range.first).coerceAtLeast(1)
     val lineY = (entityState.kelvin() - range.first).toFloat() / span * h
     val canSet = entityState.supportsColorTemp()
-    scope.Box(Modifier.size(w, h).clip(rounded(layout.dp(D.SLIDER_CORNER_DP)))) {
+    rcScope.Box(Modifier.size(w, h).clip(rounded(layout.dp(D.SLIDER_CORNER_DP)))) {
         val doc = this@verticalTemperatureSlider
         Canvas(Modifier.size(w, h)) {
             paint {
@@ -152,7 +152,7 @@ internal fun DocContext.colorWheel(entityState: EntityState, layout: LightsLayou
     val h = units.px(layout.dp(D.CONTROL_H_DP))
     val padH = units.px(layout.dp(D.WHEEL_PAD_H_DP))
     val w = h - 2 * padH
-    scope.Box(
+    rcScope.Box(
         Modifier.fillMaxWidth().height(h),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -181,7 +181,7 @@ private fun DocContext.wheelDisc(entityState: EntityState, w: Float, h: Float, l
     val radius = minOf(cx, cy)
     val ring = units.px(layout.dp(D.WHEEL_RING_DP))
     val hsb = entityState.rgbColor()?.let { Color.RGBtoHSB(it.red(), it.green(), it.blue(), null) }
-    scope.Canvas(Modifier.size(w, h)) {
+    rcScope.Canvas(Modifier.size(w, h)) {
         paint {
             style(RcPaintStyle.Fill)
             sweepGradient(cx, cy, Rpi.LightDetailWheelHues)
@@ -218,7 +218,7 @@ private fun DocContext.wheelTaps(entityState: EntityState, w: Float, h: Float) {
     val radius = minOf(w, h) / 2f
     val cellW = w / D.WHEEL_CELLS
     val cellH = h / D.WHEEL_CELLS
-    scope.Column(Modifier.size(w, h)) {
+    rcScope.Column(Modifier.size(w, h)) {
         val doc = this@wheelTaps
         for (row in 0 until D.WHEEL_CELLS) {
             Row(Modifier.size(w, cellH)) {

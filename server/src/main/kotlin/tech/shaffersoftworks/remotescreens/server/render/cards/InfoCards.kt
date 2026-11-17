@@ -9,13 +9,11 @@ import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
 import tech.shaffersoftworks.remotescreens.server.render.bindChoices
 import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.calendarEvent
-import tech.shaffersoftworks.remotescreens.server.render.widgets.gap
-import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spacer
 import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.isToday
 import tech.shaffersoftworks.remotescreens.server.render.widgets.weatherStateIcon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.key
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
-import tech.shaffersoftworks.remotescreens.server.render.freeform.paint
 import tech.shaffersoftworks.remotescreens.server.render.tiles.graph
 
 import androidx.compose.remote.creation.dsl.Modifier
@@ -42,7 +40,7 @@ internal fun DocContext.weatherCard(entityId: String, entityState: EntityState?,
     val zone = runCatching { ZoneId.of(
         homeAssistantConfig.timeZone,
     ) }.getOrDefault(ZoneId.of("UTC"))
-    scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+    rcScope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@weatherCard
         doc.weatherStateIcon(entityState?.state ?: "", CardChrome.STEPPER_KEY_DP, fallbackColor = ink)
         Spacer(Modifier.width(doc.units.px(CardChrome.CARD_GAP_DP)))
@@ -67,12 +65,12 @@ internal fun DocContext.weatherCard(entityId: String, entityState: EntityState?,
             doc.label(details, Type.BODY, soft)
         }
     }
-    gap(CardChrome.CARD_GAP_DP)
+    spacer(CardChrome.CARD_GAP_DP)
     val days = data.forecasts[entityId].orEmpty()
     val lo = days.mapNotNull { it.low }.minOrNull() ?: 0.0
     val hi = days.mapNotNull { it.high }.maxOrNull() ?: 1.0
     for (day in days.take(CardChrome.FORECAST_DAYS)) {
-        scope.Row(
+        rcScope.Row(
             Modifier.fillMaxWidth().padding(
                 start = 0f,
                 top = units.px(CardChrome.ROW_GAP_DP),
@@ -154,7 +152,7 @@ internal fun DocContext.historyCard(entityId: String, w: Float, h: Float) {
         val max = points.maxBy { it.second }
         val min = points.minBy { it.second }
         val unit = entityState.attr("unit_of_measurement").orEmpty()
-        scope.Row(Modifier.fillMaxWidth()) {
+        rcScope.Row(Modifier.fillMaxWidth()) {
             val doc = this@historyCard
             doc.label(
                 text = doc.i18n.t("ui.max", "value" to "${doc.i18n.number(max.second, 1)} $unit"),
@@ -170,7 +168,7 @@ internal fun DocContext.historyCard(entityId: String, w: Float, h: Float) {
                 weight = Weight.MEDIUM,
             )
         }
-        gap(CardChrome.PANEL_CORNER_DP)
+        spacer(CardChrome.PANEL_CORNER_DP)
     }
     graph(
         points = points,
@@ -192,8 +190,8 @@ internal fun DocContext.alarmCard(entityId: String, entityState: EntityState?, w
     bind(entityId) { states ->
         listOf(VarValue.string(Vars.tile("e:$entityId", "code"), ""))
     }
-    gap(CardChrome.FLOW_PAD_DP)
-    scope.Flow(Modifier.fillMaxWidth()) {
+    spacer(CardChrome.FLOW_PAD_DP)
+    rcScope.Flow(Modifier.fillMaxWidth()) {
         val doc = this@alarmCard
         for (mode in modes + "disarm") {
             Box(
@@ -223,7 +221,7 @@ internal fun DocContext.alarmCard(entityId: String, entityState: EntityState?, w
 }
 
 internal fun DocContext.keypad(entityId: String, w: Float) {
-    scope.Box(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
+    rcScope.Box(Modifier.fillMaxWidth(), horizontal = RcHorizontalPositioning.Center) {
         this@keypad.label(
             text = this@keypad.text(Vars.tile("e:$entityId", "code")),
             sp = Type.DISPLAY,
@@ -232,7 +230,7 @@ internal fun DocContext.keypad(entityId: String, w: Float) {
             align = RcTextAlign.Center,
         )
     }
-    gap(CardChrome.FLOW_PAD_DP)
+    spacer(CardChrome.FLOW_PAD_DP)
     val keyW = minOf(
         (w - CardChrome.KEYPAD_ROW_GAP_DP) / CardChrome.KEYPAD_COLS,
         CardChrome.KEYPAD_KEY_MAX_DP,
@@ -243,7 +241,7 @@ internal fun DocContext.keypad(entityId: String, w: Float) {
         listOf("7", "8", "9"),
         listOf("clear", "0", "back"),
     )) {
-        scope.Row(Modifier.fillMaxWidth(), horizontal = RcRowHorizontalPositioning.Center) {
+        rcScope.Row(Modifier.fillMaxWidth(), horizontal = RcRowHorizontalPositioning.Center) {
             val doc = this@keypad
             row.forEachIndexed { i, digit ->
                 if (i > 0) Spacer(Modifier.width(doc.units.px(CardChrome.SECTION_GAP_DP)))
@@ -269,14 +267,14 @@ internal fun DocContext.keypad(entityId: String, w: Float) {
                 }
             }
         }
-        gap(CardChrome.PANEL_CORNER_DP)
+        spacer(CardChrome.PANEL_CORNER_DP)
     }
 }
 
 internal fun DocContext.selectCard(entityId: String, entityState: EntityState?) {
     val options = entityState?.list("options").orEmpty()
     structural(entityId) { it?.list("options")?.joinToString() ?: "" }
-    gap(CardChrome.FLOW_PAD_DP)
+    spacer(CardChrome.FLOW_PAD_DP)
     bindChoices(scopeId = entityId, group = "option", entityId = entityId, choices = options) { it.state }
     options.forEachIndexed { i, o ->
         key(
@@ -287,7 +285,7 @@ internal fun DocContext.selectCard(entityId: String, entityState: EntityState?) 
             bg = color(Vars.option(scope = entityId, group = "option", index = i, key = Vars.KEY_BG)),
             ink = color(Vars.option(scope = entityId, group = "option", index = i, key = Vars.KEY_INK)),
         )
-        gap(CardChrome.FLOW_PAD_DP)
+        spacer(CardChrome.FLOW_PAD_DP)
     }
 }
 
@@ -295,8 +293,8 @@ internal fun DocContext.numberCard(entityId: String, entityState: EntityState?, 
     val min = entityState?.number("min") ?: 0.0
     val max = entityState?.number("max") ?: CardChrome.LEVEL_DEFAULT_MAX
     val step = entityState?.number("step") ?: 1.0
-    gap(CardChrome.PANEL_CORNER_DP)
-    scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+    spacer(CardChrome.PANEL_CORNER_DP)
+    rcScope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@numberCard
         doc.key(
             ref = ref(entityId, "value", "-$step"),
@@ -322,7 +320,7 @@ internal fun DocContext.numberCard(entityId: String, entityState: EntityState?, 
             round = true,
         )
     }
-    gap(CardChrome.CARD_GAP_DP)
+    spacer(CardChrome.CARD_GAP_DP)
     bar(entityId = entityId, verb = "value", width = w, min = min, max = max)
 }
 
@@ -333,14 +331,14 @@ internal fun DocContext.calendarCard(@Suppress(
         homeAssistantConfig.timeZone,
     ) }.getOrDefault(ZoneId.of("UTC"))
     val event = entityState?.let { calendarEvent(it, zone) }
-    gap(CardChrome.PANEL_CORNER_DP)
+    spacer(CardChrome.PANEL_CORNER_DP)
     label(
         text = event?.title ?: i18n.t("ui.no_events"),
         sp = Type.DISPLAY,
         color = role(Role.INK),
         weight = Weight.SEMI_BOLD,
     )
-    gap(CardChrome.FLOW_PAD_DP)
+    spacer(CardChrome.FLOW_PAD_DP)
     val whenText = when {
         event == null -> "—"
         event.allDay && isToday(event, zone) -> i18n.t("ui.today") + " · " + i18n.t("ui.all_day")
@@ -350,14 +348,14 @@ internal fun DocContext.calendarCard(@Suppress(
     }
     label(whenText, Type.HEADLINE, role(Role.INK_SOFT))
     event?.location?.takeIf { it.isNotBlank() }?.let {
-        gap(CardChrome.FLOW_PAD_DP)
+        spacer(CardChrome.FLOW_PAD_DP)
         label(it, Type.BODY, role(Role.INK_SOFT))
     }
 }
 
 internal fun DocContext.todoCard(entityId: String) {
     val items = data.todos[entityId].orEmpty()
-    gap(CardChrome.FLOW_PAD_DP)
+    spacer(CardChrome.FLOW_PAD_DP)
     if (items.isEmpty()) {
         label(i18n.t("ui.no_todos"), Type.HEADLINE, role(Role.INK_SOFT))
         return
@@ -370,12 +368,12 @@ internal fun DocContext.todoCard(entityId: String) {
             heightDp = CardChrome.FLOW_KEY_H_DP,
             modifier = Modifier.fillMaxWidth(),
         )
-        gap(CardChrome.FLOW_PAD_DP)
+        spacer(CardChrome.FLOW_PAD_DP)
     }
 }
 
 internal fun DocContext.timerCard(entityId: String, entityState: EntityState?) {
-    gap(CardChrome.PANEL_CORNER_DP)
+    spacer(CardChrome.PANEL_CORNER_DP)
     label(
         text = text(Vars.entity(entityId, Vars.KEY_VALUE)),
         sp = Type.DISPLAY,
@@ -383,8 +381,8 @@ internal fun DocContext.timerCard(entityId: String, entityState: EntityState?) {
         weight = Weight.NORMAL,
         align = RcTextAlign.Center,
     )
-    gap(CardChrome.CARD_GAP_DP)
-    scope.Row(Modifier.fillMaxWidth()) {
+    spacer(CardChrome.CARD_GAP_DP)
+    rcScope.Row(Modifier.fillMaxWidth()) {
         val doc = this@timerCard
         doc.key(
             ref = ref(entityId, "start"),
@@ -411,7 +409,7 @@ internal fun DocContext.timerCard(entityId: String, entityState: EntityState?) {
         )
     }
     if (entityState?.state == "active" || entityState?.state == "paused") {
-        gap(CardChrome.PANEL_CORNER_DP)
+        spacer(CardChrome.PANEL_CORNER_DP)
         key(
             ref = ref(entityId, "finish"),
             text = i18n.t("ui.finish"),
@@ -425,8 +423,8 @@ internal fun DocContext.timerCard(entityId: String, entityState: EntityState?) {
 internal fun DocContext.counterCard(entityId: String, @Suppress(
     "UNUSED_PARAMETER",
 ) entityState: EntityState?,) {
-    gap(CardChrome.PANEL_CORNER_DP)
-    scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+    spacer(CardChrome.PANEL_CORNER_DP)
+    rcScope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@counterCard
         doc.key(
             ref = ref(entityId, "decrement"),
@@ -452,7 +450,7 @@ internal fun DocContext.counterCard(entityId: String, @Suppress(
             round = true,
         )
     }
-    gap(CardChrome.CARD_GAP_DP)
+    spacer(CardChrome.CARD_GAP_DP)
     key(
         ref = ref(entityId, "reset"),
         text = i18n.t("ui.reset"),
@@ -463,14 +461,14 @@ internal fun DocContext.counterCard(entityId: String, @Suppress(
 }
 
 internal fun DocContext.inputTextCard(entityId: String, entityState: EntityState?) {
-    gap(CardChrome.PANEL_CORNER_DP)
+    spacer(CardChrome.PANEL_CORNER_DP)
     label(
         text = entityState?.state?.ifBlank { i18n.t("ui.empty_text") } ?: "—",
         sp = Type.HEADLINE,
         color = role(Role.INK),
         weight = Weight.MEDIUM,
     )
-    gap(CardChrome.CARD_GAP_DP)
+    spacer(CardChrome.CARD_GAP_DP)
     key(
         ref = ref(entityId, "clear"),
         text = i18n.t("ui.clear"),
@@ -484,7 +482,7 @@ internal fun DocContext.inputDatetimeCard(
     @Suppress("UNUSED_PARAMETER") entityId: String,
     entityState: EntityState?,
 ) {
-    gap(CardChrome.PANEL_CORNER_DP)
+    spacer(CardChrome.PANEL_CORNER_DP)
     label(
         text = entityState?.state ?: "—",
         sp = Type.DISPLAY,
@@ -492,6 +490,6 @@ internal fun DocContext.inputDatetimeCard(
         weight = Weight.NORMAL,
         align = RcTextAlign.Center,
     )
-    gap(CardChrome.FLOW_PAD_DP)
+    spacer(CardChrome.FLOW_PAD_DP)
     label(text = i18n.t("ui.datetime_hint"), sp = Type.BODY, color = role(Role.INK_SOFT), align = RcTextAlign.Center)
 }

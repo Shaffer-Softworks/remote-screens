@@ -28,7 +28,11 @@ class MusicAssistantClient(private val homeAssistant: HomeAssistant) {
         return (result?.get("config_entry_id") as? JsonPrimitive)?.contentOrNull
     }
 
-    suspend fun search(configEntryId: String, query: String, limit: Int = SEARCH_LIMIT): List<MusicListRow> {
+    suspend fun search(
+        configEntryId: String,
+        query: String,
+        limit: Int = SEARCH_LIMIT,
+    ): List<MusicListRow> {
         if (configEntryId.isBlank() || query.isBlank()) return emptyList()
         val result = callMa(
             "search",

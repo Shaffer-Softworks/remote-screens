@@ -96,7 +96,7 @@ fun DocContext.lightsPanel(tile: Tile, box: TileBox) {
     val rooms = data.lightsRooms
     val room = rooms.firstOrNull { it.areaId == ui.selectedAreaId }
     val layout = LightsLayout(pageScale(box), box.w, box.h)
-    scope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
+    rcScope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@lightsPanel
         doc.roomsColumn(tileId = tile.id, rooms = rooms, selected = room, layout = layout)
         doc.devicesColumn(tile.id, room, layout)
@@ -144,7 +144,7 @@ private fun DocContext.roomsColumn(
     val headerH = layout.roomsHeaderHeight()
     val bottomInset = layout.roomsBottomInset()
     val listH = layout.roomsListHeight()
-    scope.Column(
+    rcScope.Column(
         Modifier.width(units.px(layout.roomsW)).fillMaxHeight().background(role(Role.STRIP)),
     ) {
         val doc = this@roomsColumn
@@ -172,7 +172,7 @@ private fun DocContext.roomsColumn(
 
 /** The accent and "LIGHTING CONTROL", opaque, so a scrolled row cannot show through them. */
 private fun DocContext.roomsHeader(layout: LightsLayout, headerH: Float) {
-    scope.Column(
+    rcScope.Column(
         Modifier.fillMaxWidth().height(units.px(headerH)).background(role(Role.STRIP)),
     ) {
         val doc = this@roomsHeader
@@ -206,7 +206,7 @@ private fun DocContext.roomsHeader(layout: LightsLayout, headerH: Float) {
 private fun DocContext.roomRow(tileId: String, room: LightsRoom, isSelected: Boolean, layout: LightsLayout) {
     val countVar = Vars.tile(tileId, "$KEY_LIGHTS_ON_PREFIX${room.areaId}")
     bindLightsOnCount(countVar, room)
-    scope.Column(
+    rcScope.Column(
         tap(
             Modifier.fillMaxWidth().height(units.px(layout.dp(M.ROOM_H_DP)))
                 .padding(
@@ -247,7 +247,7 @@ private fun DocContext.bindLightsOnCount(countVar: String, room: LightsRoom) {
 /** RPI's half-black cover with Material's progress ring while the areas load. */
 private fun DocContext.roomsSpinner(layout: LightsLayout) {
     val scrim = (M.SPINNER_SCRIM_ALPHA shl ALPHA_SHIFT) or (Rpi.Black and RGB_MASK)
-    scope.Column(
+    rcScope.Column(
         Modifier.fillMaxWidth().fillMaxHeight().background(fixed(scrim)),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcColumnVerticalPositioning.Center,
@@ -281,7 +281,7 @@ private fun DocContext.roomsSpinner(layout: LightsLayout) {
 /** The chosen room's name and its devices, each with a teal line under it; a prompt until a room is chosen. */
 private fun DocContext.devicesColumn(tileId: String, room: LightsRoom?, layout: LightsLayout) {
     val pad = units.px(layout.dp(M.DEVICES_PAD_DP))
-    scope.Column(
+    rcScope.Column(
         Modifier.horizontalWeight(1f).fillMaxHeight()
             .padding(start = pad, top = units.px(layout.dp(M.COLUMN_TOP_DP)), end = pad, bottom = pad),
     ) {
@@ -341,7 +341,7 @@ private fun DocContext.scrollingList(name: String, heightDp: Float): Modifier {
 }
 
 private fun DocContext.selectRoomPrompt(layout: LightsLayout) {
-    scope.Column(
+    rcScope.Column(
         Modifier.fillMaxSize(),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcColumnVerticalPositioning.Center,

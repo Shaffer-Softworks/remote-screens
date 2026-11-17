@@ -24,7 +24,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.awt.Color
@@ -32,7 +31,6 @@ import java.awt.GradientPaint
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
-import kotlin.math.sin
 
 /**
  * A made-up home, for demo mode (no Home Assistant), the tests and screenshots. Services change its states the way
@@ -54,6 +52,7 @@ class DemoHome : HomeAssistant {
     /** Uids marked complete via `todo.update_item`, so `get_items` drops them. */
     private val completedTodos = mutableSetOf<String>()
     private val serviceHandlers = DemoServiceHandlers(::set, completedTodos)
+    private val commandHandlers = DemoCommandHandlers(::fire, commands)
 
     fun set(
         entityId: String,
@@ -90,7 +89,14 @@ class DemoHome : HomeAssistant {
             "todo" if service == "get_items" -> todoItems(ids)
             "music_assistant" -> musicAssistant(service, data)
             else -> {
-                for (id in ids) apply(id = id, domain = domain, service = service, data = data)
+                for (id in ids) {
+                    apply(
+                        id = id,
+                        domain = domain,
+                        service = service,
+                        data = data,
+                    )
+                }
                 null
             }
         }
@@ -143,7 +149,7 @@ class DemoHome : HomeAssistant {
                         add(
                             buildJsonObject {
                                 put("uri", "demo://search/${name.hashCode()}")
-                                put("name", if (name.isBlank()) "Night Drive" else name)
+                                put("name", name.ifBlank { "Night Drive" })
                                 put("artist", "Demo Artist")
                             },
                         )
@@ -203,7 +209,13 @@ class DemoHome : HomeAssistant {
         data: JsonObject,
     ) {
         val current = _states.value[id] ?: return
-        serviceHandlers.apply(entityId = id, domain = domain, service = service, data = data, current = current)
+        serviceHandlers.apply(
+            entityId = id,
+            domain = domain,
+            service = service,
+            data = data,
+            current = current,
+        )
     }
 
     private fun todoItems(ids: List<String>): JsonObject = buildJsonObject {
@@ -226,149 +238,14 @@ class DemoHome : HomeAssistant {
         })
     }
 
-    @Suppress("CyclomaticComplexMethod")
     override suspend fun command(
         type: String,
         payload: JsonObject,
-    ): JsonElement? = when (type) {
-        "fire_event" -> {
-            val eventType = payload["event_type"]?.jsonPrimitive?.contentOrNull ?: return null
-            fire(eventType, payload["event_data"] as? JsonObject ?: JsonObject(emptyMap()))
-            JsonObject(emptyMap())
-        }
-        "config/area_registry/list" -> buildJsonArray {
-            for ((id, name) in AREAS) add(buildJsonObject { put("area_id", id); put("name", name) })
-        }
-        "config/entity_registry/get" -> {
-            val entityId = payload["entity_id"]?.jsonPrimitive?.contentOrNull
-            when (entityId) {
-                "media_player.living_room" -> buildJsonObject {
-                    put("entity_id", entityId)
-                    put("config_entry_id", "demo_music_assistant")
-                }
-                "vacuum.robot" -> buildJsonObject {
-                    put("entity_id", entityId)
-                    put("options", buildJsonObject {
-                        put("vacuum", buildJsonObject {
-                            put("area_mapping", buildJsonObject {
-                                for ((area, segment) in VACUUM_AREA_SEGMENTS) {
-                                    put(area, buildJsonArray { add(JsonPrimitive(segment)) })
-                                }
-                                put("garden", buildJsonArray { })
-                            })
-                        })
-                    })
-                }
-                else -> null
-            }
-        }
-        "config/device_registry/list" -> buildJsonArray {
-            for ((id, area) in DEVICE_AREAS) add(buildJsonObject { put("id", id); put("area_id", area) })
-        }
-        "config/entity_registry/list_for_display" -> buildJsonObject {
-            put("entities", buildJsonArray {
-                for ((entity, area) in ENTITY_AREAS) add(
-                    buildJsonObject { put("ei", entity); put("ai", area) },
-                )
-                for ((entity, device) in ENTITY_DEVICES) add(
-                    buildJsonObject { put("ei", entity); put("di", device) },
-                )
-            })
-        }
-        "history/history_during_period" -> {
-            val ids = payload["entity_ids"]?.jsonArray?.map { it.jsonPrimitive.content }.orEmpty()
-            buildJsonObject {
-                for (id in ids) put(id, buildJsonArray {
-                    val now = System.currentTimeMillis() / 1000.0
-                    for (i in 0 until 48) add(buildJsonObject {
-                        put("s", "%.1f".format(java.util.Locale.ROOT, 19.5 + 2.5 * sin(i / 7.0)))
-                        put("lu", now - (48 - i) * 1800)
-                    })
-                })
-            }
-        }
-        "energy/get_prefs" -> buildJsonObject {
-            put("energy_sources", buildJsonArray {
-                add(
-                    buildJsonObject { put("type", "solar"); put("stat_rate", "sensor.solar_power") },
-                )
-                add(
-                    buildJsonObject {
-                        put("type", "grid")
-                        put("stat_rate", "sensor.grid_power")
-                        put("stat_energy_from", "sensor.grid_energy")
-                        put("number_energy_price", 0.22)
-                    },
-                )
-                add(
-                    buildJsonObject { put(
-                        "type",
-                        "battery",
-                    ); put("stat_rate", "sensor.battery_power") },
-                )
-            })
-            put("device_consumption", buildJsonArray {
-                add(
-                    buildJsonObject { put(
-                        "stat_consumption",
-                        "sensor.heat_pump_energy",
-                    ); put("stat_rate", "sensor.heat_pump_power"); put("name", "Heat pump") },
-                )
-            })
-        }
-        "recorder/statistics_during_period" -> demoEnergyStatistics()
-        "energy/fossil_energy_consumption" -> buildJsonObject {
-            put("sensor.grid_energy", 0.58)
-        }
-        "media_player/browse_media" -> buildJsonObject {
-            put("title", "Library")
-            put("media_content_id", "")
-            put("children", buildJsonArray {
-                for ((title, id) in listOf(
-                    "Sunday Morning" to "playlist:1",
-                    "Focus" to "playlist:2",
-                    "Road Trip" to "album:3",
-                )) {
-                    add(buildJsonObject {
-                        put(
-                            "title",
-                            title,
-                        ); put("media_content_id", id); put("media_content_type", "playlist")
-                        put("can_play", true); put("can_expand", false)
-                    })
-                }
-            })
-        }
-        "frontend/get_translations" -> buildJsonObject { put("resources", buildJsonObject { }) }
-        "calendar/event/delete" -> {
-            commands += type to payload
-            JsonObject(emptyMap())
-        }
-        else -> null
-    }
+    ): JsonElement? = commandHandlers.handle(type, payload)
 
-    override suspend fun fetch(path: String): ByteArray? {
+    override suspend fun fetch(path: String): ByteArray {
         calendarPayload(path)?.let { return it.toByteArray(Charsets.UTF_8) }
         return picture(path.hashCode())
-    }
-
-    private fun demoEnergyStatistics(): JsonObject {
-        val now = System.currentTimeMillis()
-        val hourMs = 3_600_000L
-        fun series(seed: Double): JsonArray = buildJsonArray {
-            for (index in 0 until 24) {
-                add(
-                    buildJsonObject {
-                        put("start", now - (24 - index) * hourMs)
-                        put("change", seed + 0.15 * sin(index / 3.0))
-                    },
-                )
-            }
-        }
-        return buildJsonObject {
-            put("sensor.grid_energy", series(1.2))
-            put("sensor.heat_pump_energy", series(0.4))
-        }
     }
 
     private fun calendarPayload(path: String): String? {

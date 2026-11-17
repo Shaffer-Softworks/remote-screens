@@ -29,7 +29,7 @@ fun DocContext.energyDashboardPanel(tile: Tile, box: TileBox) {
         page = renderingPage,
         componentId = componentId,
     )
-    scope.Box(
+    rcScope.Box(
         Modifier
             .fillMaxSize()
             .componentId(componentId)

@@ -89,7 +89,7 @@ fun DocContext.homeTile(tile: Tile, box: TileBox) {
     bindHomeWeather(tile.id, weather)
     bindNextEvent(tile.id, calendars)
 
-    scope.Column(Modifier.fillMaxSize().background(role(Role.HOME))) {
+    rcScope.Column(Modifier.fillMaxSize().background(role(Role.HOME))) {
         val doc = this@homeTile
         Row(Modifier.size(doc.units.px(box.w), doc.units.px(upperH))) {
             doc.homeWeather(
@@ -109,7 +109,7 @@ private fun DocContext.homeWeather(tileId: String, weather: String?, wDp: Float,
     val entityState = weather?.let { states[it] }
     if (weather != null) structural(weather) { it?.state ?: "" }
     val ref = weather?.let { ActionRef("e:$it", "card") }
-    scope.Column(
+    rcScope.Column(
         tap(
             Modifier.width(
                 units.px(wDp),
@@ -152,7 +152,7 @@ private fun DocContext.homeWeather(tileId: String, weather: String?, wDp: Float,
 }
 
 private fun DocContext.homeEvent(tileId: String, wDp: Float, layoutScale: Float) {
-    scope.Column(
+    rcScope.Column(
         Modifier.width(
             units.px(wDp),
         ).fillMaxHeight().padding(
@@ -207,7 +207,7 @@ private fun DocContext.homeEvent(tileId: String, wDp: Float, layoutScale: Float)
 
 private fun DocContext.homePeople(tileId: String, people: List<String>, wDp: Float, hDp: Float) {
     val photo = (hDp * PERSON_PHOTO_H_SHARE).coerceAtLeast(EVENT_TIME_GAP_DP)
-    scope.Row(
+    rcScope.Row(
         Modifier.size(units.px(wDp), units.px(hDp)).background(role(Role.HOME_STRIP)),
         horizontal = RcRowHorizontalPositioning.SpaceEvenly,
         vertical = RcVerticalPositioning.Center,

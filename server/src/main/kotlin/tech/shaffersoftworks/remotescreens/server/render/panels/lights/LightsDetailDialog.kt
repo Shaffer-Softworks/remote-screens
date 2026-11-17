@@ -56,7 +56,7 @@ internal fun DocContext.lightDetailDialog(
     val dismiss = ActionRef(tileId, "lights_dismiss")
     val cardW = minOf(layout.dp(D.CARD_W_DP), layout.pageW - 2 * layout.dp(D.DIALOG_PAD_H_DP))
     val cardH = layout.pageH - 2 * layout.dp(D.DIALOG_PAD_V_DP)
-    scope.Box(
+    rcScope.Box(
         tap(Modifier.fillMaxSize().background(role(Role.SCRIM)), dismiss),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
@@ -130,7 +130,7 @@ private fun DocContext.bindDetail(tileId: String, entityId: String) {
 
 /** The close button, then the room in grey over the light's name. */
 private fun DocContext.detailHeader(roomName: String, deviceName: String, dismiss: ActionRef, layout: LightsLayout) {
-    scope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
+    rcScope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@detailHeader
         val closePx = doc.units.px(layout.dp(D.CLOSE_DP))
         Box(
@@ -155,7 +155,7 @@ private fun DocContext.detailHeader(roomName: String, deviceName: String, dismis
 
 /** "NN%" while on, "Off" while off, and how long ago the light changed. */
 private fun DocContext.detailHeadline(tileId: String, entityState: EntityState, layout: LightsLayout) {
-    scope.Spacer(Modifier.height(units.px(layout.dp(D.HEADLINE_GAP_DP))))
+    rcScope.Spacer(Modifier.height(units.px(layout.dp(D.HEADLINE_GAP_DP))))
     val ink = fixed(Rpi.White)
     if (entityState.state == "on") {
         label(
@@ -188,7 +188,7 @@ private fun DocContext.detailHeadline(tileId: String, entityState: EntityState, 
 /** Power, brightness, colour wheel and colour temperature, the chosen one ringed in white. */
 private fun DocContext.modeBar(tileId: String, entityId: String, mode: LightDetailMode, layout: LightsLayout) {
     val pad = units.px(layout.dp(D.MODE_BAR_PAD_DP))
-    scope.Row(
+    rcScope.Row(
         Modifier.fillMaxWidth().clip(rounded(layout.dp(D.MODE_BAR_CORNER_DP)))
             .background(fixed(Rpi.LightDetailModeBar)).padding(start = pad, top = pad, end = pad, bottom = pad),
         horizontal = RcRowHorizontalPositioning.SpaceEvenly,
@@ -228,7 +228,7 @@ private fun modeRef(tileId: String, mode: LightDetailMode) = ActionRef(tileId, "
 private fun DocContext.modeButton(ref: ActionRef, isSelected: Boolean, layout: LightsLayout, content: () -> Unit) {
     val sizeDp = layout.dp(D.MODE_BUTTON_DP)
     val border = if (isSelected) layout.dp(D.MODE_BORDER_DP) else 0f
-    scope.Box(
+    rcScope.Box(
         tap(
             Modifier.size(units.px(sizeDp), units.px(sizeDp)).clip(rounded(sizeDp / 2f))
                 .background(fixed(if (isSelected) Rpi.White else Rpi.LightDetailModeBar))
@@ -251,7 +251,7 @@ private fun DocContext.modeButton(ref: ActionRef, isSelected: Boolean, layout: L
 /** The colour wheel chip (radial, white to cyan) or the colour temperature chip (cool to warm, left to right). */
 private fun DocContext.gradientChip(isRadial: Boolean, layout: LightsLayout) {
     val px = units.px(layout.dp(D.MODE_CHIP_DP))
-    scope.Canvas(Modifier.size(px, px)) {
+    rcScope.Canvas(Modifier.size(px, px)) {
         paint {
             style(RcPaintStyle.Fill)
             if (isRadial) {
@@ -280,7 +280,7 @@ private fun DocContext.gradientChip(isRadial: Boolean, layout: LightsLayout) {
 private fun DocContext.palette(tileId: String, selectedIndex: Int?, layout: LightsLayout) {
     val swatchDp = layout.dp(D.SWATCH_DP)
     val swatchPx = units.px(swatchDp)
-    scope.Column(Modifier.fillMaxWidth()) {
+    rcScope.Column(Modifier.fillMaxWidth()) {
         val doc = this@palette
         Rpi.LightDetailPalette.chunked(D.PALETTE_COLUMNS).forEachIndexed { rowIndex, colours ->
             if (rowIndex > 0) Spacer(Modifier.height(doc.units.px(layout.dp(D.PALETTE_ROW_GAP_DP))))
@@ -317,7 +317,7 @@ private fun DocContext.effectSection(
 ) {
     val effects = entityState.list("effect_list").filter { it.isNotBlank() }
     if (effects.isNotEmpty()) {
-        scope.Spacer(Modifier.height(units.px(layout.dp(D.EFFECT_GAP_DP))))
+        rcScope.Spacer(Modifier.height(units.px(layout.dp(D.EFFECT_GAP_DP))))
         effectButton(tileId, layout)
         if (ui.isEffectMenuOpen) {
             effectMenu(tileId = tileId, effects = effects, current = entityState.attr("effect"), layout = layout)
@@ -327,7 +327,7 @@ private fun DocContext.effectSection(
 
 /** The grey "Effect" button with RPI's sparkles; it opens the list of the light's effects. */
 private fun DocContext.effectButton(tileId: String, layout: LightsLayout) {
-    scope.Row(
+    rcScope.Row(
         tap(
             Modifier.fillMaxWidth().height(units.px(layout.dp(D.EFFECT_H_DP)))
                 .clip(rounded(layout.dp(D.EFFECT_CORNER_DP))).background(fixed(Rpi.LightDetailEffect)),
@@ -348,7 +348,7 @@ private fun DocContext.effectMenu(tileId: String, effects: List<String>, current
     val itemH = layout.dp(D.MENU_ITEM_H_DP)
     val menuH = minOf(layout.dp(D.MENU_MAX_H_DP), itemH * effects.size)
     val padH = units.px(layout.dp(D.MENU_ITEM_PAD_H_DP))
-    scope.Column(
+    rcScope.Column(
         Modifier.fillMaxWidth().height(units.px(menuH)).requiredHeightIn(max = units.px(menuH))
             .clip(rounded(layout.dp(D.MENU_CORNER_DP)))
             .background(fixed(Rpi.LightDetailModeBar))

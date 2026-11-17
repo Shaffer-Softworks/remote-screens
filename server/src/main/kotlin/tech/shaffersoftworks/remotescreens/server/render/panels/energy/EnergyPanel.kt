@@ -16,7 +16,7 @@ import tech.shaffersoftworks.remotescreens.shared.Tile
  * preferences. The same diagram as the 2×2 energy tile, drawn edge to edge without card chrome.
  */
 fun DocContext.energyPanel(@Suppress("UNUSED_PARAMETER") tile: Tile, box: TileBox) {
-    scope.Box(Modifier.fillMaxSize().background(role(Role.PAGE))) {
+    rcScope.Box(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@energyPanel
         doc.energyFlow(
             wDp = box.w,

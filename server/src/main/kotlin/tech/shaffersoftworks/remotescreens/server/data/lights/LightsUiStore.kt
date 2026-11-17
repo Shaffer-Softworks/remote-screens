@@ -1,6 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.data.lights
 
-import java.util.concurrent.ConcurrentHashMap
+import tech.shaffersoftworks.remotescreens.server.data.ui.TileUiStore
 
 /** The main control of RPI's light detail dialog (`LightDetailControlMode`). Keys are sent in taps. */
 enum class LightDetailMode(val key: String) {
@@ -28,40 +28,36 @@ data class LightsUiState(
 )
 
 /** Session-wide lights page UI state keyed by tile id. */
-class LightsUiStore {
-    private val byTile = ConcurrentHashMap<String, LightsUiState>()
-
-    fun state(tileId: String): LightsUiState = byTile[tileId] ?: LightsUiState()
-
-    fun snapshot(): Map<String, LightsUiState> = HashMap(byTile)
-
+class LightsUiStore : TileUiStore<LightsUiState>(LightsUiState()) {
     fun selectRoom(tileId: String, areaId: String) {
-        byTile[tileId] = state(tileId).copy(selectedAreaId = areaId, detailEntityId = null)
+        update(tileId) { it.copy(selectedAreaId = areaId, detailEntityId = null) }
     }
 
     /** Opens the dialog of [entityId] fresh, as RPI remembers mode and swatch per light. */
     fun openDetail(tileId: String, entityId: String) {
-        byTile[tileId] = state(tileId).copy(
-            detailEntityId = entityId,
-            detailMode = null,
-            paletteIndex = null,
-            isEffectMenuOpen = false,
-        )
+        update(tileId) {
+            it.copy(
+                detailEntityId = entityId,
+                detailMode = null,
+                paletteIndex = null,
+                isEffectMenuOpen = false,
+            )
+        }
     }
 
     fun dismissDetail(tileId: String) {
-        byTile[tileId] = state(tileId).copy(detailEntityId = null, isEffectMenuOpen = false)
+        update(tileId) { it.copy(detailEntityId = null, isEffectMenuOpen = false) }
     }
 
     fun selectMode(tileId: String, mode: LightDetailMode) {
-        byTile[tileId] = state(tileId).copy(detailMode = mode)
+        update(tileId) { it.copy(detailMode = mode) }
     }
 
     fun selectPalette(tileId: String, index: Int) {
-        byTile[tileId] = state(tileId).copy(paletteIndex = index)
+        update(tileId) { it.copy(paletteIndex = index) }
     }
 
     fun setEffectMenuOpen(tileId: String, isOpen: Boolean) {
-        byTile[tileId] = state(tileId).copy(isEffectMenuOpen = isOpen)
+        update(tileId) { it.copy(isEffectMenuOpen = isOpen) }
     }
 }
