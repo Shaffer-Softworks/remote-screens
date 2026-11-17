@@ -84,7 +84,16 @@ describe('tablet setup and kiosk status', () => {
   })
 
   it('uses the hosted APK download when available', async () => {
-    state.info = { version: 'test', demo: false, connected: true, language: 'en', haVersion: 'test', locationName: 'Test home', playerApp: '1.0' }
+    state.info = {
+      version: 'test',
+      demo: false,
+      connected: true,
+      language: 'en',
+      haVersion: 'test',
+      locationName: 'Test home',
+      playerApp: '1.0',
+      integrationInstalled: true,
+    }
     const html = await renderToString(createSSRApp(ScreensView))
     expect(html).toContain('href="api/player.apk"')
     const enrollment = await renderToString(createSSRApp(EnrollTabletPanel))

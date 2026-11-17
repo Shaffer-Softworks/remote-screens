@@ -56,6 +56,8 @@ data class Preferences(
     val language: String? = null,
     val clock24h: Boolean? = null,
     val sentry: SentrySettings = SentrySettings(),
+    /** Editor will not show the install-integration reminder when true. */
+    val integrationReminderDismissed: Boolean = false,
 )
 
 /** A screen is a layout. One or more players (tablets) show it. */

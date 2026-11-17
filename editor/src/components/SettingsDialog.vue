@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import CrashReportingPanel from './CrashReportingPanel.vue'
+import IntegrationInstallPanel from './IntegrationInstallPanel.vue'
 import MdiIcon from './MdiIcon.vue'
 
 const emit = defineEmits<{ close: [] }>()
@@ -29,6 +30,7 @@ onBeforeUnmount(() => {
         <MdiIcon name="close" :size="22" />
       </button>
     </header>
+    <IntegrationInstallPanel expanded />
     <CrashReportingPanel expanded />
   </dialog>
 </template>
@@ -42,5 +44,11 @@ onBeforeUnmount(() => {
 }
 .settings-dialog::backdrop { background: rgb(0 0 0 / 65%); }
 header h2 { font-size: 24px; font-weight: 600; }
-.settings-dialog :deep(.diagnostics) { padding: 0; border: 0; box-shadow: none; background: transparent; }
+.settings-dialog :deep(.diagnostics),
+.settings-dialog :deep(.integration) {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
 </style>

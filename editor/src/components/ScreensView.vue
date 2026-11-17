@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { api } from '../api'
 import { DENSITIES, PRESETS, clampDp, toDp } from '../model/devices'
 import {
@@ -11,8 +11,17 @@ import {
   type ScreenFile,
 } from '../model/screenFile'
 import type { PlayerStatus, Screen } from '../model/types'
-import { attempt, playersOf, refreshLayout, refreshThemes, state, toast } from '../store'
+import {
+  attempt,
+  integrationReminderSkipped,
+  playersOf,
+  refreshLayout,
+  refreshThemes,
+  state,
+  toast,
+} from '../store'
 import EnrollTabletPanel from './EnrollTabletPanel.vue'
+import IntegrationReminderDialog from './IntegrationReminderDialog.vue'
 import MdiIcon from './MdiIcon.vue'
 import NotificationComposer from './NotificationComposer.vue'
 import IntercomDesk from './IntercomDesk.vue'
@@ -63,6 +72,30 @@ function notifyTablet(player: PlayerStatus): void {
   menu.value = null
   notificationTargets.value = [player.deviceId]
 }
+
+const reminderOpen = ref(false)
+const shouldOfferIntegrationReminder = computed(
+  () =>
+    !!state.info?.connected &&
+    !state.info.demo &&
+    state.info.integrationInstalled === false &&
+    !state.layout?.preferences.integrationReminderDismissed &&
+    !integrationReminderSkipped.value,
+)
+
+watch(
+  shouldOfferIntegrationReminder,
+  offer => {
+    if (offer) reminderOpen.value = true
+  },
+  { immediate: true },
+)
+
+function closeIntegrationReminder(): void {
+  reminderOpen.value = false
+  integrationReminderSkipped.value = true
+}
+
 const newName = ref('')
 const newSize = ref('0')
 
@@ -255,6 +288,7 @@ function status(player: PlayerStatus): string {
   <div class="dashboard">
     <NotificationComposer v-if="notificationTargets !== null" :initial-targets="notificationTargets" @close="notificationTargets = null" />
     <SettingsDialog v-if="settingsOpen" @close="settingsOpen = false" />
+    <IntegrationReminderDialog v-if="reminderOpen" @close="closeIntegrationReminder" />
     <DeviceInfoDialog v-if="infoDeviceId" :device-id="infoDeviceId" @close="infoDeviceId = null" />
     <EnrollTabletPanel v-if="enrolling" @close="enrolling = false" />
 

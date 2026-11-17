@@ -15,6 +15,8 @@ data class ServerInfoResponse(
     val locationName: String,
     /** The version of the player app the add-on can hand out, or null when it has none. */
     val playerApp: String? = null,
+    /** True when Home Assistant has loaded the Remote Screens integration (always true in demo). */
+    @SerialName("integrationInstalled") val isIntegrationInstalled: Boolean = false,
 )
 
 @Serializable
