@@ -20,6 +20,9 @@ export const state = reactive({
 export const editing = ref<Screen | null>(null)
 const saved = ref('')
 
+/** "Not now" on the integration reminder, kept until the page reloads. */
+export const integrationReminderSkipped = ref(false)
+
 export const dirty = computed(
   () => editing.value !== null && JSON.stringify(editing.value) !== saved.value,
 )

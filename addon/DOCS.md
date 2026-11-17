@@ -20,6 +20,8 @@ The full guide (editor, free-form components, architecture, troubleshooting) is 
    and press **Pair**. The tablet shows the screen at once.
 6. Open the screen in the editor: add pages, drag entities from the library onto the grid, and press
    **Save & send**. **Preview on device** shows your changes on a tablet without saving them.
+7. Optional: for screen entities and services in Home Assistant, open **Settings** and choose
+   **Install integration** (HACS). Restart Home Assistant, then accept the setup prompt.
 
 **Export** on a screen downloads that screen as a file. **Import** adds the file as a new screen, and
 **Duplicate** makes the same copy without a file. Tablets stay on the original screen.
@@ -276,8 +278,10 @@ English in other languages.
 The **Remote Screens** integration (installed with HACS) adds, for each screen, entities for brightness, dark
 mode, standby, night mode, back-to-home, the page shown, kiosk lock, and wake-on-proximity /
 wake-on-face, and the services `remote_screens.show_alert`, `remote_screens.open_page`, `remote_screens.wake`,
-`remote_screens.close`, and `remote_screens.send_notification`. The add-on announces itself, so Home Assistant
-offers to set the integration up.
+`remote_screens.close`, and `remote_screens.send_notification`. In the editor, open **Settings** and choose
+**Install integration** to open HACS on this repository (or add it as a custom repository of type Integration
+yourself). After install, restart Home Assistant. The add-on announces itself, so Home Assistant offers to set
+the integration up. The editor also reminds you when the integration is not loaded yet.
 
 ### Device notifications
 

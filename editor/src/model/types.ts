@@ -282,6 +282,8 @@ export interface Preferences {
   language?: string
   clock24h?: boolean
   sentry?: SentrySettings
+  /** Editor will not show the install-integration reminder when true. */
+  integrationReminderDismissed?: boolean
 }
 
 export interface LayoutData {
@@ -410,6 +412,8 @@ export interface Info {
   locationName: string
   /** The player app version the add-on hands out; absent when it has none. */
   playerApp?: string
+  /** True when Home Assistant has loaded the Remote Screens integration (always true in demo). */
+  integrationInstalled?: boolean
 }
 
 export function domainOf(tile: Pick<Tile, 'entityId'>): string | undefined {

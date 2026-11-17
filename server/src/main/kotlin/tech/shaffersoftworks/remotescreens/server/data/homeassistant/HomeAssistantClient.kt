@@ -54,6 +54,8 @@ private const val COMMAND_TIMEOUT_MS = 30_000L
 private const val INITIAL_BACKOFF_MS = 1_000L
 private const val MAX_BACKOFF_MS = 30_000L
 private const val EVENT_BUFFER_CAPACITY = 64
+private const val REMOTE_SCREENS_DOMAIN = "remote_screens"
+private const val COMPONENT_LOADED_EVENT = "component_loaded"
 
 /** Home Assistant over its WebSocket API, reconnecting with backoff. States are kept from `state_changed`. */
 class HomeAssistantClient(
@@ -154,6 +156,15 @@ class HomeAssistantClient(
 
     /** Config, every state, then the events we follow. */
     private suspend fun loadInitialState() {
+        command(
+            type = "subscribe_events",
+            payload = buildJsonObject {
+                put(
+                    key = "event_type",
+                    value = COMPONENT_LOADED_EVENT,
+                )
+            },
+        )
         command("get_config")?.jsonObject?.let {
                 haConfig -> _config.value = parseConfig(haConfig)
         }
@@ -204,6 +215,11 @@ class HomeAssistantClient(
             _states.update {
                     states -> if (newState == null) states - entityId else states + (entityId to newState)
             }
+        }
+        if (eventType == COMPONENT_LOADED_EVENT &&
+            data["component"]?.jsonPrimitive?.contentOrNull == REMOTE_SCREENS_DOMAIN
+        ) {
+            _config.update { homeAssistantConfig -> homeAssistantConfig.copy(isIntegrationLoaded = true) }
         }
         _events.tryEmit(HomeAssistantEvent(eventType, data))
     }
@@ -287,6 +303,9 @@ class HomeAssistantClient(
     private fun parseConfig(haConfig: JsonObject): HomeAssistantConfig {
         fun text(key: String) = haConfig[key]?.jsonPrimitive?.contentOrNull
         val unitSystem = haConfig["unit_system"]?.jsonObject
+        val isIntegrationLoaded = haConfig["components"]?.jsonArray.orEmpty().any { component ->
+            component.jsonPrimitive.contentOrNull == REMOTE_SCREENS_DOMAIN
+        }
         return HomeAssistantConfig(
             language = text("language") ?: "en",
             country = text("country"),
@@ -294,6 +313,7 @@ class HomeAssistantClient(
             temperatureUnit = unitSystem?.get("temperature")?.jsonPrimitive?.contentOrNull ?: "°C",
             locationName = text("location_name") ?: "Home",
             version = text("version").orEmpty(),
+            isIntegrationLoaded = isIntegrationLoaded,
         )
     }
 

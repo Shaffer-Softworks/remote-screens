@@ -89,6 +89,7 @@ private fun Route.infoRoutes(dependencies: ServerDependencies) {
             haVersion = homeAssistantConfig.version,
             locationName = homeAssistantConfig.locationName,
             playerApp = dependencies.playerApkRepository.current()?.displayVersion,
+            isIntegrationInstalled = config.isDemo || homeAssistantConfig.isIntegrationLoaded,
         )
         call.respond(info)
     }
