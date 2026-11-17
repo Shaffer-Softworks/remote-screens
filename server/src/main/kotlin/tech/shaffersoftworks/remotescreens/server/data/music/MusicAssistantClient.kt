@@ -31,7 +31,7 @@ class MusicAssistantClient(private val homeAssistant: HomeAssistant) {
     suspend fun search(
         configEntryId: String,
         query: String,
-        limit: Int = SEARCH_LIMIT
+        limit: Int = SEARCH_LIMIT,
     ): List<MusicListRow> {
         if (configEntryId.isBlank() || query.isBlank()) return emptyList()
         val result = callMa(

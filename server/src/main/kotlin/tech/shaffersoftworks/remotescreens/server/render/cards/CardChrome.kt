@@ -118,7 +118,7 @@ internal object CardChrome {
 internal fun ref(
     entityId: String,
     verb: String,
-    arg: String = ""
+    arg: String = "",
 ) = ActionRef(
     tile = "e:$entityId",
     verb = verb,

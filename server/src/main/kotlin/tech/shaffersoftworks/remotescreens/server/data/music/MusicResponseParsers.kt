@@ -34,7 +34,7 @@ internal object MusicResponseParsers {
         val payload = unwrapServicePayload(element)
         val queue = extractQueuePayload(payload, playerEntityId) ?: return MusicQueueSnapshot(
             emptyList(),
-            0
+            0,
         )
         val itemsEl = queue["items"]
         val currentIndex = queue["current_index"]?.jsonPrimitive?.intOrNull
@@ -151,8 +151,9 @@ internal object MusicResponseParsers {
         var current = element as? JsonObject ?: return JsonObject(emptyMap())
         repeat(UNWRAP_DEPTH) {
             ((current["response"] ?: current["service_response"]) as? JsonObject)?.let { current = it }
-            if (current.keys.any { it in LEAF_KEYS }) return current
-            current = current.values.singleOrNull() as? JsonObject ?: return current
+            if (current.keys.none { it in LEAF_KEYS }) {
+                current = current.values.singleOrNull() as? JsonObject ?: current
+            }
         }
         return current
     }

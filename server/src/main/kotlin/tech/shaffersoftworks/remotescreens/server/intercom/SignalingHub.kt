@@ -127,7 +127,7 @@ internal class SignalingHub(
     private fun offer(
         sessionId: String,
         info: SessionInfo,
-        data: JsonObject
+        data: JsonObject,
     ): Outcome {
         val targetId = data.field("to")?.trim().orEmpty()
         val targetSessionId = clientSessions[targetId]
@@ -154,7 +154,7 @@ internal class SignalingHub(
     private fun forward(
         info: SessionInfo,
         data: JsonObject,
-        type: String
+        type: String,
     ): Outcome {
         val targetId = data.field("to")?.trim().orEmpty()
         val targetSessionId = clientSessions[targetId]

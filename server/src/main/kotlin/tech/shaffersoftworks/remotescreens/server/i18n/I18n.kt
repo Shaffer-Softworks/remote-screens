@@ -38,7 +38,7 @@ class I18n(
     fun state(
         domain: String,
         state: String,
-        deviceClass: String? = null
+        deviceClass: String? = null,
     ): String {
         val deviceClassKey = deviceClass?.let { "component.$domain.entity_component.$it.state.$state" }
         return deviceClassKey?.let(homeAssistantWords::get)

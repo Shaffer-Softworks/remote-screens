@@ -52,7 +52,7 @@ fun EntityState.vacuumSegmentRooms(): List<VacuumRoom> {
 fun selectedVacuumId(
     chosen: String?,
     tileEntityId: String?,
-    vacuumIds: Collection<String>
+    vacuumIds: Collection<String>,
 ): String? =
     chosen?.takeIf { it in vacuumIds }
         ?: tileEntityId?.takeIf { it in vacuumIds }

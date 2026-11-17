@@ -22,7 +22,7 @@ object ImageEncoder {
         source: BufferedImage,
         width: Int,
         height: Int,
-        isCropped: Boolean
+        isCropped: Boolean,
     ): BufferedImage {
         if (source.width == width && source.height == height) return source
         val widthScale = width / source.width.toDouble()
@@ -57,7 +57,7 @@ object ImageEncoder {
         val masked = BufferedImage(
             image.width,
             image.height,
-            BufferedImage.TYPE_INT_ARGB
+            BufferedImage.TYPE_INT_ARGB,
         )
         val graphics = masked.createGraphics()
         graphics.setRenderingHint(

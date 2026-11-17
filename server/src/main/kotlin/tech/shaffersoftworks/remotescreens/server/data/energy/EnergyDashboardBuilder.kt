@@ -115,24 +115,24 @@ object EnergyDashboardBuilder {
             EnergyRankBar(
                 name = named.name,
                 kwh = named.values.sum(),
-                colorArgb = named.colorArgb
+                colorArgb = named.colorArgb,
             )
         }.sortedByDescending { it.kwh }
 
     private fun totalsRows(
         gridName: String,
         gridTotal: Double,
-        cost: Double?
+        cost: Double?,
     ): List<EnergyTotalRow> = listOf(
         EnergyTotalRow(
             source = gridName,
             energyKwh = gridTotal,
-            cost = cost
+            cost = cost,
         ),
         EnergyTotalRow(
             source = "Grid total",
             energyKwh = gridTotal,
-            cost = cost
+            cost = cost,
         ),
     )
 
@@ -148,26 +148,34 @@ object EnergyDashboardBuilder {
                 id = "grid",
                 label = config.gridName,
                 column = 0,
-                colorArgb = COLOR_BLUE
+                colorArgb = COLOR_BLUE,
             ),
             EnergySankeyNode(
                 id = "home",
                 label = config.homeName,
                 column = 1,
-                colorArgb = COLOR_TEAL
+                colorArgb = COLOR_TEAL,
             ),
         )
         val links = mutableListOf(
             EnergySankeyLink(fromId = "grid", toId = "home", kwh = gridTotal),
         )
-        val byArea = linkedMapOf<String, Double>()
+        appendDeviceFlows(config, deviceTotals, nodes, links)
+        appendUntrackedFlow(untracked, nodes, links)
+        return EnergySankey(nodes = nodes, links = links)
+    }
 
+    private fun appendDeviceFlows(
+        config: EnergyDashboardConfig,
+        deviceTotals: List<EnergyRankBar>,
+        nodes: MutableList<EnergySankeyNode>,
+        links: MutableList<EnergySankeyLink>,
+    ) {
         for (device in config.devices) {
             val total = deviceTotals.firstOrNull { it.name == device.name }?.kwh ?: 0.0
             if (total <= 0.0) continue
             val areaKey = device.areaId ?: "untracked"
             val areaLabel = device.areaName ?: "Untracked"
-            byArea[areaKey] = (byArea[areaKey] ?: 0.0) + total
             val areaNodeId = "area.$areaKey"
             if (nodes.none { it.id == areaNodeId }) {
                 nodes += EnergySankeyNode(
@@ -183,35 +191,26 @@ object EnergyDashboardBuilder {
                 id = deviceId,
                 label = device.name,
                 column = 3,
-                colorArgb = color
+                colorArgb = color,
             )
-            links += EnergySankeyLink(
-                fromId = "home",
-                toId = areaNodeId,
-                kwh = total
-            )
-            links += EnergySankeyLink(
-                fromId = areaNodeId,
-                toId = deviceId,
-                kwh = total
-            )
+            links += EnergySankeyLink(fromId = "home", toId = areaNodeId, kwh = total)
+            links += EnergySankeyLink(fromId = areaNodeId, toId = deviceId, kwh = total)
         }
+    }
 
-        if (untracked > 0.0) {
-            nodes += EnergySankeyNode(
-                id = "untracked",
-                label = "Untracked consumption",
-                column = 3,
-                colorArgb = COLOR_GRAY,
-            )
-            links += EnergySankeyLink(
-                fromId = "home",
-                toId = "untracked",
-                kwh = untracked
-            )
-        }
-
-        return EnergySankey(nodes = nodes, links = links)
+    private fun appendUntrackedFlow(
+        untracked: Double,
+        nodes: MutableList<EnergySankeyNode>,
+        links: MutableList<EnergySankeyLink>,
+    ) {
+        if (untracked <= 0.0) return
+        nodes += EnergySankeyNode(
+            id = "untracked",
+            label = "Untracked consumption",
+            column = 3,
+            colorArgb = COLOR_GRAY,
+        )
+        links += EnergySankeyLink(fromId = "home", toId = "untracked", kwh = untracked)
     }
 
     private fun bucketLabels(
@@ -245,7 +244,7 @@ object EnergyDashboardBuilder {
     private fun periodLabel(
         ui: EnergyDashboardUiState,
         zone: ZoneId,
-        nowMs: Long
+        nowMs: Long,
     ): String {
         val zoned = Instant.ofEpochMilli(nowMs).atZone(zone)
         val shifted = when (ui.period) {

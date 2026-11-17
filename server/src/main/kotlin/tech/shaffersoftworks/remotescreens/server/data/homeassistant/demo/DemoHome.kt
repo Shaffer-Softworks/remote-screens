@@ -94,7 +94,7 @@ class DemoHome : HomeAssistant {
                         id = id,
                         domain = domain,
                         service = service,
-                        data = data
+                        data = data,
                     )
                 }
                 null
@@ -214,7 +214,7 @@ class DemoHome : HomeAssistant {
             domain = domain,
             service = service,
             data = data,
-            current = current
+            current = current,
         )
     }
 

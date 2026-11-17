@@ -19,7 +19,7 @@ val BLINDS_DOMAINS: Set<String> = setOf("cover")
 data class LightsRoom(
     val areaId: String,
     val name: String,
-    val entityIds: List<String>
+    val entityIds: List<String>,
 )
 
 /**

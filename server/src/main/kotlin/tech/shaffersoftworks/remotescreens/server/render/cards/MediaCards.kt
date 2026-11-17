@@ -37,7 +37,7 @@ internal fun DocContext.mediaCard(
     entityId: String,
     entityState:
     EntityState?,
-    width: Float
+    width: Float,
 ) {
     val art = minOf(width, CardChrome.MEDIA_ART_MAX_DP)
     val px = units.px(art).toInt()
@@ -153,7 +153,7 @@ internal fun DocContext.mediaCard(
     bar(
         entityId = entityId,
         verb = "volume",
-        width = width
+        width = width,
     )
 
     val sources = entityState?.list("source_list").orEmpty()
@@ -271,6 +271,6 @@ internal fun DocContext.mapCard(entityId: String, w: Float, h: Float) {
     label(
         text = i18n.t("ui.map_credit"),
         sp = Type.CAPTION,
-        color = role(Role.INK_SOFT)
+        color = role(Role.INK_SOFT),
     )
 }

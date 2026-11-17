@@ -48,7 +48,7 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
         entities: List<EntityState>,
         width: Int,
         height: Int,
-        isDark: Boolean
+        isDark: Boolean,
     ): BufferedImage {
         val people = entities.mapNotNull { entity ->
             val latitude = entity.number("latitude")
@@ -81,7 +81,7 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
             graphics = graphics,
             view = view,
             width = width,
-            height = height
+            height = height,
         )
         if (isDark) {
             graphics.color = Color(0, 0, 0, DARK_OVERLAY_ALPHA)
@@ -91,7 +91,7 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
             graphics = graphics,
             people = people,
             view = view,
-            shortestSide = min(width, height)
+            shortestSide = min(width, height),
         )
         graphics.dispose()
         return image
@@ -100,21 +100,21 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
     private data class PlacedPerson(
         val name: String,
         val latitude: Double,
-        val longitude: Double
+        val longitude: Double,
     )
 
     /** The zoom level and the world pixel of the image's top-left corner. */
     private data class MapView(
         val zoom: Int,
         val left: Double,
-        val top: Double
+        val top: Double,
     )
 
     /** Centred on everyone, zoomed out until everyone fits. */
     private fun viewOf(
         people: List<PlacedPerson>,
         width: Int,
-        height: Int
+        height: Int,
     ): MapView {
         val latitudes = people.map { it.latitude }
         val longitudes = people.map { it.longitude }
@@ -137,7 +137,7 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
         graphics: Graphics2D,
         view: MapView,
         width: Int,
-        height: Int
+        height: Int,
     ) {
         val tileCount = 1 shl view.zoom
         val firstColumn = floor(view.left / TILE_SIZE).toInt()
@@ -160,7 +160,7 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
         graphics: Graphics2D,
         people: List<PlacedPerson>,
         view: MapView,
-        shortestSide: Int
+        shortestSide: Int,
     ) {
         val radius = max(MIN_MARKER_RADIUS, shortestSide / MARKER_RADIUS_DIVISOR)
         graphics.font = Font(Font.SANS_SERIF, Font.BOLD, (radius * MARKER_FONT_SCALE).roundToInt())
