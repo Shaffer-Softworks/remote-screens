@@ -34,7 +34,7 @@ const val DRAWER_VARIABLE = "drawer"
  */
 internal class RemoteDocumentController(
     context: Context,
-    createPlayer: (Context) -> RemoteComposePlayer = { RemoteComposePlayer(it) },
+    createPlayer: (Context) -> RemoteComposePlayer = { CurrentPageTouchPlayer(it) },
 ) {
     private val players: Map<Slot, RemoteComposePlayer> = Slot.entries.associateWith { createPlayer(
         context,
