@@ -225,7 +225,7 @@ class ActionRouterTest {
         assertEquals("1234", (data["code"] as JsonPrimitive).content)
         val basement = ha.states.value.getValue("alarm_control_panel.basement")
         assertEquals("armed_home", basement.state)
-        assertEquals("armed_home", basement.attr("arm_mode"))
+        assertEquals("armed_home", basement.alarm.armModeText)
     }
 
     @Test
@@ -306,7 +306,7 @@ class ActionRouterTest {
     @Test
     fun aCleanAreaVacuumCleansTheChosenHomeAssistantAreas() {
         val robot = ha.states.value.getValue("vacuum.robot")
-        val features = checkNotNull(robot.number("supported_features")).toInt() or VACUUM_CLEAN_AREA_FEATURE
+        val features = checkNotNull(robot.common.supportedFeatureBits).toInt() or VACUUM_CLEAN_AREA_FEATURE
         ha.set("vacuum.robot", robot.state, mapOf("supported_features" to JsonPrimitive(features)))
         assertEquals(TapOutcome.Rebuild, vacuumTap("va1|vacuum_rooms|"))
         vacuumTap("va1|vacuum_rooms_toggle|living_room")

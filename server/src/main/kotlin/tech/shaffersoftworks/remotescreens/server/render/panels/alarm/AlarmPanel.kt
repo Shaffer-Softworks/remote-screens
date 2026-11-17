@@ -40,6 +40,9 @@ import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.AlarmMetrics as M
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Availability
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.AlarmState
 
 /** An arm or disarm button under the zones: the catalogue verb it sends, its word, and its icon. */
 private data class AlarmAction(val verb: String, val labelKey: String, val icon: String, val isDanger: Boolean = false)
@@ -77,7 +80,7 @@ fun DocContext.alarmPanel(tile: Tile, box: TileBox) {
     val zones = tile.alarmZones()
     val zone = zones.selectedZone(ui.selectedZone) ?: return
     structural(zone.entityId) { zoneState ->
-        listOf(zoneState?.state.orEmpty(), zoneState?.attr("arm_mode").orEmpty()).joinToString("|")
+        listOf(zoneState?.state.orEmpty(), zoneState?.alarm?.armModeText.orEmpty()).joinToString("|")
     }
     bind(entityId) { (0 until ALARM_PIN_LENGTH).map { VarValue.int(alarmDotVar(entityId, it), Vars.GONE) } }
     val scale = minOf(box.w / M.BASE_W, box.h / M.BASE_H).coerceIn(M.LAYOUT_SCALE_MIN, M.LAYOUT_SCALE_MAX)
@@ -144,7 +147,7 @@ private fun DocContext.alarmStatus(zoneState: EntityState?, layout: AlarmLayout)
             doc.statusWord(state, layout)
             Spacer(Modifier.height(doc.units.px(layout.dp(M.SECURE_GAP_DP))))
             doc.label(
-                doc.secureText(zoneState?.attr("arm_mode") ?: state),
+                doc.secureText(zoneState?.alarm?.armModeText ?: state),
                 layout.sp(M.SECURE_SP),
                 doc.role(Role.INK_SOFT),
             )
@@ -160,7 +163,7 @@ private fun DocContext.alarmStatus(zoneState: EntityState?, layout: AlarmLayout)
 
 /** Accent ring, then RPI's dark fill clipped to the inner radius so both edges stay round. */
 private fun DocContext.statusCircle(entity: EntityState?, layout: AlarmLayout) {
-    val icon = if (entity?.state == "disarmed") "lock-open-variant-outline" else "lock"
+    val icon = if (entity?.alarmState == AlarmState.DISARMED) "lock-open-variant-outline" else "lock"
     val sizeDp = layout.dp(M.STATUS_CIRCLE_DP)
     val ringDp = maxOf(layout.dp(M.STATUS_RING_DP), 1f)
     rcScope.Box(
@@ -186,17 +189,18 @@ private fun DocContext.statusCircle(entity: EntityState?, layout: AlarmLayout) {
 
 /** "Arming" fades out and back in orange, as RPI's `BlinkingText`; every other status is bold ink. */
 private fun DocContext.statusWord(state: String?, layout: AlarmLayout) {
-    val word = when (state) {
-        "disarmed" -> i18n.t("ui.alarm_disarmed")
-        "armed_home" -> i18n.t("ui.alarm_armed_home")
-        "armed_away" -> i18n.t("ui.alarm_armed_away")
-        "armed_night" -> i18n.t("ui.alarm_armed_night")
-        "arming" -> i18n.t("ui.alarm_arming")
-        null, "unknown", "unavailable" -> i18n.t("ui.alarm_disarmed")
-        else -> i18n.state("alarm_control_panel", state)
+    val alarmState = AlarmState.of(state)
+    val word = when {
+        alarmState == AlarmState.DISARMED -> i18n.t("ui.alarm_disarmed")
+        alarmState == AlarmState.ARMED_HOME -> i18n.t("ui.alarm_armed_home")
+        alarmState == AlarmState.ARMED_AWAY -> i18n.t("ui.alarm_armed_away")
+        alarmState == AlarmState.ARMED_NIGHT -> i18n.t("ui.alarm_armed_night")
+        alarmState == AlarmState.ARMING -> i18n.t("ui.alarm_arming")
+        state == null || Availability.of(state) != Availability.AVAILABLE -> i18n.t("ui.alarm_disarmed")
+        else -> i18n.state(Domain.ALARM_PANEL.value, state)
     }
     val sizeSp = layout.sp(M.STATUS_SP)
-    if (state == "arming") {
+    if (alarmState == AlarmState.ARMING) {
         armingLabel(word, sizeSp)
     } else {
         label(text = word, sp = sizeSp, color = role(Role.INK), weight = Weight.BOLD)
@@ -226,9 +230,9 @@ private fun DocContext.armingFade(): RcFloat {
 }
 
 /** RPI reads Alarmo's `arm_mode`: secure in any armed mode, blank while arming, otherwise not secure. */
-private fun DocContext.secureText(armMode: String?): String = when (armMode) {
-    "arming" -> ""
-    "armed_home", "armed_away", "armed_night" -> i18n.t("ui.alarm_secure")
+private fun DocContext.secureText(armMode: String?): String = when (AlarmState.of(armMode)) {
+    AlarmState.ARMING -> ""
+    AlarmState.ARMED_HOME, AlarmState.ARMED_AWAY, AlarmState.ARMED_NIGHT -> i18n.t("ui.alarm_secure")
     else -> i18n.t("ui.alarm_not_secure")
 }
 

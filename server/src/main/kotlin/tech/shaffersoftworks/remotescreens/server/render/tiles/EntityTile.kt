@@ -40,12 +40,12 @@ internal fun DocContext.entityTile(tile: Tile, box: TileBox, spec: TypeSpec?, en
     val short = box.h < C.SHORT_HEIGHT_DP
     val wide = (box.w >= 2 * box.h * C.WIDE_ASPECT && box.h < C.TALL_HEIGHT_DP) || short
     val hasLevel = entityId != null && box.w >= C.TALL_HEIGHT_DP && entityState != null && when (tile.domain) {
-        "light" -> entityState.list("supported_color_modes").any { it != "onoff" }
+        "light" -> entityState.light.supportedColorModes.any { it != "onoff" }
         "fan" -> entityState.supports(C.FAN_PERCENTAGE_FLAG)
         "cover", "valve" -> entityState.supports(C.COVER_POSITION_FLAG) ||
-            entityState.number("current_position") != null ||
+            entityState.cover.currentPosition != null ||
             entityState.supports(HaRenderFlags.COVER_TILT_POSITION_FLAG) ||
-            entityState.number("current_tilt_position") != null
+            entityState.cover.currentTiltPosition != null
         "humidifier", "water_heater" -> true
         "number", "input_number", "media_player" -> true
         else -> false
@@ -170,7 +170,7 @@ internal fun DocContext.entityTileLevelBar(tile: Tile, entityId: String, entityS
         "light" -> "brightness"
         "fan" -> "percentage"
         "cover" -> if (
-            entityState.supports(C.COVER_POSITION_FLAG) || entityState.number("current_position") != null
+            entityState.supports(C.COVER_POSITION_FLAG) || entityState.cover.currentPosition != null
         ) {
             "position"
         } else {
@@ -180,7 +180,7 @@ internal fun DocContext.entityTileLevelBar(tile: Tile, entityId: String, entityS
         else -> "value"
     }
     val (minValue, maxValue) = if (tile.domain in setOf("number", "input_number")) {
-        (entityState.number("min") ?: 0.0) to (entityState.number("max") ?: C.LEVEL_DEFAULT_MAX)
+        (entityState.input.min ?: 0.0) to (entityState.input.max ?: C.LEVEL_DEFAULT_MAX)
     } else {
         0.0 to C.LEVEL_DEFAULT_MAX
     }

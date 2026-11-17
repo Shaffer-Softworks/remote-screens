@@ -58,6 +58,12 @@ import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.ZoneId
 import kotlin.math.roundToInt
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileChrome as C
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaPlayerState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.PresenceState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HvacMode
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Availability
 
 private const val CLOCK_GLYPHS = 8
 
@@ -110,7 +116,7 @@ internal fun DocContext.bedsideTile(tile: Tile, box: TileBox) {
         Row(horizontal = RcRowHorizontalPositioning.Center) {
             keys.forEachIndexed { i, entityId ->
                 if (i > 0) Spacer(Modifier.width(doc.units.px(C.LEVEL_BAR_HEIGHT_DP)))
-                val spec = Catalogue.of(entityId.substringBefore('.'))
+                val spec = Catalogue.of(EntityId(entityId).domain.value)
                 val keyTile = Tile(id = "${tile.id}.k$i", entityId = entityId)
                 doc.bindEntity(entityId)
                 doc.bindTileColors(keyTile.id, entityId, Pastel.forDomain(spec?.domain))
@@ -299,7 +305,7 @@ fun DocContext.photo(
     sizeDp: Float,
     ink: RcColor = role(Role.INK),
 ) {
-    val pic = entityState?.attr("entity_picture")
+    val pic = entityState?.common?.entityPicture
     val px = units.px(sizeDp).toInt()
     if (pic != null) {
         picture(PictureSlot(name = slot, source = pic, widthPx = px, heightPx = px, refreshSeconds = 0, round = true))
@@ -327,12 +333,9 @@ fun DocContext.photo(
 /** HOME, or AWAY (or the zone's name), in capitals as the RPI panel writes it. */
 fun DocContext.bindWhere(varName: String, personId: String) {
     bind(personId) { states ->
-        val place = states[personId]?.state ?: "unknown"
-        val word = if (place == "home" || place == "not_home") {
-            i18n.state(
-                "person",
-                place,
-            )
+        val place = states[personId]?.state ?: Availability.UNKNOWN.wire
+        val word = if (PresenceState.of(place) != PresenceState.ZONE) {
+            i18n.state(Domain.PERSON.value, place)
         } else {
             place.replace('_', ' ')
         }
@@ -372,7 +375,7 @@ internal fun DocContext.weatherTile(tile: Tile, box: TileBox, entityState: Entit
                     weight = Weight.MEDIUM,
                 )
                 doc.label(
-                    doc.i18n.state("weather", entityState?.state ?: "unknown"),
+                    doc.i18n.state(Domain.WEATHER.value, entityState?.state ?: Availability.UNKNOWN.wire),
                     Type.CAPTION + 1f,
                     ink2,
                 )
@@ -417,15 +420,15 @@ internal fun DocContext.climateTile(tile: Tile, box: TileBox, entityState: Entit
     val entityId = tile.entityId ?: return
     val ink = color(Vars.tile(tile.id, Vars.KEY_INK))
     val ink2 = color(Vars.tile(tile.id, Vars.KEY_INK2))
-    val step = entityState?.number("target_temp_step")
+    val step = entityState?.climate?.targetTempStep
         ?: if (homeAssistantConfig.temperatureUnit.contains("F")) {
             ThermostatMetrics.TEMP_STEP_F
         } else {
             ThermostatMetrics.TEMP_STEP_C
         }
     val stepper = box.w >= C.HEADER_TALL_MIN_DP || box.h >= C.TALL_HEIGHT_DP
-    val modes = entityState?.list("hvac_modes").orEmpty()
-    structural(entityId) { it?.list("hvac_modes")?.joinToString() ?: "" }
+    val modes = entityState?.climate?.hvacModes.orEmpty()
+    structural(entityId) { it?.climate?.hvacModes?.joinToString() ?: "" }
     predict(ActionRef(tile.id, "temperature", "+$step"), entityId)
     predict(ActionRef(tile.id, "temperature", "-$step"), entityId)
     rcScope.Column(Modifier.fillMaxSize().padding(units.px(C.PAD_LG_DP))) {
@@ -523,7 +526,7 @@ internal fun DocContext.climateTile(tile: Tile, box: TileBox, entityState: Entit
                 doc.choiceRow(
                     scopeId = tile.id,
                     group = "mode",
-                    choices = modes.take(C.CLIMATE_MODES_TAKE).map { it to doc.i18n.state("climate", it) },
+                    choices = modes.take(C.CLIMATE_MODES_TAKE).map { it to doc.i18n.state(Domain.CLIMATE.value, it) },
                     refFor = { ActionRef(tile.id, "mode", it) },
                     heightDp = C.COL_ICON_TALL_DP,
                     icons = MODE_ICONS,
@@ -541,13 +544,13 @@ internal fun DocContext.climateTile(tile: Tile, box: TileBox, entityState: Entit
 }
 
 val MODE_ICONS = mapOf(
-    "off" to "power",
-    "heat" to "fire",
-    "cool" to "snowflake",
-    "heat_cool" to "sun-snowflake-variant",
-    "auto" to "thermostat-auto",
-    "dry" to "water-percent",
-    "fan_only" to "fan",
+    HvacMode.OFF.wire to "power",
+    HvacMode.HEAT.wire to "fire",
+    HvacMode.COOL.wire to "snowflake",
+    HvacMode.HEAT_COOL.wire to "sun-snowflake-variant",
+    HvacMode.AUTO.wire to "thermostat-auto",
+    HvacMode.DRY.wire to "water-percent",
+    HvacMode.FAN_ONLY.wire to "fan",
 )
 
 internal fun DocContext.mediaTile(tile: Tile, box: TileBox, entityState: EntityState?) {
@@ -560,22 +563,24 @@ internal fun DocContext.mediaTile(tile: Tile, box: TileBox, entityState: EntityS
         listOf(
             VarValue.string(
                 Vars.entity(entityId, "title"),
-                current?.attr("media_title") ?: current?.name ?: "",
+                current?.mediaPlayer?.mediaTitle ?: current?.name ?: "",
             ),
             VarValue.string(
                 Vars.entity(entityId, "artist"),
                 listOfNotNull(
-                    current?.attr("media_artist"),
-                    current?.attr("media_album_name"),
-                ).joinToString(" · ").ifEmpty { i18n.state("media_player", current?.state ?: "off") },
+                    current?.mediaPlayer?.mediaArtist,
+                    current?.mediaPlayer?.mediaAlbumName,
+                ).joinToString(
+                    " · ",
+                ).ifEmpty { i18n.state(Domain.MEDIA_PLAYER.value, current?.state ?: MediaPlayerState.OFF.wire) },
             ),
             VarValue.int(
                 Vars.entity(entityId, "playing"),
-                if (current?.state == "playing") Vars.VISIBLE else Vars.GONE,
+                if (current?.mediaPlayerState == MediaPlayerState.PLAYING) Vars.VISIBLE else Vars.GONE,
             ),
             VarValue.int(
                 Vars.entity(entityId, "notplaying"),
-                if (current?.state == "playing") Vars.GONE else Vars.VISIBLE,
+                if (current?.mediaPlayerState == MediaPlayerState.PLAYING) Vars.GONE else Vars.VISIBLE,
             ),
         )
     }
@@ -919,7 +924,7 @@ internal fun DocContext.mapPeople(tile: Tile): List<String> =
     (listOfNotNull(
         tile.entityId,
     ) + tile.options["people"].orEmpty().split(',').map { it.trim() }.filter { it.isNotEmpty() })
-        .ifEmpty { states.keys.filter { it.startsWith("person.") } }
+        .ifEmpty { states.keys.filter(Domain.PERSON::owns) }
 
 internal fun DocContext.mapTile(tile: Tile, box: TileBox, named: Boolean) {
     val w = units.px(box.w).toInt()
@@ -927,7 +932,7 @@ internal fun DocContext.mapTile(tile: Tile, box: TileBox, named: Boolean) {
     val who = mapPeople(tile)
     for (personId in who) {
         structural(personId) { person ->
-            "${person?.number("latitude")},${person?.number("longitude")}"
+            "${person?.common?.latitude},${person?.common?.longitude}"
         }
     }
     picture(
@@ -955,7 +960,7 @@ internal fun DocContext.mapTile(tile: Tile, box: TileBox, named: Boolean) {
                 doc.label(
                     text = tile.name ?: doc.i18n.t(
                         "ui.people_home",
-                        "count" to who.count { doc.states[it]?.state == "home" },
+                        "count" to who.count { doc.states[it]?.presenceState == PresenceState.HOME },
                     ),
                     sp = Type.CAPTION + 1f,
                     color = doc.role(Role.INK),

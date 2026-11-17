@@ -3,33 +3,66 @@
 
 package tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.AreaRegistryList
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.BrowseMedia
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.CalendarEventDelete
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.DeviceRegistryList
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EnergyGetPrefs
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityRegistryGet
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityRegistryListForDisplay
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.FireEvent
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.FossilEnergyConsumption
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.GetTranslations
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HA_JSON
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HaRequest
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HistoryDuringPeriod
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistantException
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.StatisticsDuringPeriod
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.math.sin
 
 /**
- * Handles Home Assistant WebSocket commands for demo mode — one handler per command type.
+ * Handles Home Assistant WebSocket commands for demo mode — one handler per request class. Each is recorded in
+ * [commands] as its type and payload.
  */
 internal class DemoCommandHandlers(
     private val fire: (type: String, data: JsonObject) -> Unit,
     private val commands: MutableList<Pair<String, JsonObject>>,
 ) {
-    fun handle(
-        type: String,
-        payload: JsonObject,
-    ): JsonElement? = handlers[type]?.invoke(payload)
+    /** Answers [request] the way Home Assistant would, read back through the request's own serializer. */
+    fun <R> handle(request: HaRequest<R>): R {
+        commands += request.type to request.payload()
+        val result = registryAnswer(request) ?: when (request) {
+            is FireEvent -> fireEvent(request)
+            is HistoryDuringPeriod -> historyDuringPeriod(request.entityIds)
+            EnergyGetPrefs -> energyGetPrefs()
+            is StatisticsDuringPeriod -> energyStatistics()
+            is FossilEnergyConsumption -> fossilEnergyConsumption()
+            is BrowseMedia -> mediaPlayerBrowseMedia()
+            is GetTranslations -> buildJsonObject { put("resources", buildJsonObject { }) }
+            is CalendarEventDelete -> JsonNull
+            else -> throw HomeAssistantException(code = "unknown_command", message = "Demo has no ${request.type}")
+        }
+        return HA_JSON.decodeFromJsonElement(request.resultSerializer, result ?: JsonNull)
+    }
 
-    private fun fireEvent(payload: JsonObject): JsonElement? {
-        val eventType = payload["event_type"]?.jsonPrimitive?.contentOrNull ?: return null
-        fire(eventType, (payload["event_data"] as? JsonObject) ?: JsonObject(emptyMap()))
-        return JsonObject(emptyMap())
+    private fun registryAnswer(request: HaRequest<*>): JsonElement? = when (request) {
+        AreaRegistryList -> areaRegistryList()
+        is EntityRegistryGet -> entityRegistryGet(request.entityId)
+        DeviceRegistryList -> deviceRegistryList()
+        EntityRegistryListForDisplay -> entityRegistryListForDisplay()
+        else -> null
+    }
+
+    private fun fireEvent(request: FireEvent): JsonElement {
+        fire(request.eventType, request.eventData ?: JsonObject(emptyMap()))
+        return JsonNull
     }
 
     private fun areaRegistryList(): JsonElement = buildJsonArray {
@@ -41,8 +74,8 @@ internal class DemoCommandHandlers(
         }
     }
 
-    private fun entityRegistryGet(payload: JsonObject): JsonElement? {
-        return when (val entityId = payload["entity_id"]?.jsonPrimitive?.contentOrNull) {
+    private fun entityRegistryGet(entityId: String): JsonElement {
+        return when (entityId) {
             "media_player.living_room" -> buildJsonObject {
                 put("entity_id", entityId)
                 put("config_entry_id", "demo_music_assistant")
@@ -69,7 +102,7 @@ internal class DemoCommandHandlers(
                     },
                 )
             }
-            else -> null
+            else -> buildJsonObject { put("entity_id", entityId) }
         }
     }
 
@@ -102,8 +135,7 @@ internal class DemoCommandHandlers(
         )
     }
 
-    private fun historyDuringPeriod(payload: JsonObject): JsonElement {
-        val ids = payload["entity_ids"]?.jsonArray?.map { it.jsonPrimitive.content }.orEmpty()
+    private fun historyDuringPeriod(ids: List<String>): JsonElement {
         return buildJsonObject {
             for (id in ids) {
                 put(
@@ -217,22 +249,4 @@ internal class DemoCommandHandlers(
             },
         )
     }
-
-    private val handlers: Map<String, (JsonObject) -> JsonElement?> = mapOf(
-        "fire_event" to { fireEvent(it) },
-        "config/area_registry/list" to { areaRegistryList() },
-        "config/entity_registry/get" to { entityRegistryGet(it) },
-        "config/device_registry/list" to { deviceRegistryList() },
-        "config/entity_registry/list_for_display" to { entityRegistryListForDisplay() },
-        "history/history_during_period" to { historyDuringPeriod(it) },
-        "energy/get_prefs" to { energyGetPrefs() },
-        "recorder/statistics_during_period" to { energyStatistics() },
-        "energy/fossil_energy_consumption" to { fossilEnergyConsumption() },
-        "media_player/browse_media" to { mediaPlayerBrowseMedia() },
-        "frontend/get_translations" to { buildJsonObject { put("resources", buildJsonObject { }) } },
-        "calendar/event/delete" to { payload ->
-            commands += "calendar/event/delete" to payload
-            JsonObject(emptyMap())
-        },
-    )
 }

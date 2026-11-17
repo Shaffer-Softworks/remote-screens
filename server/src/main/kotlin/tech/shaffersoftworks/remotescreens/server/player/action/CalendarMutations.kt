@@ -1,13 +1,14 @@
 package tech.shaffersoftworks.remotescreens.server.player.action
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.CalendarCreateEvent
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.CalendarEventDelete
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.call
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaCopy
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.CalendarAgendaStore
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import kotlinx.coroutines.CancellationException
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 
 /** What a calendar create or delete did. */
 sealed interface AgendaMutation {
@@ -34,9 +35,8 @@ class CalendarMutations(
 
     @Suppress("TooGenericExceptionCaught")
     private suspend fun sendCreate(message: PlayerMessage.CalendarCreate, summary: String): AgendaMutation {
-        val data = calendarCreateData(message, summary)
         return try {
-            homeAssistant.callService("calendar", "create_event", data)
+            homeAssistant.call(calendarCreateEvent(message, summary))
             agendas.invalidate()
             AgendaMutation.Accepted(AgendaCopy.CREATED)
         } catch (cancellation: CancellationException) {
@@ -52,13 +52,13 @@ class CalendarMutations(
         if (message.uid.isBlank() || calendar?.canDelete != true) {
             return AgendaMutation.Rejected(AgendaCopy.CANNOT_DELETE)
         }
-        val data = buildJsonObject {
-            put("entity_id", message.entityId)
-            put("uid", message.uid)
-            message.recurrenceId?.takeIf { it.isNotBlank() }?.let { put("recurrence_id", it) }
-        }
+        val request = CalendarEventDelete(
+            entityId = message.entityId,
+            uid = message.uid,
+            recurrenceId = message.recurrenceId?.takeIf { it.isNotBlank() },
+        )
         return try {
-            homeAssistant.command("calendar/event/delete", data)
+            homeAssistant.send(request)
             agendas.invalidate()
             AgendaMutation.Accepted(AgendaCopy.DELETED)
         } catch (cancellation: CancellationException) {
@@ -68,19 +68,21 @@ class CalendarMutations(
         }
     }
 
-    private fun calendarCreateData(message: PlayerMessage.CalendarCreate, summary: String): JsonObject =
-        buildJsonObject {
-            put("entity_id", message.entityId)
-            put("summary", summary)
-            message.location?.trim()?.takeIf { it.isNotEmpty() }?.let { put("location", it) }
-            if (message.allDay) {
-                put("start_date", message.startDate)
-                put("end_date", message.endDate)
-            } else {
-                put("start_date_time", localDateTime(message.startDate, message.startTime))
-                put("end_date_time", localDateTime(message.endDate, message.endTime))
-            }
+    private fun calendarCreateEvent(message: PlayerMessage.CalendarCreate, summary: String): CalendarCreateEvent {
+        val event = CalendarCreateEvent(
+            entityId = EntityId(message.entityId),
+            summary = summary,
+            location = message.location?.trim()?.takeIf { it.isNotEmpty() },
+        )
+        return if (message.allDay) {
+            event.copy(startDate = message.startDate, endDate = message.endDate)
+        } else {
+            event.copy(
+                startDateTime = localDateTime(message.startDate, message.startTime),
+                endDateTime = localDateTime(message.endDate, message.endTime),
+            )
         }
+    }
 
     private fun localDateTime(date: String, time: String?): String {
         val clock = time?.takeIf { it.isNotBlank() } ?: "00:00"

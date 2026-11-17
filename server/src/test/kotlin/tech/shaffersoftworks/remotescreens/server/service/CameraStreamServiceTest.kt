@@ -1,10 +1,15 @@
 package tech.shaffersoftworks.remotescreens.server.service
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HA_JSON
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HaRequest
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistantConfig
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistantEvent
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistantException
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceData
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceRef
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.readRemaining
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -35,18 +40,20 @@ class StreamingHome : HomeAssistant {
     val fetched = mutableListOf<String>()
 
     override suspend fun callService(
-        domain: String,
-        service: String,
-        data: JsonObject,
+        service: ServiceRef,
+        target: List<EntityId>,
+        data: ServiceData,
         returnResponse: Boolean,
     ): JsonElement? = null
 
-    override suspend fun command(type: String, payload: JsonObject): JsonElement {
-        commands += type to payload
+    override suspend fun <R> send(request: HaRequest<R>): R {
+        val payload = request.payload()
+        commands += request.type to payload
         if (payload["entity_id"]?.jsonPrimitive?.content == "camera.still") {
             throw HomeAssistantException("home_assistant_error", "Camera does not support stream")
         }
-        return buildJsonObject { put("url", "/api/hls/$TOKEN/master_playlist.m3u8") }
+        val result = buildJsonObject { put("url", "/api/hls/$TOKEN/master_playlist.m3u8") }
+        return HA_JSON.decodeFromJsonElement(request.resultSerializer, result)
     }
 
     override suspend fun fetch(path: String): ByteArray? = null

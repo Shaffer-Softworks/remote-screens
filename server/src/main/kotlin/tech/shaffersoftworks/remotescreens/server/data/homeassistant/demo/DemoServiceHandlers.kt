@@ -2,10 +2,18 @@ package tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceCall
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceData
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceRef
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.TimerState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.VacuumState
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.SwitchState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.CoverState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.PresenceState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaPlayerState
 
 /**
  * Applies Home Assistant service calls to demo entity state — one handler per service name.
@@ -14,17 +22,16 @@ internal class DemoServiceHandlers(
     private val set: (entityId: String, state: String, attrs: Map<String, JsonElement>) -> Unit,
     private val completedTodos: MutableSet<String>,
 ) {
+    /** Handlers are keyed by the service's name, which means the same in every domain that has it. */
     fun apply(
         entityId: String,
-        domain: String,
-        service: String,
-        data: JsonObject,
+        service: ServiceRef,
+        data: ServiceData,
         current: EntityState,
     ) {
-        handlers[service]?.invoke(
+        handlers[service.service]?.invoke(
             ServiceCall(
                 entityId = entityId,
-                domain = domain,
                 service = service,
                 data = data,
                 current = current,
@@ -70,15 +77,15 @@ internal class DemoServiceHandlers(
     private fun ServiceCall.toggle() {
         val isOn = current.state in ON_STATES
         val next = when (current.domain) {
-            "sun" -> if (isOn) "below_horizon" else "above_horizon"
-            "person" -> if (isOn) "not_home" else "home"
+            Domain.SUN -> if (isOn) "below_horizon" else "above_horizon"
+            Domain.PERSON -> if (isOn) PresenceState.NOT_HOME.wire else PresenceState.HOME.wire
             else -> if (isOn) off(current.domain) else on(current.domain)
         }
         set(entityId, next, emptyMap())
     }
 
     private fun ServiceCall.turnOn() {
-        if (current.domain == "scene" || current.domain == "script") return
+        if (current.domain == Domain.SCENE || current.domain == Domain.SCRIPT) return
         val attrs = mutableMapOf<String, JsonElement>()
 
         num("brightness_pct")?.let {
@@ -103,9 +110,9 @@ internal class DemoServiceHandlers(
         set(
             entityId,
             when (domain) {
-                "lawn_mower" -> "mowing"
-                "timer" -> "active"
-                else -> "cleaning"
+                Domain.LAWN_MOWER -> "mowing"
+                Domain.TIMER -> TimerState.ACTIVE.wire
+                else -> VacuumState.CLEANING.wire
             },
             emptyMap(),
         )
@@ -115,8 +122,8 @@ internal class DemoServiceHandlers(
         set(
             entityId,
             when (domain) {
-                "vacuum", "lawn_mower" -> "idle"
-                "timer" -> if (service == "pause") "paused" else "idle"
+                Domain.VACUUM, Domain.LAWN_MOWER -> VacuumState.IDLE.wire
+                Domain.TIMER -> if (service.service == "pause") TimerState.PAUSED.wire else TimerState.IDLE.wire
                 else -> current.state
             },
             emptyMap(),
@@ -164,7 +171,11 @@ internal class DemoServiceHandlers(
         "media_play_pause" to {
             set(
                 it.entityId,
-                if (it.current.state == "playing") "paused" else "playing",
+                if (it.current.mediaPlayerState == MediaPlayerState.PLAYING) {
+                    MediaPlayerState.PAUSED.wire
+                } else {
+                    MediaPlayerState.PLAYING.wire
+                },
                 emptyMap(),
             )
         },
@@ -248,16 +259,8 @@ internal class DemoServiceHandlers(
         const val BRIGHTNESS_PCT_SCALE = 2.55
         const val DEFAULT_TODO_COUNT = 2
 
-        fun on(domain: String) = if (domain == "cover") {
-            "open"
-        } else {
-            "on"
-        }
+        fun on(domain: Domain): String = if (domain == Domain.COVER) CoverState.OPEN.wire else SwitchState.ON.wire
 
-        fun off(domain: String) = if (domain == "cover") {
-            "closed"
-        } else {
-            "off"
-        }
+        fun off(domain: Domain): String = if (domain == Domain.COVER) CoverState.CLOSED.wire else SwitchState.OFF.wire
     }
 }

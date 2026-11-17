@@ -65,15 +65,15 @@ internal fun DocContext.lockCard(entityId: String, entityState: EntityState?) {
 
 internal fun DocContext.sirenCard(entityId: String, entityState: EntityState?) {
     bigToggle(entityId, entityState)
-    val tones = entityState?.list("available_tones").orEmpty()
+    val tones = entityState?.siren?.availableTones.orEmpty()
     if (tones.isNotEmpty()) {
-        structural(entityId) { it?.list("available_tones")?.joinToString() ?: "" }
+        structural(entityId) { it?.siren?.availableTones?.joinToString() ?: "" }
         section(i18n.t("ui.tone"))
         flowKeys(
             entityId,
             "tone",
             tones.take(CardChrome.SOURCES_TAKE).map { it to it },
-        ) { it.attr("tone") }
+        ) { it.siren.tone }
     }
 }
 
@@ -112,11 +112,11 @@ internal fun DocContext.vacuumCard(
     }
     spacer(CardChrome.PANEL_CORNER_DP)
     vacuumLocateRow(entityId = entityId, uiTileId = uiTileId, ui = ui)
-    val speeds = entityState?.list("fan_speed_list").orEmpty()
+    val speeds = entityState?.vacuum?.fanSpeedList.orEmpty()
     if (speeds.isNotEmpty()) {
-        structural(entityId) { it?.list("fan_speed_list")?.joinToString() ?: "" }
+        structural(entityId) { it?.vacuum?.fanSpeedList?.joinToString() ?: "" }
         section(i18n.t("ui.suction"))
-        flowKeys(entityId, "fan_speed", speeds.map { it to it }) { it.attr("fan_speed") }
+        flowKeys(entityId, "fan_speed", speeds.map { it to it }) { it.vacuum.fanSpeed }
     }
 }
 
@@ -125,8 +125,8 @@ private fun DocContext.vacuumLocateRow(entityId: String, uiTileId: String, ui: V
     // Segment rooms come from attributes; a changed list must rebuild the key and the dialog.
     structural(entityId) {
         listOf(
-            it?.list("room_list")?.joinToString().orEmpty(),
-            it?.list("room_ids")?.joinToString().orEmpty(),
+            it?.vacuum?.roomList?.joinToString().orEmpty(),
+            it?.vacuum?.roomIds?.joinToString().orEmpty(),
         ).joinToString("|")
     }
     val vacuumRooms = data.vacuumRooms[entityId]

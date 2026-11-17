@@ -2,12 +2,16 @@ package tech.shaffersoftworks.remotescreens.server.data.music
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.call
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceRequest
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MusicAssistantSearch
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MusicAssistantPlayMedia
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MusicAssistantGetQueue
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MusicAssistantGetLibrary
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaPlayerClearPlaylist
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityRegistryGet
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
 
 /**
  * Music Assistant services on Home Assistant: library, search, queue, and play/enqueue.
@@ -18,14 +22,10 @@ class MusicAssistantClient(private val homeAssistant: HomeAssistant) {
 
     suspend fun configEntryIdForEntity(entityId: String): String? {
         if (entityId.isBlank()) return null
-        val result = runCatching {
-            homeAssistant.command(
-                "config/entity_registry/get",
-                buildJsonObject { put("entity_id", entityId) },
-            )
-        }.onFailure { logger.debug("entity registry get {}: {}", entityId, it.message) }
-            .getOrNull() as? JsonObject
-        return (result?.get("config_entry_id") as? JsonPrimitive)?.contentOrNull
+        return runCatching { homeAssistant.send(EntityRegistryGet(entityId)) }
+            .onFailure { logger.debug("entity registry get {}: {}", entityId, it.message) }
+            .getOrNull()
+            ?.configEntryId
     }
 
     suspend fun search(
@@ -34,14 +34,7 @@ class MusicAssistantClient(private val homeAssistant: HomeAssistant) {
         limit: Int = SEARCH_LIMIT,
     ): List<MusicListRow> {
         if (configEntryId.isBlank() || query.isBlank()) return emptyList()
-        val result = callMa(
-            "search",
-            buildJsonObject {
-                put("config_entry_id", configEntryId)
-                put("name", query)
-                put("limit", limit)
-            },
-        )
+        val result = callMa(MusicAssistantSearch(configEntryId = configEntryId, name = query, limit = limit))
         return result?.let(MusicResponseParsers::parseSearch).orEmpty()
     }
 
@@ -53,23 +46,19 @@ class MusicAssistantClient(private val homeAssistant: HomeAssistant) {
     ): List<MusicListRow> {
         if (configEntryId.isBlank()) return emptyList()
         val result = callMa(
-            "get_library",
-            buildJsonObject {
-                put("config_entry_id", configEntryId)
-                put("media_type", mediaType)
-                put("limit", limit)
-                put("offset", offset)
-            },
+            MusicAssistantGetLibrary(
+                configEntryId = configEntryId,
+                mediaType = mediaType,
+                limit = limit,
+                offset = offset,
+            ),
         )
         return result?.let(MusicResponseParsers::parseLibrary).orEmpty()
     }
 
     suspend fun getQueue(playerEntityId: String): MusicQueueSnapshot {
         if (playerEntityId.isBlank()) return MusicQueueSnapshot(emptyList(), 0)
-        val result = callMa(
-            "get_queue",
-            buildJsonObject { put("entity_id", playerEntityId) },
-        )
+        val result = callMa(MusicAssistantGetQueue(EntityId(playerEntityId)))
         return result?.let { MusicResponseParsers.parseQueue(it, playerEntityId) }
             ?: MusicQueueSnapshot(emptyList(), 0)
     }
@@ -81,15 +70,7 @@ class MusicAssistantClient(private val homeAssistant: HomeAssistant) {
     ): Boolean {
         if (playerEntityId.isBlank() || uri.isBlank()) return false
         return runCatching {
-            homeAssistant.callService(
-                "music_assistant",
-                "play_media",
-                buildJsonObject {
-                    put("entity_id", playerEntityId)
-                    put("media_id", uri)
-                    put("enqueue", enqueue)
-                },
-            )
+            homeAssistant.call(MusicAssistantPlayMedia(EntityId(playerEntityId), mediaId = uri, enqueue = enqueue))
             true
         }.onFailure { logger.warn("play_media failed: {}", it.message) }.getOrDefault(false)
     }
@@ -97,19 +78,15 @@ class MusicAssistantClient(private val homeAssistant: HomeAssistant) {
     suspend fun clearPlaylist(playerEntityId: String): Boolean {
         if (playerEntityId.isBlank()) return false
         return runCatching {
-            homeAssistant.callService(
-                "media_player",
-                "clear_playlist",
-                buildJsonObject { put("entity_id", playerEntityId) },
-            )
+            homeAssistant.call(MediaPlayerClearPlaylist(EntityId(playerEntityId)))
             true
         }.onFailure { logger.warn("clear_playlist failed: {}", it.message) }.getOrDefault(false)
     }
 
-    private suspend fun callMa(service: String, data: JsonObject): JsonElement? =
-        runCatching {
-            homeAssistant.callService(domain = "music_assistant", service = service, data = data, returnResponse = true)
-        }.onFailure { logger.debug("music_assistant.{}: {}", service, it.message) }.getOrNull()
+    private suspend fun callMa(request: ServiceRequest): JsonElement? =
+        runCatching { homeAssistant.call(request, returnResponse = true) }
+            .onFailure { logger.debug("{}: {}", request.service, it.message) }
+            .getOrNull()
 
     companion object {
         private const val SEARCH_LIMIT = 25

@@ -56,6 +56,8 @@ import tech.shaffersoftworks.remotescreens.shared.Reflow
 import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.TopBar
 import tech.shaffersoftworks.remotescreens.shared.VarValue
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.PresenceState
 
 private const val CLOCK_WIDTH_SHARE = 0.42f
 private const val NAV_BOTH_ICON_SHARE = 0.4f
@@ -459,7 +461,7 @@ object ScreenRenderer {
         val temperatureEntity = bar.temperatureEntity
         if (temperatureEntity != null) {
             val entityState = states[temperatureEntity]
-            if (entityState?.domain == "weather") {
+            if (entityState?.domain == Domain.WEATHER) {
                 weatherStateIcon(
                     entityState.state,
                     STAT_ICON_DP * layoutScale,
@@ -683,16 +685,15 @@ object ScreenRenderer {
     /** The clock, the outdoor temperature and who is home: values every page shows. */
     private fun DocContext.bindSystem(screen: Screen) {
         val tempEntity = screen.topBar.temperatureEntity
-        if (tempEntity != null && states[tempEntity]?.domain == "weather") {
+        if (tempEntity != null && states[tempEntity]?.domain == Domain.WEATHER) {
             structural(tempEntity) { it?.state ?: "" }
         }
         bind(tempEntity) { states ->
             val entityState = tempEntity?.let { states[it] }
             val text = when {
                 entityState == null -> ""
-                entityState.domain == "weather" -> entityState.number(
-                    "temperature",
-                )?.let { i18n.number(it, 0) + "°" } ?: ""
+                entityState.domain == Domain.WEATHER ->
+                    entityState.weather.temperature?.let { i18n.number(it, 0) + "°" } ?: ""
                 else -> entityState.numericState()?.let { i18n.number(
                     it,
                     0,
@@ -700,11 +701,11 @@ object ScreenRenderer {
             }
             listOf(VarValue.string(Vars.TEMP, text))
         }
-        for (personId in states.keys.filter { it.startsWith("person.") }) {
+        for (personId in states.keys.filter(Domain.PERSON::owns)) {
             bind(personId) { emptyList() }
         }
         bind(null) { states ->
-            val home = states.values.count { it.domain == "person" && it.state == "home" }
+            val home = states.values.count { it.domain == Domain.PERSON && it.presenceState == PresenceState.HOME }
             listOf(VarValue.string(Vars.PEOPLE, home.toString()))
         }
     }

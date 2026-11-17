@@ -1,0 +1,17 @@
+{
+  "energy_sources": [
+    {"type": "solar", "stat_energy_from": "sensor.solar_energy", "stat_rate": "sensor.solar_power"},
+    {
+      "type": "grid",
+      "flow_from": [],
+      "stat_energy_from": "sensor.grid_energy",
+      "stat_power": "sensor.grid_power",
+      "number_energy_price": 0.31
+    },
+    {"stat_rate": "sensor.no_type"}
+  ],
+  "device_consumption": [
+    {"stat_consumption": "sensor.heat_pump_energy", "name": "Heat pump", "stat_rate": "sensor.heat_pump_power"},
+    {"stat_consumption": "sensor.dryer_energy", "included_in_stat": "sensor.heat_pump_energy"}
+  ]
+}

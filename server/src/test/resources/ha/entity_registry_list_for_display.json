@@ -1,0 +1,10 @@
+{
+  "entity_categories": {"0": "config", "1": "diagnostic"},
+  "entities": [
+    {"ei": "light.kitchen", "ai": "kitchen", "pl": "hue"},
+    {"ei": "switch.hall", "di": "hall_switch", "ic": "mdi:ceiling-light"},
+    {"ei": "sensor.signal", "di": "hall_switch", "ec": 1},
+    {"ei": "light.hidden", "ai": "kitchen", "hb": true},
+    {"ai": "kitchen"}
+  ]
+}

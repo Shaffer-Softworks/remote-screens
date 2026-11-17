@@ -27,6 +27,7 @@ import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
 import androidx.compose.remote.creation.modifiers.RectShape
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.WeatherAttributes
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.Forecast
 import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
@@ -36,6 +37,8 @@ import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.ZoneId
 import kotlin.math.roundToInt
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Availability
 
 private const val TEMP_WEIGHT = 100f
 private const val CONDITION_ICON_DP = 110f
@@ -159,9 +162,9 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
     val entityState = states[id]
     structural(
         id,
-    ) { s -> (listOf(s?.state ?: "") + DETAILS.filter { s?.number(it) != null }).joinToString() }
+    ) { s -> (listOf(s?.state ?: "") + DETAILS.filter { s?.weather?.detail(it) != null }).joinToString() }
     refreshEvery(CardChrome.WEATHER_REFRESH_S)
-    val details = DETAILS.filter { entityState?.number(it) != null }
+    val details = DETAILS.filter { entityState?.weather?.detail(it) != null }
     val zone = runCatching { ZoneId.of(homeAssistantConfig.timeZone) }.getOrDefault(ZoneId.of("UTC"))
     if (box.h > box.w) {
         bindWeatherReadings(tile.id, id, details)
@@ -221,7 +224,7 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
             )
         }
         doc.label(
-            text = doc.i18n.state("weather", entityState?.state ?: "unknown"),
+            text = doc.i18n.state(Domain.WEATHER.value, entityState?.state ?: Availability.UNKNOWN.wire),
             sp = small(CONDITION_LABEL_SP, layoutScale),
             color = ink,
             align = RcTextAlign.Center,
@@ -273,7 +276,7 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
                         )
                         Spacer(Modifier.height(doc.units.px(FORECAST_GAP_DP * layoutScale)))
                         doc.label(
-                            text = doc.i18n.state("weather", day.condition),
+                            text = doc.i18n.state(Domain.WEATHER.value, day.condition),
                             sp = small(CONDITION_SP, layoutScale),
                             color = soft,
                             align = RcTextAlign.Center,
@@ -373,7 +376,7 @@ private fun DocContext.portraitHero(page: PortraitPage) {
         }
         Spacer(Modifier.height(doc.units.px(PortraitFit.AFTER_TEMP_DP)))
         doc.label(
-            text = doc.i18n.state("weather", page.entityState?.state ?: "unknown"),
+            text = doc.i18n.state(Domain.WEATHER.value, page.entityState?.state ?: Availability.UNKNOWN.wire),
             sp = PortraitFit.NOW_CONDITION_SP,
             color = page.ink,
             align = RcTextAlign.Center,
@@ -463,7 +466,7 @@ private fun DocContext.portraitDay(page: PortraitPage, day: Forecast) {
         doc.weatherStateIcon(day.condition, PortraitFit.ROW_ICON_DP, fallbackColor = page.ink)
         Spacer(Modifier.width(doc.units.px(PortraitFit.ROW_GAP_DP)))
         doc.label(
-            text = doc.i18n.state("weather", day.condition),
+            text = doc.i18n.state(Domain.WEATHER.value, day.condition),
             sp = CONDITION_SP,
             color = page.soft,
             modifier = Modifier.horizontalWeight(1f),
@@ -512,13 +515,16 @@ private fun detailWord(key: String): String = when (key) {
 }
 
 private fun DocContext.reading(entityState: EntityState, key: String): String? = when (key) {
-    "wind_speed" -> measure(entityState = entityState, key = key, unitKey = "wind_speed_unit", fallback = "km/h")
-    "humidity" -> entityState.number(key)?.let { i18n.percent(it.roundToInt()) }
-    else -> measure(entityState = entityState, key = key, unitKey = "pressure_unit", fallback = "hPa")
+    "wind_speed" -> measure(value = entityState.weather.windSpeed, unit = entityState.weather.windSpeedUnit ?: "km/h")
+    "humidity" -> entityState.weather.humidity?.let { i18n.percent(it.roundToInt()) }
+    else -> measure(value = entityState.weather.pressure, unit = entityState.weather.pressureUnit ?: "hPa")
 }
 
-private fun DocContext.measure(entityState: EntityState, key: String, unitKey: String, fallback: String): String? {
-    val value = entityState.number(key) ?: return null
-    val unit = entityState.attr(unitKey) ?: fallback
-    return "${i18n.number(value, if (unit == "inHg") 2 else 0)} $unit"
+private fun WeatherAttributes.detail(key: String): Double? = when (key) {
+    "wind_speed" -> windSpeed
+    "humidity" -> humidity
+    else -> pressure
 }
+
+private fun DocContext.measure(value: Double?, unit: String): String? =
+    value?.let { "${i18n.number(it, if (unit == "inHg") 2 else 0)} $unit" }

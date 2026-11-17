@@ -38,6 +38,8 @@ import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Node
 import java.util.Locale
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 /** A stepped bar over the entity's level, as on a tile: a tap on step i sets i tenths of its range. */
 internal fun DocContext.sliderNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
@@ -50,9 +52,9 @@ internal fun DocContext.sliderNode(node: Node, self: Dims, axis: Axis, pages: Pa
     bindTileColors(
         node.id,
         id,
-        accent(node.props["color"], Pastel.forDomain(id.substringBefore('.'))),
+        accent(node.props["color"], Pastel.forDomain(EntityId(id).domain.value)),
     )
-    val domain = id.substringBefore('.')
+    val domain = EntityId(id).domain
     val entityState = states[id]
     val verb = sliderVerb(domain)
     val (min, max) = sliderRange(domain, entityState)
@@ -78,18 +80,18 @@ internal fun DocContext.sliderNode(node: Node, self: Dims, axis: Axis, pages: Pa
     }
 }
 
-private fun sliderVerb(domain: String) = when (domain) {
-    "light" -> "brightness"
-    "fan" -> "percentage"
-    "cover" -> "position"
-    "media_player" -> "volume"
+private fun sliderVerb(domain: Domain) = when (domain) {
+    Domain.LIGHT -> "brightness"
+    Domain.FAN -> "percentage"
+    Domain.COVER -> "position"
+    Domain.MEDIA_PLAYER -> "volume"
     else -> "value"
 }
 
-private fun sliderRange(domain: String, entityState: EntityState?): Pair<Double, Double> =
-    if (domain in setOf("number", "input_number")) {
-        (entityState?.number("min") ?: 0.0) to
-            (entityState?.number("max") ?: Metrics.LEVEL_RANGE_MAX)
+private fun sliderRange(domain: Domain, entityState: EntityState?): Pair<Double, Double> =
+    if (domain == Domain.NUMBER || domain == Domain.INPUT_NUMBER) {
+        (entityState?.input?.min ?: 0.0) to
+            (entityState?.input?.max ?: Metrics.LEVEL_RANGE_MAX)
     } else {
         0.0 to Metrics.LEVEL_RANGE_MAX
     }
@@ -107,7 +109,7 @@ internal fun DocContext.switchNode(node: Node, axis: Axis, pages: Pages) {
         bindTileColors(
             node.id,
             id,
-            accent(node.props["color"], Pastel.forDomain(id.substringBefore('.'))),
+            accent(node.props["color"], Pastel.forDomain(EntityId(id).domain.value)),
         )
         color(Vars.tile(node.id, Vars.KEY_BG))
     } else {
@@ -156,10 +158,10 @@ internal fun DocContext.switchNode(node: Node, axis: Axis, pages: Pages) {
 }
 
 /** What a stepper's keys send for an entity, and by how much a tap moves it. */
-internal fun DocContext.stepOf(node: Node, entityState: EntityState?, domain: String?): Pair<String, Double>? {
+internal fun DocContext.stepOf(node: Node, entityState: EntityState?, domain: Domain?): Pair<String, Double>? {
     val pair = when (domain) {
-        "climate", "water_heater" -> "temperature" to (
-            entityState?.number("target_temp_step")
+        Domain.CLIMATE, Domain.WATER_HEATER -> "temperature" to (
+            entityState?.climate?.targetTempStep
                 ?: if (homeAssistantConfig.temperatureUnit.contains(
                         "F",
                     )) {
@@ -168,14 +170,12 @@ internal fun DocContext.stepOf(node: Node, entityState: EntityState?, domain: St
                     Metrics.STEP_TEMP_C
                 }
             )
-        "humidifier" -> "humidity" to (entityState?.number(
-            "humidity_step",
-        ) ?: Metrics.STEP_PERCENTAGE)
-        "number", "input_number" -> "value" to (entityState?.number("step") ?: 1.0)
-        "light" -> "brightness" to Metrics.STEP_BRIGHTNESS
-        "fan" -> "percentage" to Metrics.STEP_PERCENTAGE
-        "cover", "valve" -> "position" to Metrics.STEP_POSITION
-        "media_player" -> "volume" to Metrics.STEP_VOLUME
+        Domain.HUMIDIFIER -> "humidity" to (entityState?.humidifier?.humidityStep ?: Metrics.STEP_PERCENTAGE)
+        Domain.NUMBER, Domain.INPUT_NUMBER -> "value" to (entityState?.input?.step ?: 1.0)
+        Domain.LIGHT -> "brightness" to Metrics.STEP_BRIGHTNESS
+        Domain.FAN -> "percentage" to Metrics.STEP_PERCENTAGE
+        Domain.COVER, Domain.VALVE -> "position" to Metrics.STEP_POSITION
+        Domain.MEDIA_PLAYER -> "volume" to Metrics.STEP_VOLUME
         else -> return null
     }
     val step = node.props["step"]?.toDoubleOrNull()?.takeIf { it > 0.0 } ?: pair.second
@@ -185,7 +185,7 @@ internal fun DocContext.stepOf(node: Node, entityState: EntityState?, domain: St
 /** Minus, the value, plus: a thermostat's target, a number, a light's brightness. */
 internal fun DocContext.stepperNode(node: Node, axis: Axis, pages: Pages) {
     val id = node.bind?.entityId
-    val domain = id?.substringBefore('.')
+    val domain = id?.let { EntityId(it).domain }
     val ink = role(Role.INK)
     val how = id?.let { stepOf(node, states[it], domain) }
     if (id != null) bindEntity(id)
@@ -199,9 +199,7 @@ internal fun DocContext.stepperNode(node: Node, axis: Axis, pages: Pages) {
     } }
     val down = how?.let { ActionRef(node.id, it.first, "-$step") }
     val up = how?.let { ActionRef(node.id, it.first, "+$step") }
-    val isPredictable = how != null && domain?.let { Catalogue.of(
-        it,
-    ) }?.predict?.containsKey(how.first) == true
+    val isPredictable = how != null && domain?.let { Catalogue.of(it.value) }?.predict?.containsKey(how.first) == true
     if (id != null && isPredictable) {
         down?.let { predict(it, id) }
         up?.let { predict(it, id) }
@@ -273,28 +271,28 @@ internal fun DocContext.stepperNode(node: Node, axis: Axis, pages: Pages) {
 /** What a row of choices offers for an entity: the verb, the choices, how each reads, and which is chosen. */
 internal class ChoiceSet(val verb: String, val attribute: String, val choices: List<String>, val word: (String) -> String, val chosen: (EntityState) -> String?, val icons: Map<String, String> = emptyMap())
 
-internal fun DocContext.choicesOf(entityState: EntityState?, domain: String?): ChoiceSet? = when (domain) {
-    "select", "input_select" -> ChoiceSet(
+internal fun DocContext.choicesOf(entityState: EntityState?, domain: Domain?): ChoiceSet? = when (domain) {
+    Domain.SELECT, Domain.INPUT_SELECT -> ChoiceSet(
         verb = "option",
         attribute = "options",
-        choices = entityState?.list("options").orEmpty(),
+        choices = entityState?.input?.options.orEmpty(),
         word = { it },
         chosen = { it.state },
     )
-    "climate" -> ChoiceSet(
+    Domain.CLIMATE -> ChoiceSet(
         verb = "mode",
         attribute = "hvac_modes",
-        choices = entityState?.list("hvac_modes").orEmpty(),
-        word = { i18n.state("climate", it) },
+        choices = entityState?.climate?.hvacModes.orEmpty(),
+        word = { i18n.state(Domain.CLIMATE.value, it) },
         chosen = { it.state },
         icons = MODE_ICONS,
     )
-    "light" -> ChoiceSet(
+    Domain.LIGHT -> ChoiceSet(
         verb = "effect",
         attribute = "effect_list",
-        choices = entityState?.list("effect_list").orEmpty(),
+        choices = entityState?.light?.effectList.orEmpty(),
         word = { it },
-        chosen = { it.attr("effect") },
+        chosen = { it.light.effect },
     )
     else -> null
 }
@@ -303,14 +301,14 @@ internal fun DocContext.choicesOf(entityState: EntityState?, domain: String?): C
 internal fun DocContext.choicesNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
     val id = node.bind?.entityId
     val modifier = styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))
-    val set = id?.let { choicesOf(states[it], it.substringBefore('.')) }
+    val set = id?.let { choicesOf(states[it], EntityId(it).domain) }
     if (id == null || set == null || set.choices.isEmpty()) {
         rcScope.Box(
             modifier.clip(rounded(Metrics.CHOICES_EMPTY_CORNER_DP)).background(role(Role.TRACK)),
         )
         return
     }
-    structural(id) { it?.list(set.attribute)?.joinToString() ?: "" }
+    structural(id) { it?.attributeList(set.attribute)?.joinToString() ?: "" }
     val shown = set.choices.take(
         node.props["max"]?.toIntOrNull()?.coerceIn(
             Metrics.CHOICES_MIN,

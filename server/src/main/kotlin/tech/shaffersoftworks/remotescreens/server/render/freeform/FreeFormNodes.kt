@@ -46,6 +46,8 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.spinner
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Node
 import tech.shaffersoftworks.remotescreens.shared.VarValue
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 internal fun DocContext.textNode(node: Node, axis: Axis, pages: Pages) {
     val sp = node.props["fontSize"]?.toFloatOrNull() ?: Type.TITLE
@@ -90,7 +92,7 @@ internal fun DocContext.textNode(node: Node, axis: Axis, pages: Pages) {
         val raw = when (binding.format) {
             "value" -> view.value
             "name" -> view.name
-            "attribute" -> binding.attribute?.let { entityState?.attr(it) } ?: ""
+            "attribute" -> binding.attribute?.let { entityState?.attributeText(it) } ?: ""
             else -> view.stateText
         }
         listOf(VarValue.string(nodeVar(node.id), binding.prefix + raw + binding.suffix))
@@ -114,10 +116,10 @@ internal fun DocContext.textNode(node: Node, axis: Axis, pages: Pages) {
 internal fun DocContext.iconNode(node: Node, axis: Axis, pages: Pages) {
     val sizeDp = node.props["size"]?.toFloatOrNull() ?: Metrics.ICON_DEFAULT_DP
     val entityId = node.bind?.entityId
-    val domain = entityId?.substringBefore('.')
-    val name = node.props["icon"] ?: entityId?.let { states[it]?.attr(
-        "icon",
-    ) } ?: domain?.let { Catalogue.of(it)?.icon }
+    val domain = entityId?.let { EntityId(it).domain }
+    val name = node.props["icon"]
+        ?: entityId?.let { states[it]?.common?.icon }
+        ?: domain?.let { Catalogue.of(it.value)?.icon }
     val ink = iconInk(node, entityId, domain)
     rcScope.Box(
         styled(node, axis, pages),
@@ -140,14 +142,14 @@ internal fun DocContext.iconNode(node: Node, axis: Axis, pages: Pages) {
  * A bound icon otherwise follows the entity: dim (or `colorOff`) while off, and while on its
  * `rgb_color` when Home Assistant sends one, else its pastel (or `colorOn`).
  */
-private fun DocContext.iconInk(node: Node, entityId: String?, domain: String?): RcColor {
+private fun DocContext.iconInk(node: Node, entityId: String?, domain: Domain?): RcColor {
     val fixed = node.props["color"]?.let { paint(it) }
     val choosesEachState = node.props["colorOff"] != null || node.props["colorOn"] != null
     return if (entityId == null || (!choosesEachState && fixed != null)) {
         fixed ?: role(Role.INK)
     } else {
         val offColor = inkArgb(node.props["colorOff"], Role.INK_DIM.argb)
-        val onColor = inkArgb(node.props["colorOn"], Pastel.forDomain(domain).argb)
+        val onColor = inkArgb(node.props["colorOn"], Pastel.forDomain(domain?.value).argb)
         bind(entityId) { states ->
             val view = Present.view(states[entityId], i18n)
             val entityRgb = if (node.props["colorOn"] == null) states[entityId]?.readRgb() else null
@@ -221,7 +223,7 @@ internal fun DocContext.imageNode(node: Node, self: Dims, axis: Axis, pages: Pag
     }
     val w = units.px(self.w).toInt().coerceAtLeast(1)
     val h = units.px(self.h).toInt().coerceAtLeast(1)
-    val camera = id.startsWith("camera.")
+    val camera = EntityId(id).domain == Domain.CAMERA
     val fit = node.props["fit"] == "whole"
     val contentScale = if (fit) RcContentScale.Fit else RcContentScale.Crop
     val canStream = camera && node.props["stream"] == "true" && !hasLiveVideoOnCurrentPage()
@@ -349,13 +351,13 @@ internal fun DocContext.clockNode(node: Node, axis: Axis, pages: Pages) {
 /** A pill with an icon and a word; bound, it shows the entity's state and lights up while it is on. */
 internal fun DocContext.badgeNode(node: Node, axis: Axis, pages: Pages) {
     val id = node.bind?.entityId
-    val domain = id?.substringBefore('.')
+    val domain = id?.let { EntityId(it).domain }
     if (id != null) bindEntity(id)
     val explicit = node.props["color"]?.let { paint(it) }
     val (bg, ink) = when {
         explicit != null -> explicit to role(Role.KEY_ON_INK)
         id != null -> {
-            bindTileColors(node.id, id, Pastel.forDomain(domain))
+            bindTileColors(node.id, id, Pastel.forDomain(domain?.value))
             color(Vars.tile(node.id, Vars.KEY_BG)) to color(Vars.tile(node.id, Vars.KEY_BG_INK))
         }
         else -> role(Role.KEY) to role(Role.INK)
@@ -378,9 +380,9 @@ internal fun DocContext.badgeNode(node: Node, axis: Axis, pages: Pages) {
             it
         }
     }
-    val icon = node.props["icon"]?.takeIf { it.isNotEmpty() } ?: id?.let { states[it]?.attr(
-        "icon",
-    ) } ?: domain?.let { Catalogue.of(it)?.icon }
+    val icon = node.props["icon"]?.takeIf { it.isNotEmpty() }
+        ?: id?.let { states[it]?.common?.icon }
+        ?: domain?.let { Catalogue.of(it.value)?.icon }
     val sp = node.props["fontSize"]?.toFloatOrNull() ?: Type.BODY
     val weight = node.props["weight"]?.toFloatOrNull() ?: Weight.MEDIUM
     rcScope.Row(
@@ -444,10 +446,8 @@ internal fun DocContext.bindLevel(node: Node, id: String) {
             entityState,
             i18n,
         ).level ?: entityState?.numericState()?.let { value ->
-            val lo = node.props["min"]?.toDoubleOrNull() ?: entityState.number("min") ?: 0.0
-            val hi = node.props["max"]?.toDoubleOrNull() ?: entityState.number(
-                "max",
-            ) ?: Metrics.LEVEL_RANGE_MAX
+            val lo = node.props["min"]?.toDoubleOrNull() ?: entityState.input.min ?: 0.0
+            val hi = node.props["max"]?.toDoubleOrNull() ?: entityState.input.max ?: Metrics.LEVEL_RANGE_MAX
             if (hi > lo) ((value - lo) / (hi - lo)).toFloat() else 0f
         } ?: 0f
         listOf(VarValue.float(nodeLevel(node.id), level.coerceIn(0f, 1f)))
@@ -464,7 +464,7 @@ internal fun DocContext.progressNode(node: Node, self: Dims, axis: Axis, pages: 
     val h = (self.h - node.style.padY).coerceAtLeast(1f)
     val fill = node.props["color"]?.let { paint(
         it,
-    ) } ?: fixed(Pastel.forDomain(id?.substringBefore('.')).argb)
+    ) } ?: fixed(Pastel.forDomain(id?.let { EntityId(it).domain.value }).argb)
     if (id != null) bindLevel(node, id)
     rcScope.Box(styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))) {
         val doc = this@progressNode

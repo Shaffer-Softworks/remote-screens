@@ -1,0 +1,19 @@
+{
+  "id": 5,
+  "type": "event",
+  "event": {
+    "event_type": "state_changed",
+    "data": {
+      "entity_id": "cover.curtains",
+      "old_state": null,
+      "new_state": {
+        "entity_id": "cover.curtains",
+        "state": "opening",
+        "attributes": {"current_position": 40},
+        "last_changed": "2026-11-17T08:01:00+00:00"
+      }
+    },
+    "origin": "LOCAL",
+    "time_fired": "2026-11-17T08:01:00+00:00"
+  }
+}

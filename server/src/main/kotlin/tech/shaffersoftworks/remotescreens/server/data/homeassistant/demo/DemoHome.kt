@@ -3,7 +3,12 @@
 
 package tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HaRequest
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceData
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceRef
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.calendarEntityId
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.isCalendarListPath
@@ -24,7 +29,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.awt.Color
 import java.awt.GradientPaint
@@ -73,43 +77,50 @@ class DemoHome : HomeAssistant {
     }
 
     override suspend fun callService(
-        domain: String,
-        service: String,
-        data: JsonObject,
+        service: ServiceRef,
+        target: List<EntityId>,
+        data: ServiceData,
         returnResponse: Boolean,
     ): JsonElement? {
-        calls += Triple(domain, service, data)
-        val ids = when (val entityIdValue = data["entity_id"]) {
-            is JsonPrimitive -> listOf(entityIdValue.content)
-            is JsonArray -> entityIdValue.map { it.jsonPrimitive.content }
-            else -> emptyList()
-        }
-        return when (domain) {
-            "weather" if service == "get_forecasts" -> forecasts(ids)
-            "todo" if service == "get_items" -> todoItems(ids)
-            "music_assistant" -> musicAssistant(service, data)
+        val ids = target.ifEmpty { data.entityIds }.map { it.value }
+        calls += Triple(service.domain.value, service.service, recorded(target, data))
+        return when {
+            service == ServiceRef.WEATHER_GET_FORECASTS -> forecasts(ids)
+            service == ServiceRef.TODO_GET_ITEMS -> todoItems(ids)
+            service.domain == Domain.MUSIC_ASSISTANT -> musicAssistant(service.service, data)
             else -> {
                 for (id in ids) {
-                    apply(
-                        id = id,
-                        domain = domain,
-                        service = service,
-                        data = data,
-                    )
+                    _states.value[id]?.let { current ->
+                        serviceHandlers.apply(entityId = id, service = service, data = data, current = current)
+                    }
                 }
                 null
             }
         }
     }
 
+    /** The call as Home Assistant's `service_data` would show it, with its target as `entity_id`. */
+    private fun recorded(target: List<EntityId>, data: ServiceData): JsonObject = when {
+        target.isEmpty() -> data.fields
+        else -> JsonObject(
+            data.fields + (
+                ServiceData.ENTITY_ID to (
+                    target.singleOrNull()?.let { JsonPrimitive(it.value) }
+                        ?: JsonArray(target.map { JsonPrimitive(it.value) })
+                    )
+                ),
+        )
+    }
+
+    override suspend fun <R> send(request: HaRequest<R>): R = commandHandlers.handle(request)
+
     private fun musicAssistant(
         service: String,
-        data: JsonObject,
+        data: ServiceData,
     ): JsonElement? = when (service) {
         "get_library" -> demoMusicLibrary()
-        "search" -> demoMusicSearch(data["name"]?.jsonPrimitive?.contentOrNull.orEmpty())
+        "search" -> demoMusicSearch((data["name"] as? JsonPrimitive)?.contentOrNull.orEmpty())
         "get_queue" -> demoMusicQueue()
-        "play_media" -> null
         else -> null
     }
 
@@ -202,22 +213,6 @@ class DemoHome : HomeAssistant {
         )
     }
 
-    private fun apply(
-        id: String,
-        domain: String,
-        service: String,
-        data: JsonObject,
-    ) {
-        val current = _states.value[id] ?: return
-        serviceHandlers.apply(
-            entityId = id,
-            domain = domain,
-            service = service,
-            data = data,
-            current = current,
-        )
-    }
-
     private fun todoItems(ids: List<String>): JsonObject = buildJsonObject {
         put("response", buildJsonObject {
             for (id in ids) {
@@ -237,11 +232,6 @@ class DemoHome : HomeAssistant {
             }
         })
     }
-
-    override suspend fun command(
-        type: String,
-        payload: JsonObject,
-    ): JsonElement? = commandHandlers.handle(type, payload)
 
     override suspend fun fetch(path: String): ByteArray {
         calendarPayload(path)?.let { return it.toByteArray(Charsets.UTF_8) }

@@ -4,13 +4,9 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssista
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistantException
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.CameraStream
 
 private const val IDLE_STREAM_MINUTES = 5L
 private const val MILLISECONDS_PER_MINUTE = 60_000L
@@ -69,12 +65,8 @@ class CameraStreamService(
 
     /** Home Assistant's own URL of the stream, `/api/hls/<token>/master_playlist.m3u8`. */
     private suspend fun startStream(entityId: String): String? {
-        val payload = buildJsonObject {
-            put("entity_id", entityId)
-            put("format", "hls")
-        }
         val result = try {
-            homeAssistant.command("camera/stream", payload)
+            homeAssistant.send(CameraStream(entityId))
         } catch (e: HomeAssistantException) {
             logger.info("{} has no stream: {}", entityId, e.message)
             null
@@ -85,7 +77,7 @@ class CameraStreamService(
             logger.info("Home Assistant did not start a stream for {}: {}", entityId, e.message)
             null
         }
-        return (result as? JsonObject)?.get("url")?.jsonPrimitive?.contentOrNull
+        return result?.url
     }
 
     /**

@@ -55,7 +55,7 @@ internal fun DocContext.coverCard(entityId: String, entityState: EntityState?, w
         ) { s -> listOf(
             VarValue.float(
                 Vars.entity(entityId, "tilt"),
-                ((s[entityId]?.number("current_tilt_position") ?: 0.0) / CardChrome.PERCENT_SCALE)
+                ((s[entityId]?.cover?.currentTiltPosition ?: 0.0) / CardChrome.PERCENT_SCALE)
                     .toFloat(),
             ),
         ) }

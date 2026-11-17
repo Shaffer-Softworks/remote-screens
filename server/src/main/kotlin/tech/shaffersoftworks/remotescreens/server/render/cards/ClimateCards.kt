@@ -20,9 +20,10 @@ import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.VarValue
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 internal fun DocContext.climateCard(entityId: String, entityState: EntityState?) {
-    val step = entityState?.number("target_temp_step")
+    val step = entityState?.climate?.targetTempStep
         ?: if (homeAssistantConfig.temperatureUnit.contains("F")) {
             CardChrome.TEMP_STEP_F
         } else {
@@ -70,39 +71,41 @@ internal fun DocContext.climateCard(entityId: String, entityState: EntityState?)
             )
         }
     }
-    val modes = entityState?.list("hvac_modes").orEmpty()
+    val modes = entityState?.climate?.hvacModes.orEmpty()
     structural(entityId) {
-        listOf("hvac_modes", "preset_modes", "fan_modes", "swing_modes").joinToString("|") { key ->
-            it?.list(key)?.joinToString() ?: ""
-        } + "|${it?.state}|${it.usesDualSetpoint()}|${it?.number("target_temp_high")}|${it?.number("target_temp_low")}"
+        val climate = it?.climate
+        val modeLists = listOf(climate?.hvacModes, climate?.presetModes, climate?.fanModes, climate?.swingModes)
+            .joinToString("|") { modeList -> modeList?.joinToString().orEmpty() }
+        listOf(modeLists, it?.state, it.usesDualSetpoint(), climate?.targetTempHigh, climate?.targetTempLow)
+            .joinToString("|")
     }
     if (modes.isNotEmpty()) {
         section(i18n.t("ui.mode"))
         flowKeys(entityId, "mode", modes.map {
-            it to i18n.state("climate", it)
+            it to i18n.state(Domain.CLIMATE.value, it)
         }) {
             it.state
         }
     }
-    val presets = entityState?.list("preset_modes").orEmpty()
+    val presets = entityState?.climate?.presetModes.orEmpty()
     if (presets.isNotEmpty()) {
         section(i18n.t("ui.preset"))
         flowKeys(
             entityId,
             "preset",
             presets.map { it to it.replace('_', ' ').replaceFirstChar(Char::uppercase) },
-        ) { it.attr("preset_mode") }
+        ) { it.climate.presetMode }
     }
-    val fans = entityState?.list("fan_modes").orEmpty()
+    val fans = entityState?.climate?.fanModes.orEmpty()
     if (fans.isNotEmpty()) {
         section(i18n.t("ui.speed"))
         flowKeys(
             entityId,
             "fan",
             fans.map { it to it.replaceFirstChar(Char::uppercase) },
-        ) { it.attr("fan_mode") }
+        ) { it.climate.fanMode }
     }
-    val swings = entityState?.list("swing_modes").orEmpty()
+    val swings = entityState?.climate?.swingModes.orEmpty()
     if (swings.isNotEmpty()) {
         section(i18n.t("ui.swing"))
         flowKeys(
@@ -110,7 +113,7 @@ internal fun DocContext.climateCard(entityId: String, entityState: EntityState?)
             "swing",
             swings.map { it to it.replace('_', ' ').replaceFirstChar(Char::uppercase) },
         ) {
-            it.attr("swing_mode")
+            it.climate.swingMode
         }
     }
 }
@@ -122,13 +125,11 @@ internal fun DocContext.climateDualSetpoint(
 ) {
     bind(entityId) { states ->
         val climate = states[entityId]
-        fun tempLabel(attr: String) =
-            climate?.number(
-                attr,
-            )?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + "°" } ?: "–"
+        fun tempLabel(temperature: Double?) =
+            temperature?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + "°" } ?: "–"
         listOf(
-            VarValue.string(Vars.entity(entityId, "temp_low"), tempLabel("target_temp_low")),
-            VarValue.string(Vars.entity(entityId, "temp_high"), tempLabel("target_temp_high")),
+            VarValue.string(Vars.entity(entityId, "temp_low"), tempLabel(climate?.climate?.targetTempLow)),
+            VarValue.string(Vars.entity(entityId, "temp_high"), tempLabel(climate?.climate?.targetTempHigh)),
         )
     }
     predict(ref(entityId, "temperature_low", "+$step"), entityId)
@@ -203,9 +204,9 @@ internal fun DocContext.climateDualSetpoint(
 }
 
 internal fun DocContext.waterHeaterCard(entityId: String, entityState: EntityState?, w: Float) {
-    val min = entityState?.number("min_temp") ?: CardChrome.DEFAULT_CLIMATE_LIKE_MIN
-    val max = entityState?.number("max_temp") ?: CardChrome.DEFAULT_CLIMATE_LIKE_MAX
-    val step = entityState?.number("target_temp_step") ?: 1.0
+    val min = entityState?.climate?.minTemp ?: CardChrome.DEFAULT_CLIMATE_LIKE_MIN
+    val max = entityState?.climate?.maxTemp ?: CardChrome.DEFAULT_CLIMATE_LIKE_MAX
+    val step = entityState?.climate?.targetTempStep ?: 1.0
     predict(ref(entityId, "temperature", "+$step"), entityId)
     predict(ref(entityId, "temperature", "-$step"), entityId)
     spacer(CardChrome.PANEL_CORNER_DP)
@@ -243,9 +244,9 @@ internal fun DocContext.waterHeaterCard(entityId: String, entityState: EntitySta
     }
     spacer(CardChrome.CARD_GAP_DP)
     bar(entityId = entityId, verb = "temperature", width = w, min = min, max = max)
-    val modes = entityState?.list("operation_list").orEmpty()
+    val modes = entityState?.climate?.operationList.orEmpty()
     if (modes.isNotEmpty()) {
-        structural(entityId) { it?.list("operation_list")?.joinToString() ?: "" }
+        structural(entityId) { it?.climate?.operationList?.joinToString() ?: "" }
         section(i18n.t("ui.mode"))
         flowKeys(
             entityId,
@@ -285,7 +286,7 @@ internal fun DocContext.valveCard(entityId: String, entityState: EntityState?, w
             modifier = Modifier.horizontalWeight(1f),
         )
     }
-    if (entityState?.number("current_position") != null) {
+    if (entityState?.cover?.currentPosition != null) {
         section(i18n.t("ui.position"))
         bar(entityId, "position", w)
     }

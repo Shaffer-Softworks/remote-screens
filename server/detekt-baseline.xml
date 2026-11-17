@@ -20,7 +20,6 @@
     <ID>LongMethod:Alerts.kt:AlertRenderer$fun render: RenderedDoc</ID>
     <ID>LongMethod:ClimateCards.kt:internal fun DocContext.climateCard</ID>
     <ID>LongMethod:ClimateCards.kt:internal fun DocContext.climateDualSetpoint</ID>
-    <ID>LongMethod:DemoHome.kt:DemoHome$@Suppress("CyclomaticComplexMethod") override suspend fun command: JsonElement?</ID>
     <ID>LongMethod:EntityTile.kt:internal fun DocContext.entityTile</ID>
     <ID>LongMethod:FreeFormControls.kt:internal fun DocContext.stepperNode</ID>
     <ID>LongMethod:FreeFormLayout.kt:internal fun DocContext.container</ID>
@@ -29,7 +28,6 @@
     <ID>LongMethod:FreeFormMedia.kt:internal fun DocContext.gaugeNode</ID>
     <ID>LongMethod:InfoCards.kt:internal fun DocContext.weatherCard</ID>
     <ID>LongMethod:MediaCards.kt:internal fun DocContext.mediaCard</ID>
-    <ID>LongMethod:ScreenRenderer.kt:ScreenRenderer$private fun DocContext.navBar</ID>
     <ID>LongMethod:SpecialtyTiles.kt:fun DocContext.energyFlow</ID>
     <ID>LongMethod:SpecialtyTiles.kt:internal fun DocContext.climateTile</ID>
     <ID>LongMethod:SpecialtyTiles.kt:internal fun DocContext.mediaTile</ID>
@@ -47,7 +45,6 @@
     <ID>MaxLineLength:ScreenRenderer.kt:RenderedDoc$fun</ID>
     <ID>MaxLineLength:ScreenRenderer.kt:RenderedDoc$val entities: Set&lt;String&gt; = (docContext.bindings.mapNotNull { it.entityId } + docContext.structure.map { it.first }).toSet()</ID>
     <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer.NavStyle$/** How navigation buttons look: icon, word or both, [layoutScale] against the default bar, the current page's fill. */</ID>
-    <ID>MaxLineLength:SessionLifecycle.kt:SessionLifecycle$host.screenId = layoutRepository.layout.value.players.firstOrNull { it.deviceId == host.hello.deviceId }?.screenId</ID>
     <ID>MaxLineLength:SpecialtyTiles.kt:/** Solar, the grid and the battery around the house, with the power of each, as Home Assistant's energy settings name them. */</ID>
     <ID>MaxLineLength:SpecialtyTiles.kt:fun</ID>
     <ID>MaxLineLength:SpecialtyTiles.kt:val tint = when (key) { "solar" -&gt; Pastel.YELLOW; "grid" -&gt; Pastel.BLUE; "battery" -&gt; Pastel.GREEN; else -&gt; Pastel.GREY }</ID>

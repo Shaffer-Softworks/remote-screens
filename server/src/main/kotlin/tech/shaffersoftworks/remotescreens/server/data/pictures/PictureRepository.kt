@@ -43,15 +43,13 @@ class PictureRepository(
         slot.source.startsWith(BackgroundStore.FILE_PREFIX) -> backgroundStore?.sourceKey(slot.source)
         slot.source.startsWith(ATTRIBUTE_SOURCE_PREFIX) -> {
             val (_, entityId, attribute) = slot.source.split(':', limit = 3)
-            states[entityId]?.attr(attribute)
+            states[entityId]?.attributeText(attribute)
         }
         slot.source.startsWith(MAP_SOURCE_PREFIX) -> slot.source.removePrefix(MAP_SOURCE_PREFIX)
             .substringAfter(':')
             .split(',')
             .joinToString(";") { entityId ->
-                states[entityId]?.let { "${it.number(
-                    "latitude",
-                )},${it.number("longitude")},${it.state}" }.orEmpty()
+                states[entityId]?.let { "${it.common.latitude},${it.common.longitude},${it.state}" }.orEmpty()
             }
         slot.source.startsWith(QR_SOURCE_PREFIX) -> qrPayload(slot.source, states)
         else -> slot.source

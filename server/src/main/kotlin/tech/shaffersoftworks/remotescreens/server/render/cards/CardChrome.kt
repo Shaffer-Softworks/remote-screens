@@ -179,7 +179,7 @@ internal fun DocContext.bigToggle(
     entityState: EntityState?,
     verb: String = "toggle",
 ) {
-    val spec = Catalogue.of(entityState?.domain ?: "")
+    val spec = Catalogue.of(entityState?.domain?.value.orEmpty())
     val action = ref(entityId, verb)
     predict(action, entityId)
 

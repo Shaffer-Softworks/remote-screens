@@ -1,14 +1,58 @@
 package tech.shaffersoftworks.remotescreens.server.data.music
 
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HA_JSON
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.SkippingListSerializer
+
+/** An artist as Music Assistant names it inside a media item. */
+@Serializable
+internal data class MaArtist(val name: String? = null)
+
+@Serializable
+internal data class MaMetadata(val images: List<JsonElement> = emptyList())
+
+/** A track, album, artist, playlist or station. [image] is a URL or an object with a `path`. */
+@Serializable
+internal data class MaMediaItem(
+    val uri: String? = null,
+    val name: String? = null,
+    val title: String? = null,
+    @SerialName("sort_name") val sortName: String? = null,
+    val artist: String? = null,
+    @Serializable(with = MaArtists::class) val artists: List<MaArtist> = emptyList(),
+    val image: JsonElement? = null,
+    val metadata: MaMetadata? = null,
+)
+
+/** One entry of a player queue: the [mediaItem] it plays, under its own [name]. */
+@Serializable
+internal data class MaQueueItem(
+    @SerialName("queue_item_id") val queueItemId: String? = null,
+    val name: String? = null,
+    val duration: Double? = null,
+    @SerialName("stream_title") val streamTitle: String? = null,
+    @SerialName("media_item") val mediaItem: MaMediaItem? = null,
+    val image: JsonElement? = null,
+)
+
+/** `get_queue`: [items] is the whole list, or only how many there are beside [currentItem] and [nextItem]. */
+@Serializable
+internal data class MaQueue(
+    val items: JsonElement? = null,
+    @SerialName("current_index") val currentIndex: Int? = null,
+    @SerialName("current_item") val currentItem: MaQueueItem? = null,
+    @SerialName("next_item") val nextItem: MaQueueItem? = null,
+)
+
+internal object MaArtists : SkippingListSerializer<MaArtist>(MaArtist.serializer())
 
 /** Parses Music Assistant `callService(..., returnResponse = true)` payloads. */
 internal object MusicResponseParsers {
@@ -18,7 +62,7 @@ internal object MusicResponseParsers {
             for ((first, second) in SEARCH_KINDS) {
                 val items = payload[first] as? JsonArray ?: continue
                 for (item in items) {
-                    (item as? JsonObject)?.toRow(second)?.let(::add)
+                    decode(MaMediaItem.serializer(), item)?.toRow(second)?.let(::add)
                 }
             }
         }
@@ -27,20 +71,16 @@ internal object MusicResponseParsers {
     fun parseLibrary(element: JsonElement): List<MusicListRow> {
         val payload = unwrapServicePayload(element)
         val items = payload["items"] as? JsonArray
-        return items?.mapNotNull { (it as? JsonObject)?.toRow("Library") }.orEmpty()
+        return items?.mapNotNull { decode(MaMediaItem.serializer(), it)?.toRow("Library") }.orEmpty()
     }
 
     fun parseQueue(element: JsonElement, playerEntityId: String): MusicQueueSnapshot {
         val payload = unwrapServicePayload(element)
-        val queue = extractQueuePayload(payload, playerEntityId) ?: return MusicQueueSnapshot(
-            emptyList(),
-            0,
-        )
-        val itemsEl = queue["items"]
-        val currentIndex = queue["current_index"]?.jsonPrimitive?.intOrNull
-        val currentObj = queue["current_item"] as? JsonObject
-        val nextObj = queue["next_item"] as? JsonObject
-        val currentId = currentObj?.text("queue_item_id")
+        val queue = extractQueuePayload(payload, playerEntityId)
+            ?.let { decode(MaQueue.serializer(), it) }
+            ?: return MusicQueueSnapshot(emptyList(), 0)
+        val itemsEl = queue.items
+        val currentId = queue.currentItem?.queueItemId
         return when (itemsEl) {
             is JsonArray -> MusicQueueSnapshot(
                 itemsEl.mapIndexedNotNull { index, item ->
@@ -48,17 +88,12 @@ internal object MusicResponseParsers {
                         item = item,
                         index = index,
                         currentId = currentId,
-                        currentIndex = currentIndex,
+                        currentIndex = queue.currentIndex,
                     )
                 },
                 moreCount = 0,
             )
-            else -> compactQueueSnapshot(
-                currentObj = currentObj,
-                nextObj = nextObj,
-                currentId = currentId,
-                itemsEl = itemsEl,
-            )
+            else -> compactQueueSnapshot(queue = queue, currentId = currentId)
         }
     }
 
@@ -68,58 +103,47 @@ internal object MusicResponseParsers {
         currentId: String?,
         currentIndex: Int?,
     ): MusicListRow? {
-        val obj = item as? JsonObject ?: return null
-        val id = obj.text("queue_item_id")
+        val queueItem = decode(MaQueueItem.serializer(), item) ?: return null
+        val id = queueItem.queueItemId
         val isCurrent = when {
             currentId != null && id != null -> id == currentId
             currentIndex != null -> index == currentIndex
             else -> false
         }
-        return parseQueueItem(obj, isCurrent)
+        return parseQueueItem(queueItem, isCurrent)
     }
 
-    private fun compactQueueSnapshot(
-        currentObj: JsonObject?,
-        nextObj: JsonObject?,
-        currentId: String?,
-        itemsEl: JsonElement?,
-    ): MusicQueueSnapshot {
+    private fun compactQueueSnapshot(queue: MaQueue, currentId: String?): MusicQueueSnapshot {
         val rows = buildList {
-            currentObj?.let { parseQueueItem(it, true)?.let(::add) }
-            val nextParsed = nextObj?.let { parseQueueItem(it, false) }
+            queue.currentItem?.let { parseQueueItem(it, true)?.let(::add) }
+            val next = queue.nextItem
+            val nextParsed = next?.let { parseQueueItem(it, false) }
             if (nextParsed != null) {
-                val nextId = nextObj.text("queue_item_id")
+                val nextId = next.queueItemId
                 if (nextId != null && nextId != currentId) add(nextParsed)
             }
         }
-        val more = when (val totalInQueue = (itemsEl as? JsonPrimitive)?.intOrNull) {
+        val more = when (val totalInQueue = (queue.items as? JsonPrimitive)?.intOrNull) {
             null -> 0
             else -> (totalInQueue - rows.size).coerceAtLeast(0)
         }
         return MusicQueueSnapshot(rows, more)
     }
 
-    private fun parseQueueItem(obj: JsonObject, isCurrent: Boolean): MusicListRow? {
-        val media = obj["media_item"] as? JsonObject
-        val uri = media?.text("uri")
-        val title = when {
-            media == null -> null
-            else -> obj.text("name") ?: media.text("name")
-        }
+    private fun parseQueueItem(item: MaQueueItem, isCurrent: Boolean): MusicListRow? {
+        val media = item.mediaItem
+        val uri = media?.uri
+        val title = media?.let { item.name ?: it.name }
         if (media == null || uri == null || title == null) return null
-        val durationSec = obj["duration"]?.jsonPrimitive?.intOrNull
-            ?: obj.text("duration")?.toIntOrNull()
-        val streamTitle = obj.text("stream_title")
-        val artist = media["artists"]?.jsonArray?.firstOrNull()?.jsonObject?.text("name")
+        val durationSec = item.duration?.toInt()
+        val streamTitle = item.streamTitle
+        val artist = media.artists.firstOrNull()?.name
         val subtitle = buildList {
             artist?.takeIf { it.isNotBlank() }?.let(::add)
             streamTitle?.takeIf { it.isNotBlank() }?.let(::add)
             durationSec?.takeIf { it > 0 }?.let { add(formatMmSs(it)) }
         }.joinToString(" · ").takeIf { it.isNotBlank() }
-        val art = resolveMediaImage(
-            media["image"] ?: obj["image"]
-                ?: media["metadata"]?.jsonObject?.get("images")?.jsonArray?.firstOrNull(),
-        )
+        val art = resolveMediaImage(media.image ?: item.image ?: media.metadata?.images?.firstOrNull())
         return MusicListRow(
             title = title,
             subtitle = subtitle,
@@ -129,19 +153,19 @@ internal object MusicResponseParsers {
         )
     }
 
-    private fun JsonObject.toRow(kind: String): MusicListRow? {
-        val uri = text("uri")
-        val primary = text("name") ?: text("title") ?: text("sort_name")
+    private fun MaMediaItem.toRow(kind: String): MusicListRow? {
+        val primary = name ?: title ?: sortName
         if (uri == null || primary == null) return null
-        val artist = text("artist")?.takeIf { it.isNotBlank() }
-            ?: this["artists"]?.jsonArray?.firstOrNull()?.jsonObject?.text("name")
         return MusicListRow(
             title = "$kind · $primary",
-            subtitle = artist,
+            subtitle = artist?.takeIf { it.isNotBlank() } ?: artists.firstOrNull()?.name,
             uri = uri,
-            imagePathOrUrl = resolveMediaImage(this["image"]),
+            imagePathOrUrl = resolveMediaImage(image),
         )
     }
+
+    private fun <T> decode(serializer: KSerializer<T>, element: JsonElement): T? =
+        (element as? JsonObject)?.let { runCatching { HA_JSON.decodeFromJsonElement(serializer, it) }.getOrNull() }
 
     /**
      * HA websocket `call_service` + `return_response` wraps the payload as `{ context, response }`.
@@ -159,14 +183,14 @@ internal object MusicResponseParsers {
     }
 
     private fun extractQueuePayload(payload: JsonObject, entityId: String): JsonObject? {
-        val byEntity = payload[entityId]?.jsonObject
+        val byEntity = payload[entityId] as? JsonObject
         val sole = payload.values.singleOrNull() as? JsonObject
         val soleIsQueue = sole != null &&
             (sole.containsKey("queue_id") || sole.containsKey("current_item"))
         val scanned = payload.entries.firstOrNull { (_, value) ->
             val obj = value as? JsonObject ?: return@firstOrNull false
             obj.containsKey("queue_id") || obj.containsKey("current_item")
-        }?.value?.jsonObject
+        }?.value as? JsonObject
         return when {
             payload.containsKey("queue_id") || payload.containsKey("current_item") -> payload
             byEntity != null -> byEntity

@@ -2,10 +2,10 @@ package tech.shaffersoftworks.remotescreens.server.render.panels.cameras
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.Tile
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 /** The tile option that lists a cameras page's cameras: `camera.front_door=Front Door;camera.garage`. */
 const val CAMERAS_OPTION = "cameras"
-private const val CAMERA_DOMAIN_PREFIX = "camera."
 private const val CAMERA_SEPARATOR = ';'
 private const val LABEL_SEPARATOR = '='
 
@@ -21,7 +21,7 @@ fun Tile.cameraEntries(): List<CameraEntry> = options[CAMERAS_OPTION].orEmpty()
     .mapNotNull { entry ->
         val entityId = entry.substringBefore(LABEL_SEPARATOR).trim()
         val label = entry.substringAfter(LABEL_SEPARATOR, "").trim()
-        CameraEntry(entityId, label).takeIf { entityId.startsWith(CAMERA_DOMAIN_PREFIX) }
+        CameraEntry(entityId, label).takeIf { Domain.CAMERA.owns(entityId) }
     }
     .distinctBy { it.entityId }
 

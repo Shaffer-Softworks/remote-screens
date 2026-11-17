@@ -51,8 +51,8 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
         isDark: Boolean,
     ): BufferedImage {
         val people = entities.mapNotNull { entity ->
-            val latitude = entity.number("latitude")
-            val longitude = entity.number("longitude")
+            val latitude = entity.common.latitude
+            val longitude = entity.common.longitude
             if (latitude != null && longitude != null) {
                 PlacedPerson(
                     entity.name,

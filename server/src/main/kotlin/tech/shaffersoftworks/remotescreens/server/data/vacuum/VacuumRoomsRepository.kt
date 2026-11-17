@@ -1,12 +1,8 @@
 package tech.shaffersoftworks.remotescreens.server.data.vacuum
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.AreaRegistryList
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityRegistryGet
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
@@ -48,29 +44,12 @@ class VacuumRoomsRepository(private val homeAssistant: HomeAssistant) {
     }
 
     private suspend fun fetchMappedAreas(entityId: String): List<VacuumRoom> {
-        val entry = homeAssistant.command(
-            "config/entity_registry/get",
-            buildJsonObject { put("entity_id", entityId) },
-        ) as? JsonObject
-        val mapping = entry.objectAt("options")
-            .objectAt("vacuum")
-            .objectAt("area_mapping")
-            .orEmpty()
-        val areaIds = mapping.filterValues { segments -> (segments as? JsonArray).orEmpty().isNotEmpty() }.keys
+        val mapping = homeAssistant.send(EntityRegistryGet(entityId)).options.vacuum?.areaMapping.orEmpty()
+        val areaIds = mapping.filterValues { segments -> segments.isNotEmpty() }.keys
         if (areaIds.isEmpty()) return emptyList()
-        val names = (homeAssistant.command("config/area_registry/list") as? JsonArray).orEmpty()
-            .mapNotNull { element ->
-                val area = element as? JsonObject
-                val areaId = area?.text("area_id")
-                areaId?.let { it to (area.text("name") ?: it) }
-            }
-            .toMap()
+        val names = homeAssistant.send(AreaRegistryList).associate { area -> area.areaId to area.displayName }
         return areaIds
             .map { areaId -> VacuumRoom(id = areaId, name = names[areaId] ?: areaId) }
             .sortedBy { room -> room.name }
     }
-
-    private fun JsonObject?.objectAt(key: String): JsonObject? = this?.get(key) as? JsonObject
-
-    private fun JsonObject.text(key: String): String? = (this[key] as? JsonPrimitive)?.contentOrNull
 }

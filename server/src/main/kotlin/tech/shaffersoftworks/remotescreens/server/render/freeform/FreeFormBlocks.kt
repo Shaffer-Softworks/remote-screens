@@ -49,6 +49,8 @@ import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import java.time.ZoneId
 import kotlin.math.roundToInt
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaPlayerState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 private object BlockMetrics {
     const val TIMER_KEY_H_DP = 52f
@@ -250,14 +252,14 @@ private fun DocContext.todoListNode(node: Node, self: Dims, axis: Axis, pages: P
 private fun DocContext.eventsNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
     val max = node.props["max"]?.toIntOrNull()?.coerceIn(1, BlockMetrics.EVENT_MAX)
         ?: BlockMetrics.EVENT_DEFAULT_MAX
-    val calendars = listedEntities(node, "calendars", "calendar")
+    val calendars = listedEntities(node, "calendars", Domain.CALENDAR)
     val zone = runCatching { ZoneId.of(
         homeAssistantConfig.timeZone,
     ) }.getOrDefault(ZoneId.of("UTC"))
     for (calendarId in calendars) {
         bindEntity(calendarId)
         structural(calendarId) { s ->
-            listOf(s?.attr("message"), s?.attr("start_time"), s?.attr("all_day")).joinToString("|")
+            listOf(s?.calendar?.message, s?.calendar?.startTime, s?.calendar?.allDay).joinToString("|")
         }
     }
     val events = calendars.mapNotNull { calendarId ->
@@ -417,7 +419,7 @@ private fun DocContext.mediaBarNode(node: Node, self: Dims, axis: Axis, pages: P
                     node.id,
                     "seek",
                     (
-                        (doc.states[id]?.number("media_duration") ?: 0.0) *
+                        (doc.states[id]?.mediaPlayer?.mediaDuration ?: 0.0) *
                             step / BlockMetrics.MEDIA_PROGRESS_STEPS
                         ).roundToInt().toString(),
                 )
@@ -455,17 +457,19 @@ private fun DocContext.bindMediaBar(node: Node, id: String) {
     bind(id) { states ->
         val entityState = states[id]
         val artist = listOfNotNull(
-            entityState?.attr("media_artist"),
-            entityState?.attr("media_album_name"),
-        ).joinToString(" · ").ifEmpty { i18n.state("media_player", entityState?.state ?: "off") }
-        val playing = entityState?.state == "playing"
-        val duration = entityState?.number("media_duration")
+            entityState?.mediaPlayer?.mediaArtist,
+            entityState?.mediaPlayer?.mediaAlbumName,
+        ).joinToString(
+            " · ",
+        ).ifEmpty { i18n.state(Domain.MEDIA_PLAYER.value, entityState?.state ?: MediaPlayerState.OFF.wire) }
+        val playing = entityState?.mediaPlayerState == MediaPlayerState.PLAYING
+        val duration = entityState?.mediaPlayer?.mediaDuration
         val position = entityState.mediaPosition()
         val progress = mediaProgress(position, duration)
         listOf(
             VarValue.string(
                 Vars.entity(id, "title"),
-                entityState?.attr("media_title") ?: entityState?.name ?: "",
+                entityState?.mediaPlayer?.mediaTitle ?: entityState?.name ?: "",
             ),
             VarValue.string(Vars.entity(id, "artist"), artist),
             VarValue.int(Vars.entity(id, "playing"), if (playing) Vars.VISIBLE else Vars.GONE),
@@ -550,7 +554,7 @@ private fun DocContext.forecastNode(node: Node, self: Dims, axis: Axis, pages: P
 
 /** Person chips: photo, name, HOME/AWAY. `people` lists entity ids; otherwise every person. */
 private fun DocContext.presenceNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
-    val people = listedEntities(node, "people", "person")
+    val people = listedEntities(node, "people", Domain.PERSON)
     val photo = BlockMetrics.PRESENCE_PHOTO_DP
     val ink = node.props["ink"]?.let { paint(it) } ?: role(Role.INK)
     val where = node.props["color"]?.let { paint(it) } ?: role(Role.ACCENT_SOFT)
@@ -658,12 +662,12 @@ private fun DocContext.weatherNowNode(node: Node, self: Dims, axis: Axis, pages:
 private fun DocContext.bindWeatherNow(node: Node, id: String) {
     bindEntity(id)
     structural(id) { s ->
-        listOf(s?.state, s?.number("temperature"), s?.attr("temperature_unit")).joinToString("|")
+        listOf(s?.state, s?.weather?.temperature, s?.weather?.temperatureUnit).joinToString("|")
     }
     bind(id) { states ->
         val entityState = states[id]
-        val temp = entityState?.number("temperature")
-        val unit = entityState?.attr("temperature_unit").orEmpty().replace("°", "")
+        val temp = entityState?.weather?.temperature
+        val unit = entityState?.weather?.temperatureUnit.orEmpty().replace("°", "")
         listOf(
             VarValue.string(
                 Vars.tile(node.id, "temp"),
@@ -675,7 +679,7 @@ private fun DocContext.bindWeatherNow(node: Node, id: String) {
 
 /** Next calendar event card: left-stacked day, large time, title, calendar · location (RPI home style). */
 private fun DocContext.nextEventNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
-    val calendars = listedEntities(node, "calendars", "calendar")
+    val calendars = listedEntities(node, "calendars", Domain.CALENDAR)
     val zone = runCatching { ZoneId.of(
         homeAssistantConfig.timeZone,
     ) }.getOrDefault(ZoneId.of("UTC"))
@@ -729,7 +733,7 @@ private fun DocContext.bindNextEventLeaf(
     for (calendarId in calendars) {
         bindEntity(calendarId)
         structural(calendarId) { s ->
-            listOf(s?.attr("message"), s?.attr("start_time"), s?.attr("all_day")).joinToString("|")
+            listOf(s?.calendar?.message, s?.calendar?.startTime, s?.calendar?.allDay).joinToString("|")
         }
     }
     val event = nextCalendarEvent(calendars, states, zone)
@@ -822,12 +826,12 @@ private fun DocContext.ledNode(node: Node, axis: Axis, pages: Pages) {
 }
 
 /** Entity ids from [prop] (comma-separated), else the bound entity, else every entity of [domain]. */
-private fun DocContext.listedEntities(node: Node, prop: String, domain: String): List<String> {
+private fun DocContext.listedEntities(node: Node, prop: String, domain: Domain): List<String> {
     val fromProp = node.props[prop]?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }
-    val bound = node.bind?.entityId?.takeIf { it.startsWith("$domain.") }?.let { listOf(it) }
+    val bound = node.bind?.entityId?.takeIf(domain::owns)?.let { listOf(it) }
     return when {
         !fromProp.isNullOrEmpty() -> fromProp
         bound != null -> bound
-        else -> states.keys.filter { it.startsWith("$domain.") }.sorted()
+        else -> states.keys.filter(domain::owns).sorted()
     }
 }

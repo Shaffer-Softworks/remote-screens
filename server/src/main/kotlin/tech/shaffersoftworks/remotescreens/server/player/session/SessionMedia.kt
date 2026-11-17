@@ -17,6 +17,7 @@ import tech.shaffersoftworks.remotescreens.shared.VarValue
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 import java.util.Base64
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 private const val MAP_CARD_PICTURE = "map.card"
 private const val ARGB_MASK = 0xFFFFFFFFL
@@ -71,8 +72,8 @@ internal class SessionMedia(
             if (shownDocuments[shown.slot] !== shown) return@launch
             val markers = map.entityIds.mapNotNull { entityId ->
                 val entityState = states[entityId] ?: return@mapNotNull null
-                val latitude = entityState.number("latitude") ?: return@mapNotNull null
-                val longitude = entityState.number("longitude") ?: return@mapNotNull null
+                val latitude = entityState.common.latitude ?: return@mapNotNull null
+                val longitude = entityState.common.longitude ?: return@mapNotNull null
                 val pictureName = "${Vars.MAP_PIC_PREFIX}$entityId"
                     .takeIf { name -> shown.renderedDoc.docContext.pictures.any { it.name == name } }
                 MapMarker(
@@ -261,7 +262,7 @@ internal class SessionMedia(
         if (!host.supportsVideo) return
         val id = when {
             !camera.isNullOrBlank() -> camera
-            entityId?.startsWith("camera.") == true -> entityId
+            entityId != null && Domain.CAMERA.owns(entityId) -> entityId
             kind == "camera" && !entityId.isNullOrBlank() -> entityId
             else -> return
         }

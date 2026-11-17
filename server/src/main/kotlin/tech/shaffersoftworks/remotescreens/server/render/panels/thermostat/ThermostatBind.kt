@@ -6,6 +6,8 @@ import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.shared.VarValue
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HvacMode
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 /** Readings, dial colours/sweeps, action, dual setpoints, fan word, and which mode is lit. */
 internal fun DocContext.bindThermostat(tileId: String, entityId: String, modes: List<String>, dual: Boolean) {
@@ -19,14 +21,14 @@ internal fun DocContext.bindThermostat(tileId: String, entityId: String, modes: 
             ThermostatMetrics.TEMP_DECIMALS_C
         }
         val unitSuffix = if (homeAssistantConfig.temperatureUnit.contains("F")) "°F" else "°"
-        val action = entityState?.attr("hvac_action")
+        val action = entityState?.climate?.hvacAction
         val tintArgb = when (action) {
             "heating", "preheating" -> Role.WARN
             "cooling" -> Role.BLUE
             else -> Role.ACCENT_DARK
         }.argb
-        val minValue = entityState?.number("min_temp") ?: ThermostatMetrics.DEFAULT_MIN_TEMP_C
-        val maxValue = entityState?.number("max_temp") ?: ThermostatMetrics.DEFAULT_MAX_TEMP_C
+        val minValue = entityState?.climate?.minTemp ?: ThermostatMetrics.DEFAULT_MIN_TEMP_C
+        val maxValue = entityState?.climate?.maxTemp ?: ThermostatMetrics.DEFAULT_MAX_TEMP_C
         val span = (maxValue - minValue).coerceAtLeast(1.0)
         fun sweepOf(value: Double?) = value?.let {
             (((it - minValue) / span).coerceIn(
@@ -34,12 +36,10 @@ internal fun DocContext.bindThermostat(tileId: String, entityId: String, modes: 
                 1.0,
             ) * ThermostatMetrics.FULL_CIRCLE_DEG).toFloat()
         } ?: 0f
-        fun tempLabel(attr: String) =
-            entityState?.number(
-                attr,
-            )?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + unitSuffix } ?: "–"
-        val lowSweep = sweepOf(entityState?.number("target_temp_low"))
-        val highSweep = sweepOf(entityState?.number("target_temp_high"))
+        fun tempLabel(temperature: Double?) =
+            temperature?.let { i18n.number(it, if (it % 1.0 == 0.0) 0 else 1) + unitSuffix } ?: "–"
+        val lowSweep = sweepOf(entityState?.climate?.targetTempLow)
+        val highSweep = sweepOf(entityState?.climate?.targetTempHigh)
         val coolStart = ThermostatMetrics.ARC_START_DEG + lowSweep + ThermostatMetrics.DUAL_ARC_GAP_DEG
         val coolSweep = (highSweep - lowSweep - ThermostatMetrics.DUAL_ARC_GAP_DEG).coerceAtLeast(
             0f,
@@ -48,17 +48,15 @@ internal fun DocContext.bindThermostat(tileId: String, entityId: String, modes: 
         listOf(
             VarValue.string(
                 Vars.tile(tileId, "current"),
-                entityState?.number(
-                    "current_temperature",
-                )?.let { i18n.number(it, unit) + "°" } ?: "–",
+                entityState?.climate?.currentTemperature?.let { i18n.number(it, unit) + "°" } ?: "–",
             ),
             VarValue.string(
                 Vars.tile(tileId, "humidity"),
-                entityState?.number("current_humidity")?.let { i18n.percent(it.toInt()) } ?: "–",
+                entityState?.climate?.currentHumidity?.let { i18n.percent(it.toInt()) } ?: "–",
             ),
             VarValue.string(
                 Vars.tile(tileId, "action"),
-                action?.let { actionWord(it) } ?: i18n.state("climate", state ?: "off"),
+                action?.let { actionWord(it) } ?: i18n.state(Domain.CLIMATE.value, state ?: HvacMode.OFF.wire),
             ),
             VarValue.color(Vars.tile(tileId, "dial"), tintArgb),
             VarValue.color(
@@ -69,26 +67,26 @@ internal fun DocContext.bindThermostat(tileId: String, entityId: String, modes: 
                 Vars.tile(tileId, "dialOuter"),
                 withAlpha(Role.INK.argb, ThermostatMetrics.DIAL_OUTER_ALPHA),
             ),
-            VarValue.float(Vars.tile(tileId, "sweep"), sweepOf(entityState?.number("temperature"))),
+            VarValue.float(Vars.tile(tileId, "sweep"), sweepOf(entityState?.climate?.temperature)),
             VarValue.float(Vars.tile(tileId, "sweepLow"), lowSweep),
             VarValue.float(Vars.tile(tileId, "sweepHigh"), highSweep),
             VarValue.float(Vars.tile(tileId, "coolStart"), coolStart),
             VarValue.float(Vars.tile(tileId, "coolSweep"), coolSweep),
             VarValue.string(
                 Vars.tile(tileId, "target"),
-                if (dual) "" else tempLabel("temperature"),
+                if (dual) "" else tempLabel(entityState?.climate?.temperature),
             ),
             VarValue.string(
                 Vars.tile(tileId, "low"),
-                if (dual) tempLabel("target_temp_low") else "",
+                if (dual) tempLabel(entityState?.climate?.targetTempLow) else "",
             ),
             VarValue.string(
                 Vars.tile(tileId, "high"),
-                if (dual) tempLabel("target_temp_high") else "",
+                if (dual) tempLabel(entityState?.climate?.targetTempHigh) else "",
             ),
             VarValue.string(
                 Vars.tile(tileId, "fan"),
-                entityState?.attr("fan_mode")?.let { fanWord(it) } ?: "–",
+                entityState?.climate?.fanMode?.let { fanWord(it) } ?: "–",
             ),
         ) + modes.mapIndexed { i, mode ->
             VarValue.color(
@@ -104,10 +102,7 @@ private fun DocContext.fanWord(mode: String): String =
         ?: mode.replace('_', ' ').replaceFirstChar { it.titlecase(i18n.locale) }
 
 /** Whether [state] lights the RPI mode button for [mode] (`auto` ↔ `heat_cool`). */
-private fun modeSelected(state: String?, mode: String): Boolean =
-    state == mode ||
-        (mode == "heat_cool" && state == "auto") ||
-        (mode == "auto" && state == "heat_cool")
+private fun modeSelected(state: String?, mode: String): Boolean = hvacModeSelected(state, mode)
 
 private fun withAlpha(argb: Int, alpha: Float): Int {
     val a = (alpha.coerceIn(0f, 1f) * ThermostatMetrics.OPAQUE_ALPHA).toInt()

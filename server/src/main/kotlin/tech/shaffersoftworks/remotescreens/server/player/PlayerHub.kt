@@ -23,9 +23,6 @@ import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import org.slf4j.LoggerFactory
 import tech.shaffersoftworks.remotescreens.shared.CrashTestResult
 import java.util.concurrent.ConcurrentHashMap
@@ -86,10 +83,9 @@ class PlayerHub(
         }
         scope.launch { runClock() }
         scope.launch { runTicks() }
-        scope.launch { homeAssistant.events.collect { event -> onHomeAssistantEvent(
-            event.type,
-            event.data,
-        ) } }
+        scope.launch {
+            homeAssistant.events.collect { event -> FollowedEvent.of(event)?.let { onFollowedEvent(it) } }
+        }
     }
 
     /** Serves one player's WebSocket until it closes. The first message must be its [PlayerMessage.Hello]. */
@@ -315,25 +311,13 @@ class PlayerHub(
             (targets.isEmpty() || session.screenId in targets || session.hello.deviceId in targets)
     }
 
-    private suspend fun onHomeAssistantEvent(type: String, data: JsonObject) {
-        fun targets(): List<String> = when (val targets = data["targets"] ?: data["screens"]) {
-            is JsonArray -> targets.mapNotNull { (it as? JsonPrimitive)?.content }
-            is JsonPrimitive -> listOf(targets.content)
-            else -> emptyList()
-        }
-        when (type) {
-            "remote_screens_alert" -> runCatching { Protocol.json.decodeFromJsonElement(
-                Alert.serializer(),
-                data,
-            ) }
-                .onSuccess { showAlert(it) }
-                .onFailure { logger.warn("Bad alert event: {}", it.message) }
-            "remote_screens_open_page" -> (data["page"] as? JsonPrimitive)?.content?.let { openPage(
-                targets(),
-                it,
-            ) }
-            "remote_screens_wake" -> wake(targets())
-            "remote_screens_close" -> closeOverlays(targets())
+    private suspend fun onFollowedEvent(event: FollowedEvent) {
+        when (event) {
+            is FollowedEvent.ShowAlert -> showAlert(event.alert)
+            is FollowedEvent.OpenPage -> openPage(event.targets, event.page)
+            is FollowedEvent.Wake -> wake(event.targets)
+            is FollowedEvent.Close -> closeOverlays(event.targets)
+            is FollowedEvent.Unreadable -> logger.warn("Bad {} event: {}", event.type, event.reason)
         }
     }
 

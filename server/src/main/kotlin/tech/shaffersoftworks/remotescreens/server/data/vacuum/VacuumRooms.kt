@@ -5,8 +5,6 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 /** `VacuumEntityFeature.CLEAN_AREA`: the vacuum takes `vacuum.clean_area` with Home Assistant area ids. */
 const val VACUUM_CLEAN_AREA_FEATURE = 16384
 
-const val VACUUM_PREFIX = "vacuum."
-
 /** How a vacuum cleans the rooms chosen in its dialog. */
 enum class VacuumCleanMethod {
     /** `vacuum.clean_area` with the Home Assistant areas mapped to the vacuum's segments. */
@@ -32,15 +30,15 @@ data class VacuumRooms(
 }
 
 fun EntityState.supportsCleanArea(): Boolean =
-    ((number("supported_features")?.toInt() ?: 0) and VACUUM_CLEAN_AREA_FEATURE) != 0
+    supports(VACUUM_CLEAN_AREA_FEATURE)
 
 /**
  * Segment rooms from attributes some integrations publish: parallel `room_ids` + `room_list`, or `room_list`
  * alone (name as id).
  */
 fun EntityState.vacuumSegmentRooms(): List<VacuumRoom> {
-    val ids = list("room_ids")
-    return list("room_list").mapIndexed { index, name ->
+    val ids = vacuum.roomIds
+    return vacuum.roomList.mapIndexed { index, name ->
         VacuumRoom(
             id = ids.getOrNull(index)?.takeIf { it.isNotBlank() } ?: name,
             name = name,

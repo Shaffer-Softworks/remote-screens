@@ -35,6 +35,7 @@ import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import androidx.compose.remote.creation.dsl.width
 import androidx.compose.remote.creation.modifiers.RectShape
 import tech.shaffersoftworks.remotescreens.server.render.panels.lights.LightsMetrics as M
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 private const val KEY_LIGHTS_ON_PREFIX = "lightsOn."
 private const val ALPHA_SHIFT = 24
@@ -231,10 +232,10 @@ private fun DocContext.roomRow(tileId: String, room: LightsRoom, isSelected: Boo
  * its `LightsScreen`. The room's lights are watched so the line follows them without a rebuild.
  */
 private fun DocContext.bindLightsOnCount(countVar: String, room: LightsRoom) {
-    val lightIds = room.entityIds.filter { it.startsWith("light.") }
+    val lightIds = room.entityIds.filter(Domain.LIGHT::owns)
     for (entityId in lightIds) bind(entityId) { emptyList() }
     bind(null) { current ->
-        val count = lightIds.count { current[it]?.state == "on" }
+        val count = lightIds.count { current[it]?.isOn == true }
         val words = when (count) {
             0 -> i18n.t("ui.lights_all_off")
             1 -> i18n.t("ui.lights_one_on")

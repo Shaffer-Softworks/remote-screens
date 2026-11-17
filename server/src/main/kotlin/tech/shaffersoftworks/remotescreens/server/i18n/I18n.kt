@@ -1,7 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.i18n
 
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import java.text.NumberFormat
@@ -113,13 +112,6 @@ class I18n(
                 .format(afternoon)
             return !formatted.contains("PM", ignoreCase = true) && !formatted.contains("3")
         }
-
-        /** Flattens Home Assistant's `frontend/get_translations` result into its keys. */
-        fun haResources(result: JsonObject?): Map<String, String> =
-            (result?.get("resources") as? JsonObject)
-                ?.mapNotNull { (key, value) -> (value as? JsonPrimitive)?.content?.let { key to it } }
-                ?.toMap()
-                .orEmpty()
     }
 }
 
