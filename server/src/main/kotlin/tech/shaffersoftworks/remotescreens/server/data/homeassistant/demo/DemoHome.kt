@@ -664,6 +664,14 @@ class DemoHome : HomeAssistant {
                 ),
             ),
             EntityState(
+                "select.robot_cleaning_mode",
+                "vacuum",
+                attrs(
+                    "friendly_name" to "Robot Cleaning mode",
+                    "options" to listOf("vac_and_mop", "vacuum", "mop", "customized"),
+                ),
+            ),
+            EntityState(
                 "person.sam",
                 "home",
                 attrs("friendly_name" to "Sam", "latitude" to 52.37, "longitude" to 4.89),

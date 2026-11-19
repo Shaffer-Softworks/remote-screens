@@ -24,12 +24,16 @@ private const val DEFAULT_HUMIDITY_MAX = 100.0
 private const val DEFAULT_MIN_VALUE = 0.0
 private const val DEFAULT_MAX_VALUE = 100.0
 private const val MAX_WHOLE_NUMBER = 1e9
+private const val FAHRENHEIT_FREEZE_POINT = 32.0
+private const val FAHRENHEIT_SCALE = 1.8
 private const val ARG_PLACEHOLDER = "\$arg"
 private const val CODE_PLACEHOLDER = "\$code"
 private val ARG_PART = Regex("\\\$arg[0-9]")
 private val CLIMATE_SET_TEMPERATURE = ServiceRef(Domain.CLIMATE, "set_temperature")
 private const val ATTR_TARGET_TEMP_LOW = "target_temp_low"
 private const val ATTR_TARGET_TEMP_HIGH = "target_temp_high"
+private const val ATTR_TEMPERATURE = "temperature"
+private val FAHRENHEIT_UNIT_MARKERS = setOf("°F", "F", "°f", "f")
 
 /** Fills the service data of a catalogue action with the tap's argument and a typed code. */
 object ServiceDataBuilder {
@@ -150,8 +154,36 @@ object ServiceDataBuilder {
         val delta = arg.takeIf { it.startsWith('+') || it.startsWith('-') }?.toDoubleOrNull()
         if (relativeTo == null || entity == null || delta == null) return arg
         return scaledValue(relativeTo, entity)
-            ?.let { base -> formatNumber((base + delta).coerceIn(limits(entity, relativeTo))) }
+            ?.let { base ->
+                val stepped = (base + delta).coerceIn(limits(entity, relativeTo))
+                formatNumber(snapClimateFahrenheitToWholeCelsius(stepped, relativeTo, entity))
+            }
             ?: arg
+    }
+
+    /**
+     * Mini-splits that only accept whole °C look jumpy in °F: 64−2 → 62, then the unit reports 63.
+     * Snap the display value to the °F that whole °C round-trips to, so predict and HA agree.
+     */
+    private fun snapClimateFahrenheitToWholeCelsius(
+        value: Double,
+        relativeTo: String,
+        entity: EntityState,
+    ): Double {
+        if (!shouldSnapClimateFahrenheit(relativeTo = relativeTo, entity = entity)) {
+            return value
+        }
+        val celsius = (value - FAHRENHEIT_FREEZE_POINT) / FAHRENHEIT_SCALE
+        val wholeCelsiusFahrenheit =
+            kotlin.math.round(celsius) * FAHRENHEIT_SCALE + FAHRENHEIT_FREEZE_POINT
+        return kotlin.math.round(wholeCelsiusFahrenheit)
+    }
+
+    private fun shouldSnapClimateFahrenheit(relativeTo: String, entity: EntityState): Boolean {
+        val isClimateTemperature = entity.domain == Domain.CLIMATE &&
+            relativeTo in setOf(ATTR_TEMPERATURE, ATTR_TARGET_TEMP_LOW, ATTR_TARGET_TEMP_HIGH)
+        val unit = entity.climate.temperatureUnit?.trim().orEmpty()
+        return isClimateTemperature && unit in FAHRENHEIT_UNIT_MARKERS
     }
 
     /** `$arg`, `$arg*2.55` or `$arg/100`, as a number where the argument is one. */

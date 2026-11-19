@@ -140,6 +140,7 @@ data class VacuumAttributes(
     @SerialName("fan_speed_list") val fanSpeedList: List<String> = emptyList(),
     @SerialName("room_list") val roomList: List<String> = emptyList(),
     @SerialName("room_ids") val roomIds: List<String> = emptyList(),
+    @SerialName("options") val options: List<String> = emptyList(),
 )
 
 /** A calendar's next event. */
