@@ -84,6 +84,7 @@ fun DocContext.calendarPanel(tile: Tile, box: TileBox) {
     val snapshot = data.agenda ?: AgendaSnapshot(isLoading = true)
     val zone = agendaZone()
     val calendarIds = (snapshot.calendars.map { it.entityId } + snapshot.events.map { it.entityId }).distinct()
+
     for (entityId in calendarIds) {
         structural(entityId) { entity ->
             listOf(
@@ -93,11 +94,14 @@ fun DocContext.calendarPanel(tile: Tile, box: TileBox) {
             ).joinToString("|")
         }
     }
+
     refreshEvery(AGENDA_REFRESH_SECONDS)
     val background = fixed(AgendaColor.BACKGROUND)
     val showAdd = supportsCalendarDialogs && snapshot.calendars.any { it.canCreate }
+
     rcScope.Box(Modifier.size(units.px(box.w), units.px(box.h)).background(background)) {
-        this@calendarPanel.agendaColumn(tile.id, snapshot, zone)
+        this@calendarPanel.agendaColumn(tileId = tile.id, snapshot = snapshot, zone = zone)
+
         if (showAdd) this@calendarPanel.agendaAddButton(tile.id)
     }
 }
@@ -105,6 +109,7 @@ fun DocContext.calendarPanel(tile: Tile, box: TileBox) {
 private fun DocContext.agendaColumn(tileId: String, snapshot: AgendaSnapshot, zone: ZoneId) {
     val teal = fixed(AgendaColor.TEAL)
     val white = fixed(AgendaColor.WHITE)
+
     rcScope.Column(
         Modifier.fillMaxSize().padding(
             start = units.px(AgendaLayout.PAD_H),
@@ -118,17 +123,20 @@ private fun DocContext.agendaColumn(tileId: String, snapshot: AgendaSnapshot, zo
         Spacer(Modifier.height(doc.units.px(AgendaLayout.TITLE_GAP)))
         Box(Modifier.fillMaxWidth().height(doc.units.px(AgendaLayout.RULE)).background(teal))
         val notice = doc.data.agendaNotices[tileId]
+
         if (!notice.isNullOrBlank()) {
             Spacer(Modifier.height(doc.units.px(AgendaLayout.TITLE_GAP)))
-            doc.label(notice, AgendaLayout.META_SP, teal)
+            doc.label(text = notice, sp = AgendaLayout.META_SP, color = teal)
         }
+
         Spacer(Modifier.height(doc.units.px(AgendaLayout.AFTER_RULE)))
-        doc.agendaBody(tileId, snapshot, zone)
+        doc.agendaBody(tileId = tileId, snapshot = snapshot, zone = zone)
     }
 }
 
 private fun DocContext.agendaBody(tileId: String, snapshot: AgendaSnapshot, zone: ZoneId) {
     val message = snapshot.errorMessage
+
     when {
         snapshot.isLoading && snapshot.events.isEmpty() -> agendaStatus(AgendaCopy.LOADING, showSpinner = true)
         message != null && snapshot.events.isEmpty() -> agendaStatus(
@@ -136,46 +144,55 @@ private fun DocContext.agendaBody(tileId: String, snapshot: AgendaSnapshot, zone
             showSpinner = false,
         )
         snapshot.events.isEmpty() -> agendaStatus(AgendaCopy.EMPTY, showSpinner = false)
-        else -> agendaList(tileId, snapshot.events, zone)
+        else -> agendaList(tileId = tileId, events = snapshot.events, zone = zone)
     }
 }
 
 private fun DocContext.agendaStatus(message: String, showSpinner: Boolean) {
     val color = fixed(if (showSpinner) AgendaColor.SECONDARY else AgendaColor.WHITE)
+
     rcScope.Box(
-        Modifier.fillMaxWidth().verticalWeight(1f),
+        modifier = Modifier.fillMaxWidth().verticalWeight(1f),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
     ) {
         Column {
             val doc = this@agendaStatus
+
             if (showSpinner) {
                 doc.spinner(AgendaLayout.SPINNER, doc.fixed(AgendaColor.TEAL))
                 Spacer(Modifier.height(doc.units.px(AgendaLayout.SPINNER_GAP)))
             }
-            doc.label(message, AgendaLayout.ROW_TITLE_SP, color)
+
+            doc.label(text = message, sp = AgendaLayout.ROW_TITLE_SP, color = color)
         }
     }
 }
 
 private fun DocContext.agendaList(tileId: String, events: List<AgendaEvent>, zone: ZoneId) {
     val grouped = linkedMapOf<String, List<AgendaEvent>>()
+
     for (event in events) {
         val label = agendaDay(event, zone)
         grouped[label] = grouped[label].orEmpty() + event
     }
+
     rcScope.Column(Modifier.fillMaxWidth().verticalWeight(1f).keptVerticalScroll("calendar.$tileId")) {
         val doc = this@agendaList
         var shown = 0
+
         for ((label, dayEvents) in grouped) {
             if (shown > 0) Spacer(Modifier.height(doc.units.px(AgendaLayout.LIST_GAP)))
+
             shown += 1
             doc.agendaDayHeader(label)
+
             for (event in dayEvents) {
                 Spacer(Modifier.height(doc.units.px(AgendaLayout.LIST_GAP)))
-                doc.agendaRow(tileId, event, zone)
+                doc.agendaRow(tileId = tileId, event = event, zone = zone)
             }
         }
+
         Spacer(Modifier.height(doc.units.px(AgendaLayout.LIST_BOTTOM)))
     }
 }
@@ -198,11 +215,12 @@ private fun DocContext.agendaDayHeader(label: String) {
 private fun DocContext.agendaRow(tileId: String, event: AgendaEvent, zone: ZoneId) {
     val hold = event.uid?.takeIf { supportsCalendarDialogs && event.canDelete }?.let { uid ->
         ActionRef(
-            tileId,
-            "calendar_delete",
-            listOf(event.entityId, uid, event.recurrenceId.orEmpty()).joinToString(AGENDA_FIELD_SEPARATOR),
+            tile = tileId,
+            verb = "calendar_delete",
+            arg = listOf(event.entityId, uid, event.recurrenceId.orEmpty()).joinToString(AGENDA_FIELD_SEPARATOR),
         )
     }
+
     val row = Modifier.fillMaxWidth()
         .height(units.px(AgendaLayout.ROW_H))
         .background(fixed(AgendaColor.ROW))
@@ -212,8 +230,10 @@ private fun DocContext.agendaRow(tileId: String, event: AgendaEvent, zone: ZoneI
             end = units.px(AgendaLayout.ROW_PAD_H),
             bottom = units.px(AgendaLayout.ROW_PAD_V),
         )
-    rcScope.Row(tap(row, null, hold), vertical = RcVerticalPositioning.Center) {
+
+    rcScope.Row(tap(modifier = row, ref = null, hold = hold), vertical = RcVerticalPositioning.Center) {
         val doc = this@agendaRow
+
         doc.label(
             text = agendaTime(event, zone),
             sp = AgendaLayout.TIME_SP,
@@ -221,28 +241,33 @@ private fun DocContext.agendaRow(tileId: String, event: AgendaEvent, zone: ZoneI
             weight = Weight.LIGHT,
             modifier = Modifier.width(doc.units.px(AgendaLayout.TIME_W)),
         )
+
         Box(
             Modifier.fillMaxHeight().width(doc.units.px(AgendaLayout.RULE)).background(doc.fixed(AgendaColor.DIVIDER)),
         )
+
         Spacer(Modifier.width(doc.units.px(AgendaLayout.ROW_PAD_H)))
+
         Column(Modifier.horizontalWeight(1f)) {
-            doc.label(event.summary, AgendaLayout.ROW_TITLE_SP, doc.fixed(AgendaColor.WHITE))
+            doc.label(text = event.summary, sp = AgendaLayout.ROW_TITLE_SP, color = doc.fixed(AgendaColor.WHITE))
             Spacer(Modifier.height(doc.units.px(AgendaLayout.META_GAP)))
-            doc.label(agendaMeta(event), AgendaLayout.META_SP, doc.fixed(AgendaColor.SECONDARY))
+            doc.label(text = agendaMeta(event), sp = AgendaLayout.META_SP, color = doc.fixed(AgendaColor.SECONDARY))
         }
     }
 }
 
 private fun DocContext.agendaAddButton(tileId: String) {
     val inset = units.px(AgendaLayout.FAB_INSET)
+
     rcScope.Box(
-        Modifier.fillMaxSize().padding(start = inset, top = inset, end = inset, bottom = inset),
+        modifier = Modifier.fillMaxSize().padding(start = inset, top = inset, end = inset, bottom = inset),
         horizontal = RcHorizontalPositioning.End,
         vertical = RcVerticalPositioning.Bottom,
     ) {
         val doc = this@agendaAddButton
+
         Box(
-            doc.tap(
+            modifier = doc.tap(
                 Modifier.size(doc.units.px(AgendaLayout.FAB))
                     .clip(doc.rounded(AgendaLayout.FAB_RADIUS))
                     .background(doc.fixed(AgendaColor.TEAL)),
@@ -251,7 +276,7 @@ private fun DocContext.agendaAddButton(tileId: String) {
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcVerticalPositioning.Center,
         ) {
-            doc.icon("plus", AgendaLayout.FAB_ICON, doc.fixed(AgendaColor.BACKGROUND))
+            doc.icon(name = "plus", sizeDp = AgendaLayout.FAB_ICON, color = doc.fixed(AgendaColor.BACKGROUND))
         }
     }
 }
@@ -261,11 +286,13 @@ private fun DocContext.agendaZone(): ZoneId =
 
 private fun agendaDay(event: AgendaEvent, zone: ZoneId): String {
     val start = event.start ?: return ""
+
     return start.atZone(zone).format(AGENDA_DAY)
 }
 
 private fun agendaTime(event: AgendaEvent, zone: ZoneId): String {
     val start = event.start
+
     return when {
         event.isAllDay -> AgendaCopy.ALL_DAY
         start == null -> ""
@@ -275,6 +302,7 @@ private fun agendaTime(event: AgendaEvent, zone: ZoneId): String {
 
 private fun DocContext.agendaMeta(event: AgendaEvent): String {
     val hold = if (supportsCalendarDialogs && event.canDelete) AgendaCopy.HOLD_SUFFIX else ""
+
     return listOfNotNull(
         event.calendarName.takeIf { it.isNotBlank() },
         event.location,

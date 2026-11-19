@@ -83,18 +83,22 @@ private class Layout(val scale: Float) {
 fun DocContext.securityPanel(tile: Tile, box: TileBox) {
     val ui = data.securityUi[tile.id] ?: SecurityUiState()
     val locks = states.keys.filter { EntityId(it).domain == Domain.LOCK }.sorted()
+
     val openings = states.values
         .filter { entity ->
             entity.domain == Domain.BINARY_SENSOR && entity.common.deviceClass in OPENING_DEVICE_CLASSES
         }
         .map { it.entityId }
         .sorted()
+
     val layout = Layout(
         minOf(box.w / Metrics.BASE_W, box.h / Metrics.BASE_H)
             .coerceIn(Metrics.LAYOUT_SCALE_MIN, Metrics.LAYOUT_SCALE_MAX),
     )
+
     rcScope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@securityPanel
+
         doc.sectionList(
             tileId = tile.id,
             selected = ui.selectedSection,
@@ -102,6 +106,7 @@ fun DocContext.securityPanel(tile: Tile, box: TileBox) {
             openCount = openings.count { states[it]?.isOn == true },
             layout = layout,
         )
+
         doc.detailPane(
             section = ui.selectedSection,
             locks = locks,
@@ -123,8 +128,10 @@ private fun DocContext.sectionList(
             .padding(start = 0f, top = units.px(layout.dp(Metrics.LIST_TOP_DP)), end = 0f, bottom = 0f),
     ) {
         val doc = this@sectionList
+
         Row {
             Spacer(Modifier.width(doc.units.px(layout.dp(Metrics.ACCENT_BAR_START_DP))))
+
             Box(
                 Modifier.size(
                     doc.units.px(layout.dp(Metrics.ACCENT_BAR_W_DP - Metrics.ACCENT_BAR_START_DP)),
@@ -132,7 +139,9 @@ private fun DocContext.sectionList(
                 ).background(doc.role(Role.ACCENT_DARK)),
             )
         }
+
         Spacer(Modifier.height(doc.units.px(layout.dp(Metrics.TITLE_GAP_DP))))
+
         doc.label(
             text = doc.i18n.t("ui.security_title"),
             sp = layout.sp(Metrics.TITLE_SP),
@@ -144,19 +153,21 @@ private fun DocContext.sectionList(
                 bottom = 0f,
             ),
         )
+
         doc.sectionRow(
             tileId = tileId,
             section = SecuritySection.OVERVIEW,
             icon = "shield-home",
             title = doc.i18n.t("ui.security_overview"),
             subtitle = doc.i18n.t(
-                "ui.security_overview_sub",
+                key = "ui.security_overview_sub",
                 "unlocked" to unlockedCount,
                 "open" to openCount,
             ),
             isSelected = selected == SecuritySection.OVERVIEW,
             layout = layout,
         )
+
         doc.sectionRow(
             tileId = tileId,
             section = SecuritySection.LOCKS,
@@ -166,6 +177,7 @@ private fun DocContext.sectionList(
             isSelected = selected == SecuritySection.LOCKS,
             layout = layout,
         )
+
         doc.sectionRow(
             tileId = tileId,
             section = SecuritySection.OPENINGS,
@@ -197,18 +209,19 @@ private fun DocContext.sectionRow(
                     end = units.px(layout.dp(Metrics.SECTION_PAD_START_DP)),
                     bottom = 0f,
                 ),
-            ActionRef(tileId, "security_section", section.key),
+            ActionRef(tile = tileId, verb = "security_section", arg = section.key),
         ),
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@sectionRow
         val ink = doc.role(if (isSelected) Role.ACCENT else Role.INK)
-        doc.icon(icon, layout.dp(Metrics.SECTION_ICON_DP), ink)
+        doc.icon(name = icon, sizeDp = layout.dp(Metrics.SECTION_ICON_DP), color = ink)
         Spacer(Modifier.width(doc.units.px(layout.dp(Metrics.SECTION_ICON_GAP_DP))))
+
         Column(Modifier.horizontalWeight(1f)) {
-            doc.label(title, layout.sp(Metrics.SECTION_SP), ink)
+            doc.label(text = title, sp = layout.sp(Metrics.SECTION_SP), color = ink)
             Spacer(Modifier.height(doc.units.px(layout.dp(Metrics.SECTION_SUB_GAP_DP))))
-            doc.label(subtitle, layout.sp(Metrics.SECTION_SUB_SP), doc.role(Role.INK_DIM))
+            doc.label(text = subtitle, sp = layout.sp(Metrics.SECTION_SUB_SP), color = doc.role(Role.INK_DIM))
         }
     }
 }
@@ -220,27 +233,33 @@ private fun DocContext.detailPane(
     layout: Layout,
 ) {
     val pad = units.px(layout.dp(Metrics.DETAIL_PAD_DP))
+
     rcScope.Column(
         Modifier.horizontalWeight(1f).fillMaxHeight()
             .padding(start = pad, top = pad, end = pad, bottom = pad),
     ) {
         val doc = this@detailPane
+
         val title = when (section) {
             SecuritySection.OVERVIEW -> doc.i18n.t("ui.security_overview")
             SecuritySection.LOCKS -> doc.i18n.t("ui.security_locks")
             SecuritySection.OPENINGS -> doc.i18n.t("ui.security_openings")
         }
-        doc.label(title, layout.sp(Metrics.DETAIL_TITLE_SP), doc.role(Role.INK))
+
+        doc.label(text = title, sp = layout.sp(Metrics.DETAIL_TITLE_SP), color = doc.role(Role.INK))
         Spacer(Modifier.height(doc.units.px(layout.dp(Metrics.DETAIL_GAP_DP))))
+
         Column(Modifier.fillMaxWidth().verticalWeight(1f).keptVerticalScroll("security.$section")) {
             when (section) {
-                SecuritySection.OVERVIEW -> doc.overviewBody(locks, openings, layout)
+                SecuritySection.OVERVIEW -> doc.overviewBody(locks = locks, openings = openings, layout = layout)
                 SecuritySection.LOCKS -> locks.forEachIndexed { index, entityId ->
                     if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(Metrics.ROW_GAP_DP))))
+
                     doc.lockRow(entityId, layout)
                 }
                 SecuritySection.OPENINGS -> openings.forEachIndexed { index, entityId ->
                     if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(Metrics.ROW_GAP_DP))))
+
                     doc.openingRow(entityId, layout)
                 }
             }
@@ -251,24 +270,30 @@ private fun DocContext.detailPane(
 private fun DocContext.overviewBody(locks: List<String>, openings: List<String>, layout: Layout) {
     val unlocked = locks.count { states[it]?.lockState != LockState.LOCKED }
     val open = openings.count { states[it]?.isOn == true }
+
     rcScope.Column(Modifier.fillMaxWidth()) {
         val doc = this@overviewBody
+
         doc.label(
-            doc.i18n.t("ui.security_locks_sub", "count" to unlocked),
-            layout.sp(Metrics.OVERVIEW_LINE_SP),
-            doc.role(Role.INK),
+            text = doc.i18n.t("ui.security_locks_sub", "count" to unlocked),
+            sp = layout.sp(Metrics.OVERVIEW_LINE_SP),
+            color = doc.role(Role.INK),
         )
+
         Spacer(Modifier.height(doc.units.px(layout.dp(Metrics.OVERVIEW_LINE_GAP_DP))))
+
         doc.label(
-            doc.i18n.t("ui.security_openings_sub", "count" to open),
-            layout.sp(Metrics.OVERVIEW_LINE_SP),
-            doc.role(Role.INK),
+            text = doc.i18n.t("ui.security_openings_sub", "count" to open),
+            sp = layout.sp(Metrics.OVERVIEW_LINE_SP),
+            color = doc.role(Role.INK),
         )
+
         Spacer(Modifier.height(doc.units.px(layout.dp(Metrics.OVERVIEW_LINE_GAP_DP))))
+
         doc.label(
-            doc.i18n.t("ui.security_overview_hint"),
-            layout.sp(Metrics.ROW_SUB_SP),
-            doc.role(Role.INK_DIM),
+            text = doc.i18n.t("ui.security_overview_hint"),
+            sp = layout.sp(Metrics.ROW_SUB_SP),
+            color = doc.role(Role.INK_DIM),
         )
     }
 }
@@ -277,21 +302,27 @@ private fun DocContext.lockRow(entityId: String, layout: Layout) {
     val entityState = states[entityId] ?: return
     val name = entityState.name.ifBlank { entityId }
     val isLocked = entityState.lockState == LockState.LOCKED
+
     rcScope.Column(Modifier.fillMaxWidth()) {
         val doc = this@lockRow
+
         Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
             doc.icon(
-                if (isLocked) "lock" else "lock-open-variant",
-                layout.dp(Metrics.ROW_ICON_DP),
-                doc.role(if (isLocked) Role.INK else Role.WARN),
+                name = if (isLocked) "lock" else "lock-open-variant",
+                sizeDp = layout.dp(Metrics.ROW_ICON_DP),
+                color = doc.role(if (isLocked) Role.INK else Role.WARN),
             )
+
             Spacer(Modifier.width(doc.units.px(layout.dp(Metrics.ROW_ICON_GAP_DP))))
+
             Column(Modifier.horizontalWeight(1f)) {
-                doc.label(name, layout.sp(Metrics.ROW_TITLE_SP), doc.role(Role.INK))
-                doc.label(entityState.state, layout.sp(Metrics.ROW_SUB_SP), doc.role(Role.INK_DIM))
+                doc.label(text = name, sp = layout.sp(Metrics.ROW_TITLE_SP), color = doc.role(Role.INK))
+                doc.label(text = entityState.state, sp = layout.sp(Metrics.ROW_SUB_SP), color = doc.role(Role.INK_DIM))
             }
         }
+
         Spacer(Modifier.height(doc.units.px(layout.dp(Metrics.KEY_GAP_DP))))
+
         Row(Modifier.fillMaxWidth()) {
             doc.key(
                 ref = ActionRef("e:$entityId", "lock"),
@@ -300,7 +331,9 @@ private fun DocContext.lockRow(entityId: String, layout: Layout) {
                 heightDp = layout.dp(Metrics.KEY_H_DP),
                 modifier = Modifier.horizontalWeight(1f),
             )
+
             Spacer(Modifier.width(doc.units.px(layout.dp(Metrics.KEY_GAP_DP))))
+
             doc.key(
                 ref = ActionRef("e:$entityId", "unlock"),
                 text = doc.i18n.t("ui.unlock"),
@@ -316,19 +349,24 @@ private fun DocContext.openingRow(entityId: String, layout: Layout) {
     val entityState = states[entityId] ?: return
     val name = entityState.name.ifBlank { entityId }
     val isOpen = entityState.isOn
+
     rcScope.Row(
         Modifier.fillMaxWidth().height(units.px(layout.dp(Metrics.ROW_H_DP))),
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@openingRow
+
         doc.icon(
-            openingIcon(entityState),
-            layout.dp(Metrics.ROW_ICON_DP),
-            doc.role(if (isOpen) Role.WARN else Role.INK),
+            name = openingIcon(entityState),
+            sizeDp = layout.dp(Metrics.ROW_ICON_DP),
+            color = doc.role(if (isOpen) Role.WARN else Role.INK),
         )
+
         Spacer(Modifier.width(doc.units.px(layout.dp(Metrics.ROW_ICON_GAP_DP))))
+
         Column(Modifier.horizontalWeight(1f), vertical = RcColumnVerticalPositioning.Center) {
-            doc.label(name, layout.sp(Metrics.ROW_TITLE_SP), doc.role(Role.INK))
+            doc.label(text = name, sp = layout.sp(Metrics.ROW_TITLE_SP), color = doc.role(Role.INK))
+
             doc.label(
                 text = if (isOpen) doc.i18n.t("ui.security_open") else doc.i18n.t("ui.security_closed"),
                 sp = layout.sp(Metrics.ROW_SUB_SP),

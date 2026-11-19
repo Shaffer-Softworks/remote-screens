@@ -110,14 +110,14 @@ data class VarValue(val name: String, val type: VarType, val value: String) {
         private const val HEX_RADIX = 16
         private const val ARGB_HEX_DIGITS = 8
 
-        fun string(name: String, value: String) = VarValue(name, VarType.STRING, value)
-        fun int(name: String, value: Int) = VarValue(name, VarType.INT, value.toString())
-        fun float(name: String, value: Float) = VarValue(name, VarType.FLOAT, value.toString())
+        fun string(name: String, value: String) = VarValue(name = name, type = VarType.STRING, value = value)
+        fun int(name: String, value: Int) = VarValue(name = name, type = VarType.INT, value = value.toString())
+        fun float(name: String, value: Float) = VarValue(name = name, type = VarType.FLOAT, value = value.toString())
         fun color(name: String, argb: Int) =
             VarValue(
-                name,
-                VarType.COLOR,
-                argb.toUInt().toString(HEX_RADIX).padStart(ARGB_HEX_DIGITS, '0'),
+                name = name,
+                type = VarType.COLOR,
+                value = argb.toUInt().toString(HEX_RADIX).padStart(ARGB_HEX_DIGITS, '0'),
             )
     }
 
@@ -145,7 +145,8 @@ data class ActionRef(val tile: String, val verb: String, val arg: String = "") {
         fun decode(encoded: String?): ActionRef? {
             val parts = encoded?.split('|', limit = 3) ?: return null
             val isValid = parts.size >= 2 && parts[0].isNotEmpty() && parts[1].isNotEmpty()
-            return if (isValid) ActionRef(parts[0], parts[1], parts.getOrElse(2) { "" }) else null
+
+            return if (isValid) ActionRef(tile = parts[0], verb = parts[1], arg = parts.getOrElse(2) { "" }) else null
         }
     }
 }

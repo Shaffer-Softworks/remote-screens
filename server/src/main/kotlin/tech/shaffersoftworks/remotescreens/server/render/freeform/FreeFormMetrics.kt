@@ -264,12 +264,14 @@ internal fun Node.natural(): Dims = when (type) {
     else -> Dims(0f, 0f)
 }
 
-/** About the size [node]'s content takes: a leaf's natural size, a container's children laid end to end, plus padding. */
+/** About the size [node]'s content takes: a leaf's natural size, or children laid end to end, plus padding. */
 @Suppress("CyclomaticComplexMethod")
 internal fun content(node: Node): Dims {
     fun side(spec: String, natural: Float) = (Spec.of(spec) as? Spec.Dp)?.value ?: natural
+
     if (node.type !in setOf("column", "row", "box", "flow", "tabs")) {
         val nat = node.natural()
+
         val lines = if (node.type == "text") {
             (node.props["lines"]?.toFloatOrNull() ?: 1f).coerceAtLeast(
                 1f,
@@ -277,10 +279,13 @@ internal fun content(node: Node): Dims {
         } else {
             1f
         }
+
         return Dims(side(node.size.width, nat.w), side(node.size.height, nat.h * lines))
     }
+
     val children = node.children.filter { !it.hidden }.map(::content)
     val gap = (node.props["gap"]?.toFloatOrNull() ?: 0f) * (children.size - 1).coerceAtLeast(0)
+
     val inner = when (node.type) {
         "row" -> Dims(
             children.sumOf { it.w.toDouble() }.toFloat() + gap,
@@ -296,6 +301,7 @@ internal fun content(node: Node): Dims {
         )
         else -> Dims(children.maxOfOrNull { it.w } ?: 0f, children.maxOfOrNull { it.h } ?: 0f)
     }
+
     return Dims(
         side(node.size.width, inner.w + node.style.padX),
         side(node.size.height, inner.h + node.style.padY),

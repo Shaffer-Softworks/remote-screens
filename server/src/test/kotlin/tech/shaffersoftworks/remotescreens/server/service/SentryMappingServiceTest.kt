@@ -28,6 +28,7 @@ class SentryMappingServiceTest {
         val apkDir = temporary.newFolder("apk")
         bundle(apkDir, uuid, "1.0.0")
         var calls = 0
+
         val service = SentryMappingService(
             data,
             PlayerApkRepository(apkDir),
@@ -41,6 +42,7 @@ class SentryMappingServiceTest {
             calls++
             true
         }
+
         val result = service.configure(MappingUploadSettings("my-org", token))
         assertEquals("uploaded", result.status)
         assertFalse(Json.encodeToString(result).contains(token))
@@ -48,16 +50,20 @@ class SentryMappingServiceTest {
         service.reconcile(force = true)
         assertEquals(1, calls)
         val credentials = File(data, "sentry-mappings/credentials.json")
+
         assertEquals(
             PosixFilePermissions.fromString("rw-------"),
             Files.getPosixFilePermissions(credentials.toPath()),
         )
+
         bundle(apkDir, UUID.randomUUID().toString(), "1.0.1")
+
         // Use a fresh service to exercise startup with the new bundled APK.
         val restarted = SentryMappingService(data, PlayerApkRepository(apkDir), { enabled() }) { _, _, _, _, _ ->
             calls++
             true
         }
+
         assertEquals("uploaded", restarted.reconcile().status)
         assertEquals(2, restarted.status().builds.size)
         assertEquals(2, calls)
@@ -71,10 +77,12 @@ class SentryMappingServiceTest {
         bundle(apkDir, uuid, "1.0.0")
         var sentry = enabled().copy(enabled = false)
         val projects = mutableListOf<String>()
+
         val service = SentryMappingService(data, PlayerApkRepository(apkDir), { sentry }) { _, project, _, _, _ ->
             projects.add(project)
             true
         }
+
         assertEquals("disabled", service.configure(MappingUploadSettings("my-org", token)).status)
         assertTrue(projects.isEmpty())
         sentry = enabled()
@@ -94,10 +102,12 @@ class SentryMappingServiceTest {
         bundle(apkDir, uuid, "1.0.0")
         var calls = 0
         var success = false
+
         val service = SentryMappingService(data, PlayerApkRepository(apkDir), { enabled() }) { _, _, _, _, _ ->
             calls++
             success
         }
+
         assertEquals("failed", service.configure(MappingUploadSettings("my-org", token)).status)
         service.reconcile()
         assertEquals(1, calls)
@@ -114,10 +124,12 @@ class SentryMappingServiceTest {
         bundle(apkDir, uuid, "1.0.0")
         var calls = 0
         var sentry = enabled().copy(enabled = false)
+
         val service = SentryMappingService(data, PlayerApkRepository(apkDir), { sentry }) { _, _, _, _, _ ->
             calls++
             true
         }
+
         service.configure(MappingUploadSettings("my-org", token))
         File(data, "sentry-mappings/$uuid.txt").appendText("tampered")
         sentry = enabled()
@@ -140,11 +152,13 @@ class SentryMappingServiceTest {
 
     private fun bundle(directory: File, id: String, version: String) {
         val apk = File(directory, "remote-screens.apk")
+
         ZipOutputStream(apk.outputStream()).use { zip ->
             zip.putNextEntry(ZipEntry("assets/sentry-debug-meta.properties"))
             zip.write("io.sentry.ProguardUuids=$id\n".toByteArray())
             zip.closeEntry()
         }
+
         File(directory, "mapping.txt").writeText("com.example.Example -> a:\n    void method() -> b\n")
         File(directory, "mapping-apk.sha256").writeText(mappingSha256(apk))
         File(directory, "version.json").writeText("""{"versionCode":1,"versionName":"$version"}""")

@@ -17,10 +17,12 @@ internal class ProximityScale {
             } else if (distance > 0f) {
                 reportsCentimetres = false
             }
+
             if (reportsCentimetres != true) {
                 return distance > 0f
             }
         }
+
         return distance < maximumRange
     }
 

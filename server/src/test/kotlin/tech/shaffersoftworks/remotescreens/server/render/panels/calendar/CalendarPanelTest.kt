@@ -36,6 +36,7 @@ class CalendarPanelTest {
                 ),
             ),
         )
+
         val data = RenderData(
             agenda = AgendaSnapshot(
                 events = listOf(
@@ -57,6 +58,7 @@ class CalendarPanelTest {
                 ),
             ),
         )
+
         val doc = ScreenRenderer.render(
             screen,
             tablet,
@@ -69,6 +71,7 @@ class CalendarPanelTest {
                 supportsCalendarDialogs = true,
             ),
         )
+
         val text = doc.bytes.toString(Charsets.UTF_8)
         assertTrue(text.contains("Upcoming events"))
         assertTrue(text.contains("Wed, Jul 15"))

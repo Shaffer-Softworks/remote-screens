@@ -63,6 +63,7 @@ object Vars {
 /** Binds the values every tile and card of an entity reads. Once per entity per document. */
 fun DocContext.bindEntity(entityId: String, name: String? = null, icon: String? = null) {
     if (bindings.any { it.entityId == entityId && it.compute is EntityBinding }) return
+
     bind(entityId, EntityBinding(entityId = entityId, docContext = this, name = name, icon = icon))
 }
 
@@ -79,6 +80,7 @@ private class EntityBinding(
             nameOverride = name,
             iconOverride = icon,
         )
+
         return listOf(
             VarValue.string(Vars.entity(entityId, Vars.KEY_NAME), view.name),
             VarValue.string(Vars.entity(entityId, Vars.KEY_STATE), view.stateText),
@@ -112,11 +114,13 @@ fun DocContext.bindTileColors(tileId: String, entityId: String?, accent: Int, al
         val on = alwaysOn || view.on
         val isAvailable = entityId == null || view.isAvailable
         val lit = on && isAvailable
+
         val iconColor = when {
             !isAvailable -> Role.INK_FAINT.argb
             on -> accent
             else -> Role.INK_DIM.argb
         }
+
         listOf(
             VarValue.color(Vars.tile(tileId, Vars.KEY_BG), if (lit) accent else Role.KEY.argb),
             VarValue.color(
@@ -152,8 +156,10 @@ fun DocContext.bindChoices(
 ) {
     bind(entityId) { states ->
         val current = states[entityId]?.let(chosen)
+
         choices.flatMapIndexed { index, choice ->
             val on = choice == current
+
             listOf(
                 VarValue.color(
                     Vars.option(scope = scopeId, group = group, index = index, key = Vars.KEY_BG),

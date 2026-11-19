@@ -1,6 +1,7 @@
 package tech.shaffersoftworks.remotescreens.server.render.panels.lights
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.LightColorMode
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightDetailMode
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.server.render.theme.Rpi
@@ -11,7 +12,6 @@ import kotlin.math.roundToInt
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.CoverState
 
-private val RGB_CAPABLE_MODES = setOf("rgb", "rgbw", "rgbww", "hs", "xy")
 private const val EFFECT_FEATURE = 4
 private const val ROW_ICON_FALLBACK = "toggle-switch"
 private const val SECONDS_PER_MINUTE = 60L
@@ -20,11 +20,12 @@ private const val SECONDS_PER_DAY = 86_400L
 
 /** RPI's `LightAttributes.supportsBrightness`: a brightness mode, or a brightness reported now. */
 internal fun EntityState.supportsBrightness(): Boolean =
-    "brightness" in light.supportedColorModes || light.brightness != null
+    LightColorMode.BRIGHTNESS in light.supportedColorModes || light.brightness != null
 
-internal fun EntityState.supportsColorTemp(): Boolean = "color_temp" in light.supportedColorModes
+internal fun EntityState.supportsColorTemp(): Boolean = LightColorMode.COLOR_TEMP in light.supportedColorModes
 
-internal fun EntityState.supportsRgbColor(): Boolean = light.supportedColorModes.any { it in RGB_CAPABLE_MODES }
+internal fun EntityState.supportsRgbColor(): Boolean =
+    light.supportedColorModes.any { it in LightColorMode.RGB_CAPABLE }
 
 internal fun EntityState.supportsEffects(): Boolean = light.effectList.isNotEmpty() || supports(EFFECT_FEATURE)
 
@@ -53,6 +54,7 @@ internal fun EntityState.rowIcon(): String = common.icon?.takeIf(Icons::exists) 
 /** Brightness 0–100 as the dialog shows it: from `brightness`, else full when on and nothing when off. */
 internal fun EntityState?.brightnessPercent(): Int {
     val brightness = this?.light?.brightness
+
     return if (brightness != null) {
         (brightness / LightsMetrics.BRIGHTNESS_MAX * LightsMetrics.PERCENT).roundToInt()
             .coerceIn(0, LightsMetrics.PERCENT)
@@ -67,18 +69,20 @@ internal fun EntityState?.brightnessPercent(): Int {
 internal fun EntityState?.kelvinRange(): IntRange {
     val low = this?.light?.minColorTempKelvin?.toInt() ?: LightsDialogMetrics.MIN_KELVIN
     val high = this?.light?.maxColorTempKelvin?.toInt() ?: LightsDialogMetrics.MAX_KELVIN
+
     return minOf(low, high)..maxOf(low, high)
 }
 
 internal fun EntityState?.kelvin(): Int {
     val range = kelvinRange()
+
     return this?.light?.colorTempKelvin?.toInt()?.coerceIn(range) ?: ((range.first + range.last) / 2)
 }
 
 /** The dialog's first mode, as RPI's `LightDeviceDetailDialog` picks it. */
 internal fun EntityState?.startMode(): LightDetailMode = when {
     this == null -> LightDetailMode.POWER
-    light.colorMode == "color_temp" && supportsColorTemp() -> LightDetailMode.COLOR_TEMPERATURE
+    light.colorMode == LightColorMode.COLOR_TEMP && supportsColorTemp() -> LightDetailMode.COLOR_TEMPERATURE
     supportsBrightness() -> LightDetailMode.BRIGHTNESS
     supportsColorTemp() -> LightDetailMode.COLOR_TEMPERATURE
     else -> LightDetailMode.POWER
@@ -88,11 +92,12 @@ internal fun EntityState?.startMode(): LightDetailMode = when {
 internal fun EntityState?.updatedLabel(i18n: I18n, now: Instant = Instant.now()): String {
     val then = this?.lastChanged?.let { runCatching { Instant.parse(it) }.getOrNull() } ?: return "\u2014"
     val seconds = Duration.between(then, now).seconds.coerceAtLeast(0)
+
     return when {
-        seconds < SECONDS_PER_MINUTE -> plural(i18n, "second", seconds)
-        seconds < SECONDS_PER_HOUR -> plural(i18n, "minute", seconds / SECONDS_PER_MINUTE)
-        seconds < SECONDS_PER_DAY -> plural(i18n, "hour", seconds / SECONDS_PER_HOUR)
-        else -> plural(i18n, "day", seconds / SECONDS_PER_DAY)
+        seconds < SECONDS_PER_MINUTE -> plural(i18n = i18n, unit = "second", count = seconds)
+        seconds < SECONDS_PER_HOUR -> plural(i18n = i18n, unit = "minute", count = seconds / SECONDS_PER_MINUTE)
+        seconds < SECONDS_PER_DAY -> plural(i18n = i18n, unit = "hour", count = seconds / SECONDS_PER_HOUR)
+        else -> plural(i18n = i18n, unit = "day", count = seconds / SECONDS_PER_DAY)
     }
 }
 

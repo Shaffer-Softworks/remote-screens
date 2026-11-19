@@ -21,6 +21,7 @@ class NavigationDrawerProtocolTest {
                 width = 320,
             ),
         )
+
         assertEquals(message, Protocol.decodeServer(Protocol.encode(message)))
     }
 
@@ -29,6 +30,7 @@ class NavigationDrawerProtocolTest {
         val message = Protocol.decodeServer(
             """{"type":"document","slot":"main","rev":1,"data":""}""",
         ) as ServerMessage.Document
+
         assertNull(message.navigationDrawer)
     }
 }

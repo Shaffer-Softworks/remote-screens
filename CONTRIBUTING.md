@@ -4,6 +4,8 @@
 
 - JDK **21**
 - Android SDK (player app)
+- Android CLI (`android`), dev channel. `./scripts/install-android-cli.sh` installs it to `~/.local/bin`.
+  Agents in this repo follow `.cursor/skills/android-cli` (same text as `.agents/skills/android-cli`).
 - Node **24** (editor)
 - Python **3.13** (integration tests, catalogue tools)
 

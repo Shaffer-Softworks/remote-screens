@@ -28,6 +28,7 @@ class PlayerAppLogs {
             entries.filter { entry -> entry.eventId.isNotBlank() && entry.eventId.length <= MAX_EVENT_ID }
                 .onEach { entry ->
                     val key = deviceId to entry.eventId
+
                     if (key !in written) {
                         log(deviceId, entry)
                         remember(key)
@@ -41,6 +42,7 @@ class PlayerAppLogs {
     private fun log(deviceId: String, entry: AppLogEntry) {
         val text = "Tablet ${clean(deviceId, MAX_DEVICE_ID)} [${clean(entry.tag, MAX_TAG)}] " +
             "at ${entry.timestampMs}: ${clean(entry.message, MAX_MESSAGE)}"
+
         when (entry.level) {
             AppLogLevel.ERROR -> logger.error("{}", text)
             AppLogLevel.WARNING -> logger.warn("{}", text)
@@ -50,6 +52,7 @@ class PlayerAppLogs {
     /** Called under the [written] lock. */
     private fun remember(key: Pair<String, String>) {
         written[key] = Unit
+
         if (written.size > REMEMBERED_EVENTS) written.remove(written.keys.first())
     }
 

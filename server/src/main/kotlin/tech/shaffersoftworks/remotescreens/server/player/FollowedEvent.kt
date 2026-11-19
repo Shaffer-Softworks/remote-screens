@@ -37,6 +37,7 @@ sealed interface FollowedEvent {
         /** The screens' reading of [event], or null for an event they do not follow. */
         fun of(event: HomeAssistantEvent): FollowedEvent? {
             val data = event.data
+
             return when (event.type) {
                 ALERT -> runCatching { Protocol.json.decodeFromJsonElement(Alert.serializer(), data) }
                     .fold(onSuccess = ::ShowAlert, onFailure = { Unreadable(ALERT, it.message.orEmpty()) })

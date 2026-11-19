@@ -90,9 +90,11 @@ class IntercomSessionTest {
         harness.registered()
         harness.session.command("call", "station-kitchen")
         runCurrent()
+
         harness.link.inbound.send(
             """{"type":"unavailable","targetId":"station-kitchen","reason":"busy"}""",
         )
+
         runCurrent()
 
         assertTrue(harness.link.sent.any { it.contains(""""type":"hangup"""") })
@@ -175,6 +177,7 @@ class IntercomSessionTest {
         val audio = FakeAudio()
         val reports = mutableListOf<PlayerMessage.IntercomReport>()
         var wakes = 0
+
         val session = IntercomSession(
             link,
             audio,
@@ -183,6 +186,7 @@ class IntercomSessionTest {
             onReport = { reports += it },
             onWake = { wakes += 1 },
         )
+
         return Harness(link, audio, session, reports, { wakes })
     }
 
@@ -212,6 +216,7 @@ class IntercomSessionTest {
 
         override suspend fun conversation(url: String, block: suspend SignalingConversation.() -> Unit) {
             opened += 1
+
             val conversation = object : SignalingConversation {
                 override suspend fun send(text: String) {
                     sent += text
@@ -219,6 +224,7 @@ class IntercomSessionTest {
 
                 override suspend fun receive(): String? = inbound.receive()
             }
+
             conversation.block()
         }
     }
@@ -234,11 +240,13 @@ class IntercomSessionTest {
 
         override suspend fun createOffer(): String {
             listener.onCandidate(HOST_CANDIDATE, "0", 0)
+
             return "offer-sdp"
         }
 
         override suspend fun acceptOffer(sdp: String): String {
             listener.onCandidate(HOST_CANDIDATE, "0", 0)
+
             return "answer-sdp"
         }
 
@@ -252,6 +260,7 @@ class IntercomSessionTest {
 
         override fun stop() {
             if (!isStarted) return
+
             isStarted = false
             listener.onFailed()
         }

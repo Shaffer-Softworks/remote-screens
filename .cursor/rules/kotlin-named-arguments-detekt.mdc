@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Kotlin: named arguments (Detekt `NamedArguments`)
 
-**`NamedArguments`** (in `config/detekt/detekt.yml`) flags calls with more than **3** unnamed arguments.
+**`NamedArguments`** (in `config/detekt/detekt.yml`) flags calls with more than **2** unnamed arguments.
 
 ## What to do
 
@@ -40,7 +40,7 @@ levelBar(float(…), widthDp, C.LEVEL_BAR_HEIGHT_DP, color(…), role(Role.TRACK
 
 ## Pragmatic limits
 
-- Short calls (≤ 3 args) may stay positional: `gap(C.GAP_10_DP)`, `label(name, Type.BODY, ink)`.
+- Short calls (≤ 2 args) may stay positional: `gap(C.GAP_10_DP)`, `label(name, Type.BODY)`.
 - Trailing lambdas stay trailing; name the parameters *before* the lambda.
 - Do not invent names for unused `it` in one-liners.
 

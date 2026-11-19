@@ -27,6 +27,7 @@ class InstallReceiver : BroadcastReceiver() {
                     Intent.EXTRA_INTENT,
                     Intent::class.java,
                 )
+
                 confirmIntent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)?.let(context::startActivity)
             }
             PackageInstaller.STATUS_SUCCESS -> {
@@ -41,6 +42,7 @@ class InstallReceiver : BroadcastReceiver() {
             else -> {
                 val statusMessage = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
                 Timber.w("Update not installed (%d): %s", status, statusMessage)
+
                 Toast.makeText(
                     context,
                     context.getString(R.string.update_failed),

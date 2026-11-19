@@ -72,13 +72,16 @@ fun ScreenSettingsDialog(
             settings.brightness.coerceIn(MIN_BRIGHTNESS_PERCENT, MAX_BRIGHTNESS_PERCENT).toFloat(),
         )
     }
+
     var isDarkMode by remember(settings) { mutableStateOf(settings.darkMode) }
+
     var standbyChoiceIndex by remember(settings) {
         mutableIntStateOf(
             STANDBY_MINUTE_CHOICES.indexOfFirst { it >= settings.standbyMinutes }
                 .takeIf { it >= 0 } ?: STANDBY_MINUTE_CHOICES.lastIndex,
         )
     }
+
     val standbyMinutes = STANDBY_MINUTE_CHOICES[standbyChoiceIndex]
 
     AlertDialog(
@@ -94,6 +97,7 @@ fun ScreenSettingsDialog(
                     contentDescription = "Shaffer Softworks Logo",
                     modifier = Modifier.size(49.dp),
                 )
+
                 Text(stringResource(R.string.settings))
             }
         },
@@ -109,12 +113,15 @@ fun ScreenSettingsDialog(
                     ),
                     style = MaterialTheme.typography.bodySmall,
                 )
+
                 TextButton(onClick = onCheckForUpdates, enabled = !isCheckingForUpdates) {
                     Text(stringResource(
                         if (isCheckingForUpdates) R.string.checking_for_updates else R.string.check_for_updates,
                     ))
                 }
+
                 Text(stringResource(R.string.brightness))
+
                 Slider(
                     value = brightnessPercent,
                     onValueChange = { value ->
@@ -123,63 +130,77 @@ fun ScreenSettingsDialog(
                     },
                     valueRange = MIN_BRIGHTNESS_PERCENT.toFloat()..MAX_BRIGHTNESS_PERCENT.toFloat(),
                 )
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(stringResource(R.string.dark_mode))
+
                     Switch(
                         checked = isDarkMode,
                         onCheckedChange = { enabled -> isDarkMode = enabled },
                     )
                 }
+
                 Text(stringResource(R.string.standby, standbyLabel(standbyMinutes)))
+
                 Slider(
                     value = standbyChoiceIndex.toFloat(),
                     onValueChange = { value -> standbyChoiceIndex = value.roundToInt() },
                     valueRange = 0f..STANDBY_MINUTE_CHOICES.lastIndex.toFloat(),
                     steps = STANDBY_MINUTE_CHOICES.size - 2,
                 )
+
                 Text(
                     text = stringResource(R.string.server, server ?: "—"),
                     style = MaterialTheme.typography.bodySmall,
                 )
+
                 TextButton(
                     onClick = onChangeServer,
                 ) { Text(stringResource(R.string.change_server)) }
+
                 TextButton(onClick = onForget) { Text(stringResource(R.string.forget)) }
+
                 if (canOfferSelfStart) {
                     TextButton(
                         onClick = onAllowSelfStart,
                     ) { Text(stringResource(R.string.allow_self_start)) }
                 }
+
                 if (canOfferScreenOff) {
                     TextButton(
                         onClick = onAllowScreenOff,
                     ) { Text(stringResource(R.string.allow_screen_off)) }
                 }
+
                 if (canOfferUnrestrictedBattery) {
                     TextButton(onClick = onAllowUnrestrictedBattery) {
                         Text(stringResource(R.string.allow_unrestricted_battery))
                     }
                 }
+
                 if (canOfferCameraPermission) {
                     TextButton(onClick = onAllowCameraPermission) {
                         Text(stringResource(R.string.allow_camera_for_face_wake))
                     }
                 }
+
                 if (canOfferLocationPermission) {
                     TextButton(onClick = onAllowLocationPermission) {
                         Text(stringResource(R.string.allow_location_sharing))
                     }
                 }
+
                 wakeOnFaceUnavailableNote?.let { noteRes ->
                     Text(
                         text = stringResource(noteRes),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
+
                 when (kioskAction) {
                     KioskAction.UNLOCK -> TextButton(onClick = onUnlockKiosk) {
                         Text(stringResource(R.string.kiosk_unlock))
@@ -189,6 +210,7 @@ fun ScreenSettingsDialog(
                     }
                     null -> Unit
                 }
+
                 if (canRemoveDeviceOwner) {
                     TextButton(onClick = onRemoveDeviceOwner) {
                         Text(stringResource(R.string.kiosk_remove_device_owner))

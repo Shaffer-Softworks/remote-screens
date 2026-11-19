@@ -35,7 +35,11 @@ internal class SignalingHub(
         val displayName: String?,
         val inCall: Boolean,
     ) {
-        fun toClient(): SignalingClient = SignalingClient(clientId, displayName, inCall)
+        fun toClient(): SignalingClient = SignalingClient(
+            clientId = clientId,
+            displayName = displayName,
+            inCall = inCall
+        )
     }
 
     private data class SessionInfo(
@@ -52,13 +56,17 @@ internal class SignalingHub(
     /** A frame of a `type` this hub does not know still marks a registered station active. */
     fun handleMessage(sessionId: String, text: String): Outcome = synchronized(lock) {
         val frame = SignalingFrame.decode(text)
+
         if (frame is SignalingFrame.Register) return register(sessionId, frame)
+
         if (frame == null && SignalingFrame.typeOf(text) == null) return Outcome()
+
         val info = sessions[sessionId] ?: return Outcome(sends = listOf(error(sessionId, ERROR_NOT_REGISTERED)))
 
         info.lastActivity = now()
+
         when (frame) {
-            is SignalingFrame.Offer -> offer(sessionId, info, frame)
+            is SignalingFrame.Offer -> offer(sessionId = sessionId, info = info, frame = frame)
             is SignalingFrame.Answer -> forward(info, frame.to) { frame.copy(from = info.clientId) }
             is SignalingFrame.Candidate -> forward(info, frame.to) { frame.copy(from = info.clientId) }
             is SignalingFrame.Hangup -> hangup(info, frame)
@@ -69,9 +77,11 @@ internal class SignalingHub(
 
     fun handleDisconnect(sessionId: String): Outcome = synchronized(lock) {
         val info = sessions.remove(sessionId) ?: return Outcome()
+
         if (clientSessions[info.clientId] == sessionId) clientSessions.remove(info.clientId)
+
         val sends = mutableListOf<Outbound>()
-        clearPeer(info.clientId, info.inCallWith, sends)
+        clearPeer(clientId = info.clientId, peerId = info.inCallWith, sends = sends)
         sends += rosterBroadcast()
         Outcome(sends = sends)
     }
@@ -84,12 +94,15 @@ internal class SignalingHub(
 
     private fun register(sessionId: String, frame: SignalingFrame.Register): Outcome {
         val clientId = frame.clientId.trim()
+
         if (clientId.isEmpty()) return Outcome(sends = listOf(error(sessionId, ERROR_MISSING_CLIENT)))
+
         val displayName = frame.displayName?.trim()?.takeIf { it.isNotEmpty() }
         val previousSessionId = clientSessions[clientId]
         val previous = previousSessionId?.let { sessions[it] }
 
         clientSessions[clientId] = sessionId
+
         sessions[sessionId] = SessionInfo(
             clientId = clientId,
             displayName = displayName,
@@ -101,20 +114,23 @@ internal class SignalingHub(
         val close = mutableListOf<String>()
 
         if (previousSessionId != null && previousSessionId != sessionId) {
-            clearPeer(clientId, previous?.inCallWith, sends)
+            clearPeer(clientId = clientId, peerId = previous?.inCallWith, sends = sends)
             sessions.remove(previousSessionId)
             sends += Outbound(previousSessionId, SignalingFrame.encode(SignalingFrame.Replaced(bySession = sessionId)))
             close += previousSessionId
         }
+
         close += pruneStale()
         val registered = SignalingFrame.encode(SignalingFrame.Registered(clientId))
         sends += Outbound(sessionId, registered)
         sends += rosterBroadcast()
+
         val deferred = listOf(
-            DeferredSend(sessionId, registered, REGISTERED_REPEAT_SHORT_MS),
-            DeferredSend(sessionId, registered, REGISTERED_REPEAT_LONG_MS),
+            DeferredSend(sessionId = sessionId, json = registered, delayMs = REGISTERED_REPEAT_SHORT_MS),
+            DeferredSend(sessionId = sessionId, json = registered, delayMs = REGISTERED_REPEAT_LONG_MS),
         )
-        return Outcome(sends, deferred, close)
+
+        return Outcome(sends = sends, deferred = deferred, closeSessionIds = close)
     }
 
     private fun offer(
@@ -125,17 +141,25 @@ internal class SignalingHub(
         val targetId = frame.to?.trim().orEmpty()
         val targetSessionId = clientSessions[targetId]
         val target = targetSessionId?.let { sessions[it] }
+
         val refused = when {
             targetId.isEmpty() -> error(sessionId, ERROR_MISSING_TO)
-            targetSessionId == null || target == null -> unavailable(sessionId, targetId, REASON_OFFLINE)
-            target.inCallWith != null -> unavailable(sessionId, targetId, REASON_BUSY)
+            targetSessionId == null || target == null -> unavailable(
+                sessionId = sessionId,
+                targetId = targetId,
+                reason = REASON_OFFLINE
+            )
+            target.inCallWith != null -> unavailable(sessionId = sessionId, targetId = targetId, reason = REASON_BUSY)
             else -> null
         }
+
         if (refused != null) return Outcome(sends = listOf(refused))
+
         info.inCallWith = targetId
         target?.inCallWith = info.clientId
         val offer = SignalingFrame.encode(frame.copy(to = targetId, from = info.clientId))
         val delivered = targetSessionId?.let { Outbound(it, offer) }
+
         return Outcome(sends = listOfNotNull(delivered) + rosterBroadcast())
     }
 
@@ -148,43 +172,51 @@ internal class SignalingHub(
         val targetId = to?.trim().orEmpty()
         val targetSessionId = clientSessions[targetId]
         val sender = clientSessions[info.clientId]
+
         val sends = if (targetId.isNotEmpty() && targetSessionId != null) {
             listOf(Outbound(targetSessionId, SignalingFrame.encode(fromSender())))
         } else if (sender != null) {
-            listOf(unavailable(sender, targetId, REASON_OFFLINE))
+            listOf(unavailable(sessionId = sender, targetId = targetId, reason = REASON_OFFLINE))
         } else {
             emptyList()
         }
+
         return Outcome(sends = sends)
     }
 
     private fun hangup(info: SessionInfo, frame: SignalingFrame.Hangup): Outcome {
         val targetId = frame.to?.trim()?.takeIf { it.isNotEmpty() } ?: info.inCallWith
         val sends = mutableListOf<Outbound>()
+
         if (targetId != null) {
             clientSessions[targetId]?.let { targetSessionId ->
                 val hangup = SignalingFrame.Hangup(to = targetId, from = info.clientId)
                 sends += Outbound(targetSessionId, SignalingFrame.encode(hangup))
                 sessions[targetSessionId]?.inCallWith = null
             }
+
             info.inCallWith = null
             sends += rosterBroadcast()
         }
+
         return Outcome(sends = sends)
     }
 
     private fun clientsFor(sessionId: String): Outcome {
         val closed = pruneStale()
+
         val sends = if (closed.isEmpty()) {
             listOf(Outbound(sessionId, rosterJson()))
         } else {
             rosterBroadcast()
         }
+
         return Outcome(sends = sends, closeSessionIds = closed)
     }
 
     private fun clearPeer(clientId: String, peerId: String?, sends: MutableList<Outbound>) {
         if (peerId == null) return
+
         val peerSessionId = clientSessions[peerId] ?: return
         sessions[peerSessionId]?.takeIf { it.inCallWith == clientId }?.inCallWith = null
         sends += Outbound(peerSessionId, SignalingFrame.encode(SignalingFrame.Hangup(from = clientId)))
@@ -192,20 +224,24 @@ internal class SignalingHub(
 
     private fun pruneStale(): List<String> {
         val expired = sessions.filter { now() - it.value.lastActivity > STALE_CLIENT_MS }.keys.toList()
+
         for (sessionId in expired) {
             val info = sessions.remove(sessionId) ?: continue
+
             if (clientSessions[info.clientId] == sessionId) clientSessions.remove(info.clientId)
         }
+
         return expired
     }
 
     private fun views(): List<ClientView> = clientSessions.mapNotNull { (clientId, sessionId) ->
         val info = sessions[sessionId] ?: return@mapNotNull null
-        ClientView(clientId, info.displayName, info.inCallWith != null)
+        ClientView(clientId = clientId, displayName = info.displayName, inCall = info.inCallWith != null)
     }
 
     private fun rosterBroadcast(): List<Outbound> {
         val json = rosterJson()
+
         return clientSessions.values.distinct().map { Outbound(it, json) }
     }
 

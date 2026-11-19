@@ -1,6 +1,6 @@
 ---
 description: Full-page energy flow — Other tiles energy kind, edge-to-edge energyFlow from HA energy preferences
-globs: server/src/main/kotlin/**/render/panels/energy/**/*.kt,server/src/main/kotlin/**/render/tiles/SpecialtyTiles.kt,server/src/main/kotlin/**/render/tiles/TileBox.kt,server/src/main/kotlin/**/render/tiles/Tiles.kt,catalogue/_kinds.yaml,editor/src/model/otherTiles.ts,editor/src/components/GridMockup.vue,editor/src/components/TileDrawer.vue,editor/src/components/EntityLibrary.vue
+globs: server/src/main/kotlin/**/render/panels/energy/**/*.kt,server/src/main/kotlin/**/render/tiles/TileBox.kt,server/src/main/kotlin/**/render/tiles/Tiles.kt,catalogue/_kinds.yaml,editor/src/model/otherTiles.ts,editor/src/components/GridMockup.vue,editor/src/components/TileDrawer.vue,editor/src/components/EntityLibrary.vue
 alwaysApply: false
 ---
 
@@ -13,7 +13,7 @@ A full `energy` tile is an edge-to-edge page of the solar / grid / battery / hom
 - Catalogue kind `energy` in `_kinds.yaml`: sizes `[2x2, full]`, card `energy`.
 - `OTHER_TILE_KINDS` includes `energy`. Other tiles click/drag uses `kindSource('energy')` → `{ kind: 'energy', full: true }` so the library opens a page even though 2×2 is first in the catalogue.
 - `Tile.edgeToEdge()` and `Tiles.kt` dispatch full energy to `energyPanel` (`panels/energy/EnergyPanel.kt`), which fills `Role.PAGE` and calls `energyFlow` with `compact = false`. `hasOwnTaps` includes `energy` so the page has no default card hold (entity nodes still open history on long-press).
-- Non-full energy tiles keep the card path in `SpecialtyTiles.energyFlow`.
+- Non-full energy tiles keep the card path in `panels/energy/EnergyFlow.kt` (`energyFlow(..., compact)`). The energy card uses the same function.
 - Data: `RenderDataRepository.energy()` / `EnergyPrefs` when any tile kind is `energy`.
 
 ## Editor

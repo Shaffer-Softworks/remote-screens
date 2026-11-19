@@ -58,9 +58,11 @@ internal object MaArtists : SkippingListSerializer<MaArtist>(MaArtist.serializer
 internal object MusicResponseParsers {
     fun parseSearch(element: JsonElement): List<MusicListRow> {
         val payload = unwrapServicePayload(element)
+
         return buildList {
             for ((first, second) in SEARCH_KINDS) {
                 val items = payload[first] as? JsonArray ?: continue
+
                 for (item in items) {
                     decode(MaMediaItem.serializer(), item)?.toRow(second)?.let(::add)
                 }
@@ -71,16 +73,20 @@ internal object MusicResponseParsers {
     fun parseLibrary(element: JsonElement): List<MusicListRow> {
         val payload = unwrapServicePayload(element)
         val items = payload["items"] as? JsonArray
+
         return items?.mapNotNull { decode(MaMediaItem.serializer(), it)?.toRow("Library") }.orEmpty()
     }
 
     fun parseQueue(element: JsonElement, playerEntityId: String): MusicQueueSnapshot {
         val payload = unwrapServicePayload(element)
-        val queue = extractQueuePayload(payload, playerEntityId)
-            ?.let { decode(MaQueue.serializer(), it) }
-            ?: return MusicQueueSnapshot(emptyList(), 0)
+
+        val queue = extractQueuePayload(payload, playerEntityId)?.let { decode(MaQueue.serializer(), it) }
+
+        if (queue == null) return MusicQueueSnapshot(emptyList(), 0)
+
         val itemsEl = queue.items
         val currentId = queue.currentItem?.queueItemId
+
         return when (itemsEl) {
             is JsonArray -> MusicQueueSnapshot(
                 itemsEl.mapIndexedNotNull { index, item ->
@@ -103,13 +109,18 @@ internal object MusicResponseParsers {
         currentId: String?,
         currentIndex: Int?,
     ): MusicListRow? {
-        val queueItem = decode(MaQueueItem.serializer(), item) ?: return null
+        val queueItem = decode(MaQueueItem.serializer(), item)
+
+        if (queueItem == null) return null
+
         val id = queueItem.queueItemId
+
         val isCurrent = when {
             currentId != null && id != null -> id == currentId
             currentIndex != null -> index == currentIndex
             else -> false
         }
+
         return parseQueueItem(queueItem, isCurrent)
     }
 
@@ -118,15 +129,19 @@ internal object MusicResponseParsers {
             queue.currentItem?.let { parseQueueItem(it, true)?.let(::add) }
             val next = queue.nextItem
             val nextParsed = next?.let { parseQueueItem(it, false) }
+
             if (nextParsed != null) {
                 val nextId = next.queueItemId
+
                 if (nextId != null && nextId != currentId) add(nextParsed)
             }
         }
+
         val more = when (val totalInQueue = (queue.items as? JsonPrimitive)?.intOrNull) {
             null -> 0
             else -> (totalInQueue - rows.size).coerceAtLeast(0)
         }
+
         return MusicQueueSnapshot(rows, more)
     }
 
@@ -134,16 +149,21 @@ internal object MusicResponseParsers {
         val media = item.mediaItem
         val uri = media?.uri
         val title = media?.let { item.name ?: it.name }
+
         if (media == null || uri == null || title == null) return null
+
         val durationSec = item.duration?.toInt()
         val streamTitle = item.streamTitle
         val artist = media.artists.firstOrNull()?.name
+
         val subtitle = buildList {
             artist?.takeIf { it.isNotBlank() }?.let(::add)
             streamTitle?.takeIf { it.isNotBlank() }?.let(::add)
             durationSec?.takeIf { it > 0 }?.let { add(formatMmSs(it)) }
         }.joinToString(" · ").takeIf { it.isNotBlank() }
+
         val art = resolveMediaImage(media.image ?: item.image ?: media.metadata?.images?.firstOrNull())
+
         return MusicListRow(
             title = title,
             subtitle = subtitle,
@@ -155,7 +175,9 @@ internal object MusicResponseParsers {
 
     private fun MaMediaItem.toRow(kind: String): MusicListRow? {
         val primary = name ?: title ?: sortName
+
         if (uri == null || primary == null) return null
+
         return MusicListRow(
             title = "$kind · $primary",
             subtitle = artist?.takeIf { it.isNotBlank() } ?: artists.firstOrNull()?.name,
@@ -173,24 +195,32 @@ internal object MusicResponseParsers {
      */
     private fun unwrapServicePayload(element: JsonElement): JsonObject {
         var current = element as? JsonObject ?: return JsonObject(emptyMap())
+
         repeat(UNWRAP_DEPTH) {
-            ((current["response"] ?: current["service_response"]) as? JsonObject)?.let { current = it }
-            if (current.keys.none { it in LEAF_KEYS }) {
+            ((current["response"] ?: current["service_response"]) as? JsonObject)?.let { nested ->
+                current = nested
+            }
+
+            if (current.keys.none { key -> key in LEAF_KEYS }) {
                 current = current.values.singleOrNull() as? JsonObject ?: current
             }
         }
+
         return current
     }
 
     private fun extractQueuePayload(payload: JsonObject, entityId: String): JsonObject? {
         val byEntity = payload[entityId] as? JsonObject
         val sole = payload.values.singleOrNull() as? JsonObject
+
         val soleIsQueue = sole != null &&
             (sole.containsKey("queue_id") || sole.containsKey("current_item"))
+
         val scanned = payload.entries.firstOrNull { (_, value) ->
             val obj = value as? JsonObject ?: return@firstOrNull false
             obj.containsKey("queue_id") || obj.containsKey("current_item")
         }?.value as? JsonObject
+
         return when {
             payload.containsKey("queue_id") || payload.containsKey("current_item") -> payload
             byEntity != null -> byEntity
@@ -202,6 +232,7 @@ internal object MusicResponseParsers {
     private fun resolveMediaImage(element: JsonElement?): String? {
         val fromPrimitive = (element as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotBlank() }
         val fromObject = (element as? JsonObject)?.text("path")?.trim()?.takeIf { it.isNotBlank() }
+
         return fromPrimitive ?: fromObject
     }
 
@@ -209,6 +240,7 @@ internal object MusicResponseParsers {
         val safe = totalSec.coerceAtLeast(0)
         val minutes = safe / SECONDS_PER_MINUTE
         val seconds = safe % SECONDS_PER_MINUTE
+
         return "$minutes:${seconds.toString().padStart(2, '0')}"
     }
 

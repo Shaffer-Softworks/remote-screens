@@ -57,6 +57,7 @@ class PlayerHub(
     @OptIn(FlowPreview::class)
     fun start() {
         playersChanged.start()
+
         scope.launch {
             homeAssistant.states
                 .debounce(STATE_DEBOUNCE_MS.milliseconds)
@@ -67,6 +68,7 @@ class PlayerHub(
                     }
                 }
         }
+
         scope.launch {
             layoutRepository.layout.collectLatest { layout ->
                 for (session in sessions.values) {
@@ -74,6 +76,7 @@ class PlayerHub(
                 }
             }
         }
+
         scope.launch {
             homeAssistant.isConnected.collectLatest {
                 for (session in sessions.values) {
@@ -81,8 +84,10 @@ class PlayerHub(
                 }
             }
         }
+
         scope.launch { runClock() }
         scope.launch { runTicks() }
+
         scope.launch {
             homeAssistant.events.collect { event -> FollowedEvent.of(event)?.let { onFollowedEvent(it) } }
         }
@@ -92,9 +97,11 @@ class PlayerHub(
     suspend fun serve(socket: WebSocketSession, remoteAddress: String) {
         val hello = socket.receiveHello() ?: return
         val record = layoutRepository.layout.value.players.firstOrNull { it.deviceId == hello.deviceId }
+
         if (!PlayerAuth.mayConnect(hello, record)) {
             logger.warn("Player {} presented invalid credentials", hello.deviceId)
             runCatching { socket.close() }
+
             return
         }
 
@@ -105,17 +112,21 @@ class PlayerHub(
             newPairingCode = ::newPairingCode,
             onStatusChanged = playersChanged::notifyChanged,
         )
+
         sessions.put(hello.deviceId, session)?.close()
         playersChanged.notifyChanged()
         logger.info("Player {} ({}) connected from {}", hello.deviceName, hello.deviceId, remoteAddress)
 
         try {
             session.welcome()
+
             if (session.screenId != null) {
                 for (item in notificationQueue.drain(session.hello.deviceId)) {
                     val request = notificationQueue.deliveryRequest(item)
+
                     runCatching { session.notify(request) }.onFailure { exception ->
                         if (exception is CancellationException) throw exception
+
                         logger.warn(
                             "Queued notification to {} failed: {}",
                             session.hello.deviceId,
@@ -124,6 +135,7 @@ class PlayerHub(
                     }
                 }
             }
+
             for (frame in socket.incoming) {
                 (frame as? Frame.Text)?.let { Protocol.decodePlayer(
                     it.readText(),
@@ -132,6 +144,7 @@ class PlayerHub(
         } finally {
             sessions.remove(hello.deviceId, session)
             session.stop()
+
             layoutRepository.update { layout ->
                 layout.copy(
                     players = layout.players.map { player ->
@@ -143,6 +156,7 @@ class PlayerHub(
                     },
                 )
             }
+
             logger.info("Player {} disconnected", hello.deviceName)
             playersChanged.notifyDisconnected { sessions.containsKey(hello.deviceId) }
         }
@@ -150,6 +164,7 @@ class PlayerHub(
 
     fun status(): List<PlayerStatus> = layoutRepository.layout.value.players.map { record ->
         val session = sessions[record.deviceId]
+
         PlayerStatus(
             deviceId = record.deviceId,
             name = record.name,
@@ -179,9 +194,12 @@ class PlayerHub(
     ): Boolean {
         val layout = layoutRepository.layout.value
         val session = sessions.values.firstOrNull { it.pairingCode == codeOrDeviceId } ?: sessions[codeOrDeviceId]
+
         val deviceId = session?.hello?.deviceId
             ?: layout.players.firstOrNull { it.deviceId == codeOrDeviceId }?.deviceId
+
         if (deviceId == null || layout.screens.none { it.id == screenId }) return false
+
         val token = if (session != null) playerTokens.newToken() else null
 
         layoutRepository.update { current ->
@@ -199,8 +217,10 @@ class PlayerHub(
                 },
             )
         }
+
         session?.adopted(token)
         playersChanged.notifyChanged()
+
         return true
     }
 
@@ -208,6 +228,7 @@ class PlayerHub(
         layoutRepository.update { layout ->
             layout.copy(players = layout.players.filterNot { it.deviceId == deviceId })
         }
+
         sessions[deviceId]?.welcome()
         playersChanged.notifyChanged()
     }
@@ -224,12 +245,14 @@ class PlayerHub(
                 } },
             )
         }
+
         playersChanged.notifyChanged()
     }
 
     suspend fun testSentry(deviceId: String): CrashTestResult {
         val session = sessions[deviceId]?.takeIf { it.screenId != null }
             ?: return CrashTestResult("offline")
+
         return if (Protocol.CAPABILITY_SENTRY_TEST in session.hello.capabilities) {
             session.testSentry()
         } else {
@@ -245,6 +268,7 @@ class PlayerHub(
     suspend fun preview(deviceId: String, screen: Screen): Boolean {
         val session = sessions[deviceId] ?: return false
         session.showPreview(screen)
+
         return true
     }
 
@@ -253,24 +277,30 @@ class PlayerHub(
         val layout = layoutRepository.layout.value
         val knownIds = layout.screens.map { it.id } + layout.players.filter { it.screenId != null }.map { it.deviceId }
         require(request.targets.all { it in knownIds }) { "Unknown notification target" }
+
         val recipients = layout.players.filter { player ->
             player.screenId != null &&
                 (request.all || player.deviceId in request.targets || player.screenId in request.targets)
         }
+
         val deliveries = recipients.map { player ->
             val session = sessions[player.deviceId]?.takeIf { it.screenId == player.screenId }
+
             val status = if (session == null) {
                 notificationQueue.enqueue(player.deviceId, request)
                 "queued"
             } else {
                 runCatching { session.notify(request) }.getOrElse { exception ->
                     if (exception is CancellationException) throw exception
+
                     logger.warn("Notification to {} failed: {}", player.deviceId, exception.message)
                     "failed"
                 }
             }
-            NotificationDelivery(player.deviceId, player.name, status)
+
+            NotificationDelivery(deviceId = player.deviceId, name = player.name, status = status)
         }
+
         return NotificationResult(deliveries)
     }
 
@@ -301,7 +331,9 @@ class PlayerHub(
     /** Whether [token] belongs to an adopted player; used for the APK download. */
     fun isTrustedToken(token: String?): Boolean {
         if (token == null) return false
+
         val tokenHash = PlayerTokens.hash(token)
+
         return layoutRepository.layout.value.players.any { it.tokenHash == tokenHash && it.screenId != null }
     }
 
@@ -332,6 +364,7 @@ class PlayerHub(
             delay(untilNextMinuteMs.coerceAtLeast(MIN_CLOCK_DELAY_MS).milliseconds)
 
             val clockVars = screenClock.clockVars()
+
             for (session in sessions.values) {
                 session.sendVars(clockVars)
                 session.checkNight()
@@ -343,6 +376,7 @@ class PlayerHub(
         while (scope.isActive) {
             delay(TICK_INTERVAL_MS.milliseconds)
             val states = homeAssistant.states.value
+
             for (session in sessions.values) {
                 runCatching { session.tick(
                     states,

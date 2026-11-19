@@ -36,12 +36,14 @@ internal fun DocumentOverlays(
     // Keep the last dashboard for this page so the RC stub never shows through.
     var stickyEnergy by remember { mutableStateOf<SlotEnergyDashboard?>(null) }
     val playingEnergy = state.playingEnergyDashboard
+
     SideEffect {
         when {
             playingEnergy != null -> stickyEnergy = playingEnergy
             stickyEnergy?.page != state.page -> stickyEnergy = null
         }
     }
+
     val energyDashboard = when {
         slot != Slot.MAIN -> null
         playingEnergy != null -> playingEnergy
@@ -56,11 +58,13 @@ internal fun DocumentOverlays(
                 }
             }
         }
+
         state.playingMap?.takeIf { it.first == slot }?.second?.let { map ->
             key(slot, map.revision, map.componentId) {
                 DocumentOverlay(bounds.map) { LiveMapView(map, state.bitmaps, Modifier) }
             }
         }
+
         state.playingSearch?.takeIf { it.first == slot }?.second?.let { search ->
             key(slot, search.tileId, search.revision, search.componentId) {
                 DocumentOverlay(bounds.search) {
@@ -74,6 +78,7 @@ internal fun DocumentOverlays(
                 }
             }
         }
+
         energyDashboard?.let { dashboard ->
             key(dashboard.tileId, dashboard.page) {
                 // Full-screen cover when the hole is not laid out yet (swap), so the RC stub stays hidden.

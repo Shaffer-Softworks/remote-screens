@@ -14,6 +14,8 @@ import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaCopy
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaSnapshot
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
+import tech.shaffersoftworks.remotescreens.server.render.cards.CardType
+import tech.shaffersoftworks.remotescreens.shared.TileKind
 import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.ALARM_PIN_LENGTH
 import tech.shaffersoftworks.remotescreens.server.render.HaRenderFlags
 import tech.shaffersoftworks.remotescreens.server.render.Vars
@@ -49,7 +51,7 @@ class ActionRouter(
     private val renderData: RenderDataRepository? = null,
 ) {
     private val logger = LoggerFactory.getLogger(ActionRouter::class.java)
-    private val alarmActions = AlarmActions(homeAssistant, i18n, renderData)
+    private val alarmActions = AlarmActions(homeAssistant = homeAssistant, i18n = i18n, renderData = renderData)
     private val lightsActions = LightsActions(homeAssistant, renderData)
     private val panelUiActions = PanelUiActions(homeAssistant, renderData)
     private val energyDashboardActions = EnergyDashboardActions(renderData)
@@ -60,6 +62,7 @@ class ActionRouter(
     ): TapTarget? = when {
         ref.tile.startsWith(ENTITY_TILE_PREFIX) -> {
             val entityId = ref.tile.removePrefix(ENTITY_TILE_PREFIX)
+
             TapTarget(
                 tileId = ref.tile,
                 entityId = entityId,
@@ -91,13 +94,22 @@ class ActionRouter(
     ): TapOutcome {
         val target = target(ref, screen) ?: return TapOutcome.Ignored
         val entity = target.entityId?.let { homeAssistant.states.value[it] }
-        val verb = resolveVerb(ref.verb, target, entity)
+        val verb = resolveVerb(verb = ref.verb, target = target, entity = entity)
 
         return try {
             if (verb == "calendar_create" || verb == "calendar_delete") {
-                handleCalendar(verb, ref, target)
+                handleCalendar(verb = verb, ref = ref, target = target)
             } else {
-                dispatchTap(verb = verb, ref = ref, target = target, entity = entity, memory = memory, nowMs = nowMs)
+                dispatchTap(
+                    TapDispatch(
+                        verb = verb,
+                        ref = ref,
+                        target = target,
+                        entity = entity,
+                        memory = memory,
+                        nowMs = nowMs,
+                    ),
+                )
             }
         } catch (cancellation: CancellationException) {
             throw cancellation
@@ -107,47 +119,76 @@ class ActionRouter(
         }
     }
 
-    private suspend fun dispatchTap(
-        verb: String,
-        ref: ActionRef,
-        target: TapTarget,
-        entity: EntityState?,
-        memory: TapMemory,
-        nowMs: Long,
-    ): TapOutcome = when (verb) {
-        "card" -> TapOutcome.Card(
-            target.entityId,
-            if (ref.arg == "history") "history" else target.kind,
-        )
-        ActionRef.VERB_RUN -> runTileAction(ref, target)
-        "favourite" -> playFavourite(target)
-        "event" -> fireEvent(ref.arg, target)
-        "code_digit", "code_back", "code_clear" -> typeCode(
-            verb = verb,
-            arg = ref.arg,
-            target = target,
-            memory = memory,
-        )
-        "alarm_arm", "alarm_zone", "alarm_dismiss" -> alarmActions.handle(
-            verb = verb,
-            arg = ref.arg,
-            target = target,
-            memory = memory,
-        )
-        "lights_room", "lights_detail", "lights_dismiss", "lights_mode", "lights_palette",
-        "lights_effects", "lights_effect",
-        -> lightsActions.handle(verb, ref.arg, target)
-        "blinds_room", "cameras_select", "security_section",
-        "vacuum_select", "vacuum_rooms", "vacuum_rooms_dismiss", "vacuum_rooms_toggle", "vacuum_rooms_clean",
-        -> panelUiActions.handle(verb, ref.arg, target)
-        "energy_dash_prev", "energy_dash_next", "energy_dash_now", "energy_dash_period" ->
-            energyDashboardActions.handle(verb, target)
-        "intercom_call", "intercom_hangup", "intercom_mute" -> IntercomActions.handle(verb, ref.arg)
-        "browse_type", "listen_mode", "primary_tab", "load_more",
-        "clear_queue", "play_uri", "enqueue_uri",
-        "volume_up", "volume_down",
-        -> handleMusic(verb, ref, target)
-        else -> callService(verb = verb, ref = ref, target = target, entity = entity, memory = memory, nowMs = nowMs)
+    private data class TapDispatch(
+        val verb: String,
+        val ref: ActionRef,
+        val target: TapTarget,
+        val entity: EntityState?,
+        val memory: TapMemory,
+        val nowMs: Long,
+    )
+
+    private data class MusicVerb(
+        val verb: String,
+        val ref: ActionRef,
+        val target: TapTarget,
+        val tileId: String,
+        val entityId: String,
+        val repo: RenderDataRepository,
+    )
+
+    private suspend fun dispatchTap(tap: TapDispatch): TapOutcome {
+        val verb = tap.verb
+        val ref = tap.ref
+        val target = tap.target
+        val entity = tap.entity
+        val memory = tap.memory
+        val nowMs = tap.nowMs
+
+        return when (verb) {
+            "card" -> TapOutcome.Card(
+                target.entityId,
+                if (ref.arg == CardType.HISTORY.wire) CardType.HISTORY.wire else target.kind,
+            )
+            ActionRef.VERB_RUN -> runTileAction(ref, target)
+            "favourite" -> playFavourite(target)
+            "event" -> fireEvent(ref.arg, target)
+            "code_digit", "code_back", "code_clear" -> typeCode(
+                verb = verb,
+                arg = ref.arg,
+                target = target,
+                memory = memory,
+            )
+            "alarm_arm", "alarm_zone", "alarm_dismiss" -> alarmActions.handle(
+                verb = verb,
+                arg = ref.arg,
+                target = target,
+                memory = memory,
+            )
+            "lights_room", "lights_detail", "lights_dismiss", "lights_mode", "lights_palette",
+            "lights_effects", "lights_effect",
+            -> lightsActions.handle(verb = verb, arg = ref.arg, target = target)
+            "blinds_room", "cameras_select", "security_section",
+            "vacuum_select", "vacuum_rooms", "vacuum_rooms_dismiss", "vacuum_rooms_toggle", "vacuum_rooms_clean",
+            -> panelUiActions.handle(verb = verb, arg = ref.arg, target = target)
+            "energy_dash_prev", "energy_dash_next", "energy_dash_now", "energy_dash_period" ->
+                energyDashboardActions.handle(verb, target)
+            "intercom_call", "intercom_hangup", "intercom_mute" -> IntercomActions.handle(verb, ref.arg)
+            "browse_type", "listen_mode", "primary_tab", "load_more",
+            "clear_queue", "play_uri", "enqueue_uri",
+            "volume_up", "volume_down",
+            -> handleMusic(verb = verb, ref = ref, target = target)
+            else -> callService(
+                TapDispatch(
+                    verb = verb,
+                    ref = ref,
+                    target = target,
+                    entity = entity,
+                    memory = memory,
+                    nowMs = nowMs,
+                ),
+            )
+        }
     }
 
     /** See [ServiceDataBuilder.resolveArg]. */
@@ -155,7 +196,7 @@ class ActionRouter(
         action: ActionSpec,
         arg: String,
         entity: EntityState?,
-    ): String = ServiceDataBuilder.resolveArg(action, arg, entity)
+    ): String = ServiceDataBuilder.resolveArg(action = action, arg = arg, entity = entity)
 
     /** The state Home Assistant will most likely report once [ref] is done, or null when it cannot be told. */
     fun foresee(
@@ -164,18 +205,26 @@ class ActionRouter(
         entity: EntityState,
     ): EntityState? {
         val spec = target?.spec ?: Catalogue.of(entity.domain.value)
+
         val verb = resolveVerb(
-            ref.verb,
-            target ?: TapTarget(tileId = "", entityId = entity.entityId, kind = entity.domain.value, tile = null),
-            entity,
+            verb = ref.verb,
+            target = target ?: TapTarget(
+                tileId = "",
+                entityId = entity.entityId,
+                kind = entity.domain.value,
+                tile = null
+            ),
+            entity = entity,
         )
+
         val prediction = spec?.predict?.get(verb) ?: return null
         val action = spec.actions[verb]
+
         val arg = if (action != null) {
             ServiceDataBuilder.resolveArg(
-                action,
-                ref.arg,
-                entity,
+                action = action,
+                arg = ref.arg,
+                entity = entity,
             )
         } else {
             ref.arg
@@ -238,17 +287,23 @@ class ActionRouter(
         else -> verb
     }
 
-    private suspend fun callService(
-        verb: String,
-        ref: ActionRef,
-        target: TapTarget,
-        entity: EntityState?,
-        memory: TapMemory,
-        nowMs: Long,
-    ): TapOutcome {
-        val spec = if (target.kind == "music") Catalogue.of("media_player") else target.spec
+    private suspend fun callService(tap: TapDispatch): TapOutcome {
+        val verb = tap.verb
+        val ref = tap.ref
+        val target = tap.target
+        val entity = tap.entity
+        val memory = tap.memory
+        val nowMs = tap.nowMs
+
+        val spec = if (TileKind.fromWire(target.kind) == TileKind.MUSIC) {
+            Catalogue.of(TileKind.MEDIA_PLAYER.wire)
+        } else {
+            target.spec
+        }
+
         val action = spec?.actions?.get(verb)
         val entityId = target.entityId
+
         if (action == null || entityId == null) return TapOutcome.Ignored
 
         return confirmationNeeded(
@@ -259,6 +314,7 @@ class ActionRouter(
             nowMs = nowMs,
         ) ?: run {
             val code = memory.codes.remove(entityId)
+
             val data = ServiceDataBuilder.build(
                 action = action,
                 verb = verb,
@@ -266,7 +322,12 @@ class ActionRouter(
                 entity = entity,
                 code = code,
             )
-            homeAssistant.callNamedService(action.service, target = listOf(EntityId(entityId)), data = data)
+
+            homeAssistant.callNamedService(
+                serviceText = action.service,
+                target = listOf(EntityId(entityId)),
+                data = data
+            )
         }
     }
 
@@ -277,13 +338,14 @@ class ActionRouter(
     ): TapOutcome {
         val agendas = renderData?.calendarAgenda ?: return TapOutcome.Ignored
         val snapshot = agendas.latest
+
         return when (verb) {
             "calendar_create" -> TapOutcome.OpenCalendar(
                 tileId = target.tileId,
                 mode = CalendarDialogMode.CREATE,
                 calendars = snapshot.calendars.filter { it.canCreate },
             )
-            "calendar_delete" -> deleteDialog(ref.arg, target.tileId, snapshot)
+            "calendar_delete" -> deleteDialog(arg = ref.arg, tileId = target.tileId, snapshot = snapshot)
             else -> TapOutcome.Ignored
         }
     }
@@ -296,8 +358,11 @@ class ActionRouter(
         val parts = arg.split(AGENDA_FIELD_SEPARATOR)
         val entityId = parts.getOrNull(0).orEmpty()
         val uid = parts.getOrNull(1).orEmpty()
+
         if (entityId.isBlank() || uid.isBlank()) return TapOutcome.Ignored
+
         val recurrenceId = parts.getOrNull(2)?.takeIf { it.isNotEmpty() }
+
         val event = snapshot.events.firstOrNull { candidate ->
             candidate.entityId == entityId && candidate.uid == uid &&
                 (recurrenceId == null || candidate.recurrenceId == recurrenceId)
@@ -306,7 +371,7 @@ class ActionRouter(
         return if (event == null || !event.canDelete) {
             TapOutcome.AgendaNotice(tileId, AgendaCopy.CANNOT_DELETE)
         } else {
-            TapOutcome.OpenCalendar(tileId, CalendarDialogMode.DELETE, event = event)
+            TapOutcome.OpenCalendar(tileId = tileId, mode = CalendarDialogMode.DELETE, event = event)
         }
     }
 
@@ -323,47 +388,51 @@ class ActionRouter(
             TapOutcome.Ignored
         } else {
             musicVerb(
-                verb = verb,
-                ref = ref,
-                target = target,
-                tileId = tileId,
-                entityId = entityId,
-                repo = repo,
+                MusicVerb(
+                    verb = verb,
+                    ref = ref,
+                    target = target,
+                    tileId = tileId,
+                    entityId = entityId,
+                    repo = repo,
+                ),
             )
         }
     }
 
-    private suspend fun musicVerb(
-        verb: String,
-        ref: ActionRef,
-        target: TapTarget,
-        tileId: String,
-        entityId: String,
-        repo: RenderDataRepository,
-    ): TapOutcome = when (verb) {
-        "browse_type" -> {
-            repo.musicUi.setBrowseType(tileId, ref.arg)
-            TapOutcome.Rebuild
+    private suspend fun musicVerb(verbCall: MusicVerb): TapOutcome {
+        val verb = verbCall.verb
+        val ref = verbCall.ref
+        val target = verbCall.target
+        val tileId = verbCall.tileId
+        val entityId = verbCall.entityId
+        val repo = verbCall.repo
+
+        return when (verb) {
+            "browse_type" -> {
+                repo.musicUi.setBrowseType(tileId, ref.arg)
+                TapOutcome.Rebuild
+            }
+            "listen_mode" -> {
+                repo.musicUi.setListenMode(tileId, ref.arg)
+                TapOutcome.Rebuild
+            }
+            "primary_tab" -> {
+                repo.musicUi.setPrimarySection(tileId, ref.arg)
+                TapOutcome.Rebuild
+            }
+            "load_more" -> musicLoadMore(repo = repo, target = target, tileId = tileId, entityId = entityId)
+            "clear_queue" -> {
+                repo.music.clearPlaylist(entityId)
+                repo.invalidateMusic(playerEntityId = entityId)
+                TapOutcome.Rebuild
+            }
+            "play_uri" -> musicPlayUri(repo = repo, entityId = entityId, uri = ref.arg, enqueue = "play")
+            "enqueue_uri" -> musicPlayUri(repo = repo, entityId = entityId, uri = ref.arg, enqueue = "add")
+            "volume_up" -> musicVolume(entityId, isUp = true)
+            "volume_down" -> musicVolume(entityId, isUp = false)
+            else -> TapOutcome.Ignored
         }
-        "listen_mode" -> {
-            repo.musicUi.setListenMode(tileId, ref.arg)
-            TapOutcome.Rebuild
-        }
-        "primary_tab" -> {
-            repo.musicUi.setPrimarySection(tileId, ref.arg)
-            TapOutcome.Rebuild
-        }
-        "load_more" -> musicLoadMore(repo = repo, target = target, tileId = tileId, entityId = entityId)
-        "clear_queue" -> {
-            repo.music.clearPlaylist(entityId)
-            repo.invalidateMusic(playerEntityId = entityId)
-            TapOutcome.Rebuild
-        }
-        "play_uri" -> musicPlayUri(repo = repo, entityId = entityId, uri = ref.arg, enqueue = "play")
-        "enqueue_uri" -> musicPlayUri(repo = repo, entityId = entityId, uri = ref.arg, enqueue = "add")
-        "volume_up" -> musicVolume(entityId, isUp = true)
-        "volume_down" -> musicVolume(entityId, isUp = false)
-        else -> TapOutcome.Ignored
     }
 
     private suspend fun musicLoadMore(
@@ -374,8 +443,11 @@ class ActionRouter(
     ): TapOutcome {
         val configEntryId = target.tile?.options?.get("config_entry_id")
             ?: repo.music.configEntryIdForEntity(entityId)
+
         if (configEntryId == null) return TapOutcome.Failed("No Music Assistant config entry")
+
         repo.loadMoreBrowse(tileId, configEntryId)
+
         return TapOutcome.Rebuild
     }
 
@@ -385,17 +457,22 @@ class ActionRouter(
         uri: String,
         enqueue: String,
     ): TapOutcome {
-        val ok = repo.music.playMediaUri(entityId, uri, enqueue = enqueue)
+        val ok = repo.music.playMediaUri(playerEntityId = entityId, uri = uri, enqueue = enqueue)
+
         if (!ok) {
             val message = if (enqueue == "add") "Could not add to queue" else "Could not start playback"
+
             return TapOutcome.Failed(message)
         }
+
         repo.invalidateMusic(playerEntityId = entityId)
+
         return TapOutcome.Rebuild
     }
 
     private suspend fun musicVolume(entityId: String, isUp: Boolean): TapOutcome {
         homeAssistant.call(MediaPlayerVolumeStep(EntityId(entityId), isUp = isUp))
+
         return TapOutcome.Done
     }
 
@@ -408,6 +485,7 @@ class ActionRouter(
         nowMs: Long,
     ): TapOutcome.Confirm? {
         if (!action.confirm) return null
+
         val key = "${target.tileId}|$verb"
         val pending = memory.pendingConfirm
         val isSecondTap = pending != null && pending.key == key && nowMs - pending.sinceMs <= CONFIRM_MS
@@ -436,17 +514,21 @@ class ActionRouter(
             val action = if (ref.arg == ActionRef.ARG_HOLD) tile.hold else tile.tap
             action.takeIf { it.type == TapType.ACTION }
         }
+
         val serviceText = tap?.service ?: return TapOutcome.Ignored
         val data = ServiceData(tap.data ?: JsonObject(emptyMap()))
         val tileTarget = if (data.entityIds.isEmpty()) listOfNotNull(target.entityId?.let(::EntityId)) else emptyList()
-        return homeAssistant.callNamedService(serviceText, target = tileTarget, data = data)
+
+        return homeAssistant.callNamedService(serviceText = serviceText, target = tileTarget, data = data)
     }
 
     private suspend fun playFavourite(target: TapTarget): TapOutcome {
         val options = target.tile?.options
         val mediaPlayer = target.entityId
         val contentId = options?.get("content_id")
+
         if (mediaPlayer == null || contentId == null) return TapOutcome.Ignored
+
         homeAssistant.call(
             MediaPlayerPlayMedia(
                 entityId = EntityId(mediaPlayer),
@@ -454,16 +536,20 @@ class ActionRouter(
                 mediaContentType = options["content_type"] ?: "music",
             ),
         )
+
         return TapOutcome.Done
     }
 
     private suspend fun fireEvent(eventType: String, target: TapTarget): TapOutcome {
         if (eventType.isBlank()) return TapOutcome.Ignored
+
         val eventData = buildJsonObject {
             target.entityId?.let { put(ServiceData.ENTITY_ID, it) }
             put("source", "remote_screens")
         }
+
         homeAssistant.send(FireEvent(eventType, eventData))
+
         return TapOutcome.Done
     }
 
@@ -475,12 +561,15 @@ class ActionRouter(
     ): TapOutcome {
         val entityId = target.entityId ?: return TapOutcome.Ignored
         val typed = memory.codes[entityId].orEmpty()
+
         val next = when (verb) {
             "code_digit" -> (typed + arg.filter(Char::isDigit)).take(MAX_CODE_LENGTH)
             "code_back" -> typed.dropLast(1)
             else -> ""
         }
+
         memory.codes[entityId] = next
+
         val dots = if (target.tile?.isAlarmPage() == true) {
             (0 until ALARM_PIN_LENGTH).map { index ->
                 VarValue.int(alarmDotVar(entityId, index), if (index < next.length) Vars.VISIBLE else Vars.GONE)
@@ -488,7 +577,8 @@ class ActionRouter(
         } else {
             emptyList()
         }
-        return TapOutcome.Code("t.e:$entityId.code", "•".repeat(next.length), dots)
+
+        return TapOutcome.Code(varName = "t.e:$entityId.code", shown = "•".repeat(next.length), extra = dots)
     }
 
     companion object {
@@ -503,6 +593,7 @@ internal suspend fun HomeAssistant.callNamedService(
     data: ServiceData,
 ): TapOutcome {
     val service = ServiceRef.parse(serviceText) ?: return TapOutcome.Failed("Bad service $serviceText")
-    callService(service, target = target, data = data)
+    callService(service = service, target = target, data = data)
+
     return TapOutcome.Done
 }

@@ -29,10 +29,12 @@ data class AdbResult(val message: String)
 fun Route.adbRoutes(adb: AdbService) {
     route("/adb") {
         get { call.adbOperation { call.respond(adb.status()) } }
+
         listOf("pair", "connect", "disconnect", "associate", "restart", "install", "screenshot", "logs")
             .forEach { operation ->
                 post("/$operation") {
                     val request = call.receive<AdbRequest>()
+
                     call.adbOperation {
                         when (operation) {
                             "screenshot" -> call.respondBytes(adb.screenshot(request.serial), ContentType.Image.PNG)

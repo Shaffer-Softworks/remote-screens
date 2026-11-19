@@ -25,8 +25,10 @@ fun calendarEvent(entityState: EntityState, zone: ZoneId): CalendarEvent? {
         text?.let {
             runCatching { LocalDateTime.parse(text, HA_LOCAL).atZone(zone) }.getOrNull()
         }
+
     val title = entityState.calendar.message
     val start = time(entityState.calendar.startTime)
+
     return if (title == null || start == null) {
         null
     } else {

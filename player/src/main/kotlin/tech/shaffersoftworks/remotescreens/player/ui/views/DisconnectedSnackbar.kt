@@ -69,12 +69,14 @@ fun DisconnectedSnackbar(
                         .clip(CircleShape)
                         .background(WarningAmber),
                 )
+
                 Text(
                     text = stringResource(R.string.disconnected),
                     color = DialogWhite,
                     fontSize = 16.sp,
                     modifier = Modifier.weight(1f),
                 )
+
                 TextButton(onClick = onRetry) {
                     Text(
                         text = stringResource(R.string.retry),

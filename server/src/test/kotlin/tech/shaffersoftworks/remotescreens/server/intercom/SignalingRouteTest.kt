@@ -35,14 +35,18 @@ class SignalingRouteTest {
             client.webSocket("/webrtc") {
                 send(Frame.Text("""{"type":"register","clientId":"ha-browser","displayName":"Michael"}"""))
                 var roster: JsonObject? = null
+
                 while (roster == null) {
                     val frame = incoming.receive() as Frame.Text
                     val message = Json.parseToJsonElement(frame.readText()).jsonObject
+
                     if (message["type"]?.jsonPrimitive?.content == "clientsList") roster = message
                 }
+
                 val names = roster["clients"]!!.jsonArray.map {
                     it.jsonObject["displayName"]!!.jsonPrimitive.content
                 }
+
                 assertEquals(setOf("Kitchen", "Michael"), names.toSet())
                 assertTrue(names.size == 2)
             }

@@ -106,6 +106,9 @@ vico-compose-m3 = { module = "com.patrykandpatrick.vico:compose-m3", version.ref
 vico-core = { module = "com.patrykandpatrick.vico:core", version.ref = "vico" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
+detekt-api = { module = "dev.detekt:detekt-api", version.ref = "detekt" }
+detekt-analysis-api = { module = "dev.detekt:detekt-kotlin-analysis-api", version.ref = "detekt" }
+detekt-test = { module = "dev.detekt:detekt-test", version.ref = "detekt" }
 detekt-rules-ktlint-wrapper = { module = "dev.detekt:detekt-rules-ktlint-wrapper", version.ref = "detekt" }
 
 # Coil

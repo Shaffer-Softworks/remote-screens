@@ -58,6 +58,7 @@ class AndroidWebRtcAudio @Inject constructor(
         this.listener = listener
         closePeer()
         ensureFactory()
+
         val configuration = PeerConnection.RTCConfiguration(emptyList()).apply {
             tcpCandidatePolicy = PeerConnection.TcpCandidatePolicy.ENABLED
             bundlePolicy = PeerConnection.BundlePolicy.MAXBUNDLE
@@ -65,10 +66,12 @@ class AndroidWebRtcAudio @Inject constructor(
             continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
             sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
         }
+
         peer = factory?.createPeerConnection(
             configuration,
             WebRtcPeerObserver { activeListener(generation) },
         )
+
         addLocalAudio()
         audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
         routeToSpeaker()
@@ -81,6 +84,7 @@ class AndroidWebRtcAudio @Inject constructor(
 
     override suspend fun acceptOffer(sdp: String): String {
         setRemote(SessionDescription.Type.OFFER, sdp)
+
         return createDescription { connection, callback ->
             connection.createAnswer(callback, receiveAudio())
         }
@@ -93,6 +97,7 @@ class AndroidWebRtcAudio @Inject constructor(
     override suspend fun rollbackAndAnswer(offer: String): String? = runCatching {
         setLocal(SessionDescription(SessionDescription.Type.ROLLBACK, ""))
         setRemote(SessionDescription.Type.OFFER, offer)
+
         createDescription { connection, callback ->
             connection.createAnswer(callback, receiveAudio())
         }
@@ -100,10 +105,13 @@ class AndroidWebRtcAudio @Inject constructor(
 
     override fun addCandidate(candidate: String, sdpMid: String?, sdpMLineIndex: Int) {
         val ice = IceCandidate(sdpMid ?: "", sdpMLineIndex, candidate)
+
         if (!hasRemoteDescription) {
             pendingCandidates.add(ice)
+
             return
         }
+
         peer?.addIceCandidate(ice)
     }
 
@@ -116,7 +124,9 @@ class AndroidWebRtcAudio @Inject constructor(
         listener = IdleAudioListener
         closePeer()
         audioManager.mode = AudioManager.MODE_NORMAL
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) audioManager.clearCommunicationDevice()
+
         focusRequest?.let { request -> audioManager.abandonAudioFocusRequest(request) }
         focusRequest = null
     }
@@ -128,8 +138,10 @@ class AndroidWebRtcAudio @Inject constructor(
                 MediaStreamTrack.MediaType.MEDIA_TYPE_AUDIO,
                 RtpTransceiver.RtpTransceiverInit(RtpTransceiver.RtpTransceiverDirection.RECV_ONLY),
             )
+
             return
         }
+
         val source = factory?.createAudioSource(MediaConstraints())
         localAudio = factory?.createAudioTrack(LOCAL_TRACK_ID, source)
         localAudio?.setEnabled(true)
@@ -142,14 +154,18 @@ class AndroidWebRtcAudio @Inject constructor(
 
     private fun ensureFactory() {
         if (factory != null) return
+
         PeerConnectionFactory.initialize(
             PeerConnectionFactory.InitializationOptions.builder(context).createInitializationOptions(),
         )
+
         val module = JavaAudioDeviceModule.builder(context)
             .setUseHardwareAcousticEchoCanceler(JavaAudioDeviceModule.isBuiltInAcousticEchoCancelerSupported())
             .setUseHardwareNoiseSuppressor(JavaAudioDeviceModule.isBuiltInNoiseSuppressorSupported())
             .createAudioDeviceModule()
+
         audioDevice = module
+
         factory = PeerConnectionFactory.builder()
             .setAudioDeviceModule(module)
             .setOptions(PeerConnectionFactory.Options())
@@ -171,7 +187,9 @@ class AndroidWebRtcAudio @Inject constructor(
         localAudio = null
         pendingCandidates.clear()
         hasRemoteDescription = false
+
         if (closingPeer == null && closingAudio == null) return
+
         closeScope.launch {
             closingAudio?.setEnabled(false)
             closingAudio?.dispose()
@@ -183,10 +201,13 @@ class AndroidWebRtcAudio @Inject constructor(
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             @Suppress("DEPRECATION")
             audioManager.isSpeakerphoneOn = true
+
             return
         }
+
         val speaker = audioManager.availableCommunicationDevices
             .firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
+
         if (speaker != null) audioManager.setCommunicationDevice(speaker)
     }
 
@@ -195,9 +216,11 @@ class AndroidWebRtcAudio @Inject constructor(
             .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
             .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
             .build()
+
         val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
             .setAudioAttributes(attributes)
             .build()
+
         focusRequest = request
         audioManager.requestAudioFocus(request)
     }
@@ -206,6 +229,7 @@ class AndroidWebRtcAudio @Inject constructor(
         create: (PeerConnection, SdpObserver) -> Unit,
     ): String {
         val connection = peer ?: error("No intercom call is open")
+
         val description = suspendCancellableCoroutine { continuation ->
             create(
                 connection,
@@ -227,12 +251,15 @@ class AndroidWebRtcAudio @Inject constructor(
                 },
             )
         }
+
         setLocal(description)
+
         return description.description
     }
 
     private suspend fun setLocal(description: SessionDescription) {
         val connection = peer ?: error("No intercom call is open")
+
         suspendCancellableCoroutine { continuation ->
             connection.setLocalDescription(
                 object : SdpObserver {
@@ -251,6 +278,7 @@ class AndroidWebRtcAudio @Inject constructor(
 
     private suspend fun setRemote(type: SessionDescription.Type, sdp: String) {
         val connection = peer ?: error("No intercom call is open")
+
         suspendCancellableCoroutine { continuation ->
             connection.setRemoteDescription(
                 object : SdpObserver {
@@ -265,6 +293,7 @@ class AndroidWebRtcAudio @Inject constructor(
                 SessionDescription(type, sdp),
             )
         }
+
         flushCandidates()
     }
 

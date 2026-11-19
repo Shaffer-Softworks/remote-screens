@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.render.theme
 
+import java.util.Locale
 import tech.shaffersoftworks.remotescreens.shared.Theme
 import kotlinx.serialization.Serializable
 
@@ -192,55 +193,81 @@ object Themes {
 
     private fun over(theme: Theme): Palette {
         val base = BUILTIN[theme.base]?.second ?: RPI
+
         val roles = theme.roles.mapNotNull { (k, v) -> Role.of(
             k,
         )?.let { r -> parse(v)?.let { r to it } } }.toMap()
+
         val pastels = theme.pastels.mapNotNull { (k, v) -> Pastel.of(
             k,
         )?.let { p -> parse(v)?.let { p to it } } }.toMap()
+
         return base.with(roles, pastels)
     }
 
     /** Every theme, built-in first, as the editor draws them. */
     fun all(custom: List<Theme>): List<ResolvedTheme> =
         BUILTIN.map { (id, v) ->
-            resolved(id = id, name = v.first, base = id, builtin = true, palette = v.second, own = Theme(id, v.first))
+            resolved(
+                ThemeParts(
+                    id = id,
+                    name = v.first,
+                    base = id,
+                    builtin = true,
+                    palette = v.second,
+                    own = Theme(id, v.first),
+                ),
+            )
         } +
             custom.map {
-                resolved(id = it.id, name = it.name, base = it.base, builtin = false, palette = over(it), own = it)
+                resolved(
+                    ThemeParts(
+                        id = it.id,
+                        name = it.name,
+                        base = it.base,
+                        builtin = false,
+                        palette = over(it),
+                        own = it,
+                    ),
+                )
             }
 
-    private fun resolved(
-        id: String,
-        name: String,
-        base: String,
-        builtin: Boolean,
-        palette: Palette,
-        own: Theme,
-    ): ResolvedTheme = ResolvedTheme(
-        id = id,
-        name = name,
-        base = base,
-        builtin = builtin,
-        dark = palette.dark,
-        roles = Role.entries.associate { it.key to hex(palette[it]) },
-        pastels = Pastel.entries.associate { it.key to hex(palette[it]) },
-        overrides = Overrides(own.roles, own.pastels),
+    private data class ThemeParts(
+        val id: String,
+        val name: String,
+        val base: String,
+        val builtin: Boolean,
+        val palette: Palette,
+        val own: Theme,
+    )
+
+    private fun resolved(parts: ThemeParts): ResolvedTheme = ResolvedTheme(
+        id = parts.id,
+        name = parts.name,
+        base = parts.base,
+        builtin = parts.builtin,
+        dark = parts.palette.dark,
+        roles = Role.entries.associate { role -> role.key to hex(parts.palette[role]) },
+        pastels = Pastel.entries.associate { pastel -> pastel.key to hex(parts.palette[pastel]) },
+        overrides = Overrides(parts.own.roles, parts.own.pastels),
     )
 
     /** `#RRGGBB` or `#AARRGGBB` to ARGB, or null for anything else. */
     fun parse(hex: String): Int? {
         if (!Theme.HEX.matches(hex)) return null
+
         val value = hex.substring(1).toLong(HEX_RADIX)
+
         return (if (hex.length == HEX_RGB_LENGTH) value or OPAQUE_ARGB_PREFIX else value).toInt()
     }
 
     fun hex(argb: Int): String {
         val alpha = (argb ushr ALPHA_SHIFT) and OPAQUE_ALPHA
+
         return if (alpha == OPAQUE_ALPHA) {
-            "#%06X".format(argb and RGB_MASK)
+            "#%06X".format(Locale.ROOT, argb and RGB_MASK)
         } else {
-            "#%08X".format(argb.toLong() and ARGB_MASK)
+            "#%08X".format(Locale.ROOT, argb.toLong() and ARGB_MASK)
         }
     }
 
@@ -248,6 +275,7 @@ object Themes {
         require(
             roles.size == Role.entries.size && pastels.size == Pastel.entries.size,
         ) { "a built-in theme names every colour" }
+
         return Palette(
             IntArray(Role.entries.size) { roles.getValue(Role.entries[it]) },
             IntArray(Pastel.entries.size) { pastels.getValue(Pastel.entries[it]) },

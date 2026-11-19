@@ -96,6 +96,7 @@ fun CalendarDialogs(
 ) {
     if (state.mode == CalendarDialogMode.DELETE) {
         val event = state.event ?: return
+
         DeleteCalendarEventDialog(
             summary = event.summary,
             isMutating = state.isMutating,
@@ -132,10 +133,13 @@ private fun CreateCalendarEventDialog(
     var endTime by remember { mutableStateOf(defaultStart.plusHours(1)) }
     var formError by remember { mutableStateOf<String?>(null) }
     var activePicker by remember { mutableStateOf<PickerTarget?>(null) }
+
     LaunchedEffect(serverError) {
         if (serverError != null) formError = serverError
     }
+
     val colors = calendarFieldColors()
+
     AlertDialog(
         onDismissRequest = { if (!isMutating) onDismiss() },
         containerColor = DialogBackground,
@@ -190,6 +194,7 @@ private fun CreateCalendarEventDialog(
             }
         },
     )
+
     CalendarPicker(
         target = activePicker,
         startDate = startDate,
@@ -206,12 +211,14 @@ private fun CreateCalendarEventDialog(
         onEndDate = { endDate = it; activePicker = null },
         onStartTime = { picked ->
             startTime = picked
+
             endTime = endTimeAfterStartChange(
                 picked = picked,
                 endTime = endTime,
                 startDate = startDate,
                 endDate = endDate,
             )
+
             activePicker = null
         },
         onEndTime = { endTime = it; activePicker = null },
@@ -260,6 +267,7 @@ private fun CreateCalendarFields(
         } else {
             CalendarDropdown(calendars = calendars, selected = selected, onSelected = onSelected, colors = colors)
         }
+
         OutlinedTextField(
             value = summary,
             onValueChange = onSummary,
@@ -268,6 +276,7 @@ private fun CreateCalendarFields(
             singleLine = true,
             colors = colors,
         )
+
         OutlinedTextField(
             value = location,
             onValueChange = onLocation,
@@ -276,6 +285,7 @@ private fun CreateCalendarFields(
             singleLine = true,
             colors = colors,
         )
+
         Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(
                 checked = isAllDay,
@@ -286,16 +296,22 @@ private fun CreateCalendarFields(
                     checkmarkColor = DialogBackground,
                 ),
             )
+
             Text(text = "All day", color = DialogWhite)
         }
+
         PickerField("Start date", startDate.format(DisplayDate), colors) { onPick(PickerTarget.START_DATE) }
+
         if (!isAllDay) {
             PickerField("Start time", startTime.format(DisplayTime), colors) { onPick(PickerTarget.START_TIME) }
         }
+
         PickerField("End date", endDate.format(DisplayDate), colors) { onPick(PickerTarget.END_DATE) }
+
         if (!isAllDay) {
             PickerField("End time", endTime.format(DisplayTime), colors) { onPick(PickerTarget.END_TIME) }
         }
+
         if (formError != null) {
             Text(
                 text = formError,
@@ -316,6 +332,7 @@ private fun CalendarDropdown(
     colors: TextFieldColors,
 ) {
     var expanded by remember { mutableStateOf(false) }
+
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
         OutlinedTextField(
             modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
@@ -326,6 +343,7 @@ private fun CalendarDropdown(
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             colors = colors,
         )
+
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             calendars.forEach { calendar ->
                 DropdownMenuItem(
@@ -343,6 +361,7 @@ private fun CalendarDropdown(
 @Composable
 private fun PickerField(label: String, value: String, colors: TextFieldColors, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
+
     Box(
         modifier = Modifier.fillMaxWidth().clickable(
             interactionSource = interaction,
@@ -397,6 +416,7 @@ private fun CalendarDatePickerDialog(
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = initialDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
     )
+
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
@@ -421,6 +441,7 @@ private fun CalendarTimePickerDialog(
         initialMinute = initialTime.minute,
         is24Hour = false,
     )
+
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = DialogBackground,
@@ -506,8 +527,11 @@ private fun submitNewEvent(draft: NewEventDraft, onCreate: (CalendarCreateForm) 
             endTime = if (draft.isAllDay) LocalTime.MIDNIGHT else draft.endTime,
         )
     }
+
     val error = createFormError(form)
+
     if (error == null && form != null) onCreate(form)
+
     return error
 }
 

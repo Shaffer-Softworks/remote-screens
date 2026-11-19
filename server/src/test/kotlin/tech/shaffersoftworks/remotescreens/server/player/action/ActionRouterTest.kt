@@ -1,6 +1,7 @@
 package tech.shaffersoftworks.remotescreens.server.player.action
 
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmNotice
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoHome
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoLayout
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightDetailMode
@@ -66,6 +67,7 @@ class ActionRouterTest {
             "closed",
             mapOf("supported_features" to JsonPrimitive(tiltOnlyCoverFeatures)),
         )
+
         assertEquals(TapOutcome.Done, tap("r1|toggle|"))
         val (domain, service, _) = ha.calls.last()
         assertEquals("cover" to "open_cover_tilt", domain to service)
@@ -78,6 +80,7 @@ class ActionRouterTest {
             "open",
             mapOf("supported_features" to JsonPrimitive(tiltOnlyCoverFeatures)),
         )
+
         assertEquals(TapOutcome.Done, tap("r1|toggle|"))
         assertEquals("close_cover_tilt", ha.calls.last().second)
     }
@@ -127,7 +130,7 @@ class ActionRouterTest {
 
     @Test
     fun aStepStaysWithinTheLimits() {
-        val climate = checkNotNull(Catalogue.of("climate")).actions.getValue("temperature")
+        val climate = checkNotNull(Catalogue.of(Domain.CLIMATE.value)).actions.getValue("temperature")
         val entityState = ha.states.value.getValue("climate.living_room")
         assertEquals("30", router.resolveArg(climate, "+50", entityState))
     }
@@ -135,6 +138,7 @@ class ActionRouterTest {
     @Test
     fun volumeIsAFraction() {
         tap("t5|volume|+10")
+
         assertEquals(
             0.45,
             checkNotNull((ha.calls.last().third["volume_level"] as JsonPrimitive).doubleOrNull),
@@ -155,6 +159,7 @@ class ActionRouterTest {
     fun aLateSecondTapAsksAgain() {
         val memory = TapMemory()
         tap("t7|toggle|", memory, now = 1000)
+
         assertIs<TapOutcome.Confirm>(
             tap("t7|toggle|", memory, now = 1000 + ActionRouter.CONFIRM_MS + 1),
         )
@@ -203,10 +208,12 @@ class ActionRouterTest {
         val memory = TapMemory()
         alarmTap("a1|code_digit|4", memory)
         val shown = assertIs<TapOutcome.Code>(alarmTap("a1|code_digit|2", memory))
+
         assertEquals(
             listOf(Vars.VISIBLE, Vars.VISIBLE, Vars.GONE, Vars.GONE).map { it.toString() },
             shown.extra.map { it.value },
         )
+
         assertEquals(alarmDotVar("alarm_control_panel.house", 0), shown.extra.first().name)
     }
 
@@ -234,10 +241,12 @@ class ActionRouterTest {
         alarmTap("a1|alarm_zone|alarm_control_panel.garage", memory)
         typePin("1234", memory)
         val refused = alarmTap("a1|alarm_arm|arm_away", memory)
+
         assertEquals(
             TapOutcome.AlarmNotice("a1", "Open Sensors!", "Check windows and doors are closed"),
             refused,
         )
+
         assertTrue(ha.calls.isEmpty())
         typePin("1234", memory)
         assertEquals(TapOutcome.Done, alarmTap("a1|alarm_arm|disarm", memory))
@@ -283,10 +292,12 @@ class ActionRouterTest {
         val (_, service, data) = ha.calls.last()
         assertEquals("send_command", service)
         assertEquals("app_segment_clean", (data["command"] as JsonPrimitive).content)
+
         assertEquals(
             listOf(16, 17),
             data.getValue("params").jsonArray.map { it.jsonPrimitive.int },
         )
+
         val ui = renderData.vacuumUi.state("va1")
         assertTrue(!ui.roomsDialogOpen)
         assertTrue(ui.selectedRooms.isEmpty())
@@ -315,10 +326,12 @@ class ActionRouterTest {
         assertEquals(TapOutcome.Rebuild, vacuumTap("va1|vacuum_rooms_clean|"))
         val (domain, service, data) = ha.calls.last()
         assertEquals("vacuum" to "clean_area", domain to service)
+
         assertEquals(
             listOf("kitchen", "living_room"),
             data.getValue("cleaning_area_id").jsonArray.map { it.jsonPrimitive.content },
         )
+
         assertEquals("cleaning", ha.states.value["vacuum.robot"]?.state)
     }
 
@@ -326,9 +339,11 @@ class ActionRouterTest {
     fun aVacuumPageWithoutAnEntityOpensRoomsOfTheOnlyVacuum() {
         val page = Page("vacuum2", "Vacuum", listOf(Tile("va2", kind = "vacuum", full = true)))
         val noEntityScreen = screen.copy(pages = screen.pages + page)
+
         val outcome = runBlocking {
             router.handle(checkNotNull(ActionRef.decode("va2|vacuum_rooms|")), noEntityScreen, TapMemory(), 0)
         }
+
         assertEquals(TapOutcome.Rebuild, outcome)
         assertTrue(renderData.vacuumUi.state("va2").roomsDialogOpen)
     }
@@ -371,10 +386,12 @@ class ActionRouterTest {
         assertEquals("light" to "turn_on", domain to service)
         assertEquals("light.living_room", (data["entity_id"] as JsonPrimitive).content)
         val swatch = Rpi.LightDetailPalette[0]
+
         assertEquals(
             listOf((swatch shr 16) and 0xFF, (swatch shr 8) and 0xFF, swatch and 0xFF),
             data.getValue("rgb_color").jsonArray.map { it.jsonPrimitive.int },
         )
+
         assertEquals(0, renderData.lightsUi.state("li1").paletteIndex)
         lightsTap("li1|lights_effects|")
         lightsTap("li1|lights_effect|Rainbow")
@@ -438,6 +455,7 @@ class ActionRouterTest {
                 ),
             ),
         )
+
         runBlocking {
             router.handle(checkNotNull(ActionRef.decode("both|run|tap")), custom, TapMemory())
             assertEquals("script" to "turn_on", ha.calls.last().first to ha.calls.last().second)
@@ -513,6 +531,7 @@ class ActionRouterTest {
                 ),
             ),
         )
+
         renderData.forScreen(calendarScreen)
         val create = router.handle(ActionRef("cal", "calendar_create"), calendarScreen, TapMemory())
         val opened = assertIs<TapOutcome.OpenCalendar>(create)

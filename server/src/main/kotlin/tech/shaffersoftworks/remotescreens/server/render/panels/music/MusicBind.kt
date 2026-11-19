@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.render.panels.music
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ControlVerb
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Present
@@ -15,17 +16,21 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 /** Now-playing vars and transport predictions for a Music Assistant tile. */
 internal fun DocContext.bindMusicNowPlaying(tileId: String, entityId: String) {
     bindEntity(entityId)
+
     bind(entityId) { states ->
         val entityState = states[entityId]
         val artist = entityState?.mediaPlayer?.mediaArtist.orEmpty()
         val album = entityState?.mediaPlayer?.mediaAlbumName.orEmpty()
+
         val artistLine = artist.ifEmpty {
             i18n.state(Domain.MEDIA_PLAYER.value, entityState?.state ?: MediaPlayerState.OFF.wire)
         }
+
         val playing = entityState?.mediaPlayerState == MediaPlayerState.PLAYING
         val duration = entityState?.mediaPlayer?.mediaDuration
         val position = entityState.mediaPosition()
         val progress = mediaProgress(position, duration)
+
         listOf(
             VarValue.string(
                 Vars.entity(entityId, "title"),
@@ -57,8 +62,9 @@ internal fun DocContext.bindMusicNowPlaying(tileId: String, entityId: String) {
             ),
         )
     }
+
     predict(ActionRef(tileId, "play_pause"), entityId)
-    predict(ActionRef(tileId, "volume"), entityId)
+    predict(ActionRef(tileId, ControlVerb.VOLUME), entityId)
     predict(ActionRef(tileId, "seek"), entityId)
 }
 
@@ -73,13 +79,16 @@ internal fun EntityState?.mediaPosition(now: Instant = Instant.now()): Double? {
     val reported = this?.mediaPlayer?.mediaPosition
     val updatedAt = this?.mediaPositionUpdatedAt()
     val isPlaying = this?.mediaPlayerState == MediaPlayerState.PLAYING
+
     val elapsedSeconds = if (isPlaying && reported != null && updatedAt != null) {
         (now.toEpochMilli() - updatedAt.toEpochMilli()).coerceAtLeast(0L) / Playhead.MS_PER_SECOND
     } else {
         0.0
     }
+
     val raw = reported?.plus(elapsedSeconds)
     val duration = this?.mediaPlayer?.mediaDuration
+
     return if (raw != null && duration != null && duration > 0.0) {
         minOf(raw, duration)
     } else {
@@ -89,12 +98,14 @@ internal fun EntityState?.mediaPosition(now: Instant = Instant.now()): Double? {
 
 private fun EntityState.mediaPositionUpdatedAt(): Instant? {
     val stamp = mediaPlayer.mediaPositionUpdatedAt ?: return null
+
     return runCatching { OffsetDateTime.parse(stamp).toInstant() }.getOrNull()
         ?: runCatching { Instant.parse(stamp) }.getOrNull()
 }
 
 internal fun mediaProgress(position: Double?, duration: Double?): Float {
     if (position == null || duration == null || duration <= 0.0) return 0f
+
     return (position / duration).toFloat().coerceIn(0f, 1f)
 }
 
@@ -103,6 +114,7 @@ internal fun formatMusicTime(seconds: Double): String {
     val total = seconds.toInt().coerceAtLeast(0)
     val minutes = total / MusicMetrics.SECONDS_PER_MINUTE
     val secs = total % MusicMetrics.SECONDS_PER_MINUTE
+
     return "$minutes:${secs.toString().padStart(2, '0')}"
 }
 

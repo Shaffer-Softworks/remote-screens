@@ -33,16 +33,21 @@ data class NotificationRequest(
         require(level in setOf("info", "warning", "danger")) { "Invalid level" }
         require(all.xor(targets.isNotEmpty())) { "Choose targets or explicitly select all" }
         require(targets.all { it.isNotBlank() }) { "Invalid target" }
+
         require(duration in 0..NOTIFICATION_MAX_DURATION && (presentation != "banner" || duration > 0)) {
             "Invalid timeout"
         }
+
         require(camera == null || (presentation == "alert" && camera.startsWith("camera."))) {
             "Cameras are supported only on alerts"
         }
+
         val validButtons = buttons.all { it.title.isNotBlank() && it.title.length <= MAX_BUTTON_TITLE_LENGTH }
+
         require(buttons.size <= 2 && validButtons) {
             "Provide up to two labeled buttons"
         }
+
         require(buttons.all { it.service == null || it.service.matches(Regex("[a-z0-9_]+\\.[a-z0-9_]+")) }) {
             "Button services must use domain.service"
         }

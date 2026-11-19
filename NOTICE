@@ -26,3 +26,8 @@ Map tiles are fetched at run time from OpenStreetMap and are not part of this re
 
 Libraries used at build and run time (AndroidX Remote Compose, Ktor, kotlinx, Vue, Vite and others) keep their
 own licenses, listed with each package.
+
+Android CLI skill (`.cursor/skills/android-cli`, `.agents/skills/android-cli`)
+  Copyright Google LLC
+  Licensed under the Apache License, Version 2.0
+  https://developer.android.com/tools/agents/android-cli

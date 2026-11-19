@@ -6,6 +6,7 @@ import java.time.LocalTime
 fun ScreenSettings.isNightAt(time: LocalTime): Boolean {
     val start = parseTimeOrNull(nightStart)
     val end = parseTimeOrNull(nightEnd)
+
     return when {
         start == null || end == null -> false
         start <= end -> time in start..<end

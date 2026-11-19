@@ -40,7 +40,7 @@ object Rc {
 
     fun document(widthPx: Int, heightPx: Int, description: String, content: RcScope.() -> Unit): ByteArray =
         createRcBuffer(
-            RcProfile(profile),
+            profile = RcProfile(profile),
             RemoteComposeWriter.HTag(Header.DOC_WIDTH, widthPx),
             RemoteComposeWriter.HTag(Header.DOC_HEIGHT, heightPx),
             RemoteComposeWriter.HTag(Header.DOC_CONTENT_DESCRIPTION, description),
@@ -65,6 +65,7 @@ object Rc {
         val tokens = commands.split(' ')
         var i = 0
         fun nextNumber() = tokens[i++].toFloat() * scale
+
         while (i < tokens.size) {
             when (tokens[i++]) {
                 "M" -> remotePath.moveTo(nextNumber(), nextNumber())
@@ -84,6 +85,7 @@ object Rc {
                 )
             }
         }
+
         return remotePath
     }
 

@@ -11,11 +11,13 @@ class I18nTest {
     fun everyLanguageHasEveryUiTextWithTheSamePlaceholders() {
         val english = I18n.ENGLISH
         val ui = english.keys.filter { it.startsWith("ui.") }.toSet()
+
         for (lang in I18n.SUPPORTED - "en") {
             val own = I18n.load(lang)
             assertTrue(own.isNotEmpty(), "translations/$lang.json is missing")
             assertEquals(emptySet(), ui - own.keys, "$lang lacks texts")
             assertEquals(emptySet(), own.keys - english.keys, "$lang has keys English does not")
+
             for ((k, v) in own) {
                 val expected = placeholder.findAll(english.getValue(k)).map { it.value }.toSet()
                 assertEquals(expected, placeholder.findAll(v).map { it.value }.toSet(), "$lang $k")

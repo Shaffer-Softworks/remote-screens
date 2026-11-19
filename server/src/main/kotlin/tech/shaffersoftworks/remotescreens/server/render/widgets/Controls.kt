@@ -63,6 +63,7 @@ fun DocContext.levelBar(
     val thumb = heightPx * LEVEL_KNOB_SHARE
     val thumbPad = (heightPx - thumb) / 2f
     val barRadius = heightPx / 2f
+
     rcScope.Box(Modifier.size(widthPx, heightPx).clip(rounded(heightDp / 2f)).background(track)) {
         Canvas(Modifier.size(widthPx, heightPx)) {
             // Knob travels in-bounds; fill tip peeks past its right edge by the vertical inset so the
@@ -71,6 +72,7 @@ fun DocContext.levelBar(
             val thumbRight = thumbLeft + thumb
             val tip = thumbRight + thumbPad
             paint { color(fill); style(RcPaintStyle.Fill) }
+
             drawRoundRect(
                 left = 0f.rf,
                 top = 0f.rf,
@@ -79,7 +81,9 @@ fun DocContext.levelBar(
                 radiusX = barRadius.rf,
                 radiusY = barRadius.rf,
             )
+
             paint { color(knob); style(RcPaintStyle.Fill) }
+
             drawRoundRect(
                 left = thumbLeft,
                 top = thumbPad.rf,
@@ -88,13 +92,16 @@ fun DocContext.levelBar(
                 radiusX = (thumb / 2f).rf,
                 radiusY = (thumb / 2f).rf,
             )
+
             if (stroke > 0f) {
                 paint {
                     color(strokeColor)
                     style(RcPaintStyle.Stroke)
                     strokeWidth(stroke)
                 }
+
                 val inset = stroke / 2f
+
                 drawRoundRect(
                     left = inset.rf,
                     top = inset.rf,
@@ -105,6 +112,7 @@ fun DocContext.levelBar(
                 )
             }
         }
+
         Row(Modifier.size(widthPx, heightPx)) {
             for (i in 1..steps) Box(
                 this@levelBar.tap(Modifier.horizontalWeight(1f).fillMaxHeight(), refAt(i)),
@@ -129,11 +137,14 @@ fun DocContext.segmentedLevelBar(
     refAt: (Int) -> ActionRef,
 ) {
     val group = "seg.$levelKey"
+
     for (index in 0 until steps) {
         color(Vars.option(scope = entityId, group = group, index = index, key = Vars.KEY_BG), trackRole.argb)
     }
+
     bind(entityId) { states ->
         val lit = (levelOf(states).coerceIn(0f, 1f) * steps).roundToInt().coerceIn(0, steps)
+
         (0 until steps).map { index ->
             VarValue.color(
                 Vars.option(scope = entityId, group = group, index = index, key = Vars.KEY_BG),
@@ -141,13 +152,17 @@ fun DocContext.segmentedLevelBar(
             )
         }
     }
+
     val gapPx = units.px(SEG_LEVEL_GAP_DP)
     val segW = ((widthDp - SEG_LEVEL_GAP_DP * (steps - 1)) / steps).coerceAtLeast(1f)
     val heightPx = units.px(heightDp)
+
     rcScope.Row(Modifier.size(units.px(widthDp), heightPx), vertical = RcVerticalPositioning.Center) {
         val doc = this@segmentedLevelBar
+
         for (index in 0 until steps) {
             if (index > 0) Spacer(Modifier.width(gapPx))
+
             Box(
                 doc.tap(
                     Modifier.size(doc.units.px(segW), heightPx)
@@ -176,26 +191,32 @@ fun DocContext.choiceRow(
 ) {
     val corner = heightDp / SEG_CHOICE_CORNER_DIVISOR
     val edge = units.px(SEG_EDGE_DP)
+
     rcScope.Row(
-        Modifier.fillMaxWidth().height(units.px(heightDp))
+        modifier = Modifier.fillMaxWidth().height(units.px(heightDp))
             .clip(rounded(corner)).background(role(Role.INK_DIM)).padding(edge),
         horizontal = RcRowHorizontalPositioning.Start,
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@choiceRow
+
         choices.forEachIndexed { index, (value, word) ->
             if (index > 0) Spacer(Modifier.width(edge))
+
             val cell = Modifier.horizontalWeight(1f).fillMaxHeight()
                 .background(doc.color(Vars.option(scope = scopeId, group = group, index = index, key = Vars.KEY_BG)))
+
             Row(
-                doc.tap(cell, refFor(value)),
+                modifier = doc.tap(cell, refFor(value)),
                 horizontal = RcRowHorizontalPositioning.Center,
                 vertical = RcVerticalPositioning.Center,
             ) {
                 val ink = doc.color(Vars.option(scope = scopeId, group = group, index = index, key = Vars.KEY_INK))
                 val icon = icons[value]
+
                 if (icon != null) {
-                    doc.icon(icon, heightDp * CHOICE_ICON_SHARE, ink)
+                    doc.icon(name = icon, sizeDp = heightDp * CHOICE_ICON_SHARE, color = ink)
+
                     if (word.isNotEmpty()) {
                         Spacer(
                             Modifier.width(
@@ -204,6 +225,7 @@ fun DocContext.choiceRow(
                         )
                     }
                 }
+
                 if (icon == null || word.isNotEmpty()) {
                     doc.label(
                         text = word,

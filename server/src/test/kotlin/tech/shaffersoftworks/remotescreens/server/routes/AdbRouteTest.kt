@@ -26,21 +26,26 @@ class AdbRouteTest {
     fun screenshotIsBinaryAndInvalidTargetIsRejected() = testApplication {
         val png = byteArrayOf(-119, 80, 78, 71, 13, 10, 0, -1)
         val adb = AdbService(temporary.root, PlayerApkRepository(null), commandRunner = { _, _ -> png })
+
         application {
             configureSerialization()
             routing { adbRoutes(adb) }
         }
+
         val screenshot = client.post("/adb/screenshot") {
             contentType(ContentType.Application.Json)
             setBody("""{"serial":"tablet:1234"}""")
         }
+
         assertEquals(HttpStatusCode.OK, screenshot.status)
         assertEquals(ContentType.Image.PNG, screenshot.contentType())
         assertContentEquals(png, screenshot.bodyAsBytes())
+
         val invalid = client.post("/adb/restart") {
             contentType(ContentType.Application.Json)
             setBody("""{"serial":"-e"}""")
         }
+
         assertEquals(HttpStatusCode.BadRequest, invalid.status)
     }
 
@@ -51,10 +56,12 @@ class AdbRouteTest {
             PlayerApkRepository(null),
             commandRunner = { _, _ -> throw java.io.IOException("not installed") },
         )
+
         application {
             configureSerialization()
             routing { adbRoutes(adb) }
         }
+
         assertEquals(HttpStatusCode.ServiceUnavailable, client.get("/adb").status)
     }
 }

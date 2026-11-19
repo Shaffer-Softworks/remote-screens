@@ -18,10 +18,12 @@ internal class SessionDiagnostics(private val send: suspend (ServerMessage) -> U
 
     suspend fun test(): CrashTestResult {
         val request = Pending(UUID.randomUUID().toString(), CompletableDeferred())
+
         if (!pending.compareAndSet(null, request)) return CrashTestResult("busy")
 
         return try {
             send(ServerMessage.SentryTest(request.id))
+
             withTimeoutOrNull(TEST_REPLY_TIMEOUT_MS.milliseconds) {
                 request.reply.await()
             } ?: CrashTestResult("timeout")

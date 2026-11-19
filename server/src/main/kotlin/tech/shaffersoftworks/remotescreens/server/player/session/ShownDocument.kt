@@ -34,11 +34,14 @@ internal class ShownDocument(
     ): Boolean {
         val lastSentMs = pictureSentAtMs[name] ?: 0L
         val isDue = refreshSeconds > 0 && nowMs - lastSentMs >= refreshSeconds * MS_PER_SECOND
+
         val shouldSkip = pictureInflightKeys[name] == sourceKey ||
             (!isForced && !isDue && pictureKeys[name] == sourceKey)
+
         if (!shouldSkip) {
             pictureInflightKeys[name] = sourceKey
         }
+
         return !shouldSkip
     }
 
@@ -50,9 +53,11 @@ internal class ShownDocument(
         isSuccess: Boolean,
     ) {
         val isCurrent = pictureInflightKeys[name] == sourceKey
+
         if (isCurrent) {
             pictureInflightKeys.remove(name)
         }
+
         if (isSuccess && isCurrent) {
             pictureKeys[name] = sourceKey
             pictureSentAtMs[name] = nowMs

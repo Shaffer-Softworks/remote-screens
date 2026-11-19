@@ -51,36 +51,67 @@ internal fun widgetGallery(device: Device, input: RenderInput, typography: Boole
             }
         }
     }
+
     return RenderedDoc(bytes, context)
 }
 
 private fun DocContext.typographySamples() {
     for (size in listOf(Type.CAPTION, Type.BODY, Type.TITLE, Type.HEADLINE, Type.VALUE, Type.DISPLAY)) {
-        label("Living room · ${size.toInt()} sp", size, role(Role.INK))
+        label(
+            text = "Living room · ${size.toInt()} sp",
+            sp = size,
+            color = role(Role.INK),
+        )
+
         spacer(TYPE_GAP)
     }
+
     for (weight in listOf(Weight.LIGHT, Weight.NORMAL, Weight.MEDIUM, Weight.SEMI_BOLD, Weight.BOLD)) {
         label(text = "Font weight ${weight.toInt()}", sp = Type.TITLE, color = role(Role.INK), weight = weight)
     }
+
     spacer(TYPE_GAP)
     numericLabel(text = literal("11:08 PM"), sp = Type.HEADLINE, color = role(Role.INK), glyphs = CLOCK_GLYPHS)
 }
 
 private fun DocContext.controlSamples() {
     rcScope.Row {
-        icon("lightbulb-on", ICON_SIZE, role(Role.ACCENT))
-        weatherStateIcon("partlycloudy", ICON_SIZE, fallbackColor = role(Role.INK))
+        icon(
+            name = "lightbulb-on",
+            sizeDp = ICON_SIZE,
+            color = role(Role.ACCENT),
+        )
+
+        weatherStateIcon(
+            condition = "partlycloudy",
+            sizeDp = ICON_SIZE,
+            fallbackColor = role(Role.INK),
+        )
+
         initials(name = "Sam Taylor", sizeDp = ICON_SIZE, bg = role(Role.KEY), ink = role(Role.INK))
         spinner(SPINNER_SIZE, role(Role.ACCENT))
     }
+
     spacer(CONTROL_GAP)
+
     rcScope.Row {
-        key(ActionRef("sample", "toggle"), text = "Lights", icon = "lightbulb")
-        key(ActionRef("sample", "plus"), icon = "plus", round = true)
+        key(
+            ref = ActionRef(tile = "sample", verb = "toggle"),
+            text = "Lights",
+            icon = "lightbulb",
+        )
+
+        key(
+            ref = ActionRef(tile = "sample", verb = "plus"),
+            icon = "plus",
+            round = true,
+        )
     }
+
     spacer(CONTROL_GAP)
     barSamples()
     spacer(CONTROL_GAP)
+
     label(
         text = "A long label that wraps across the available width to show how shared text behaves.",
         sp = Type.HEADLINE,
@@ -97,8 +128,16 @@ private fun DocContext.barSamples() {
         fill = role(Role.ACCENT),
         track = role(Role.TRACK),
         steps = BAR_STEPS,
-    ) { ActionRef("sample", "level", it.toString()) }
+    ) {
+        ActionRef(
+            tile = "sample",
+            verb = "level",
+            arg = it.toString(),
+        )
+    }
+
     spacer(CONTROL_GAP)
+
     segmentedLevelBar(
         entityId = "sample",
         levelKey = "preview",
@@ -108,5 +147,11 @@ private fun DocContext.barSamples() {
         levelOf = { SAMPLE_LEVEL },
         fillRole = Role.ACCENT,
         trackRole = Role.TRACK,
-    ) { ActionRef("sample", "level", it.toString()) }
+    ) {
+        ActionRef(
+            tile = "sample",
+            verb = "level",
+            arg = it.toString(),
+        )
+    }
 }

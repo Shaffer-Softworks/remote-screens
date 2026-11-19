@@ -38,6 +38,7 @@ class ThemesTest {
             roles = mapOf("card" to "#123456", "nope" to "#FFFFFF"),
             pastels = mapOf("teal" to "#80FF0000"),
         )
+
         val p = Themes.resolve("mine", listOf(mine))
         assertEquals(0xFF123456.toInt(), p[Role.CARD])
         assertEquals(0x80FF0000.toInt(), p[Pastel.TEAL])
@@ -65,28 +66,36 @@ class ThemesTest {
             Theme("rpi", "Mine"),
             emptyList(),
         ) }
+
         assertFailsWith<BadRequestException> { ThemeValidator.validate(
             Theme("Bad Id", "Mine"),
             emptyList(),
         ) }
+
         assertFailsWith<BadRequestException> { ThemeValidator.validate(
             Theme("mine", "Mine", base = "mine"),
             emptyList(),
         ) }
+
         assertFailsWith<BadRequestException> { ThemeValidator.validate(
             Theme("mine", "Mine", roles = mapOf("card" to "blue")),
             emptyList(),
         ) }
+
         val full = (1..Theme.MAX_THEMES).map { Theme("t$it", "T$it") }
+
         assertFailsWith<BadRequestException> { ThemeValidator.validate(
             Theme("mine", "Mine"),
             full,
         ) }
+
         ThemeValidator.validate(Theme("t1", "Again"), full)
+
         val ok = ThemeValidator.validate(
             Theme("mine", "  ", roles = mapOf("CARD" to "#abcdef", "nope" to "#000000")),
             emptyList(),
         )
+
         assertEquals("mine", ok.name)
         assertEquals(mapOf("card" to "#ABCDEF"), ok.roles)
     }
@@ -99,11 +108,13 @@ class ThemesTest {
         // Theme ARGB values live in Color.kt as `0xAARRGGBB.toInt()` (exempt). Bare 8-digit
         // hex is only for parse masks in Themes.kt.
         val hexInventory = setOf("Themes.kt")
+
         val offenders = checkNotNull(dir.listFiles()).filter {
             it.name !in hexInventory && it.name.endsWith(
                 ".kt",
             ) && hex.containsMatchIn(it.readText())
         }
+
         assertEquals(emptyList(), offenders.map { it.name })
     }
 }

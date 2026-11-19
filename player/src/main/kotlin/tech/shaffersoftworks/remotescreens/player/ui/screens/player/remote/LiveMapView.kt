@@ -95,16 +95,20 @@ private object OsmdroidConfiguration {
 
     fun ensureOsmdroidConfigured(context: Context) {
         if (configured) return
+
         synchronized(this) {
             if (configured) return
+
             val appContext = context.applicationContext
             val base = File(appContext.cacheDir, "osmdroid")
+
             Configuration.getInstance().apply {
                 userAgentValue = "RemoteScreens/${BuildConfig.VERSION_NAME}"
                 osmdroidBasePath = base
                 osmdroidTileCache = File(base, "tiles")
                 load(appContext, appContext.getSharedPreferences("osmdroid", Context.MODE_PRIVATE))
             }
+
             configured = true
         }
     }
@@ -118,15 +122,19 @@ private fun InteractiveMap(
     pictures: Map<String, Bitmap>,
 ) {
     val (centre, zoom) = remember(markers) { viewOf(markers) }
+
     val cameraState = rememberCameraState {
         geoPoint = centre
         this.zoom = zoom
     }
+
     val context = LocalContext.current
+
     val tileSource = remember(context, tileUrl) {
         OsmdroidConfiguration.ensureOsmdroidConfigured(context)
         tileSourceFor(tileUrl)
     }
+
     val properties = remember(tileSource) {
         MapProperties(
             minZoomLevel = MIN_TILE_ZOOM.toDouble(),
@@ -136,6 +144,7 @@ private fun InteractiveMap(
             isMultiTouchControls = true,
         )
     }
+
     val icons = remember(markers, pictures) {
         markers.mapIndexed { index, marker ->
             markerIcon(
@@ -148,6 +157,7 @@ private fun InteractiveMap(
     }
 
     val hostView = LocalView.current
+
     OpenStreetMap(
         modifier = Modifier.fillMaxSize(),
         cameraState = cameraState,
@@ -166,6 +176,7 @@ private fun InteractiveMap(
             }
         }
     }
+
     SideEffect {
         if (dark) hostView.post { applyDarkTileFilter(hostView) }
     }
@@ -176,7 +187,9 @@ private fun MapMarkerPin(marker: MapMarker, icon: Drawable, index: Int) {
     val point = remember(marker.latitude, marker.longitude) {
         GeoPoint(marker.latitude, marker.longitude)
     }
+
     val markerState = rememberMarkerState(geoPoint = point)
+
     Marker(
         state = markerState,
         icon = icon,
@@ -194,12 +207,15 @@ private fun viewOf(markers: List<MapMarker>): Pair<GeoPoint, Double> = when {
     else -> {
         val latitudes = markers.map { it.latitude }
         val longitudes = markers.map { it.longitude }
+
         val centre = GeoPoint(
             (latitudes.min() + latitudes.max()) / 2.0,
             (longitudes.min() + longitudes.max()) / 2.0,
         )
+
         val latSpan = max((latitudes.max() - latitudes.min()) * MULTI_MARKER_PADDING, MIN_SPAN_DEGREES)
         val lonSpan = max((longitudes.max() - longitudes.min()) * MULTI_MARKER_PADDING, MIN_SPAN_DEGREES)
+
         val zoom = min(
             MAX_FIT_ZOOM,
             max(
@@ -207,6 +223,7 @@ private fun viewOf(markers: List<MapMarker>): Pair<GeoPoint, Double> = when {
                 ln(EARTH_LONGITUDE_DEGREES / max(latSpan, lonSpan)) / ln(2.0),
             ),
         )
+
         centre to zoom
     }
 }
@@ -237,10 +254,12 @@ private fun markerIcon(
     val bitmap = createBitmap(size, size)
     val canvas = Canvas(bitmap)
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+
     if (picture != null) {
         val scaled = picture.scale(size, size)
         paint.color = Color.WHITE
         canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
+
         canvas.withClip(
             Path().apply {
                 addCircle(size / 2f, size / 2f, size / 2f - PHOTO_INSET_PX, Path.Direction.CW)
@@ -259,14 +278,17 @@ private fun markerIcon(
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = size * MARKER_INITIALS_SIZE_SHARE
         paint.typeface = Typeface.DEFAULT_BOLD
+
         val initials = label.split(' ')
             .mapNotNull { word -> word.firstOrNull()?.uppercaseChar()?.toString() }
             .take(INITIALS_COUNT)
             .joinToString("")
             .ifEmpty { "?" }
+
         val textY = size / 2f - (paint.descent() + paint.ascent()) / 2f
         canvas.drawText(initials, size / 2f, textY, paint)
     }
+
     return bitmap.toDrawable(resources)
 }
 
@@ -276,6 +298,7 @@ private fun InteractiveMapPreview() {
     RemoteScreensTheme {
         val context = LocalContext.current
         OsmdroidConfiguration.ensureOsmdroidConfigured(context)
+
         InteractiveMap(
             tileUrl = PREVIEW_TILE_URL,
             dark = false,
@@ -298,6 +321,7 @@ private fun InteractiveMapDarkPreview() {
     RemoteScreensTheme {
         val context = LocalContext.current
         OsmdroidConfiguration.ensureOsmdroidConfigured(context)
+
         InteractiveMap(
             tileUrl = PREVIEW_TILE_URL,
             dark = true,
@@ -313,15 +337,18 @@ private fun MapMarkerPinPreview() {
     RemoteScreensTheme {
         val context = LocalContext.current
         OsmdroidConfiguration.ensureOsmdroidConfigured(context)
+
         val marker = MapMarker(
             latitude = DEFAULT_LATITUDE,
             longitude = DEFAULT_LONGITUDE,
             label = "Ada Lovelace",
         )
+
         val cameraState = rememberCameraState {
             geoPoint = GeoPoint(marker.latitude, marker.longitude)
             zoom = SINGLE_MARKER_ZOOM
         }
+
         OpenStreetMap(
             modifier = Modifier.fillMaxSize(),
             cameraState = cameraState,
@@ -346,8 +373,10 @@ private fun applyDarkTileFilter(root: View) {
         root.overlayManager.tilesOverlay.setColorFilter(
             PorterDuffColorFilter(DARK_TILE_MULTIPLY, PorterDuff.Mode.MULTIPLY),
         )
+
         return
     }
+
     if (root is ViewGroup) {
         for (index in 0 until root.childCount) {
             applyDarkTileFilter(root.getChildAt(index))

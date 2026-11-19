@@ -45,25 +45,32 @@ class GoogleLocationAccuracy @Inject constructor(
 
     override fun enableLocationServices() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+
         if (!devicePolicyManager.isDeviceOwnerApp(context.packageName)) return
+
         runCatching { devicePolicyManager.setLocationEnabled(adminComponent, true) }
             .onFailure { exception -> Timber.w(exception, "Could not turn location services on") }
     }
 
     override suspend fun findAccuracyPrompt(): IntentSender? = suspendCancellableCoroutine { continuation ->
         val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, ACCURACY_REQUEST_INTERVAL_MS).build()
+
         val settings = LocationSettingsRequest.Builder()
             .addLocationRequest(request)
             .setAlwaysShow(true)
             .build()
+
         LocationServices.getSettingsClient(context)
             .checkLocationSettings(settings)
             .addOnCompleteListener { completed ->
                 if (!continuation.isActive) return@addOnCompleteListener
+
                 val exception = completed.exception
+
                 if (exception != null && exception !is ResolvableApiException) {
                     Timber.w(exception, "Location accuracy cannot be changed from the app")
                 }
+
                 continuation.resume(
                     if (exception is ResolvableApiException) exception.resolution.intentSender else null,
                 )

@@ -61,6 +61,7 @@ class PlayerViewModelTest : PlayerViewModelTestBase() {
             runBlocking { verify(preferencesRepository).forget(resetDeviceId = true) }
             verify(connectionRepository).reconnect()
         }
+
         assertFalse(viewModel.viewState.value.remoteScreen.hasMainDocument)
     }
 
@@ -210,6 +211,7 @@ class PlayerViewModelTest : PlayerViewModelTestBase() {
             revision = 7,
             metadata = ActionRef("_", "page", "2").encode(),
         )
+
         runCurrent()
 
         assertEquals(2, viewModel.viewState.value.remoteScreen.page)
@@ -336,6 +338,7 @@ class PlayerViewModelTest : PlayerViewModelTestBase() {
     fun `proximity and face wake can both run when both are enabled`() {
         whenever(proximityWakeMonitor.isUsable()).thenReturn(true)
         whenever(faceWakeMonitor.isUsable()).thenReturn(true)
+
         receive(
             ServerMessage.Settings(
                 ScreenSettings(standbyScreenOff = true, wakeOnProximity = true, wakeOnFace = true),
@@ -353,6 +356,7 @@ class PlayerViewModelTest : PlayerViewModelTestBase() {
     @Test
     fun `waking leaves proximity listening`() {
         whenever(proximityWakeMonitor.isUsable()).thenReturn(true)
+
         receive(
             ServerMessage.Settings(
                 ScreenSettings(standbyScreenOff = true, wakeOnProximity = true),
@@ -421,6 +425,7 @@ class PlayerViewModelTest : PlayerViewModelTestBase() {
             revision = 7,
             metadata = ActionRef("_", "settings").encode(),
         )
+
         runCurrent()
     }
 
@@ -598,10 +603,12 @@ class PlayerViewModelTest : PlayerViewModelTestBase() {
     @Test
     fun `manual check reports current version without offering a downgrade`() {
         whenever(deviceRepository.appVersionCode).thenReturn(142)
+
         runBlocking {
             whenever(updateRepository.check(any(), any()))
                 .thenReturn(ServerMessage.UpdateAvailable(141, "0.1.41", "/player/apk"))
         }
+
         openSettings()
 
         viewModel.onCheckForUpdatesRequested()
@@ -609,6 +616,7 @@ class PlayerViewModelTest : PlayerViewModelTestBase() {
 
         assertNull(viewModel.viewState.value.availableUpdate)
         assertEquals(false, viewModel.viewState.value.settingsDialog?.isCheckingForUpdates)
+
         assertTrue(takeEvents().contains(PlayerEvent.ShowMessageResource(
             tech.shaffersoftworks.remotescreens.player.R.string.update_current,
         )))
@@ -623,6 +631,7 @@ class PlayerViewModelTest : PlayerViewModelTestBase() {
         runCurrent()
 
         assertEquals(false, viewModel.viewState.value.settingsDialog?.isCheckingForUpdates)
+
         assertTrue(takeEvents().contains(PlayerEvent.ShowMessageResource(
             tech.shaffersoftworks.remotescreens.player.R.string.update_check_failed,
         )))
@@ -716,12 +725,15 @@ class PlayerViewModelTest : PlayerViewModelTestBase() {
 
     private fun takeEvents(): List<PlayerEvent> {
         val collected = mutableListOf<PlayerEvent>()
+
         val job = CoroutineScope(testDispatcher).launch {
             viewModel.events.collect { event -> collected += event }
         }
+
         runCurrent()
         job.cancel()
         runCurrent()
+
         return collected
     }
 }

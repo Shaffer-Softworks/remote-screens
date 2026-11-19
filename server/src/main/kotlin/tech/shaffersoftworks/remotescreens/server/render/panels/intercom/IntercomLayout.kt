@@ -18,10 +18,12 @@ internal class IntercomLayout private constructor(
     /** Captions stay at 12sp while the key is tall enough to hold them, and shrink with the key when it is not. */
     fun sp(value: Float): Float {
         val scaled = value * scale
+
         val fitted = minOf(
             IntercomMetrics.SMALL_LABEL_MIN_SP,
             dp(IntercomMetrics.BUTTON_H_DP) * IntercomMetrics.LABEL_OF_BUTTON,
         )
+
         return maxOf(scaled, fitted)
     }
 
@@ -38,15 +40,27 @@ internal class IntercomLayout private constructor(
             val side = dp(IntercomMetrics.STACK_SIDE_DP)
             val gap = dp(IntercomMetrics.BUTTON_GAP_DP)
             val room = (pageW - side * 2f - gap) / 2f
+
             return if (isStacked) minOf(designed, room) else designed
         }
 
     companion object {
         fun of(pageW: Float, pageH: Float, statusLines: Int): IntercomLayout {
-            val stacked = !sideBySide(pageW, pageH, statusLines)
+            val stacked = !sideBySide(pageW = pageW, pageH = pageH, statusLines = statusLines)
             val headerBody = headerBody(statusLines)
-            val scale = if (stacked) stackScale(pageW, pageH, headerBody) else sideScale(pageW, pageH)
+
+            val scale = if (stacked) {
+                stackScale(
+                    pageW = pageW,
+                    pageH = pageH,
+                    header = headerBody
+                )
+            } else {
+                sideScale(pageW, pageH)
+            }
+
             val headerH = if (stacked) (headerBody * scale).coerceAtMost(pageH) else 0f
+
             return IntercomLayout(
                 scale = scale,
                 pageW = pageW,
@@ -63,6 +77,7 @@ internal class IntercomLayout private constructor(
             val listMin = (IntercomMetrics.LIST_MIN_W_DP + IntercomMetrics.STATION_NAME_MIN_DP) * scale
             val extraLines = (statusLines - 1).coerceAtLeast(0)
             val minH = (IntercomMetrics.COLUMN_BODY_DP + IntercomMetrics.STATUS_LINE_DP * extraLines) * scale
+
             return pageW - column >= listMin && column >= keys && pageH >= minH
         }
 
@@ -76,8 +91,10 @@ internal class IntercomLayout private constructor(
             val heightScale = pageH / (header + IntercomMetrics.ROW_H_DP)
             val raw = minOf(widthScale, heightScale).coerceIn(0f, IntercomMetrics.STACK_SCALE_MAX)
             val raised = raw.coerceAtLeast(IntercomMetrics.STACK_SCALE_MIN)
+
             val fits = IntercomMetrics.STACKED_WIDTH_DP * raised <= pageW &&
                 (header + IntercomMetrics.ROW_H_DP) * raised <= pageH
+
             return if (fits) raised else raw
         }
 

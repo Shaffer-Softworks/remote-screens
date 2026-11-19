@@ -48,19 +48,23 @@ class MainActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         showOverLockScreen()
         hideSystemBars()
+
         setContent {
             RemoteScreensTheme {
                 PlayerScreen(viewModel)
             }
         }
+
         // After layout/immersive settle — a sync measure here can Hello with the wrong size until reboot.
         scheduleDisplayMeasure()
+
         window.decorView.addOnLayoutChangeListener {
                 _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
             if (right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop) {
                 scheduleDisplayMeasure()
             }
         }
+
         observeKiosk()
         observeScreenOn()
     }
@@ -81,11 +85,15 @@ class MainActivity : ComponentActivity() {
 
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         val action = event.actionMasked
+
         val logEvent = BuildConfig.DEBUG && (action == MotionEvent.ACTION_DOWN ||
             action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL)
+
         if (!logEvent) return super.dispatchTouchEvent(event)
+
         val receivedAt = SystemClock.uptimeMillis()
         val handled = super.dispatchTouchEvent(event)
+
         Timber.tag("InputDiagnostics").d(
             "gesture=%d event=%s deliveryDelay=%dms dispatch=%dms handled=%b",
             event.downTime,
@@ -94,19 +102,24 @@ class MainActivity : ComponentActivity() {
             SystemClock.uptimeMillis() - receivedAt,
             handled,
         )
+
         return handled
     }
 
     private fun scheduleDisplayMeasure(forceReload: Boolean = false) {
         reloadAfterDisplayMeasure = reloadAfterDisplayMeasure || forceReload
+
         if (displayMeasureScheduled) return
+
         displayMeasureScheduled = true
+
         window.decorView.doOnPreDraw {
             displayMeasureScheduled = false
             val reload = reloadAfterDisplayMeasure
             reloadAfterDisplayMeasure = false
             viewModel.onDisplayMeasured(measureDisplay(), forceReload = reload)
         }
+
         window.decorView.invalidate()
     }
 
@@ -125,12 +138,14 @@ class MainActivity : ComponentActivity() {
                         if (isKioskWanted && kioskManager.consumeBatteryPrompt() && requestUnrestrictedBattery()) {
                             return@collect
                         }
+
                         laidOutKioskState = kioskManager.lockTaskState()
                         kioskManager.applyKiosk(this@MainActivity, isKioskWanted)
                         onLockTaskStateChanged()
                     }
             }
         }
+
         lifecycleScope.launch {
             kioskManager.lockTaskChanges.collect { onLockTaskStateChanged() }
         }
@@ -142,6 +157,7 @@ class MainActivity : ComponentActivity() {
         val kioskState = kioskManager.lockTaskState()
         laidOutKioskState = kioskState
         viewModel.onKioskStateChanged()
+
         if (previousKioskState != null && previousKioskState != kioskState) {
             hideSystemBars()
             scheduleDisplayMeasure(forceReload = true)

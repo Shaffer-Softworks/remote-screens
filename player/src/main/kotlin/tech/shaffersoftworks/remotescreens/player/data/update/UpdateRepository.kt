@@ -42,8 +42,11 @@ class UpdateRepository @Inject constructor(
     /** Checks the connected add-on without interrupting the player session. */
     suspend fun check(server: String, token: String): ServerMessage.UpdateAvailable? {
         val response = httpClient.get("http://$server/player/update") { parameter("token", token) }
+
         if (response.status == HttpStatusCode.NoContent) return null
+
         check(response.status.isSuccess()) { "Update check returned ${response.status}" }
+
         return Json.decodeFromString<ServerMessage.UpdateAvailable>(response.bodyAsText())
     }
 
@@ -54,9 +57,12 @@ class UpdateRepository @Inject constructor(
     suspend fun install(server: String, path: String, token: String, silent: Boolean = false): Boolean =
         withContext(ioDispatcher) {
             val apkFile = File(context.cacheDir, UPDATE_FILE_PATH).apply { parentFile?.mkdirs() }
+
             try {
                 val wrote = httpClient.downloadPlayerApk("http://$server$path?token=$token", apkFile)
+
                 if (!wrote) return@withContext false
+
                 commitInstallSession(apkFile, silent)
                 true
             } catch (cancellation: CancellationException) {
@@ -75,20 +81,25 @@ class UpdateRepository @Inject constructor(
     @Throws(IOException::class)
     private fun commitInstallSession(apkFile: File, silent: Boolean) {
         val packageInstaller = context.packageManager.packageInstaller
+
         val sessionParams = PackageInstaller.SessionParams(
             PackageInstaller.SessionParams.MODE_FULL_INSTALL,
         )
+
         // Same-signature self-update on Android 12+: skip the system confirm. [silent] is for callers that also skip
         // our own dialog (device owner); the flag still helps after a manual confirm on other tablets.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             sessionParams.setRequireUserAction(
                 PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED,
             )
+
             if (silent) {
                 Timber.i("Committing player update without a system confirm (Android 12+)")
             }
         }
+
         val sessionId = packageInstaller.createSession(sessionParams)
+
         packageInstaller.openSession(sessionId).use { installSession ->
             installSession.openWrite(
                 INSTALL_SESSION_NAME,
@@ -98,14 +109,17 @@ class UpdateRepository @Inject constructor(
                 apkFile.inputStream().use { apkInputStream -> apkInputStream.copyTo(
                     apkOutputStream,
                 ) }
+
                 installSession.fsync(apkOutputStream)
             }
+
             val statusIntent = PendingIntent.getBroadcast(
                 context,
                 sessionId,
                 Intent(context, InstallReceiver::class.java),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
             )
+
             installSession.commit(statusIntent.intentSender)
         }
     }

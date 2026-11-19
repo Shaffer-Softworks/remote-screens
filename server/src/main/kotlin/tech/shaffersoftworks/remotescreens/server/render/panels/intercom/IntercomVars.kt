@@ -5,6 +5,7 @@ import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.shared.IntercomStation
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import tech.shaffersoftworks.remotescreens.shared.Screen
+import tech.shaffersoftworks.remotescreens.shared.TileKind
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 
 /** What the intercom page is showing for one tablet. Call state lives on that tablet's session, not in render data. */
@@ -27,6 +28,7 @@ data class IntercomView(
                     stations = emptyList(),
                 )
             }
+
             return IntercomView(
                 supportsCalls = true,
                 status = report?.status ?: i18n.t("ui.intercom_connecting"),
@@ -41,7 +43,7 @@ data class IntercomView(
 
 internal fun Screen.intercomPageIndexes(): List<Int> =
     pages.mapIndexedNotNull { index, page ->
-        index.takeIf { page.allTiles().any { it.effectiveKind() == "intercom" } }
+        index.takeIf { page.allTiles().any { tile -> tile.tileKind() == TileKind.INTERCOM } }
     }
 
 internal fun Screen.hasIntercomTile(): Boolean = intercomPageIndexes().isNotEmpty()
@@ -64,10 +66,13 @@ internal object IntercomVars {
     /** Empty when the tablet cannot place a call: the page then has no variables to update. */
     fun values(view: IntercomView, i18n: I18n): List<VarValue> {
         if (!view.supportsCalls) return emptyList()
+
         val live = view.connectedId != null
+
         val rows = view.stations.mapIndexed { index, station ->
-            VarValue.string(rowStatus(index), rowLabel(view, station, i18n))
+            VarValue.string(rowStatus(index), rowLabel(view = view, station = station, i18n = i18n))
         }
+
         return listOf(
             VarValue.string(STATUS, view.status),
             VarValue.int(MIC_ON, if (view.isMuted) Vars.GONE else Vars.VISIBLE),

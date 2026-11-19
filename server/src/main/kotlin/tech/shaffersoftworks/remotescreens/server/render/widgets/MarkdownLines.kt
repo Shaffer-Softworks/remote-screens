@@ -14,12 +14,12 @@ object MarkdownLines {
         source.replace("\r\n", "\n").replace('\r', '\n').split('\n').map { raw ->
             when {
                 raw.startsWith("**") && raw.endsWith("**") && raw.length >= BOLD_MARKER_LENGTH ->
-                    Line(raw.removeSurrounding("**"), bold = true, italic = false)
+                    Line(text = raw.removeSurrounding("**"), bold = true, italic = false)
                 raw.startsWith(
                     "*",
                 ) && raw.endsWith("*") && raw.length >= 2 && !raw.startsWith("**") ->
-                    Line(raw.removeSurrounding("*"), bold = false, italic = true)
-                else -> Line(raw, bold = false, italic = false)
+                    Line(text = raw.removeSurrounding("*"), bold = false, italic = true)
+                else -> Line(text = raw, bold = false, italic = false)
             }
         }
 }

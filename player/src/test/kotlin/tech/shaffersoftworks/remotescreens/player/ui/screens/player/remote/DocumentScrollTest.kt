@@ -27,12 +27,14 @@ class DocumentScrollTest {
     fun aRebuiltListComesBackToTheSameOffset() {
         val written = mutableListOf<Float>()
         val primed = parse(scrollDocument())
+
         DocumentScroll.restore(
             primed,
             listOf(DocumentScroll.Mark(LIST_ID, isVertical = true, offset = SCROLLED, max = RANGE)),
         ) { _, value ->
             written += value
         }
+
         assertTrue(written.contains(-SCROLLED))
         val captured = DocumentScroll.capture(primed).single()
         assertEquals(LIST_ID, captured.componentId)
@@ -48,31 +50,40 @@ class DocumentScrollTest {
     private fun parse(bytes: ByteArray): Component {
         val document = CoreDocument()
         document.initFromBuffer(RemoteComposeBuffer.fromInputStream(ByteArrayInputStream(bytes)))
+
         return checkNotNull(document.rootLayoutComponent)
     }
 
     private fun scrollers(root: Component): List<Component> {
         val found = mutableListOf<Component>()
+
         fun walk(component: Component) {
             if (component.ownsVerticalScroll()) found += component
+
             for (operation in component.mList) {
                 val nested = operation as? Component ?: continue
                 walk(nested)
             }
+
             val laidOut = (component as? LayoutComponent)?.childrenComponents ?: return
+
             for (child in laidOut) walk(child)
         }
+
         walk(root)
+
         return found
     }
 
     private fun Component.ownsVerticalScroll(): Boolean {
         for (operation in mList) {
             val modifiers = operation as? ComponentModifiers ?: continue
+
             for (modifier in modifiers.list) {
                 if (modifier is ScrollModifierOperation && modifier.isVerticalScroll()) return true
             }
         }
+
         return false
     }
 

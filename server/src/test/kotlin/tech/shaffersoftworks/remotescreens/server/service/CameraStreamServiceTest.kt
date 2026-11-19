@@ -49,10 +49,13 @@ class StreamingHome : HomeAssistant {
     override suspend fun <R> send(request: HaRequest<R>): R {
         val payload = request.payload()
         commands += request.type to payload
+
         if (payload["entity_id"]?.jsonPrimitive?.content == "camera.still") {
             throw HomeAssistantException("home_assistant_error", "Camera does not support stream")
         }
+
         val result = buildJsonObject { put("url", "/api/hls/$TOKEN/master_playlist.m3u8") }
+
         return HA_JSON.decodeFromJsonElement(request.resultSerializer, result)
     }
 
@@ -63,8 +66,11 @@ class StreamingHome : HomeAssistant {
         onBody: suspend (contentType: String?, body: ByteReadChannel) -> Unit,
     ): Int {
         fetched += path
+
         if (!path.startsWith("/api/hls/$TOKEN/")) return 404
+
         onBody("application/vnd.apple.mpegurl", ByteReadChannel("#EXTM3U\n"))
+
         return 200
     }
 }
@@ -76,9 +82,11 @@ class CameraStreamServiceTest {
 
     private suspend fun relay(token: String, file: String, query: String = ""): Pair<Int?, String?> {
         var body: String? = null
+
         val status = service.relay(token, file, query) { _, channel ->
             body = channel.readRemaining().readByteArray().decodeToString()
         }
+
         return status to body
     }
 
@@ -101,12 +109,14 @@ class CameraStreamServiceTest {
             "/stream/hls/$TOKEN/master_playlist.m3u8",
             service.hlsPath("camera.front_door"),
         )
+
         assertEquals(1, home.commands.size)
 
         assertEquals(
             "/stream/hls/$TOKEN/master_playlist.m3u8",
             service.hlsPath("camera.front_door"),
         )
+
         assertEquals(1, home.commands.size, "reopening the card should reuse the warm token")
     }
 
@@ -123,6 +133,7 @@ class CameraStreamServiceTest {
         assertEquals(200, relay(TOKEN, "segment/12.m4s").first)
         // LL-HLS parts are named segment/{seq}.{part}.m4s — a second dot in the file name.
         assertEquals(200, relay(TOKEN, "segment/12.0.m4s").first)
+
         assertEquals(
             listOf(
                 "/api/hls/$TOKEN/playlist.m3u8?_HLS_msn=12&_HLS_part=3",

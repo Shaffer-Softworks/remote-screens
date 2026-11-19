@@ -55,13 +55,16 @@ private const val LIVE_MAX_OFFSET_MS = 5_000L
 internal fun LiveVideoView(video: SlotVideo, onFailed: (SlotVideo, Int?) -> Unit) {
     if (LocalInspectionMode.current) {
         Box(Modifier.fillMaxSize().background(Color.Black))
+
         return
     }
+
     val context = LocalContext.current
     val texture = remember { TextureView(context) }
     var aspectRatio by remember(video) { mutableFloatStateOf(1f) }
     var ready by remember(video) { mutableStateOf(false) }
     val currentOnFailed by rememberUpdatedState(onFailed)
+
     DisposableEffect(video, texture) {
         val listener = object : Player.Listener {
             override fun onVideoSizeChanged(videoSize: VideoSize) {
@@ -78,15 +81,18 @@ internal fun LiveVideoView(video: SlotVideo, onFailed: (SlotVideo, Int?) -> Unit
                 currentOnFailed(video, error.httpResponseCode())
             }
         }
+
         val player = createVideoPlayer(context, video)
         player.addListener(listener)
         player.setVideoTextureView(texture)
+
         onDispose {
             player.removeListener(listener)
             player.clearVideoTextureView(texture)
             player.release()
         }
     }
+
     Box(
         Modifier.fillMaxSize()
             .alpha(if (ready) 1f else 0f)
@@ -101,9 +107,11 @@ internal fun LiveVideoView(video: SlotVideo, onFailed: (SlotVideo, Int?) -> Unit
             val fillWidth = (width.toFloat() / height > aspectRatio) == video.crop
             val videoWidth = if (fillWidth) width else (height * aspectRatio).roundToInt()
             val videoHeight = if (fillWidth) (width / aspectRatio).roundToInt() else height
+
             val surface = measurables.single().measure(
                 Constraints.fixed(videoWidth.coerceAtLeast(1), videoHeight.coerceAtLeast(1)),
             )
+
             layout(width, height) { surface.place((width - videoWidth) / 2, (height - videoHeight) / 2) }
         }
     }
@@ -116,10 +124,12 @@ private fun createVideoPlayer(context: android.content.Context, video: SlotVideo
         .setConnectTimeoutMs(CONNECT_TIMEOUT_MS)
         .setReadTimeoutMs(READ_TIMEOUT_MS)
         .setAllowCrossProtocolRedirects(true)
+
     // Start as soon as anything has loaded and catch up quickly, as a camera is only worth watching live.
     val loadControl = DefaultLoadControl.Builder()
         .setBufferDurationsMs(0, MAX_BUFFER_MS, 0, 0)
         .build()
+
     val mediaItem = MediaItem.Builder()
         .setUri(video.url)
         .setLiveConfiguration(
@@ -131,6 +141,7 @@ private fun createVideoPlayer(context: android.content.Context, video: SlotVideo
                 .build(),
         )
         .build()
+
     val player = ExoPlayer.Builder(context)
         .setMediaSourceFactory(
             DefaultMediaSourceFactory(httpDataSourceFactory).setLiveMaxSpeed(LIVE_MAX_SPEED),
@@ -149,10 +160,13 @@ private fun createVideoPlayer(context: android.content.Context, video: SlotVideo
 
 private fun PlaybackException.httpResponseCode(): Int? {
     var cause: Throwable? = this
+
     while (cause != null) {
         if (cause is HttpDataSource.InvalidResponseCodeException) return cause.responseCode
+
         cause = cause.cause
     }
+
     return null
 }
 

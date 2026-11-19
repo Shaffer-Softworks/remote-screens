@@ -46,14 +46,24 @@ private fun nodeProps(type: String): Map<String, String> = when (type) {
 
 internal fun sampleNode(type: String): Node {
     val props = nodeProps(type)
+
     val children = if (type in NodeTypes.CONTAINERS) {
         listOf(
-            Node("first", "text", props = mapOf("text" to "Living room", "fontSize" to "28")),
-            Node("second", "button", props = mapOf("text" to "Lights", "icon" to "lightbulb")),
+            Node(
+                id = "first",
+                type = "text",
+                props = mapOf("text" to "Living room", "fontSize" to "28"),
+            ),
+            Node(
+                id = "second",
+                type = "button",
+                props = mapOf("text" to "Lights", "icon" to "lightbulb"),
+            ),
         )
     } else {
         emptyList()
     }
+
     return Node(
         id = "sample",
         type = type,

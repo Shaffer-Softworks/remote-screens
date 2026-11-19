@@ -20,6 +20,7 @@ private const val ORIENTATION_LANDSCAPE = 2
 /** A wall screen has no status or navigation bar; a swipe from the edge shows them for a moment. */
 fun Activity.hideSystemBars() {
     WindowCompat.setDecorFitsSystemWindows(window, false)
+
     WindowInsetsControllerCompat(window, window.decorView).apply {
         hide(WindowInsetsCompat.Type.systemBars())
         systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -66,6 +67,7 @@ fun Activity.displayRotation(): Int {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
         display?.rotation?.let { return it }
     }
+
     @Suppress("DEPRECATION")
     return windowManager.defaultDisplay.rotation
 }
@@ -77,14 +79,18 @@ fun Activity.applyScreenOrientation(orientationSetting: Int) {
         ORIENTATION_LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         else -> ActivityInfo.SCREEN_ORIENTATION_FULL_USER
     }
+
     val expectedConfiguration = when (orientationSetting) {
         ORIENTATION_PORTRAIT -> Configuration.ORIENTATION_PORTRAIT
         ORIENTATION_LANDSCAPE -> Configuration.ORIENTATION_LANDSCAPE
         else -> Configuration.ORIENTATION_UNDEFINED
     }
+
     val currentConfiguration = resources.configuration.orientation
+
     val isConfigurationMismatched = currentConfiguration != Configuration.ORIENTATION_UNDEFINED &&
         currentConfiguration != expectedConfiguration
+
     if (requestedOrientation == targetOrientation &&
         expectedConfiguration != Configuration.ORIENTATION_UNDEFINED &&
         isConfigurationMismatched
@@ -92,6 +98,7 @@ fun Activity.applyScreenOrientation(orientationSetting: Int) {
         // RPI #677: some OEMs ignore an unchanged request after wake; clear it before reapplying.
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
     }
+
     requestedOrientation = targetOrientation
 }
 
@@ -101,17 +108,22 @@ fun Activity.measureDisplay(): DisplayInfo {
     // Some devices report natural portrait dimensions during lock-task transitions even though
     // the app is laid out in landscape. The laid-out window is the area the document actually draws in.
     val decor = window.decorView
+
     val (widthPx, heightPx) = if (decor.width > 0 && decor.height > 0) {
         decor.width to decor.height
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
         windowManager.currentWindowMetrics.bounds.let { bounds -> bounds.width() to bounds.height() }
     } else {
         val realMetrics = DisplayMetrics()
+
         @Suppress("DEPRECATION")
         windowManager.defaultDisplay.getRealMetrics(realMetrics)
+
         realMetrics.widthPixels to realMetrics.heightPixels
     }
+
     val nightModeFlags = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+
     return DisplayInfo(
         widthDp = (widthPx / displayMetrics.density).toInt(),
         heightDp = (heightPx / displayMetrics.density).toInt(),

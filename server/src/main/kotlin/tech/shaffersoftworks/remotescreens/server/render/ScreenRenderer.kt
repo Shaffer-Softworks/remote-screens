@@ -59,6 +59,7 @@ import tech.shaffersoftworks.remotescreens.shared.VarValue
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.PresenceState
 import tech.shaffersoftworks.remotescreens.shared.Tile
+import tech.shaffersoftworks.remotescreens.shared.TileKind
 
 private const val CLOCK_WIDTH_SHARE = 0.42f
 private const val NAV_BOTH_ICON_SHARE = 0.4f
@@ -94,31 +95,41 @@ class RenderedDoc(
     val builtAt: Long = System.currentTimeMillis(),
     val navigationDrawer: tech.shaffersoftworks.remotescreens.shared.NavigationDrawer? = null,
 ) {
-    val entities: Set<String> = (docContext.bindings.mapNotNull { it.entityId } + docContext.structure.map { it.first }).toSet()
+    val entities: Set<String> =
+        (docContext.bindings.mapNotNull { it.entityId } + docContext.structure.map { it.first }).toSet()
 
     fun vars(states: Map<String, EntityState>): Map<String, VarValue> {
         val out = LinkedHashMap<String, VarValue>()
+
         for (binding in docContext.bindings) {
             for (value in runCatching { binding.compute(states) }.getOrDefault(emptyList())) {
                 if (docContext.declares(value.name)) out[value.name] = value
             }
         }
+
         return out
     }
 
     /** For each action that can be foreseen: the values that will change once Home Assistant has done it. */
-    fun predictions(states: Map<String, EntityState>, foresee: (ActionRef, EntityState) -> EntityState?): Map<String, List<VarValue>> {
+    fun predictions(
+        states: Map<String, EntityState>,
+        foresee: (ActionRef, EntityState) -> EntityState?,
+    ): Map<String, List<VarValue>> {
         val now = vars(states)
         val out = LinkedHashMap<String, List<VarValue>>()
+
         for ((meta, pair) in docContext.predicted) {
             val (ref, entityId) = pair
             val next = states[entityId]?.let { foresee(ref, it) } ?: continue
             val after = HashMap(states).also { it[entityId] = next }
+
             val changed = docContext.bindings.filter { it.entityId == entityId }
                 .flatMap { runCatching { it.compute(after) }.getOrDefault(emptyList()) }
                 .filter { docContext.declares(it.name) && now[it.name] != it }
+
             if (changed.isNotEmpty()) out[meta] = changed
         }
+
         return out
     }
 
@@ -179,6 +190,7 @@ object ScreenRenderer {
         val widthDp = device.widthDp.toFloat()
         val topBar = Grid.topBarHeight(screen.topBar)
         val navBar = Grid.navBarHeight(screen.navBar, widthDp)
+
         val spec = Grid.spec(
             size = screen.grid,
             widthDp = widthDp,
@@ -195,6 +207,7 @@ object ScreenRenderer {
         ) { docContext ->
             docContext.bindSystem(screen)
             val page = docContext.int(Vars.PAGE, startPage)
+
             Box(Modifier.fillMaxSize().background(docContext.role(Role.PAGE))) {
                 StateLayout(page, Modifier.fillMaxSize()) {
                     pages.forEachIndexed { pageNumber, screenPage ->
@@ -214,6 +227,7 @@ object ScreenRenderer {
                 }
             }
         }
+
         return RenderedDoc(
             bytes = bytes,
             docContext = docContext,
@@ -235,10 +249,13 @@ object ScreenRenderer {
         showBar: Boolean,
     ) {
         renderingPage = index
+
         if (showBar) topBar(screen = screen, page = page, spec = spec, back = page.hidden, home = home)
+
         val contentH = spec.heightDp - spec.topBar - spec.navBar
         pageBackground(screen = screen, page = page, spec = spec, contentH = contentH)
         val root = page.root
+
         if (root != null) {
             freeForm(
                 root = root,
@@ -249,15 +266,20 @@ object ScreenRenderer {
                 pageIndex = pageIndex,
             ) { id -> screen.pages.firstOrNull { it.id == id }?.title }
         }
+
         val placed = if (root == null) {
             gridTiles(screen = screen, page = page, spec = spec, pageIndex = pageIndex, contentH = contentH)
         } else {
             emptyList()
         }
+
         val items = navItems(screen = screen, visible = visible, current = index, home = home)
+
         if (screen.navBar.show) navBar(bar = screen.navBar, spec = spec, items = items)
-        for (placement in placed.filter { it.tile.effectiveKind() == "lights" && it.tile.edgeToEdge() }) {
-            val box = tileBox(spec, placement, contentH)
+
+        for (placement in placed.filter { it.tile.tileKind() == TileKind.LIGHTS && it.tile.edgeToEdge() }) {
+            val box = tileBox(spec = spec, placement = placement, contentH = contentH)
+
             at(0f, 0f) {
                 lightsDialogLayer(
                     tile = placement.tile,
@@ -267,11 +289,13 @@ object ScreenRenderer {
                 )
             }
         }
-        for (placement in placed.filter { it.tile.effectiveKind() == "vacuum" && it.tile.edgeToEdge() }) {
+
+        for (placement in placed.filter { it.tile.tileKind() == TileKind.VACUUM && it.tile.edgeToEdge() }) {
             at(0f, 0f) {
                 vacuumDialogLayer(tile = placement.tile, screenW = spec.widthDp)
             }
         }
+
         if (screen.drawer.modal) {
             if (!showBar) floatingMenuKey(drawer = screen.drawer, spec = spec)
         }
@@ -286,19 +310,24 @@ object ScreenRenderer {
         contentH: Float,
     ): List<Reflow.Placed> {
         val placed = Reflow.place(page.tiles.filter { tileUsable(it) }, screen.grid)
+
         if (placed.isEmpty()) emptyPage(spec, contentH)
+
         for (placement in placed) {
             val tile = placement.tile
-            val box = tileBox(spec, placement, contentH)
-            val named = if (tile.effectiveKind() == "nav" && tile.name == null) {
+            val box = tileBox(spec = spec, placement = placement, contentH = contentH)
+
+            val named = if (tile.tileKind() == TileKind.NAV && tile.name == null) {
                 tile.copy(
                     name = screen.pages.firstOrNull { it.id == tile.options["page"] }?.title,
                 )
             } else {
                 tile
             }
-            tile(named, box, pageIndex)
+
+            tile(tile = named, box = box, pageIndex = pageIndex)
         }
+
         return placed
     }
 
@@ -306,7 +335,7 @@ object ScreenRenderer {
     private fun DocContext.emptyPage(spec: GridSpec, contentH: Float) {
         at(0f, spec.topBar) {
             rcScope.Box(
-                Modifier.size(units.px(spec.widthDp), units.px(contentH)),
+                modifier = Modifier.size(units.px(spec.widthDp), units.px(contentH)),
                 horizontal = RcHorizontalPositioning.Center,
                 vertical = RcVerticalPositioning.Center,
             ) {
@@ -327,11 +356,13 @@ object ScreenRenderer {
     /** The page's photo, cropped to the area between the bars. Cards and full-page panels paint over it. */
     private fun DocContext.pageBackground(screen: Screen, page: Page, spec: GridSpec, contentH: Float) {
         val token = page.backgroundImage
-        val source = token?.let { BackgroundStore.pictureSource(screen.id, page.id, it) }
+        val source = token?.let { BackgroundStore.pictureSource(screenId = screen.id, pageId = page.id, token = it) }
+
         if (source != null) {
             val widthPx = units.px(spec.widthDp).toInt().coerceAtLeast(1)
             val heightPx = units.px(contentH).toInt().coerceAtLeast(1)
             val slot = "bg.${page.id}"
+
             picture(
                 PictureSlot(
                     name = slot,
@@ -342,6 +373,7 @@ object ScreenRenderer {
                     crop = true,
                 ),
             )
+
             rcScope.Box(
                 Modifier.fillMaxSize().padding(
                     start = units.px(0f),
@@ -351,8 +383,8 @@ object ScreenRenderer {
                 ),
             ) {
                 Image(
-                    this@pageBackground.image(slot, widthPx, heightPx),
-                    Modifier.size(
+                    image = this@pageBackground.image(name = slot, width = widthPx, height = heightPx),
+                    modifier = Modifier.size(
                         this@pageBackground.units.px(spec.widthDp),
                         this@pageBackground.units.px(contentH),
                     ),
@@ -365,6 +397,7 @@ object ScreenRenderer {
     private fun tileBox(spec: GridSpec, placement: Reflow.Placed, contentH: Float): TileBox {
         val tile = placement.tile
         val full = tile.full || (placement.w == spec.cols && placement.h == spec.rows)
+
         return if (tile.edgeToEdge()) {
             TileBox(
                 x = 0f,
@@ -391,6 +424,7 @@ object ScreenRenderer {
 
     private fun DocContext.tileUsable(tile: Tile): Boolean {
         val spec = Catalogue.of(tile.effectiveKind())
+
         return spec != null && (tile.entityId != null || !spec.needsEntity)
     }
 
@@ -409,10 +443,12 @@ object ScreenRenderer {
         val ink = role(Role.INK)
         val layoutScale = (spec.topBar / Grid.TOP_BAR).coerceIn(TOP_BAR_MIN_SCALE, LAYOUT_SCALE_MAX)
         val headerSp = HEADER_SP * layoutScale
+
         val clockW = bar.clockWidth?.let { spec.widthDp * it / PERCENT } ?: minOf(
             CLOCK_MAX_WIDTH_DP,
             spec.widthDp * CLOCK_WIDTH_SHARE,
         )
+
         val background = bar.background?.let { paint(it) } ?: role(Role.HEADER)
         val clockBackground = bar.clockBackground?.let { paint(it) } ?: role(Role.HEADER_DARK)
         val keyDp = minOf(BACK_KEY_BASE_DP * layoutScale, spec.topBar - BACK_KEY_INSET_DP)
@@ -424,28 +460,33 @@ object ScreenRenderer {
         ) {
             val doc = this@topBar
             doc.menuKey(drawer = drawer, end = false, sizeDp = keyDp, gapDp = MENU_KEY_GAP_DP)
+
             if (bar.clock) {
                 Row(
-                    Modifier.width(
+                    modifier = Modifier.width(
                         doc.units.px(clockW),
                     ).fillMaxHeight().background(clockBackground),
                     horizontal = RcRowHorizontalPositioning.SpaceEvenly,
                     vertical = RcVerticalPositioning.Center,
                 ) {
                     doc.label(text = doc.text(Vars.TIME), sp = headerSp, color = ink, weight = Weight.BOLD)
+
                     if (bar.date && spec.widthDp >= Grid.NARROW) {
                         doc.label(
-                            doc.text(Vars.DAY),
-                            headerSp,
-                            ink,
+                            text = doc.text(Vars.DAY),
+                            sp = headerSp,
+                            color = ink,
                         )
                     }
                 }
             }
+
             Spacer(Modifier.width(doc.units.px(spec.padding + CLOCK_PAD_EXTRA_DP)))
+
             Row(Modifier.horizontalWeight(1f), vertical = RcVerticalPositioning.Center) {
                 if (back) {
-                    val backRef = ActionRef("_", "back", home.toString())
+                    val backRef = ActionRef(tile = "_", verb = "back", arg = home.toString())
+
                     doc.key(
                         ref = backRef,
                         icon = "arrow-left",
@@ -453,11 +494,14 @@ object ScreenRenderer {
                         widthDp = keyDp,
                         round = true,
                     )
+
                     Spacer(Modifier.width(doc.units.px(NAV_LABEL_BASE_SP * layoutScale)))
                     doc.label(text = page.title, sp = Type.TITLE * layoutScale, color = ink, weight = Weight.MEDIUM)
                 }
             }
+
             doc.topBarTrailing(bar = bar, headerSp = headerSp, layoutScale = layoutScale, ink = ink)
+
             if (!doc.menuKey(drawer = drawer, end = true, sizeDp = keyDp, gapDp = MENU_KEY_GAP_DP)) {
                 Spacer(Modifier.width(doc.units.px(NAV_ICON_LABEL_GAP_DP)))
             }
@@ -467,16 +511,19 @@ object ScreenRenderer {
     /** Outdoor temperature, people at home, Wi‑Fi and battery on the right of the header. */
     private fun DocContext.topBarTrailing(bar: TopBar, headerSp: Float, layoutScale: Float, ink: RcColor) {
         val temperatureEntity = bar.temperatureEntity
+
         if (temperatureEntity != null) {
             val entityState = states[temperatureEntity]
+
             if (entityState?.domain == Domain.WEATHER) {
                 weatherStateIcon(
-                    entityState.state,
-                    STAT_ICON_DP * layoutScale,
+                    condition = entityState.state,
+                    sizeDp = STAT_ICON_DP * layoutScale,
                     fallbackColor = ink,
                 )
+
                 rcScope.Spacer(Modifier.width(units.px(STAT_ICON_GAP_DP * layoutScale)))
-                label(text(Vars.TEMP), headerSp, ink)
+                label(text = text(Vars.TEMP), sp = headerSp, color = ink)
                 rcScope.Spacer(Modifier.width(units.px(STAT_GAP_DP * layoutScale)))
             } else {
                 topBarStat(
@@ -489,6 +536,7 @@ object ScreenRenderer {
                 )
             }
         }
+
         if (bar.people) {
             topBarStat(
                 icon = "home-account",
@@ -498,6 +546,7 @@ object ScreenRenderer {
                 ink = ink,
             )
         }
+
         if (bar.wifi) {
             topBarStat(
                 icon = "wifi",
@@ -507,7 +556,8 @@ object ScreenRenderer {
                 ink = ink,
             )
         }
-        if (bar.battery) topBarBattery(headerSp, layoutScale, ink)
+
+        if (bar.battery) topBarBattery(headerSp = headerSp, layoutScale = layoutScale, ink = ink)
     }
 
     /** An icon and a value on the right of the header, with the usual gap after it. */
@@ -519,15 +569,16 @@ object ScreenRenderer {
         ink: RcColor,
         iconColor: RcColor = role(Role.ACCENT_SOFT),
     ) {
-        this.icon(icon, STAT_ICON_DP * layoutScale, iconColor)
+        this.icon(name = icon, sizeDp = STAT_ICON_DP * layoutScale, color = iconColor)
         rcScope.Spacer(Modifier.width(units.px(STAT_ICON_GAP_DP * layoutScale)))
-        label(text(value), headerSp, ink)
+        label(text = text(value), sp = headerSp, color = ink)
         rcScope.Spacer(Modifier.width(units.px(STAT_GAP_DP * layoutScale)))
     }
 
     /** Battery level with the idle / charging icons swapped by visibility. */
     private fun DocContext.topBarBattery(headerSp: Float, layoutScale: Float, ink: RcColor) {
         val tint = role(Role.ACCENT_SOFT)
+
         rcScope.Box(
             Modifier.size(
                 units.px(STAT_ICON_DP * layoutScale),
@@ -540,6 +591,7 @@ object ScreenRenderer {
                 color = tint,
                 visible = int(Vars.BATTERY_IDLE),
             )
+
             icon(
                 name = "battery-charging",
                 sizeDp = STAT_ICON_DP * layoutScale,
@@ -547,8 +599,9 @@ object ScreenRenderer {
                 visible = int(Vars.BATTERY_CHARGING),
             )
         }
+
         rcScope.Spacer(Modifier.width(units.px(STAT_ICON_GAP_DP * layoutScale)))
-        label(text(Vars.BATTERY), headerSp, ink)
+        label(text = text(Vars.BATTERY), sp = headerSp, color = ink)
         rcScope.Spacer(Modifier.width(units.px(STAT_GAP_DP * layoutScale)))
     }
 
@@ -559,6 +612,7 @@ object ScreenRenderer {
     private fun DocContext.navBar(bar: NavBar, spec: GridSpec, items: List<NavItem>) {
         val barH = spec.navBar - NAV_LINE
         val count = items.size
+
         val buttonW = if (bar.layout == "fill") {
             spec.widthDp / count
         } else {
@@ -567,27 +621,33 @@ object ScreenRenderer {
                 spec.widthDp / count,
             )
         }
+
         val layoutScale = barH / (Grid.navBar(spec.widthDp) - NAV_LINE)
+
         val style = NavStyle(
-            bar.labels,
-            layoutScale,
-            bar.active?.let { paint(it) } ?: role(Role.NAV_ON),
+            labels = bar.labels,
+            layoutScale = layoutScale,
+            on = bar.active?.let { paint(it) } ?: role(Role.NAV_ON),
         )
+
         val lineColor = bar.line?.let { paint(it) } ?: role(Role.NAV_LINE)
         val background = bar.background?.let { paint(it) } ?: role(Role.NAV)
+
         at(
             0f,
             spec.heightDp - spec.navBar,
         ) { rcScope.Column(Modifier.size(units.px(spec.widthDp), units.px(spec.navBar))) {
             val doc = this@navBar
+
             Box(
                 Modifier.size(
                     doc.units.px(spec.widthDp),
                     doc.units.px(NAV_LINE),
                 ).background(lineColor),
             )
+
             Row(
-                Modifier.size(
+                modifier = Modifier.size(
                     doc.units.px(spec.widthDp),
                     doc.units.px(barH),
                 ).background(background),
@@ -603,10 +663,11 @@ object ScreenRenderer {
     private fun DocContext.navItems(screen: Screen, visible: List<Int>, current: Int, home: Int): List<NavItem> =
         visible.map { pageNumber ->
             val page = screen.pages[pageNumber]
+
             NavItem(
                 title = page.title,
                 icon = page.icon ?: if (pageNumber == home) "home" else "view-dashboard",
-                ref = ActionRef("_", "page", pageNumber.toString()),
+                ref = ActionRef(tile = "_", verb = "page", arg = pageNumber.toString()),
                 isCurrent = pageNumber == current,
             )
         } + NavItem(
@@ -624,15 +685,17 @@ object ScreenRenderer {
         else -> RcRowHorizontalPositioning.SpaceEvenly
     }
 
-    /** How navigation buttons look: icon, word or both, [layoutScale] against the default bar, the current page's fill. */
+    /** How navigation buttons look: icon, word or both, scaled against the default bar. */
     private class NavStyle(val labels: String, val layoutScale: Float, val on: RcColor)
 
     private fun DocContext.navButton(item: NavItem, wDp: Float, hDp: Float, style: NavStyle) {
         val icon = item.icon
         var modifier = Modifier.size(units.px(wDp), units.px(hDp))
+
         if (item.isCurrent) modifier = modifier.background(style.on)
+
         rcScope.Column(
-            tap(modifier, item.ref),
+            modifier = tap(modifier, item.ref),
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcColumnVerticalPositioning.Center,
         ) {
@@ -641,13 +704,19 @@ object ScreenRenderer {
             val wordW = Modifier.width(doc.units.px(wDp - STAT_ICON_GAP_DP))
             // Icon and label stay page ink on the teal pill (selected does not flip to KEY_ON_INK).
             val ink = doc.role(Role.INK)
+
             when (style.labels) {
-                "icons" -> doc.icon(icon, minOf(NAV_ICON_ONLY_MAX, hDp * NAV_ICON_ONLY_SHARE), ink)
+                "icons" -> doc.icon(
+                    name = icon,
+                    sizeDp = minOf(NAV_ICON_ONLY_MAX, hDp * NAV_ICON_ONLY_SHARE),
+                    color = ink
+                )
                 "text" -> {
                     val sp = (NAV_WORD_ONLY_SP * style.layoutScale).coerceIn(
                         NAV_WORD_ONLY_MIN_SP,
                         NAV_WORD_ONLY_MAX_SP,
                     )
+
                     doc.label(
                         text = word,
                         sp = sp,
@@ -659,7 +728,8 @@ object ScreenRenderer {
                     )
                 }
                 else -> {
-                    doc.icon(icon, minOf(NAV_BOTH_ICON_MAX_DP, hDp * NAV_BOTH_ICON_SHARE), ink)
+                    doc.icon(name = icon, sizeDp = minOf(NAV_BOTH_ICON_MAX_DP, hDp * NAV_BOTH_ICON_SHARE), color = ink)
+
                     Spacer(
                         Modifier.height(
                             doc.units.px(
@@ -669,10 +739,12 @@ object ScreenRenderer {
                             ),
                         ),
                     )
+
                     val sp = (NAV_LABEL_BASE_SP * style.layoutScale).coerceIn(
                         NAV_LABEL_MIN_SP,
                         NAV_LABEL_MAX_SP,
                     )
+
                     doc.label(text = word, sp = sp, color = ink, align = RcTextAlign.Center, modifier = wordW)
                 }
             }
@@ -693,25 +765,31 @@ object ScreenRenderer {
     /** The clock, the outdoor temperature and who is home: values every page shows. */
     private fun DocContext.bindSystem(screen: Screen) {
         val tempEntity = screen.topBar.temperatureEntity
+
         if (tempEntity != null && states[tempEntity]?.domain == Domain.WEATHER) {
-            structural(tempEntity) { it?.state ?: "" }
+            structural(tempEntity) { it?.state.orEmpty() }
         }
+
         bind(tempEntity) { states ->
             val entityState = tempEntity?.let { states[it] }
+
             val text = when {
                 entityState == null -> ""
                 entityState.domain == Domain.WEATHER ->
-                    entityState.weather.temperature?.let { i18n.number(it, 0) + "°" } ?: ""
+                    entityState.weather.temperature?.let { i18n.number(it, 0) + "°" }.orEmpty()
                 else -> entityState.numericState()?.let { i18n.number(
                     it,
                     0,
                 ) + "°" } ?: entityState.state
             }
+
             listOf(VarValue.string(Vars.TEMP, text))
         }
+
         for (personId in states.keys.filter(Domain.PERSON::owns)) {
             bind(personId) { emptyList() }
         }
+
         bind(null) { states ->
             val home = states.values.count { it.domain == Domain.PERSON && it.presenceState == PresenceState.HOME }
             listOf(VarValue.string(Vars.PEOPLE, home.toString()))

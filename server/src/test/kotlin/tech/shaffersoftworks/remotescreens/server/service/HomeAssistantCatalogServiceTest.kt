@@ -25,10 +25,12 @@ class HomeAssistantCatalogServiceTest {
         val catalog = HomeAssistantCatalogService(DemoHome())
 
         val areas = catalog.areas()
+
         assertEquals(
             listOf("Bedroom", "Garden", "Hallway", "Kitchen", "Living room"),
             areas.map { it.name },
         )
+
         assertNull(areas.find { it.id == "missing" })
     }
 }

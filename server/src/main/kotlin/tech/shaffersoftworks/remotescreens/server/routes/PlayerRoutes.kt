@@ -38,38 +38,48 @@ fun Route.playerRoutes(
     get("/health") { call.respondText("ok") }
     webSocket("/player") { playerHub.serve(this, call.request.origin.remoteAddress) }
     playerUpdateRoute(playerHub, playerApkRepository)
+
     get("/player/apk") {
         val apk = playerApkRepository.current()
         val parameters = call.request.queryParameters
+
         val isAllowed = playerHub.isTrustedToken(parameters["token"]) ||
             enrollmentService.isValidToken(parameters["enroll"])
+
         if (apk == null || !isAllowed) {
             call.respond(HttpStatusCode.NotFound)
         } else {
             call.respondApk(apk.file)
         }
     }
+
     get("${CameraStreamService.PLAYER_PATH}/{token}/{file...}") {
         val playerToken = call.request.headers[HttpHeaders.Authorization]?.removePrefix(
             "Bearer ",
         )?.trim()
+
         if (!playerHub.isTrustedToken(playerToken)) {
             call.respond(HttpStatusCode.Unauthorized)
+
             return@get
         }
+
         val token = call.parameters.getOrFail("token")
         val file = call.parameters.getAll("file").orEmpty().joinToString("/")
+
         val status = cameraStreamService.relay(
-            token,
-            file,
-            call.request.queryString(),
+            token = token,
+            file = file,
+            query = call.request.queryString(),
         ) { contentType, body ->
             call.response.header(HttpHeaders.CacheControl, "no-cache")
+
             call.respondBytesWriter(
                 contentType?.let(ContentType::parse),
                 HttpStatusCode.OK,
             ) { body.copyTo(this) }
         }
+
         when {
             status == null -> call.respond(HttpStatusCode.NotFound)
             !HttpStatusCode.fromValue(
@@ -83,17 +93,20 @@ private fun Route.playerUpdateRoute(playerHub: PlayerHub, playerApkRepository: P
     get("/player/update") {
         if (!playerHub.isTrustedToken(call.request.queryParameters["token"])) {
             call.respond(HttpStatusCode.Unauthorized)
+
             return@get
         }
+
         val apk = playerApkRepository.current()
+
         if (apk == null) {
             call.respond(HttpStatusCode.NoContent)
         } else {
             call.respond(
                 ServerMessage.UpdateAvailable(
-                    apk.versionCode,
-                    apk.versionName,
-                    "/player/apk",
+                    versionCode = apk.versionCode,
+                    versionName = apk.versionName,
+                    path = "/player/apk",
                 ),
             )
         }
@@ -103,6 +116,7 @@ private fun Route.playerUpdateRoute(playerHub: PlayerHub, playerApkRepository: P
 internal suspend fun ApplicationCall.respondApk(file: File) {
     val disposition = ContentDisposition.Attachment
         .withParameter(ContentDisposition.Parameters.FileName, PlayerApkRepository.APK_FILE_NAME)
+
     response.header(HttpHeaders.ContentDisposition, disposition.toString())
     respondFile(file)
 }

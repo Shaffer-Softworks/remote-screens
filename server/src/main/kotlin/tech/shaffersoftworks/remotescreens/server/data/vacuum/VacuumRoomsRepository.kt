@@ -20,11 +20,13 @@ class VacuumRoomsRepository(private val homeAssistant: HomeAssistant) {
     suspend fun rooms(entityId: String): VacuumRooms? {
         val entityState = homeAssistant.states.value[entityId]
         val mapped = if (entityState?.supportsCleanArea() == true) mappedAreas(entityId) else emptyList()
+
         val rooms = if (mapped.isNotEmpty()) {
             VacuumRooms(VacuumCleanMethod.AREA, mapped)
         } else {
             VacuumRooms(VacuumCleanMethod.SEGMENT, entityState?.vacuumSegmentRooms().orEmpty())
         }
+
         return rooms.takeIf { it.rooms.isNotEmpty() }
     }
 
@@ -36,18 +38,24 @@ class VacuumRoomsRepository(private val homeAssistant: HomeAssistant) {
         areaRooms[entityId]
             ?.takeIf { System.currentTimeMillis() - it.second < AREA_ROOMS_TTL_MS }
             ?.let { return it.first }
+
         val rooms = runCatching { fetchMappedAreas(entityId) }
             .onFailure { logger.debug("Vacuum areas of {} failed: {}", entityId, it.message) }
             .getOrElse { areaRooms[entityId]?.first.orEmpty() }
+
         areaRooms[entityId] = rooms to System.currentTimeMillis()
+
         return rooms
     }
 
     private suspend fun fetchMappedAreas(entityId: String): List<VacuumRoom> {
         val mapping = homeAssistant.send(EntityRegistryGet(entityId)).options.vacuum?.areaMapping.orEmpty()
         val areaIds = mapping.filterValues { segments -> segments.isNotEmpty() }.keys
+
         if (areaIds.isEmpty()) return emptyList()
+
         val names = homeAssistant.send(AreaRegistryList).associate { area -> area.areaId to area.displayName }
+
         return areaIds
             .map { areaId -> VacuumRoom(id = areaId, name = names[areaId] ?: areaId) }
             .sortedBy { room -> room.name }

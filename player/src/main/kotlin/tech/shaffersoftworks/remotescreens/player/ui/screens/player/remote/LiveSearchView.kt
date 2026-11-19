@@ -81,6 +81,7 @@ internal fun LiveSearchView(
     imageLoader: ImageLoader,
 ) {
     var loading by remember(search.tileId, search.revision, search.rows) { mutableStateOf(false) }
+
     SearchContent(
         search = search,
         rows = search.rows,
@@ -108,15 +109,20 @@ private fun SearchContent(
 ) {
     var text by remember(search.tileId, search.revision) { mutableStateOf(initialText) }
     val currentOnQuery by rememberUpdatedState(onQuery)
+
     LaunchedEffect(text, search.tileId, search.revision) {
         if (text.isBlank()) {
             currentOnQuery("")
+
             return@LaunchedEffect
         }
+
         delay(SEARCH_DEBOUNCE_MS.milliseconds)
         currentOnQuery(text)
     }
+
     val showResults = text.isNotBlank() || rows.isNotEmpty()
+
     Column(
         Modifier
             .fillMaxSize()
@@ -157,7 +163,9 @@ private fun SearchContent(
                 unfocusedLabelColor = LiveSearchInk.copy(alpha = 0.7f),
             ),
         )
+
         Spacer(Modifier.height(10.dp))
+
         if (showResults) {
             Text(
                 text = "Results",
@@ -166,6 +174,7 @@ private fun SearchContent(
                 modifier = Modifier.padding(bottom = 6.dp),
             )
         }
+
         when {
             isLoading && text.isNotBlank() -> {
                 Row(
@@ -261,6 +270,7 @@ private fun SearchRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+
                 musicSearchRow.subtitle?.let {
                     Text(
                         text = it,
@@ -272,11 +282,14 @@ private fun SearchRow(
                 }
             }
         }
+
         var menuOpen by remember(musicSearchRow.uri, musicSearchRow.title) { mutableStateOf(false) }
+
         Box {
             TextButton(onClick = { menuOpen = true }) {
                 Text("⋮", color = LiveSearchInk.copy(alpha = 0.75f), fontSize = 18.sp)
             }
+
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
                     text = { Text("Add to queue") },

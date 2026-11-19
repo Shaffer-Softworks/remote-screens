@@ -63,6 +63,7 @@ internal class LightsLayout(val scale: Float, val pageW: Float, val pageH: Float
      */
     fun roomNameTopInset(): Float {
         val content = dp(M.ROOM_SP + M.ROOM_SUB_GAP_DP + M.ROOM_SUB_SP)
+
         return ((dp(M.ROOM_H_DP) - content) / 2f).coerceAtLeast(0f)
     }
 
@@ -96,11 +97,12 @@ fun DocContext.lightsPanel(tile: Tile, box: TileBox) {
     val ui = data.lightsUi[tile.id] ?: LightsUiState()
     val rooms = data.lightsRooms
     val room = rooms.firstOrNull { it.areaId == ui.selectedAreaId }
-    val layout = LightsLayout(pageScale(box), box.w, box.h)
+    val layout = LightsLayout(scale = pageScale(box), pageW = box.w, pageH = box.h)
+
     rcScope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@lightsPanel
         doc.roomsColumn(tileId = tile.id, rooms = rooms, selected = room, layout = layout)
-        doc.devicesColumn(tile.id, room, layout)
+        doc.devicesColumn(tileId = tile.id, room = room, layout = layout)
     }
 }
 
@@ -111,16 +113,18 @@ fun DocContext.lightsPanel(tile: Tile, box: TileBox) {
 fun DocContext.lightsDialogLayer(tile: Tile, box: TileBox, screenW: Float, screenH: Float) {
     val ui = data.lightsUi[tile.id] ?: return
     val room = data.lightsRooms.firstOrNull { it.areaId == ui.selectedAreaId }
+
     val detailEntityId = ui.detailEntityId?.takeIf { entityId ->
         room != null && entityId in room.entityIds && states[entityId]?.supportsLightDetail() == true
     }
+
     if (room != null && detailEntityId != null) {
         lightDetailDialog(
             tileId = tile.id,
             entityId = detailEntityId,
             roomName = room.name,
             ui = ui,
-            layout = LightsLayout(pageScale(box), screenW, screenH),
+            layout = LightsLayout(scale = pageScale(box), pageW = screenW, pageH = screenH),
         )
     }
 }
@@ -145,26 +149,33 @@ private fun DocContext.roomsColumn(
     val headerH = layout.roomsHeaderHeight()
     val bottomInset = layout.roomsBottomInset()
     val listH = layout.roomsListHeight()
+
     rcScope.Column(
         Modifier.width(units.px(layout.roomsW)).fillMaxHeight().background(role(Role.STRIP)),
     ) {
         val doc = this@roomsColumn
+
         Box(Modifier.fillMaxWidth().height(doc.units.px(listH))) {
             if (rooms.isEmpty()) {
                 doc.roomsSpinner(layout)
             } else {
                 Column(doc.scrollingList("lights.$tileId.rooms", listH)) {
                     Spacer(Modifier.height(doc.units.px(headerH)))
+
                     rooms.forEachIndexed { index, room ->
                         if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.ROOM_GAP_DP))))
+
                         doc.roomRow(tileId = tileId, room = room, isSelected = room == selected, layout = layout)
                     }
+
                     // So the last room can leave the clip edge instead of sitting on the bleed strip.
                     Spacer(Modifier.height(doc.units.px(bottomInset)))
                 }
             }
+
             doc.roomsHeader(layout, layout.roomsPlateHeight())
         }
+
         Box(
             Modifier.fillMaxWidth().height(doc.units.px(bottomInset)).background(doc.role(Role.STRIP)),
         )
@@ -178,8 +189,10 @@ private fun DocContext.roomsHeader(layout: LightsLayout, headerH: Float) {
     ) {
         val doc = this@roomsHeader
         Spacer(Modifier.height(doc.units.px(layout.dp(M.COLUMN_TOP_DP))))
+
         Row {
             Spacer(Modifier.width(doc.units.px(layout.dp(M.ACCENT_BAR_START_DP))))
+
             Box(
                 Modifier.size(
                     doc.units.px(layout.dp(M.ACCENT_BAR_W_DP - M.ACCENT_BAR_START_DP)),
@@ -187,7 +200,9 @@ private fun DocContext.roomsHeader(layout: LightsLayout, headerH: Float) {
                 ).background(doc.role(Role.ACCENT_DARK)),
             )
         }
+
         Spacer(Modifier.height(doc.units.px(layout.dp(M.TITLE_GAP_DP))))
+
         doc.label(
             text = doc.i18n.t("ui.lights_title"),
             sp = layout.sp(M.TITLE_SP),
@@ -207,6 +222,7 @@ private fun DocContext.roomsHeader(layout: LightsLayout, headerH: Float) {
 private fun DocContext.roomRow(tileId: String, room: LightsRoom, isSelected: Boolean, layout: LightsLayout) {
     val countVar = Vars.tile(tileId, "$KEY_LIGHTS_ON_PREFIX${room.areaId}")
     bindLightsOnCount(countVar, room)
+
     rcScope.Column(
         tap(
             Modifier.fillMaxWidth().height(units.px(layout.dp(M.ROOM_H_DP)))
@@ -216,14 +232,20 @@ private fun DocContext.roomRow(tileId: String, room: LightsRoom, isSelected: Boo
                     end = units.px(layout.dp(M.ROOM_PAD_END_DP)),
                     bottom = 0f,
                 ),
-            ActionRef(tileId, "lights_room", room.areaId),
+            ActionRef(tile = tileId, verb = "lights_room", arg = room.areaId),
         ),
         vertical = RcColumnVerticalPositioning.Center,
     ) {
         val doc = this@roomRow
-        doc.label(room.name, layout.sp(M.ROOM_SP), doc.role(if (isSelected) Role.ACCENT else Role.INK))
+
+        doc.label(
+            text = room.name,
+            sp = layout.sp(M.ROOM_SP),
+            color = doc.role(if (isSelected) Role.ACCENT else Role.INK)
+        )
+
         Spacer(Modifier.height(doc.units.px(layout.dp(M.ROOM_SUB_GAP_DP))))
-        doc.label(doc.text(countVar), layout.sp(M.ROOM_SUB_SP), doc.role(Role.INK_DIM))
+        doc.label(text = doc.text(countVar), sp = layout.sp(M.ROOM_SUB_SP), color = doc.role(Role.INK_DIM))
     }
 }
 
@@ -233,14 +255,18 @@ private fun DocContext.roomRow(tileId: String, room: LightsRoom, isSelected: Boo
  */
 private fun DocContext.bindLightsOnCount(countVar: String, room: LightsRoom) {
     val lightIds = room.entityIds.filter(Domain.LIGHT::owns)
+
     for (entityId in lightIds) bind(entityId) { emptyList() }
+
     bind(null) { current ->
         val count = lightIds.count { current[it]?.isOn == true }
+
         val words = when (count) {
             0 -> i18n.t("ui.lights_all_off")
             1 -> i18n.t("ui.lights_one_on")
             else -> i18n.t("ui.lights_many_on", "count" to count)
         }
+
         listOf(VarValue.string(countVar, words))
     }
 }
@@ -248,16 +274,19 @@ private fun DocContext.bindLightsOnCount(countVar: String, room: LightsRoom) {
 /** RPI's half-black cover with Material's progress ring while the areas load. */
 private fun DocContext.roomsSpinner(layout: LightsLayout) {
     val scrim = (M.SPINNER_SCRIM_ALPHA shl ALPHA_SHIFT) or (Rpi.Black and RGB_MASK)
+
     rcScope.Column(
-        Modifier.fillMaxWidth().fillMaxHeight().background(fixed(scrim)),
+        modifier = Modifier.fillMaxWidth().fillMaxHeight().background(fixed(scrim)),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcColumnVerticalPositioning.Center,
     ) {
         val doc = this@roomsSpinner
         val sizePx = doc.units.px(layout.dp(M.SPINNER_DP))
         val stroke = doc.units.px(layout.dp(M.SPINNER_STROKE_DP))
+
         Canvas(Modifier.size(sizePx, sizePx)) {
             val inset = stroke / 2f
+
             paint {
                 clearShader()
                 color(doc.fixed(Rpi.LightsSpinnerTrack))
@@ -265,8 +294,10 @@ private fun DocContext.roomsSpinner(layout: LightsLayout) {
                 strokeWidth(stroke)
                 style(RcPaintStyle.Stroke)
             }
-            drawCircle(sizePx / 2f, sizePx / 2f, sizePx / 2f - inset)
+
+            drawCircle(centerX = sizePx / 2f, centerY = sizePx / 2f, radius = sizePx / 2f - inset)
             paint { color(doc.fixed(Rpi.LightsSpinner)) }
+
             drawArc(
                 left = inset,
                 top = inset,
@@ -282,23 +313,31 @@ private fun DocContext.roomsSpinner(layout: LightsLayout) {
 /** The chosen room's name and its devices, each with a teal line under it; a prompt until a room is chosen. */
 private fun DocContext.devicesColumn(tileId: String, room: LightsRoom?, layout: LightsLayout) {
     val pad = units.px(layout.dp(M.DEVICES_PAD_DP))
+
     rcScope.Column(
         Modifier.horizontalWeight(1f).fillMaxHeight()
             .padding(start = pad, top = units.px(layout.dp(M.COLUMN_TOP_DP)), end = pad, bottom = pad),
     ) {
         val doc = this@devicesColumn
+
         if (room == null) {
             doc.selectRoomPrompt(layout)
+
             return@Column
         }
+
         val headerH = layout.devicesHeaderHeight()
         val devices = room.entityIds.filter { it in doc.states }
+
         Box(Modifier.fillMaxWidth().height(doc.units.px(layout.devicesBodyHeight()))) {
             Column(doc.scrollingList("lights.$tileId.devices", layout.devicesBodyHeight())) {
                 Spacer(Modifier.height(doc.units.px(headerH)))
+
                 devices.forEachIndexed { index, entityId ->
                     if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.DEVICE_GAP_DP))))
-                    doc.deviceRow(tileId, entityId, layout)
+
+                    doc.deviceRow(tileId = tileId, entityId = entityId, layout = layout)
+
                     Box(
                         Modifier.fillMaxWidth()
                             .height(doc.units.px(maxOf(layout.dp(M.DIVIDER_DP), M.DIVIDER_DP)))
@@ -306,6 +345,7 @@ private fun DocContext.devicesColumn(tileId: String, room: LightsRoom?, layout: 
                     )
                 }
             }
+
             Column(
                 Modifier.fillMaxWidth()
                     .height(doc.units.px(layout.devicesPlateHeight()))
@@ -334,6 +374,7 @@ private fun DocContext.devicesColumn(tileId: String, room: LightsRoom?, layout: 
  */
 private fun DocContext.scrollingList(name: String, heightDp: Float): Modifier {
     val viewport = units.px(heightDp)
+
     return Modifier.fillMaxWidth()
         .height(viewport)
         .requiredHeightIn(max = viewport)
@@ -343,13 +384,14 @@ private fun DocContext.scrollingList(name: String, heightDp: Float): Modifier {
 
 private fun DocContext.selectRoomPrompt(layout: LightsLayout) {
     rcScope.Column(
-        Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcColumnVerticalPositioning.Center,
     ) {
         val doc = this@selectRoomPrompt
-        doc.icon("gesture-tap", layout.dp(M.PROMPT_ICON_DP), doc.role(Role.INK_DIM))
+        doc.icon(name = "gesture-tap", sizeDp = layout.dp(M.PROMPT_ICON_DP), color = doc.role(Role.INK_DIM))
         Spacer(Modifier.height(doc.units.px(layout.dp(M.PROMPT_GAP_DP))))
+
         doc.label(
             text = doc.i18n.t("ui.lights_select_room"),
             sp = layout.sp(M.PROMPT_SP),

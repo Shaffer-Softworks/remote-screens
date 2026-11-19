@@ -26,6 +26,7 @@ internal fun PreviewSession.panels() {
 private fun PreviewSession.lightRooms() {
     for ((areaId, name) in data.lightsRooms) {
         val renderData = data.copy(lightsUi = mapOf("li1" to LightsUiState(selectedAreaId = areaId)))
+
         page(
             group = "Panels",
             label = "Lights · $name",
@@ -50,9 +51,17 @@ private fun PreviewSession.intercomStates() {
             status = "Connected to Kitchen",
             isBusy = true,
             connectedId = "kitchen",
-            stations = listOf(IntercomStation("kitchen", "Kitchen", true), IntercomStation("bedroom", "Bedroom")),
+            stations = listOf(
+                IntercomStation(
+                    clientId = "kitchen",
+                    displayName = "Kitchen",
+                    inCall = true,
+                ),
+                IntercomStation("bedroom", "Bedroom"),
+            ),
             isMuted = muted,
         )
+
         page(
             group = "Panels",
             label = "Intercom · connected · muted=$muted",
@@ -67,6 +76,7 @@ private fun PreviewSession.lightDialogs() {
         val detail = data.copy(
             lightsUi = mapOf("li1" to LightsUiState(detailEntityId = "light.living_room", detailMode = mode)),
         )
+
         page(
             group = "Dialogs",
             label = "Light · ${mode.key}",
@@ -74,9 +84,11 @@ private fun PreviewSession.lightDialogs() {
             renderInput = input(renderData = detail),
         )
     }
+
     val effects = data.copy(
         lightsUi = mapOf("li1" to LightsUiState(detailEntityId = "light.living_room", isEffectMenuOpen = true)),
     )
+
     page(
         group = "Dialogs",
         label = "Light · effects",
@@ -95,6 +107,7 @@ private fun PreviewSession.vacuumRoomsDialog() {
             ),
         ),
     )
+
     page(
         group = "Dialogs",
         label = "Vacuum · rooms",
@@ -106,13 +119,16 @@ private fun PreviewSession.vacuumRoomsDialog() {
 private fun PreviewSession.noticesAndCamera() {
     val notice = AlarmNotice("Unable to arm", "Close the kitchen window.")
     val alarm = data.copy(alarmUi = mapOf("a1" to AlarmUiState(notice = notice)))
+
     page(
         group = "Dialogs",
         label = "Alarm notice",
         page = DemoLayout.alarmPage(),
         renderInput = input(renderData = alarm),
     )
+
     val cameras = data.copy(camerasUi = mapOf("cm1" to CamerasUiState("camera.driveway")))
+
     page(
         group = "Panels",
         label = "Selected camera",
@@ -123,11 +139,13 @@ private fun PreviewSession.noticesAndCamera() {
 
 private fun PreviewSession.musicStates() {
     val musicPage = demo.pages.first { it.id == "music" }
+
     for (section in listOf(MusicUiState.PRIMARY_BROWSE, MusicUiState.PRIMARY_LISTEN)) {
         for (mode in listOf(MusicUiState.LISTEN_SEARCH, MusicUiState.LISTEN_QUEUE)) {
             val music = data.copy(
                 musicUi = mapOf("ma1" to MusicUiState(primarySection = section, listenMode = mode)),
             )
+
             page(
                 group = "Panels",
                 label = "Music · $section · $mode",
@@ -140,13 +158,16 @@ private fun PreviewSession.musicStates() {
 
 private fun PreviewSession.calendarStates() {
     val loading = data.copy(agenda = AgendaSnapshot(isLoading = true))
+
     page(
         group = "States",
         label = "Calendar loading",
         page = extraPages.last(),
         renderInput = input(renderData = loading),
     )
+
     val error = data.copy(agenda = AgendaSnapshot(errorMessage = "Calendar could not be loaded."))
+
     page(
         group = "States",
         label = "Calendar error",

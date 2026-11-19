@@ -55,16 +55,24 @@ fun snapshot(document: RenderedDoc, states: Map<String, EntityState>): ByteArray
     RemoteComposeBuffer.fromInputStream(ByteArrayInputStream(document.bytes)).inflateFromBuffer(operations)
     val names = operations.filterIsInstance<NamedVariable>().associateBy { it.mVarId }
     val output = WireBuffer()
+
     operations.forEach { operation ->
         val name = names[operation.resourceId()]?.mVarName?.removePrefix("USER:")
         val value = values[name]?.value
+
         val replacement = when {
-            operation is BitmapData -> imageSnapshot(operation, names, document)
+            operation is BitmapData -> imageSnapshot(
+                image = operation,
+                names = names,
+                document = document,
+            )
             value != null -> operation.withValue(value)
             else -> operation
         }
+
         replacement.write(output)
     }
+
     return output.buffer.copyOf(output.size).also { bytes ->
         // Fail generation immediately on malformed documents, including unsupported operations.
         CoreDocument().initFromBuffer(RemoteComposeBuffer.fromInputStream(ByteArrayInputStream(bytes)))
@@ -95,8 +103,18 @@ private fun imageSnapshot(
     val named = names[image.mImageId]?.takeIf { it.mVarType == NamedVariable.IMAGE_TYPE } ?: return image
     val name = named.mVarName.removePrefix("USER:")
     val slot = document.docContext.pictures.firstOrNull { it.name == name }
+
     return slot?.let {
-        BitmapData(image.mImageId, image.width, image.height, placeholder(it.source, image.width, image.height))
+        BitmapData(
+            image.mImageId,
+            image.width,
+            image.height,
+            placeholder(
+                source = it.source,
+                width = image.width,
+                height = image.height,
+            ),
+        )
     } ?: image
 }
 
@@ -107,6 +125,7 @@ private fun placeholder(source: String, width: Int, height: Int): ByteArray =
     placeholderCache.getOrPut("$source:$width:$height") {
         val image = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
         drawPlaceholder(image, source)
+
         ByteArrayOutputStream().use { stream ->
             check(ImageIO.write(image, "png", stream))
             stream.toByteArray()
@@ -115,24 +134,30 @@ private fun placeholder(source: String, width: Int, height: Int): ByteArray =
 
 private fun drawPlaceholder(image: BufferedImage, source: String) {
     val graphics = image.createGraphics()
+
     try {
         graphics.scale(image.width.toDouble() / ART_WIDTH, image.height.toDouble() / ART_HEIGHT)
         graphics.color = Color(ART_BACKGROUND)
         graphics.fillRect(0, 0, ART_WIDTH, ART_HEIGHT)
         graphics.color = Color(ART_GRID)
+
         for (x in 0..ART_WIDTH step GRID_STEP) {
             graphics.drawLine(x, 0, x, ART_HEIGHT)
         }
+
         for (y in 0..ART_HEIGHT step GRID_STEP) {
             graphics.drawLine(0, y, ART_WIDTH, y)
         }
+
         graphics.color = Color.WHITE
         graphics.font = Font("SansSerif", Font.BOLD, ART_FONT_SIZE)
+
         val label = when {
             source.startsWith("map:") -> "Sample map"
             source.contains("camera") -> "Sample camera"
             else -> "Sample artwork"
         }
+
         graphics.drawString(label, ART_LABEL_X, ART_LABEL_Y)
     } finally {
         graphics.dispose()

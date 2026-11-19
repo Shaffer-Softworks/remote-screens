@@ -34,6 +34,7 @@ class MusicBindTest {
         )
 
         assertEquals(REPORTED_POSITION + ELAPSED_SECONDS, entityState.mediaPosition(NOW))
+
         assertEquals(
             (REPORTED_POSITION + ELAPSED_SECONDS).toFloat() / TRACK_DURATION.toFloat(),
             mediaProgress(entityState.mediaPosition(NOW), TRACK_DURATION),
@@ -126,6 +127,7 @@ class MusicBindTest {
                     "Elapsed milliseconds: $elapsedMillis",
                 )
             }
+
         assertEquals("0:00", formatMusicTime(-0.6))
     }
 
@@ -138,10 +140,12 @@ class MusicBindTest {
         val attributes = buildMap {
             put("media_position", JsonPrimitive(position))
             put("media_duration", JsonPrimitive(duration))
+
             if (updatedAt != null) {
                 put("media_position_updated_at", JsonPrimitive(updatedAt))
             }
         }
+
         return EntityState(
             "media_player.living_room",
             state,

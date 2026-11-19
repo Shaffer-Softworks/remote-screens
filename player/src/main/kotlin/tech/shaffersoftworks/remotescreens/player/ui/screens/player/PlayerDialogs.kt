@@ -53,6 +53,7 @@ internal fun PlayerDialogs(
             onDelete = onCalendarDelete,
         )
     }
+
     viewState.settingsDialog?.let { settingsDialog ->
         if (settingsDialog.isForgetConfirmationVisible) {
             ForgetScreenDialog(
@@ -89,12 +90,14 @@ internal fun PlayerDialogs(
             )
         }
     }
+
     if (viewState.isKioskPinDialogVisible) {
         KioskPinDialog(
             onConfirm = onKioskPinEntered,
             onDismiss = onKioskPinDismissed,
         )
     }
+
     viewState.addressDialog?.let { addressDialog ->
         AddressDialog(
             initialAddress = addressDialog.initialAddress,
@@ -102,6 +105,7 @@ internal fun PlayerDialogs(
             onDismiss = onAddressDismissed,
         )
     }
+
     viewState.availableUpdate?.let { update ->
         UpdateDialog(
             versionName = update.versionName,

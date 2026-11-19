@@ -19,6 +19,7 @@ class NestingProbeTest {
     private fun names(bytes: ByteArray): List<String> {
         val doc = CoreDocument()
         doc.initFromBuffer(RemoteComposeBuffer.fromInputStream(ByteArrayInputStream(bytes)))
+
         return doc.getNamedVariables(NamedVariable.STRING_TYPE).toList()
     }
 
@@ -27,6 +28,7 @@ class NestingProbeTest {
         val bytes = Rc.document(100, 100, "nested") {
             Box(Modifier.size(50f, 50f)) { Text(remoteNamedText("USER:inner", "x")) }
         }
+
         assertEquals(
             emptyList(),
             names(bytes),
@@ -37,6 +39,7 @@ class NestingProbeTest {
     @Test
     fun buildDeclaresItAtTheTop() {
         val i18n = I18n("en", emptyMap(), emptyMap(), true)
+
         val (bytes, _) = DocContext.build(
             100,
             100,
@@ -52,6 +55,7 @@ class NestingProbeTest {
         ) { docContext ->
             Box(Modifier.size(50f, 50f)) { Text(docContext.text("inner")) }
         }
+
         assertEquals(listOf("USER:inner"), names(bytes))
     }
 }

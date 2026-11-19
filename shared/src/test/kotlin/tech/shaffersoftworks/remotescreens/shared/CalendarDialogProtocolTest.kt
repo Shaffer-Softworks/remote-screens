@@ -12,6 +12,7 @@ class CalendarDialogProtocolTest {
             tileId = "cal",
             calendars = listOf(CalendarChoice("calendar.family", "Family")),
         )
+
         assertEquals(dialog, Protocol.decodeServer(Protocol.encode(dialog)))
     }
 
@@ -27,6 +28,7 @@ class CalendarDialogProtocolTest {
                 summary = "Soccer practice",
             ),
         )
+
         assertEquals(dialog, Protocol.decodeServer(Protocol.encode(dialog)))
 
         val create = PlayerMessage.CalendarCreate(
@@ -40,6 +42,7 @@ class CalendarDialogProtocolTest {
             endDate = "2026-07-15",
             endTime = "18:30",
         )
+
         assertEquals(create, Protocol.decodePlayer(Protocol.encode(create)))
 
         val delete = PlayerMessage.CalendarDelete(
@@ -47,6 +50,7 @@ class CalendarDialogProtocolTest {
             entityId = "calendar.family",
             uid = "event-1",
         )
+
         val decoded = Protocol.decodePlayer(Protocol.encode(delete)) as PlayerMessage.CalendarDelete
         assertEquals(delete, decoded)
         assertNull(decoded.recurrenceId)

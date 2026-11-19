@@ -55,7 +55,7 @@ internal class SessionDocument(
     suspend fun showMain(screen: Screen) {
         val rebuild: suspend () -> RenderedDoc? = { host.screen()?.let { renderScreen(it) } }
         val renderedDoc = buildMutex.withLock { renderScreen(screen) }
-        show(Slot.MAIN, renderedDoc, rebuild)
+        show(slot = Slot.MAIN, renderedDoc = renderedDoc, rebuild = rebuild)
     }
 
     suspend fun show(
@@ -68,6 +68,7 @@ internal class SessionDocument(
     ) {
         val states = homeAssistant.states.value
         val previous = shownDocuments[slot]
+
         if (!force && previous != null && previous.renderedDoc.hasSameContent(renderedDoc)) {
             reuseShownDocument(
                 shown = previous,
@@ -75,14 +76,17 @@ internal class SessionDocument(
                 rebuild = rebuild,
                 states = states,
             )
+
             return
         }
+
         val shown = adoptShownDocument(
             slot = slot,
             renderedDoc = renderedDoc,
             rebuild = rebuild,
             states = states,
         )
+
         sendDocumentMessage(
             shown = shown,
             states = states,
@@ -90,6 +94,7 @@ internal class SessionDocument(
             wakeOnShow = wakeOnShow,
             restartTimeout = force,
         )
+
         sendLiveAttachments(
             shown = shown,
             states = states,
@@ -122,8 +127,10 @@ internal class SessionDocument(
             renderedDoc = renderedDoc,
             rebuild = rebuild,
         ).also { document -> document.revision = ++host.lastRevision }
+
         shown.sentVars = renderedDoc.vars(states)
         shownDocuments[slot] = shown
+
         return shown
     }
 
@@ -135,17 +142,19 @@ internal class SessionDocument(
         restartTimeout: Boolean,
     ) {
         val renderedDoc = shown.renderedDoc
+
         val bytes = if (host.supportsDeflate) {
             Rc.compress(renderedDoc.bytes)
         } else {
             renderedDoc.bytes
         }
+
         host.send(
             ServerMessage.Document(
                 slot = shown.slot,
                 rev = shown.revision,
                 data = Base64.getEncoder().encodeToString(bytes),
-                vars = documentVars(shown.slot, renderedDoc, states),
+                vars = documentVars(slot = shown.slot, renderedDoc = renderedDoc, states = states),
                 predictions = renderedDoc.predictions(states, host::foresee),
                 homePage = renderedDoc.homePage,
                 pageCount = renderedDoc.pageIds.size.coerceAtLeast(1),
@@ -173,6 +182,7 @@ internal class SessionDocument(
         } else {
             emptyList()
         }
+
         return renderedDoc.vars(states).values +
             context.screenClock.clockVars() +
             host.connectedVar() +
@@ -188,6 +198,7 @@ internal class SessionDocument(
         val vars = renderedDoc.vars(states)
         val changed = vars.values.filter { shown.sentVars[it.name] != it }
         shown.sentVars = vars
+
         if (changed.isNotEmpty()) {
             host.send(
                 ServerMessage.Vars(
@@ -207,20 +218,26 @@ internal class SessionDocument(
         states: Map<String, EntityState>,
         isForced: Boolean,
     ) {
-        media.sendPictures(shown, states, isForced = isForced)
+        media.sendPictures(shown = shown, states = states, isForced = isForced)
+
         for (map in shown.renderedDoc.docContext.maps) {
-            media.sendMap(shown, map, states)
+            media.sendMap(shown = shown, map = map, states = states)
         }
+
         for (dashboard in shown.renderedDoc.docContext.energyDashboards) {
             media.sendEnergyDashboard(shown, dashboard)
         }
+
         if (!isForced) return
+
         for ((entityId) in shown.renderedDoc.docContext.videos) {
             media.warmCameraStream(entityId = entityId)
         }
+
         for (video in shown.renderedDoc.docContext.videos) {
             media.sendVideo(shown, video)
         }
+
         for (search in shown.renderedDoc.docContext.searches) {
             media.sendSearch(shown, search)
         }
@@ -233,9 +250,11 @@ internal class SessionDocument(
                 if (calendarStructureChanged(shown.renderedDoc, states)) {
                     context.renderDataRepository.calendarAgenda.invalidate()
                 }
+
                 rebuild(shown)
                 continue
             }
+
             sendChangedVars(shown = shown, renderedDoc = shown.renderedDoc, states = states)
             sendLiveAttachments(shown = shown, states = states, isForced = false)
         }
@@ -250,9 +269,11 @@ internal class SessionDocument(
         for (shown in shownDocuments.values.toList()) {
             val vars = shown.renderedDoc.vars(states)
             val changed = vars.values.filter { shown.sentVars[it.name] != it }
+
             if (changed.isEmpty()) continue
 
             shown.sentVars = vars
+
             host.send(
                 ServerMessage.Vars(
                     changed,
@@ -267,22 +288,25 @@ internal class SessionDocument(
             runCatching { shown.rebuild() }
                 .onFailure { error ->
                     if (error is CancellationException) throw error
+
                     logger.warn("Build failed: {}", error.message, error)
                 }
                 .getOrNull()
         } ?: return
 
         if (shownDocuments[shown.slot] === shown) {
-            show(shown.slot, renderedDoc, shown.rebuild)
+            show(slot = shown.slot, renderedDoc = renderedDoc, rebuild = shown.rebuild)
         }
     }
 
     /** Sends every value again: after a tap whose prediction Home Assistant did not confirm. */
     suspend fun resync() {
         val states = homeAssistant.states.value
+
         for (shown in shownDocuments.values) {
             val vars = shown.renderedDoc.vars(states)
             shown.sentVars = vars
+
             host.send(
                 ServerMessage.Vars(
                     vars.values.toList(),
@@ -295,9 +319,11 @@ internal class SessionDocument(
     suspend fun openCard(entityId: String?, kind: String?) {
         // Start the HLS stream while the card builds so the first frame is not waiting on camera/stream.
         media.warmCameraStream(entityId = entityId, kind = kind)
+
         val build: suspend () -> RenderedDoc? = {
             val renderData = context.renderDataRepository.forCard(entityId, kind)
             val screen = host.screen()
+
             // The page area: the card sits between the bars like the page's own dialogs do.
             CardRenderer.render(
                 entityId = entityId ?: "card.$kind",
@@ -308,7 +334,9 @@ internal class SessionDocument(
                 bottomInsetDp = screen?.let { Grid.navBarHeight(it.navBar, host.device.widthDp.toFloat()) } ?: 0f,
             )
         }
+
         val renderedDoc = buildMutex.withLock { build() } ?: return
+
         show(
             slot = Slot.OVERLAY,
             renderedDoc = renderedDoc,
@@ -319,15 +347,19 @@ internal class SessionDocument(
     suspend fun showAlert(alert: Alert) {
         host.currentAlert = alert
         media.warmCameraStream(camera = alert.camera)
+
         val build: suspend () -> RenderedDoc? = {
             host.currentAlert?.let { AlertRenderer.render(
-                it,
-                host.device,
-                renderInput(RenderData()),
+                alert = it,
+                device = host.device,
+                input = renderInput(RenderData()),
             ) }
         }
+
         val renderedDoc = buildMutex.withLock { build() } ?: return
+
         if (alert.wake) host.send(ServerMessage.Wake(true))
+
         show(
             slot = Slot.ALERT,
             renderedDoc = renderedDoc,

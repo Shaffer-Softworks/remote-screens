@@ -57,26 +57,26 @@ private const val ORANGE_RED = 255
 private const val ORANGE_GREEN = 128
 private const val ORANGE_BLUE = 0
 
-class FreeFormTest {
-    private val ha = DemoHome()
-    private val i18n = I18n("en", I18n.load("en"), emptyMap(), true)
-    private val tablet = Device(1280, 800, 1.5f)
+open class FreeFormFixture {
+    protected val ha = DemoHome()
+    protected val i18n = I18n("en", I18n.load("en"), emptyMap(), true)
+    protected val tablet = Device(1280, 800, 1.5f)
 
-    private fun input() = RenderInput(ha.states.value, i18n, ha.config.value, RenderData())
-    private val Role.argb: Int get() = Themes.RPI[this]
-    private val Pastel.argb: Int get() = Themes.RPI[this]
+    protected fun input() = RenderInput(ha.states.value, i18n, ha.config.value, RenderData())
+    protected val Role.argb: Int get() = Themes.RPI[this]
+    protected val Pastel.argb: Int get() = Themes.RPI[this]
 
-    private fun parse(bytes: ByteArray) = CoreDocument().also { it.initFromBuffer(
+    protected fun parse(bytes: ByteArray) = CoreDocument().also { it.initFromBuffer(
         RemoteComposeBuffer.fromInputStream(ByteArrayInputStream(bytes)),
     ) }
 
-    private fun screen(root: Node) = Screen(
+    protected fun screen(root: Node) = Screen(
         "s",
         "Free",
         pages = listOf(Page("home", "Home", root = root), Page("two", "Two")),
     )
 
-    private val everyType = Node(
+    protected val everyType = Node(
         "root",
         "column",
         size = NodeSize("fill", "fill"),
@@ -319,7 +319,9 @@ class FreeFormTest {
             ),
         ),
     )
+}
 
+class FreeFormTest : FreeFormFixture() {
     @Test
     fun everyComponentTypeRenders() {
         val used = everyType.walk().map { it.type }.toSet()
@@ -327,6 +329,7 @@ class FreeFormTest {
         val doc = ScreenRenderer.render(screen(everyType), tablet, input())
         val core = parse(doc.bytes)
         assertContains(core.getNamedVariables(NamedVariable.INT_TYPE).toList(), "USER:page")
+
         assertTrue(
             doc.docContext.pictures.any { it.name == "img.cam" && it.source == "/api/camera_proxy/camera.front_door" },
         )
@@ -344,17 +347,18 @@ class FreeFormTest {
                     "image",
                     size = NodeSize("dp:160", "dp:90"),
                     bind = NodeBinding("camera.front_door"),
-                    props = mapOf("stream" to "true"),
+                    props = mapOf(Tile.OPTION_STREAM to Tile.OPTION_TRUE),
                 ),
                 Node(
                     "also",
                     "image",
                     size = NodeSize("dp:160", "dp:90"),
                     bind = NodeBinding("camera.driveway"),
-                    props = mapOf("stream" to "true"),
+                    props = mapOf(Tile.OPTION_STREAM to Tile.OPTION_TRUE),
                 ),
             ),
         )
+
         val doc = ScreenRenderer.render(screen(root), tablet, input())
         val video = doc.docContext.videos.single()
         assertEquals("camera.front_door", video.entityId)
@@ -389,6 +393,7 @@ class FreeFormTest {
             },
             Node("$id.sw", "switch"),
         ))
+
         val row = Node(
             "row",
             "row",
@@ -396,13 +401,16 @@ class FreeFormTest {
             props = mapOf("gap" to "12"),
             children = listOf(card("a", true), card("b", false)),
         )
+
         // The icon's 32 dp, the gap, the switch's 30 dp and 20 dp of padding top and bottom.
         assertEquals(32f + 12f + 30f + 40f, content(row).h)
+
         val doc = ScreenRenderer.render(
             screen(Node("root", "column", children = listOf(row))),
             tablet,
             input(),
         )
+
         assertTrue(doc.bytes.isNotEmpty())
     }
 
@@ -435,12 +443,15 @@ class FreeFormTest {
                 )),
             ))
         })
+
         val wrapped = ScreenRenderer.render(screen(people("wrap")), tablet, input()).bytes
+
         assertTrue(
             wrapped.contentEquals(
                 ScreenRenderer.render(screen(people("fill")), tablet, input()).bytes,
             ),
         )
+
         assertTrue(
             wrapped.contentEquals(
                 ScreenRenderer.render(screen(people("weight:2")), tablet, input()).bytes,
@@ -477,12 +488,15 @@ class FreeFormTest {
                 ),
             ),
         )
+
         val wrapped = ScreenRenderer.render(screen(chip("wrap")), tablet, input()).bytes
+
         assertTrue(
             wrapped.contentEquals(
                 ScreenRenderer.render(screen(chip("fill")), tablet, input()).bytes,
             ),
         )
+
         assertTrue(
             wrapped.contentEquals(
                 ScreenRenderer.render(screen(chip("weight:2")), tablet, input()).bytes,
@@ -502,17 +516,21 @@ class FreeFormTest {
                     props = listOfNotNull(place?.let { "place" to it }).toMap(),
                 ),
             ))
+
             val field = { name: String -> BoxLayout::class.java.getDeclaredField(
                 name,
             ).apply { isAccessible = true } }
+
             return ops(parse(ScreenRenderer.render(screen(card), tablet, input()).bytes).operations)
                 .filterIsInstance<BoxLayout>().map { field(
                     "mHorizontalPositioning",
                 ).getInt(it) to field("mVerticalPositioning").getInt(it) }
         }
+
         val plain = boxes(null)
         val right = boxes("end")
         assertEquals(plain.size + 1, right.size, "the switch sits in a box of its own")
+
         assertEquals(
             1,
             right.count { it == BoxLayout.END to BoxLayout.TOP } - plain.count { it == BoxLayout.END to BoxLayout.TOP },
@@ -531,6 +549,7 @@ class FreeFormTest {
             ),
             Node("dial", "gauge", props = mapOf("caption" to "Humidity")),
         ))
+
         // Twelve numbers round the face, one caption under each of the two gauges.
         assertEquals(
             14,
@@ -538,16 +557,22 @@ class FreeFormTest {
                 parse(ScreenRenderer.render(screen(dials), tablet, input()).bytes).operations,
             ).count { it is DrawTextAnchored },
         )
+
         val all = ops(
             parse(ScreenRenderer.render(screen(everyType), tablet, input()).bytes).operations,
         )
+
         // showWhen text puts animate on its wrapping Box (Text alone used to carry it).
         val slides = all.filterIsInstance<BoxLayout>().map { it.mAnimationSpec }
             .filter { it.enterAnimation == AnimationSpec.ANIMATION.SLIDE_TOP }
+
         assertEquals(1, slides.size)
         assertEquals(AnimationSpec.ANIMATION.SLIDE_TOP, slides.single().exitAnimation)
     }
 
+}
+
+class FreeFormBindingTest : FreeFormFixture() {
     @Test
     fun boundTextIsAVariableThatFollowsTheEntity() {
         val doc = ScreenRenderer.render(screen(everyType), tablet, input())
@@ -557,6 +582,7 @@ class FreeFormTest {
         assertTrue(value.startsWith("Kitchen "), "prefixed: $value")
         assertContains(doc.entities, "sensor.kitchen_temperature")
         val core = parse(doc.bytes)
+
         assertContains(
             core.getNamedVariables(NamedVariable.STRING_TYPE).toList(),
             "USER:" + nodeVar("temp"),
@@ -567,12 +593,15 @@ class FreeFormTest {
     fun aBoundIconLightsUpWithItsEntity() {
         val doc = ScreenRenderer.render(screen(everyType), tablet, input())
         val states = ha.states.value
+
         val on = doc.vars(
             states + ("light.table_lamp" to states.getValue("light.table_lamp").with("on")),
         )
+
         val off = doc.vars(
             states + ("light.table_lamp" to states.getValue("light.table_lamp").with("off")),
         )
+
         assertEquals(Pastel.YELLOW.argb, on["t.bulb.icon"]?.asColor())
         assertEquals(Role.INK_DIM.argb, off["t.bulb.icon"]?.asColor())
     }
@@ -591,14 +620,18 @@ class FreeFormTest {
                 ),
             ),
         )
+
         val doc = ScreenRenderer.render(screen(root), tablet, input())
         val states = ha.states.value
+
         val on = doc.vars(
             states + ("light.table_lamp" to states.getValue("light.table_lamp").with("on")),
         )
+
         val off = doc.vars(
             states + ("light.table_lamp" to states.getValue("light.table_lamp").with("off")),
         )
+
         assertEquals(Themes.RPI[Role.DANGER], on["t.lamp.icon"]?.asColor())
         assertEquals(Themes.RPI[Pastel.BLUE], off["t.lamp.icon"]?.asColor())
     }
@@ -618,8 +651,10 @@ class FreeFormTest {
                 ),
             ),
         )
+
         val doc = ScreenRenderer.render(screen(root), tablet, input())
         val states = ha.states.value
+
         val coloured = states.getValue("light.living_room").with(
             state = "on",
             attrs = mapOf("rgb_color" to buildJsonArray {
@@ -628,6 +663,7 @@ class FreeFormTest {
                 add(JsonPrimitive(ORANGE_BLUE))
             }),
         )
+
         val on = doc.vars(states + ("light.living_room" to coloured))
         val off = doc.vars(states + ("light.living_room" to coloured.with("off")))
         assertEquals(coloured.readRgb(), on["t.lamp.icon"]?.asColor())
@@ -639,11 +675,14 @@ class FreeFormTest {
     fun componentsAreTappableThroughTheRouter() {
         val page = screen(everyType).pages.first()
         val ids = page.allTiles().map { it.id }.toSet()
+
         assertTrue(
             setOf("temp", "bulb", "go", "t1", "level", "cam").all { it in ids },
             "tappable: $ids",
         )
+
         val doc = ScreenRenderer.render(screen(everyType), tablet, input())
+
         assertTrue(
             "bulb|toggle|" in doc.docContext.predicted,
             "a bound light icon toggles, and the toggle is foreseen",
@@ -657,11 +696,13 @@ class FreeFormTest {
         val doc = ScreenRenderer.render(screen(everyType), tablet, input())
         assertTrue("sw|toggle|" in doc.docContext.predicted)
         val states = ha.states.value
+
         val on = doc.vars(
             states + ("switch.coffee_machine" to states.getValue(
                 "switch.coffee_machine",
             ).with("on")),
         )
+
         assertEquals(Vars.VISIBLE.toString(), on["e.switch.coffee_machine.on"]?.value)
         assertEquals(Vars.GONE.toString(), on["e.switch.coffee_machine.off"]?.value)
     }
@@ -669,10 +710,12 @@ class FreeFormTest {
     @Test
     fun aStepperStepsTheThermostatThroughTheRouter() {
         val doc = ScreenRenderer.render(screen(everyType), tablet, input())
+
         assertTrue(
             doc.docContext.predicted.keys.any { it.startsWith("heat|temperature|+") },
             "predicted: ${doc.docContext.predicted.keys}",
         )
+
         assertTrue(doc.docContext.predicted.keys.any { it.startsWith("heat|temperature|-") })
         val tile = screen(everyType).pages.first().allTiles().first { it.id == "heat" }
         assertEquals("climate", tile.effectiveKind())
@@ -681,13 +724,16 @@ class FreeFormTest {
     @Test
     fun aThermostatComponentStepsAndSetsModesThroughTheRouter() {
         val doc = ScreenRenderer.render(screen(everyType), tablet, input())
+
         assertTrue(
             doc.docContext.predicted.keys.any { it.startsWith("climatePanel|temperature_low|+") },
             "predicted: ${doc.docContext.predicted.keys}",
         )
+
         assertTrue(
             doc.docContext.predicted.keys.any { it.startsWith("climatePanel|temperature_high|-") },
         )
+
         assertTrue(doc.docContext.predicted.keys.any { it.startsWith("climatePanel|mode|") })
         val tile = screen(everyType).pages.first().allTiles().first { it.id == "climatePanel" }
         assertEquals("climate", tile.effectiveKind())
@@ -709,9 +755,11 @@ class FreeFormTest {
         val i = wash.input.options.take(4).indexOf(wash.state)
         assertTrue(i >= 0, "the demo's option is among the first four")
         assertEquals(Role.KEY_ON.argb, vars["o.wash.c.$i.bg"]?.asColor())
+
         val mode = states.getValue(
             "climate.living_room",
         ).let { it.climate.hvacModes.take(4).indexOf(it.state) }
+
         assertEquals(Role.KEY_ON.argb, vars["o.modes.c.$mode.bg"]?.asColor())
     }
 
@@ -719,17 +767,21 @@ class FreeFormTest {
     fun aProgressBarFillsWithTheValueBetweenItsLimits() {
         val doc = ScreenRenderer.render(screen(everyType), tablet, input())
         val states = ha.states.value
+
         val at20 = doc.vars(
             states + ("sensor.kitchen_temperature" to states.getValue(
                 "sensor.kitchen_temperature",
             ).with("20")),
         )
+
         assertEquals(0.5f, checkNotNull(at20[nodeLevel("bar")]?.value?.toFloat()), 0.001f)
+
         val at99 = doc.vars(
             states + ("sensor.kitchen_temperature" to states.getValue(
                 "sensor.kitchen_temperature",
             ).with("99")),
         )
+
         assertEquals(1f, checkNotNull(at99[nodeLevel("bar")]?.value?.toFloat()), 0.001f)
     }
 
@@ -748,16 +800,20 @@ class FreeFormTest {
         val doc = ScreenRenderer.render(screen(everyType), tablet, input())
         val states = ha.states.value
         val lamp = states.getValue("light.living_room")
+
         val half = doc.vars(
             states + ("light.living_room" to lamp.with(
                 "on",
                 mapOf("brightness" to kotlinx.serialization.json.JsonPrimitive(128)),
             )),
         )
+
         assertEquals(0.5f, checkNotNull(half[nodeLevel("ring")]?.value?.toFloat()), 0.01f)
+
         val off = doc.vars(
             states + ("light.table_lamp" to states.getValue("light.table_lamp").with("off")),
         )
+
         assertEquals(
             Vars.GONE.toString(),
             off["e.light.table_lamp.on"]?.value,
@@ -772,10 +828,12 @@ class FreeFormTest {
         val memory = TapMemory()
         fun tap(ref: ActionRef) = runBlocking { router.handle(ref, s, memory) }
         tap(ActionRef("remote", "next"))
+
         assertEquals(
             "media_player" to "media_next_track",
             ha.calls.last().let { it.first to it.second },
         )
+
         tap(ActionRef("hues", "hue", "120"))
         assertEquals("light" to "turn_on", ha.calls.last().let { it.first to it.second })
         tap(ActionRef("pad", "code_digit", "1"))
@@ -784,11 +842,13 @@ class FreeFormTest {
         tap(ActionRef("arm", "arm_away"))
         val (domain, service, data) = ha.calls.last()
         assertEquals("alarm_control_panel" to "alarm_arm_away", domain to service)
+
         assertEquals(
             "123",
             (data["code"] as kotlinx.serialization.json.JsonPrimitive).content,
             "the code typed on the keypad goes with the arm",
         )
+
         val doc = ScreenRenderer.render(s, tablet, input())
         val declared = parse(doc.bytes).getNamedVariables(NamedVariable.STRING_TYPE).toList()
         assertContains(declared, "USER:t.e:alarm_control_panel.house.code")
@@ -798,6 +858,7 @@ class FreeFormTest {
     @Test
     fun everyDemoCardRendersAsAComponent() {
         val demo = DemoLayout.screen()
+
         val pages = demo.pages.map { p ->
             val cards = p.tiles.map { t -> Node(
                 "n.${t.id}",
@@ -805,6 +866,7 @@ class FreeFormTest {
                 size = NodeSize("weight:1", "fill"),
                 tile = t,
             ) }
+
             p.copy(
                 tiles = emptyList(),
                 root = Node(
@@ -815,15 +877,19 @@ class FreeFormTest {
                 ),
             )
         }
+
         val screen = ScreenValidator.validate(demo.copy(pages = pages))
         val data = runBlocking { RenderDataRepository(ha).forScreen(screen) }
+
         val doc = ScreenRenderer.render(
             screen,
             tablet,
             input().let { RenderInput(it.states, it.i18n, it.homeAssistantConfig, data) },
         )
+
         val vars = doc.vars(ha.states.value)
         assertEquals("Ceiling light", vars["e.light.living_room.name"]?.value)
+
         val declared = parse(doc.bytes).let { core ->
             core.getNamedVariables(
                 NamedVariable.STRING_TYPE,
@@ -832,6 +898,7 @@ class FreeFormTest {
                     NamedVariable.FLOAT_TYPE,
                 ) + core.getNamedVariables(NamedVariable.COLOR_TYPE)
         }
+
         val unread = vars.keys.filter { "USER:$it" !in declared && !it.startsWith("sys.") }
         assertTrue(unread.isEmpty(), "values sent but never declared: $unread")
     }
@@ -847,6 +914,7 @@ class FreeFormTest {
         fun rejects(root: Node) = assertFailsWith<BadRequestException> { ScreenValidator.validate(
             screen(root),
         ) }
+
         rejects(Node("a", "marquee"))
         rejects(Node("a", "text", children = listOf(Node("b", "text"))))
         rejects(Node("a", "column", children = listOf(Node("a", "text"))))
@@ -868,6 +936,7 @@ class FreeFormTest {
                 Node("dup", "text", bind = NodeBinding("light.kitchen")),
             ),
         )
+
         assertFailsWith<BadRequestException> { ScreenValidator.validate(screen(clash)) }
     }
 
@@ -878,23 +947,29 @@ class FreeFormTest {
             "presence",
             props = mapOf("people" to "person.sam", "ink" to ink, "color" to color),
         )
+
         val soft = ScreenRenderer.render(
             screen(people("ink", "accent_soft")),
             tablet,
             input(),
         ).bytes
+
         val bright = ScreenRenderer.render(
             screen(people("accent", "blue")),
             tablet,
             input(),
         ).bytes
+
         assertTrue(soft.isNotEmpty())
+
         assertTrue(
             !soft.contentEquals(bright),
             "presence ink/color props must change the document",
         )
+
         val vars = ScreenRenderer.render(screen(people("ink", "accent_soft")), tablet, input())
             .vars(ha.states.value)
+
         assertTrue(vars.containsKey("t.people.where.person.sam"))
     }
 
@@ -906,6 +981,7 @@ class FreeFormTest {
             bind = NodeBinding("weather.home"),
             props = mapOf("days" to "3", "ink" to ink, "color" to color),
         )
+
         val a = ScreenRenderer.render(screen(days("ink_soft", "ink")), tablet, input()).bytes
         val b = ScreenRenderer.render(screen(days("accent", "blue")), tablet, input()).bytes
         assertTrue(a.isNotEmpty())
@@ -931,12 +1007,14 @@ class FreeFormTest {
         assertTrue(vars["t.next.ev.time"]?.value?.isNotBlank() == true)
         assertContains(vars["t.next.ev.meta"]?.value.orEmpty(), "Family")
         assertContains(vars["t.next.ev.meta"]?.value.orEmpty(), "Main St")
+
         val coloured = Node(
             "next",
             "nextevent",
             bind = NodeBinding("calendar.family"),
             props = mapOf("ink" to "accent", "color" to "blue"),
         )
+
         val plain = doc.bytes
         val tinted = ScreenRenderer.render(screen(coloured), tablet, input()).bytes
         assertTrue(!plain.contentEquals(tinted), "nextevent ink/color props must change the document")
@@ -951,24 +1029,30 @@ class FreeFormTest {
         assertEquals("3:15", vars["e.media_player.living_room.dur"]?.value)
         assertTrue(vars.containsKey("e.media_player.living_room.progress"))
         assertTrue(vars.containsKey("e.media_player.living_room.level"))
+
         assertEquals(
             0,
             doc.docContext.refreshSeconds,
             "media bar updates are variables; a timed rebuild flashed the home page",
         )
+
         assertTrue(
             doc.docContext.predicted.keys.any { it.startsWith("now|seek|") },
             "predicted: ${doc.docContext.predicted.keys}",
         )
+
         assertTrue(doc.docContext.predicted.keys.any { it.startsWith("now|volume|") })
+
         val closed = Node(
             "now",
             "mediabar",
             bind = NodeBinding("media_player.living_room"),
             props = mapOf("openCard" to "false"),
         )
+
         val openBytes = doc.bytes
         val closedBytes = ScreenRenderer.render(screen(closed), tablet, input()).bytes
+
         assertTrue(
             !openBytes.contentEquals(closedBytes),
             "openCard=false must omit the art/title card tap",

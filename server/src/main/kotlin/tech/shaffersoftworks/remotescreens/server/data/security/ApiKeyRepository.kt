@@ -24,6 +24,7 @@ class ApiKeyRepository(dataDir: File) {
         file.writeText(key)
         file.setReadable(false, false)
         file.setReadable(true, true)
+
         return key
     }
 }

@@ -24,7 +24,9 @@ internal class CurrentPageTouchPlayer(context: Context) : RemoteComposePlayer(co
         } else {
             null
         }
+
         val collapsed = root?.let(HiddenPanes::collapse).orEmpty()
+
         return try {
             super.dispatchTouchEvent(event)
         } finally {
@@ -39,16 +41,21 @@ internal object HiddenPanes {
     /** Zero-sizes each settled `StateLayout` pane that is not current. */
     fun collapse(root: Component): List<Collapsed> {
         val collapsed = mutableListOf<Collapsed>()
+
         fun descend(component: Component) {
             // The root keeps its children in the operation list; layouts list theirs after measure.
             val children = (component as? LayoutComponent)?.childrenComponents
                 ?: component.mList.filterIsInstance<Component>()
+
             val state = component as? StateLayout
             var paneIndex = 0
+
             for (child in children) {
                 val isPane = state != null && child is LayoutComponent
                 val isHidden = isPane && !state.inTransition && paneIndex != state.currentLayoutIndex
+
                 if (isPane) paneIndex++
+
                 if (isHidden) {
                     collapsed += Collapsed(pane = child, width = child.width, height = child.height)
                     child.width = 0f
@@ -58,7 +65,9 @@ internal object HiddenPanes {
                 }
             }
         }
+
         descend(root)
+
         return collapsed
     }
 

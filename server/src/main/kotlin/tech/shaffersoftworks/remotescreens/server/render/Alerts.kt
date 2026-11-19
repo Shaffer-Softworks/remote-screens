@@ -82,11 +82,13 @@ object AlertRenderer {
 
     fun render(alert: Alert, device: Device, input: RenderInput): RenderedDoc {
         val panelW = minOf(device.widthDp - SCREEN_MARGIN_DP, MAX_PANEL_WIDTH_DP)
+
         val camH = if (alert.camera != null) {
             minOf(panelW * CAMERA_ASPECT, device.heightDp * MAX_CAMERA_HEIGHT_RATIO)
         } else {
             0f
         }
+
         val (bytes, docContext) = DocContext.build(
             widthPx = device.widthPx,
             heightPx = device.heightPx,
@@ -97,14 +99,16 @@ object AlertRenderer {
                 Modifier.fillMaxSize().background(docContext.role(Role.SCRIM)),
                 ActionRef("alert", "dismiss"),
             )
+
             Box(
-                scrim,
+                modifier = scrim,
                 horizontal = RcHorizontalPositioning.Center,
                 vertical = RcVerticalPositioning.Center,
             ) {
                 val panel = Modifier.width(docContext.units.px(panelW))
                     .clip(docContext.rounded(PANEL_CORNER_DP))
                     .background(docContext.role(Role.CARD))
+
                 Column(
                     docContext.tap(
                         panel,
@@ -112,39 +116,49 @@ object AlertRenderer {
                     ).padding(docContext.units.px(PANEL_PADDING_DP)),
                     horizontal = RcHorizontalPositioning.Center,
                 ) {
-                    docContext.badge(alert)
-                    docContext.spacer(TITLE_GAP_DP)
-                    docContext.label(
-                        text = alert.title,
-                        sp = Type.HEADLINE,
-                        color = docContext.role(Role.INK),
-                        weight = Weight.SEMI_BOLD,
-                        lines = 2,
-                        align = RcTextAlign.Center,
-                    )
-                    if (alert.message.isNotBlank()) {
-                        docContext.spacer(MESSAGE_GAP_DP)
-                        docContext.label(
-                            text = alert.message,
-                            sp = Type.TITLE,
-                            color = docContext.role(Role.INK_SOFT),
-                            lines = MESSAGE_LINES,
-                            align = RcTextAlign.Center,
-                        )
-                    }
-                    if (alert.camera != null) {
-                        docContext.camera(
-                            alert.camera,
-                            panelW - SCREEN_MARGIN_DP,
-                            camH,
-                        )
-                    }
-                    docContext.spacer(BUTTONS_GAP_DP)
-                    docContext.buttons(alert.buttons.take(MAX_BUTTONS))
+                    docContext.alertCopy(alert = alert, panelW = panelW, camH = camH)
                 }
             }
         }
+
         return RenderedDoc(bytes, docContext)
+    }
+
+    private fun DocContext.alertCopy(alert: Alert, panelW: Float, camH: Float) {
+        badge(alert)
+        spacer(TITLE_GAP_DP)
+
+        label(
+            text = alert.title,
+            sp = Type.HEADLINE,
+            color = role(Role.INK),
+            weight = Weight.SEMI_BOLD,
+            lines = 2,
+            align = RcTextAlign.Center,
+        )
+
+        if (alert.message.isNotBlank()) {
+            spacer(MESSAGE_GAP_DP)
+
+            label(
+                text = alert.message,
+                sp = Type.TITLE,
+                color = role(Role.INK_SOFT),
+                lines = MESSAGE_LINES,
+                align = RcTextAlign.Center,
+            )
+        }
+
+        if (alert.camera != null) {
+            camera(
+                camera = alert.camera,
+                widthDp = panelW - SCREEN_MARGIN_DP,
+                heightDp = camH,
+            )
+        }
+
+        spacer(BUTTONS_GAP_DP)
+        buttons(alert.buttons.take(MAX_BUTTONS))
     }
 
     private fun DocContext.badge(alert: Alert) {
@@ -153,23 +167,26 @@ object AlertRenderer {
             "warning" -> Role.WARN
             else -> Role.ACCENT
         }
+
         val badge = Modifier.size(
             units.px(BADGE_DP),
             units.px(BADGE_DP),
         ).clip(rounded(BADGE_DP / 2f)).background(role(tone))
+
         rcScope.Box(
-            badge,
+            modifier = badge,
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcVerticalPositioning.Center,
         ) {
             val icon = alert.icon ?: if (alert.level == "info") "bell-ring" else "alert"
-            this@badge.icon(icon, BADGE_ICON_DP, role(Role.KEY_ON_INK))
+            this@badge.icon(name = icon, sizeDp = BADGE_ICON_DP, color = role(Role.KEY_ON_INK))
         }
     }
 
     private fun DocContext.camera(camera: String, widthDp: Float, heightDp: Float) {
         val pw = units.px(widthDp).toInt()
         val ph = units.px(heightDp).toInt()
+
         picture(
             PictureSlot(
                 name = "alert.cam",
@@ -179,11 +196,13 @@ object AlertRenderer {
                 refreshSeconds = CAMERA_ALERT_REFRESH_S,
             ),
         )
+
         val video = liveVideo(camera, crop = true)
         spacer(TITLE_GAP_DP)
+
         rcScope.Image(
-            image("alert.cam", pw, ph),
-            Modifier.size(
+            image = image(name = "alert.cam", width = pw, height = ph),
+            modifier = Modifier.size(
                 units.px(widthDp),
                 units.px(heightDp),
             ).clip(rounded(CAMERA_CORNER_DP)).componentId(video),
@@ -194,11 +213,14 @@ object AlertRenderer {
     private fun DocContext.buttons(buttons: List<AlertButton>) {
         rcScope.Row(Modifier.fillMaxWidth()) {
             val docContext = this@buttons
+
             buttons.forEachIndexed { i, b ->
                 if (i > 0) Spacer(Modifier.width(docContext.units.px(BUTTON_SPACING_DP)))
+
                 val isPrimary = i == 0
+
                 docContext.key(
-                    ref = ActionRef("alert", "button", i.toString()),
+                    ref = ActionRef(tile = "alert", verb = "button", arg = i.toString()),
                     text = b.title,
                     heightDp = BUTTON_HEIGHT_DP,
                     modifier = Modifier.horizontalWeight(1f),
@@ -212,7 +234,9 @@ object AlertRenderer {
                     },
                 )
             }
+
             if (buttons.isNotEmpty()) Spacer(Modifier.width(docContext.units.px(BUTTON_SPACING_DP)))
+
             docContext.key(
                 ref = ActionRef("alert", "dismiss"),
                 text = docContext.i18n.t("ui.close"),

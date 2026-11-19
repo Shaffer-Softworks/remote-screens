@@ -73,15 +73,19 @@ class MotionMonitor @Inject constructor(
 
     fun start() {
         val manager = sensorManager
+
         if (manager == null || listenJob?.isActive == true) return
+
         listenJob = scope.launch {
             callbackFlow {
                 val samples = this
+
                 val accelerometerListener = object : SensorEventListener {
                     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
 
                     override fun onSensorChanged(event: SensorEvent) {
                         if (event.values.size < AXES) return
+
                         trySend(
                             MotionSample.Acceleration(
                                 x = event.values[0],
@@ -91,18 +95,23 @@ class MotionMonitor @Inject constructor(
                         )
                     }
                 }
+
                 val triggerListener = object : TriggerEventListener() {
                     override fun onTrigger(event: TriggerEvent?) {
                         samples.trySend(MotionSample.Significant)
                         // A trigger sensor disarms after firing.
                         val sensor = significantMotionSensor ?: return
+
                         if (listenJob?.isActive == true) manager.requestTriggerSensor(this, sensor)
                     }
                 }
+
                 accelerometer?.let { sensor ->
                     manager.registerListener(accelerometerListener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
                 }
+
                 significantMotionSensor?.let { sensor -> manager.requestTriggerSensor(triggerListener, sensor) }
+
                 awaitClose {
                     manager.unregisterListener(accelerometerListener)
                     significantMotionSensor?.let { sensor -> manager.cancelTriggerSensor(triggerListener, sensor) }
@@ -114,11 +123,13 @@ class MotionMonitor @Inject constructor(
                 }
             }
         }
+
         Timber.d("Motion monitor started: %s", hardware)
     }
 
     fun stop() {
         if (listenJob == null) return
+
         listenJob?.cancel()
         listenJob = null
         hasGravity = false
@@ -127,6 +138,7 @@ class MotionMonitor @Inject constructor(
     fun snapshot(): MotionTelemetry {
         val lastMotionElapsed = lastMotionElapsedMs
         val isMoving = lastMotionElapsed != null && SystemClock.elapsedRealtime() - lastMotionElapsed < MOVING_LATCH_MS
+
         return MotionTelemetry(
             isMoving = isMoving,
             orientation = orientationName(),
@@ -146,6 +158,7 @@ class MotionMonitor @Inject constructor(
         val wasStill = previousMotion == null || now - previousMotion >= MOVING_LATCH_MS
         lastMotionElapsedMs = now
         lastMotionAt = System.currentTimeMillis()
+
         if (wasStill) _changes.tryEmit(Unit)
     }
 
@@ -155,15 +168,19 @@ class MotionMonitor @Inject constructor(
             gravity[1] = sample.y
             gravity[2] = sample.z
             hasGravity = true
+
             return
         }
+
         val axes = floatArrayOf(sample.x, sample.y, sample.z)
         var linearSquared = 0f
+
         for (axis in 0 until AXES) {
             gravity[axis] += GRAVITY_SMOOTHING * (axes[axis] - gravity[axis])
             val linear = axes[axis] - gravity[axis]
             linearSquared += linear * linear
         }
+
         if (sqrt(linearSquared) >= MOVEMENT_THRESHOLD) onMotion()
     }
 

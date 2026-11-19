@@ -45,49 +45,66 @@ class CameraImageClickTest {
     private fun hasClickTarget(root: Component?, operations: List<Operation>): Boolean {
         fun walk(c: Component): Boolean {
             val mods = (c as? LayoutComponent)?.componentModifiers?.modifiersList.orEmpty()
+
             if (mods.any { it is ClickModifierOperation || it is MultiClickModifier }) return true
+
             val kids = ArrayList<Component>()
             c.getComponents(kids)
+
             return kids.any(::walk)
         }
+
         return (root != null && walk(root)) ||
             ops(operations).any { it is ClickModifierOperation || it is MultiClickModifier }
     }
 
     private fun hasImage(root: Component?): Boolean {
         if (root == null) return false
+
         fun walk(c: Component): Boolean {
             if (c is ImageLayout) return true
+
             val kids = ArrayList<Component>()
             c.getComponents(kids)
+
             return kids.any(::walk)
         }
+
         return walk(root)
     }
 
     private fun hasText(root: Component?): Boolean {
         if (root == null) return false
+
         fun walk(c: Component): Boolean {
             if (c is CoreText) return true
+
             val kids = ArrayList<Component>()
             c.getComponents(kids)
+
             return kids.any(::walk)
         }
+
         return walk(root)
     }
 
     /** True when a CoreText itself carries a click modifier (the fragile path we wrap away). */
     private fun textItselfHasClick(root: Component?): Boolean {
         if (root == null) return false
+
         fun walk(c: Component): Boolean {
             if (c is CoreText) {
                 val mods = c.componentModifiers.modifiersList.orEmpty()
+
                 if (mods.any { it is ClickModifierOperation || it is MultiClickModifier }) return true
             }
+
             val kids = ArrayList<Component>()
             c.getComponents(kids)
+
             return kids.any(::walk)
         }
+
         return walk(root)
     }
 
@@ -97,15 +114,20 @@ class CameraImageClickTest {
      */
     private fun textParentHasClick(root: Component?): Boolean {
         if (root == null) return false
+
         fun walk(c: Component): Boolean {
             val kids = ArrayList<Component>()
             c.getComponents(kids)
+
             if (kids.size == 1 && kids[0] is CoreText) {
                 val mods = (c as? LayoutComponent)?.componentModifiers?.modifiersList.orEmpty()
+
                 if (mods.any { it is ClickModifierOperation || it is MultiClickModifier }) return true
             }
+
             return kids.any(::walk)
         }
+
         return walk(root)
     }
 
@@ -128,9 +150,11 @@ class CameraImageClickTest {
                 ),
             ),
         )
+
         val doc = ScreenRenderer.render(Screen("s", "S", pages = listOf(page)), tablet, input())
         val core = parse(doc.bytes)
         assertTrue(hasImage(core.rootLayoutComponent), "camera image is in the document")
+
         assertTrue(
             hasClickTarget(core.rootLayoutComponent, core.operations),
             "camera image must keep a click target",
@@ -144,9 +168,11 @@ class CameraImageClickTest {
             "Cameras",
             tiles = listOf(Tile("t1", entityId = "camera.front_door", w = 2, h = 2)),
         )
+
         val doc = ScreenRenderer.render(Screen("s", "S", pages = listOf(page)), tablet, input())
         val core = parse(doc.bytes)
         assertTrue(hasImage(core.rootLayoutComponent), "camera image is in the document")
+
         assertTrue(
             hasClickTarget(core.rootLayoutComponent, core.operations),
             "camera tile must keep a click target",
@@ -173,17 +199,21 @@ class CameraImageClickTest {
                 ),
             ),
         )
+
         val doc = ScreenRenderer.render(Screen("s", "S", pages = listOf(page)), tablet, input())
         val core = parse(doc.bytes)
         assertTrue(hasText(core.rootLayoutComponent), "bound text is in the document")
+
         assertTrue(
             hasClickTarget(core.rootLayoutComponent, core.operations),
             "bound text must keep a click target",
         )
+
         assertFalse(
             textItselfHasClick(core.rootLayoutComponent),
             "click must sit on a Box around the Text",
         )
+
         assertTrue(textParentHasClick(core.rootLayoutComponent), "click must sit on the Text's Box")
     }
 
@@ -207,22 +237,27 @@ class CameraImageClickTest {
                 ),
             ),
         )
+
         val screen = Screen(
             "s",
             "S",
             pages = listOf(page, Page("two", "Rooms", tiles = emptyList())),
         )
+
         val doc = ScreenRenderer.render(screen, tablet, input())
         val core = parse(doc.bytes)
         assertTrue(hasText(core.rootLayoutComponent), "tappable text is in the document")
+
         assertTrue(
             hasClickTarget(core.rootLayoutComponent, core.operations),
             "page-tap text must keep a click target",
         )
+
         assertFalse(
             textItselfHasClick(core.rootLayoutComponent),
             "click must sit on a Box around the Text",
         )
+
         assertTrue(textParentHasClick(core.rootLayoutComponent), "click must sit on the Text's Box")
     }
 
@@ -245,13 +280,16 @@ class CameraImageClickTest {
                 ),
             ),
         )
+
         val doc = ScreenRenderer.render(Screen("s", "S", pages = listOf(page)), tablet, input())
         val core = parse(doc.bytes)
         assertTrue(hasText(core.rootLayoutComponent), "plain text is in the document")
+
         assertFalse(
             textItselfHasClick(core.rootLayoutComponent),
             "plain text must not carry a click",
         )
+
         assertFalse(
             textParentHasClick(core.rootLayoutComponent),
             "plain text's Box must not carry a click (chrome clicks elsewhere are fine)",

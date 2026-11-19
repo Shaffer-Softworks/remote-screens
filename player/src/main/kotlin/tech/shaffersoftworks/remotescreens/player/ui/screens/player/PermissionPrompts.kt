@@ -20,10 +20,13 @@ internal class PermissionPrompts {
 
     fun request(prompt: PermissionPrompt) {
         if (prompt == current || prompt in waiting) return
+
         if (current != null) {
             waiting.add(prompt)
+
             return
         }
+
         current = prompt
         show(prompt)
     }
@@ -32,6 +35,7 @@ internal class PermissionPrompts {
     fun finished() {
         val next = waiting.removeFirstOrNull()
         current = next
+
         if (next != null) show(next)
     }
 }

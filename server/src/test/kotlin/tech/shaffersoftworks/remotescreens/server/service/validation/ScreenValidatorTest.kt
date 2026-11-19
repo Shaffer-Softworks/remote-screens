@@ -28,9 +28,11 @@ class ScreenValidatorTest {
     fun aCustomSizeIsKeptWithinTheLimits() {
         val s = ScreenValidator.validate(Screen("s", "Wall", designSize = DeviceSize(50, 99999)))
         assertEquals(DeviceSize(DeviceSize.MIN, DeviceSize.MAX), s.designSize)
+
         val validated = ScreenValidator.validate(
             Screen("s", "Wall", designSize = DeviceSize(1100, 700)),
         )
+
         assertEquals(DeviceSize(1100, 700), validated.designSize)
     }
 
@@ -44,6 +46,7 @@ class ScreenValidatorTest {
                 navBar = NavBar(height = 2, labels = "huge", layout = "diagonal", active = "pink"),
             ),
         )
+
         assertEquals(TopBar.MAX_HEIGHT, s.topBar.height)
         assertEquals(TopBar.MIN_CLOCK_WIDTH, s.topBar.clockWidth)
         assertNull(s.topBar.background)
@@ -67,6 +70,7 @@ class ScreenValidatorTest {
                 drawer = Drawer(style = "modal", side = "middle", width = 999),
             ),
         )
+
         assertEquals("modal", screen.drawer.style)
         assertEquals("start", screen.drawer.side)
         assertEquals(Drawer.MAX_MODAL_WIDTH, screen.drawer.width)
@@ -82,6 +86,7 @@ class ScreenValidatorTest {
             val screen = ScreenValidator.validate(
                 Screen("s", "Wall", navBar = NavBar(show = false), drawer = Drawer(style = style)),
             )
+
             assertEquals("off", screen.drawer.style)
             assertTrue(screen.navBar.show)
         }
@@ -100,10 +105,13 @@ class ScreenValidatorTest {
         val kept = ScreenValidator.validate(
             Screen("s", "Wall", pages = listOf(Page("home", "Home", backgroundImage = "1700000000000"))),
         )
+
         assertEquals("1700000000000", kept.pages.single().backgroundImage)
+
         val dropped = ScreenValidator.validate(
             Screen("s", "Wall", pages = listOf(Page("home", "Home", backgroundImage = "../secret"))),
         )
+
         assertNull(dropped.pages.single().backgroundImage)
     }
 

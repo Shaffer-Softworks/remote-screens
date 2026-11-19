@@ -8,7 +8,6 @@ import tech.shaffersoftworks.remotescreens.server.data.vacuum.selectedVacuumId
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
-import tech.shaffersoftworks.remotescreens.server.render.cards.vacuumCard
 import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
@@ -51,7 +50,8 @@ fun DocContext.vacuumPanel(tile: Tile, box: TileBox) {
     val vacuums = vacuumEntityIds(tile.entityId)
     val selectedId = selectedVacuumId(chosen = ui.selectedVacuum, tileEntityId = tile.entityId, vacuumIds = vacuums)
     val selected = selectedId?.let { states[it] }
-    val layout = VacuumLayout(pageScale(box), box.w, box.h)
+    val layout = VacuumLayout(scale = pageScale(box), pageW = box.w, pageH = box.h)
+
     rcScope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@vacuumPanel
         doc.vacuumList(tileId = tile.id, vacuums = vacuums, selectedId = selectedId, layout = layout)
@@ -65,13 +65,16 @@ fun DocContext.vacuumPanel(tile: Tile, box: TileBox) {
  */
 fun DocContext.vacuumDialogLayer(tile: Tile, screenW: Float) {
     val ui = data.vacuumUi[tile.id]?.takeIf { it.roomsDialogOpen } ?: return
+
     val selectedId = selectedVacuumId(
         chosen = ui.selectedVacuum,
         tileEntityId = tile.entityId,
         vacuumIds = vacuumEntityIds(tile.entityId),
     )
+
     val entityState = selectedId?.let { states[it] }
     val vacuumRooms = selectedId?.let { data.vacuumRooms[it] }
+
     if (entityState != null && vacuumRooms != null) {
         vacuumRoomsDialog(
             tileId = tile.id,
@@ -89,7 +92,9 @@ private fun pageScale(box: TileBox): Float =
 /** All vacuums, with the tile's entity first when it is one. */
 private fun DocContext.vacuumEntityIds(preferred: String?): List<String> {
     val all = states.keys.filter(Domain.VACUUM::owns).sorted()
+
     if (preferred == null || preferred !in all) return all
+
     return listOf(preferred) + all.filter { it != preferred }
 }
 
@@ -104,8 +109,10 @@ private fun DocContext.vacuumList(
             .padding(start = 0f, top = units.px(layout.dp(M.LIST_TOP_DP)), end = 0f, bottom = 0f),
     ) {
         val doc = this@vacuumList
+
         Row {
             Spacer(Modifier.width(doc.units.px(layout.dp(M.ACCENT_BAR_START_DP))))
+
             Box(
                 Modifier.size(
                     doc.units.px(layout.dp(M.ACCENT_BAR_W_DP - M.ACCENT_BAR_START_DP)),
@@ -113,7 +120,9 @@ private fun DocContext.vacuumList(
                 ).background(doc.role(Role.ACCENT_DARK)),
             )
         }
+
         Spacer(Modifier.height(doc.units.px(layout.dp(M.TITLE_GAP_DP))))
+
         doc.label(
             text = doc.i18n.t("ui.vacuum_title"),
             sp = layout.sp(M.TITLE_SP),
@@ -125,7 +134,9 @@ private fun DocContext.vacuumList(
                 bottom = 0f,
             ),
         )
+
         val pad = doc.units.px(layout.dp(M.LIST_PAD_DP))
+
         Column(
             Modifier.fillMaxWidth()
                 .verticalWeight(1f)
@@ -134,6 +145,7 @@ private fun DocContext.vacuumList(
         ) {
             vacuums.forEachIndexed { index, entityId ->
                 if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.ITEM_GAP_DP))))
+
                 doc.vacuumRow(
                     tileId = tileId,
                     entityId = entityId,
@@ -153,23 +165,33 @@ private fun DocContext.vacuumRow(
 ) {
     // Live name / status via bindEntity vars — baking strings here never updates on state_changed.
     bindEntity(entityId)
+
     rcScope.Row(
         tap(
             Modifier.fillMaxWidth().height(units.px(layout.dp(M.ITEM_H_DP))),
-            ActionRef(tileId, "vacuum_select", entityId),
+            ActionRef(tile = tileId, verb = "vacuum_select", arg = entityId),
         ),
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@vacuumRow
-        doc.icon("robot-vacuum", layout.dp(M.ITEM_ICON_DP), doc.role(if (isSelected) Role.ACCENT else Role.INK))
+
+        doc.icon(
+            name = "robot-vacuum",
+            sizeDp = layout.dp(M.ITEM_ICON_DP),
+            color = doc.role(if (isSelected) Role.ACCENT else Role.INK)
+        )
+
         Spacer(Modifier.width(doc.units.px(layout.dp(M.ITEM_ICON_GAP_DP))))
+
         Column(Modifier.horizontalWeight(1f)) {
             doc.label(
                 text = doc.text(Vars.entity(entityId, Vars.KEY_NAME)),
                 sp = layout.sp(M.ITEM_LABEL_SP),
                 color = doc.role(if (isSelected) Role.ACCENT else Role.INK),
             )
+
             Spacer(Modifier.height(doc.units.px(layout.dp(M.ITEM_SUB_GAP_DP))))
+
             doc.label(
                 text = doc.text(Vars.entity(entityId, Vars.KEY_STATE)),
                 sp = layout.sp(M.ITEM_SUB_SP),
@@ -186,15 +208,20 @@ private fun DocContext.vacuumDetail(
     layout: VacuumLayout,
 ) {
     val pad = units.px(layout.dp(M.DETAIL_PAD_DP))
+
     rcScope.Column(
         Modifier.horizontalWeight(1f).fillMaxHeight().padding(start = pad, top = pad, end = pad, bottom = pad),
     ) {
         val doc = this@vacuumDetail
+
         if (selected == null) {
             doc.selectVacuumPrompt(layout)
+
             return@Column
         }
+
         doc.bindEntity(selected.entityId)
+
         doc.label(
             text = doc.text(Vars.entity(selected.entityId, Vars.KEY_NAME)),
             sp = layout.sp(M.DETAIL_NAME_SP),
@@ -206,14 +233,18 @@ private fun DocContext.vacuumDetail(
                 bottom = 0f,
             ),
         )
+
         Spacer(Modifier.height(doc.units.px(layout.dp(M.BATTERY_GAP_DP))))
+
         // Present.view already formats vacuum as "state · battery%"; keep it on KEY_STATE for live pushes.
         doc.label(
             text = doc.text(Vars.entity(selected.entityId, Vars.KEY_STATE)),
             sp = layout.sp(M.DETAIL_STATUS_SP),
             color = doc.role(Role.INK_DIM),
         )
+
         Spacer(Modifier.height(doc.units.px(layout.dp(M.DETAIL_GAP_DP))))
+
         doc.vacuumCard(
             entityId = selected.entityId,
             entityState = selected,
@@ -225,13 +256,14 @@ private fun DocContext.vacuumDetail(
 
 private fun DocContext.selectVacuumPrompt(layout: VacuumLayout) {
     rcScope.Column(
-        Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcColumnVerticalPositioning.Center,
     ) {
         val doc = this@selectVacuumPrompt
-        doc.icon("gesture-tap", layout.dp(M.PROMPT_ICON_DP), doc.role(Role.INK_DIM))
+        doc.icon(name = "gesture-tap", sizeDp = layout.dp(M.PROMPT_ICON_DP), color = doc.role(Role.INK_DIM))
         Spacer(Modifier.height(doc.units.px(layout.dp(M.PROMPT_GAP_DP))))
+
         doc.label(
             text = doc.i18n.t("ui.vacuum_select"),
             sp = layout.sp(M.PROMPT_SP),

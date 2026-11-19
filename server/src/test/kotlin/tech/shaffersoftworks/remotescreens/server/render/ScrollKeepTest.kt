@@ -37,34 +37,43 @@ class ScrollKeepTest {
 
     private fun scrollerIds(name: String): List<Int> {
         val document = CoreDocument()
+
         document.initFromBuffer(
             RemoteComposeBuffer.fromInputStream(ByteArrayInputStream(scrollDocument(name))),
         )
+
         val found = mutableListOf<Int>()
         val root = document.rootLayoutComponent ?: return found
+
         walk(root) { component ->
             if (component.ownsVerticalScroll()) found += component.id
         }
+
         return found
     }
 
     private fun Component.ownsVerticalScroll(): Boolean {
         for (operation in mList) {
             val modifiers = operation as? ComponentModifiers ?: continue
+
             for (modifier in modifiers.list) {
                 if (modifier is ScrollModifierOperation && modifier.isVerticalScroll()) return true
             }
         }
+
         return false
     }
 
     private fun walk(component: Component, visit: (Component) -> Unit) {
         visit(component)
+
         for (operation in component.mList) {
             val nested = operation as? Component ?: continue
             walk(nested, visit)
         }
+
         val laidOut = (component as? LayoutComponent)?.childrenComponents ?: return
+
         for (child in laidOut) walk(child, visit)
     }
 

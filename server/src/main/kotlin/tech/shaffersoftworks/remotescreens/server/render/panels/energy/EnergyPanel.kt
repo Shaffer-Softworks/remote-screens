@@ -5,7 +5,6 @@ package tech.shaffersoftworks.remotescreens.server.render.panels.energy
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
-import tech.shaffersoftworks.remotescreens.server.render.tiles.energyFlow
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.fillMaxSize
@@ -18,6 +17,7 @@ import tech.shaffersoftworks.remotescreens.shared.Tile
 fun DocContext.energyPanel(@Suppress("UNUSED_PARAMETER") tile: Tile, box: TileBox) {
     rcScope.Box(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@energyPanel
+
         doc.energyFlow(
             wDp = box.w,
             hDp = box.h,

@@ -25,7 +25,9 @@ class MusicUiStore : TileUiStore<MusicUiState>(MusicUiState()) {
     fun setBrowseType(tileId: String, mediaType: String): MusicUiState {
         val type = mediaType.takeIf { it in MusicUiState.BROWSE_TYPES }
             ?: MusicUiState.DEFAULT_BROWSE_TYPE
+
         clearBrowse(tileId)
+
         return update(tileId) {
             it.copy(browseMediaType = type, browseOffset = 0)
         }
@@ -36,6 +38,7 @@ class MusicUiStore : TileUiStore<MusicUiState>(MusicUiState()) {
             MusicUiState.LISTEN_SEARCH -> MusicUiState.LISTEN_SEARCH
             else -> MusicUiState.LISTEN_QUEUE
         }
+
         return update(tileId) { it.copy(listenMode = listenMode) }
     }
 
@@ -44,6 +47,7 @@ class MusicUiStore : TileUiStore<MusicUiState>(MusicUiState()) {
             MusicUiState.PRIMARY_LISTEN -> MusicUiState.PRIMARY_LISTEN
             else -> MusicUiState.PRIMARY_BROWSE
         }
+
         return update(tileId) { it.copy(primarySection = primary) }
     }
 

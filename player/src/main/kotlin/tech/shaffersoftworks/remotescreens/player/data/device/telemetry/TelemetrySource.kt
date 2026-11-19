@@ -39,6 +39,7 @@ class DeviceTelemetrySource @Inject constructor(
     override fun start(isLocationShared: Boolean) {
         environmentSensorMonitor.start()
         motionMonitor.start()
+
         if (isLocationShared) locationMonitor.start() else locationMonitor.stop()
     }
 

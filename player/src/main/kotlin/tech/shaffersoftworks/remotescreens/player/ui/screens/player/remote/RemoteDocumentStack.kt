@@ -50,33 +50,43 @@ internal fun RemoteDocumentStack(
     val active = lifecycle.isAtLeast(Lifecycle.State.STARTED)
     val currentState by rememberUpdatedState(state)
     var bounds by remember { mutableStateOf(OverlayBounds()) }
+
     SideEffect {
         controller.onAction = onAction
         // This composition recorded the new stacking. Hide the old buffer before the frame draws.
         controller.hideReplacedMainPlayer()
     }
+
     LaunchedEffect(controller, state) {
         controller.render(state)
     }
+
     DisposableEffect(controller, host) {
         val observer = host.viewTreeObserver
+
         val listener = ViewTreeObserver.OnPreDrawListener {
             controller.beforeDraw()
             val measured = overlayBounds(controller, currentState)
+
             // Keep the last Energy hole while the dashboard is still playing. A MAIN swap measures
             // the incoming buffer before layout and would otherwise shrink the overlay to 0×0.
             bounds = measured.copy(
                 energy = measured.energy
                     ?: bounds.energy.takeIf { currentState.playingEnergyDashboard != null },
             )
+
             true
         }
+
         observer.addOnPreDrawListener(listener)
+
         onDispose {
             if (observer.isAlive) observer.removeOnPreDrawListener(listener)
+
             controller.dispose()
         }
     }
+
     Box(
         Modifier.fillMaxSize().deferDocumentUpdatesDuringTouch(controller),
     ) {
@@ -84,6 +94,7 @@ internal fun RemoteDocumentStack(
         // swap draw the Energy stub over the native dashboard for a frame.
         Slot.entries.forEach { slot ->
             val base = slot.ordinal * SLOT_LAYER_SPACING
+
             if (slot == Slot.MAIN) {
                 AndroidView(
                     factory = { controller.mainBackPlayer },
@@ -92,6 +103,7 @@ internal fun RemoteDocumentStack(
                     ),
                 )
             }
+
             AndroidView(
                 factory = { controller.primaryPlayer(slot) },
                 modifier = Modifier.fillMaxSize().zIndex(
@@ -99,9 +111,11 @@ internal fun RemoteDocumentStack(
                 ),
             )
         }
+
         if (active) {
             Slot.entries.forEach { slot ->
                 val base = slot.ordinal * SLOT_LAYER_SPACING
+
                 DocumentOverlays(
                     slot = slot,
                     state = state,
@@ -148,17 +162,21 @@ internal data class OverlayBounds(
 
 private fun overlayBounds(controller: RemoteDocumentController, state: RemoteScreenState): OverlayBounds {
     fun bounds(slot: Slot, id: Int): Rect? = componentBounds(controller.documentPlayer(slot), id)
+
     // Visible MAIN buffer first during a swap: documentPlayer is the incoming one and may not
     // have laid out the Energy hole yet (null bounds → 0×0 overlay flash / RC stub).
     fun energyBounds(id: Int): Rect? {
         val front = controller.primaryPlayer(Slot.MAIN)
         val back = controller.mainBackPlayer
         val visible = if (controller.mainFrontIsPrimary) front else back
+
         return componentBounds(visible, id)
             ?: componentBounds(controller.documentPlayer(Slot.MAIN), id)
     }
+
     val search = state.playingSearch
     val energy = state.playingEnergyDashboard
+
     return OverlayBounds(
         video = state.playingVideo?.let { (slot, video) -> bounds(slot, video.componentId) },
         map = state.playingMap?.let { (slot, map) -> bounds(slot, map.componentId) },
@@ -180,6 +198,7 @@ internal fun DocumentOverlay(bounds: Rect?, modifier: Modifier = Modifier, conte
         val width = bounds?.width()?.coerceAtLeast(0) ?: 0
         val height = bounds?.height()?.coerceAtLeast(0) ?: 0
         val children = measurables.map { it.measure(Constraints.fixed(width, height)) }
+
         layout(constraints.maxWidth, constraints.maxHeight) {
             if (bounds != null && width > 0 && height > 0) {
                 children.forEach { it.place(bounds.left, bounds.top) }
@@ -204,6 +223,7 @@ private fun RemoteDocumentStackPreview() {
             onSearchEnqueue = { _, _ -> },
             imageLoader = previewLoader,
         )
+
         DocumentOverlay(Rect(0, 0, 1, 1)) { }
     }
 }

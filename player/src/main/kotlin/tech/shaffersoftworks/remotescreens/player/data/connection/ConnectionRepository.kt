@@ -81,6 +81,7 @@ class ConnectionRepository @Inject constructor(
             this.client = client
             newConnection(server, buildHello)
         }
+
         job.start()
     }
 
@@ -94,13 +95,16 @@ class ConnectionRepository @Inject constructor(
         helloProvider = buildHello
         session.set(null)
         connectionJob?.cancel()
+
         val job = ioScope.launch(start = CoroutineStart.LAZY) {
             runConnectionLoop(server, buildHello, token)
         }
+
         connectionJob = job
         _server.value = server
         _consecutiveFailures.value = 0
         updateState(null, ConnectionStatus.CONNECTING)
+
         return job
     }
 
@@ -111,6 +115,7 @@ class ConnectionRepository @Inject constructor(
             val buildHello = helloProvider ?: return
             newConnection(server, buildHello)
         }
+
         job.start()
     }
 
@@ -121,6 +126,7 @@ class ConnectionRepository @Inject constructor(
     fun disconnect(client: Any? = null) {
         synchronized(connectionLock) {
             if (client != null && this.client !== client) return
+
             this.client = null
             owner = null
             session.set(null)
@@ -139,6 +145,7 @@ class ConnectionRepository @Inject constructor(
 
     suspend fun send(message: PlayerMessage) {
         val currentSession = session.get() ?: return
+
         try {
             currentSession.socket.send(Frame.Text(Protocol.encode(message)))
         } catch (cancelled: CancellationException) {
@@ -152,6 +159,7 @@ class ConnectionRepository @Inject constructor(
     suspend fun trySend(message: PlayerMessage, connectionId: Long? = null): Boolean {
         val currentSession = session.get()
             ?.takeIf { connectionId == null || it.id == connectionId } ?: return false
+
         return try {
             currentSession.socket.send(Frame.Text(Protocol.encode(message)))
             true
@@ -196,9 +204,11 @@ class ConnectionRepository @Inject constructor(
         token: Any,
     ) {
         var backoffMs = INITIAL_BACKOFF_MS
+
         while (currentCoroutineContext().isActive) {
             val id = beginAttempt(token) ?: return
             var ownedSession: ActiveConnection? = null
+
             try {
                 coroutineScope {
                     // HTTP request timeouts do not bound an upgraded WebSocket waiting for its first reply.
@@ -207,16 +217,21 @@ class ConnectionRepository @Inject constructor(
                         delay(CONNECTION_START_TIMEOUT_MS.milliseconds)
                         throw IOException("Server did not respond within ${CONNECTION_START_TIMEOUT_MS}ms")
                     }
+
                     try {
                         httpClient.webSocket("ws://$server/player") {
                             val activeConnection = ActiveConnection(id, this)
                             send(Frame.Text(Protocol.encode(buildHello())))
+
                             if (!publish(token, activeConnection, currentCoroutineContext())) return@webSocket
+
                             ownedSession = activeConnection
                             backoffMs = INITIAL_BACKOFF_MS
+
                             for (frame in incoming) {
                                 val textFrame = frame as? Frame.Text ?: continue
                                 val message = Protocol.decodeServer(textFrame.readText())
+
                                 if (message != null) {
                                     startupWatchdog.cancel()
                                     _receivedMessages.emit(ReceivedMessage(id, message))
@@ -239,11 +254,15 @@ class ConnectionRepository @Inject constructor(
                     }
                 }
             }
+
             if (!currentCoroutineContext().isActive) break
+
             synchronized(connectionLock) {
                 if (owner !== token) return
+
                 _consecutiveFailures.value += 1
             }
+
             delay(backoffMs.milliseconds)
             backoffMs = min(backoffMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS)
         }

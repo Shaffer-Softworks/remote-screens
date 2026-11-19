@@ -35,12 +35,14 @@ class PreviewDocumentsTest {
             HomeAssistantConfig(),
             RenderData(),
         )
+
         val values = listOf(
             VarValue.string("test.text", "Kitchen · 21 °C"),
             VarValue.color("test.color", 0xff12ab34.toInt()),
             VarValue.int("test.int", -7),
             VarValue.float("test.float", 0.625f),
         )
+
         val (bytes, context) = DocContext.build(
             800,
             480,
@@ -54,6 +56,7 @@ class PreviewDocumentsTest {
             doc.bind(null) { values }
             Box(Modifier.fillMaxSize())
         }
+
         val original = bytes.copyOf()
         val baked = snapshot(RenderedDoc(bytes, context), emptyMap())
         val before = operations(bytes)
@@ -61,18 +64,25 @@ class PreviewDocumentsTest {
         assertContentEquals(original, bytes)
         assertEquals(before.map { it.javaClass }, after.map { it.javaClass })
         val names = after.filterIsInstance<NamedVariable>().associate { it.mVarName to it.mVarId }
+
         assertEquals("Kitchen · 21 °C", after.filterIsInstance<TextData>()
             .single { it.mTextId == names.getValue("USER:test.text") }.mText)
+
         assertEquals(0xff12ab34.toInt(), after.filterIsInstance<ColorConstant>()
             .single { it.mColorId == names.getValue("USER:test.color") }.mColor)
+
         fun wire(operation: Operation): ByteArray {
             val buffer = WireBuffer()
             operation.write(buffer)
+
             return buffer.buffer.copyOf(buffer.size)
         }
+
         val integer = after.filterIsInstance<IntegerConstant>()
             .single { it.mId == names.getValue("USER:test.int") }
+
         assertContentEquals(wire(IntegerConstant(names.getValue("USER:test.int"), -7)), wire(integer))
+
         assertEquals(0.625f, after.filterIsInstance<FloatConstant>()
             .single { it.mId == names.getValue("USER:test.float") }.mValue)
     }
@@ -85,10 +95,12 @@ class PreviewDocumentsTest {
             HomeAssistantConfig(),
             RenderData(),
         )
+
         val (bytes, context) = DocContext.build(800, 480, "Clock", { input.context(Device(800, 480, 1f)) }) { doc ->
             doc.text(Vars.TIME)
             Box(Modifier.fillMaxSize())
         }
+
         val after = operations(snapshot(RenderedDoc(bytes, context), emptyMap()))
         val time = after.filterIsInstance<NamedVariable>().single { it.mVarName == "USER:" + Vars.TIME }
         assertEquals("10:08", after.filterIsInstance<TextData>().single { it.mTextId == time.mVarId }.mText)

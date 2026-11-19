@@ -53,16 +53,19 @@ class NavDrawerRenderTest {
                     drawer = Drawer(style = "modal", side = side, active = "pink"),
                 )
             }
+
             val doc = ScreenRenderer.render(screen, tablet, input())
             assertFalse("USER:drawer" in ints(doc), "the panel is native, not a remote StateLayout")
             assertFalse(isLit(doc), "the drawer selection is drawn by Material 3")
             val drawer = kotlin.test.assertNotNull(doc.navigationDrawer)
             assertEquals(side, drawer.side)
             assertEquals(screen.name, drawer.title)
+
             assertEquals(
                 screen.pages.withIndex().filter { !it.value.hidden }.map { it.index },
                 drawer.items.mapNotNull { it.page },
             )
+
             assertEquals("Settings", drawer.items.last().title)
             assertTrue(drawer.items.all { it.iconPath.isNotEmpty() })
         }
@@ -72,11 +75,13 @@ class NavDrawerRenderTest {
     fun nativeDrawerChangesAreSentEvenWhenTheRemoteBytesMatch() {
         val screen = DemoLayout.screen().copy(drawer = Drawer(style = "modal", active = "pink"))
         val pinkDrawer = ScreenRenderer.render(screen, tablet, input())
+
         val otherDrawer = ScreenRenderer.render(
             screen.copy(drawer = screen.drawer.copy(active = "teal")),
             tablet,
             input(),
         )
+
         assertTrue(pinkDrawer.bytes.contentEquals(otherDrawer.bytes))
         assertFalse(pinkDrawer.hasSameContent(otherDrawer))
         assertTrue(pinkDrawer.hasSameContent(ScreenRenderer.render(screen, tablet, input())))

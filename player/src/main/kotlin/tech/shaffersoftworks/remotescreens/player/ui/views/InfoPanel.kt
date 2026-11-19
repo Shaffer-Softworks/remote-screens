@@ -72,11 +72,13 @@ private fun InfoPanelFullScreen(
     onAllowUnrestrictedBattery: () -> Unit,
 ) {
     val pairingCode = (state as? InfoPanelState.Pairing)?.code
+
     val title = if (pairingCode != null) {
         stringResource(R.string.pair_title)
     } else {
         stringResource(R.string.app_name)
     }
+
     val body = when (state) {
         InfoPanelState.Searching -> stringResource(R.string.searching)
         is InfoPanelState.Connecting -> stringResource(R.string.connecting, state.server)
@@ -112,6 +114,7 @@ private fun InfoPanelFullScreen(
                 modifier = Modifier.padding(vertical = CODE_VERTICAL_PADDING),
             )
         }
+
         Text(text = body, color = DialogWhite, fontSize = BODY_TEXT_SIZE, textAlign = TextAlign.Center)
 
         if (pairingCode == null) {
@@ -121,12 +124,14 @@ private fun InfoPanelFullScreen(
 
         if (canOfferUnrestrictedBattery) {
             Spacer(Modifier.height(PANEL_PADDING))
+
             Text(
                 text = stringResource(R.string.battery_restricted),
                 color = DialogWhite,
                 fontSize = NOTE_TEXT_SIZE,
                 textAlign = TextAlign.Center,
             )
+
             TextButton(onClick = onAllowUnrestrictedBattery) {
                 Text(stringResource(R.string.allow_unrestricted_battery))
             }

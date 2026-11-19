@@ -76,12 +76,17 @@ class LocationMonitor @Inject constructor(
     @SuppressLint("MissingPermission")
     fun start() {
         val manager = locationManager
+
         if (manager == null || !hasPermission()) return
+
         val provider = chooseProvider(manager)
+
         if (provider == null) {
             Timber.d("Location: no provider enabled")
+
             return
         }
+
         if (listenJob?.isActive != true) {
             listenJob = scope.launch { listen(manager, provider) }
         } else {
@@ -92,7 +97,9 @@ class LocationMonitor @Inject constructor(
     @SuppressLint("MissingPermission")
     private fun requestAnotherFix(manager: LocationManager, provider: String) {
         val listener = updatesListener
+
         if (_location.value != null || listener == null) return
+
         try {
             requestCurrentFix(manager, provider, listener)
         } catch (error: SecurityException) {
@@ -112,8 +119,10 @@ class LocationMonitor @Inject constructor(
             val fixes = this
             val listener = LocationListener { location -> fixes.trySend(readingOf(location)) }
             updatesListener = listener
+
             try {
                 bestLastKnown(manager)?.let { fixes.trySend(readingOf(it)) }
+
                 // These LocationManager methods require a Looper. There is no Executor overload here.
                 manager.requestLocationUpdates(
                     provider,
@@ -122,10 +131,13 @@ class LocationMonitor @Inject constructor(
                     listener,
                     Looper.getMainLooper(),
                 )
+
                 Timber.d("Location started with %s", provider)
+
                 // A wall tablet may never move 50 m, and the cached fix is often empty the first time
                 // this app is allowed to read location. Ask for one position now, and again until one arrives.
                 if (_location.value == null) requestCurrentFix(manager, provider, listener)
+
                 awaitClose { unregister(manager, listener) }
             } catch (error: SecurityException) {
                 Timber.w(error, "Location permission was revoked")
@@ -157,6 +169,7 @@ class LocationMonitor @Inject constructor(
 
     private fun unregister(manager: LocationManager, listener: LocationListener) {
         manager.removeUpdates(listener)
+
         if (updatesListener === listener) updatesListener = null
     }
 

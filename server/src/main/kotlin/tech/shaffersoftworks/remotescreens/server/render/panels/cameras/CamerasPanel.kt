@@ -57,10 +57,11 @@ fun DocContext.camerasPanel(tile: Tile, box: TileBox) {
     val ui = data.camerasUi[tile.id] ?: CamerasUiState()
     val cameras = tile.cameraEntries()
     val selected = cameras.selectedCamera(ui.selectedCamera)
-    val layout = CamerasLayout(pageScale(box), box.w, box.h)
+    val layout = CamerasLayout(scale = pageScale(box), pageW = box.w, pageH = box.h)
+
     rcScope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@camerasPanel
-        doc.cameraList(tile.id, cameras, layout)
+        doc.cameraList(tileId = tile.id, cameras = cameras, layout = layout)
         doc.selectedCameraPane(selected, layout)
     }
 }
@@ -75,8 +76,10 @@ private fun DocContext.cameraList(tileId: String, cameras: List<CameraEntry>, la
             .padding(start = 0f, top = units.px(layout.dp(M.LIST_TOP_DP)), end = 0f, bottom = 0f),
     ) {
         val doc = this@cameraList
+
         Row {
             Spacer(Modifier.width(doc.units.px(layout.dp(M.ACCENT_BAR_START_DP))))
+
             Box(
                 Modifier.size(
                     doc.units.px(layout.dp(M.ACCENT_BAR_W_DP - M.ACCENT_BAR_START_DP)),
@@ -84,7 +87,9 @@ private fun DocContext.cameraList(tileId: String, cameras: List<CameraEntry>, la
                 ).background(doc.role(Role.ACCENT_DARK)),
             )
         }
+
         Spacer(Modifier.height(doc.units.px(layout.dp(M.TITLE_GAP_DP))))
+
         doc.label(
             text = doc.i18n.t("ui.cameras_title"),
             sp = layout.sp(M.TITLE_SP),
@@ -96,7 +101,9 @@ private fun DocContext.cameraList(tileId: String, cameras: List<CameraEntry>, la
                 bottom = 0f,
             ),
         )
+
         val pad = doc.units.px(layout.dp(M.LIST_PAD_DP))
+
         Column(
             Modifier.fillMaxWidth()
                 .verticalWeight(1f)
@@ -105,7 +112,8 @@ private fun DocContext.cameraList(tileId: String, cameras: List<CameraEntry>, la
         ) {
             cameras.forEachIndexed { index, camera ->
                 if (index > 0) Spacer(Modifier.height(doc.units.px(layout.dp(M.ITEM_GAP_DP))))
-                doc.cameraRow(tileId, camera, layout)
+
+                doc.cameraRow(tileId = tileId, camera = camera, layout = layout)
             }
         }
     }
@@ -119,6 +127,7 @@ private fun DocContext.cameraRow(tileId: String, camera: CameraEntry, layout: Ca
     val pictureName = "cam.list.${camera.entityId}"
     val imageW = units.px(layout.dp(M.ITEM_IMAGE_W_DP))
     val rowH = units.px(layout.dp(M.ITEM_H_DP))
+
     picture(
         PictureSlot(
             name = pictureName,
@@ -128,21 +137,29 @@ private fun DocContext.cameraRow(tileId: String, camera: CameraEntry, layout: Ca
             refreshSeconds = 0,
         ),
     )
+
     val barColor = fixed((M.ITEM_BAR_ALPHA shl ALPHA_SHIFT) or (palette[Role.ACCENT_DARK] and RGB_MASK))
+
     rcScope.Box(
-        tap(
+        modifier = tap(
             Modifier.fillMaxWidth().height(rowH),
-            ActionRef(tileId, "cameras_select", camera.entityId),
+            ActionRef(tile = tileId, verb = "cameras_select", arg = camera.entityId),
         ),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Bottom,
     ) {
         val doc = this@cameraRow
+
         Image(
-            doc.image(pictureName, imageW.toInt().coerceAtLeast(1), rowH.toInt().coerceAtLeast(1)),
-            Modifier.size(imageW, rowH),
+            image = doc.image(
+                name = pictureName,
+                width = imageW.toInt().coerceAtLeast(1),
+                height = rowH.toInt().coerceAtLeast(1)
+            ),
+            modifier = Modifier.size(imageW, rowH),
             contentScale = RcContentScale.Crop,
         )
+
         Box(
             Modifier.width(imageW).height(doc.units.px(layout.dp(M.ITEM_BAR_H_DP))).background(barColor),
             vertical = RcVerticalPositioning.Center,
@@ -165,11 +182,14 @@ private fun DocContext.cameraRow(tileId: String, camera: CameraEntry, layout: Ca
 /** The chosen camera's name over its live video; blank until a camera is chosen, as RPI's right pane is. */
 private fun DocContext.selectedCameraPane(selected: CameraEntry?, layout: CamerasLayout) {
     val pad = units.px(layout.dp(M.DETAIL_PAD_DP))
+
     rcScope.Column(
         Modifier.horizontalWeight(1f).fillMaxHeight().padding(start = pad, top = pad, end = pad, bottom = pad),
     ) {
         val doc = this@selectedCameraPane
+
         if (selected == null) return@Column
+
         doc.label(
             text = selected.displayName(doc.states[selected.entityId]),
             sp = layout.sp(M.DETAIL_NAME_SP),
@@ -181,6 +201,7 @@ private fun DocContext.selectedCameraPane(selected: CameraEntry?, layout: Camera
                 bottom = 0f,
             ),
         )
+
         Spacer(Modifier.height(doc.units.px(layout.dp(M.DETAIL_GAP_DP))))
         doc.liveVideoBox(selected.entityId, layout)
     }
@@ -194,6 +215,7 @@ private fun DocContext.liveVideoBox(entityId: String, layout: CamerasLayout) {
     val pictureName = "cam.card.$entityId"
     val pictureW = units.px(layout.videoW).toInt().coerceAtLeast(1)
     val pictureH = units.px(layout.videoH).toInt().coerceAtLeast(1)
+
     picture(
         PictureSlot(
             name = pictureName,
@@ -204,20 +226,24 @@ private fun DocContext.liveVideoBox(entityId: String, layout: CamerasLayout) {
             crop = false,
         ),
     )
+
     val video = liveVideo(entityId, crop = false)
     val waiting = int(Vars.entity(entityId, Vars.KEY_CAM_WAITING), Vars.VISIBLE)
     val still = int(Vars.entity(entityId, Vars.KEY_CAM_STILL), Vars.GONE)
+
     rcScope.Box(
-        Modifier.fillMaxWidth().verticalWeight(1f).background(role(Role.TRACK)).componentId(video),
+        modifier = Modifier.fillMaxWidth().verticalWeight(1f).background(role(Role.TRACK)).componentId(video),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@liveVideoBox
+
         Image(
-            doc.image(pictureName, pictureW, pictureH),
-            Modifier.fillMaxSize().visibility(still),
+            image = doc.image(name = pictureName, width = pictureW, height = pictureH),
+            modifier = Modifier.fillMaxSize().visibility(still),
             contentScale = RcContentScale.Fit,
         )
-        doc.spinner(M.SPINNER_DP * layout.scale, doc.role(Role.ACCENT), waiting)
+
+        doc.spinner(sizeDp = M.SPINNER_DP * layout.scale, color = doc.role(Role.ACCENT), visible = waiting)
     }
 }

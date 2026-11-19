@@ -36,10 +36,13 @@ object ScreenValidator {
         ensureValid(pages.map { it.id }.toSet().size == pages.size) { "Page ids must differ" }
         ensureValid(gridTileCount <= MAX_TILES_PER_SCREEN) { "At most $MAX_TILES_PER_SCREEN tiles" }
         ensureValid(tiles.map { it.id }.toSet().size == tiles.size) { "Tile ids must differ" }
+
         for (page in pages) page.root?.let { validateTree(it, page.title) }
+
         ensureValid(grid.cols in cellRange && grid.rows in cellRange) { "Grid out of range" }
         val drawer = screen.drawer.validated()
         val navBar = screen.navBar.validated()
+
         return screen.copy(
             name = normalizeName(screen.name),
             homePage = screen.homePage.takeIf { home -> pages.any { it.id == home } } ?: pages.first().id,
@@ -49,30 +52,37 @@ object ScreenValidator {
             navBar = if (drawer.style == "off") navBar.copy(show = true) else navBar,
             drawer = drawer,
             designSize = screen.designSize?.let(::coerceDesignSize),
-            pages = pages.map { page -> clampPage(page, grid.cols, grid.rows) },
+            pages = pages.map { page -> clampPage(page = page, cols = grid.cols, rows = grid.rows) },
         )
     }
 
     /** What a free-form page may hold: known components, ids that differ, a bounded size and depth. */
     fun validateTree(root: Node, pageTitle: String) {
         val nodes = root.walk().toList()
+
         ensureValid(
             nodes.size <= MAX_NODES_PER_PAGE,
         ) { "$pageTitle: at most $MAX_NODES_PER_PAGE components" }
+
         ensureValid(
             root.depth() <= MAX_NODE_DEPTH,
         ) { "$pageTitle: components nest at most $MAX_NODE_DEPTH deep" }
+
         ensureValid(
             nodes.map { it.id }.toSet().size == nodes.size,
         ) { "$pageTitle: component ids must differ" }
+
         for (node in nodes) {
             ensureValid(node.type in NodeTypes.ALL) { "$pageTitle: unknown component ${node.type}" }
+
             ensureValid(node.children.isEmpty() || node.type in NodeTypes.CONTAINERS) {
                 "$pageTitle: a ${node.type} holds no components"
             }
+
             ensureValid(
                 node.type != "tile" || node.tile != null,
             ) { "$pageTitle: tile ${node.id} has no card" }
+
             for (size in listOf(node.size.width, node.size.height)) {
                 ensureValid(NODE_SIZE.matches(size)) { "$pageTitle: size $size of ${node.id}" }
             }

@@ -35,15 +35,19 @@ class IntercomCoordinator @Inject constructor(
     ) {
         val next = "$url|$clientId|$displayName"
         val current = session
+
         // A kiosk relaunch can replace the ViewModel and cancel the session's original scope.
         if (current?.isActive == true && signature == next && sessionScope === scope) {
             current.attachReport(onReport)
             current.publishAgain()
+
             return
         }
+
         stop()
         signature = next
         sessionScope = scope
+
         val opened = IntercomSession(
             link = link,
             audio = audio,
@@ -52,6 +56,7 @@ class IntercomCoordinator @Inject constructor(
             onReport = onReport,
             onWake = onWake,
         )
+
         session = opened
         opened.start()
     }

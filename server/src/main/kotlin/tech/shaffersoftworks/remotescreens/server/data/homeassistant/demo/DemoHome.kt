@@ -4,6 +4,7 @@
 package tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.LightColorMode
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HaRequest
@@ -83,7 +84,8 @@ class DemoHome : HomeAssistant {
         returnResponse: Boolean,
     ): JsonElement? {
         val ids = target.ifEmpty { data.entityIds }.map { it.value }
-        calls += Triple(service.domain.value, service.service, recorded(target, data))
+        calls += Triple(first = service.domain.value, second = service.service, third = recorded(target, data))
+
         return when {
             service == ServiceRef.WEATHER_GET_FORECASTS -> forecasts(ids)
             service == ServiceRef.TODO_GET_ITEMS -> todoItems(ids)
@@ -94,6 +96,7 @@ class DemoHome : HomeAssistant {
                         serviceHandlers.apply(entityId = id, service = service, data = data, current = current)
                     }
                 }
+
                 null
             }
         }
@@ -179,11 +182,13 @@ class DemoHome : HomeAssistant {
                     buildJsonObject {
                         put("name", "Phantom Grid")
                         put("queue_item_id", "q1")
+
                         put(
                             "media_item",
                             buildJsonObject {
                                 put("uri", "demo://queue/1")
                                 put("name", "Phantom Grid")
+
                                 put(
                                     "artists",
                                     buildJsonArray {
@@ -194,11 +199,13 @@ class DemoHome : HomeAssistant {
                         )
                     },
                 )
+
                 put(
                     "next_item",
                     buildJsonObject {
                         put("name", "Next Up")
                         put("queue_item_id", "q2")
+
                         put(
                             "media_item",
                             buildJsonObject {
@@ -208,6 +215,7 @@ class DemoHome : HomeAssistant {
                         )
                     },
                 )
+
                 put("items", 5)
             },
         )
@@ -235,11 +243,13 @@ class DemoHome : HomeAssistant {
 
     override suspend fun fetch(path: String): ByteArray {
         calendarPayload(path)?.let { return it.toByteArray(Charsets.UTF_8) }
+
         return picture(path.hashCode())
     }
 
     private fun calendarPayload(path: String): String? {
         val entityId = calendarEntityId(path)
+
         return when {
             isCalendarListPath(path) -> calendarListJson()
             entityId != null -> calendarEventsJson(entityId)
@@ -255,6 +265,7 @@ class DemoHome : HomeAssistant {
     private fun calendarEventsJson(entityId: String): String {
         val day = java.time.LocalDate.now(java.time.ZoneOffset.UTC).plusDays(1)
         val later = day.plusDays(1)
+
         return when (entityId) {
             "calendar.family" -> buildJsonArray {
                 add(buildJsonObject {
@@ -293,6 +304,7 @@ class DemoHome : HomeAssistant {
                     "pouring",
                     "partlycloudy",
                 )
+
                 for (day in 0 until 7) add(buildJsonObject {
                     put(
                         "datetime",
@@ -300,6 +312,7 @@ class DemoHome : HomeAssistant {
                             day.toLong(),
                         ).toString() + "T12:00:00+00:00",
                     )
+
                     put("condition", conditions[day])
                     put("temperature", 18 + day % 4)
                     put("templow", 9 + day % 3)
@@ -360,67 +373,73 @@ class DemoHome : HomeAssistant {
                 "arm_mode" to "disarmed",
                 "delay" to 0,
             )
+
             val sensors = openSensor?.let { JsonObject(mapOf(it to JsonPrimitive("on"))) } ?: JsonNull
-            return EntityState(entityId, "disarmed", JsonObject(base + ("open_sensors" to sensors)))
+
+            return EntityState(
+                entityId = entityId,
+                state = "disarmed",
+                attributes = JsonObject(base + ("open_sensors" to sensors))
+            )
         }
 
         @Suppress("LongMethod")
         fun initialStates(): List<EntityState> = listOf(
             EntityState(
-                "light.living_room",
-                "on",
-                attrs(
+                entityId = "light.living_room",
+                state = "on",
+                attributes = attrs(
                     "friendly_name" to "Ceiling light",
                     "brightness" to 150,
-                    "supported_color_modes" to listOf("hs", "color_temp"),
-                    "color_mode" to "hs",
+                    "supported_color_modes" to listOf(LightColorMode.HS, LightColorMode.COLOR_TEMP),
+                    "color_mode" to LightColorMode.HS,
                     "effect_list" to listOf("Rainbow", "Candle", "Pulse"),
                 ),
             ),
             EntityState(
-                "light.table_lamp",
-                "off",
-                attrs(
+                entityId = "light.table_lamp",
+                state = "off",
+                attributes = attrs(
                     "friendly_name" to "Table lamp",
-                    "supported_color_modes" to listOf("brightness"),
+                    "supported_color_modes" to listOf(LightColorMode.BRIGHTNESS),
                 ),
             ),
             EntityState(
-                "light.kitchen",
-                "on",
-                attrs(
+                entityId = "light.kitchen",
+                state = "on",
+                attributes = attrs(
                     "friendly_name" to "Kitchen lights",
                     "brightness" to 255,
-                    "supported_color_modes" to listOf("onoff"),
+                    "supported_color_modes" to listOf(LightColorMode.ONOFF),
                 ),
             ),
             EntityState(
-                "light.bedroom",
-                "off",
-                attrs(
+                entityId = "light.bedroom",
+                state = "off",
+                attributes = attrs(
                     "friendly_name" to "Bedside lamp",
-                    "supported_color_modes" to listOf("brightness"),
+                    "supported_color_modes" to listOf(LightColorMode.BRIGHTNESS),
                 ),
             ),
             EntityState(
-                "light.garden",
-                "off",
-                attrs(
+                entityId = "light.garden",
+                state = "off",
+                attributes = attrs(
                     "friendly_name" to "Garden lights",
-                    "supported_color_modes" to listOf("onoff"),
+                    "supported_color_modes" to listOf(LightColorMode.ONOFF),
                 ),
             ),
             EntityState(
-                "switch.coffee_machine",
-                "off",
-                attrs("friendly_name" to "Coffee machine", "icon" to "mdi:coffee"),
+                entityId = "switch.coffee_machine",
+                state = "off",
+                attributes = attrs("friendly_name" to "Coffee machine", "icon" to "mdi:coffee"),
             ),
             EntityState(
-                "switch.hallway_light",
-                "on",
-                attrs("friendly_name" to "Hallway light", "icon" to "mdi:ceiling-light"),
+                entityId = "switch.hallway_light",
+                state = "on",
+                attributes = attrs("friendly_name" to "Hallway light", "icon" to "mdi:ceiling-light"),
             ),
-            EntityState("fan.bedroom", "on", attrs(
+            EntityState(entityId = "fan.bedroom", state = "on", attributes = attrs(
                 "friendly_name" to "Bedroom fan",
                 "percentage" to 50,
                 "oscillating" to true,
@@ -429,7 +448,7 @@ class DemoHome : HomeAssistant {
                 "preset_mode" to "breeze",
                 "supported_features" to 15,
             )),
-            EntityState("humidifier.bedroom", "on", attrs(
+            EntityState(entityId = "humidifier.bedroom", state = "on", attributes = attrs(
                 "friendly_name" to "Bedroom humidifier",
                 "humidity" to 45,
                 "current_humidity" to 38,
@@ -439,9 +458,9 @@ class DemoHome : HomeAssistant {
                 "mode" to "normal",
             )),
             EntityState(
-                "sensor.kitchen_temperature",
-                "21.4",
-                attrs(
+                entityId = "sensor.kitchen_temperature",
+                state = "21.4",
+                attributes = attrs(
                     "friendly_name" to "Kitchen temperature",
                     "unit_of_measurement" to "°C",
                     "device_class" to "temperature",
@@ -449,9 +468,9 @@ class DemoHome : HomeAssistant {
                 ),
             ),
             EntityState(
-                "sensor.outdoor_temperature",
-                "12.8",
-                attrs(
+                entityId = "sensor.outdoor_temperature",
+                state = "12.8",
+                attributes = attrs(
                     "friendly_name" to "Outdoor",
                     "unit_of_measurement" to "°C",
                     "device_class" to "temperature",
@@ -459,9 +478,9 @@ class DemoHome : HomeAssistant {
                 ),
             ),
             EntityState(
-                "sensor.power",
-                "432",
-                attrs(
+                entityId = "sensor.power",
+                state = "432",
+                attributes = attrs(
                     "friendly_name" to "Power usage",
                     "unit_of_measurement" to "W",
                     "device_class" to "power",
@@ -469,79 +488,79 @@ class DemoHome : HomeAssistant {
                 ),
             ),
             EntityState(
-                "sensor.solar_power",
-                "5200",
-                attrs(
+                entityId = "sensor.solar_power",
+                state = "5200",
+                attributes = attrs(
                     "friendly_name" to "Solar",
                     "unit_of_measurement" to "W",
                     "device_class" to "power",
                 ),
             ),
             EntityState(
-                "sensor.grid_power",
-                "-1200",
-                attrs(
+                entityId = "sensor.grid_power",
+                state = "-1200",
+                attributes = attrs(
                     "friendly_name" to "Grid",
                     "unit_of_measurement" to "W",
                     "device_class" to "power",
                 ),
             ),
             EntityState(
-                "sensor.battery_power",
-                "1500",
-                attrs(
+                entityId = "sensor.battery_power",
+                state = "1500",
+                attributes = attrs(
                     "friendly_name" to "Battery",
                     "unit_of_measurement" to "W",
                     "device_class" to "power",
                 ),
             ),
             EntityState(
-                "sensor.heat_pump_power",
-                "900",
-                attrs(
+                entityId = "sensor.heat_pump_power",
+                state = "900",
+                attributes = attrs(
                     "friendly_name" to "Heat pump",
                     "unit_of_measurement" to "W",
                     "device_class" to "power",
                 ),
             ),
             EntityState(
-                "sensor.heat_pump_energy",
-                "6.2",
-                attrs(
+                entityId = "sensor.heat_pump_energy",
+                state = "6.2",
+                attributes = attrs(
                     "friendly_name" to "Heat pump energy",
                     "unit_of_measurement" to "kWh",
                     "device_class" to "energy",
                 ),
             ),
             EntityState(
-                "binary_sensor.front_door",
-                "off",
-                attrs("friendly_name" to "Front door", "device_class" to "door"),
+                entityId = "binary_sensor.front_door",
+                state = "off",
+                attributes = attrs("friendly_name" to "Front door", "device_class" to "door"),
             ),
             EntityState(
-                "binary_sensor.garage_side_door",
-                "on",
-                attrs("friendly_name" to "Garage side door", "device_class" to "door"),
+                entityId = "binary_sensor.garage_side_door",
+                state = "on",
+                attributes = attrs("friendly_name" to "Garage side door", "device_class" to "door"),
             ),
             EntityState(
-                "binary_sensor.living_room_window",
-                "off",
-                attrs("friendly_name" to "Living room window", "device_class" to "window"),
+                entityId = "binary_sensor.living_room_window",
+                state = "off",
+                attributes = attrs("friendly_name" to "Living room window", "device_class" to "window"),
             ),
             EntityState(
-                "scene.movie_night",
-                "2026-01-01T00:00:00+00:00",
-                attrs("friendly_name" to "Movie night", "icon" to "mdi:movie"),
+                entityId = "scene.movie_night",
+                state = "2026-01-01T00:00:00+00:00",
+                attributes = attrs("friendly_name" to "Movie night", "icon" to "mdi:movie"),
             ),
             EntityState(
-                "script.good_night",
-                "off",
-                attrs("friendly_name" to "Good night", "icon" to "mdi:weather-night"),
+                entityId = "script.good_night",
+                state = "off",
+                attributes = attrs("friendly_name" to "Good night", "icon" to "mdi:weather-night"),
             ),
             EntityState(
-                "cover.living_room_curtains",
-                "open",
-                attrs(
+                entityId = "cover.living_room_curtains",
+                state = "open",
+                attributes = attrs(
                     "friendly_name" to "Curtains",
                     "current_position" to 70,
                     "current_tilt_position" to 50,
@@ -550,11 +569,11 @@ class DemoHome : HomeAssistant {
                 ),
             ),
             EntityState(
-                "lock.front_door",
-                "locked",
-                attrs("friendly_name" to "Front door", "supported_features" to 1),
+                entityId = "lock.front_door",
+                state = "locked",
+                attributes = attrs("friendly_name" to "Front door", "supported_features" to 1),
             ),
-            EntityState("climate.living_room", "heat_cool", attrs(
+            EntityState(entityId = "climate.living_room", state = "heat_cool", attributes = attrs(
                 "friendly_name" to "Heating",
                 "current_temperature" to 21.0,
                 "current_humidity" to 45,
@@ -575,7 +594,7 @@ class DemoHome : HomeAssistant {
                 // TARGET_TEMPERATURE | TARGET_TEMPERATURE_RANGE | FAN_MODE | PRESET_MODE | SWING_MODE
                 "supported_features" to 59,
             )),
-            EntityState("climate.bedroom", "heat_cool", attrs(
+            EntityState(entityId = "climate.bedroom", state = "heat_cool", attributes = attrs(
                 "friendly_name" to "Bedroom climate",
                 "current_temperature" to 21.0,
                 "temperature" to 21.0,
@@ -589,9 +608,9 @@ class DemoHome : HomeAssistant {
                 "supported_features" to 3,
             )),
             EntityState(
-                "media_player.living_room",
-                "playing",
-                attrs(
+                entityId = "media_player.living_room",
+                state = "playing",
+                attributes = attrs(
                     "friendly_name" to "Living room speaker",
                     "media_title" to "Clair de Lune",
                     "media_artist" to "Debussy",
@@ -604,28 +623,28 @@ class DemoHome : HomeAssistant {
                     "source_list" to listOf("Spotify", "Radio"),
                 ),
             ),
-            EntityState("weather.home", "partlycloudy", attrs("friendly_name" to "Home", "temperature" to 14.2, "temperature_unit" to "°C", "humidity" to 71, "wind_speed" to 12, "wind_speed_unit" to "km/h",
+            EntityState(entityId = "weather.home", state = "partlycloudy", attributes = attrs("friendly_name" to "Home", "temperature" to 14.2, "temperature_unit" to "°C", "humidity" to 71, "wind_speed" to 12, "wind_speed_unit" to "km/h",
                 "pressure" to 1013, "pressure_unit" to "hPa", "supported_features" to 3,)),
             EntityState(
-                "camera.front_door",
-                "idle",
-                attrs(
+                entityId = "camera.front_door",
+                state = "idle",
+                attributes = attrs(
                     "friendly_name" to "Front door camera",
                     "entity_picture" to "/api/camera_proxy/camera.front_door",
                 ),
             ),
             EntityState(
-                "camera.driveway",
-                "idle",
-                attrs(
+                entityId = "camera.driveway",
+                state = "idle",
+                attributes = attrs(
                     "friendly_name" to "Driveway camera",
                     "entity_picture" to "/api/camera_proxy/camera.driveway",
                 ),
             ),
             EntityState(
-                "alarm_control_panel.house",
-                "disarmed",
-                attrs(
+                entityId = "alarm_control_panel.house",
+                state = "disarmed",
+                attributes = attrs(
                     "friendly_name" to "House alarm",
                     "code_format" to "number",
                     "supported_features" to 63,
@@ -633,20 +652,28 @@ class DemoHome : HomeAssistant {
             ),
             alarmoZone("alarm_control_panel.basement", "Basement alarm"),
             alarmoZone("alarm_control_panel.upstairs", "Upstairs alarm"),
-            alarmoZone("alarm_control_panel.garage", "Garage alarm", openSensor = "binary_sensor.garage_side_door"),
+            alarmoZone(
+                entityId = "alarm_control_panel.garage",
+                name = "Garage alarm",
+                openSensor = "binary_sensor.garage_side_door"
+            ),
             EntityState(
-                "input_select.washing_program",
-                "Cotton eco",
-                attrs(
+                entityId = "input_select.washing_program",
+                state = "Cotton eco",
+                attributes = attrs(
                     "friendly_name" to "Washing machine",
                     "options" to listOf("Cotton", "Cotton eco", "Synthetics", "Wool", "Quick 15'"),
                 ),
             ),
-            EntityState("input_boolean.guest_mode", "off", attrs("friendly_name" to "Guest mode")),
             EntityState(
-                "vacuum.robot",
-                "docked",
-                attrs(
+                entityId = "input_boolean.guest_mode",
+                state = "off",
+                attributes = attrs("friendly_name" to "Guest mode")
+            ),
+            EntityState(
+                entityId = "vacuum.robot",
+                state = "docked",
+                attributes = attrs(
                     "friendly_name" to "Robot",
                     "battery_level" to 100,
                     "fan_speed" to "Standard",
@@ -664,29 +691,29 @@ class DemoHome : HomeAssistant {
                 ),
             ),
             EntityState(
-                "select.robot_cleaning_mode",
-                "vacuum",
-                attrs(
+                entityId = "select.robot_cleaning_mode",
+                state = "vacuum",
+                attributes = attrs(
                     "friendly_name" to "Robot Cleaning mode",
                     "options" to listOf("vac_and_mop", "vacuum", "mop", "customized"),
                 ),
             ),
             EntityState(
-                "person.sam",
-                "home",
-                attrs("friendly_name" to "Sam", "latitude" to 52.37, "longitude" to 4.89),
+                entityId = "person.sam",
+                state = "home",
+                attributes = attrs("friendly_name" to "Sam", "latitude" to 52.37, "longitude" to 4.89),
             ),
             EntityState(
-                "person.alex",
-                "not_home",
-                attrs("friendly_name" to "Alex", "latitude" to 52.35, "longitude" to 4.92),
+                entityId = "person.alex",
+                state = "not_home",
+                attributes = attrs("friendly_name" to "Alex", "latitude" to 52.35, "longitude" to 4.92),
             ),
             EntityState(
-                "button.doorbell_test",
-                "unknown",
-                attrs("friendly_name" to "Test doorbell"),
+                entityId = "button.doorbell_test",
+                state = "unknown",
+                attributes = attrs("friendly_name" to "Test doorbell"),
             ),
-            EntityState("calendar.family", "off", attrs(
+            EntityState(entityId = "calendar.family", state = "off", attributes = attrs(
                 "friendly_name" to "Family",
                 "message" to "Dentist appointment",
                 "location" to "Main St",
@@ -695,22 +722,22 @@ class DemoHome : HomeAssistant {
                 "end_time" to "${java.time.LocalDate.now().plusDays(1)} 20:30:00",
                 "supported_features" to 3,
             )),
-            EntityState("todo.shopping", "2", attrs("friendly_name" to "Shopping")),
+            EntityState(entityId = "todo.shopping", state = "2", attributes = attrs("friendly_name" to "Shopping")),
             EntityState(
-                "timer.kitchen",
-                "idle",
-                attrs(
+                entityId = "timer.kitchen",
+                state = "idle",
+                attributes = attrs(
                     "friendly_name" to "Kitchen timer",
                     "duration" to "00:10:00",
                     "remaining" to "0:10:00",
                 ),
             ),
             EntityState(
-                "counter.guests",
-                "3",
-                attrs("friendly_name" to "Guests", "initial" to 0, "step" to 1),
+                entityId = "counter.guests",
+                state = "3",
+                attributes = attrs("friendly_name" to "Guests", "initial" to 0, "step" to 1),
             ),
-            EntityState("water_heater.tank", "eco", attrs(
+            EntityState(entityId = "water_heater.tank", state = "eco", attributes = attrs(
                 "friendly_name" to "Hot water",
                 "temperature" to 50,
                 "min_temp" to 40,
@@ -719,34 +746,34 @@ class DemoHome : HomeAssistant {
                 "operation_mode" to "eco",
             )),
             EntityState(
-                "valve.garden",
-                "open",
-                attrs("friendly_name" to "Garden valve", "current_position" to 100),
+                entityId = "valve.garden",
+                state = "open",
+                attributes = attrs("friendly_name" to "Garden valve", "current_position" to 100),
             ),
             EntityState(
-                "siren.alarm",
-                "off",
-                attrs("friendly_name" to "Siren", "available_tones" to listOf("fire", "burglar")),
+                entityId = "siren.alarm",
+                state = "off",
+                attributes = attrs("friendly_name" to "Siren", "available_tones" to listOf("fire", "burglar")),
             ),
             EntityState(
-                "lawn_mower.yard",
-                "docked",
-                attrs("friendly_name" to "Mower", "battery_level" to 80),
+                entityId = "lawn_mower.yard",
+                state = "docked",
+                attributes = attrs("friendly_name" to "Mower", "battery_level" to 80),
             ),
             EntityState(
-                "input_text.note",
-                "Door code for Sam",
-                attrs("friendly_name" to "Note", "max" to 100),
+                entityId = "input_text.note",
+                state = "Door code for Sam",
+                attributes = attrs("friendly_name" to "Note", "max" to 100),
             ),
             EntityState(
-                "input_datetime.quiet_hours",
-                "22:00:00",
-                attrs("friendly_name" to "Quiet hours", "has_date" to false, "has_time" to true),
+                entityId = "input_datetime.quiet_hours",
+                state = "22:00:00",
+                attributes = attrs("friendly_name" to "Quiet hours", "has_date" to false, "has_time" to true),
             ),
             EntityState(
-                "sun.sun",
-                "above_horizon",
-                attrs(
+                entityId = "sun.sun",
+                state = "above_horizon",
+                attributes = attrs(
                     "friendly_name" to "Sun",
                     "next_rising" to "2026-10-08T07:45:00+00:00",
                     "next_setting" to "2026-10-07T18:40:00+00:00",
@@ -763,6 +790,7 @@ class DemoHome : HomeAssistant {
             val img = BufferedImage(w, h, BufferedImage.TYPE_INT_RGB)
             val graphics = img.createGraphics()
             val hue = (seed and 0xff) / 255f
+
             graphics.paint = GradientPaint(
                 0f,
                 0f,
@@ -771,8 +799,10 @@ class DemoHome : HomeAssistant {
                 h.toFloat(),
                 Color.getHSBColor(hue + 0.15f, 0.55f, 0.6f),
             )
+
             graphics.fillRect(0, 0, w, h)
             graphics.dispose()
+
             return ByteArrayOutputStream().also { ImageIO.write(img, "png", it) }.toByteArray()
         }
     }

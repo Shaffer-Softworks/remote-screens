@@ -26,10 +26,12 @@ class EnrollmentServiceTest {
         val dir = Files.createTempDirectory("apk").toFile()
         File(dir, PlayerApkRepository.APK_FILE_NAME).writeText("apk")
         val checksum = signatureChecksum?.let { """, "signatureChecksum": "$it"""" }.orEmpty()
+
         File(
             dir,
             "version.json",
         ).writeText("""{"versionCode": 100, "versionName": "0.1.0"$checksum}""")
+
         return dir
     }
 
@@ -53,26 +55,32 @@ class EnrollmentServiceTest {
             EnrollmentService.ADMIN_COMPONENT,
             provisioning["${EXTRA}PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME"]?.jsonPrimitive?.content,
         )
+
         assertEquals(
             enrollment.downloadUrl,
             provisioning["${EXTRA}PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION"]?.jsonPrimitive?.content,
         )
+
         assertTrue(enrollment.downloadUrl.startsWith("http://192.168.1.10:8100/player/apk?enroll="))
+
         assertEquals(
             "c2lnbmF0dXJl",
             provisioning["${EXTRA}PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM"]?.jsonPrimitive?.content,
         )
+
         assertTrue(
             checkNotNull(
                 provisioning["${EXTRA}PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED"],
             ).jsonPrimitive.boolean,
         )
+
         assertEquals(
             "192.168.1.10:8100",
             provisioning["${EXTRA}PROVISIONING_ADMIN_EXTRAS_BUNDLE"]?.jsonObject?.get(
                 "server",
             )?.jsonPrimitive?.content,
         )
+
         assertNull(provisioning["${EXTRA}PROVISIONING_WIFI_SSID"])
     }
 
@@ -81,9 +89,11 @@ class EnrollmentServiceTest {
         val enrollment = service(
             apkDir = apkDir(signatureChecksum = null),
         ).createEnrollment(EnrollmentRequest())
+
         val provisioning = provisioningOf(enrollment.provisioning)
 
         assertNull(provisioning["${EXTRA}PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM"])
+
         // SHA-256 of "apk", URL-safe Base64 without padding.
         assertEquals(
             "3TfC1ydPfqmCy4M5DDaRj-6c6IiQc8RLaM3AC9uMPgQ",
@@ -98,13 +108,16 @@ class EnrollmentServiceTest {
             wifiPassword = "secret",
             wifiSecurity = "wpa",
         )
+
         val provisioning = provisioningOf(service().createEnrollment(request).provisioning)
 
         assertEquals("Home", provisioning["${EXTRA}PROVISIONING_WIFI_SSID"]?.jsonPrimitive?.content)
+
         assertEquals(
             "secret",
             provisioning["${EXTRA}PROVISIONING_WIFI_PASSWORD"]?.jsonPrimitive?.content,
         )
+
         assertEquals(
             "WPA",
             provisioning["${EXTRA}PROVISIONING_WIFI_SECURITY_TYPE"]?.jsonPrimitive?.content,
@@ -118,6 +131,7 @@ class EnrollmentServiceTest {
             wifiPassword = "ignored",
             wifiSecurity = "NONE",
         )
+
         val provisioning = provisioningOf(service().createEnrollment(request).provisioning)
 
         assertNull(provisioning["${EXTRA}PROVISIONING_WIFI_PASSWORD"])
@@ -138,6 +152,7 @@ class EnrollmentServiceTest {
         val token = tokenOf(enrollmentService.createEnrollment(EnrollmentRequest()).downloadUrl)
 
         assertTrue(enrollmentService.isValidToken(token))
+
         assertTrue(
             enrollmentService.isValidToken(token),
             "several tablets can enroll from one code",
@@ -161,6 +176,7 @@ class EnrollmentServiceTest {
         assertFailsWith<EnrollmentUnavailableException> { service(
             apkDir = null,
         ).createEnrollment(EnrollmentRequest()) }
+
         assertFailsWith<EnrollmentUnavailableException> {
             service(defaultHost = null).createEnrollment(EnrollmentRequest())
         }

@@ -87,12 +87,14 @@ class IntegrationPlayersRouteTest {
             PlayerRecord("tablet", "Hallway", screenId = "home", tokenHash = PlayerTokens.hash(TABLET_TOKEN)),
             PlayerRecord("spare", "Spare tablet", screenId = null),
         )
+
         dependencies.layoutRepository.update { layout -> layout.copy(players = tablets) }
     }
 
     private fun withRoutes(test: suspend ApplicationTestBuilder.(HttpClient) -> Unit) = testApplication {
         install(WebSockets)
         application { configureSerialization() }
+
         routing {
             playerRoutes(
                 dependencies.playerHub,
@@ -100,14 +102,17 @@ class IntegrationPlayersRouteTest {
                 dependencies.enrollmentService,
                 CameraStreamService(StreamingHome()),
             )
+
             route("/integration") { integrationRoutes(dependencies.screenService, dependencies.playerHub) }
         }
+
         test(createClient { install(ClientWebSockets) })
     }
 
     private suspend fun players(client: HttpClient): List<PlayerStatus> {
         val response = client.get("/integration/players")
         assertEquals(HttpStatusCode.OK, response.status)
+
         return ApiJson.decodeFromString(ListSerializer(PlayerStatus.serializer()), response.bodyAsText())
     }
 
@@ -116,13 +121,17 @@ class IntegrationPlayersRouteTest {
         dependencies.layoutRepository.update { layout ->
             layout.copy(screens = listOf(tech.shaffersoftworks.remotescreens.shared.Screen("home", "Home")))
         }
+
         val id = java.util.UUID.randomUUID().toString()
+
         val logger = org.slf4j.LoggerFactory.getLogger(
             tech.shaffersoftworks.remotescreens.server.player.PlayerSession::class.java,
         ) as ch.qos.logback.classic.Logger
+
         val appender = ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>()
         appender.start()
         logger.addAppender(appender)
+
         val error = AppLogEntry(
             eventId = id,
             timestampMs = 123L,
@@ -130,30 +139,39 @@ class IntegrationPlayersRouteTest {
             tag = "Test",
             message = "persisted-$id\nsecond line",
         )
+
         val warning = error.copy(eventId = "$id-warning", level = AppLogLevel.WARNING, message = "persisted-$id warn")
         val entry = PlayerMessage.AppLog(listOf(error, warning))
+
         try {
             repeat(2) {
                 client.webSocket("/player") {
                     send(Frame.Text(Protocol.encode(hello(deviceId = "tablet", token = TABLET_TOKEN))))
+
                     repeat(2) {
                         send(Frame.Text(Protocol.encode(entry)))
+
                         val ack = kotlinx.coroutines.withTimeout(5.seconds) {
                             var received: ServerMessage? = null
+
                             while (received !is ServerMessage.AppLogAck) {
                                 val frame = incoming.receive() as? Frame.Text ?: continue
                                 received = Protocol.decodeServer(frame.readText())
                             }
+
                             received
                         }
+
                         assertEquals(ServerMessage.AppLogAck(listOf(error.eventId, warning.eventId)), ack)
                     }
                 }
             }
+
             val logged = appender.list.filter { it.formattedMessage.contains("persisted-$id") }
             assertEquals(2, logged.size)
             assertTrue(logged.all { it.formattedMessage.contains("Tablet tablet") })
             assertTrue(logged.none { it.formattedMessage.contains('\n') })
+
             assertEquals(
                 listOf(ch.qos.logback.classic.Level.ERROR, ch.qos.logback.classic.Level.WARN),
                 logged.map { it.level },
@@ -180,6 +198,7 @@ class IntegrationPlayersRouteTest {
             environment = EnvironmentTelemetry(illuminanceLux = 182f),
             location = LocationTelemetry(latitude = 52.1, longitude = 4.3, fixedAt = 1L),
         )
+
         client.webSocket("/player") {
             val hello = PlayerMessage.Hello(
                 deviceId = "tablet",
@@ -191,11 +210,13 @@ class IntegrationPlayersRouteTest {
                 appVersion = 1,
                 capabilities = listOf(Protocol.CAPABILITY_TELEMETRY),
             )
+
             send(Frame.Text(Protocol.encode(hello)))
             send(Frame.Text(Protocol.encode(PlayerMessage.Telemetry(telemetry))))
 
             var reported = players(client).first { it.deviceId == "tablet" }
             var attempts = 0
+
             while (reported.telemetry == null && attempts++ < POLL_ATTEMPTS) {
                 delay(POLL_DELAY_MS.milliseconds)
                 reported = players(client).first { it.deviceId == "tablet" }
@@ -213,12 +234,15 @@ class IntegrationPlayersRouteTest {
         dependencies.layoutRepository.update { layout ->
             layout.copy(screens = listOf(tech.shaffersoftworks.remotescreens.shared.Screen("home", "Home")))
         }
+
         dependencies.playerHub.start()
         val home = dependencies.homeAssistant as DemoHome
         val fired = Channel<HomeAssistantEvent>(Channel.UNLIMITED)
+
         val listener = CoroutineScope(Dispatchers.Default).launch(start = CoroutineStart.UNDISPATCHED) {
             home.events.filter { event -> event.type == PLAYERS_CHANGED_EVENT }.collect { fired.send(it) }
         }
+
         try {
             client.webSocket("/player") {
                 send(Frame.Text(Protocol.encode(hello(deviceId = "tablet", token = TABLET_TOKEN))))
@@ -258,10 +282,12 @@ class IntegrationPlayersRouteTest {
             incoming.receive()
             var reported = players(client).first { it.deviceId == "tablet" }
             var attempts = 0
+
             while (!reported.isOnline && attempts++ < POLL_ATTEMPTS) {
                 delay(POLL_DELAY_MS.milliseconds)
                 reported = players(client).first { it.deviceId == "tablet" }
             }
+
             assertTrue(reported.isOnline)
 
             client.webSocket("/player") {
@@ -279,9 +305,11 @@ class IntegrationPlayersRouteTest {
     fun anUnpairedClientCannotCreateCalendarEvents() = withRoutes { client ->
         val home = dependencies.homeAssistant as DemoHome
         val callsBefore = home.calls.size
+
         client.webSocket("/player") {
             send(Frame.Text(Protocol.encode(hello(deviceId = "intruder", token = null))))
             incoming.receive()
+
             send(
                 Frame.Text(
                     Protocol.encode(
@@ -295,8 +323,10 @@ class IntegrationPlayersRouteTest {
                     ),
                 ),
             )
+
             delay(POLL_DELAY_MS.milliseconds)
         }
+
         assertTrue(home.calls.drop(callsBefore).none { it.first == "calendar" })
     }
 

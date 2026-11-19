@@ -39,6 +39,7 @@ class KioskManagerTest {
     @Test
     fun aDeviceOwnerGrantsRuntimePermissionsWithoutAPrompt() {
         whenever(devicePolicyManager.isDeviceOwnerApp(PACKAGE)).thenReturn(true)
+
         whenever(
             devicePolicyManager.setPermissionGrantState(any(), any(), any(), any()),
         ).thenReturn(true)
@@ -60,6 +61,7 @@ class KioskManagerTest {
     @Test
     fun aDeviceOwnerGrantsRuntimePermissionsWhenLockTaskStarts() {
         whenever(devicePolicyManager.isDeviceOwnerApp(PACKAGE)).thenReturn(true)
+
         whenever(
             devicePolicyManager.setPermissionGrantState(any(), any(), any(), any()),
         ).thenReturn(true)
@@ -98,6 +100,7 @@ class KioskManagerTest {
     @Test
     fun alreadyGrantedPoliciesAreNotGrantedAgain() {
         whenever(devicePolicyManager.isDeviceOwnerApp(PACKAGE)).thenReturn(true)
+
         whenever(devicePolicyManager.getPermissionGrantState(any(), any(), any()))
             .thenReturn(DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED)
 
@@ -118,9 +121,11 @@ class KioskManagerTest {
         val display: Display = mock {
             on { getRotation() } doReturn rotation
         }
+
         val windowManager: WindowManager = mock {
             on { defaultDisplay } doReturn display
         }
+
         return mock {
             on { getWindowManager() } doReturn windowManager
         }

@@ -1,5 +1,7 @@
 package tech.shaffersoftworks.remotescreens.server.render.theme
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
+
 /**
  * The colours of the screens, by what they are for. Code asks for a role, never for a hex value; the values come from
  * the screen's theme (see [Themes]); hex colours live in Color.kt ([ThemesTest]).
@@ -65,14 +67,14 @@ enum class Pastel(val key: String) {
 
         /** The colour a domain wears when the tile names none, as Home Assistant's own state colours lean. */
         fun forDomain(domain: String?): Pastel = when (domain) {
-            "light" -> YELLOW
-            "switch", "input_boolean" -> ORANGE
-            "fan", "climate" -> TEAL
-            "cover" -> PURPLE
-            "media_player" -> PINK
-            "lock", "alarm_control_panel" -> GREEN
-            "scene", "script", "button" -> PURPLE
-            "vacuum" -> TEAL
+            Domain.LIGHT.value -> YELLOW
+            Domain.SWITCH.value, Domain.INPUT_BOOLEAN.value -> ORANGE
+            Domain.FAN.value, Domain.CLIMATE.value -> TEAL
+            Domain.COVER.value -> PURPLE
+            Domain.MEDIA_PLAYER.value -> PINK
+            Domain.LOCK.value, Domain.ALARM_PANEL.value -> GREEN
+            Domain.SCENE.value, Domain.SCRIPT.value, Domain.BUTTON.value -> PURPLE
+            Domain.VACUUM.value -> TEAL
             else -> TEAL
         }
     }
@@ -99,6 +101,7 @@ class Palette(private val roles: IntArray, private val pastels: IntArray) {
         val r = (argb shr RED_SHIFT) and CHANNEL_MASK
         val g = (argb shr GREEN_SHIFT) and CHANNEL_MASK
         val b = argb and CHANNEL_MASK
+
         return (RED_LUMA * r + GREEN_LUMA * g + BLUE_LUMA * b) / CHANNEL_MASK
     }
 

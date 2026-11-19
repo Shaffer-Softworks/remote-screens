@@ -54,28 +54,36 @@ internal fun PlayerNavigationDrawer(
     content: @Composable () -> Unit,
 ) {
     val navigation = state.navigationDrawer
+
     // Keep the content in the same composition branch while dialogs disable the drawer.
     // Moving it would dispose and recreate the Remote Compose document players.
     if (navigation == null) {
         Box(modifier) { content() }
+
         return
     }
+
     val drawerState = rememberDrawerState(if (state.isDrawerOpen) DrawerValue.Open else DrawerValue.Closed)
     val currentAction by rememberUpdatedState(onAction)
+
     LaunchedEffect(state.isDrawerOpen, isEnabled) {
         if (state.isDrawerOpen && isEnabled) drawerState.open() else drawerState.close()
     }
+
     LaunchedEffect(drawerState) {
         // Skip the initial value: the effect above may still be animating a requested open.
         snapshotFlow { drawerState.currentValue }.drop(1).collect { value ->
             currentAction(ActionRef("_", "set", "drawer|${if (value == DrawerValue.Open) 1 else 0}").encode())
         }
     }
+
     BackHandler(enabled = isEnabled && (drawerState.isOpen || state.isDrawerOpen)) {
         currentAction(ActionRef("_", "set", "drawer|0").encode())
     }
+
     val contentDirection = LocalLayoutDirection.current
     val drawerDirection = if (navigation.side == "end") LayoutDirection.Rtl else LayoutDirection.Ltr
+
     CompositionLocalProvider(LocalLayoutDirection provides drawerDirection) {
         ModalNavigationDrawer(
             modifier = modifier,
@@ -104,6 +112,7 @@ private fun PlayerDrawerSheet(
     onAction: (String) -> Unit,
 ) {
     val ink = navigation.ink?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurface
+
     ModalDrawerSheet(
         modifier = modifier.widthIn(max = navigation.width.dp),
         drawerContainerColor = navigation.background?.let { Color(it) }
@@ -119,9 +128,12 @@ private fun PlayerDrawerSheet(
                         style = MaterialTheme.typography.titleLarge,
                     )
                 }
+
                 items(navigation.items) { item ->
                     if (item.page == null) HorizontalDivider(Modifier.padding(DRAWER_PADDING_DP.dp))
+
                     val image = remember(item.iconPath) { drawerIcon(item.iconPath) }
+
                     NavigationDrawerItem(
                         modifier = Modifier.padding(horizontal = DRAWER_PADDING_DP.dp),
                         label = { Text(item.title) },
@@ -147,6 +159,7 @@ private fun PlayerDrawerSheet(
                         onClick = {
                             val action = item.page?.let { ActionRef("_", "page", it.toString()) }
                                 ?: ActionRef("_", "settings")
+
                             onAction(action.encode())
                         },
                     )

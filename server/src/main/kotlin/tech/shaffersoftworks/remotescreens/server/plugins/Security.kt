@@ -18,8 +18,10 @@ class OnlyIngressConfig {
 val OnlyIngress = createRouteScopedPlugin("OnlyIngress", ::OnlyIngressConfig) {
     val logger = LoggerFactory.getLogger("tech.shaffersoftworks.remotescreens.server.OnlyIngress")
     val isEnforced = pluginConfig.isEnforced
+
     onCall { call ->
         val peer = call.request.origin.remoteAddress
+
         if (isEnforced && !ServerConfig.isIngressPeer(peer)) {
             logger.warn("Refused an editor request from {}", peer)
             call.respond(HttpStatusCode.Forbidden)
@@ -34,6 +36,7 @@ class IntegrationKeyConfig {
 /** Refuses integration requests without the add-on's API key as their bearer token. */
 val IntegrationKey = createRouteScopedPlugin("IntegrationKey", ::IntegrationKeyConfig) {
     val expectedHeader = "Bearer ${pluginConfig.apiKey}"
+
     onCall { call ->
         if (call.request.header(HttpHeaders.Authorization) != expectedHeader) {
             call.respond(HttpStatusCode.Unauthorized)

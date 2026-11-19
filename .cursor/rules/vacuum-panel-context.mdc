@@ -1,6 +1,6 @@
 ---
 description: Full vacuum page and vacuum card — list of vacuums, vacuumCard controls, Rooms dialog and selective clean (clean_area / app_segment_clean)
-globs: server/src/main/kotlin/**/render/panels/vacuum/**/*.kt,server/src/main/kotlin/**/data/vacuum/**/*.kt,server/src/main/kotlin/**/player/action/VacuumActions.kt,server/src/main/kotlin/**/render/cards/ToggleCards.kt,server/src/main/kotlin/**/render/cards/CardRenderer.kt,server/src/main/kotlin/**/data/renderdata/RenderDataRepository.kt,server/src/main/kotlin/**/render/tiles/Tiles.kt,server/src/main/kotlin/**/render/tiles/TileBox.kt,catalogue/vacuum.yaml,editor/src/model/otherTiles.ts,editor/src/components/GridMockup.vue,editor/src/components/TileDrawer.vue
+globs: server/src/main/kotlin/**/render/panels/vacuum/**/*.kt,server/src/main/kotlin/**/data/vacuum/**/*.kt,server/src/main/kotlin/**/player/action/VacuumActions.kt,server/src/main/kotlin/**/render/cards/CardRenderer.kt,server/src/main/kotlin/**/data/renderdata/RenderDataRepository.kt,server/src/main/kotlin/**/render/tiles/Tiles.kt,server/src/main/kotlin/**/render/tiles/TileBox.kt,catalogue/vacuum.yaml,editor/src/model/otherTiles.ts,editor/src/components/GridMockup.vue,editor/src/components/TileDrawer.vue
 alwaysApply: false
 ---
 

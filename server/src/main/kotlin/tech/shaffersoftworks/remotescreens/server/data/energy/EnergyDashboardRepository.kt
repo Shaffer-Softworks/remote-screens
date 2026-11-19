@@ -35,6 +35,7 @@ class EnergyDashboardRepository(private val homeAssistant: HomeAssistant) {
     ): EnergyDashboardSnapshot? {
         val config = config(homeName) ?: return null
         val (startMs, endMs) = EnergyDashboardBuilder.window(ui = ui, zone = zone)
+
         val statisticIds = buildList {
             config.gridEnergyFrom?.let(::add)
             config.devices.forEach { add(it.statConsumption) }
@@ -56,18 +57,22 @@ class EnergyDashboardRepository(private val homeAssistant: HomeAssistant) {
                 )
             }.onFailure { logger.debug("Energy statistics failed: {}", it.message) }.getOrNull()
         }
+
         val gridPoints = config.gridEnergyFrom
             ?.let { EnergyDashboardParser.statistics(statsResponse, it) }
             .orEmpty()
+
         val devicePoints = config.devices.associate { device ->
             device.statConsumption to EnergyDashboardParser.statistics(statsResponse, device.statConsumption)
         }
+
         val fossilFraction = fossilFraction(
             statisticIds = listOfNotNull(config.gridEnergyFrom),
             startMs = startMs,
             endMs = endMs,
             period = EnergyDashboardBuilder.recorderPeriod(ui),
         )
+
         return EnergyDashboardBuilder.build(
             config = config,
             ui = ui,
@@ -80,11 +85,19 @@ class EnergyDashboardRepository(private val homeAssistant: HomeAssistant) {
 
     suspend fun config(homeName: String = "Home"): EnergyDashboardConfig? {
         cachedConfig?.takeIf { System.currentTimeMillis() - it.second < CONFIG_TTL_MS }?.let { return it.first }
+
         val prefs = runCatching {
             homeAssistant.send(EnergyGetPrefs)
         }.onFailure { logger.debug("Energy dashboard prefs failed: {}", it.message) }.getOrNull()
-        val value = prefs?.let { EnergyDashboardParser.config(it, entityAreas(), homeName) }
+
+        val value = prefs?.let { EnergyDashboardParser.config(
+            preferences = it,
+            entityAreas = entityAreas(),
+            homeName = homeName
+        ) }
+
         cachedConfig = value to System.currentTimeMillis()
+
         return value
     }
 
@@ -100,6 +113,7 @@ class EnergyDashboardRepository(private val homeAssistant: HomeAssistant) {
         period: String,
     ): Double {
         if (statisticIds.isEmpty()) return 1.0
+
         val response = runCatching {
             homeAssistant.send(
                 FossilEnergyConsumption(
@@ -111,6 +125,7 @@ class EnergyDashboardRepository(private val homeAssistant: HomeAssistant) {
                 ),
             )
         }.onFailure { logger.debug("Fossil energy failed: {}", it.message) }.getOrNull()
+
         return EnergyDashboardParser.fossilKwh(response)
     }
 
@@ -123,13 +138,16 @@ class EnergyDashboardRepository(private val homeAssistant: HomeAssistant) {
         val value = runCatching { fetchEntityAreas() }
             .onFailure { logger.debug("Energy area map failed: {}", it.message) }
             .getOrElse { emptyMap() }
+
         cachedAreas = value to System.currentTimeMillis()
+
         return value
     }
 
     private suspend fun fetchEntityAreas(): Map<String, Pair<String, String>> {
         val areaNames = homeAssistant.send(AreaRegistryList).associate { area -> area.areaId to area.displayName }
         val devices = homeAssistant.send(DeviceRegistryList)
+
         return homeAssistant.send(EntityRegistryListForDisplay).entityAreaIds(devices)
             .mapNotNull { (entityId, areaId) -> areaNames[areaId]?.let { entityId to (areaId to it) } }
             .toMap()

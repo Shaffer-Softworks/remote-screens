@@ -24,6 +24,7 @@ class ShownDocumentPictureTest {
             HomeAssistantConfig(),
             RenderData(),
         )
+
         return ShownDocument(
             slot = Slot.MAIN,
             renderedDoc = RenderedDoc(ByteArray(0), docContext),
@@ -34,6 +35,7 @@ class ShownDocumentPictureTest {
     @Test
     fun aFailedFetchLeavesTheKeyUnsetSoTheNextSendRetries() {
         val document = shown()
+
         assertTrue(
             document.beginPictureFetch(
                 name = "cam.still",
@@ -43,14 +45,17 @@ class ShownDocumentPictureTest {
                 refreshSeconds = 0,
             ),
         )
+
         document.finishPictureFetch(
             name = "cam.still",
             sourceKey = "/api/camera_proxy/camera.front",
             nowMs = 1_100L,
             isSuccess = false,
         )
+
         assertNull(document.pictureKeys["cam.still"])
         assertNull(document.pictureInflightKeys["cam.still"])
+
         assertTrue(
             document.beginPictureFetch(
                 name = "cam.still",
@@ -66,6 +71,7 @@ class ShownDocumentPictureTest {
     fun aSuccessfulFetchSkipsUntilTheKeyChangesOrTheSlotIsDue() {
         val document = shown()
         val sourceKey = "/api/camera_proxy/camera.front"
+
         assertTrue(
             document.beginPictureFetch(
                 name = "cam.still",
@@ -75,14 +81,17 @@ class ShownDocumentPictureTest {
                 refreshSeconds = 4,
             ),
         )
+
         document.finishPictureFetch(
             name = "cam.still",
             sourceKey = sourceKey,
             nowMs = 1_050L,
             isSuccess = true,
         )
+
         assertEquals(sourceKey, document.pictureKeys["cam.still"])
         assertEquals(1_050L, document.pictureSentAtMs["cam.still"])
+
         assertFalse(
             document.beginPictureFetch(
                 name = "cam.still",
@@ -92,6 +101,7 @@ class ShownDocumentPictureTest {
                 refreshSeconds = 4,
             ),
         )
+
         assertTrue(
             document.beginPictureFetch(
                 name = "cam.still",
@@ -101,12 +111,14 @@ class ShownDocumentPictureTest {
                 refreshSeconds = 4,
             ),
         )
+
         document.finishPictureFetch(
             name = "cam.still",
             sourceKey = sourceKey,
             nowMs = 6_100L,
             isSuccess = true,
         )
+
         assertTrue(
             document.beginPictureFetch(
                 name = "cam.still",
@@ -121,6 +133,7 @@ class ShownDocumentPictureTest {
     @Test
     fun aSupersededFetchDoesNotClearTheNewerInflightOrMarkTheOldKey() {
         val document = shown()
+
         assertTrue(
             document.beginPictureFetch(
                 name = "person",
@@ -130,6 +143,7 @@ class ShownDocumentPictureTest {
                 refreshSeconds = 0,
             ),
         )
+
         assertTrue(
             document.beginPictureFetch(
                 name = "person",
@@ -139,21 +153,26 @@ class ShownDocumentPictureTest {
                 refreshSeconds = 0,
             ),
         )
+
         assertEquals("new", document.pictureInflightKeys["person"])
+
         document.finishPictureFetch(
             name = "person",
             sourceKey = "old",
             nowMs = 3L,
             isSuccess = true,
         )
+
         assertEquals("new", document.pictureInflightKeys["person"])
         assertNull(document.pictureKeys["person"])
+
         document.finishPictureFetch(
             name = "person",
             sourceKey = "new",
             nowMs = 4L,
             isSuccess = true,
         )
+
         assertNull(document.pictureInflightKeys["person"])
         assertEquals("new", document.pictureKeys["person"])
         assertEquals(4L, document.pictureSentAtMs["person"])
@@ -162,6 +181,7 @@ class ShownDocumentPictureTest {
     @Test
     fun anInflightKeyIsNotStartedTwice() {
         val document = shown()
+
         assertTrue(
             document.beginPictureFetch(
                 name = "cam.still",
@@ -171,6 +191,7 @@ class ShownDocumentPictureTest {
                 refreshSeconds = 0,
             ),
         )
+
         assertFalse(
             document.beginPictureFetch(
                 name = "cam.still",

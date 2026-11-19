@@ -50,15 +50,18 @@ fun DocContext.vacuumRoomsDialog(
     val selectedCount = vacuumRooms.selectedIds(selected).size
     val cardW = minOf(D.CARD_W_DP, screenW - 2 * D.DIALOG_PAD_H_DP)
     val listH = minOf(D.LIST_MAX_H_DP, rooms.size * (D.ROW_H_DP + D.ROW_GAP_DP))
+
     val cardH = D.CARD_PAD_DP * 2 + D.CLOSE_DP + D.TITLE_SUB_GAP_DP + D.SUB_SP +
         D.HEADER_EXTRA_DP + listH + D.FOOTER_GAP_DP + D.KEY_H_DP + D.CAPTION_GAP_DP + D.CAPTION_SP
+
     rcScope.Box(
-        tap(Modifier.fillMaxSize().background(role(Role.SCRIM)), dismiss),
+        modifier = tap(Modifier.fillMaxSize().background(role(Role.SCRIM)), dismiss),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@vacuumRoomsDialog
         val pad = doc.units.px(D.CARD_PAD_DP)
+
         Column(
             doc.tap(
                 Modifier.size(doc.units.px(cardW), doc.units.px(cardH))
@@ -69,6 +72,7 @@ fun DocContext.vacuumRoomsDialog(
         ) {
             doc.roomsDialogHeader(vacuumName = vacuumName, dismiss = dismiss)
             doc.spacer(D.TITLE_SUB_GAP_DP)
+
             Column(
                 Modifier.fillMaxWidth()
                     .height(doc.units.px(listH))
@@ -76,6 +80,7 @@ fun DocContext.vacuumRoomsDialog(
             ) {
                 rooms.forEachIndexed { index, room ->
                     if (index > 0) Spacer(Modifier.height(doc.units.px(D.ROW_GAP_DP)))
+
                     doc.roomRow(
                         tileId = tileId,
                         room = room,
@@ -83,6 +88,7 @@ fun DocContext.vacuumRoomsDialog(
                     )
                 }
             }
+
             Spacer(Modifier.height(doc.units.px(D.FOOTER_GAP_DP)))
             doc.roomsDialogFooter(tileId = tileId, selectedCount = selectedCount)
         }
@@ -92,6 +98,7 @@ fun DocContext.vacuumRoomsDialog(
 private fun DocContext.roomsDialogHeader(vacuumName: String, dismiss: ActionRef) {
     rcScope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@roomsDialogHeader
+
         Column(Modifier.horizontalWeight(1f)) {
             doc.label(
                 text = doc.i18n.t("ui.rooms_select_title"),
@@ -99,12 +106,14 @@ private fun DocContext.roomsDialogHeader(vacuumName: String, dismiss: ActionRef)
                 color = doc.role(Role.INK),
                 weight = Weight.SEMI_BOLD,
             )
+
             doc.label(
                 text = doc.i18n.t("ui.rooms_select_subtitle", "name" to vacuumName),
                 sp = D.SUB_SP,
                 color = doc.role(Role.INK_DIM),
             )
         }
+
         doc.key(
             ref = dismiss,
             icon = "close",
@@ -119,38 +128,44 @@ private fun DocContext.roomRow(tileId: String, room: VacuumRoom, selected: Boole
     rcScope.Row(
         tap(
             Modifier.fillMaxWidth().height(units.px(D.ROW_H_DP)),
-            ActionRef(tileId, "vacuum_rooms_toggle", room.id),
+            ActionRef(tile = tileId, verb = "vacuum_rooms_toggle", arg = room.id),
         ),
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@roomRow
+
         Box(
-            Modifier.size(doc.units.px(D.CHECK_DP), doc.units.px(D.CHECK_DP))
+            modifier = Modifier.size(doc.units.px(D.CHECK_DP), doc.units.px(D.CHECK_DP))
                 .clip(doc.rounded(D.CHECK_DP / 2f))
                 .background(doc.role(if (selected) Role.ACCENT else Role.KEY)),
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcVerticalPositioning.Center,
         ) {
             if (selected) {
-                doc.icon("check", D.CHECK_DP * D.CHECK_ICON_RATIO, doc.role(Role.INK_DARK))
+                doc.icon(name = "check", sizeDp = D.CHECK_DP * D.CHECK_ICON_RATIO, color = doc.role(Role.INK_DARK))
             }
         }
+
         Spacer(Modifier.width(doc.units.px(D.ROW_ICON_GAP_DP)))
-        doc.label(room.name, Type.BODY, doc.role(Role.INK))
+        doc.label(text = room.name, sp = Type.BODY, color = doc.role(Role.INK))
     }
 }
 
 private fun DocContext.roomsDialogFooter(tileId: String, selectedCount: Int) {
     val canClean = selectedCount > 0
+
     rcScope.Row(Modifier.fillMaxWidth()) {
         val doc = this@roomsDialogFooter
+
         doc.key(
             ref = ActionRef(tileId, "vacuum_rooms_dismiss"),
             text = doc.i18n.t("ui.cancel"),
             heightDp = D.KEY_H_DP,
             modifier = Modifier.horizontalWeight(1f),
         )
+
         Spacer(Modifier.width(doc.units.px(D.KEY_GAP_DP)))
+
         doc.key(
             ref = ActionRef(tileId, "vacuum_rooms_clean"),
             text = if (selectedCount == 1) {
@@ -164,7 +179,9 @@ private fun DocContext.roomsDialogFooter(tileId: String, selectedCount: Int) {
             modifier = Modifier.horizontalWeight(1f),
         )
     }
+
     spacer(D.CAPTION_GAP_DP)
+
     label(
         text = i18n.t("ui.rooms_clears_after_start"),
         sp = D.CAPTION_SP,

@@ -39,12 +39,15 @@ class AppLogTest {
     private suspend fun setUp(acknowledge: Boolean = false, acceptSend: Boolean = true) {
         whenever(connection.receivedMessages).thenReturn(messages)
         whenever(logs.pending(Protocol.MAX_APP_LOG_BATCH)).thenReturn(pending)
+
         whenever(connection.trySend(batch, 1L)).thenAnswer {
             if (acknowledge) {
                 messages.tryEmit(entryAck)
             }
+
             acceptSend
         }
+
         whenever(logs.acknowledge(listOf(entry.eventId))).thenAnswer { pending.value = emptyList(); Unit }
     }
 
@@ -71,8 +74,10 @@ class AppLogTest {
     @Test
     fun aBlockedSocketSendTimesOutAndRetriesWithoutRemovingTheEntry() = runTest {
         setUp()
+
         org.mockito.kotlin.doSuspendableAnswer { kotlinx.coroutines.awaitCancellation() }
             .whenever(connection).trySend(batch, 1L)
+
         AppLog(connection, backgroundScope, logs).forwardOn(1L)
         runCurrent()
         verify(connection).trySend(batch, 1L)
@@ -129,10 +134,12 @@ class AppLogTest {
         advanceTimeBy(1.seconds)
         runCurrent()
         verify(connection, times(2)).trySend(batch, 1L)
+
         whenever(connection.trySend(batch, 1L)).thenAnswer {
             messages.tryEmit(entryAck)
             true
         }
+
         advanceTimeBy(2.seconds)
         runCurrent()
         verify(connection, times(3)).trySend(batch, 1L)
@@ -145,12 +152,15 @@ class AppLogTest {
         val twoEntries = PlayerMessage.AppLog(listOf(entry.toEntry(), second.toEntry()))
         setUp()
         pending.value = listOf(entry, second)
+
         whenever(connection.trySend(twoEntries, 1L)).thenAnswer {
             messages.tryEmit(
                 ConnectionRepository.ReceivedMessage(1L, ServerMessage.AppLogAck(listOf("event-2", "unrelated"))),
             )
+
             true
         }
+
         AppLog(connection, backgroundScope, logs).forwardOn(1L)
         runCurrent()
         verify(connection).trySend(twoEntries, 1L)

@@ -22,6 +22,19 @@ import tech.shaffersoftworks.remotescreens.server.render.panels.blinds.blindsPan
 import tech.shaffersoftworks.remotescreens.server.render.panels.lights.lightsPanel
 import tech.shaffersoftworks.remotescreens.server.render.panels.security.securityPanel
 import tech.shaffersoftworks.remotescreens.server.render.panels.vacuum.vacuumPanel
+import tech.shaffersoftworks.remotescreens.server.render.cards.calendar.calendarTile
+import tech.shaffersoftworks.remotescreens.server.render.cards.camera.cameraTile
+import tech.shaffersoftworks.remotescreens.server.render.cards.climate.climateTile
+import tech.shaffersoftworks.remotescreens.server.render.cards.history.historyTile
+import tech.shaffersoftworks.remotescreens.server.render.cards.map.mapTile
+import tech.shaffersoftworks.remotescreens.server.render.cards.media.mediaTile
+import tech.shaffersoftworks.remotescreens.server.render.cards.weather.weatherTile
+import tech.shaffersoftworks.remotescreens.server.render.panels.energy.energyFlow
+import tech.shaffersoftworks.remotescreens.server.render.tiles.bedside.bedsideTile
+import tech.shaffersoftworks.remotescreens.server.render.tiles.clock.clockTile
+import tech.shaffersoftworks.remotescreens.server.render.tiles.favourite.favouriteTile
+import tech.shaffersoftworks.remotescreens.server.render.tiles.nav.navTile
+import tech.shaffersoftworks.remotescreens.server.render.tiles.person.personTile
 import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.server.render.panels.music.musicPanel
@@ -39,6 +52,7 @@ import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Tile
+import tech.shaffersoftworks.remotescreens.shared.TileKind
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileChrome as C
 
 /**
@@ -47,68 +61,80 @@ import tech.shaffersoftworks.remotescreens.server.render.tiles.TileChrome as C
  */
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
-    val kind = tile.effectiveKind()
-    val spec = Catalogue.of(kind)
+    val kindWire = tile.effectiveKind()
+    val kind = tile.tileKind()
+    val spec = Catalogue.of(kindWire)
     val entityId = tile.entityId
     val entityState = entityId?.let { states[it] }
-    if (entityId != null) bindEntity(entityId, tile.name, tile.icon)
-    val lit = accent(tile.color, Pastel.forDomain(tile.domain ?: kind))
+
+    if (entityId != null) bindEntity(entityId = entityId, name = tile.name, icon = tile.icon)
+
+    val lit = accent(tile.color, Pastel.forDomain(tile.domain ?: kindWire))
     bindTileColors(tileId = tile.id, entityId = entityId, accent = lit, alwaysOn = kind in C.ALWAYS_LIT)
 
     val tapRef = tapRef(tile = tile, action = tile.tap, spec = spec, pageIndex = pageIndex, hold = false)
     val holdRef = tapRef(tile = tile, action = tile.hold, spec = spec, pageIndex = pageIndex, hold = true)
+
     if (tapRef != null && entityId != null && spec?.predict?.containsKey(
             tapRef.verb,
         ) == true) {
         predict(tapRef, entityId)
     }
 
-    if (kind == "home" || box.edge) {
+    if (kind == TileKind.HOME || box.edge) {
         val hasOwnTaps = kind in setOf(
-            "calendar",
-            "alarm_control_panel",
-            "lights",
-            "blinds",
-            "vacuum",
-            "security",
-            "cameras",
-            "intercom",
-            "energy",
-            "energy_dashboard",
+            TileKind.CALENDAR,
+            TileKind.ALARM_PANEL,
+            TileKind.LIGHTS,
+            TileKind.BLINDS,
+            TileKind.VACUUM,
+            TileKind.SECURITY,
+            TileKind.CAMERAS,
+            TileKind.INTERCOM,
+            TileKind.ENERGY,
+            TileKind.ENERGY_DASHBOARD,
         )
+
         val pageTap = if (hasOwnTaps) null else tapRef
         val pageHold = if (hasOwnTaps) null else holdRef
+
         at(
             box.x,
             box.y,
-        ) { rcScope.Box(tap(Modifier.size(units.px(box.w), units.px(box.h)), pageTap, pageHold)) {
+        ) { rcScope.Box(
+            tap(modifier = Modifier.size(units.px(box.w), units.px(box.h)), ref = pageTap, hold = pageHold)
+        ) {
             when (kind) {
-                "home" -> this@tile.homeTile(tile, box)
-                "climate" -> this@tile.thermostatPanel(tile, box)
-                "music" -> this@tile.musicPanel(tile, box)
-                "calendar" -> this@tile.calendarPanel(tile, box)
-                "alarm_control_panel" -> this@tile.alarmPanel(tile, box)
-                "lights" -> this@tile.lightsPanel(tile, box)
-                "blinds" -> this@tile.blindsPanel(tile, box)
-                "vacuum" -> this@tile.vacuumPanel(tile, box)
-                "security" -> this@tile.securityPanel(tile, box)
-                "cameras" -> this@tile.camerasPanel(tile, box)
-                "intercom" -> this@tile.intercomPanel(tile, box)
-                "energy" -> this@tile.energyPanel(tile, box)
-                "energy_dashboard" -> this@tile.energyDashboardPanel(tile, box)
+                TileKind.HOME -> this@tile.homeTile(tile, box)
+                TileKind.CLIMATE -> this@tile.thermostatPanel(tile, box)
+                TileKind.MUSIC -> this@tile.musicPanel(tile, box)
+                TileKind.CALENDAR -> this@tile.calendarPanel(tile, box)
+                TileKind.ALARM_PANEL -> this@tile.alarmPanel(tile, box)
+                TileKind.LIGHTS -> this@tile.lightsPanel(tile, box)
+                TileKind.BLINDS -> this@tile.blindsPanel(tile, box)
+                TileKind.VACUUM -> this@tile.vacuumPanel(tile, box)
+                TileKind.SECURITY -> this@tile.securityPanel(tile, box)
+                TileKind.CAMERAS -> this@tile.camerasPanel(tile, box)
+                TileKind.INTERCOM -> this@tile.intercomPanel(tile, box)
+                TileKind.ENERGY -> this@tile.energyPanel(tile, box)
+                TileKind.ENERGY_DASHBOARD -> this@tile.energyDashboardPanel(tile, box)
                 else -> this@tile.weatherPanel(tile, box)
             }
         } }
+
         return
     }
 
     val inner = box.copy(w = box.w - 2 * C.CARD_EDGE, h = box.h - 2 * C.CARD_EDGE)
-    val asMap = kind == "map" || (kind in setOf(
-        "person",
-        "device_tracker",
-    ) && tile.options["map"] == "true")
+
+    val asMap = kind == TileKind.MAP || (kind in setOf(
+        TileKind.PERSON,
+        TileKind.DEVICE_TRACKER,
+    ) && tile.options[Tile.OPTION_MAP] == Tile.OPTION_TRUE)
+
     val hasHeader = (asMap || kind !in C.NO_HEADER) && inner.w >= C.HEADER_MIN_DP && inner.h >= C.HEADER_MIN_DP &&
-        !(kind == "camera" && tile.options["name"] == "false")
+        !(kind == TileKind.CAMERA && tile.options[Tile.OPTION_NAME] == Tile.OPTION_FALSE)
+
     val headerH = if (!hasHeader) {
         0f
     } else if (inner.h >= C.HEADER_TALL_MIN_DP) {
@@ -116,6 +142,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
     } else {
         C.HEADER_SHORT_DP
     }
+
     val body = inner.copy(h = inner.h - if (hasHeader) headerH + C.HEADER_LINE else 0f)
     val named = !hasHeader
 
@@ -123,8 +150,10 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
         units.px(box.w),
         units.px(box.h),
     ).clip(rounded(C.CARD_CORNER_DP)).background(edgeOf(tile)).padding(units.px(C.CARD_EDGE))
-    at(box.x, box.y) { rcScope.Box(tap(modifier, tapRef, holdRef)) {
+
+    at(box.x, box.y) { rcScope.Box(tap(modifier = modifier, ref = tapRef, hold = holdRef)) {
         val docContext = this@tile
+
         Column(
             Modifier.fillMaxSize().clip(
                 docContext.rounded(C.PAD_SM_DP),
@@ -145,66 +174,71 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
                     vertical = RcVerticalPositioning.Center,
                 ) {
                     docContext.headerTitle(
-                        tile,
-                        kind,
-                        if (headerH >= C.HEADER_TALL_DP) Type.TITLE else Type.BODY + 1f,
+                        tile = tile,
+                        kind = kind,
+                        sp = if (headerH >= C.HEADER_TALL_DP) Type.TITLE else Type.BODY + 1f,
                     )
                 }
+
                 Box(
                     Modifier.fillMaxWidth().height(
                         docContext.units.px(C.HEADER_LINE),
                     ).background(docContext.color(Vars.tile(tile.id, Vars.KEY_LINE))),
                 )
             }
+
             // A weight here lays the header title out at the top of the screen, so the name paints
             // in the bar. The body is the height left under the header.
             Box(Modifier.fillMaxWidth().height(docContext.units.px(body.h))) {
                 when (kind) {
-                    "clock" -> docContext.clockTile(tile, body)
-                    "bedside" -> docContext.bedsideTile(tile, body)
-                    "nav" -> docContext.navTile(tile, body, named)
-                    "weather" -> docContext.weatherTile(
+                    TileKind.CLOCK -> docContext.clockTile(tile, body)
+                    TileKind.BEDSIDE -> docContext.bedsideTile(tile, body)
+                    TileKind.NAV -> docContext.navTile(tile = tile, box = body, named = named)
+                    TileKind.WEATHER -> docContext.weatherTile(
                         tile = tile,
                         box = body,
                         entityState = entityState,
                         named = named,
                     )
-                    "climate" -> docContext.climateTile(
+                    TileKind.CLIMATE -> docContext.climateTile(
                         tile = tile,
                         box = body,
                         entityState = entityState,
                         named = named,
                     )
-                    "media_player" -> docContext.mediaTile(tile, body, entityState)
-                    "camera" -> docContext.cameraTile(tile, body, named)
-                    "history" -> docContext.historyTile(tile, body, named)
-                    "energy" -> docContext.energyFlow(
-                        body.w,
-                        body.h,
+                    TileKind.MEDIA_PLAYER -> docContext.mediaTile(tile = tile, box = body, entityState = entityState)
+                    TileKind.CAMERA -> docContext.cameraTile(tile = tile, box = body, named = named)
+                    TileKind.HISTORY -> docContext.historyTile(tile = tile, box = body, named = named)
+                    TileKind.ENERGY -> docContext.energyFlow(
+                        wDp = body.w,
+                        hDp = body.h,
                         compact = !body.full && body.w < 400f,
                     )
-                    "map" -> docContext.mapTile(tile, body, named)
-                    "person", "device_tracker" -> if (asMap) {
+                    TileKind.MAP -> docContext.mapTile(tile = tile, box = body, named = named)
+                    TileKind.PERSON, TileKind.DEVICE_TRACKER -> if (asMap) {
                         docContext.mapTile(
-                            tile,
-                            body,
-                            named,
+                            tile = tile,
+                            box = body,
+                            named = named,
                         )
                     } else {
-                        docContext.personTile(tile, body, entityState)
+                        docContext.personTile(tile = tile, box = body, entityState = entityState)
                     }
-                    "favourite" -> docContext.favouriteTile(tile, body, named)
-                    "calendar" -> docContext.calendarTile(
+                    TileKind.FAVOURITE -> docContext.favouriteTile(tile = tile, box = body, named = named)
+                    TileKind.CALENDAR -> docContext.calendarTile(
                         tile = tile,
                         box = body,
                         entityState = entityState,
                         named = named,
                     )
-                    "sensor" -> if (tile.options["graph"] == "true" && body.h >= C.SHORT_HEIGHT_DP) {
+                    TileKind.SENSOR -> if (
+                        tile.options[Tile.OPTION_GRAPH] == Tile.OPTION_TRUE &&
+                        body.h >= C.SHORT_HEIGHT_DP
+                    ) {
                         docContext.historyTile(
-                            tile,
-                            body,
-                            named,
+                            tile = tile,
+                            box = body,
+                            named = named,
                         )
                     } else {
                         docContext.entityTile(

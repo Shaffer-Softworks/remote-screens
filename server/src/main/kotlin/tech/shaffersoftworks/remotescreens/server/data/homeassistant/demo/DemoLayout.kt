@@ -15,6 +15,7 @@ import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.TapAction
 import tech.shaffersoftworks.remotescreens.shared.TapType
 import tech.shaffersoftworks.remotescreens.shared.Tile
+import tech.shaffersoftworks.remotescreens.shared.TileKind
 import tech.shaffersoftworks.remotescreens.shared.TopBar
 
 /** A screen over [DemoHome] with a tile of every kind, for demo mode and for tests. */
@@ -77,7 +78,7 @@ object DemoLayout {
     fun lightsPage(): Page = Page(
         id = "lights",
         title = "Lights",
-        tiles = listOf(Tile("li1", kind = "lights", full = true)),
+        tiles = listOf(Tile(id = "li1", kind = TileKind.LIGHTS.wire, full = true)),
         icon = "lightbulb-group",
     )
 
@@ -88,7 +89,7 @@ object DemoLayout {
         tiles = listOf(
             Tile(
                 id = "cm1",
-                kind = "cameras",
+                kind = TileKind.CAMERAS.wire,
                 full = true,
                 options = mapOf(CAMERAS_OPTION to "camera.front_door=Front Door;camera.driveway"),
             ),
@@ -100,7 +101,7 @@ object DemoLayout {
     fun intercomPage(): Page = Page(
         id = "intercom",
         title = "Intercom",
-        tiles = listOf(Tile("ic1", kind = "intercom", full = true)),
+        tiles = listOf(Tile(id = "ic1", kind = TileKind.INTERCOM.wire, full = true)),
         icon = "phone",
     )
 
@@ -108,7 +109,7 @@ object DemoLayout {
     fun energyDashboardPage(): Page = Page(
         id = "energy_dashboard",
         title = "Energy",
-        tiles = listOf(Tile("ed1", kind = "energy_dashboard", full = true)),
+        tiles = listOf(Tile(id = "ed1", kind = TileKind.ENERGY_DASHBOARD.wire, full = true)),
         icon = "chart-box",
     )
 
@@ -116,7 +117,7 @@ object DemoLayout {
     fun energyPage(): Page = Page(
         id = "energy",
         title = "Energy",
-        tiles = listOf(Tile("en1", kind = "energy", full = true)),
+        tiles = listOf(Tile(id = "en1", kind = TileKind.ENERGY.wire, full = true)),
         icon = "lightning-bolt",
     )
 
@@ -124,7 +125,7 @@ object DemoLayout {
     fun blindsPage(): Page = Page(
         id = "blinds",
         title = "Blinds",
-        tiles = listOf(Tile("bl1", kind = "blinds", full = true)),
+        tiles = listOf(Tile(id = "bl1", kind = TileKind.BLINDS.wire, full = true)),
         icon = "blinds",
     )
 
@@ -132,7 +133,7 @@ object DemoLayout {
     fun vacuumPage(): Page = Page(
         id = "vacuum",
         title = "Vacuum",
-        tiles = listOf(Tile("va1", entityId = "vacuum.robot", kind = "vacuum", full = true)),
+        tiles = listOf(Tile(id = "va1", entityId = "vacuum.robot", kind = TileKind.VACUUM.wire, full = true)),
         icon = "robot-vacuum",
     )
 
@@ -140,14 +141,14 @@ object DemoLayout {
     fun securityPage(): Page = Page(
         id = "security",
         title = "Security",
-        tiles = listOf(Tile("se1", kind = "security", full = true)),
+        tiles = listOf(Tile(id = "se1", kind = TileKind.SECURITY.wire, full = true)),
         icon = "shield-home",
     )
 
     private fun homePage(): Page = Page(
         id = "home",
         title = "Home",
-        tiles = listOf(Tile("h1", kind = "home", full = true)),
+        tiles = listOf(Tile(id = "h1", kind = TileKind.HOME.wire, full = true)),
         icon = "home",
     )
 
@@ -164,7 +165,7 @@ object DemoLayout {
             Tile(id = "t5", entityId = "media_player.living_room", col = 1, row = 1, w = 2, h = 2),
             Tile(id = "t7", entityId = "lock.front_door", col = 3, row = 1),
             Tile(id = "t8", entityId = "scene.movie_night", col = 3, row = 2),
-            Tile(id = "t9", kind = "nav", col = 4, row = 2, options = mapOf("page" to "more")),
+            Tile(id = "t9", kind = TileKind.NAV.wire, col = 4, row = 2, options = mapOf(Tile.OPTION_PAGE to "more")),
         ),
     )
 
@@ -182,10 +183,10 @@ object DemoLayout {
                 row = 1,
                 w = 2,
                 h = 2,
-                options = mapOf("graph" to "true"),
+                options = mapOf(Tile.OPTION_GRAPH to Tile.OPTION_TRUE),
             ),
             Tile(id = "r4", entityId = "camera.front_door", col = 2, row = 1, w = 2, h = 2),
-            Tile(id = "r5", kind = "map", col = 4, row = 0, h = 3),
+            Tile(id = "r5", kind = TileKind.MAP.wire, col = 4, row = 0, h = 3),
         ),
     )
 
@@ -194,9 +195,9 @@ object DemoLayout {
         title = "More",
         hidden = true,
         tiles = listOf(
-            Tile(id = "m1", kind = "clock", col = 0, row = 0, w = 2),
-            Tile(id = "m9", kind = "history", entityId = "sensor.power", col = 0, row = 1, w = 2),
-            Tile(id = "m2", kind = "energy", col = 2, row = 0, w = 2, h = 2),
+            Tile(id = "m1", kind = TileKind.CLOCK.wire, col = 0, row = 0, w = 2),
+            Tile(id = "m9", kind = TileKind.HISTORY.wire, entityId = "sensor.power", col = 0, row = 1, w = 2),
+            Tile(id = "m2", kind = TileKind.ENERGY.wire, col = 2, row = 0, w = 2, h = 2),
             Tile(id = "m3", entityId = "alarm_control_panel.house", col = 4, row = 0),
             Tile(id = "m4", entityId = "input_select.washing_program", col = 4, row = 1),
             Tile(id = "m5", entityId = "vacuum.robot", col = 0, row = 2),
@@ -211,7 +212,7 @@ object DemoLayout {
             ),
             Tile(
                 id = "m10",
-                kind = "favourite",
+                kind = TileKind.FAVOURITE.wire,
                 entityId = "media_player.living_room",
                 col = 4,
                 row = 2,
@@ -255,8 +256,8 @@ object DemoLayout {
         props = mapOf("gap" to "12", "scroll" to "true"),
         children = listOf(
             Node(
-                "title",
-                "text",
+                id = "title",
+                type = "text",
                 props = mapOf(
                     "text" to "Free-form",
                     "fontSize" to "28",
@@ -284,7 +285,7 @@ object DemoLayout {
                 bind = NodeBinding("weather.home"),
                 props = mapOf("days" to "5"),
             ),
-            Node("who", "presence", size = NodeSize("fill", "wrap")),
+            Node(id = "who", type = "presence", size = NodeSize("fill", "wrap")),
             Node(
                 id = "ev",
                 type = "events",
@@ -326,8 +327,8 @@ object DemoLayout {
                 props = mapOf("fontSize" to "36"),
             ),
             Node(
-                "code",
-                "qr",
+                id = "code",
+                type = "qr",
                 props = mapOf(
                     "text" to "https://www.home-assistant.io",
                     "size" to "120",
@@ -343,13 +344,13 @@ object DemoLayout {
         props = mapOf("labels" to "Note,Light", "gap" to "8"),
         children = listOf(
             Node(
-                "md",
-                "markdown",
+                id = "md",
+                type = "markdown",
                 props = mapOf(
                     "text" to "**Welcome**\nDrag components in the editor.",
                 ),
             ),
-            Node("sw", "switch", bind = NodeBinding("light.living_room")),
+            Node(id = "sw", type = "switch", bind = NodeBinding("light.living_room")),
         ),
     )
 
@@ -359,7 +360,7 @@ object DemoLayout {
         size = NodeSize("fill", "wrap"),
         props = mapOf("gap" to "12", "alignment" to "center"),
         children = listOf(
-            Node("ledLabel", "text", props = mapOf("text" to "Living room")),
+            Node(id = "ledLabel", type = "text", props = mapOf("text" to "Living room")),
             Node(
                 id = "dot",
                 type = "led",
@@ -372,14 +373,14 @@ object DemoLayout {
     private fun weatherPage(): Page = Page(
         id = "weather",
         title = "Weather",
-        tiles = listOf(Tile("w1", "weather.home", full = true)),
+        tiles = listOf(Tile(id = "w1", entityId = "weather.home", full = true)),
         icon = "weather-partly-cloudy",
     )
 
     private fun thermostatPage(): Page = Page(
         id = "thermostat",
         title = "Thermostat",
-        tiles = listOf(Tile("c1", "climate.living_room", full = true)),
+        tiles = listOf(Tile(id = "c1", entityId = "climate.living_room", full = true)),
         icon = "thermostat",
     )
 
@@ -390,7 +391,7 @@ object DemoLayout {
             Tile(
                 id = "ma1",
                 entityId = "media_player.living_room",
-                kind = "music",
+                kind = TileKind.MUSIC.wire,
                 full = true,
                 options = mapOf("config_entry_id" to "demo_music_assistant"),
             ),

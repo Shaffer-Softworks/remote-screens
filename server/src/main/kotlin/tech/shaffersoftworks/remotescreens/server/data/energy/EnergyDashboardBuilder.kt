@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.data.energy
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EnergySource
 import tech.shaffersoftworks.remotescreens.shared.EnergyBarSeries
 import tech.shaffersoftworks.remotescreens.shared.EnergyDistribution
 import tech.shaffersoftworks.remotescreens.shared.EnergyNamedSeries
@@ -14,6 +15,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.max
 
+private const val NODE_UNTRACKED = "untracked"
 private const val ALPHA_OPAQUE = 0xFF000000L
 private const val COLOR_BLUE = 0xFF03A9F4L
 private const val COLOR_TEAL = 0xFF009688L
@@ -54,16 +56,17 @@ object EnergyDashboardBuilder {
         fossilKwh: Double?,
         nowMs: Long = System.currentTimeMillis(),
     ): EnergyDashboardSnapshot {
-        val labels = bucketLabels(ui.period, gridPoints, zone)
+        val labels = bucketLabels(period = ui.period, points = gridPoints, zone = zone)
         val gridValues = alignValues(gridPoints, labels.size)
         val gridTotal = gridValues.sum()
         val cost = config.gridPrice?.let { gridTotal * it }
-        val deviceSeries = deviceSeries(config, devicePoints, labels.size)
+        val deviceSeries = deviceSeries(config = config, devicePoints = devicePoints, bucketCount = labels.size)
         val deviceTotals = deviceTotals(deviceSeries)
         val untracked = max(0.0, gridTotal - deviceTotals.sumOf { it.kwh })
 
         val totalConsumed = gridTotal  // later: + max(0, solar - toGrid)
         val lowCarbonKwh = fossilKwh?.let { (totalConsumed - it).coerceAtLeast(0.0) }
+
         val lowCarbonPercent = if (fossilKwh != null && totalConsumed > 0.0) {
             (1.0 - fossilKwh / totalConsumed).coerceIn(0.0, 1.0) * PERCENT
         } else {
@@ -71,7 +74,7 @@ object EnergyDashboardBuilder {
         }
 
         return EnergyDashboardSnapshot(
-            periodLabel = periodLabel(ui, zone, nowMs),
+            periodLabel = periodLabel(ui = ui, zone = zone, nowMs = nowMs),
             isNow = ui.offset == 0,
             electricity = EnergyBarSeries(
                 title = "Electricity",
@@ -79,7 +82,7 @@ object EnergyDashboardBuilder {
                 labels = labels,
                 values = gridValues,
             ),
-            totals = totalsRows(config.gridName, gridTotal, cost),
+            totals = totalsRows(gridName = config.gridName, gridTotal = gridTotal, cost = cost),
             devicesDetail = deviceSeries,
             devicesRank = deviceTotals,
             distribution = EnergyDistribution(
@@ -143,25 +146,29 @@ object EnergyDashboardBuilder {
         untracked: Double,
     ): EnergySankey {
         if (gridTotal <= 0.0) return EnergySankey()
+
         val nodes = mutableListOf(
             EnergySankeyNode(
-                id = "grid",
+                id = EnergySource.GRID,
                 label = config.gridName,
                 column = 0,
                 colorArgb = COLOR_BLUE,
             ),
             EnergySankeyNode(
-                id = "home",
+                id = EnergySource.HOME,
                 label = config.homeName,
                 column = 1,
                 colorArgb = COLOR_TEAL,
             ),
         )
+
         val links = mutableListOf(
-            EnergySankeyLink(fromId = "grid", toId = "home", kwh = gridTotal),
+            EnergySankeyLink(fromId = EnergySource.GRID, toId = EnergySource.HOME, kwh = gridTotal),
         )
-        appendDeviceFlows(config, deviceTotals, nodes, links)
-        appendUntrackedFlow(untracked, nodes, links)
+
+        appendDeviceFlows(config = config, deviceTotals = deviceTotals, nodes = nodes, links = links)
+        appendUntrackedFlow(untracked = untracked, nodes = nodes, links = links)
+
         return EnergySankey(nodes = nodes, links = links)
     }
 
@@ -173,10 +180,13 @@ object EnergyDashboardBuilder {
     ) {
         for (device in config.devices) {
             val total = deviceTotals.firstOrNull { it.name == device.name }?.kwh ?: 0.0
+
             if (total <= 0.0) continue
-            val areaKey = device.areaId ?: "untracked"
+
+            val areaKey = device.areaId ?: NODE_UNTRACKED
             val areaLabel = device.areaName ?: "Untracked"
             val areaNodeId = "area.$areaKey"
+
             if (nodes.none { it.id == areaNodeId }) {
                 nodes += EnergySankeyNode(
                     id = areaNodeId,
@@ -185,15 +195,18 @@ object EnergyDashboardBuilder {
                     colorArgb = COLOR_GRAY,
                 )
             }
+
             val deviceId = "device.${device.statConsumption}"
             val color = deviceTotals.firstOrNull { it.name == device.name }?.colorArgb ?: COLOR_BLUE
+
             nodes += EnergySankeyNode(
                 id = deviceId,
                 label = device.name,
                 column = 3,
                 colorArgb = color,
             )
-            links += EnergySankeyLink(fromId = "home", toId = areaNodeId, kwh = total)
+
+            links += EnergySankeyLink(fromId = EnergySource.HOME, toId = areaNodeId, kwh = total)
             links += EnergySankeyLink(fromId = areaNodeId, toId = deviceId, kwh = total)
         }
     }
@@ -204,13 +217,15 @@ object EnergyDashboardBuilder {
         links: MutableList<EnergySankeyLink>,
     ) {
         if (untracked <= 0.0) return
+
         nodes += EnergySankeyNode(
-            id = "untracked",
+            id = NODE_UNTRACKED,
             label = "Untracked consumption",
             column = 3,
             colorArgb = COLOR_GRAY,
         )
-        links += EnergySankeyLink(fromId = "home", toId = "untracked", kwh = untracked)
+
+        links += EnergySankeyLink(fromId = EnergySource.HOME, toId = NODE_UNTRACKED, kwh = untracked)
     }
 
     private fun bucketLabels(
@@ -219,10 +234,12 @@ object EnergyDashboardBuilder {
         zone: ZoneId,
     ): List<String> {
         if (points.isEmpty()) return emptyList()
+
         val formatter = when (period) {
             EnergyDashboardPeriod.DAY -> hourLabel
             EnergyDashboardPeriod.WEEK, EnergyDashboardPeriod.MONTH -> dayLabel
         }
+
         return points.map { point ->
             Instant.ofEpochMilli(point.startMs).atZone(zone).format(formatter)
         }
@@ -232,6 +249,7 @@ object EnergyDashboardBuilder {
         if (size <= 0 || points.isEmpty()) {
             return if (size <= 0) emptyList() else List(size) { 0.0 }
         }
+
         val values = points.take(size).map { it.change }
 
         return if (values.size >= size) {
@@ -247,6 +265,7 @@ object EnergyDashboardBuilder {
         nowMs: Long,
     ): String {
         val zoned = Instant.ofEpochMilli(nowMs).atZone(zone)
+
         val shifted = when (ui.period) {
             EnergyDashboardPeriod.DAY -> zoned.plusDays(ui.offset.toLong())
             EnergyDashboardPeriod.WEEK -> zoned.plusWeeks(ui.offset.toLong())
@@ -269,6 +288,7 @@ object EnergyDashboardBuilder {
         nowMs: Long = System.currentTimeMillis(),
     ): Pair<Long, Long> {
         val zoned = Instant.ofEpochMilli(nowMs).atZone(zone)
+
         val end = when (ui.period) {
             EnergyDashboardPeriod.DAY -> {
                 val day = zoned.toLocalDate().plusDays(ui.offset.toLong() + 1L)
@@ -278,6 +298,7 @@ object EnergyDashboardBuilder {
                 val startOfWeek = zoned.toLocalDate()
                     .minusDays((zoned.dayOfWeek.value - 1).toLong())
                     .plusWeeks(ui.offset.toLong() + 1L)
+
                 startOfWeek.atStartOfDay(zone).toInstant().toEpochMilli()
             }
             EnergyDashboardPeriod.MONTH -> {
@@ -285,6 +306,7 @@ object EnergyDashboardBuilder {
                 month.atStartOfDay(zone).toInstant().toEpochMilli()
             }
         }
+
         val start = when (ui.period) {
             EnergyDashboardPeriod.DAY -> end - DAY_MS
             EnergyDashboardPeriod.WEEK -> end - DAYS_PER_WEEK * DAY_MS
@@ -294,9 +316,11 @@ object EnergyDashboardBuilder {
                     .atStartOfDay(zone)
                     .toInstant()
                     .toEpochMilli()
+
                 monthStart
             }
         }
+
         return start to end
     }
 

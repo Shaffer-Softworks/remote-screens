@@ -9,9 +9,11 @@ class NotificationTest {
     @Test
     fun requiresExplicitRecipients() {
         assertThrows(IllegalArgumentException::class.java) { NotificationRequest("Hi").validate() }
+
         assertThrows(IllegalArgumentException::class.java) {
             NotificationRequest("Hi", all = true, targets = listOf("tablet")).validate()
         }
+
         NotificationRequest("Hi", all = true).validate()
         NotificationRequest("Hi", targets = listOf("tablet")).validate()
     }
@@ -21,9 +23,11 @@ class NotificationTest {
         assertThrows(IllegalArgumentException::class.java) {
             NotificationRequest("Hi", all = true, timeout = 0).validate()
         }
+
         assertThrows(IllegalArgumentException::class.java) {
             NotificationRequest("Hi", all = true, camera = "camera.door").validate()
         }
+
         NotificationRequest("Hi", all = true, presentation = "alert", timeout = 0, camera = "camera.door").validate()
         assertEquals(10, NotificationRequest("Hi").duration)
         assertEquals(30, NotificationRequest("Hi", presentation = "alert").duration)
@@ -35,9 +39,11 @@ class NotificationTest {
         assertThrows(IllegalArgumentException::class.java) {
             NotificationRequest(" ", all = true).validate()
         }
+
         assertThrows(IllegalArgumentException::class.java) {
             NotificationRequest("Hi", all = true, buttons = listOf(NotificationButton("Open", "invalid"))).validate()
         }
+
         NotificationRequest("Hi", all = true, buttons = listOf(NotificationButton("Open", "lock.open"))).validate()
     }
 
@@ -47,8 +53,10 @@ class NotificationTest {
         assertEquals(banner, Protocol.decodeServer(Protocol.encode(banner)))
         val action = PlayerMessage.NotificationAction("id", 0)
         assertEquals(action, Protocol.decodePlayer(Protocol.encode(action)))
+
         val document = Protocol.decodeServer("""{"type":"document","slot":"alert","rev":1,"data":""}""")
             as ServerMessage.Document
+
         assertEquals(true, document.wakeOnShow)
         val silent = document.copy(wakeOnShow = false)
         assertEquals(silent, Protocol.decodeServer(Protocol.encode(silent)))

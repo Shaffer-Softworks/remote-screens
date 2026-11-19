@@ -24,11 +24,13 @@ class PlayerApkRepository(private val apkDir: File?) {
     /** Read on every call, so an APK dropped in while the add-on runs is offered without a restart. */
     fun current(): PlayerApk? {
         val file = apkDir?.let { File(it, APK_FILE_NAME) }?.takeIf { it.isFile } ?: return null
+
         return runCatching {
             val meta = META_JSON.decodeFromString(
                 ApkVersion.serializer(),
                 File(file.parentFile, "version.json").readText(),
             )
+
             PlayerApk(
                 versionCode = meta.versionCode,
                 versionName = meta.versionName,

@@ -10,6 +10,7 @@ class SecurityActions(
     fun handle(arg: String, target: TapTarget): TapOutcome {
         val tileId = target.tile?.id
         val section = SecuritySection.of(arg)
+
         return if (tileId == null || renderData == null || section == null) {
             TapOutcome.Ignored
         } else {

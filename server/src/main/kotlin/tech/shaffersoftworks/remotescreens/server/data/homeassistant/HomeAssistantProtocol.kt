@@ -44,6 +44,7 @@ open class SkippingListSerializer<T>(private val element: KSerializer<T>) : KSer
     override fun deserialize(decoder: Decoder): List<T> {
         val jsonDecoder = decoder as JsonDecoder
         val array = jsonDecoder.decodeJsonElement() as? JsonArray ?: return emptyList()
+
         return array.mapNotNull { item -> runCatching { jsonDecoder.json.decodeFromJsonElement(
             element,
             item,
@@ -139,6 +140,7 @@ data class HaConfigDto(
     /** [integrationDomain] is among the loaded [components]. */
     fun toConfig(integrationDomain: String): HomeAssistantConfig {
         val defaults = HomeAssistantConfig()
+
         return HomeAssistantConfig(
             language = language ?: defaults.language,
             country = country,

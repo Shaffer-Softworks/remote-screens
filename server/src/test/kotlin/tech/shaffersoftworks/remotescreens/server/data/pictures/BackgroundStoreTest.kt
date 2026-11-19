@@ -33,12 +33,15 @@ class BackgroundStoreTest {
         val jpegFile = assertNotNull(store.read("s", "home", jpegToken))
         assertFalse(jpegFile.isPng)
         assertTrue(assertNotNull(store.read("s", "more", pngToken)).isPng)
+
         assertFailsWith<BackgroundRejected> {
             store.save("s", "home", "not a picture".encodeToByteArray())
         }
+
         assertFailsWith<BackgroundRejected> {
             store.save("s", "home", ByteArray(BackgroundStore.MAX_BYTES + 1))
         }
+
         assertFailsWith<BackgroundRejected> { store.save("../s", "home", jpeg()) }
     }
 
@@ -62,6 +65,7 @@ class BackgroundStoreTest {
         val token = store.save("s", "home", jpeg())
         val source = assertNotNull(BackgroundStore.pictureSource("s", "home", token))
         val slot = PictureSlot("bg.home", source, SAMPLE_SIZE, SAMPLE_SIZE, 0)
+
         HttpClient(CIO).use { client ->
             val repository = PictureRepository(DemoHome(), client, backgroundStore = store)
             assertNotNull(repository.load(slot, emptyMap()))
@@ -101,6 +105,7 @@ class BackgroundStoreTest {
         graphics.dispose()
         val output = ByteArrayOutputStream()
         check(ImageIO.write(image, format, output))
+
         return output.toByteArray()
     }
 }

@@ -13,6 +13,7 @@ Style source of truth: **Shaffer-Softworks/RPI** (`StudioProjects/RPI`) — trai
 - Plugin id: `dev.detekt` (not `io.gitlab.arturbosch.detekt`).
 - Config: `config/detekt/detekt.yml`; shared via root `build.gradle.kts` `withPlugin("dev.detekt")`.
 - Ktlint rules need: `detektPlugins("dev.detekt:detekt-rules-ktlint-wrapper")` (catalog: `libs.detekt.rules.ktlint.wrapper`).
+- Custom rules live in `:detekt-rules` and are added with `detektPlugins(project(":detekt-rules"))`. `StatementSpacing` (ruleset `remotescreens`) requires a blank line before control flow, multi-line statements, and `return`.
 - Config key is **`ktlint:`**, not `formatting:` (1.x name).
 - Baselines: `shared/detekt-baseline.xml`, `server/detekt-baseline.xml`, `player/detekt-baseline.xml`.
 
@@ -26,7 +27,7 @@ Style source of truth: **Shaffer-Softworks/RPI** (`StudioProjects/RPI`) — trai
 
 ## Related complexity rules
 
-- `NamedArguments` — name parameters when a call has more than 3 args (see `kotlin-named-arguments-detekt.mdc`)
+- `NamedArguments` — name parameters when a call has more than 2 args (see `kotlin-named-arguments-detekt.mdc`)
 
 ## Style rules
 

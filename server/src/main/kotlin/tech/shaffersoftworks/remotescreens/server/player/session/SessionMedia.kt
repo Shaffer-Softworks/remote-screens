@@ -1,10 +1,10 @@
 package tech.shaffersoftworks.remotescreens.server.player.session
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
-import tech.shaffersoftworks.remotescreens.server.render.LiveEnergyDashboard
-import tech.shaffersoftworks.remotescreens.server.render.LiveMap
-import tech.shaffersoftworks.remotescreens.server.render.LiveSearch
-import tech.shaffersoftworks.remotescreens.server.render.LiveVideo
+import tech.shaffersoftworks.remotescreens.server.render.cards.camera.LiveVideo
+import tech.shaffersoftworks.remotescreens.server.render.cards.map.LiveMap
+import tech.shaffersoftworks.remotescreens.server.render.panels.energydashboard.LiveEnergyDashboard
+import tech.shaffersoftworks.remotescreens.server.render.panels.music.LiveSearch
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
@@ -12,6 +12,7 @@ import tech.shaffersoftworks.remotescreens.shared.EnergyDashboardTheme
 import tech.shaffersoftworks.remotescreens.shared.MapMarker
 import tech.shaffersoftworks.remotescreens.shared.MusicSearchRow
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
+import tech.shaffersoftworks.remotescreens.shared.TileKind
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import kotlinx.coroutines.launch
@@ -38,13 +39,17 @@ internal class SessionMedia(
         context.scope.launch {
             if (!host.supportsVideo) {
                 showCameraStillFallback(shown, video)
+
                 return@launch
             }
 
             val path = context.cameraStreamService.hlsPath(video.entityId)
+
             if (shownDocuments[shown.slot] !== shown) return@launch
+
             if (path == null) {
                 showCameraStillFallback(shown, video)
+
                 return@launch
             }
 
@@ -68,14 +73,18 @@ internal class SessionMedia(
         states: Map<String, EntityState>,
     ) {
         if (!host.supportsMap) return
+
         context.scope.launch {
             if (shownDocuments[shown.slot] !== shown) return@launch
+
             val markers = map.entityIds.mapNotNull { entityId ->
                 val entityState = states[entityId] ?: return@mapNotNull null
                 val latitude = entityState.common.latitude ?: return@mapNotNull null
                 val longitude = entityState.common.longitude ?: return@mapNotNull null
+
                 val pictureName = "${Vars.MAP_PIC_PREFIX}$entityId"
                     .takeIf { name -> shown.renderedDoc.docContext.pictures.any { it.name == name } }
+
                 MapMarker(
                     latitude = latitude,
                     longitude = longitude,
@@ -100,9 +109,12 @@ internal class SessionMedia(
     /** Sends the native Energy dashboard payload; older players keep the RC update stub. */
     fun sendEnergyDashboard(shown: ShownDocument, dashboard: LiveEnergyDashboard) {
         if (!host.supportsEnergyDashboard) return
+
         context.scope.launch {
             if (shownDocuments[shown.slot] !== shown) return@launch
+
             val snapshot = shown.renderedDoc.docContext.data.energyDashboards[dashboard.tileId] ?: return@launch
+
             host.send(
                 ServerMessage.EnergyDashboard(
                     slot = shown.slot,
@@ -129,7 +141,9 @@ internal class SessionMedia(
     /** Opens the native Music Assistant search overlay; no-op for older players. */
     suspend fun sendSearch(shown: ShownDocument, search: LiveSearch) {
         if (!host.supportsMusicSearch) return
+
         if (shownDocuments[shown.slot] !== shown) return
+
         host.send(
             ServerMessage.LiveSearch(
                 slot = shown.slot,
@@ -153,14 +167,19 @@ internal class SessionMedia(
                 .asSequence()
                 .mapNotNull { it.renderedDoc.docContext.data.musicConfigEntry[tileId] }
                 .firstOrNull()
+
             val configEntryId = fromDoc ?: run {
                 val screen = host.screen() ?: return@launch
+
                 val tile = screen.pages.flatMap { it.allTiles() }.firstOrNull { it.id == tileId }
                     ?: return@launch
+
                 val entityId = tile.entityId ?: return@launch
+
                 tile.options["config_entry_id"]
                     ?: context.renderDataRepository.music.configEntryIdForEntity(entityId)
             } ?: return@launch
+
             val rows = context.renderDataRepository.music.search(configEntryId, query)
                 .map { row ->
                     MusicSearchRow(
@@ -170,6 +189,7 @@ internal class SessionMedia(
                         imagePathOrUrl = row.imagePathOrUrl,
                     )
                 }
+
             host.send(ServerMessage.SearchResults(tileId = tileId, rows = rows))
         }
     }
@@ -178,6 +198,7 @@ internal class SessionMedia(
         val shown = shownDocuments[message.slot]?.takeIf { it.revision == message.rev } ?: return
         val video = shown.renderedDoc.docContext.videos.firstOrNull { it.componentId == message.componentId } ?: return
         val restarts = shown.videoRestarts.getOrDefault(video.componentId, 0)
+
         if (restarts < MAX_VIDEO_RESTARTS) {
             shown.videoRestarts[video.componentId] = restarts + 1
             sendVideo(shown, video)
@@ -187,6 +208,7 @@ internal class SessionMedia(
                 video.entityId,
                 message.httpCode,
             )
+
             context.scope.launch { showCameraStillFallback(shown, video) }
         }
     }
@@ -194,8 +216,11 @@ internal class SessionMedia(
     /** Hides the camera card's spinner and shows its still; no-op for alerts (they never declare these vars). */
     suspend fun showCameraStillFallback(shown: ShownDocument, video: LiveVideo) {
         val waiting = Vars.entity(video.entityId, Vars.KEY_CAM_WAITING)
+
         if (!shown.renderedDoc.docContext.declares(waiting)) return
+
         if (shownDocuments[shown.slot] !== shown) return
+
         host.send(
             ServerMessage.Vars(
                 listOf(
@@ -212,12 +237,14 @@ internal class SessionMedia(
         isForced: Boolean,
     ) {
         val nowMs = System.currentTimeMillis()
+
         // Interactive map players draw OSM themselves; skip the server-drawn map still.
         val pictures = shown.renderedDoc.docContext.pictures
             .filterNot { host.supportsMap && it.name == MAP_CARD_PICTURE }
 
         for (picture in pictures) {
             val sourceKey = context.pictureRepository.sourceKey(picture, states)
+
             if (!shown.beginPictureFetch(
                     name = picture.name,
                     sourceKey = sourceKey,
@@ -228,18 +255,24 @@ internal class SessionMedia(
             ) {
                 continue
             }
+
             context.scope.launch {
                 var isSuccess = false
+
                 try {
                     val bytes = context.pictureRepository.load(picture, states) ?: return@launch
+
                     if (shownDocuments[shown.slot] !== shown) return@launch
+
                     if (shown.pictureInflightKeys[picture.name] != sourceKey) return@launch
+
                     host.send(
                         ServerMessage.Bitmap(
                             picture.name,
                             Base64.getEncoder().encodeToString(bytes),
                         ),
                     )
+
                     isSuccess = true
                 } finally {
                     shown.finishPictureFetch(
@@ -260,12 +293,14 @@ internal class SessionMedia(
         camera: String? = null,
     ) {
         if (!host.supportsVideo) return
+
         val id = when {
             !camera.isNullOrBlank() -> camera
             entityId != null && Domain.CAMERA.owns(entityId) -> entityId
-            kind == "camera" && !entityId.isNullOrBlank() -> entityId
+            TileKind.fromWire(kind) == TileKind.CAMERA && !entityId.isNullOrBlank() -> entityId
             else -> return
         }
+
         context.scope.launch {
             runCatching { context.cameraStreamService.hlsPath(id) }
         }

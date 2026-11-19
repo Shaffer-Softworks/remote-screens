@@ -36,36 +36,43 @@ internal object HaWeatherIcons {
     /** Layered paths for [condition], or null when HA falls back to MDI (e.g. `exceptional`). */
     fun pieces(condition: String, nightTime: Boolean = false): List<Piece>? {
         if (condition !in SVG_STATES) return null
+
         return buildList {
-            when {
-                condition == "sunny" -> add(Piece(Layer.SUN, path("sunny")))
-                condition == "clear-night" -> add(Piece(Layer.MOON, path("clear_night")))
-                condition == "partlycloudy" && nightTime -> add(Piece(Layer.MOON, path("partly_disk")))
-                condition == "partlycloudy" -> add(Piece(Layer.SUN, path("partly_disk")))
+            when (condition) {
+                "sunny" -> add(Piece(Layer.SUN, path("sunny")))
+                "clear-night" -> add(Piece(Layer.MOON, path("clear_night")))
+                "partlycloudy" if nightTime -> add(Piece(Layer.MOON, path("partly_disk")))
+                "partlycloudy" -> add(Piece(Layer.SUN, path("partly_disk")))
             }
+
             if (condition in CLOUDY) {
                 add(Piece(Layer.CLOUD_BACK, path("cloud_back")))
                 add(Piece(Layer.CLOUD_FRONT, path("cloud_front")))
             }
+
             if (condition in RAINY) {
                 add(Piece(Layer.RAIN, path("rain_1")))
                 add(Piece(Layer.RAIN, path("rain_2")))
                 add(Piece(Layer.RAIN, path("rain_3")))
                 add(Piece(Layer.RAIN, path("rain_4")))
             }
+
             if (condition == "pouring") {
                 add(Piece(Layer.RAIN, path("pour_1")))
                 add(Piece(Layer.RAIN, path("pour_2")))
             }
+
             if (condition in WINDY) {
                 add(Piece(Layer.CLOUD_BACK, path("wind_1")))
                 add(Piece(Layer.CLOUD_BACK, path("wind_2")))
             }
+
             if (condition in SNOWY) {
                 add(Piece(Layer.SNOW, path("snow_1")))
                 add(Piece(Layer.SNOW, path("snow_2")))
                 add(Piece(Layer.SNOW, path("snow_3")))
             }
+
             if (condition in LIGHTNING) {
                 add(Piece(Layer.SUN, path("bolt")))
             }
@@ -76,6 +83,7 @@ internal object HaWeatherIcons {
         val stream = checkNotNull(
             HaWeatherIcons::class.java.getResourceAsStream("/ha-weather-paths.json"),
         ) { "ha-weather-paths.json is not bundled" }
+
         val text = stream.bufferedReader().use { it.readText() }
         Json.decodeFromString(MapSerializer(String.serializer(), String.serializer()), text)
     }

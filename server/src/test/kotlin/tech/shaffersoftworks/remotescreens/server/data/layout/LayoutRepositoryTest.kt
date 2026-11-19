@@ -29,6 +29,7 @@ class LayoutRepositoryTest {
     fun everyReleasedSchemaLoads() {
         val files = fixtures.listFiles { file -> file.name.matches(Regex("v\\d+\\.json")) }.orEmpty()
         assertTrue(files.isNotEmpty(), "no layout fixtures in $fixtures")
+
         for (file in files) {
             val data = LayoutRepository(dirWith(file.readText())).layout.value
             assertEquals(SCHEMA_VERSION, data.schemaVersion, file.name)
@@ -42,12 +43,15 @@ class LayoutRepositoryTest {
         val s = LayoutRepository(
             dirWith(File(fixtures, "v2.json").readText()),
         ).layout.value.screens.single()
+
         val root = checkNotNull(s.pages[0].root)
         assertEquals("column", root.type)
+
         assertEquals(
             listOf("n1", "n2", "n3", "n4", "n5", "n6", "n7"),
             root.walk().map { it.id }.toList(),
         )
+
         assertEquals("light.kitchen", root.walk().first { it.type == "tile" }.tile?.entityId)
         assertEquals("value", root.walk().first { it.id == "n6" }.bind?.format)
         assertEquals(null, s.pages[1].root)
@@ -81,6 +85,7 @@ class LayoutRepositoryTest {
             """{"schemaVersion":2,"screens":[{"id":"wall","name":"Wall","navBar":{"show":false},""" +
                 """"drawer":{"style":"rail","width":96,"labels":"icons"}}]}""",
         )
+
         val screen = LayoutRepository(directory).layout.value.screens.single()
         assertEquals("off", screen.drawer.style)
         assertTrue(screen.navBar.show)
@@ -91,8 +96,10 @@ class LayoutRepositoryTest {
         val dir = dirWith(
             """{"schemaVersion": ${SCHEMA_VERSION + 1}, "screens": [], "somethingNew": true}""",
         )
+
         val repository = LayoutRepository(dir)
         assertTrue(repository.layout.value.screens.isEmpty())
+
         assertTrue(
             File(dir, "layouts.v${SCHEMA_VERSION + 1}.json").readText().contains("somethingNew"),
         )
@@ -114,18 +121,22 @@ class LayoutRepositoryTest {
                 o + ("two" to JsonPrimitive(o["one"]?.jsonPrimitive?.content == "true")),
             ) },
         )
+
         val out = LayoutMigrations.migrate(
             JsonObject(mapOf("schemaVersion" to JsonPrimitive(1))),
             steps,
             target = 3,
         )
+
         assertEquals(3, out["schemaVersion"]?.jsonPrimitive?.intOrNull)
         assertEquals("true", out["two"]?.jsonPrimitive?.content)
         val unversioned = LayoutMigrations.migrate(JsonObject(emptyMap()), steps, target = 2)
         assertEquals(2, unversioned["schemaVersion"]?.jsonPrimitive?.intOrNull)
+
         assertFailsWith<IllegalStateException> {
             LayoutMigrations.migrate(JsonObject(emptyMap()), emptyMap(), target = 2)
         }
+
         assertTrue(out.jsonObject.containsKey("one"))
     }
 }

@@ -36,19 +36,24 @@ class GridParityTest {
     fun matchesFixture() {
         val fixture = Json.parseToJsonElement(file.readText()).jsonObject
         val answered = answer(fixture)
+
         if (System.getProperty("fixtures.update") == "true") {
             file.writeText(json.encodeToString(JsonElement.serializer(), answered) + "\n")
+
             return
         }
+
         compare(answered, fixture, "")
     }
 
     @Test
     fun fixtureHasAnswers() {
         val fixture = Json.parseToJsonElement(file.readText()).jsonObject
+
         for (section in listOf("suggest", "spec", "reflow")) {
             val cases = fixture.getValue(section).jsonArray
             assertTrue(cases.isNotEmpty(), "$section has cases")
+
             for (case in cases) assertTrue(
                 "expect" in case.jsonObject,
                 "$section case without an answer: $case",
@@ -57,71 +62,85 @@ class GridParityTest {
     }
 
     private fun answer(fixture: JsonObject): JsonObject = buildJsonObject {
-        put("suggest", buildJsonArray {
-            for (case in fixture.getValue("suggest").jsonArray.map { it.jsonObject }) {
-                val gridSize = Grid.suggest(case.floatAt("width"), case.floatAt("height"))
-                add(inputs(case) + ("expect" to buildJsonObject {
-                    put("cols", gridSize.cols)
-                    put("rows", gridSize.rows)
-                }))
-            }
-        })
-        put("spec", buildJsonArray {
-            for (case in fixture.getValue("spec").jsonArray.map { it.jsonObject }) {
-                // `topBar` is whether the default bar shows, or its height; `navBar`, if given, the bottom bar's;
-                val topBarValue = case.getValue("topBar").jsonPrimitive
-                val topBarHeight = topBarValue.booleanOrNull?.let { if (it) Grid.TOP_BAR else 0f }
-                    ?: topBarValue.float
-                val navBarHeight = case["navBar"]?.jsonPrimitive?.float ?: Grid.navBar(
-                    case.floatAt("width"),
+        put("suggest", suggestAnswers(fixture))
+        put("spec", specAnswers(fixture))
+        put("reflow", reflowAnswers(fixture))
+    }
+
+    private fun suggestAnswers(fixture: JsonObject): JsonArray = buildJsonArray {
+        for (case in fixture.getValue("suggest").jsonArray.map { it.jsonObject }) {
+            val gridSize = Grid.suggest(case.floatAt("width"), case.floatAt("height"))
+
+            add(inputs(case) + ("expect" to buildJsonObject {
+                put("cols", gridSize.cols)
+                put("rows", gridSize.rows)
+            }))
+        }
+    }
+
+    private fun specAnswers(fixture: JsonObject): JsonArray = buildJsonArray {
+        for (case in fixture.getValue("spec").jsonArray.map { it.jsonObject }) {
+            // `topBar` is whether the default bar shows, or its height; `navBar`, if given, the bottom bar's.
+            val topBarValue = case.getValue("topBar").jsonPrimitive
+
+            val topBarHeight = topBarValue.booleanOrNull?.let { if (it) Grid.TOP_BAR else 0f }
+                ?: topBarValue.float
+
+            val navBarHeight = case["navBar"]?.jsonPrimitive?.float ?: Grid.navBar(
+                case.floatAt("width"),
+            )
+
+            val grid = GridSize(case.intAt("cols"), case.intAt("rows"))
+
+            val spec = Grid.spec(
+                size = grid,
+                widthDp = case.floatAt("width"),
+                heightDp = case.floatAt("height"),
+                topBar = topBarHeight,
+                navBar = navBarHeight,
+            )
+
+            add(inputs(case) + ("expect" to buildJsonObject {
+                put("cols", spec.cols)
+                put("rows", spec.rows)
+                put("cellW", spec.cellW)
+                put("cellH", spec.cellH)
+                put("topBar", spec.topBar)
+                put("navBar", spec.navBar)
+                put("large", spec.large)
+                put("x", floats((0 until spec.cols).map { col -> spec.x(col) }))
+                put("y", floats((0 until spec.rows).map { row -> spec.y(row) }))
+                put("w", floats((1..spec.cols).map { span -> spec.w(span) }))
+                put("h", floats((1..spec.rows).map { span -> spec.h(span) }))
+            }))
+        }
+    }
+
+    private fun reflowAnswers(fixture: JsonObject): JsonArray = buildJsonArray {
+        for (case in fixture.getValue("reflow").jsonArray.map { it.jsonObject }) {
+            val tiles = case.getValue("tiles").jsonArray.map { it.jsonObject }.map { tileJson ->
+                Tile(
+                    id = tileJson.stringAt("id"),
+                    col = tileJson.intAt("col"),
+                    row = tileJson.intAt("row"),
+                    w = tileJson.intAt("w"),
+                    h = tileJson.intAt("h"),
+                    full = tileJson["full"]?.jsonPrimitive?.booleanOrNull ?: false,
                 )
-                val grid = GridSize(case.intAt("cols"), case.intAt("rows"))
-                val spec = Grid.spec(
-                    size = grid,
-                    widthDp = case.floatAt("width"),
-                    heightDp = case.floatAt("height"),
-                    topBar = topBarHeight,
-                    navBar = navBarHeight,
-                )
-                add(inputs(case) + ("expect" to buildJsonObject {
-                    put("cols", spec.cols)
-                    put("rows", spec.rows)
-                    put("cellW", spec.cellW)
-                    put("cellH", spec.cellH)
-                    put("topBar", spec.topBar)
-                    put("navBar", spec.navBar)
-                    put("large", spec.large)
-                    put("x", floats((0 until spec.cols).map { col -> spec.x(col) }))
-                    put("y", floats((0 until spec.rows).map { row -> spec.y(row) }))
-                    put("w", floats((1..spec.cols).map { span -> spec.w(span) }))
-                    put("h", floats((1..spec.rows).map { span -> spec.h(span) }))
-                }))
             }
-        })
-        put("reflow", buildJsonArray {
-            for (case in fixture.getValue("reflow").jsonArray.map { it.jsonObject }) {
-                val tiles = case.getValue("tiles").jsonArray.map { it.jsonObject }.map { tileJson ->
-                    Tile(
-                        tileJson.stringAt("id"),
-                        col = tileJson.intAt("col"),
-                        row = tileJson.intAt("row"),
-                        w = tileJson.intAt("w"),
-                        h = tileJson.intAt("h"),
-                        full = tileJson["full"]?.jsonPrimitive?.booleanOrNull ?: false,
-                    )
-                }
-                val placed = Reflow.place(tiles, GridSize(case.intAt("cols"), case.intAt("rows")))
-                add(inputs(case) + ("expect" to buildJsonArray {
-                    for (placement in placed) add(buildJsonObject {
-                        put("id", placement.tile.id)
-                        put("col", placement.col)
-                        put("row", placement.row)
-                        put("w", placement.w)
-                        put("h", placement.h)
-                    })
-                }))
-            }
-        })
+
+            val placed = Reflow.place(tiles, GridSize(case.intAt("cols"), case.intAt("rows")))
+
+            add(inputs(case) + ("expect" to buildJsonArray {
+                for (placement in placed) add(buildJsonObject {
+                    put("id", placement.tile.id)
+                    put("col", placement.col)
+                    put("row", placement.row)
+                    put("w", placement.w)
+                    put("h", placement.h)
+                })
+            }))
+        }
     }
 
     private fun inputs(case: JsonObject) = JsonObject(case - "expect")
@@ -138,6 +157,7 @@ class GridParityTest {
         when {
             actual is JsonObject && expected is JsonObject -> {
                 assertEquals(expected.keys, actual.keys, "keys at $path")
+
                 for (key in expected.keys) compare(
                     actual.getValue(key),
                     expected.getValue(key),
@@ -146,6 +166,7 @@ class GridParityTest {
             }
             actual is JsonArray && expected is JsonArray -> {
                 assertEquals(expected.size, actual.size, "length at $path")
+
                 for (index in expected.indices) compare(
                     actual[index],
                     expected[index],
@@ -155,6 +176,7 @@ class GridParityTest {
             actual is JsonPrimitive && expected is JsonPrimitive -> {
                 val actualNumber = actual.content.toDoubleOrNull()
                 val expectedNumber = expected.content.toDoubleOrNull()
+
                 if (actualNumber != null && expectedNumber != null && !actual.isString) {
                     if (abs(actualNumber - expectedNumber) > 0.01) {
                         fail("$path: expected $expectedNumber, got $actualNumber")

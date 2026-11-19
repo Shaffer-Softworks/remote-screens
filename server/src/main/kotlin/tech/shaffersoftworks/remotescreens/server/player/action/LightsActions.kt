@@ -25,6 +25,7 @@ class LightsActions(
     ): TapOutcome {
         val tileId = target.tile?.id
         val store = renderData?.lightsUi
+
         val isHandled = when {
             tileId == null || store == null -> false
             verb == "lights_palette" || verb == "lights_effect" -> changeLight(
@@ -50,6 +51,7 @@ class LightsActions(
         arg: String,
     ): Boolean {
         val mode = LightDetailMode.of(arg)
+
         when (verb) {
             "lights_room" -> store.selectRoom(tileId, arg)
             "lights_detail" -> store.openDetail(tileId, arg)
@@ -57,6 +59,7 @@ class LightsActions(
             "lights_effects" -> store.setEffectMenuOpen(tileId, !store.state(tileId).isEffectMenuOpen)
             "lights_mode" -> if (mode != null) store.selectMode(tileId, mode)
         }
+
         return verb != "lights_mode" || mode != null
     }
 
@@ -69,9 +72,12 @@ class LightsActions(
         if (verb == "lights_effect") {
             store.setEffectMenuOpen(tileId, false)
             turnOnDetailLight(tileId) { entityId -> LightTurnOn(entityId, effect = arg) }
+
             return true
         }
+
         val index = arg.toIntOrNull()
+
         if (index != null) {
             pickSwatch(tileId, index)
         }

@@ -16,10 +16,12 @@ class ProvisioningModeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Timber.i("Provisioning mode asked")
+
         val provisioningResult = Intent().putExtra(
             DevicePolicyManager.EXTRA_PROVISIONING_MODE,
             DevicePolicyManager.PROVISIONING_MODE_FULLY_MANAGED_DEVICE,
         )
+
         setResult(RESULT_OK, provisioningResult)
         finish()
     }

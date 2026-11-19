@@ -39,18 +39,22 @@ class BackgroundStore(dataDir: File) {
             bytes.size > MAX_BYTES -> "Image must be 8 MB or smaller"
             else -> null
         }
+
         if (reason != null) throw BackgroundRejected(reason)
+
         val isPng = imageFormat(bytes) ?: throw BackgroundRejected("Use a JPEG or PNG")
         val token = System.currentTimeMillis().toString()
         val directory = File(root, screenId)
         directory.mkdirs()
-        File(directory, fileName(pageId, token, isPng)).writeBytes(bytes)
+        File(directory, fileName(pageId = pageId, token = token, isPng = isPng)).writeBytes(bytes)
+
         return token
     }
 
     /** The bytes for [token], or null when that page has no such file. */
     fun read(screenId: String, pageId: String, token: String): StoredBackground? {
-        val file = locate(screenId, pageId, token) ?: return null
+        val file = locate(screenId = screenId, pageId = pageId, token = token) ?: return null
+
         return StoredBackground(file.readBytes(), file.extension == PNG_EXTENSION)
     }
 
@@ -60,34 +64,42 @@ class BackgroundStore(dataDir: File) {
     fun resolve(source: String): File? {
         val relative = source.removePrefix(FILE_PREFIX)
             .takeIf { source.startsWith(FILE_PREFIX) && RELATIVE_FILE.matches(it) }
+
         val file = relative?.let { path ->
             val stem = path.substringAfter('/')
+
             locate(
-                path.substringBefore('/'),
-                stem.substringBeforeLast('-'),
-                stem.substringAfterLast('-'),
+                screenId = path.substringBefore('/'),
+                pageId = stem.substringBeforeLast('-'),
+                token = stem.substringAfterLast('-'),
             )
         }
+
         val canonical = file?.canonicalFile
+
         val inside = canonical != null &&
             canonical.path.startsWith(root.canonicalFile.path + File.separator) &&
             canonical.isFile
+
         return canonical?.takeIf { inside }
     }
 
     /** Length and last-modified time, so replacing the file sends it to the tablet again. */
     fun sourceKey(source: String): String? {
         val file = resolve(source) ?: return null
+
         return "${file.length()}:${file.lastModified()}"
     }
 
     /** Deletes wallpapers in [screenId] that [pages] no longer name. */
     fun deleteUnreferenced(screenId: String, pages: List<Page>) {
         val directory = directoryOf(screenId) ?: return
+
         val kept = pages.mapNotNull { page ->
             val token = page.backgroundImage ?: return@mapNotNull null
-            locate(screenId, page.id, token)?.name
+            locate(screenId = screenId, pageId = page.id, token = token)?.name
         }.toSet()
+
         directory.listFiles()?.filter { it.isFile && it.name !in kept }?.forEach { it.delete() }
     }
 
@@ -99,15 +111,19 @@ class BackgroundStore(dataDir: File) {
 
     private fun directoryOf(screenId: String): File? {
         if (!isSafeId(screenId)) return null
+
         val directory = File(root, screenId)
+
         return directory.takeIf { it.isDirectory }
     }
 
     private fun locate(screenId: String, pageId: String, token: String): File? {
         if (!isSafeId(screenId) || !isSafeId(pageId) || !TOKEN.matches(token)) return null
+
         val directory = File(root, screenId)
-        val png = File(directory, fileName(pageId, token, isPng = true))
-        val jpeg = File(directory, fileName(pageId, token, isPng = false))
+        val png = File(directory, fileName(pageId = pageId, token = token, isPng = true))
+        val jpeg = File(directory, fileName(pageId = pageId, token = token, isPng = false))
+
         return when {
             png.isFile -> png
             jpeg.isFile -> jpeg
@@ -121,7 +137,9 @@ class BackgroundStore(dataDir: File) {
             isJpeg(bytes) -> false
             else -> null
         }
+
         val decoded = png?.let { runCatching { ImageIO.read(ByteArrayInputStream(bytes)) }.getOrNull() }
+
         return if (isImage(decoded)) png else null
     }
 
@@ -134,7 +152,12 @@ class BackgroundStore(dataDir: File) {
         /** The picture source for a page wallpaper. Null when an id could leave the backgrounds folder. */
         fun pictureSource(screenId: String, pageId: String, token: String): String? {
             if (!isSafeId(screenId) || !isSafeId(pageId) || !TOKEN.matches(token)) return null
-            return "$FILE_PREFIX$screenId/${fileName(pageId, token, isPng = false).substringBeforeLast('.')}"
+
+            return "$FILE_PREFIX$screenId/${fileName(
+                pageId = pageId,
+                token = token,
+                isPng = false
+            ).substringBeforeLast('.')}"
         }
     }
 }
@@ -143,6 +166,7 @@ private fun isSafeId(value: String): Boolean = SAFE_ID.matches(value)
 
 private fun fileName(pageId: String, token: String, isPng: Boolean): String {
     val extension = if (isPng) PNG_EXTENSION else JPEG_EXTENSION
+
     return "$pageId-$token.$extension"
 }
 

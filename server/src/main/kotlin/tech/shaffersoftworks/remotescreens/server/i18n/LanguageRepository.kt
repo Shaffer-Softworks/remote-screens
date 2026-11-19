@@ -21,24 +21,30 @@ class LanguageRepository(
         val is24Hour = preferences.clock24h ?: I18n.default24h(language)
         val key = "$language|$is24Hour"
         cached?.takeIf { cacheKey == key }?.let { return it }
+
         val built = I18n(
             language = language,
             ownWords = I18n.load(language.substringBefore('-')),
             homeAssistantWords = homeAssistantWords[language].orEmpty(),
             is24Hour = is24Hour,
         )
+
         cached = built
         cacheKey = key
+
         return built
     }
 
     /** Loads Home Assistant's words for states in the current language. */
     suspend fun loadHomeAssistantWords() {
         val language = current().language
+
         if (homeAssistantWords.containsKey(language)) return
+
         val translations = runCatching {
             homeAssistant.send(GetTranslations(language = language, category = ENTITY_COMPONENT))
         }.getOrNull()
+
         homeAssistantWords[language] = translations?.texts.orEmpty()
         cached = null
     }

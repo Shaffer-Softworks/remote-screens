@@ -56,11 +56,12 @@ object Grid {
     /** The grid a device of this size gets when it is adopted. */
     fun suggest(widthDp: Float, heightDp: Float): GridSize {
         val (availableWidth, availableHeight) = available(
-            widthDp,
-            heightDp,
-            TOP_BAR,
-            navBar(widthDp),
+            widthDp = widthDp,
+            heightDp = heightDp,
+            topBar = TOP_BAR,
+            navBar = navBar(widthDp),
         )
+
         return GridSize(fit(availableWidth), fit(availableHeight))
     }
 
@@ -72,11 +73,18 @@ object Grid {
         topBar: Float = TOP_BAR,
         navBar: Float = navBar(widthDp),
     ): GridSpec {
-        val (availableWidth, availableHeight) = available(widthDp, heightDp, topBar, navBar)
+        val (availableWidth, availableHeight) = available(
+            widthDp = widthDp,
+            heightDp = heightDp,
+            topBar = topBar,
+            navBar = navBar,
+        )
+
         val cols = size.cols.coerceIn(1, MAX_CELLS)
         val rows = size.rows.coerceIn(1, MAX_CELLS)
         val cellW = round1((availableWidth - GAP * (cols - 1)) / cols)
         val cellH = round1((availableHeight - GAP * (rows - 1)) / rows)
+
         return GridSpec(
             cols = cols,
             rows = rows,
@@ -114,35 +122,43 @@ object Reflow {
         val taken = Array(size.rows) { BooleanArray(size.cols) }
         val placed = mutableListOf<Placed>()
         val full = tiles.firstOrNull { it.full }
-        if (full != null) return listOf(Placed(full, 0, 0, size.cols, size.rows))
+
+        if (full != null) return listOf(Placed(tile = full, col = 0, row = 0, w = size.cols, h = size.rows))
 
         val (fits, rest) = tiles.partition { it.col + it.w <= size.cols && it.row + it.h <= size.rows }
+
         for (tile in fits.sortedWith(compareBy({ it.row }, { it.col }))) {
-            if (free(taken, tile.col, tile.row, tile.w, tile.h)) {
-                mark(taken, tile.col, tile.row, tile.w, tile.h)
-                placed += Placed(tile, tile.col, tile.row, tile.w, tile.h)
+            if (free(taken = taken, col = tile.col, row = tile.row, colSpan = tile.w, rowSpan = tile.h)) {
+                mark(taken = taken, col = tile.col, row = tile.row, colSpan = tile.w, rowSpan = tile.h)
+                placed += Placed(tile = tile, col = tile.col, row = tile.row, w = tile.w, h = tile.h)
             } else {
-                spot(taken, tile, size)?.let { placed += it }
+                spot(taken = taken, tile = tile, size = size)?.let { placed += it }
             }
         }
+
         for (tile in rest.sortedWith(compareBy({ it.row }, { it.col }))) {
-            spot(taken, tile, size)?.let { placed += it }
+            spot(taken = taken, tile = tile, size = size)?.let { placed += it }
         }
+
         return placed
     }
 
     private fun spot(taken: Array<BooleanArray>, tile: Tile, size: GridSize): Placed? {
         var colSpan = tile.w.coerceAtMost(size.cols)
         var rowSpan = tile.h.coerceAtMost(size.rows)
+
         while (colSpan >= 1 && rowSpan >= 1) {
             for (row in 0..size.rows - rowSpan) for (col in 0..size.cols - colSpan) {
-                if (free(taken, col, row, colSpan, rowSpan)) {
-                    mark(taken, col, row, colSpan, rowSpan)
-                    return Placed(tile, col, row, colSpan, rowSpan)
+                if (free(taken = taken, col = col, row = row, colSpan = colSpan, rowSpan = rowSpan)) {
+                    mark(taken = taken, col = col, row = row, colSpan = colSpan, rowSpan = rowSpan)
+
+                    return Placed(tile = tile, col = col, row = row, w = colSpan, h = rowSpan)
                 }
             }
+
             if (colSpan >= rowSpan) colSpan-- else rowSpan--
         }
+
         return null
     }
 
@@ -150,6 +166,7 @@ object Reflow {
         for (cellRow in row until row + rowSpan) for (cellCol in col until col + colSpan) {
             if (cellRow >= taken.size || cellCol >= taken[cellRow].size || taken[cellRow][cellCol]) return false
         }
+
         return true
     }
 

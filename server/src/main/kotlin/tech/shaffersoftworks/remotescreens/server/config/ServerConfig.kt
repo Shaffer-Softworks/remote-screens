@@ -50,6 +50,7 @@ data class ServerConfig(
             val dataDir = resolveDataDir(env, isSupervisor)
             val addonOptions = readAddonOptions(File(dataDir, "options.json"))
             val homeAssistantUrls = homeAssistantUrls(env, isSupervisor)
+
             return ServerConfig(
                 isSupervisor = isSupervisor,
                 isDemo = isDemoRequested || (!isSupervisor && accessToken.isEmpty()),
@@ -77,6 +78,7 @@ data class ServerConfig(
             supervisorToken: String?,
         ): String {
             val tokenFile = env["HA_TOKEN_FILE"]
+
             return when {
                 supervisorToken != null -> supervisorToken
                 tokenFile != null -> File(tokenFile).readText().trim()
@@ -90,7 +92,9 @@ data class ServerConfig(
             isSupervisor: Boolean,
         ): Pair<String, String> {
             if (isSupervisor) return SUPERVISOR_WEBSOCKET_URL to SUPERVISOR_REST_URL
+
             val homeAssistantUrl = (env["HA_URL"] ?: DEFAULT_HOME_ASSISTANT_URL).trimEnd('/')
+
             return homeAssistantUrl.replaceFirst(
                 "http",
                 "ws",
@@ -102,6 +106,7 @@ data class ServerConfig(
             isSupervisor: Boolean,
         ): File {
             val path = env["REMOTE_SCREENS_DATA"] ?: if (isSupervisor) "/data" else "data"
+
             return File(path).also { it.mkdirs() }
         }
 
@@ -116,6 +121,7 @@ data class ServerConfig(
             val url = raw?.trim().orEmpty()
             val isHttp = url.startsWith("https://") || url.startsWith("http://")
             val hasPlaceholders = listOf("{z}", "{x}", "{y}").all { it in url }
+
             return if (isHttp && hasPlaceholders) url else OPENSTREETMAP_TILE_URL
         }
 
@@ -126,6 +132,7 @@ data class ServerConfig(
          */
         fun isIngressPeer(address: String): Boolean {
             val octets = address.removePrefix("::ffff:").split('.').mapNotNull { it.toIntOrNull() }
+
             return octets.size == IPV4_OCTETS &&
                 octets[0] == INGRESS_NETWORK_FIRST_OCTET &&
                 octets[1] == INGRESS_NETWORK_SECOND_OCTET &&

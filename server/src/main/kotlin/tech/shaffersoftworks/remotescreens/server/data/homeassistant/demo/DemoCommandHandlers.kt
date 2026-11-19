@@ -8,6 +8,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.BrowseMedia
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.CalendarEventDelete
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.DeviceRegistryList
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EnergyGetPrefs
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EnergySource
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityRegistryGet
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityRegistryListForDisplay
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.FireEvent
@@ -38,6 +39,7 @@ internal class DemoCommandHandlers(
     /** Answers [request] the way Home Assistant would, read back through the request's own serializer. */
     fun <R> handle(request: HaRequest<R>): R {
         commands += request.type to request.payload()
+
         val result = registryAnswer(request) ?: when (request) {
             is FireEvent -> fireEvent(request)
             is HistoryDuringPeriod -> historyDuringPeriod(request.entityIds)
@@ -49,7 +51,8 @@ internal class DemoCommandHandlers(
             is CalendarEventDelete -> JsonNull
             else -> throw HomeAssistantException(code = "unknown_command", message = "Demo has no ${request.type}")
         }
-        return HA_JSON.decodeFromJsonElement(request.resultSerializer, result ?: JsonNull)
+
+        return HA_JSON.decodeFromJsonElement(request.resultSerializer, result)
     }
 
     private fun registryAnswer(request: HaRequest<*>): JsonElement? = when (request) {
@@ -62,6 +65,7 @@ internal class DemoCommandHandlers(
 
     private fun fireEvent(request: FireEvent): JsonElement {
         fire(request.eventType, request.eventData ?: JsonObject(emptyMap()))
+
         return JsonNull
     }
 
@@ -82,6 +86,7 @@ internal class DemoCommandHandlers(
             }
             "vacuum.robot" -> buildJsonObject {
                 put("entity_id", entityId)
+
                 put(
                     "options",
                     buildJsonObject {
@@ -94,6 +99,7 @@ internal class DemoCommandHandlers(
                                         for ((area, segment) in DemoHome.VACUUM_AREA_SEGMENTS) {
                                             put(area, buildJsonArray { add(JsonPrimitive(segment)) })
                                         }
+
                                         put("garden", buildJsonArray { })
                                     },
                                 )
@@ -125,6 +131,7 @@ internal class DemoCommandHandlers(
                         put("ai", area)
                     })
                 }
+
                 for ((entity, device) in DemoHome.ENTITY_DEVICES) {
                     add(buildJsonObject {
                         put("ei", entity)
@@ -142,6 +149,7 @@ internal class DemoCommandHandlers(
                     id,
                     buildJsonArray {
                         val now = System.currentTimeMillis() / 1000.0
+
                         for (i in 0 until 48) {
                             add(
                                 buildJsonObject {
@@ -152,6 +160,7 @@ internal class DemoCommandHandlers(
                                             19.5 + 2.5 * sin(i / 7.0),
                                         ),
                                     )
+
                                     put("lu", now - (48 - i) * 1800)
                                 },
                             )
@@ -168,26 +177,29 @@ internal class DemoCommandHandlers(
             buildJsonArray {
                 add(
                     buildJsonObject {
-                        put("type", "solar")
+                        put("type", EnergySource.SOLAR)
                         put("stat_rate", "sensor.solar_power")
                     },
                 )
+
                 add(
                     buildJsonObject {
-                        put("type", "grid")
+                        put("type", EnergySource.GRID)
                         put("stat_rate", "sensor.grid_power")
                         put("stat_energy_from", "sensor.grid_energy")
                         put("number_energy_price", 0.22)
                     },
                 )
+
                 add(
                     buildJsonObject {
-                        put("type", "battery")
+                        put("type", EnergySource.BATTERY)
                         put("stat_rate", "sensor.battery_power")
                     },
                 )
             },
         )
+
         put(
             "device_consumption",
             buildJsonArray {
@@ -205,6 +217,7 @@ internal class DemoCommandHandlers(
     private fun energyStatistics(): JsonObject {
         val now = System.currentTimeMillis()
         val hourMs = 3_600_000L
+
         fun series(seed: Double) = buildJsonArray {
             for (index in 0 until 24) {
                 add(
@@ -215,6 +228,7 @@ internal class DemoCommandHandlers(
                 )
             }
         }
+
         return buildJsonObject {
             put("sensor.grid_energy", series(1.2))
             put("sensor.heat_pump_energy", series(0.4))
@@ -228,6 +242,7 @@ internal class DemoCommandHandlers(
     private fun mediaPlayerBrowseMedia(): JsonElement = buildJsonObject {
         put("title", "Library")
         put("media_content_id", "")
+
         put(
             "children",
             buildJsonArray {

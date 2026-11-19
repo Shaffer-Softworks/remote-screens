@@ -51,19 +51,26 @@ internal object HomeAssistantResponseParser {
 
     /** The answer of `weather.get_forecasts` for [entityId], with or without its `response` wrapper. */
     fun forecasts(result: JsonElement?, entityId: String): List<Forecast> =
-        serviceResponse(result, entityId, ForecastResponse.serializer())?.forecast.orEmpty().mapNotNull(::forecast)
+        serviceResponse(
+            result = result,
+            entityId = entityId,
+            serializer = ForecastResponse.serializer()
+        )?.forecast.orEmpty().mapNotNull(::forecast)
 
     /** The rows of a minimal `history/history_during_period` answer: `s` is the state, `lu` or `lc` its time. */
     fun history(result: Map<String, List<HistoryRow>>, entityId: String): List<HistoryPoint> {
         val isBinary = EntityId(entityId).domain == Domain.BINARY_SENSOR
+
         return result[entityId].orEmpty().mapNotNull { row -> historyPoint(row, isBinary) }
     }
 
     fun energy(preferences: EnergyPreferences): EnergyPrefs {
         fun rateOf(type: String) = preferences.energySources.firstOrNull { it.type == type }?.powerSensor
+
         val devices = preferences.deviceConsumption.mapNotNull { device ->
             device.powerSensor?.let { sensor -> (device.name ?: sensor) to sensor }
         }
+
         return EnergyPrefs(
             solar = rateOf(EnergySource.SOLAR),
             grid = rateOf(EnergySource.GRID),
@@ -86,8 +93,13 @@ internal object HomeAssistantResponseParser {
 
     /** Incomplete items from `todo.get_items` for [entityId]. */
     fun todos(result: JsonElement?, entityId: String): List<TodoItem> =
-        serviceResponse(result, entityId, TodoResponse.serializer())?.items.orEmpty().mapNotNull { item ->
+        serviceResponse(
+            result = result,
+            entityId = entityId,
+            serializer = TodoResponse.serializer()
+        )?.items.orEmpty().mapNotNull { item ->
             val summary = item.summary
+
             when {
                 item.status != null && item.status != NEEDS_ACTION -> null
                 summary == null -> null
@@ -99,6 +111,7 @@ internal object HomeAssistantResponseParser {
     private fun <T> serviceResponse(result: JsonElement?, entityId: String, serializer: KSerializer<T>): T? {
         val response = (result as? JsonObject)?.let { it["response"] as? JsonObject ?: it }
         val part = response?.get(entityId) as? JsonObject ?: return null
+
         return runCatching { HA_JSON.decodeFromJsonElement(serializer, part) }.getOrNull()
     }
 
@@ -106,6 +119,7 @@ internal object HomeAssistantResponseParser {
         val time = forecast.datetime
             ?.let { runCatching { OffsetDateTime.parse(it).toZonedDateTime() }.getOrNull() }
             ?: return null
+
         return Forecast(
             time = time,
             condition = forecast.condition.orEmpty(),
@@ -117,12 +131,15 @@ internal object HomeAssistantResponseParser {
 
     private fun historyPoint(row: HistoryRow, isBinary: Boolean): HistoryPoint? {
         val state = row.state
+
         val value = if (isBinary) {
             state?.let { if (it == SwitchState.ON.wire) 1.0 else 0.0 }
         } else {
             state?.toDoubleOrNull()
         }
+
         val timeMs = (row.lastUpdated ?: row.lastChanged)?.let { (it * MS_PER_SECOND).toLong() }
+
         return if (value != null && timeMs != null) timeMs to value else null
     }
 }
