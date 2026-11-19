@@ -296,6 +296,7 @@ internal fun DocContext.flowKeys(
     entityId: String,
     verb: String,
     choices: List<Pair<String, String>>,
+    isSegmented: Boolean = false,
     chosen: (EntityState) -> String?,
 ) {
     bindChoices(
@@ -306,7 +307,7 @@ internal fun DocContext.flowKeys(
         chosen = chosen,
     )
 
-    if (choices.size in 2..CardChrome.FLOW_KEYS_SEGMENT_MAX) {
+    if (isSegmented || choices.size in 2..CardChrome.FLOW_KEYS_SEGMENT_MAX) {
         choiceRow(
             scopeId = entityId,
             group = verb,

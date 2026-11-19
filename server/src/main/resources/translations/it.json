@@ -36,6 +36,7 @@
   "ui.rooms_clean_many": "Pulisci {count} stanze",
   "ui.rooms_clears_after_start": "La selezione si azzera all'avvio",
   "ui.suction": "Aspirazione",
+  "ui.cleaning_mode": "Modalità di pulizia",
   "ui.battery": "Batteria {value}",
   "ui.code": "Codice",
   "ui.clear": "Cancella",

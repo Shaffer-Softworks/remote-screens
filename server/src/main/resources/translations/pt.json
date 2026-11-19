@@ -36,6 +36,7 @@
   "ui.rooms_clean_many": "Limpar {count} divisões",
   "ui.rooms_clears_after_start": "A seleção é limpa ao iniciar",
   "ui.suction": "Sucção",
+  "ui.cleaning_mode": "Modo de limpeza",
   "ui.battery": "Bateria {value}",
   "ui.code": "Código",
   "ui.clear": "Limpar",

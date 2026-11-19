@@ -128,6 +128,7 @@ internal fun DocContext.vacuumCard(
             entityId = entityId,
             verb = "fan_speed",
             choices = speeds.map { it to i18n.optionLabel(it) },
+            isSegmented = false,
         ) {
             it.vacuum.fanSpeed
         }
@@ -143,6 +144,7 @@ internal fun DocContext.vacuumCard(
             entityId = cleaningModeId,
             verb = "option",
             choices = cleaningModes.map { it to i18n.optionLabel(it) },
+            isSegmented = true,
         ) {
             it.state
         }

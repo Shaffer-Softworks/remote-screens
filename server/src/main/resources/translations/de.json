@@ -36,6 +36,7 @@
   "ui.rooms_clean_many": "{count} Räume reinigen",
   "ui.rooms_clears_after_start": "Auswahl wird nach dem Start geleert",
   "ui.suction": "Saugkraft",
+  "ui.cleaning_mode": "Reinigungsmodus",
   "ui.battery": "Akku {value}",
   "ui.code": "Code",
   "ui.clear": "Löschen",
