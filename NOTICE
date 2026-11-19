@@ -31,3 +31,8 @@ Android CLI skill (`.cursor/skills/android-cli`, `.agents/skills/android-cli`)
   Copyright Google LLC
   Licensed under the Apache License, Version 2.0
   https://developer.android.com/tools/agents/android-cli
+Android skills (`.cursor/skills`, `.agents/skills`): `android-permissions-security`, `android-intent-security`,
+`anr-audit-and-fix`, `jetpack-compose-performance`, and `android-profiler`.
+  Copyright Google LLC
+  Licensed under the Apache License, Version 2.0
+  https://github.com/android/skills

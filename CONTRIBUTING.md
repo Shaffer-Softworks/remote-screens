@@ -9,6 +9,8 @@
 - Node **24** (editor)
 - Python **3.13** (integration tests, catalogue tools)
 
+Player work can use the Android skills in `.cursor/skills/` (the same copies are in `.agents/skills/`): `android-permissions-security`, `android-intent-security`, `anr-audit-and-fix`, `jetpack-compose-performance`, and `android-profiler`.
+
 ## Day-to-day
 
 ```sh
