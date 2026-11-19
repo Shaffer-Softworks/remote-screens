@@ -1,5 +1,5 @@
 // The library's "Other tiles": kinds that are no entity, and the full-page panels.
-// Every edge-to-edge page the add-on draws (TileBox.kt `edgeToEdge`) must be offered here.
+// Every edge-to-edge page the add-on draws (TileKind.EDGE_PAGES) must be offered here.
 
 import type { EntityInfo, TileSource } from './types'
 
