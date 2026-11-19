@@ -403,7 +403,7 @@ object ScreenRenderer {
         page: Page,
         spec: GridSpec,
         back: Boolean,
-        home: Int
+        home: Int,
     ) {
         val bar = screen.topBar
         val ink = role(Role.INK)

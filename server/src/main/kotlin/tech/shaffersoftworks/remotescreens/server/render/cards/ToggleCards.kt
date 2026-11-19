@@ -2,38 +2,36 @@
 
 package tech.shaffersoftworks.remotescreens.server.render.cards
 
-import tech.shaffersoftworks.remotescreens.server.render.DocContext
-import tech.shaffersoftworks.remotescreens.server.render.theme.Role
-import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
-import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
-import tech.shaffersoftworks.remotescreens.server.render.widgets.spacer
-import tech.shaffersoftworks.remotescreens.server.render.widgets.key
-import tech.shaffersoftworks.remotescreens.server.render.widgets.label
-
 import androidx.compose.remote.creation.dsl.Modifier
-import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
-import androidx.compose.remote.creation.dsl.RcTextAlign
-import androidx.compose.remote.creation.dsl.fillMaxWidth
-import androidx.compose.remote.creation.dsl.horizontalWeight
-import androidx.compose.remote.creation.dsl.width
-import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
-import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiState
-import tech.shaffersoftworks.remotescreens.server.render.widgets.KEY_CORNER_DIVISOR
-import tech.shaffersoftworks.remotescreens.server.render.widgets.KEY_ICON_DP
-import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
-import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
-import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
-import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning
+import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
+import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
+import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.height
+import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
+import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
-import java.util.Locale
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
+import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiState
+import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.Vars
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
+import tech.shaffersoftworks.remotescreens.server.render.widgets.KEY_CORNER_DIVISOR
+import tech.shaffersoftworks.remotescreens.server.render.widgets.KEY_ICON_DP
+import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
+import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
+import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
+import tech.shaffersoftworks.remotescreens.server.render.widgets.key
+import tech.shaffersoftworks.remotescreens.server.render.widgets.label
+import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
+import tech.shaffersoftworks.remotescreens.server.render.widgets.spacer
+import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
+import tech.shaffersoftworks.remotescreens.shared.ActionRef
 
 internal fun DocContext.toggleCard(entityId: String, entityState: EntityState?) {
     spacer(CardChrome.PANEL_PAD_DP)
@@ -80,10 +78,11 @@ internal fun DocContext.sirenCard(entityId: String, entityState: EntityState?) {
 }
 
 internal fun cleaningModeEntityId(vacuumId: String): String =
-        "select.${EntityId(vacuumId).objectId}_cleaning_mode"
+    "select.${EntityId(vacuumId).objectId}_cleaning_mode"
 
-internal fun vaccumBatteryEntityId(vacuumId: String): String =
-    "sensor.${EntityId(vacuumId).objectId}_cleaning_mode"
+// TODO add battery
+internal fun vacuumBatteryEntityId(vacuumId: String): String =
+    "sensor.${EntityId(vacuumId).objectId}_battery"
 
 internal fun DocContext.vacuumCard(
     entityId: String,
@@ -128,7 +127,8 @@ internal fun DocContext.vacuumCard(
         flowKeys(
             entityId = entityId,
             verb = "fan_speed",
-            choices = speeds.map { it to i18n.optionLabel(it) }) {
+            choices = speeds.map { it to i18n.optionLabel(it) },
+        ) {
             it.vacuum.fanSpeed
         }
     }
@@ -142,7 +142,8 @@ internal fun DocContext.vacuumCard(
         flowKeys(
             entityId = cleaningModeId,
             verb = "option",
-            choices = cleaningModes.map { it to i18n.optionLabel(it)  }) {
+            choices = cleaningModes.map { it to i18n.optionLabel(it) },
+        ) {
             it.state
         }
     }
