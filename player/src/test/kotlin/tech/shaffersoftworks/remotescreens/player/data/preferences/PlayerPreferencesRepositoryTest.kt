@@ -23,6 +23,7 @@ class PlayerPreferencesRepositoryTest {
                 temporaryFolder.newFolder().resolve("player.preferences_pb")
             },
         )
+
         val originalId = repository.deviceId()
         repository.setServer("10.0.0.5:8100")
         repository.setPairing("secret-token", "Kitchen")
@@ -50,6 +51,7 @@ class PlayerPreferencesRepositoryTest {
                 temporaryFolder.newFolder().resolve("player.preferences_pb")
             },
         )
+
         val originalId = repository.deviceId()
         repository.setPairing("secret-token", "Kitchen")
 

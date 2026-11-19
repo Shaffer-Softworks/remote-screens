@@ -73,11 +73,13 @@ class SupervisorClient(
             DiscoveryMessage.serializer(),
             DiscoveryMessage(DISCOVERY_SERVICE, DiscoveryConfig(host = LOOPBACK, port = playerPort, apiKey = apiKey)),
         )
+
         val response = httpClient.post("$SUPERVISOR_URL/discovery") {
             bearerAuth(supervisorToken)
             contentType(ContentType.Application.Json)
             setBody(body)
         }
+
         logger.info(
             "Discovery sent: {} {}",
             response.status,

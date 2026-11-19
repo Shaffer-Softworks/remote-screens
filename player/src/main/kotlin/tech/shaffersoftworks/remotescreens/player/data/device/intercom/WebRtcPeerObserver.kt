@@ -13,6 +13,7 @@ internal class WebRtcPeerObserver(
 ) : PeerConnection.Observer {
     override fun onIceCandidate(candidate: IceCandidate?) {
         if (candidate == null) return
+
         listener().onCandidate(candidate.sdp, candidate.sdpMid, candidate.sdpMLineIndex)
     }
 
@@ -29,6 +30,7 @@ internal class WebRtcPeerObserver(
 
     override fun onAddTrack(receiver: RtpReceiver?, streams: Array<out MediaStream>?) {
         val track = receiver?.track()
+
         if (track is AudioTrack) track.setEnabled(true)
     }
 

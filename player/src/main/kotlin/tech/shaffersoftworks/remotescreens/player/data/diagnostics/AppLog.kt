@@ -46,9 +46,11 @@ class AppLog @Inject constructor(
 
     fun start() {
         if (writerJob?.isActive == true) return
+
         writerJob = scope.launch {
             for (entry in writes) {
                 var retrySeconds = 1L
+
                 while (!persist(entry)) {
                     delay(retrySeconds.seconds)
                     retrySeconds = (retrySeconds * 2).coerceAtMost(MAX_RETRY_SECONDS)
@@ -64,6 +66,7 @@ class AppLog @Inject constructor(
      */
     fun forwardOn(connectionId: Long?) {
         if (connectionId != null && connectionId == forwardingConnectionId && forwardingJob?.isActive == true) return
+
         forwardingJob?.cancel()
         forwardingConnectionId = connectionId
         forwardingJob = connectionId?.let { id -> scope.launch { sendLogs(id) } }
@@ -82,12 +85,15 @@ class AppLog @Inject constructor(
 
     private suspend fun sendLogs(connectionId: Long) {
         var retrySeconds = 1L
+
         while (true) {
             val isDelivered = try {
                 val batch = logs.pending(Protocol.MAX_APP_LOG_BATCH).first { it.isNotEmpty() }
                 val acknowledged = sendAndAwaitAck(batch, connectionId)
+
                 // Entries left out of the acknowledgement stay queued and go in the next batch.
                 if (acknowledged.isNotEmpty()) logs.acknowledge(acknowledged)
+
                 acknowledged.isNotEmpty()
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -95,6 +101,7 @@ class AppLog @Inject constructor(
                 Log.e("AppLog", "Could not forward stored logs", error)
                 false
             }
+
             delay(if (isDelivered) 1.seconds else retrySeconds.seconds)
             retrySeconds = if (isDelivered) 1L else (retrySeconds * 2).coerceAtMost(MAX_RETRY_SECONDS)
         }
@@ -103,6 +110,7 @@ class AppLog @Inject constructor(
     /** Returns the event IDs in [batch] that the add-on acknowledged, or none on a failed send or timeout. */
     private suspend fun sendAndAwaitAck(batch: List<StoredLog>, connectionId: Long): List<String> {
         val eventIds = batch.mapTo(HashSet()) { it.eventId }
+
         return withTimeoutOrNull(5.seconds) {
             coroutineScope {
                 // Subscribe before sending so a fast acknowledgement cannot be missed.
@@ -114,8 +122,10 @@ class AppLog @Inject constructor(
                             ?.takeIf { it.isNotEmpty() }
                     }.first()
                 }
+
                 try {
                     val message = PlayerMessage.AppLog(batch.map { it.toEntry() })
+
                     if (connection.trySend(message, connectionId)) ack.await() else emptyList()
                 } finally {
                     ack.cancel()
@@ -136,7 +146,9 @@ class AppLog @Inject constructor(
 
     private fun record(priority: Int, tag: String, message: String, isEchoedToLogcat: Boolean) {
         val entry = entry(priority, tag, message)
+
         if (isEchoedToLogcat) Log.println(priority, entry.tag, entry.message)
+
         writes.trySend(entry)
     }
 

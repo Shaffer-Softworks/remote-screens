@@ -115,6 +115,7 @@ data class RemoteScreenState(
     val playingVideo: Pair<Slot, SlotVideo>?
         get() {
             val slot = topOverlay ?: Slot.MAIN
+
             return videos[slot]
                 ?.takeIf { video -> video.revision == documents[slot]?.revision }
                 ?.takeIf { video -> slot != Slot.MAIN || video.page < 0 || video.page == page }
@@ -125,6 +126,7 @@ data class RemoteScreenState(
     val playingMap: Pair<Slot, SlotMap>?
         get() {
             val slot = topOverlay ?: return null
+
             return maps[slot]
                 ?.takeIf { map -> map.revision == documents[slot]?.revision }
                 ?.let { map -> slot to map }
@@ -143,8 +145,11 @@ data class RemoteScreenState(
     val playingEnergyDashboard: SlotEnergyDashboard?
         get() {
             val onPage = energyDashboards[Slot.MAIN].orEmpty().filter { it.page == page }
+
             if (onPage.isEmpty()) return null
+
             val revision = documents[Slot.MAIN]?.revision
+
             return onPage.firstOrNull { it.revision == revision } ?: onPage.last()
         }
 
@@ -158,6 +163,7 @@ data class RemoteScreenState(
 
     fun withDocument(message: ServerMessage.Document, bytes: ByteArray): RemoteScreenState {
         val document = SlotDocument(message.rev, bytes, message.predictions.toMutableMap())
+
         val updated = copy(
             documents = documents + (message.slot to document),
             values = values + message.vars.associateBy(VarValue::name),
@@ -166,8 +172,11 @@ data class RemoteScreenState(
             searches = searches - message.slot,
             energyDashboards = retainedEnergyDashboards(message),
         )
+
         if (message.slot != Slot.MAIN) return updated
+
         val newPageCount = message.pageCount.coerceAtLeast(1)
+
         return updated.copy(
             navigationDrawer = message.navigationDrawer,
             homePage = message.homePage,
@@ -183,6 +192,7 @@ data class RemoteScreenState(
         if (message.predictions.isNotEmpty()) {
             for (document in documents.values) document.predictions.putAll(message.predictions)
         }
+
         return copy(values = values + message.vars.associateBy(VarValue::name))
     }
 
@@ -193,6 +203,7 @@ data class RemoteScreenState(
                 mode = CalendarDialogMode.CREATE,
                 tileId = message.tileId,
             )
+
             copy(calendarDialog = current.copy(error = message.error, isMutating = false))
         }
         CalendarDialogMode.DELETE -> copy(
@@ -215,6 +226,7 @@ data class RemoteScreenState(
     fun withCalendarMutating(isMutating: Boolean): RemoteScreenState {
         val current = calendarDialog ?: return this
         val error = if (isMutating) null else current.error
+
         return copy(calendarDialog = current.copy(isMutating = isMutating, error = error))
     }
 
@@ -224,6 +236,7 @@ data class RemoteScreenState(
     /** What a tap will change, applied before Home Assistant answers. Null when the tap predicts nothing. */
     fun withPrediction(slot: Slot, metadata: String): RemoteScreenState? {
         val predictedValues = documents[slot]?.predictions?.get(metadata) ?: return null
+
         return copy(values = values + predictedValues.associateBy(VarValue::name))
     }
 
@@ -258,6 +271,7 @@ data class RemoteScreenState(
 
     fun withSearchResults(tileId: String, rows: List<MusicSearchRow>): RemoteScreenState {
         val entry = searches.entries.firstOrNull { it.value.tileId == tileId } ?: return this
+
         return copy(
             searches = searches + (entry.key to entry.value.copy(rows = rows)),
         )
@@ -270,6 +284,7 @@ data class RemoteScreenState(
         // Wrong rev, or same payload re-sent on every same-content refresh — keep what is showing.
         val shouldKeep = documentRevision != dashboard.revision || previous?.message == dashboard.message
         val forSlot = existing.filterNot { it.page == dashboard.page } + dashboard
+
         return if (shouldKeep) this else copy(energyDashboards = energyDashboards + (slot to forSlot))
     }
 
@@ -322,11 +337,13 @@ private fun RemoteScreenState.retainedEnergyDashboards(
     message: ServerMessage.Document,
 ): Map<Slot, List<SlotEnergyDashboard>> {
     val pages = message.energyPages
+
     val kept = when {
         message.slot != Slot.MAIN -> emptyList()
         pages == null -> energyDashboards[message.slot].orEmpty()
         else -> energyDashboards[message.slot].orEmpty().filter { it.page in pages }
     }
+
     return if (message.slot != Slot.MAIN || kept.isEmpty() && pages != null) {
         energyDashboards - message.slot
     } else {

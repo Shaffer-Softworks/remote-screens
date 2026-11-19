@@ -3,6 +3,7 @@ package tech.shaffersoftworks.remotescreens.server.player
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.Base64
+import java.util.Locale
 
 private const val TOKEN_BYTES = 32
 private const val PAIRING_CODE_MIN = 100_000
@@ -15,6 +16,7 @@ class PlayerTokens(private val random: SecureRandom = SecureRandom()) {
     fun newPairingCode(taken: Set<String>): String {
         while (true) {
             val code = (PAIRING_CODE_MIN + random.nextInt(PAIRING_CODE_RANGE)).toString()
+
             if (code !in taken) return code
         }
     }
@@ -29,6 +31,6 @@ class PlayerTokens(private val random: SecureRandom = SecureRandom()) {
         fun hash(token: String): String =
             MessageDigest.getInstance(
                 "SHA-256",
-            ).digest(token.toByteArray()).joinToString("") { "%02x".format(it) }
+            ).digest(token.toByteArray()).joinToString("") { "%02x".format(Locale.ROOT, it) }
     }
 }

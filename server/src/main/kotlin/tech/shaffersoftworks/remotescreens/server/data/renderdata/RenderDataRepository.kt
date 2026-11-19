@@ -26,6 +26,7 @@ import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiStore
 import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.Tile
+import tech.shaffersoftworks.remotescreens.shared.TileKind
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.ZoneId
@@ -90,36 +91,45 @@ class RenderDataRepository(
     /** What the screen needs, for its tiles and for any card that may be opened from them. */
     suspend fun forScreen(screen: Screen): RenderData {
         val tiles = screen.pages.flatMap { it.allTiles() }
+
         val weatherEntities = tiles.mapNotNull { it.entityId }.filter { it.startsWith(
             "weather.",
         ) }.distinct()
+
         val todoEntities = tiles.mapNotNull { it.entityId }.filter { it.startsWith(
             "todo.",
         ) }.distinct()
+
         val graphedEntities = tiles.filter(::isGraphed).mapNotNull { it.entityId }.distinct()
-        val mediaPlayers = tiles.filter { it.effectiveKind() == "media_player" }.mapNotNull { it.entityId }.distinct()
-        val musicTiles = tiles.filter { it.effectiveKind() == "music" }
-        val needsAgenda = tiles.any { it.full && it.effectiveKind() == "calendar" }
-        val needsEnergy = tiles.any { it.effectiveKind() == "energy" }
-        val needsLights = tiles.any { it.effectiveKind() == "lights" }
-        val energyDashboardTiles = tiles.filter { it.effectiveKind() == "energy_dashboard" }
-        val needsBlinds = tiles.any { it.effectiveKind() == "blinds" }
-        val historyHours = tiles.firstOrNull { it.effectiveKind() == "history" }
+        val mediaPlayers = tiles.filter { it.tileKind() == TileKind.MEDIA_PLAYER }.mapNotNull { it.entityId }.distinct()
+        val musicTiles = tiles.filter { it.tileKind() == TileKind.MUSIC }
+        val needsAgenda = tiles.any { it.full && it.tileKind() == TileKind.CALENDAR }
+        val needsEnergy = tiles.any { it.tileKind() == TileKind.ENERGY }
+        val needsLights = tiles.any { it.tileKind() == TileKind.LIGHTS }
+        val energyDashboardTiles = tiles.filter { it.tileKind() == TileKind.ENERGY_DASHBOARD }
+        val needsBlinds = tiles.any { it.tileKind() == TileKind.BLINDS }
+
+        val historyHours = tiles.firstOrNull { it.tileKind() == TileKind.HISTORY }
             ?.options?.get("hours")?.toIntOrNull()
             ?: DEFAULT_HISTORY_HOURS
+
         // Drop cached to-dos so a complete on the page is visible after the next rebuild.
         for (entityId in todoEntities) todos.remove(entityId)
+
         val musicPayload = musicPayload(musicTiles)
         val zone = runCatching { ZoneId.of(homeAssistant.config.value.timeZone) }.getOrDefault(ZoneId.of("UTC"))
         val agenda = if (needsAgenda) calendarAgenda.snapshot(homeAssistant.states.value, zone) else null
         val homeName = homeAssistant.config.value.locationName.takeIf { it.isNotBlank() } ?: "Home"
+
         val energyDashboards = energyDashboardTiles.associate { tile ->
             val ui = energyDashboardUi.state(tile.id)
+
             tile.id to (
                 energyDashboard.snapshot(ui = ui, zone = zone, homeName = homeName)
                     ?: emptyEnergyDashboard(ui)
                 )
         }
+
         return RenderData(
             forecasts = weatherEntities.associateWith { forecast(it) },
             history = graphedEntities.associateWith { history(it, historyHours) },
@@ -156,7 +166,7 @@ class RenderDataRepository(
             .mapNotNull { entityId -> vacuumRooms(entityId)?.let { entityId to it } }
             .toMap()
 
-    private fun isVacuumPage(tile: Tile): Boolean = tile.full && tile.effectiveKind() == "vacuum"
+    private fun isVacuumPage(tile: Tile): Boolean = tile.full && tile.tileKind() == TileKind.VACUUM
 
     private fun emptyEnergyDashboard(ui: EnergyDashboardUiState): EnergyDashboardSnapshot =
         EnergyDashboardSnapshot(
@@ -177,9 +187,10 @@ class RenderDataRepository(
 
     /** What the card of [entityId], or of a [kind] with no entity such as energy, needs. */
     suspend fun forCard(entityId: String?, kind: String?): RenderData = when {
-        entityId == null -> RenderData(energy = if (kind == "energy") energy() else null)
+        entityId == null -> RenderData(energy = if (TileKind.fromWire(kind) == TileKind.ENERGY) energy() else null)
         Domain.WEATHER.owns(entityId) -> RenderData(forecasts = mapOf(entityId to forecast(entityId)))
-        kind == "history" || Domain.SENSOR.owns(entityId) || Domain.BINARY_SENSOR.owns(entityId) ->
+        TileKind.fromWire(kind) == TileKind.HISTORY ||
+            Domain.SENSOR.owns(entityId) || Domain.BINARY_SENSOR.owns(entityId) ->
             RenderData(history = mapOf(entityId to history(entityId, DEFAULT_HISTORY_HOURS)))
         Domain.MEDIA_PLAYER.owns(entityId) -> RenderData(browse = mapOf(entityId to browse(entityId)))
         Domain.TODO.owns(entityId) -> RenderData(todos = mapOf(entityId to todoItems(entityId)))
@@ -192,6 +203,7 @@ class RenderDataRepository(
 
     fun invalidateMusic(tileId: String? = null, playerEntityId: String? = null) {
         if (tileId != null) musicUiStore.clearBrowse(tileId)
+
         if (playerEntityId != null) {
             musicQueueCache.remove(playerEntityId)
         } else {
@@ -200,44 +212,48 @@ class RenderDataRepository(
     }
 
     suspend fun forecast(entityId: String): List<Forecast> = cached(
-        forecasts,
-        entityId,
-        FORECAST_TTL_MS,
+        cache = forecasts,
+        key = entityId,
+        ttlMs = FORECAST_TTL_MS,
     ) {
         val result = homeAssistant.call(WeatherGetForecasts(EntityId(entityId)), returnResponse = true)
         HomeAssistantResponseParser.forecasts(result, entityId)
     }
 
     suspend fun history(entityId: String, hours: Int): List<HistoryPoint> =
-        cached(histories, "$entityId@$hours", HISTORY_TTL_MS) {
+        cached(cache = histories, key = "$entityId@$hours", ttlMs = HISTORY_TTL_MS) {
             val request = HistoryDuringPeriod(
                 startTime = Instant.now().minusSeconds(hours * SECONDS_PER_HOUR).toString(),
                 entityIds = listOf(entityId),
             )
+
             HomeAssistantResponseParser.history(homeAssistant.send(request), entityId)
         }
 
     suspend fun energy(): EnergyPrefs? {
         energyPreferences?.takeIf { it.isFresh(ENERGY_TTL_MS) }?.let { return it.value }
+
         val value = runCatching {
             HomeAssistantResponseParser.energy(homeAssistant.send(EnergyGetPrefs))
         }.onFailure { logger.debug("No energy preferences: {}", it.message) }.getOrNull()
+
         energyPreferences = Cached(value, System.currentTimeMillis())
+
         return value
     }
 
     suspend fun browse(entityId: String): List<BrowseItem> = cached(
-        libraries,
-        entityId,
-        BROWSE_TTL_MS,
+        cache = libraries,
+        key = entityId,
+        ttlMs = BROWSE_TTL_MS,
     ) {
         HomeAssistantResponseParser.library(homeAssistant.send(BrowseMedia(entityId)))
     }
 
     suspend fun todoItems(entityId: String): List<TodoItem> = cached(
-        todos,
-        entityId,
-        BROWSE_TTL_MS,
+        cache = todos,
+        key = entityId,
+        ttlMs = BROWSE_TTL_MS,
     ) {
         val result = homeAssistant.call(TodoGetItems(EntityId(entityId)), returnResponse = true)
         HomeAssistantResponseParser.todos(result, entityId)
@@ -270,73 +286,88 @@ class RenderDataRepository(
         val configEntries = linkedMapOf<String, String>()
         val ui = linkedMapOf<String, MusicUiState>()
         val hasMore = linkedMapOf<String, Boolean>()
+
         for (tile in musicTiles) {
             val playerEntityId = tile.entityId ?: continue
             val state = musicUiStore.state(tile.id)
             ui[tile.id] = state
             val configEntryId = resolveConfigEntry(tile, playerEntityId)
+
             if (configEntryId != null) {
                 configEntries[tile.id] = configEntryId
-                ensureBrowseLoaded(tile.id, configEntryId, state)
+                ensureBrowseLoaded(tileId = tile.id, configEntryId = configEntryId, state = state)
                 browse[tile.id] = musicUiStore.browseItems(tile.id)
                 hasMore[tile.id] = musicUiStore.browseHasMore(tile.id)
                 queue[tile.id] = musicQueue(playerEntityId)
             }
         }
+
         return MusicPayload(browse = browse, queue = queue, configEntries = configEntries, ui = ui, hasMore = hasMore)
     }
 
     private suspend fun resolveConfigEntry(tile: Tile, playerEntityId: String): String? {
         val fromOptions = tile.options["config_entry_id"]?.takeIf { it.isNotBlank() }
         val cached = configEntryCache[playerEntityId]?.takeIf { it.isFresh(BROWSE_TTL_MS) }?.value
+
         val resolved = when {
             fromOptions != null -> fromOptions
             cached != null -> cached
             else -> {
                 val fetched = musicClient.configEntryIdForEntity(playerEntityId)
+
                 if (fetched != null) {
                     configEntryCache[playerEntityId] = Cached(fetched, System.currentTimeMillis())
                 }
+
                 fetched
             }
         }
+
         return resolved
     }
 
     /** Loads the first library page into [musicUiStore] when the tile has no rows yet. */
     suspend fun ensureBrowseLoaded(tileId: String, configEntryId: String, state: MusicUiState) {
         if (musicUiStore.browseItems(tileId).isNotEmpty()) return
+
         val page = musicClient.getLibrary(
             configEntryId = configEntryId,
             mediaType = state.browseMediaType,
             offset = 0,
             limit = MusicAssistantClient.LIBRARY_PAGE_SIZE,
         )
+
         musicUiStore.setBrowseItems(
-            tileId,
-            page,
+            tileId = tileId,
+            items = page,
             hasMore = page.size >= MusicAssistantClient.LIBRARY_PAGE_SIZE,
         )
+
         musicUiStore.setBrowseOffset(tileId, 0)
     }
 
     /** Fetches the next browse page for [tileId] and updates the store. */
     suspend fun loadMoreBrowse(tileId: String, configEntryId: String): Boolean {
         val state = musicUiStore.state(tileId)
+
         if (!musicUiStore.browseHasMore(tileId)) return false
+
         val offset = musicUiStore.browseItems(tileId).size
         musicUiStore.setBrowseOffset(tileId, offset)
+
         val page = musicClient.getLibrary(
             configEntryId = configEntryId,
             mediaType = state.browseMediaType,
             offset = offset,
             limit = MusicAssistantClient.LIBRARY_PAGE_SIZE,
         )
+
         musicUiStore.setBrowseItems(
-            tileId,
-            musicUiStore.browseItems(tileId) + page,
+            tileId = tileId,
+            items = musicUiStore.browseItems(tileId) + page,
             hasMore = page.size >= MusicAssistantClient.LIBRARY_PAGE_SIZE,
         )
+
         return page.isNotEmpty()
     }
 
@@ -344,11 +375,13 @@ class RenderDataRepository(
         musicQueueCache[playerEntityId]?.takeIf { it.isFresh(MUSIC_TTL_MS) }?.let { return it.value }
         val snapshot = musicClient.getQueue(playerEntityId)
         musicQueueCache[playerEntityId] = Cached(snapshot, System.currentTimeMillis())
+
         return snapshot
     }
 
     private fun isGraphed(tile: Tile): Boolean =
-        tile.effectiveKind() == "history" || (tile.effectiveKind() == "sensor" && tile.options["graph"] == "true")
+        tile.tileKind() == TileKind.HISTORY ||
+            (tile.tileKind() == TileKind.SENSOR && tile.options[Tile.OPTION_GRAPH] == Tile.OPTION_TRUE)
 
     @Volatile
     private var energyPreferences: Cached<EnergyPrefs?>? = null
@@ -360,10 +393,13 @@ class RenderDataRepository(
         load: suspend () -> List<T>,
     ): List<T> {
         cache[key]?.takeIf { it.isFresh(ttlMs) }?.let { return it.value }
+
         val value = runCatching { load() }
             .onFailure { logger.debug("Fetch {} failed: {}", key, it.message) }
             .getOrDefault(cache[key]?.value.orEmpty())
+
         cache[key] = Cached(value, System.currentTimeMillis())
+
         return value
     }
 }

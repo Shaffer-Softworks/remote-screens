@@ -23,10 +23,13 @@ class VacuumActions(
         val repository = renderData ?: return TapOutcome.Ignored
         val store = repository.vacuumUi
         val tileId = target.tileId
+
         val isHandled = when (verb) {
             "vacuum_select" -> {
                 val isVacuum = Domain.VACUUM.owns(arg)
+
                 if (isVacuum) store.selectVacuum(tileId, arg)
+
                 isVacuum
             }
             "vacuum_rooms" -> openRooms(repository = repository, target = target)
@@ -36,19 +39,24 @@ class VacuumActions(
             }
             "vacuum_rooms_toggle" -> {
                 val isRoom = arg.isNotBlank()
+
                 if (isRoom) store.toggleRoom(tileId, arg)
+
                 isRoom
             }
             "vacuum_rooms_clean" -> cleanRooms(repository = repository, target = target)
             else -> false
         }
+
         return if (isHandled) TapOutcome.Rebuild else TapOutcome.Ignored
     }
 
     private suspend fun openRooms(repository: RenderDataRepository, target: TapTarget): Boolean {
         val entityId = roomsEntityId(store = repository.vacuumUi, target = target)
         val hasRooms = entityId != null && repository.vacuumRooms(entityId) != null
+
         if (hasRooms) repository.vacuumUi.openRooms(target.tileId)
+
         return hasRooms
     }
 
@@ -57,6 +65,7 @@ class VacuumActions(
         val entityId = roomsEntityId(store = store, target = target)
         val rooms = entityId?.let { repository.vacuumRooms(it) }
         val roomIds = rooms?.selectedIds(store.state(target.tileId).selectedRooms).orEmpty()
+
         if (entityId == null || rooms == null || roomIds.isEmpty()) return false
 
         when (rooms.method) {
@@ -65,7 +74,9 @@ class VacuumActions(
                 VacuumSegmentClean.of(EntityId(entityId), segmentIds = roomIds),
             )
         }
+
         store.afterClean(target.tileId)
+
         return true
     }
 

@@ -83,7 +83,9 @@ class KioskManager @Inject constructor(
     /** Must be called while [activity] is in front. */
     fun startLockTaskMode(activity: Activity) {
         disableSystemAutoRotate(activity)
+
         if (isDeviceOwner()) setKioskPolicies(enable = true)
+
         runCatching { activity.startLockTask() }
             .onSuccess { Timber.i("Lock task started (device owner: %b)", isDeviceOwner()) }
             .onFailure { exception -> Timber.e(exception, "startLockTask failed") }
@@ -95,6 +97,7 @@ class KioskManager @Inject constructor(
      */
     private fun disableSystemAutoRotate(activity: Activity) {
         val userRotation = activity.displayRotation()
+
         if (deviceRepository.disableSystemAutoRotate(userRotation)) {
             Timber.i("System auto-rotate disabled (user_rotation=%d)", userRotation)
         } else {
@@ -110,6 +113,7 @@ class KioskManager @Inject constructor(
         runCatching { activity.stopLockTask() }
             .onSuccess { Timber.i("Lock task stopped") }
             .onFailure { exception -> Timber.e(exception, "stopLockTask failed") }
+
         if (isDeviceOwner()) setKioskPolicies(enable = false)
     }
 
@@ -121,6 +125,7 @@ class KioskManager @Inject constructor(
     /** Applies [isKioskWanted] to [activity], doing nothing when it already holds. */
     fun applyKiosk(activity: Activity, isKioskWanted: Boolean) {
         val currentState = lockTaskState()
+
         when {
             isKioskWanted && currentState == KioskState.OFF -> startLockTaskMode(activity)
             !isKioskWanted && currentState != KioskState.OFF -> stopLockTaskMode(activity)
@@ -135,7 +140,9 @@ class KioskManager @Inject constructor(
         ioScope.launch {
             val isKioskWanted = preferencesRepository.isKioskEnabled.first() &&
                 !preferencesRepository.isKioskSuppressed.first()
+
             if (!isKioskWanted || !isDeviceOwner() || lockTaskState() != KioskState.OFF) return@launch
+
             Timber.i("Relaunching the kiosk (%s)", reason)
             context.startActivity(mainActivityIntent(context))
         }
@@ -150,6 +157,7 @@ class KioskManager @Inject constructor(
         // Application.onCreate, an admin receiver, or a lock-task transition while it does so.
         ioScope.launch {
             if (!permissionGrantMutex.tryLock()) return@launch
+
             try {
                 grantMissingRuntimePermissions()
             } finally {
@@ -160,6 +168,7 @@ class KioskManager @Inject constructor(
 
     private fun grantMissingRuntimePermissions() {
         if (!isDeviceOwner()) return
+
         for (permission in RUNTIME_PERMISSIONS) {
             val isGranted = runCatching {
                 devicePolicyManager.getPermissionGrantState(adminComponent, context.packageName, permission) ==
@@ -173,6 +182,7 @@ class KioskManager @Inject constructor(
                 Timber.w(exception, "Could not grant %s", permission)
                 false
             }
+
             if (!isGranted) {
                 Timber.w("Device policy did not grant %s", permission)
             }
@@ -185,16 +195,20 @@ class KioskManager @Inject constructor(
      */
     fun onProvisioned(provisioningIntent: Intent) {
         grantRuntimePermissions()
+
         val adminExtras = IntentCompat.getParcelableExtra(
             provisioningIntent,
             DevicePolicyManager.EXTRA_PROVISIONING_ADMIN_EXTRAS_BUNDLE,
             PersistableBundle::class.java,
         )
+
         val server = adminExtras?.getString(EXTRA_SERVER)?.let(::normalizeServerAddress)
+
         ioScope.launch {
             // Before the kiosk turns on, so the first lock already sees it.
             preferencesRepository.setBatteryPromptPending(true)
             preferencesRepository.setKioskEnabled(true)
+
             if (server != null) preferencesRepository.setServer(server)
         }
     }
@@ -205,7 +219,9 @@ class KioskManager @Inject constructor(
      */
     suspend fun consumeBatteryPrompt(): Boolean {
         if (!preferencesRepository.isBatteryPromptPending.first()) return false
+
         preferencesRepository.setBatteryPromptPending(false)
+
         return isDeviceOwner() && !deviceRepository.isIgnoringBatteryOptimizations()
     }
 
@@ -215,7 +231,9 @@ class KioskManager @Inject constructor(
      */
     fun removeDeviceOwner() {
         if (!isDeviceOwner()) return
+
         setKioskPolicies(enable = false)
+
         // Still the only API that drops device owner without a factory wipe; deprecated as "test-only".
         @Suppress("DEPRECATION")
         runCatching { devicePolicyManager.clearDeviceOwnerApp(context.packageName) }
@@ -229,15 +247,19 @@ class KioskManager @Inject constructor(
                 restriction,
                 enable,
             ) }
+
             devicePolicyManager.setStatusBarDisabled(adminComponent, enable)
             devicePolicyManager.setKeyguardDisabled(adminComponent, enable)
             setAsHomeApp(enable)
+
             if (enable) {
                 grantRuntimePermissions()
+
                 devicePolicyManager.setLockTaskPackages(
                     adminComponent,
                     arrayOf(context.packageName),
                 )
+
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     devicePolicyManager.setLockTaskFeatures(
                         adminComponent,
@@ -258,11 +280,13 @@ class KioskManager @Inject constructor(
      */
     fun setLocationAccuracyDialogAllowed(isAllowed: Boolean) {
         if (!isDeviceOwner() || lockTaskState() != KioskState.LOCKED) return
+
         val packages = if (isAllowed) {
             arrayOf(context.packageName, GOOGLE_PLAY_SERVICES_PACKAGE)
         } else {
             arrayOf(context.packageName)
         }
+
         runCatching { devicePolicyManager.setLockTaskPackages(adminComponent, packages) }
             .onFailure { exception ->
                 Timber.w(exception, "Could not update lock task packages for location accuracy")
@@ -283,6 +307,7 @@ class KioskManager @Inject constructor(
                 addCategory(Intent.CATEGORY_HOME)
                 addCategory(Intent.CATEGORY_DEFAULT)
             }
+
             devicePolicyManager.addPersistentPreferredActivity(
                 adminComponent,
                 homeFilter,

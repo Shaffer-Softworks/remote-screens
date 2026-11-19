@@ -15,11 +15,15 @@ internal fun componentBounds(player: RemoteComposePlayer, componentId: Int): Rec
     val component = runCatching {
         player.document.document.getComponent(componentId)
     }.getOrNull()
+
     val width = component?.width?.roundToInt() ?: 0
     val height = component?.height?.roundToInt() ?: 0
+
     if (component == null || width <= 0 || height <= 0) return null
+
     val windowBounds = remoteContextOf(player)?.let { remoteContext ->
         val locationInWindow = floatArrayOf(0f, 0f)
+
         runCatching {
             component.getLocationInWindow(remoteContext, locationInWindow)
             val left = locationInWindow[0].roundToInt()
@@ -27,11 +31,14 @@ internal fun componentBounds(player: RemoteComposePlayer, componentId: Int): Rec
             Rect(left, top, left + width, top + height)
         }.getOrNull()
     }
+
     val semanticBounds = IntArray(SEMANTIC_BOUND_SIZE)
+
     val hasSemanticBounds = runCatching {
         component.getBoundsInSemanticParent(semanticBounds, null)
         true
     }.getOrDefault(false)
+
     val fromSemantic = if (hasSemanticBounds) {
         Rect(
             semanticBounds[BOUND_LEFT],
@@ -42,6 +49,7 @@ internal fun componentBounds(player: RemoteComposePlayer, componentId: Int): Rec
     } else {
         null
     }
+
     return windowBounds ?: fromSemantic
 }
 

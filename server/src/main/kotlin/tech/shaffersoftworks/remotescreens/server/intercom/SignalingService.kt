@@ -32,6 +32,7 @@ class SignalingService(
             while (isActive) {
                 delay(APP_PING_INTERVAL_MS.milliseconds)
                 val ping = SignalingFrame.encode(SignalingFrame.Ping(System.currentTimeMillis()))
+
                 for (socket in sockets.values) {
                     runCatching { socket.send(Frame.Text(ping)) }
                 }
@@ -42,6 +43,7 @@ class SignalingService(
     suspend fun serve(socket: WebSocketSession) {
         val sessionId = UUID.randomUUID().toString()
         sockets[sessionId] = socket
+
         try {
             for (frame in socket.incoming) {
                 if (frame is Frame.Text) {
@@ -56,6 +58,7 @@ class SignalingService(
 
     suspend fun clientsBody(): String {
         val (views, closeSessionIds) = hub.poll()
+
         for (sessionId in closeSessionIds) {
             closeSocket(sessionId)
         }
@@ -102,6 +105,7 @@ class SignalingService(
 /** `/webrtc` for stations, and `/api/clients` for the roster. */
 fun Route.signalingRoutes(signaling: SignalingService) {
     webSocket("/webrtc") { signaling.serve(this) }
+
     get("/api/clients") {
         call.respondText(signaling.clientsBody(), ContentType.Application.Json)
     }

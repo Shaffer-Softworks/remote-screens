@@ -3,7 +3,7 @@ package tech.shaffersoftworks.remotescreens.server.service
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
@@ -12,6 +12,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import tech.shaffersoftworks.remotescreens.server.data.apk.PlayerApkRepository
+import tech.shaffersoftworks.remotescreens.server.di.serverIoDispatcher
 
 private const val PLAYER_PACKAGE = "tech.shaffersoftworks.remotescreens.player"
 private const val OUTPUT_LIMIT = 16 * 1024 * 1024
@@ -33,6 +34,7 @@ class AdbService(
     private val apks: PlayerApkRepository,
     private val executable: String = System.getenv("REMOTE_SCREENS_ADB") ?: "adb",
     private val commandRunner: (suspend (List<String>, String) -> ByteArray)? = null,
+    private val ioDispatcher: CoroutineDispatcher = serverIoDispatcher(),
 ) {
     private val home = File(dataDir, "adb").also { it.mkdirs() }
     private val associationsFile = File(home, "tablets.json")
@@ -45,16 +47,28 @@ class AdbService(
 
     suspend fun status(): AdbStatus = mutex.withLock {
         val lines = run(listOf("devices", "-l")).decodeToString().lineSequence()
+
         val devices = lines.map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("List ") }
             .mapNotNull { line ->
                 val parts = line.split(Regex("\\s+"), limit = 3)
-                if (parts.size < 2) null else AdbDevice(parts[0], parts[1], parts.getOrElse(2) { "" })
+
+                if (parts.size < 2) {
+                    null
+                } else {
+                    AdbDevice(
+                        serial = parts[0],
+                        state = parts[1],
+                        description = parts.getOrElse(2) { "" }
+                    )
+                }
             }.toList()
+
         AdbStatus(devices, associations.toMap())
     }
 
     suspend fun pair(endpoint: String, code: String): String {
         require(code.matches(Regex("[0-9]{6}"))) { "Enter the six-digit pairing code" }
+
         return run(listOf("pair", endpoint(endpoint)), code + "\n").decodeToString()
     }
 
@@ -64,12 +78,15 @@ class AdbService(
     suspend fun disconnect(serial: String): String =
         run(listOf("disconnect", endpoint(serial))).decodeToString()
 
-    suspend fun associate(playerId: String, serial: String) = mutex.withLock {
+    suspend fun associate(playerId: String, serial: String): Unit = mutex.withLock {
         require(playerId.isNotBlank() && playerId.length <= MAX_IDENTIFIER_LENGTH) { "Invalid tablet" }
+
         if (serial.isBlank()) associations.remove(playerId) else associations[playerId] = serial(serial)
-        withContext(Dispatchers.IO) {
+
+        withContext(ioDispatcher) {
             val temporary = File(home, "tablets.json.tmp")
             temporary.writeText(Json.encodeToString(associations.toMap()))
+
             java.nio.file.Files.move(
                 temporary.toPath(),
                 associationsFile.toPath(),
@@ -81,12 +98,14 @@ class AdbService(
 
     suspend fun restart(serial: String): String {
         device(serial, listOf("shell", "am", "force-stop", PLAYER_PACKAGE))
+
         return device(serial, listOf("shell", "am", "start", "-W", "-n", "$PLAYER_PACKAGE/.MainActivity"))
             .decodeToString()
     }
 
     suspend fun install(serial: String): String {
         val apk = checkNotNull(apks.current()) { "No packaged player APK is available" }
+
         return device(serial, listOf("install", "-r", apk.file.absolutePath)).decodeToString()
     }
 
@@ -103,6 +122,7 @@ class AdbService(
         require(value.matches(Regex("[A-Za-z0-9._:\\[\\]%-]{1,200}")) && !value.startsWith("-")) {
             "Invalid ADB device serial"
         }
+
         return value
     }
 
@@ -110,23 +130,27 @@ class AdbService(
         require(value.matches(Regex("[A-Za-z0-9][A-Za-z0-9.-]*:[0-9]{1,5}"))) {
             "Enter a tablet address as host:port"
         }
+
         require(value.substringAfterLast(':').toInt() in 1..MAX_PORT) { "Invalid port" }
+
         return value
     }
 
     /** Drain both pipes concurrently, cap output, and always terminate unfinished processes. */
     private suspend fun run(args: List<String>, input: String = ""): ByteArray = coroutineScope {
         commandRunner?.let { return@coroutineScope it(args, input) }
-        withContext(Dispatchers.IO) {
+
+        withContext(ioDispatcher) {
             val process = ProcessBuilder(listOf(executable, "-P", "5038") + args).apply {
                 environment()["ANDROID_USER_HOME"] = home.absolutePath
                 environment()["HOME"] = home.absolutePath
                 environment().remove("ADB_SERVER_SOCKET")
                 environment().remove("ADB_VENDOR_KEYS")
             }.start()
+
             try {
-                val stdout = async(Dispatchers.IO) { readOutput(process.inputStream, process) }
-                val stderr = async(Dispatchers.IO) { readOutput(process.errorStream, process) }
+                val stdout = async(ioDispatcher) { readOutput(process.inputStream, process) }
+                val stderr = async(ioDispatcher) { readOutput(process.errorStream, process) }
                 process.outputStream.bufferedWriter().use { it.write(input) }
                 check(process.waitFor(COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS)) { "ADB command timed out" }
                 val output = stdout.await()
@@ -142,15 +166,20 @@ class AdbService(
     private fun readOutput(stream: java.io.InputStream, process: Process): ByteArray = stream.use {
         val output = ByteArrayOutputStream()
         val buffer = ByteArray(READ_BUFFER_SIZE)
+
         while (true) {
             val count = it.read(buffer)
+
             if (count < 0) break
+
             if (output.size() + count > OUTPUT_LIMIT) {
                 process.destroyForcibly()
                 error("ADB output exceeded the size limit")
             }
+
             output.write(buffer, 0, count)
         }
+
         output.toByteArray()
     }
 }

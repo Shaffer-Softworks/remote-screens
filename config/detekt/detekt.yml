@@ -18,12 +18,31 @@ complexity:
   # Prefer named args on multi-arg calls (see .cursor/rules/kotlin-named-arguments-detekt.mdc).
   NamedArguments:
     active: true
-    allowedArguments: 3
+    allowedArguments: 2
     ignoreArgumentsMatchingNames: false
+    # Generated from catalogue yaml. The generator keeps positional vararg calls.
+    excludes: ['**/Catalogue.kt']
+    # Naming every element of a vararg is a compile error, so these stay positional.
+    ignoreMethods:
+      - 'kotlin.collections.listOf'
+      - 'kotlin.collections.setOf'
+      - 'kotlin.collections.mapOf'
+      - 'kotlin.collections.mutableListOf'
+      - 'kotlin.collections.mutableSetOf'
+      - 'kotlin.collections.mutableMapOf'
+      - 'kotlin.arrayOf'
+      - 'kotlin.collections.arrayListOf'
+      - 'kotlin.collections.hashSetOf'
+      - 'kotlin.collections.hashMapOf'
+      - 'kotlin.collections.linkedMapOf'
 
 # Match Shaffer-Softworks/RPI: braced multiline if/else for statements; short
 # expression ifs may stay one line (e.g. `if (debug) a else b`).
 style:
+  UnusedPrivateFunction:
+    active: true
+    # Compose previews are private on purpose and are referenced by the preview tooling.
+    allowedNames: '(_|ignored|expected|serialVersionUID|.*Preview)'
   BracesOnIfStatements:
     active: true
     # Options: 'never', 'always', 'consistent', or 'necessary'
@@ -46,8 +65,20 @@ style:
     ignoreExtensionFunctions: true
     excludes: ['**/test/**', '**/androidTest/**', '**/*.kts']
 
-# Requires detektPlugins("dev.detekt:detekt-rules-ktlint-wrapper") — see root build.gradle.kts.
+# Requires detektPlugins — see root build.gradle.kts:
+#   dev.detekt:detekt-rules-ktlint-wrapper and project(":detekt-rules").
 # Style aligned with RPI (trailing commas, chain wrapping, arg wrapping, multiline if/else).
+remotescreens:
+  active: true
+  StatementSpacing:
+    active: true
+    autoCorrect: true
+  # One-shot helper for the type-resolution NamedArguments findings. Safe to leave on:
+  # it only rewrites a call when that call already violates NamedArguments.
+  NameCallArguments:
+    active: false
+    autoCorrect: false
+
 ktlint:
   ArgumentListWrapping:
     active: true
@@ -214,10 +245,10 @@ ktlint:
   ThenSpacing:
     active: false
   TrailingCommaOnCallSite:
-    active: true
+    active: false
     autoCorrect: true
   TrailingCommaOnDeclarationSite:
-    active: true
+    active: false
     autoCorrect: true
   TypeArgumentComment:
     active: false

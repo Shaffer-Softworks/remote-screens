@@ -62,15 +62,15 @@ class ServerDependencies(
 
     private val languageRepository = LanguageRepository(homeAssistant, layoutRepository)
     private val actionRouter = ActionRouter(
-        homeAssistant,
-        { languageRepository.current() },
-        renderDataRepository,
+        homeAssistant = homeAssistant,
+        i18n = { languageRepository.current() },
+        renderData = renderDataRepository,
     )
 
     val sentryMappings = SentryMappingService(
-        config.dataDir,
-        playerApkRepository,
-        { layoutRepository.layout.value.preferences.sentry },
+        dataDir = config.dataDir,
+        apks = playerApkRepository,
+        settings = { layoutRepository.layout.value.preferences.sentry },
     )
     val screenService = ScreenService(layoutRepository, backgroundStore)
     val themeService = ThemeService(layoutRepository)
@@ -112,6 +112,7 @@ class ServerDependencies(
         sentryMappings.start(scope)
         playerHub.start()
         signaling.start()
+
         scope.launch {
             homeAssistant.isConnected.collect { isConnected ->
                 if (isConnected) {

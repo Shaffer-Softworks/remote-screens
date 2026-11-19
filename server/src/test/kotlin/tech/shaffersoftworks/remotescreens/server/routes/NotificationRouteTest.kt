@@ -53,13 +53,16 @@ class NotificationRouteTest {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val http = HttpClient()
         val data = Files.createTempDirectory("notifications").toFile()
+
         val config = ServerConfig(
             isSupervisor = false, isDemo = true, homeAssistantWebSocketUrl = "",
             homeAssistantRestUrl = "", accessToken = "", dataDir = data,
             staticDir = null, apkDir = null, ingressHost = "127.0.0.1",
             ingressPort = 0, playerPort = 0, hostname = "localhost", version = "test",
         )
+
         val dependencies = ServerDependencies(config, http, scope)
+
         dependencies.layoutRepository.update { layout ->
             layout.copy(
                 screens = listOf(Screen("home", "Home")),
@@ -70,16 +73,19 @@ class NotificationRouteTest {
                 ),
             )
         }
+
         application {
             install(WebSockets)
             configureSerialization()
             configureErrorHandling()
+
             routing {
                 route("/integration") { integrationRoutes(dependencies.screenService, dependencies.playerHub) }
                 route("/api") { notificationRoutes(dependencies.playerHub) }
                 webSocket("/player") { dependencies.playerHub.serve(this, "test") }
             }
         }
+
         try {
             test(createClient { install(ClientWebSockets) }, dependencies)
         } finally {
@@ -94,7 +100,9 @@ class NotificationRouteTest {
             contentType(ContentType.Application.Json)
             setBody(Protocol.json.encodeToString(NotificationRequest.serializer(), request))
         }
+
         assertEquals(HttpStatusCode.OK, response.status)
+
         return Protocol.json.decodeFromString(NotificationResult.serializer(), response.bodyAsText())
     }
 
@@ -109,17 +117,21 @@ class NotificationRouteTest {
             appVersion = 1,
             capabilities = if (capable) listOf(Protocol.CAPABILITY_NOTIFICATIONS) else emptyList(),
         ))))
+
         untilMessage { it is ServerMessage.Document && it.slot == Slot.MAIN }
     }
 
     private suspend fun DefaultWebSocketSession.untilMessage(predicate: (ServerMessage) -> Boolean): ServerMessage =
         withTimeout(10_000) {
             var found: ServerMessage? = null
+
             while (found == null) {
                 val frame = incoming.receive() as? Frame.Text
                 val message = frame?.let { Protocol.decodeServer(it.readText()) }
+
                 if (message != null && predicate(message)) found = message
             }
+
             found
         }
 
@@ -134,6 +146,7 @@ class NotificationRouteTest {
     fun queuedNotificationsFlushWhenTheTabletReconnects() = withHub { client, _ ->
         val queued = client.notify(NotificationRequest("Laundry", targets = listOf("one")))
         assertEquals("queued", queued.devices.single().status)
+
         client.webSocket("/player") {
             hello()
             val banner = untilMessage { it is ServerMessage.NotificationBanner } as ServerMessage.NotificationBanner
@@ -158,10 +171,12 @@ class NotificationRouteTest {
     fun overlappingTargetsAreDeduplicatedAndPartialResultsReturned() = withHub { client, _ ->
         client.webSocket("/player") {
             hello()
+
             val result = client.notify(
                 NotificationRequest("Hi", targets = listOf("one", "home", "home")),
                 "/api/notifications",
             )
+
             assertEquals(2, result.devices.size)
             assertEquals("sent", result.devices.first { it.deviceId == "one" }.status)
             assertEquals("queued", result.devices.first { it.deviceId == "two" }.status)
@@ -186,12 +201,14 @@ class NotificationRouteTest {
     fun silentAlertHasNoWakeAndRepeatedContentGetsANewRevision() = withHub { client, _ ->
         client.webSocket("/player") {
             hello()
+
             val request = NotificationRequest(
                 "Check garage",
                 targets = listOf("one"),
                 presentation = "alert",
                 timeout = 0,
             )
+
             client.notify(request)
             val received = untilMessage { it is ServerMessage.Document || it is ServerMessage.Wake }
             val first = received as ServerMessage.Document
@@ -208,18 +225,22 @@ class NotificationRouteTest {
         client.webSocket("/player") {
             hello()
             val home = dependencies.homeAssistant as DemoHome
+
             val request = NotificationRequest(
                 "Open?",
                 targets = listOf("one"),
                 buttons = listOf(NotificationButton("Open", "lock.open")),
             )
+
             client.notify(request)
             val first = untilMessage { it is ServerMessage.NotificationBanner } as ServerMessage.NotificationBanner
             client.notify(request)
             val second = untilMessage { it is ServerMessage.NotificationBanner } as ServerMessage.NotificationBanner
+
             val event = async(start = CoroutineStart.UNDISPATCHED) {
                 withTimeout(10_000) { home.events.first { it.type == "remote_screens_alert_action" } }
             }
+
             send(Frame.Text(Protocol.encode(PlayerMessage.NotificationAction(first.id, 0))))
             send(Frame.Text(Protocol.encode(PlayerMessage.NotificationAction(second.id, 0))))
             send(Frame.Text(Protocol.encode(PlayerMessage.NotificationAction(second.id, 0))))
@@ -242,6 +263,7 @@ class NotificationRouteTest {
                 contentType(ContentType.Application.Json)
                 setBody(Protocol.json.encodeToString(NotificationRequest.serializer(), request))
             }
+
             assertEquals(HttpStatusCode.BadRequest, response.status)
         }
     }

@@ -102,7 +102,7 @@ APK file instead, which also works.
 
 ## Development
 
-You need JDK 21, the Android SDK (for the player), Node 24 and Python 3.13. See [CONTRIBUTING.md](CONTRIBUTING.md).
+You need JDK 21, the Android SDK (for the player), the Android CLI, Node 24 and Python 3.13. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```sh
 ./gradlew :shared:test :server:test        # server and shared tests

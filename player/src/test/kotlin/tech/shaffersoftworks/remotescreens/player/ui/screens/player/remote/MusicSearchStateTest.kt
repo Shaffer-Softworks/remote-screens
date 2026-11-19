@@ -20,12 +20,14 @@ class MusicSearchStateTest {
                 Slot.MAIN,
                 SlotSearch(1, 0x5E_0000, "ma1", "media_player.living_room"),
             )
+
         assertEquals("ma1", withSearch.playingSearch?.second?.tileId)
 
         val replaced = withSearch.withDocument(
             ServerMessage.Document(slot = Slot.MAIN, rev = 2, data = ""),
             byteArrayOf(2),
         )
+
         assertNull(replaced.playingSearch)
     }
 
@@ -44,6 +46,7 @@ class MusicSearchStateTest {
                 "ma1",
                 listOf(MusicSearchRow("Night Drive", "Various", "demo://1")),
             )
+
         assertEquals(1, state.playingSearch?.second?.rows?.size)
         assertEquals("Night Drive", state.playingSearch?.second?.rows?.first()?.title)
     }
@@ -60,6 +63,7 @@ class MusicSearchStateTest {
                 Slot.MAIN,
                 SlotSearch(1, 0x5E_0000, "ma1", "media_player.living_room", page = 3),
             )
+
         assertNotNull(onMusic.playingSearch)
         assertNull(onMusic.withPage(0).playingSearch)
         assertNotNull(onMusic.withPage(3).playingSearch)

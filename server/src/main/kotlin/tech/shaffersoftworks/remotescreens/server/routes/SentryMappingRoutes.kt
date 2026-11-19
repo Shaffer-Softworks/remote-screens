@@ -16,15 +16,19 @@ import tech.shaffersoftworks.remotescreens.server.service.SentryMappingService
 fun Route.sentryMappingRoutes(service: SentryMappingService) {
     route("/sentry/mappings") {
         get { call.respond(service.status()) }
+
         put {
             val request = call.receive<MappingUploadSettings>()
+
             val result = try {
                 service.configure(request)
             } catch (error: IllegalArgumentException) {
                 throw BadRequestException(error.message ?: "Invalid Sentry upload settings", error)
             }
+
             call.respond(result)
         }
+
         post { call.respond(service.reconcile(force = true)) }
         delete { call.respond(service.clear()) }
     }

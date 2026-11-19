@@ -16,6 +16,7 @@ subprojects {
         }
         dependencies {
             add("detektPlugins", rootProject.libs.detekt.rules.ktlint.wrapper)
+            add("detektPlugins", project(":detekt-rules"))
         }
     }
 }

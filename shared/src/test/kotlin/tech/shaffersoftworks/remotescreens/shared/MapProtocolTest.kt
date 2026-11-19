@@ -19,6 +19,7 @@ class MapProtocolTest {
         )
 
         assertEquals(map, Protocol.decodeServer(Protocol.encode(map)))
+
         assertEquals(
             """{"type":"map","slot":"overlay","rev":4,"componentId":6094848,""" +
                 """"tileUrl":"https://tile.openstreetmap.org/{z}/{x}/{y}.png","dark":true,""" +

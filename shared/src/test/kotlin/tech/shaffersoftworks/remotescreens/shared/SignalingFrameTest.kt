@@ -37,19 +37,24 @@ class SignalingFrameTest {
     @Test
     fun theWireNamesMatchTheStandaloneServer() {
         assertEquals(json("""{"type":"getClients"}"""), wire(SignalingFrame.GetClients))
+
         assertEquals(
             json("""{"type":"offer","sdp":"v=0","to":"station-b"}"""),
             wire(SignalingFrame.Offer("v=0", to = "station-b")),
         )
+
         assertEquals(
             json("""{"type":"candidate","candidate":"c","sdpMLineIndex":0,"to":"station-b"}"""),
             wire(SignalingFrame.Candidate("c", sdpMLineIndex = 0, to = "station-b")),
         )
+
         assertEquals(
             json("""{"type":"unavailable","targetId":"station-b","reason":"offline"}"""),
             wire(SignalingFrame.Unavailable("station-b")),
         )
+
         assertEquals(json("""{"type":"ping","ts":0}"""), wire(SignalingFrame.Ping()))
+
         assertEquals(
             json("""{"type":"clientsList","clients":[{"clientId":"ha-1","displayName":null,"inCall":false}]}"""),
             wire(SignalingFrame.ClientsList(listOf(SignalingClient("ha-1")))),
@@ -72,6 +77,7 @@ class SignalingFrameTest {
     fun missingFieldsTakeTheirDefaults() {
         assertEquals(SignalingFrame.Ping(ts = 0), SignalingFrame.decode("""{"type":"ping"}"""))
         assertEquals(SignalingFrame.Register(clientId = ""), SignalingFrame.decode("""{"type":"register"}"""))
+
         assertEquals(
             SignalingFrame.Unavailable("station-b", SignalingFrame.REASON_OFFLINE),
             SignalingFrame.decode("""{"type":"unavailable","targetId":"station-b"}"""),

@@ -35,6 +35,7 @@ class ScreenService(
     /** The layout without token hashes; the editor only needs to know whether a player has one. */
     fun redactedLayout(): LayoutData {
         val layout = layoutRepository.layout.value
+
         return layout.copy(
             players = layout.players.map { player ->
                 player.copy(tokenHash = if (player.tokenHash != null) "set" else null)
@@ -54,6 +55,7 @@ class ScreenService(
         } catch (error: IllegalArgumentException) {
             throw BadRequestException(error.message ?: "Invalid Sentry settings", error)
         }
+
         return layoutRepository.update { it.copy(preferences = preferences.copy(sentry = sentry)) }.preferences
     }
 
@@ -63,9 +65,11 @@ class ScreenService(
         } else {
             null
         }
+
         val grid = request.grid
             ?: designSize?.let { Grid.suggest(it.widthDp.toFloat(), it.heightDp.toFloat()) }
             ?: GridSize.DEFAULT
+
         val screen = Screen(
             id = newScreenId(),
             name = ScreenValidator.normalizeName(request.name),
@@ -74,7 +78,9 @@ class ScreenService(
             designSize = designSize,
             settings = ScreenSettings(orientation = ScreenValidator.orientationOf(designSize)),
         )
+
         layoutRepository.update { it.copy(screens = it.screens + screen) }
+
         return screen
     }
 
@@ -85,12 +91,16 @@ class ScreenService(
      */
     fun importScreen(file: ScreenFile): Screen {
         if (file.kind != ScreenFile.KIND) throw BadRequestException("Not a screen file")
+
         if (file.schemaVersion > SCHEMA_VERSION) {
             throw BadRequestException("This screen file needs a newer Remote Screens")
         }
+
         lateinit var imported: Screen
+
         layoutRepository.update { layout ->
             val screenId = newScreenId()
+
             val cleared = ScreenValidator.validate(
                 file.screen.copy(
                     id = screenId,
@@ -98,21 +108,26 @@ class ScreenService(
                     pages = file.screen.pages.map { page -> page.copy(backgroundImage = null) },
                 ),
             )
+
             val pages = cleared.pages.map { page ->
                 val asset = file.backgrounds.find { background -> background.pageId == page.id }
                     ?: return@map page
+
                 val token = restoreBackground(
                     screenId = screenId,
                     pageId = page.id,
                     asset = asset,
                 ) ?: return@map page
+
                 page.copy(backgroundImage = token)
             }
+
             val screen = cleared.copy(pages = pages)
             val themes = themesToStore(layout.themes, file.themes)
             imported = screen
             layout.copy(screens = layout.screens + screen, themes = themes)
         }
+
         return imported
     }
 
@@ -123,8 +138,9 @@ class ScreenService(
         asset: ScreenBackgroundAsset,
     ): String? {
         val bytes = runCatching { Base64.getDecoder().decode(asset.data) }.getOrNull() ?: return null
+
         return try {
-            backgroundStore.save(screenId, pageId, bytes)
+            backgroundStore.save(screenId = screenId, pageId = pageId, bytes = bytes)
         } catch (_: BackgroundRejected) {
             null
         } catch (_: IllegalArgumentException) {
@@ -135,11 +151,15 @@ class ScreenService(
     /** Replaces the screen [screenId]; null when there is no such screen. */
     fun updateScreen(screenId: String, screen: Screen): Screen? {
         val validated = ScreenValidator.validate(screen.copy(id = screenId))
+
         if (!exists(screenId)) return null
+
         layoutRepository.update { layout ->
             layout.copy(screens = layout.screens.map { if (it.id == screenId) validated else it })
         }
+
         backgroundStore.deleteUnreferenced(screenId, validated.pages)
+
         return validated
     }
 
@@ -157,6 +177,7 @@ class ScreenService(
                 } },
             )
         }
+
         backgroundStore.deleteScreen(screenId)
     }
 
@@ -180,13 +201,17 @@ class ScreenService(
     /** Merges the fields in [patch] into the settings of [screenId]; false when there is no such screen. */
     fun patchSettings(screenId: String, patch: JsonObject): Boolean {
         if (!exists(screenId)) return false
+
         updateSettings(screenId) { current ->
             val json = LayoutRepository.JSON
+
             val merged = JsonObject(
                 json.encodeToJsonElement(ScreenSettings.serializer(), current).jsonObject + patch,
             )
+
             json.decodeFromJsonElement(ScreenSettings.serializer(), merged)
         }
+
         return true
     }
 
@@ -196,13 +221,17 @@ class ScreenService(
     /** [name], or [name] plus " copy" / " copy 2" when that name is already used, within the name length. */
     private fun uniqueName(name: String, taken: Set<String>): String {
         val base = ScreenValidator.normalizeName(name)
+
         if (base !in taken) return base
+
         for (attempt in 1..MAX_COPY_NAME_ATTEMPTS) {
             val suffix = if (attempt == 1) COPY_NAME_SUFFIX else "$COPY_NAME_SUFFIX $attempt"
             val room = (ScreenValidator.MAX_SCREEN_NAME_LENGTH - suffix.length).coerceAtLeast(1)
             val candidate = ScreenValidator.normalizeName(base.take(room) + suffix)
+
             if (candidate !in taken) return candidate
         }
+
         throw BadRequestException("Could not name the copy")
     }
 
@@ -210,10 +239,13 @@ class ScreenService(
     private fun themesToStore(stored: List<Theme>, incoming: List<Theme>): List<Theme> {
         val seen = stored.map { it.id }.toMutableSet()
         var themes = stored
+
         for (theme in incoming) {
             if (!seen.add(theme.id)) continue
+
             themes = themes + ThemeValidator.validate(theme, themes)
         }
+
         return themes
     }
 }

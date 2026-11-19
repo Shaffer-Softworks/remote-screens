@@ -36,6 +36,7 @@ class DeviceRepository @Inject constructor(
     val appVersionCode: Int
         get() {
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 packageInfo.longVersionCode.toInt()
             } else {
@@ -50,10 +51,12 @@ class DeviceRepository @Inject constructor(
             IntentFilter(Intent.ACTION_BATTERY_CHANGED),
         )
             ?: return BatteryStatus(levelPercent = null, isCharging = null)
+
         val level = batteryIntent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
         val scale = batteryIntent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
         val levelPercent = if (level >= 0 && scale > 0) level * PERCENT / scale else null
         val isCharging = batteryIntent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0
+
         return BatteryStatus(levelPercent, isCharging)
     }
 
@@ -62,16 +65,19 @@ class DeviceRepository @Inject constructor(
         @Suppress("DEPRECATION")
         val wifiConnectionInfo =
             wifiManager.takeIf { it.isWifiEnabled }?.connectionInfo?.takeIf { it.networkId != -1 }
+
         @Suppress("DEPRECATION")
         return wifiConnectionInfo?.let { WifiManager.calculateSignalLevel(it.rssi, WIFI_LEVELS) }
     }
 
     fun isHomeApp(): Boolean {
         val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+
         val homeActivity = context.packageManager.resolveActivity(
             homeIntent,
             PackageManager.MATCH_DEFAULT_ONLY,
         )
+
         return homeActivity?.activityInfo?.packageName == context.packageName
     }
 
@@ -100,6 +106,7 @@ class DeviceRepository @Inject constructor(
             val resolver = context.contentResolver
             Settings.System.putInt(resolver, Settings.System.USER_ROTATION, userRotation)
             Settings.System.putInt(resolver, Settings.System.ACCELEROMETER_ROTATION, AUTO_ROTATE_DISABLED)
+
             Settings.System.getInt(
                 resolver,
                 Settings.System.ACCELEROMETER_ROTATION,

@@ -21,6 +21,7 @@ class HomeAssistantProtocolTest {
 
     private fun <R> result(request: HaRequest<R>, name: String): R {
         val message = assertIs<HaInbound.Result>(HA_JSON.decodeFromString(HaInbound.serializer(), fixture(name)))
+
         return HA_JSON.decodeFromJsonElement(request.resultSerializer, checkNotNull(message.result))
     }
 
@@ -48,6 +49,7 @@ class HomeAssistantProtocolTest {
         val event = assertIs<HaInbound.Event>(
             HA_JSON.decodeFromString(HaInbound.serializer(), fixture("state_changed_event.json")),
         ).event
+
         val change = HA_JSON.decodeFromJsonElement(StateChangedData.serializer(), event.data)
 
         assertEquals("state_changed", event.eventType)
@@ -65,17 +67,20 @@ class HomeAssistantProtocolTest {
                 inbound("""{"type":"auth_required","ha_version":"2026.11.2"}"""),
             ).haVersion,
         )
+
         assertEquals(
             "Invalid password",
             assertIs<HaInbound.AuthInvalid>(
                 inbound("""{"type":"auth_invalid","message":"Invalid password"}"""),
             ).message,
         )
+
         val failed = assertIs<HaInbound.Result>(
             inbound(
                 """{"id":9,"type":"result","success":false,"error":{"code":"not_found","message":"Not found"}}""",
             ),
         )
+
         assertEquals(HaError("not_found", "Not found"), failed.error)
     }
 
@@ -85,12 +90,14 @@ class HomeAssistantProtocolTest {
             EntityRegistryListForDisplay.resultSerializer,
             element("entity_registry_list_for_display.json"),
         )
+
         val areas = registry.entityAreaIds(listOf(DeviceEntry("hall_switch", "hallway"), DeviceEntry("loose")))
 
         assertEquals(4, registry.entities.size)
         assertEquals("kitchen", areas["light.kitchen"])
         assertEquals("hallway", areas["switch.hall"])
         assertEquals("mdi:ceiling-light", registry.entities[1].icon)
+
         assertEquals(
             listOf("sensor.signal", "light.hidden"),
             registry.entities.filter { it.isHidden }.map { it.entityId },
@@ -122,6 +129,7 @@ class HomeAssistantProtocolTest {
             listOf(1_763_366_400_500L to 11.5, 1_763_370_000_000L to 12.0),
             HomeAssistantResponseParser.history(history, "sensor.outdoor"),
         )
+
         assertEquals(
             listOf(1.0, 0.0),
             HomeAssistantResponseParser.history(history, "binary_sensor.door").map { it.second },
@@ -148,6 +156,7 @@ class HomeAssistantProtocolTest {
                 """{"sensor.grid_energy":[{"start":1763366400000,"change":1.25},{"start":1763370000000}]}""",
             ),
         )
+
         val fossil = HA_JSON.decodeFromJsonElement(
             FossilEnergyConsumption("", "", emptyList(), "hour", "").resultSerializer,
             HA_JSON.parseToJsonElement("""{"2026-11-17T08:00:00+00:00":0.4,"2026-11-17T09:00:00+00:00":null}"""),
@@ -166,6 +175,7 @@ class HomeAssistantProtocolTest {
             },
             CameraStream("camera.door").payload(),
         )
+
         assertEquals(
             buildJsonObject {
                 put("entity_id", "calendar.family")
@@ -173,6 +183,7 @@ class HomeAssistantProtocolTest {
             },
             CalendarEventDelete("calendar.family", "abc").payload(),
         )
+
         val history = HistoryDuringPeriod("2026-11-17T00:00:00Z", listOf("sensor.outdoor")).payload()
         assertEquals(JsonPrimitive(false), history["significant_changes_only"])
         assertEquals(JsonArray(listOf(JsonPrimitive("sensor.outdoor"))), history["entity_ids"])
@@ -183,6 +194,7 @@ class HomeAssistantProtocolTest {
     fun aServiceCallMovesItsEntityToTheTarget() {
         val request = VacuumSegmentClean.of(EntityId("vacuum.robot"), listOf("16", "kitchen"))
         val data = request.data()
+
         val call = CallService(
             domain = request.service.domain.value,
             service = request.service.service,
@@ -191,6 +203,7 @@ class HomeAssistantProtocolTest {
         ).payload()
 
         assertEquals(ServiceRef.VACUUM_SEND_COMMAND, request.service)
+
         assertEquals(
             HA_JSON.parseToJsonElement(
                 """{"domain":"vacuum","service":"send_command","service_data":{"params":[16,"kitchen"],

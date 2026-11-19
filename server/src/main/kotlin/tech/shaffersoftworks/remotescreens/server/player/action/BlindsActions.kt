@@ -14,12 +14,14 @@ class BlindsActions(
     ): TapOutcome {
         val tileId = target.tile?.id
         val store = renderData?.blindsUi
+
         val isHandled = tileId != null && store != null && changePage(
             store = store,
             tileId = tileId,
             verb = verb,
             arg = arg,
         )
+
         return if (isHandled) {
             TapOutcome.Rebuild
         } else {

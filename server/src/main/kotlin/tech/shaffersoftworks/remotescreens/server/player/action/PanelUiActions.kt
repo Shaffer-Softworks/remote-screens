@@ -14,13 +14,13 @@ class PanelUiActions(
     private val securityActions = SecurityActions(renderData)
 
     suspend fun handle(verb: String, arg: String, target: TapTarget): TapOutcome = when (verb) {
-        "blinds_room" -> blindsActions.handle(verb, arg, target)
+        "blinds_room" -> blindsActions.handle(verb = verb, arg = arg, target = target)
         "vacuum_select",
         "vacuum_rooms",
         "vacuum_rooms_dismiss",
         "vacuum_rooms_toggle",
         "vacuum_rooms_clean",
-        -> vacuumActions.handle(verb, arg, target)
+        -> vacuumActions.handle(verb = verb, arg = arg, target = target)
         "cameras_select" -> camerasActions.handle(arg, target)
         "security_section" -> securityActions.handle(arg, target)
         else -> TapOutcome.Ignored

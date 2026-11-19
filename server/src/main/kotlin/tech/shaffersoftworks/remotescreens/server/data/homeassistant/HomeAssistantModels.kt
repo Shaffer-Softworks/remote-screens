@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.server.data.homeassistant
 
+import java.util.Locale
 import kotlin.math.roundToInt
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -100,15 +101,18 @@ data class EntityState(
     /** Home Assistant's `rgb_color` as opaque ARGB, or null when the entity reports none. */
     fun readRgb(): Int? {
         val channels = light.rgbColor.map { it.roundToInt() }
+
         if (channels.size < RGB_CHANNELS) return null
+
         val red = channels[0].coerceIn(0, CHANNEL_MAX)
         val green = channels[1].coerceIn(0, CHANNEL_MAX)
         val blue = channels[2].coerceIn(0, CHANNEL_MAX)
+
         return (OPAQUE_ALPHA shl ALPHA_SHIFT) or (red shl RED_SHIFT) or (green shl GREEN_SHIFT) or blue
     }
 
     /** [readRgb] as `#RRGGBB`, for the editor. */
-    fun readRgbHex(): String? = readRgb()?.let { "#%06X".format(it and RGB_MASK) }
+    fun readRgbHex(): String? = readRgb()?.let { "#%06X".format(Locale.ROOT, it and RGB_MASK) }
 
     /** This entity with another state and some attributes replaced, as Home Assistant would report it. */
     fun with(state: String = this.state, attrs: Map<String, JsonElement> = emptyMap()): EntityState =

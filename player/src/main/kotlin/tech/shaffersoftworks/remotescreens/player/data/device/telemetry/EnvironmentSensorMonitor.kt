@@ -82,7 +82,9 @@ class EnvironmentSensorMonitor @Inject constructor(
 
     fun start() {
         val manager = sensorManager
+
         if (manager == null || listenJob?.isActive == true) return
+
         val sensors = listOfNotNull(
             lightSensor,
             pressureSensor,
@@ -90,6 +92,7 @@ class EnvironmentSensorMonitor @Inject constructor(
             humiditySensor,
             proximitySensor,
         )
+
         listenJob = scope.launch {
             callbackFlow {
                 val sensorListener = object : SensorEventListener {
@@ -97,6 +100,7 @@ class EnvironmentSensorMonitor @Inject constructor(
 
                     override fun onSensorChanged(event: SensorEvent) {
                         val value = event.values.firstOrNull() ?: return
+
                         trySend(
                             EnvironmentSample(
                                 type = event.sensor.type,
@@ -107,17 +111,21 @@ class EnvironmentSensorMonitor @Inject constructor(
                         )
                     }
                 }
+
                 sensors.forEach { sensor ->
                     manager.registerListener(sensorListener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
                 }
+
                 awaitClose { manager.unregisterListener(sensorListener) }
             }.collect { sample -> onSample(sample) }
         }
+
         Timber.d("Environment sensors started: %s", hardware)
     }
 
     fun stop() {
         if (listenJob == null) return
+
         listenJob?.cancel()
         listenJob = null
         announcedLux = null
@@ -138,10 +146,13 @@ class EnvironmentSensorMonitor @Inject constructor(
         val smoothedLux = _readings.value.illuminanceLux?.let { it + SMOOTHING * (lux - it) } ?: lux
         _readings.update { it.copy(illuminanceLux = smoothedLux) }
         val previousLux = announcedLux
+
         val isBigChange = previousLux == null ||
             abs(smoothedLux - previousLux) >= maxOf(previousLux * LIGHT_CHANGE_RATIO, LIGHT_CHANGE_MIN_LUX)
+
         if (isBigChange) {
             announcedLux = smoothedLux
+
             if (previousLux != null) _changes.tryEmit(Unit)
         }
     }
@@ -150,6 +161,7 @@ class EnvironmentSensorMonitor @Inject constructor(
         val isNear = proximityScale.isNear(distance, maximumRange, resolution)
         val wasNear = _readings.value.isNear
         _readings.update { it.copy(isNear = isNear) }
+
         if (wasNear != null && wasNear != isNear) _changes.tryEmit(Unit)
     }
 }

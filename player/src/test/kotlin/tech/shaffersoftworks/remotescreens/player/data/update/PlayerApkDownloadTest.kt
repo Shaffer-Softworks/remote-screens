@@ -24,6 +24,7 @@ class PlayerApkDownloadTest {
     @Test
     fun downloadOutlivesTheNormalRequestDeadlineAndStreamsTheBody() = runBlocking {
         val apkBytes = ByteArray(1024) { it.toByte() }
+
         val engine = MockEngine { request ->
             val timeout = requireNotNull(request.getCapabilityOrNull(HttpTimeoutCapability))
             assertEquals(HttpTimeoutConfig.INFINITE_TIMEOUT_MS, timeout.requestTimeoutMillis)
@@ -32,9 +33,11 @@ class PlayerApkDownloadTest {
             delay(50)
             respond(apkBytes)
         }
+
         val client = HttpClient(engine) {
             install(HttpTimeout) { requestTimeoutMillis = 1 }
         }
+
         try {
             val file = temporaryFolder.newFile()
             assertTrue(client.downloadPlayerApk("http://server/player.apk", file))
@@ -49,6 +52,7 @@ class PlayerApkDownloadTest {
         val client = HttpClient(MockEngine { respond("Not found", HttpStatusCode.NotFound) }) {
             install(HttpTimeout)
         }
+
         try {
             val file = temporaryFolder.newFile()
             assertFalse(client.downloadPlayerApk("http://server/missing.apk", file))

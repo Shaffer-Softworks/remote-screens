@@ -24,7 +24,7 @@ class EntityStateTest {
         assertEquals(Domain.LIGHT, light.domain)
         assertEquals("Kitchen", light.name)
         assertEquals(128.0, light.light.brightness)
-        assertEquals(listOf("hs", "color_temp"), light.light.supportedColorModes)
+        assertEquals(listOf(LightColorMode.HS, LightColorMode.COLOR_TEMP), light.light.supportedColorModes)
         assertEquals(44, light.features())
         assertEquals("#FF000A", light.readRgbHex())
         assertTrue(light.isOn)

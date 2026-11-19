@@ -29,7 +29,9 @@ class I18n(
 
     fun t(key: String, vararg args: Pair<String, Any>): String {
         var text = ownWords[key] ?: ENGLISH[key] ?: key
+
         for ((name, value) in args) text = text.replace("{$name}", value.toString())
+
         return text
     }
 
@@ -40,6 +42,7 @@ class I18n(
         deviceClass: String? = null,
     ): String {
         val deviceClassKey = deviceClass?.let { "component.$domain.entity_component.$it.state.$state" }
+
         return deviceClassKey?.let(homeAssistantWords::get)
             ?: homeAssistantWords["component.$domain.entity_component._.state.$state"]
             ?: ownWords["state.$state"]
@@ -51,6 +54,7 @@ class I18n(
         val format = NumberFormat.getNumberInstance(locale)
         format.minimumFractionDigits = decimals
         format.maximumFractionDigits = decimals
+
         return format.format(value)
     }
 
@@ -94,6 +98,7 @@ class I18n(
             val stream = I18n::class.java.getResourceAsStream(
                 "/translations/$language.json",
             ) ?: return emptyMap()
+
             return Json.decodeFromString(
                 MapSerializer(String.serializer(), String.serializer()),
                 stream.bufferedReader().use { it.readText() },
@@ -112,9 +117,11 @@ class I18n(
                 0,
                 ZoneId.of("UTC"),
             )
+
             val formatted = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
                 .withLocale(Locale.forLanguageTag(language))
                 .format(afternoon)
+
             return !formatted.contains("PM", ignoreCase = true) && !formatted.contains("3")
         }
     }

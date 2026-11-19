@@ -16,9 +16,11 @@ object EnergyDashboardParser {
         homeName: String = DEFAULT_HOME_NAME,
     ): EnergyDashboardConfig {
         val grid = preferences.energySources.firstOrNull { it.type == EnergySource.GRID }
+
         val devices = preferences.deviceConsumption.map { device ->
             val stat = device.statConsumption
             val area = entityAreas[stat]
+
             EnergyDashboardDevice(
                 name = device.name ?: stat.substringAfterLast('.'),
                 statConsumption = stat,
@@ -27,6 +29,7 @@ object EnergyDashboardParser {
                 areaName = area?.second,
             )
         }
+
         return EnergyDashboardConfig(
             gridEnergyFrom = grid?.statEnergyFrom,
             gridPrice = grid?.numberEnergyPrice,
@@ -42,6 +45,7 @@ object EnergyDashboardParser {
     /** Fossil energy share as 0..1 from `energy/fossil_energy_consumption`. */
     fun fossilFraction(response: Map<String, Double?>?): Double {
         val values = response?.values?.filterNotNull().orEmpty()
+
         return if (values.isEmpty()) FULL_FOSSIL else values.average().coerceIn(0.0, FULL_FOSSIL)
     }
 

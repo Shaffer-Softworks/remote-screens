@@ -30,6 +30,7 @@ class DiscoveryRepository @Inject constructor(
             setReferenceCounted(false)
             acquire()
         }
+
         val discoveryListener = object : NsdManager.DiscoveryListener {
             override fun onDiscoveryStarted(serviceType: String) = Unit
             override fun onDiscoveryStopped(serviceType: String) = Unit
@@ -42,6 +43,7 @@ class DiscoveryRepository @Inject constructor(
                 resolve(service) { address -> trySend(address) }
             }
         }
+
         nsdManager.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
 
         awaitClose {
@@ -63,6 +65,7 @@ class DiscoveryRepository @Inject constructor(
                 } else {
                     serviceInfo.host?.hostAddress
                 }
+
                 if (hostAddress != null) onResolved("$hostAddress:${serviceInfo.port}")
             }
         })

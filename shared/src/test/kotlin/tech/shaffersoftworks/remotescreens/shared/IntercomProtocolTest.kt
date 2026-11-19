@@ -36,6 +36,7 @@ class IntercomProtocolTest {
             displayName = "Living Room",
             pageIndexes = listOf(2),
         )
+
         val command = ServerMessage.IntercomCommand(verb = "call", clientId = "station-kitchen")
 
         assertEquals(config, Protocol.decodeServer(Protocol.encode(config)))

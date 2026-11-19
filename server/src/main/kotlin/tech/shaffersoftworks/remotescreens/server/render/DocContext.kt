@@ -14,6 +14,10 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssista
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
+import tech.shaffersoftworks.remotescreens.server.render.cards.camera.LiveVideo
+import tech.shaffersoftworks.remotescreens.server.render.cards.map.LiveMap
+import tech.shaffersoftworks.remotescreens.server.render.panels.energydashboard.LiveEnergyDashboard
+import tech.shaffersoftworks.remotescreens.server.render.panels.music.LiveSearch
 import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
@@ -90,36 +94,40 @@ class DocContext(
         }
 
     fun text(name: String): RcText =
-        declare(texts, name, { text(name) }) { rcScope.remoteNamedText(Rc.USER + name, "") }
+        declare(cache = texts, key = name, again = { text(name) }) { rcScope.remoteNamedText(Rc.USER + name, "") }
 
     fun int(name: String, initial: Int = 0): RcInteger =
         declare(
-            ints,
-            name,
-            { int(name, initial) },
+            cache = ints,
+            key = name,
+            again = { int(name, initial) },
         ) { rcScope.remoteNamedInteger(Rc.USER + name, initial) }
 
     fun float(name: String, initial: Float = 0f): RcFloat =
         declare(
-            floats,
-            name,
-            { float(name, initial) },
+            cache = floats,
+            key = name,
+            again = { float(name, initial) },
         ) { rcScope.remoteNamedFloat(Rc.USER + name, initial) }
 
     fun color(name: String, initial: Int = 0): RcColor =
         declare(
-            colors,
-            name,
-            { color(name, initial) },
+            cache = colors,
+            key = name,
+            again = { color(name, initial) },
         ) { rcScope.remoteNamedColor(Rc.USER + name, initial) }
 
     /** A fixed text for canvas text operations, which take a declared text rather than a string. */
-    fun literal(s: String): RcText = declare(literals, s, { literal(s) }) { rcScope.remoteText(s) }
+    fun literal(s: String): RcText = declare(
+        cache = literals,
+        key = s,
+        again = { literal(s) }
+    ) { rcScope.remoteText(s) }
     fun fixed(argb: Int): RcColor =
         declare(
-            colors,
-            "#" + argb.toUInt().toString(HEX_RADIX),
-            { fixed(argb) },
+            cache = colors,
+            key = "#" + argb.toUInt().toString(HEX_RADIX),
+            again = { fixed(argb) },
         ) { rcScope.remoteColor(argb) }
 
     fun role(r: Role): RcColor = fixed(palette[r])
@@ -135,16 +143,21 @@ class DocContext(
     /** Whether the document has a named variable [name], so a value for it is worth sending. */
     fun declares(name: String): Boolean = name in texts || name in ints || name in floats || name in colors
 
-    fun image(name: String, w: Int, h: Int): RcImage = declare(
-        images,
-        name,
-        { image(name, w, h) },
+    fun image(
+        name: String,
+        width: Int,
+        height: Int,
+    ): RcImage = declare(
+        cache = images,
+        key = name,
+        again = { image(name = name, width = width, height = height) },
     ) {
         val placeholder = BufferedImage(
-            w.coerceAtLeast(1),
-            h.coerceAtLeast(1),
+            width.coerceAtLeast(1),
+            height.coerceAtLeast(1),
             BufferedImage.TYPE_INT_ARGB,
         )
+
         rcScope.remoteNamedBitmap(Rc.USER + name, placeholder)
     }
 
@@ -155,14 +168,16 @@ class DocContext(
     fun path(icon: String? = null, rawSvg: String? = null, scale: Float = 1f): RcPath {
         val svg = rawSvg ?: Icons.path(icon)
         val key = "${scale.toRawBits()}:$svg"
-        return declare(paths, key, { path(icon, rawSvg, scale) }) {
+
+        return declare(cache = paths, key = key, again = { path(icon = icon, rawSvg = rawSvg, scale = scale) }) {
             rcScope.remotePathData(Rc.path(svg, scale))
         }
     }
 
     fun meta(ref: ActionRef): RcText {
         val encoded = ref.encode()
-        return declare(metas, encoded, { meta(ref) }) { rcScope.remoteText(encoded) }
+
+        return declare(cache = metas, key = encoded, again = { meta(ref) }) { rcScope.remoteText(encoded) }
     }
 
     fun bind(entityId: String?, compute: (Map<String, EntityState>) -> List<VarValue>) {
@@ -181,12 +196,13 @@ class DocContext(
     fun liveVideo(entityId: String, crop: Boolean): Int {
         val componentId = LiveVideo.FIRST_COMPONENT_ID + videos.size
         videos += LiveVideo(entityId = entityId, componentId = componentId, crop = crop, page = renderingPage)
+
         return componentId
     }
 
     /** The document is built again when [what] of the entity changes, such as its icon or its list of modes. */
     fun structural(entityId: String, what: (EntityState?) -> String) {
-        structure += Triple(entityId, what, what(states[entityId]))
+        structure += Triple(first = entityId, second = what, third = what(states[entityId]))
     }
 
     fun refreshEvery(seconds: Int) {
@@ -207,97 +223,23 @@ class DocContext(
             content: RcScope.(DocContext) -> Unit,
         ): Pair<ByteArray, DocContext> {
             val dry = newContext()
-            Rc.document(widthPx, heightPx, description) {
+
+            Rc.document(widthPx = widthPx, heightPx = heightPx, description = description) {
                 dry.rcScope = this
                 content(dry)
             }
+
             val docContext = newContext()
-            val bytes = Rc.document(widthPx, heightPx, description) {
+
+            val bytes = Rc.document(widthPx = widthPx, heightPx = heightPx, description = description) {
                 docContext.rcScope = this
+
                 for (declaration in dry.declarations) declaration(docContext)
+
                 content(docContext)
             }
+
             return bytes to docContext
         }
     }
 }
-
-class Binding(val entityId: String?, val compute: (Map<String, EntityState>) -> List<VarValue>)
-
-/**
- * A camera's live video over the component with [componentId]; [crop] when the feed fills its box rather than fits.
- * [page] is the page being drawn, so a page's own video stops when the tablet leaves it.
- */
-data class LiveVideo(val entityId: String, val componentId: Int, val crop: Boolean, val page: Int = 0) {
-    companion object {
-        /** Far above the ids the player gives components itself, so the video target is the only one with it. */
-        const val FIRST_COMPONENT_ID = 0x5C_0000
-    }
-}
-
-/** An interactive map of [entityIds] over the component with [componentId]; [dark] matches the theme. */
-data class LiveMap(val entityIds: List<String>, val componentId: Int, val dark: Boolean) {
-    companion object {
-        /** Next to [LiveVideo.FIRST_COMPONENT_ID], so map and video targets never share an id. */
-        const val FIRST_COMPONENT_ID = 0x5D_0000
-    }
-}
-
-/** Native Music Assistant search over [componentId] for [tileId] / [playerEntityId]. */
-data class LiveSearch(
-    val tileId: String,
-    val playerEntityId: String,
-    val componentId: Int,
-    val xPx: Int = 0,
-    val yPx: Int = 0,
-    val widthPx: Int = 0,
-    val heightPx: Int = 0,
-    /** Document page this field belongs to. The player hides it on every other page. */
-    val page: Int = 0,
-) {
-    companion object {
-        /** Next to [LiveMap.FIRST_COMPONENT_ID], so search, map, and video targets never share an id. */
-        const val FIRST_COMPONENT_ID = 0x5E_0000
-    }
-}
-
-/** A native Energy dashboard for [tileId] on document [page] over [componentId]. */
-data class LiveEnergyDashboard(
-    val tileId: String,
-    val page: Int,
-    val componentId: Int,
-) {
-    companion object {
-        /** Next to [LiveSearch.FIRST_COMPONENT_ID]. */
-        const val FIRST_COMPONENT_ID = 0x5F_0000
-    }
-}
-
-/** True when this page already registered a live stream (one decoder per visible page). */
-fun DocContext.hasLiveVideoOnCurrentPage(): Boolean = videos.any { it.page == renderingPage }
-
-/** The component id to give the box an interactive map of [entityIds] plays over, with `Modifier.componentId`. */
-fun DocContext.liveMap(entityIds: List<String>): Int {
-    val componentId = LiveMap.FIRST_COMPONENT_ID + maps.size
-    maps += LiveMap(entityIds, componentId, dark = palette.dark)
-    return componentId
-}
-
-/** The component id for a native Music Assistant search overlay, placed at [boundsPx] in the document. */
-fun DocContext.liveSearch(tileId: String, playerEntityId: String, boundsPx: SearchBoundsPx): Int {
-    val componentId = LiveSearch.FIRST_COMPONENT_ID + searches.size
-    searches += LiveSearch(
-        tileId = tileId,
-        playerEntityId = playerEntityId,
-        componentId = componentId,
-        xPx = boundsPx.x,
-        yPx = boundsPx.y,
-        widthPx = boundsPx.width,
-        heightPx = boundsPx.height,
-        page = renderingPage,
-    )
-    return componentId
-}
-
-/** Document-pixel rectangle for the native search field. */
-data class SearchBoundsPx(val x: Int, val y: Int, val width: Int, val height: Int)

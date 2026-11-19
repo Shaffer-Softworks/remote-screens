@@ -1,5 +1,7 @@
 package tech.shaffersoftworks.remotescreens.server.player.action
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.AlarmVerb
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
@@ -48,8 +50,10 @@ class AlarmActions(
         memory: TapMemory,
     ): TapOutcome {
         if (tile.alarmZones().none { it.entityId == zoneEntityId }) return TapOutcome.Ignored
+
         renderData?.alarmUi?.selectZone(tile.id, zoneEntityId)
         memory.codes.remove(entityId)
+
         return TapOutcome.Rebuild
     }
 
@@ -63,25 +67,31 @@ class AlarmActions(
         verb: String,
         memory: TapMemory,
     ): TapOutcome {
-        val action = Catalogue.of("alarm_control_panel")?.actions?.get(verb) ?: return TapOutcome.Ignored
+        val action = Catalogue.of(Domain.ALARM_PANEL.value)?.actions?.get(verb) ?: return TapOutcome.Ignored
         val code = memory.codes.remove(entityId).orEmpty()
         val selected = renderData?.alarmUi?.state(tile.id)?.selectedZone
         val zoneEntityId = tile.alarmZones().selectedZone(selected)?.entityId ?: entityId
         val zoneState = homeAssistant.states.value[zoneEntityId]
         val words = i18n()
+
         val notice = when {
             code.isEmpty() -> words.t("ui.alarm_pin_first_title") to words.t("ui.alarm_pin_first")
             code.length != ALARM_PIN_LENGTH -> words.t("ui.alarm_pin_invalid_title") to words.t("ui.alarm_pin_invalid")
-            verb != "disarm" && zoneState.hasOpenSensors() ->
+            verb != AlarmVerb.DISARM && zoneState.hasOpenSensors() ->
                 words.t("ui.alarm_open_sensors_title") to words.t("ui.alarm_open_sensors")
             else -> null
         }
 
         return if (notice != null) {
-            TapOutcome.AlarmNotice(tile.id, notice.first, notice.second)
+            TapOutcome.AlarmNotice(tileId = tile.id, title = notice.first, message = notice.second)
         } else {
             val data = ServiceDataBuilder.build(action = action, verb = verb, arg = "", entity = zoneState, code = code)
-            homeAssistant.callNamedService(action.service, target = listOf(EntityId(zoneEntityId)), data = data)
+
+            homeAssistant.callNamedService(
+                serviceText = action.service,
+                target = listOf(EntityId(zoneEntityId)),
+                data = data
+            )
         }
     }
 }

@@ -12,11 +12,13 @@ import tech.shaffersoftworks.remotescreens.shared.NotificationRequest
 fun Route.notificationRoutes(playerHub: PlayerHub) {
     post("/notifications") {
         val request = call.receive<NotificationRequest>()
+
         val result = try {
             playerHub.notify(request)
         } catch (invalid: IllegalArgumentException) {
             throw BadRequestException(invalid.message ?: "Invalid notification", invalid)
         }
+
         call.respond(result)
     }
 }

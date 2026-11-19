@@ -32,6 +32,7 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
     PlayerEvents(viewModel)
     PlayerWindowEffects(viewState)
     BackHandler(onBack = viewModel::onBack)
+
     PlayerScreenContent(
         viewState = viewState,
         onUserInteraction = viewModel::onUserInteraction,
@@ -47,6 +48,7 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
         imageLoader = viewModel.haImageLoaderQualifier,
         onNotificationAction = viewModel::dismissNotificationBanner,
     )
+
     PlayerDialogs(
         viewState = viewState,
         onForgetConfirmed = viewModel::onForgetConfirmed,
@@ -102,6 +104,7 @@ internal fun PlayerScreenContent(
                 awaitPointerEventScope {
                     while (true) {
                         val event = awaitPointerEvent(PointerEventPass.Initial)
+
                         if (event.type == PointerEventType.Press) onUserInteraction()
                     }
                 }
@@ -129,6 +132,7 @@ internal fun PlayerScreenContent(
                 imageLoader = imageLoader,
             )
         }
+
         PlayerChromeOverlays(
             viewState = viewState,
             onEnterAddress = onEnterAddress,
@@ -155,12 +159,15 @@ private fun PlayerChromeOverlays(
             )
         }
     }
+
     viewState.infoPanel?.let { infoPanel ->
         val disconnectedOverDocument =
             infoPanel is InfoPanelState.Disconnected && viewState.remoteScreen.hasMainDocument
+
         if (disconnectedOverDocument && (viewState.isAnyDialogVisible || viewState.isBlackout)) {
             return@let
         }
+
         InfoPanel(
             state = infoPanel,
             onEnterAddress = onEnterAddress,
@@ -171,7 +178,9 @@ private fun PlayerChromeOverlays(
             onRetry = onReconnect,
         )
     }
+
     viewState.identifyScreenName?.let { screenName -> IdentifyBadge(screenName = screenName) }
+
     if (viewState.isBlackout) {
         Box(Modifier.fillMaxSize().background(Color.Black))
     }

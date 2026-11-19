@@ -53,47 +53,57 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
         val people = entities.mapNotNull { entity ->
             val latitude = entity.common.latitude
             val longitude = entity.common.longitude
+
             if (latitude != null && longitude != null) {
                 PlacedPerson(
-                    entity.name,
-                    latitude,
-                    longitude,
+                    name = entity.name,
+                    latitude = latitude,
+                    longitude = longitude,
                 )
             } else {
                 null
             }
         }
+
         val image = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
         val graphics = image.createGraphics()
+
         graphics.setRenderingHint(
             RenderingHints.KEY_ANTIALIASING,
             RenderingHints.VALUE_ANTIALIAS_ON,
         )
+
         graphics.setRenderingHint(
             RenderingHints.KEY_TEXT_ANTIALIASING,
             RenderingHints.VALUE_TEXT_ANTIALIAS_ON,
         )
+
         graphics.color = if (isDark) DARK_BACKGROUND else LIGHT_BACKGROUND
         graphics.fillRect(0, 0, width, height)
 
-        val view = viewOf(people, width, height)
+        val view = viewOf(people = people, width = width, height = height)
+
         drawTiles(
             graphics = graphics,
             view = view,
             width = width,
             height = height,
         )
+
         if (isDark) {
             graphics.color = Color(0, 0, 0, DARK_OVERLAY_ALPHA)
             graphics.fillRect(0, 0, width, height)
         }
+
         drawMarkers(
             graphics = graphics,
             people = people,
             view = view,
             shortestSide = min(width, height),
         )
+
         graphics.dispose()
+
         return image
     }
 
@@ -121,16 +131,21 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
         val centreLatitude = if (latitudes.isEmpty()) DEFAULT_LATITUDE else (latitudes.min() + latitudes.max()) / 2
         val centreLongitude = if (longitudes.isEmpty()) DEFAULT_LONGITUDE else (longitudes.min() + longitudes.max()) / 2
         var zoom = MAX_ZOOM
+
         while (zoom > MIN_ZOOM && people.size > 1) {
             val xs = longitudes.map { WebMercator.longitudeToX(it, zoom) }
             val ys = latitudes.map { WebMercator.latitudeToY(it, zoom) }
             val isFitting = xs.max() - xs.min() < width * FIT_FRACTION && ys.max() - ys.min() < height * FIT_FRACTION
+
             if (isFitting) break
+
             zoom--
         }
+
         val centreX = WebMercator.longitudeToX(centreLongitude, zoom)
         val centreY = WebMercator.latitudeToY(centreLatitude, zoom)
-        return MapView(zoom, centreX - width / 2.0, centreY - height / 2.0)
+
+        return MapView(zoom = zoom, left = centreX - width / 2.0, top = centreY - height / 2.0)
     }
 
     private suspend fun drawTiles(
@@ -144,9 +159,11 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
         val lastColumn = floor((view.left + width) / TILE_SIZE).toInt()
         val firstRow = floor(view.top / TILE_SIZE).toInt().coerceAtLeast(0)
         val lastRow = floor((view.top + height) / TILE_SIZE).toInt().coerceAtMost(tileCount - 1)
+
         for (column in firstColumn..lastColumn) {
             for (row in firstRow..lastRow) {
                 val wrappedColumn = ((column % tileCount) + tileCount) % tileCount
+
                 tile(view.zoom, wrappedColumn, row)?.let { tileImage ->
                     val x = (column * TILE_SIZE - view.left).roundToInt()
                     val y = (row * TILE_SIZE - view.top).roundToInt()
@@ -164,6 +181,7 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
     ) {
         val radius = max(MIN_MARKER_RADIUS, shortestSide / MARKER_RADIUS_DIVISOR)
         graphics.font = Font(Font.SANS_SERIF, Font.BOLD, (radius * MARKER_FONT_SCALE).roundToInt())
+
         for ((index, person) in people.withIndex()) {
             val x = WebMercator.longitudeToX(person.longitude, view.zoom) - view.left
             val y = WebMercator.latitudeToY(person.latitude, view.zoom) - view.top
@@ -173,11 +191,14 @@ class MapRenderer(private val tile: suspend (zoom: Int, x: Int, y: Int) -> Buffe
             graphics.color = Color.WHITE
             graphics.stroke = BasicStroke((radius / MARKER_STROKE_DIVISOR).toFloat())
             graphics.draw(dot)
+
             val initials = person.name.split(' ')
                 .filter { it.isNotBlank() }
                 .take(INITIALS_COUNT)
                 .joinToString("") { it.take(1).uppercase() }
+
             val metrics = graphics.fontMetrics
+
             graphics.drawString(
                 initials,
                 (x - metrics.stringWidth(initials) / 2.0).toFloat(),
@@ -197,6 +218,7 @@ object WebMercator {
 
     fun latitudeToY(latitude: Double, zoom: Int): Double {
         val radians = latitude * PI / HALF_TURN_DEGREES
+
         return (1 - ln(tan(radians) + 1 / cos(radians)) / PI) / 2 * worldSize(zoom)
     }
 

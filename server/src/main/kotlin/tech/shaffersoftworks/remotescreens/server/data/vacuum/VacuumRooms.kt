@@ -38,6 +38,7 @@ fun EntityState.supportsCleanArea(): Boolean =
  */
 fun EntityState.vacuumSegmentRooms(): List<VacuumRoom> {
     val ids = vacuum.roomIds
+
     return vacuum.roomList.mapIndexed { index, name ->
         VacuumRoom(
             id = ids.getOrNull(index)?.takeIf { it.isNotBlank() } ?: name,

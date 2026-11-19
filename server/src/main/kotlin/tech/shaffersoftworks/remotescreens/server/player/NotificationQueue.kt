@@ -30,16 +30,21 @@ class NotificationQueue {
         nowMs: Long = System.currentTimeMillis(),
     ) {
         val queue = byDevice.getOrPut(deviceId) { ArrayDeque() }
+
         synchronized(queue) {
             dropExpiredLocked(queue, nowMs)
             val tag = request.tag
+
             if (!tag.isNullOrBlank()) {
                 queue.removeAll { it.request.tag == tag }
             }
+
             queue.removeAll { it.request.presentation == request.presentation }
+
             while (queue.size >= MAX_ITEMS_PER_DEVICE) {
                 queue.removeFirst()
             }
+
             queue.addLast(QueuedNotification(request = request, enqueuedAtMs = nowMs))
         }
     }
@@ -50,6 +55,7 @@ class NotificationQueue {
         nowMs: Long = System.currentTimeMillis(),
     ): List<QueuedNotification> {
         val queue = byDevice[deviceId] ?: return emptyList()
+
         return synchronized(queue) {
             dropExpiredLocked(queue, nowMs)
             val items = queue.toList()
@@ -62,11 +68,13 @@ class NotificationQueue {
     /** Request to deliver, with wake cleared when the item is older than [WAKE_WINDOW_MS]. */
     fun deliveryRequest(item: QueuedNotification, nowMs: Long = System.currentTimeMillis()): NotificationRequest {
         val keepWake = item.request.wake && nowMs - item.enqueuedAtMs <= WAKE_WINDOW_MS
+
         return if (keepWake == item.request.wake) item.request else item.request.copy(wake = false)
     }
 
     fun ttlMs(request: NotificationRequest): Long {
         if (request.presentation == "alert" && request.duration == 0) return UNTIL_ACK_TTL_MS
+
         return request.duration * MS_PER_SECOND
     }
 

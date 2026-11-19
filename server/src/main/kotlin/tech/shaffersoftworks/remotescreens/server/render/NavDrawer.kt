@@ -22,7 +22,7 @@ import tech.shaffersoftworks.remotescreens.shared.Screen
 
 private const val FLOATING_MENU_KEY_DP = 48f
 
-private val OPEN_DRAWER = ActionRef("_", "set", "${Vars.DRAWER}|${Vars.VISIBLE}")
+private val OPEN_DRAWER = ActionRef(tile = "_", verb = "set", arg = "${Vars.DRAWER}|${Vars.VISIBLE}")
 
 /** Button data for the existing bottom navigation bar. */
 internal class NavItem(val title: String, val icon: String, val ref: ActionRef, val isCurrent: Boolean)
@@ -30,15 +30,18 @@ internal class NavItem(val title: String, val icon: String, val ref: ActionRef, 
 /** The remote menu button opens the native Material 3 drawer on the Android player. */
 internal fun DocContext.menuKey(drawer: Drawer, end: Boolean, sizeDp: Float, gapDp: Float): Boolean {
     if (!drawer.modal || drawer.end != end) return false
+
     rcScope.Spacer(Modifier.width(units.px(gapDp)))
     key(ref = OPEN_DRAWER, icon = "menu", heightDp = sizeDp, widthDp = sizeDp, round = true)
     rcScope.Spacer(Modifier.width(units.px(gapDp)))
+
     return true
 }
 
 /** A menu button for screens without a top bar. */
 internal fun DocContext.floatingMenuKey(drawer: Drawer, spec: GridSpec) {
     val x = if (drawer.end) spec.widthDp - spec.padding - FLOATING_MENU_KEY_DP else spec.padding
+
     at(x, spec.padding) {
         key(
             ref = OPEN_DRAWER,
@@ -57,6 +60,7 @@ internal fun DocContext.navigationDrawer(
     home: Int,
 ): NavigationDrawer? {
     if (!screen.drawer.modal) return null
+
     return NavigationDrawer(
         title = screen.name,
         items = pages.withIndex().filter { !it.value.hidden }.map { (index, page) ->
@@ -68,8 +72,8 @@ internal fun DocContext.navigationDrawer(
         } + NavigationDrawerItem(title = i18n.t("ui.settings"), iconPath = Icons.path("cog")),
         side = screen.drawer.side,
         width = screen.drawer.width ?: Grid.MODAL_DRAWER.toInt(),
-        background = drawerColor(screen.drawer.background, palette, Role.NAV),
-        active = drawerColor(screen.drawer.active, palette, Role.NAV_ON),
+        background = drawerColor(key = screen.drawer.background, palette = palette, fallback = Role.NAV),
+        active = drawerColor(key = screen.drawer.active, palette = palette, fallback = Role.NAV_ON),
         ink = palette[Role.INK],
     )
 }

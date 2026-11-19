@@ -42,6 +42,7 @@ class PlayerPreferencesRepository @Inject constructor(
         val updatedPreferences = dataStore.edit { preferences ->
             if (preferences[DEVICE_ID_KEY] == null) preferences[DEVICE_ID_KEY] = UUID.randomUUID().toString()
         }
+
         return checkNotNull(updatedPreferences[DEVICE_ID_KEY])
     }
 
@@ -52,6 +53,7 @@ class PlayerPreferencesRepository @Inject constructor(
     suspend fun setPairing(token: String, screenName: String?) {
         dataStore.edit { preferences ->
             preferences[TOKEN_KEY] = token
+
             if (screenName != null) {
                 preferences[SCREEN_NAME_KEY] = screenName
             } else {
@@ -67,6 +69,7 @@ class PlayerPreferencesRepository @Inject constructor(
         dataStore.edit { preferences ->
             val wasEnabled = preferences[KIOSK_ENABLED_KEY] ?: false
             preferences[KIOSK_ENABLED_KEY] = isEnabled
+
             if (isEnabled && !wasEnabled) preferences.remove(KIOSK_SUPPRESSED_KEY)
         }
     }
@@ -87,6 +90,7 @@ class PlayerPreferencesRepository @Inject constructor(
         dataStore.edit { preferences ->
             preferences.remove(TOKEN_KEY)
             preferences.remove(SCREEN_NAME_KEY)
+
             if (resetDeviceId) preferences[DEVICE_ID_KEY] = UUID.randomUUID().toString()
         }
     }

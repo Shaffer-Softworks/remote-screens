@@ -55,12 +55,17 @@ class ProximityWakeMonitor @Inject constructor(
     fun start(onNear: () -> Unit) {
         val manager = sensorManager
         val sensor = proximitySensor
+
         if (manager == null || sensor == null) {
             Timber.d("Proximity wake: no sensor")
+
             return
         }
+
         this.onNear = onNear
+
         if (listenJob?.isActive == true) return
+
         listenJob = scope.launch {
             callbackFlow {
                 val sensorListener = object : SensorEventListener {
@@ -70,15 +75,18 @@ class ProximityWakeMonitor @Inject constructor(
                         event.values.firstOrNull()?.let { distance -> trySend(distance) }
                     }
                 }
+
                 manager.registerListener(sensorListener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
                 awaitClose { manager.unregisterListener(sensorListener) }
             }.collect { distance -> onDistance(distance, sensor) }
         }
+
         Timber.d("Proximity wake started")
     }
 
     fun stop() {
         if (listenJob == null) return
+
         listenJob?.cancel()
         listenJob = null
         onNear = null
@@ -89,6 +97,7 @@ class ProximityWakeMonitor @Inject constructor(
         val now = android.os.SystemClock.elapsedRealtime()
         val isNear = proximityScale.isNear(distance, sensor.maximumRange, sensor.resolution)
         val isDebounced = now - lastNearAtMs >= NEAR_DEBOUNCE_MS
+
         if (isNear && isDebounced) {
             lastNearAtMs = now
             onNear?.invoke()

@@ -13,11 +13,13 @@ class ProjectRuleIndexTest {
         val index = File(rulesDir, INDEX_FILE)
         val text = index.readText()
         assertTrue("The rule index must always apply", text.contains("alwaysApply: true"))
+
         val missing = rulesDir.listFiles { file -> file.extension == "mdc" && file.name != INDEX_FILE }
             .orEmpty()
             .map { it.name }
             .filter { name -> !text.contains(name) }
             .sorted()
+
         assertEquals("Add these rule files to $INDEX_FILE", emptyList<String>(), missing)
     }
 

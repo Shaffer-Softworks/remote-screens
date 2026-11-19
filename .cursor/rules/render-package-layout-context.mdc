@@ -10,13 +10,13 @@ alwaysApply: false
 
 | Package | Holds |
 |---|---|
-| `render` | Document core only: `ScreenRenderer`, `DocContext`, `Rc`, `Vars`, `Present`, `HaRenderFlags`, `Alerts` |
+| `render` | Document session only: `ScreenRenderer`, `DocContext`, `Binding`, `Rc`, `Vars`, `Present`, `HaRenderFlags`, `Alerts`. Overlay types (`LiveVideo`, `LiveMap`, `LiveSearch`, `LiveEnergyDashboard`) live beside the feature that registers them and do not import `DocContext` |
 | `render.theme` | `Color` (`Rpi`, `Light`, `Oled`, `Contrast`), `ThemeModel` (`Role`, `Pastel`, `Palette`, `Units`), `Themes` |
 | `render.widgets` | Shared building blocks: `Widgets` (`Type`, `Weight`, `label`, `key`, `icon`, `gap`, ...), `Controls`, `Icons`, `HaWeatherIcons`, `QrBitmaps`, `MarkdownLines` |
-| `render.panels.<feature>` | Full-page tiles: `alarm`, `calendar`, `music`, `thermostat`, `weather`, `home`. Each keeps its `*Panel`, `*Bind`, `*Metrics` together |
+| `render.panels.<feature>` | Full-page tiles (`alarm`, `blinds`, `calendar`, `cameras`, `energy`, `energydashboard`, `home`, `intercom`, `lights`, `music`, `security`, `thermostat`, `vacuum`, `weather`). Each keeps its `*Panel`, `*Bind`, `*Metrics` together. A card or diagram the page draws (`vacuumCard`, `energyFlow`) lives in that panel package |
 | `render.freeform` | Free-form renderer: `FreeForm`, `FreeFormBlocks`, `FreeFormNodes`, `FreeFormLayout`, `FreeFormMedia`, ... |
-| `render.cards` | Card dialogs (`CardRenderer`, `*Cards`) |
-| `render.tiles` | Grid tiles and dispatch (`Tiles` calls the `panels.*` entry points) |
+| `render.cards` | Shared card shell only: `CardRenderer` (dispatch) and `CardChrome` (padding, keys, bars). One entity card is `render.cards.<type>` (`light`, `climate`, `media`, `camera`, …), and that package also holds the matching grid tile |
+| `render.tiles` | Shared tile chrome and dispatch: `Tiles`, `EntityTile`, `TileChrome`, `TileBox`. A tile with no card is `render.tiles.<type>` (`clock`, `bedside`, `nav`, `person`, `favourite`). There is no grab-bag tile file |
 
 Tests mirror the package: `CalendarPanelTest` is in `render.panels.calendar`, `ThemesTest` in `render.theme`, `FreeFormTest` in `render.freeform`. `RenderTest` stays at the root.
 
@@ -24,8 +24,9 @@ Tests mirror the package: `CalendarPanelTest` is in `render.panels.calendar`, `T
 
 - Detekt `InvalidPackageDeclaration` is active: the folder and the `package` line must match.
 - `theme` imports nothing from the other subpackages; keep it that way. `widgets` never imports `panels`, `tiles` or `cards`.
-- Known cross-links, not layering: panels take `tiles.TileBox` (Home also uses `tiles.bindWhere` and `tiles.photo`, Weather uses `cards.CardChrome`), and `widgets` and `ThermostatDial` use `freeform.paint`.
+- Known cross-links, not layering: panels take `tiles.TileBox` (Home also uses `tiles.person.bindWhere` and `tiles.person.photo`, Weather uses `cards.CardChrome`), and `widgets` and `ThermostatDial` use `freeform.paint`.
 - A new panel gets its own `panels/<feature>/` folder. A metrics object only one panel uses stays in that panel's folder.
+- A new entity card gets `cards/<type>/`, and its grid tile goes in that same package. A tile with no card gets `tiles/<type>/`. Do not add another multi-type card or tile file.
 - `ThemesTest` still rejects hex colours anywhere under `render/`; new fixed colours go in `theme/Color.kt`.
 
 ## Moving files

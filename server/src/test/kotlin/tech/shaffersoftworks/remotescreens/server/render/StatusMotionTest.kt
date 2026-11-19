@@ -18,18 +18,22 @@ import kotlin.test.assertEquals
 class StatusMotionTest {
     private fun context(entity: EntityState): Pair<CoreDocument, DocContext> {
         val home = DemoHome()
+
         val input = RenderInput(
             mapOf(entity.entityId to entity),
             I18n("en", I18n.load("en"), emptyMap(), true),
             home.config.value,
             tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData(),
         )
+
         val (bytes, context) = DocContext.build(200, 100, "Motion", { input.context(Device(200, 100, 1f)) }) { doc ->
             doc.statusIcon(entity.entityId, "fan", 40f, doc.role(Role.INK))
         }
+
         val core = CoreDocument().also {
             it.initFromBuffer(RemoteComposeBuffer.fromInputStream(ByteArrayInputStream(bytes)))
         }
+
         return core to context
     }
 
@@ -42,9 +46,11 @@ class StatusMotionTest {
         val names = core.getNamedVariables(NamedVariable.INT_TYPE).toList()
         assertContains(names, "USER:$moving")
         assertContains(names, "USER:$resting")
+
         for (state in listOf("off", "on", "unavailable", "unknown")) {
             val values = context.bindings.flatMap { it.compute(mapOf(entity.entityId to entity.copy(state = state))) }
                 .associateBy { it.name }
+
             assertEquals(if (state == "on") Vars.VISIBLE else Vars.GONE, values.getValue(moving).asInt())
             assertEquals(if (state == "on") Vars.GONE else Vars.VISIBLE, values.getValue(resting).asInt())
         }
@@ -54,10 +60,13 @@ class StatusMotionTest {
     fun thermostatMotionTracksHvacActionRatherThanSelectedMode() {
         val entity = EntityState("climate.test", "heat")
         val (_, context) = context(entity)
+
         for (action in listOf("idle", "heating", "preheating", "cooling", "off")) {
             val updated = entity.copy(attributes = JsonObject(mapOf("hvac_action" to JsonPrimitive(action))))
+
             val values = context.bindings.flatMap { it.compute(mapOf(entity.entityId to updated)) }
                 .associateBy { it.name }
+
             val expected = if (action in setOf("heating", "preheating", "cooling")) Vars.VISIBLE else Vars.GONE
             assertEquals(expected, values.getValue(Vars.entity(entity.entityId, "icon_moving")).asInt())
         }
@@ -67,9 +76,11 @@ class StatusMotionTest {
     fun alarmOnlyPulsesDuringTransientOrTriggeredStates() {
         val entity = EntityState("alarm_control_panel.test", "disarmed")
         val (_, context) = context(entity)
+
         for (state in listOf("disarmed", "armed_home", "arming", "pending", "triggered", "unavailable")) {
             val values = context.bindings.flatMap { it.compute(mapOf(entity.entityId to entity.copy(state = state))) }
                 .associateBy { it.name }
+
             val expected = if (state in setOf("arming", "pending", "triggered")) Vars.VISIBLE else Vars.GONE
             assertEquals(expected, values.getValue(Vars.entity(entity.entityId, "icon_moving")).asInt())
         }

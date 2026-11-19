@@ -47,9 +47,11 @@ internal fun blackbodyColor(kelvin: Int): Int {
     val red: Double
     val green: Double
     val blue: Double
+
     if (k <= Blackbody.WARM_LIMIT) {
         red = Blackbody.FULL
         green = Blackbody.GREEN_WARM_A * ln(k) - Blackbody.GREEN_WARM_B
+
         blue = if (k <= Blackbody.BLUE_LIMIT) {
             0.0
         } else {
@@ -60,6 +62,8 @@ internal fun blackbodyColor(kelvin: Int): Int {
         green = Blackbody.GREEN_COOL_A * (k - Blackbody.COOL_OFFSET).pow(Blackbody.GREEN_COOL_EXP)
         blue = Blackbody.FULL
     }
+
     fun channel(value: Double) = value.coerceIn(0.0, Blackbody.FULL).roundToInt()
-    return rgb(channel(red), channel(green), channel(blue))
+
+    return rgb(red = channel(red), green = channel(green), blue = channel(blue))
 }

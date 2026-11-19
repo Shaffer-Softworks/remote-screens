@@ -48,11 +48,13 @@ class IntercomPanelTest {
                 IntercomStation("station-kitchen", "Kitchen", inCall = true),
             ),
         )
+
         val text = render(view)
 
         for (word in listOf("INTERCOM", "Mute", "Hang Up", "Call", "Living Room", "Kitchen")) {
             assertContains(text, word)
         }
+
         assertContains(text, "ic1|intercom_call|station-living")
         assertContains(text, "ic1|intercom_hangup|")
         assertFalse("ic1|intercom_call|station-kitchen" in text, "a station already in a call cannot be called")
@@ -117,10 +119,12 @@ class IntercomPanelTest {
 
         val portrait = IntercomLayout.of(PORTRAIT_CONTENT_W, PORTRAIT_CONTENT_H, statusLines = 1)
         assertStackedBand(portrait)
+
         assertContains(
             render(stations(), Device(LANDSCAPE_SCREEN_W, LANDSCAPE_SCREEN_H, TABLET_DENSITY)),
             "Living Room",
         )
+
         assertContains(
             render(stations(), Device(PORTRAIT_SCREEN_W, PORTRAIT_SCREEN_H, TABLET_DENSITY)),
             "Kitchen",
@@ -137,6 +141,7 @@ class IntercomPanelTest {
             IntercomLayout.of(PORTRAIT_CONTENT_W, PORTRAIT_CONTENT_H, statusLines = 1),
             IntercomLayout.of(KEYPAD_CONTENT_W, KEYPAD_CONTENT_H, statusLines = 1),
         )
+
         for (layout in stacked) {
             assertStackedBand(layout)
             assertTrue(stationRoom(layout) >= layout.dp(IntercomMetrics.ROW_H_DP), "no full station row")
@@ -166,6 +171,7 @@ class IntercomPanelTest {
 
     private fun render(view: IntercomView, device: Device = tablet): String {
         val input = RenderInput(ha.states.value, i18n, ha.config.value, RenderData(), intercom = view)
+
         return String(ScreenRenderer.render(screen, device, input).bytes, Charset.forName("ISO-8859-1"))
     }
 
@@ -198,6 +204,7 @@ class IntercomPanelTest {
                 IntercomMetrics.ROW_PAD_DP * 2f + IntercomMetrics.ROW_INSET_DP * 3f +
                 IntercomMetrics.ROW_ICON_DP,
         )
+
         return layout.pageW - layout.columnW - chrome - layout.keyW
     }
 
@@ -208,12 +215,14 @@ class IntercomPanelTest {
                 IntercomMetrics.ROW_PAD_DP * 2f + IntercomMetrics.ROW_INSET_DP * 3f +
                 IntercomMetrics.ROW_ICON_DP,
         )
+
         return layout.pageW - chrome - layout.keyW
     }
 
     private fun assertKeysFit(layout: IntercomLayout, pageW: Float) {
         val pair = layout.keyW * 2f + layout.dp(IntercomMetrics.BUTTON_GAP_DP) +
             layout.dp(IntercomMetrics.STACK_SIDE_DP) * 2f
+
         assertTrue(pair <= pageW + 0.05f, "keys take $pair dp on a $pageW dp page")
     }
 

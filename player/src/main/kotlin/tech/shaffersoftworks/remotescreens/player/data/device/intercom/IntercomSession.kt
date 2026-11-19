@@ -94,6 +94,7 @@ internal class IntercomSession(
                 Timber.d(error, "Intercom signaling dropped")
                 dropCall()
             }
+
             if (isRunning) delayFor(RECONNECT_MS.milliseconds)
         }
     }
@@ -101,17 +102,21 @@ internal class IntercomSession(
     private suspend fun SignalingConversation.readFrames() {
         conversation = this
         emit(IntercomWire.register(clientId, registration.displayName))
+
         val heartbeat = scope.launch {
             while (isRunning) {
                 delayFor(HEARTBEAT_MS.milliseconds)
                 emit(IntercomWire.heartbeat())
             }
         }
+
         try {
             while (isRunning) {
                 val text = receive()
                 val frame = text?.let(IntercomWire::parse)
+
                 if (text == null) return
+
                 if (frame != null) handle(frame)
             }
         } finally {
@@ -156,12 +161,15 @@ internal class IntercomSession(
             }
             else -> null
         }
+
         if (answer == null) {
             if (phase == Phase.OUTGOING && clientId >= frame.from) {
                 endCall(notifyPeer = true, nextStatus = CALL_FAILED)
             }
+
             return
         }
+
         peerId = frame.from
         phase = Phase.INCOMING
         emit(IntercomWire.answer(frame.from, answer))
@@ -172,13 +180,17 @@ internal class IntercomSession(
 
     private suspend fun placeCall(targetId: String) {
         if (phase != Phase.IDLE || targetId.isBlank()) return
+
         peerId = targetId
         audio.start(audioListener)
+
         val sdp = runCatching { audio.createOffer() }.getOrElse {
             peerId = null
             audio.stop()
+
             return
         }
+
         phase = Phase.OUTGOING
         emit(IntercomWire.offer(targetId, sdp))
         status = "Calling ${nameOf(targetId)}"
@@ -188,6 +200,7 @@ internal class IntercomSession(
 
     private suspend fun onUnavailable(frame: IntercomFrame.Unavailable) {
         if (peerId != frame.targetId) return
+
         val nextStatus = if (frame.reason == SignalingFrame.REASON_BUSY) {
             "${nameOf(
                 frame.targetId,
@@ -195,18 +208,22 @@ internal class IntercomSession(
         } else {
             NO_ANSWER
         }
+
         endCall(notifyPeer = true, nextStatus = nextStatus)
     }
 
     private suspend fun endCall(notifyPeer: Boolean, nextStatus: String) {
         if (!isOnACall()) return
+
         val target = peerId
         timeoutJob?.cancel()
         peerId = null
         phase = if (isRegistered) Phase.IDLE else Phase.OFFLINE
         status = nextStatus
         publish()
+
         if (notifyPeer && target != null) emit(IntercomWire.hangup(target))
+
         audio.stop()
     }
 
@@ -233,12 +250,15 @@ internal class IntercomSession(
                 names[station.clientId] = station.displayName
                 IntercomStation(station.clientId, station.displayName, station.inCall)
             }
+
         if (phase == Phase.IDLE && (status == CONNECTING || status == ONLINE)) status = ONLINE
+
         publish()
     }
 
     private fun publish() {
         val connectedId = peerId.takeIf { phase == Phase.LIVE }
+
         reportListener(
             PlayerMessage.IntercomReport(
                 status = status,
@@ -257,6 +277,7 @@ internal class IntercomSession(
 
     private fun armTimeout() {
         timeoutJob?.cancel()
+
         timeoutJob = scope.launch {
             delayFor(CALL_TIMEOUT_MS.milliseconds)
             endCall(notifyPeer = true, nextStatus = NO_ANSWER)

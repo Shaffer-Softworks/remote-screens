@@ -32,24 +32,16 @@ import androidx.compose.remote.creation.dsl.size
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
-import kotlin.math.roundToInt
 
 internal object CardChrome {
-    const val HUE_SATURATION = 0.55f
     const val CAMERA_RESERVE_DP = 120f
     const val TOGGLE_DP = 132f
-    const val HISTORY_RESERVE_DP = 140f
-    const val HUE_DEGREES = 360f
     const val PANEL_CORNER_DP = 10f
     const val SECTION_GAP_DP = 12f
     const val HEADER_GAP_DP = 14f
     const val CARD_GAP_DP = 16f
-    const val CAMERA_SPINNER_DP = 48f
-    /** Marker photo size sent for interactive map pins. */
-    const val MAP_MARKER_DP = 48f
     const val SECTION_TITLE_GAP_DP = 18f
     const val PANEL_PAD_DP = 20f
-    const val WEATHER_ICON_ROW_DP = 28f
     const val CLOSE_KEY_DP = 40f
     const val SWATCH_DP = 46f
     const val FLOW_KEY_H_DP = 48f
@@ -57,7 +49,6 @@ internal object CardChrome {
     const val MEDIA_CTRL_DP = 60f
     const val TOGGLE_ICON_DP = 64f
     const val STEPPER_KEY_DP = 72f
-    const val PLAY_KEY_DP = 80f
     const val ROW_GAP_DP = 6f
     const val FLOW_PAD_DP = 8f
     const val PANEL_MARGIN_DP = 32f
@@ -68,51 +59,10 @@ internal object CardChrome {
     const val LEVEL_DEFAULT_MAX = 100.0
     const val FLOW_KEYS_SEGMENT_MAX = 5
     const val FLOW_KEY_SEG_H_DP = 42f
-    const val FAN_PERCENTAGE_FLAG = HaRenderFlags.FAN_PERCENTAGE_FLAG
-    const val FAN_OSCILLATE_FLAG = 2
-    const val FAN_DIRECTION_FLAG = 4
-    const val COVER_POSITION_FLAG = HaRenderFlags.COVER_POSITION_FLAG
-    const val COVER_TILT_FLAG = HaRenderFlags.COVER_TILT_POSITION_FLAG
-    const val DEFAULT_HUMIDITY_MIN = 0.0
-    const val DEFAULT_HUMIDITY_MAX = 100.0
-    const val DEFAULT_HUMIDITY_STEP = 5.0
-    const val DEFAULT_CLIMATE_LIKE_MIN = 40.0
-    const val DEFAULT_CLIMATE_LIKE_MAX = 60.0
-    const val TODO_CARD_TAKE = 12
-    const val WEATHER_REFRESH_S = 1800
-    const val HISTORY_REFRESH_S = 300
     /** Opaque alpha in the high byte; not a theme colour (see Color.kt / Themes.kt inventory). */
     const val OPAQUE_ALPHA_BYTE = 0xFF
     const val OPAQUE_ARGB = OPAQUE_ALPHA_BYTE shl 24
-    const val ALPHA_OPAQUE = 0xFF
-    const val ALPHA_SHIFT = 24
-    const val RED_SHIFT = 16
-    const val GREEN_SHIFT = 8
-    const val CHANNEL_MAX = 255
-    const val KELVIN_MIN = 2200
-    const val KELVIN_SPAN = 4300f
-    const val KELVIN_GREEN_BASE = 190
-    const val KELVIN_GREEN_RANGE = 60
-    const val KELVIN_BLUE_BASE = 120
-    const val KELVIN_BLUE_RANGE = 135
-    const val EFFECTS_TAKE = 24
     const val SOURCES_TAKE = 16
-    const val LIBRARY_TAKE = 20
-    const val FORECAST_DAYS = 7
-    /** Seconds between refreshes of the camera card's still. */
-    const val CAMERA_CARD_REFRESH_S = 4
-    const val PERCENT_SCALE = 100.0
-    const val TEMP_STEP_F = 1.0
-    const val TEMP_STEP_C = 0.5
-    const val MEDIA_ART_MAX_DP = 280f
-    const val KEYPAD_ROW_GAP_DP = 24f
-    const val KEYPAD_COLS = 3f
-    const val KEYPAD_KEY_MAX_DP = 110f
-    /** Home Assistant alarm_control_panel supported_features bits. */
-    const val ALARM_FEAT_ARM_HOME = 1
-    const val ALARM_FEAT_ARM_AWAY = 2
-    const val ALARM_FEAT_ARM_NIGHT = 4
-    const val ALARM_FEAT_ARM_VACATION = 32
 }
 
 internal fun ref(
@@ -125,12 +75,14 @@ internal fun ref(
     arg = arg,
 )
 
-internal fun DocContext.header(entityId: String, card: String) {
+internal fun DocContext.header(entityId: String, card: CardType) {
     val ink = role(Role.INK)
     val soft = role(Role.INK_SOFT)
+
     // Mockup: circular close on the left, title centred (balanced by a matching spacer).
     rcScope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@header
+
         doc.key(
             ref = ActionRef("_", "close"),
             icon = "close",
@@ -140,7 +92,7 @@ internal fun DocContext.header(entityId: String, card: String) {
         )
 
         Column(Modifier.horizontalWeight(1f), horizontal = RcHorizontalPositioning.Center) {
-            if (card == "energy") {
+            if (card == CardType.ENERGY) {
                 doc.label(
                     text = doc.i18n.t("ui.house"),
                     sp = Type.HEADLINE,
@@ -156,6 +108,7 @@ internal fun DocContext.header(entityId: String, card: String) {
                     weight = Weight.SEMI_BOLD,
                     align = RcTextAlign.Center,
                 )
+
                 doc.label(
                     text = doc.text(Vars.entity(entityId, Vars.KEY_STATE)),
                     sp = Type.BODY,
@@ -190,7 +143,7 @@ internal fun DocContext.bigToggle(
         val doc = this@bigToggle
 
         Box(
-            doc.tap(
+            modifier = doc.tap(
                 Modifier.size(
                     width = doc.units.px(CardChrome.TOGGLE_DP),
                     height = doc.units.px(CardChrome.TOGGLE_DP),
@@ -227,12 +180,14 @@ internal fun DocContext.bigToggle(
 
 internal fun DocContext.section(title: String) {
     spacer(CardChrome.SECTION_TITLE_GAP_DP)
+
     label(
         text = title,
         sp = Type.BODY,
         color = role(Role.INK_SOFT),
         weight = Weight.SEMI_BOLD,
     )
+
     spacer(CardChrome.FLOW_PAD_DP)
 }
 
@@ -253,6 +208,7 @@ internal fun DocContext.bar(
         steps = CardChrome.LEVEL_STEPS,
     ) { step ->
         val value = min + (max - min) * step / CardChrome.LEVEL_STEPS.toDouble()
+
         val action = ref(
             entityId = entityId,
             verb = verb,
@@ -265,6 +221,7 @@ internal fun DocContext.bar(
                 )
             },
         )
+
         predict(action, entityId)
         action
     }
@@ -276,6 +233,7 @@ internal fun DocContext.swatches(colors: List<Pair<Int, ActionRef>>) {
         horizontal = RcRowHorizontalPositioning.SpaceBetween,
     ) {
         val doc = this@swatches
+
         for ((argb, r) in colors) {
             Box(
                 doc.tap(
@@ -312,14 +270,16 @@ internal fun DocContext.flowKeys(
             scopeId = entityId,
             group = verb,
             choices = choices,
-            refFor = { ref(entityId, verb, it) },
+            refFor = { ref(entityId = entityId, verb = verb, arg = it) },
             heightDp = CardChrome.FLOW_KEY_SEG_H_DP,
         )
+
         return
     }
 
     rcScope.Flow(Modifier.fillMaxWidth()) {
         val doc = this@flowKeys
+
         choices.forEachIndexed { index, (value, word) ->
             Box(
                 Modifier.padding(
@@ -330,7 +290,7 @@ internal fun DocContext.flowKeys(
                 ),
             ) {
                 doc.key(
-                    ref = ref(entityId, verb, value),
+                    ref = ref(entityId = entityId, verb = verb, arg = value),
                     text = word,
                     bg = doc.color(
                         Vars.option(
@@ -353,19 +313,4 @@ internal fun DocContext.flowKeys(
             }
         }
     }
-}
-
-val HUES = listOf(0, 30, 50, 120, 180, 220, 270, 320)
-val KELVINS = listOf(2200, 2700, 3500, 4500, 5500, 6500)
-
-/** The colour of white light at [k] kelvin, near enough for a swatch. */
-fun kelvinColor(k: Int): Int {
-    val t = ((k - CardChrome.KELVIN_MIN) / CardChrome.KELVIN_SPAN).coerceIn(0f, 1f)
-    val r = CardChrome.CHANNEL_MAX
-    val g = (CardChrome.KELVIN_GREEN_BASE + CardChrome.KELVIN_GREEN_RANGE * t).roundToInt()
-    val b = (CardChrome.KELVIN_BLUE_BASE + CardChrome.KELVIN_BLUE_RANGE * t).roundToInt()
-    return (CardChrome.ALPHA_OPAQUE shl CardChrome.ALPHA_SHIFT) or
-        (r shl CardChrome.RED_SHIFT) or
-        (g shl CardChrome.GREEN_SHIFT) or
-        b
 }

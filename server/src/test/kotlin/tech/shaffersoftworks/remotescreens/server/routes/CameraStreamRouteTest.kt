@@ -56,11 +56,13 @@ class CameraStreamRouteTest {
             screenId = "home",
             tokenHash = PlayerTokens.hash(PLAYER_TOKEN),
         )
+
         dependencies.layoutRepository.update { layout -> layout.copy(players = listOf(tablet)) }
     }
 
     private fun withRoutes(test: suspend (HttpClient) -> Unit) = testApplication {
         install(WebSockets)
+
         routing {
             playerRoutes(
                 dependencies.playerHub,
@@ -69,6 +71,7 @@ class CameraStreamRouteTest {
                 cameraStreamService,
             )
         }
+
         test(client)
     }
 

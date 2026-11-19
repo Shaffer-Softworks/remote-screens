@@ -75,6 +75,7 @@ data class ServiceRef(val domain: Domain, val service: String) {
         fun parse(text: String): ServiceRef? {
             val domain = text.substringBefore('.', missingDelimiterValue = "")
             val service = text.substringAfter('.', missingDelimiterValue = "")
+
             return if (domain.isEmpty() || service.isEmpty()) null else ServiceRef(Domain(domain), service)
         }
 

@@ -10,7 +10,6 @@ import androidx.compose.remote.creation.dsl.componentId
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.padding
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
-import tech.shaffersoftworks.remotescreens.server.render.LiveEnergyDashboard
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
@@ -24,13 +23,15 @@ import tech.shaffersoftworks.remotescreens.shared.Tile
 @Suppress("UnusedParameter")
 fun DocContext.energyDashboardPanel(tile: Tile, box: TileBox) {
     val componentId = LiveEnergyDashboard.FIRST_COMPONENT_ID + energyDashboards.size
+
     energyDashboards += LiveEnergyDashboard(
         tileId = tile.id,
         page = renderingPage,
         componentId = componentId,
     )
+
     rcScope.Box(
-        Modifier
+        modifier = Modifier
             .fillMaxSize()
             .componentId(componentId)
             .background(role(Role.PAGE))

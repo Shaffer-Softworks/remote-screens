@@ -169,6 +169,7 @@ data class Node(
 ) {
     fun walk(): Sequence<Node> = sequence {
         yield(this@Node)
+
         for (child in children) yieldAll(child.walk())
     }
 
@@ -264,6 +265,21 @@ data class Tile(
 ) {
     val domain: String? get() = entityId?.substringBefore('.', "")?.ifEmpty { null }
     fun effectiveKind(): String = kind ?: domain ?: "empty"
+
+    /** The kind when it is one the renderer names, or null for an ordinary entity domain. */
+    fun tileKind(): TileKind? = TileKind.fromWire(effectiveKind())
+
+    companion object {
+        const val OPTION_STREAM = "stream"
+        const val OPTION_FIT = "fit"
+        const val OPTION_WHOLE = "whole"
+        const val OPTION_NAME = "name"
+        const val OPTION_GRAPH = "graph"
+        const val OPTION_MAP = "map"
+        const val OPTION_PAGE = "page"
+        const val OPTION_TRUE = "true"
+        const val OPTION_FALSE = "false"
+    }
 }
 
 @Serializable
@@ -439,6 +455,7 @@ data class Drawer(
 
     fun validated(): Drawer {
         val style = style.takeIf { it in STYLES } ?: "off"
+
         return copy(
             style = style,
             side = side.takeIf { it in SIDES } ?: "start",

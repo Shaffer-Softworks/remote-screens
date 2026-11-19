@@ -68,14 +68,17 @@ fun NotificationBanner(
     BoxWithConstraints(modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         val top = banner.topInsetDp.coerceAtLeast(0f).dp.coerceAtMost(maxHeight / MAX_TOP_INSET_DIVISOR)
         val cardHeight = (maxHeight - top - 24.dp).coerceAtLeast(48.dp)
+
         val tone = when (banner.level) {
             "danger" -> MaterialTheme.colorScheme.error
             "warning" -> MaterialTheme.colorScheme.tertiary
             else -> MaterialTheme.colorScheme.primary
         }
+
         val path = remember(banner.iconPath) {
             runCatching { PathParser().parsePathString(banner.iconPath).toPath() }.getOrNull()
         }
+
         Surface(
             modifier = Modifier.padding(top = top + 8.dp, start = 12.dp, end = 12.dp)
                 .widthIn(max = 720.dp).fillMaxWidth().heightIn(max = cardHeight)
@@ -94,8 +97,10 @@ fun NotificationBanner(
                             }
                         }
                     }
+
                     Column(Modifier.weight(1f)) {
                         Text(banner.title, style = MaterialTheme.typography.titleMedium)
+
                         if (banner.message.isNotBlank()) {
                             Text(
                                 banner.message,
@@ -104,7 +109,9 @@ fun NotificationBanner(
                             )
                         }
                     }
+
                     val dismissLabel = stringResource(R.string.dismiss_notification)
+
                     IconButton(
                         onClick = { onAction(null) },
                         modifier = Modifier.semantics { contentDescription = dismissLabel },
@@ -112,6 +119,7 @@ fun NotificationBanner(
                         Text("×", style = MaterialTheme.typography.headlineSmall)
                     }
                 }
+
                 if (banner.buttons.isNotEmpty()) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         banner.buttons.forEachIndexed { index, label ->

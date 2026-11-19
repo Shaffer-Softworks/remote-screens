@@ -35,13 +35,17 @@ class LightsRoomsRepository(private val homeAssistant: HomeAssistant) {
 
     suspend fun rooms(domains: Set<Domain> = LIGHTS_DOMAINS): List<LightsRoom> {
         val cacheKey = domains.map { it.value }.sorted().joinToString(",")
+
         cachedByDomains[cacheKey]
             ?.takeIf { System.currentTimeMillis() - it.second < ROOMS_TTL_MS }
             ?.let { return it.first }
+
         val rooms = runCatching { fetchRooms(domains) }
             .onFailure { logger.debug("Rooms failed ({}): {}", cacheKey, it.message) }
             .getOrElse { cachedByDomains[cacheKey]?.first.orEmpty() }
+
         cachedByDomains = cachedByDomains + (cacheKey to (rooms to System.currentTimeMillis()))
+
         return rooms
     }
 
@@ -54,9 +58,11 @@ class LightsRoomsRepository(private val homeAssistant: HomeAssistant) {
         val devices = homeAssistant.send(DeviceRegistryList)
         val entityAreas = homeAssistant.send(EntityRegistryListForDisplay).entityAreaIds(devices)
         val ordered = homeAssistant.states.value.keys.filter { entityId -> EntityId(entityId).domain in domains }
+
         val rooms = areas
             .map { area ->
                 val areaId = area.areaId
+
                 LightsRoom(
                     areaId = areaId,
                     name = area.displayName,
@@ -64,6 +70,7 @@ class LightsRoomsRepository(private val homeAssistant: HomeAssistant) {
                 )
             }
             .sortedBy { room -> room.name }
+
         // Blinds only lists rooms that have a cover; lights keeps empty rooms like RPI.
         return if (domains == BLINDS_DOMAINS) {
             rooms.filter { room -> room.entityIds.isNotEmpty() }

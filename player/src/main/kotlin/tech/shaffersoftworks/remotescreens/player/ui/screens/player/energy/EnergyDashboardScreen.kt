@@ -34,6 +34,7 @@ fun EnergyDashboardScreen(
     modifier: Modifier = Modifier,
 ) {
     val colors = message.theme.toEnergyColors()
+
     CompositionLocalProvider(LocalEnergyColors provides colors) {
         Box(modifier.fillMaxSize().background(colors.page)) {
             Column(
@@ -55,6 +56,7 @@ fun EnergyDashboardScreen(
                         ElectricityCard(message.electricity)
                         TotalsCard(message.totals)
                     }
+
                     Column(
                         Modifier.weight(1f).fillMaxHeight(),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -63,10 +65,12 @@ fun EnergyDashboardScreen(
                         GaugeCard(message.lowCarbonPercent)
                     }
                 }
+
                 DevicesDetailCard(message.devicesDetail)
                 DevicesRankCard(message.devicesRank)
                 SankeyCard(message.sankey)
             }
+
             PeriodBar(
                 label = message.periodLabel,
                 isNow = message.isNow,
@@ -93,6 +97,7 @@ private fun PeriodBar(
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalEnergyColors.current
+
     Row(
         modifier
             .background(colors.card, RoundedCornerShape(28.dp))
@@ -105,9 +110,11 @@ private fun PeriodBar(
             color = colors.ink,
             modifier = Modifier.clickable(onClick = onPeriod).padding(horizontal = 8.dp),
         )
+
         TextButton(onClick = onNow, enabled = !isNow) {
             Text(text = "Now", color = if (isNow) colors.accent else colors.ink)
         }
+
         Text("<", color = colors.ink, modifier = Modifier.clickable(onClick = onPrev).padding(8.dp))
         Text(">", color = colors.ink, modifier = Modifier.clickable(onClick = onNext).padding(8.dp))
     }

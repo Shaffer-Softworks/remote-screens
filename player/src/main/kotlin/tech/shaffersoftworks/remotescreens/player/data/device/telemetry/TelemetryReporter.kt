@@ -47,22 +47,29 @@ class TelemetryReporter @Inject constructor(
     ) {
         if (!isEnabled) {
             stop()
+
             return
         }
+
         this.wantsLocation = wantsLocation
         val shouldShareLocation = currentLocationShare()
+
         if (isRunning && isLocationShared == shouldShareLocation) {
             if (shouldShareLocation) source.start(true)
+
             return
         }
+
         stop()
         this.wantsLocation = wantsLocation
         isLocationShared = shouldShareLocation
         source.start(shouldShareLocation)
         Timber.d("Telemetry started, location %b", shouldShareLocation)
+
         job = scope.launch {
             merge(scheduledReports(), source.changes).conflate().collect {
                 val shareNow = currentLocationShare()
+
                 if (shareNow != isLocationShared) {
                     isLocationShared = shareNow
                     source.start(shareNow)
@@ -70,6 +77,7 @@ class TelemetryReporter @Inject constructor(
                 } else if (shareNow) {
                     source.start(true)
                 }
+
                 val telemetry = withContext(ioDispatcher) { source.snapshot(shareNow) }
                 send(PlayerMessage.Telemetry(telemetry))
                 delay(MIN_REPORT_GAP_MS.milliseconds)
@@ -82,7 +90,9 @@ class TelemetryReporter @Inject constructor(
     fun stop() {
         job?.cancel()
         job = null
+
         if (isLocationShared != null) source.stop()
+
         isLocationShared = null
     }
 

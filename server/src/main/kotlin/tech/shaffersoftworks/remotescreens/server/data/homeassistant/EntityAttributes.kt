@@ -23,7 +23,7 @@ private val ATTRIBUTE_JSON = Json {
 /** [attributes] as [serializer]'s view, keeping every attribute that decodes and leaving the rest at their defaults. */
 internal fun <T> decodeAttributes(serializer: KSerializer<T>, attributes: JsonObject): T =
     runCatching { ATTRIBUTE_JSON.decodeFromJsonElement(serializer, attributes) }.getOrElse {
-        val fitting = attributes.filter { (key, value) -> fits(serializer, key, value) }
+        val fitting = attributes.filter { (key, value) -> fits(serializer = serializer, key = key, value = value) }
         ATTRIBUTE_JSON.decodeFromJsonElement(serializer, JsonObject(fitting))
     }
 

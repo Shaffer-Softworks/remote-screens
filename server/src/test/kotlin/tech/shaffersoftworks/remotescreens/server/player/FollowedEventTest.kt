@@ -24,11 +24,14 @@ class FollowedEventTest {
                 put("targets", buildJsonArray { add(JsonPrimitive("hall")) })
             },
         )
+
         assertEquals(FollowedEvent.OpenPage(listOf("hall"), "Cameras"), open)
+
         assertEquals(
             FollowedEvent.Wake(listOf("kitchen")),
             of(FollowedEvent.WAKE, buildJsonObject { put("screens", "kitchen") }),
         )
+
         assertEquals(FollowedEvent.Close(emptyList()), of(FollowedEvent.CLOSE))
     }
 
@@ -37,6 +40,7 @@ class FollowedEventTest {
         val alert = assertIs<FollowedEvent.ShowAlert>(
             of(FollowedEvent.ALERT, buildJsonObject { put("title", "Doorbell") }),
         )
+
         assertEquals("Doorbell", alert.alert.title)
         assertIs<FollowedEvent.Unreadable>(of(FollowedEvent.ALERT, buildJsonObject { put("message", "No title") }))
         assertIs<FollowedEvent.Unreadable>(of(FollowedEvent.OPEN_PAGE))

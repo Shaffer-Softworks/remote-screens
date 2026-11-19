@@ -3,6 +3,8 @@
 package tech.shaffersoftworks.remotescreens.server.render.freeform
 
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.shared.Tile
+import tech.shaffersoftworks.remotescreens.shared.TileKind
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Icons
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.Present
@@ -12,14 +14,15 @@ import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Weight
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
-import tech.shaffersoftworks.remotescreens.server.render.hasLiveVideoOnCurrentPage
+import tech.shaffersoftworks.remotescreens.server.render.cards.camera.CAMERA_SPINNER_DP
+import tech.shaffersoftworks.remotescreens.server.render.cards.camera.hasLiveVideoOnCurrentPage
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.initials
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
 import tech.shaffersoftworks.remotescreens.server.render.widgets.rounded
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
-import tech.shaffersoftworks.remotescreens.server.render.tiles.graph
-import tech.shaffersoftworks.remotescreens.server.render.tiles.photo
+import tech.shaffersoftworks.remotescreens.server.render.cards.history.graph
+import tech.shaffersoftworks.remotescreens.server.render.tiles.person.photo
 import tech.shaffersoftworks.remotescreens.server.render.tiles.tile
 import tech.shaffersoftworks.remotescreens.server.render.widgets.toggleIcon
 
@@ -41,24 +44,39 @@ import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.visibility
 import androidx.compose.remote.creation.dsl.width
-import tech.shaffersoftworks.remotescreens.server.render.cards.CardChrome
 import tech.shaffersoftworks.remotescreens.server.render.widgets.spinner
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Node
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
+import tech.shaffersoftworks.remotescreens.shared.NodeBinding
+
+private fun DocContext.boundCopy(binding: NodeBinding, entityState: EntityState?): String {
+    val view = Present.view(entityState, i18n)
+
+    val raw = when (binding.format) {
+        "value" -> view.value
+        "name" -> view.name
+        "attribute" -> binding.attribute?.let { entityState?.attributeText(it) }.orEmpty()
+        else -> view.stateText
+    }
+
+    return binding.prefix + raw + binding.suffix
+}
 
 internal fun DocContext.textNode(node: Node, axis: Axis, pages: Pages) {
     val sp = node.props["fontSize"]?.toFloatOrNull() ?: Type.TITLE
     val weight = node.props["weight"]?.toFloatOrNull() ?: Weight.NORMAL
     val ink = node.props["color"]?.let { paint(it) } ?: role(Role.INK)
-    val marquee = node.props["marquee"] == "true"
+    val marquee = node.props["marquee"] == Tile.OPTION_TRUE
     val lines = if (marquee) 1 else node.props["lines"]?.toIntOrNull()?.coerceIn(1, Metrics.TEXT_MAX_LINES) ?: 1
     val textAlign = align(node.props["align"])
+
     // Words wider than their space glide back and forth at 30 dp a second, forever.
     // Put taps on a Box: like Image, Text can keep a ClickModifier that still misses taps on device.
-    val modifier = styled(node, axis, pages).let {
+    val modifier = styled(node = node, axis = axis, pages = pages).let {
         if (marquee) {
             it.marquee(
                 iterations = Int.MAX_VALUE,
@@ -72,7 +90,9 @@ internal fun DocContext.textNode(node: Node, axis: Axis, pages: Pages) {
             it
         }
     }
+
     val binding = node.bind
+
     if (binding == null) {
         rcScope.Box(
             modifier,
@@ -84,19 +104,14 @@ internal fun DocContext.textNode(node: Node, axis: Axis, pages: Pages) {
             lines = lines,
             align = textAlign,
         ) }
+
         return
     }
+
     bind(binding.entityId) { states ->
-        val entityState = states[binding.entityId]
-        val view = Present.view(entityState, i18n)
-        val raw = when (binding.format) {
-            "value" -> view.value
-            "name" -> view.name
-            "attribute" -> binding.attribute?.let { entityState?.attributeText(it) } ?: ""
-            else -> view.stateText
-        }
-        listOf(VarValue.string(nodeVar(node.id), binding.prefix + raw + binding.suffix))
+        listOf(VarValue.string(nodeVar(node.id), boundCopy(binding, states[binding.entityId])))
     }
+
     rcScope.Box(
         modifier,
     ) { this@textNode.label(
@@ -117,22 +132,26 @@ internal fun DocContext.iconNode(node: Node, axis: Axis, pages: Pages) {
     val sizeDp = node.props["size"]?.toFloatOrNull() ?: Metrics.ICON_DEFAULT_DP
     val entityId = node.bind?.entityId
     val domain = entityId?.let { EntityId(it).domain }
+
     val name = node.props["icon"]
         ?: entityId?.let { states[it]?.common?.icon }
         ?: domain?.let { Catalogue.of(it.value)?.icon }
-    val ink = iconInk(node, entityId, domain)
+
+    val ink = iconInk(node = node, entityId = entityId, domain = domain)
+
     rcScope.Box(
-        styled(node, axis, pages),
+        modifier = styled(node = node, axis = axis, pages = pages),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@iconNode
         val iconOn = node.props["iconOn"]
+
         if (entityId != null && iconOn != null) {
             doc.bindEntity(entityId)
             doc.toggleIcon(entityId = entityId, off = name ?: Icons.FALLBACK, on = iconOn, sizeDp = sizeDp, color = ink)
         } else {
-            doc.icon(name, sizeDp, ink)
+            doc.icon(name = name, sizeDp = sizeDp, color = ink)
         }
     }
 }
@@ -145,70 +164,88 @@ internal fun DocContext.iconNode(node: Node, axis: Axis, pages: Pages) {
 private fun DocContext.iconInk(node: Node, entityId: String?, domain: Domain?): RcColor {
     val fixed = node.props["color"]?.let { paint(it) }
     val choosesEachState = node.props["colorOff"] != null || node.props["colorOn"] != null
+
     return if (entityId == null || (!choosesEachState && fixed != null)) {
         fixed ?: role(Role.INK)
     } else {
         val offColor = inkArgb(node.props["colorOff"], Role.INK_DIM.argb)
         val onColor = inkArgb(node.props["colorOn"], Pastel.forDomain(domain?.value).argb)
+
         bind(entityId) { states ->
             val view = Present.view(states[entityId], i18n)
             val entityRgb = if (node.props["colorOn"] == null) states[entityId]?.readRgb() else null
+
             val argb = when {
                 !view.isAvailable -> Role.INK_FAINT.argb
                 view.on -> entityRgb ?: onColor
                 else -> offColor
             }
+
             listOf(VarValue.color(Vars.tile(node.id, Vars.KEY_ICON), argb))
         }
+
         color(Vars.tile(node.id, Vars.KEY_ICON))
     }
+}
+
+private fun DocContext.buttonFace(node: Node, axis: Axis, pages: Pages, bg: RcColor): Modifier {
+    var base = sized(node, axis)
+
+    if (node.size.height == "wrap") base = base.height(units.px(Metrics.BUTTON_NATURAL_H))
+
+    val corner = if (node.style.corner > 0f) {
+        node.style.corner
+    } else {
+        Metrics.BUTTON_NATURAL_H / Metrics.BUTTON_CORNER_DIVISOR
+    }
+
+    base = base.clip(rounded(corner))
+
+    if (node.style.background == null) base = base.background(bg)
+
+    val framed = styled(node = node, axis = axis, pages = pages, base = base)
+
+    if (node.style.padded) return framed
+
+    return framed.padding(
+        start = units.px(Metrics.BUTTON_PAD_H_DP),
+        top = 0f,
+        end = units.px(Metrics.BUTTON_PAD_H_DP),
+        bottom = 0f,
+    )
 }
 
 internal fun DocContext.buttonNode(node: Node, axis: Axis, pages: Pages) {
     val bg = node.props["color"]?.let { paint(it) } ?: role(Role.KEY)
     val ink = node.props["ink"]?.let { paint(it) } ?: role(Role.INK)
-    var base = sized(node, axis)
-    if (node.size.height == "wrap") base = base.height(units.px(Metrics.BUTTON_NATURAL_H))
-    base = base.clip(
-        rounded(
-            if (node.style.corner > 0f) node.style.corner else Metrics.BUTTON_NATURAL_H / Metrics.BUTTON_CORNER_DIVISOR,
-        ),
-    )
-    if (node.style.background == null) base = base.background(bg)
-    val modifier = styled(node = node, axis = axis, pages = pages, base = base).let {
-        if (!node.style.padded) {
-            it.padding(
-                start = units.px(Metrics.BUTTON_PAD_H_DP),
-                top = 0f,
-                end = units.px(Metrics.BUTTON_PAD_H_DP),
-                bottom = 0f,
-            )
-        } else {
-            it
-        }
-    }
+    val modifier = buttonFace(node = node, axis = axis, pages = pages, bg = bg)
+
     val word = node.props["text"]?.takeIf { it.isNotEmpty() }
     val icon = node.props["icon"]?.takeIf { it.isNotEmpty() }
     val sp = node.props["fontSize"]?.toFloatOrNull() ?: Type.BODY
     val weight = node.props["weight"]?.toFloatOrNull() ?: Weight.MEDIUM
+
     rcScope.Row(
-        modifier,
+        modifier = modifier,
         horizontal = RcRowHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@buttonNode
+
         if (icon != null) {
             doc.icon(
-                icon,
-                if (word == null) Metrics.BUTTON_ICON_ONLY_DP else Metrics.BUTTON_ICON_WITH_TEXT_DP,
-                ink,
+                name = icon,
+                sizeDp = if (word == null) Metrics.BUTTON_ICON_ONLY_DP else Metrics.BUTTON_ICON_WITH_TEXT_DP,
+                color = ink,
             )
         }
+
         if (icon != null && word != null) {
             Spacer(
                 Modifier.width(doc.units.px(Metrics.BUTTON_ICON_GAP_DP)),
             )
         }
+
         if (word != null) doc.label(text = word, sp = sp, color = ink, weight = weight)
     }
 }
@@ -216,18 +253,22 @@ internal fun DocContext.buttonNode(node: Node, axis: Axis, pages: Pages) {
 /** A camera's frames, or the entity's picture (a person, album art), fetched by the add-on. */
 internal fun DocContext.imageNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
     val id = node.bind?.entityId
-    val modifier = styled(node, axis, pages)
+    val modifier = styled(node = node, axis = axis, pages = pages)
+
     if (id == null) {
         rcScope.Box(modifier.background(role(Role.TRACK)))
+
         return
     }
+
     val w = units.px(self.w).toInt().coerceAtLeast(1)
     val h = units.px(self.h).toInt().coerceAtLeast(1)
     val camera = EntityId(id).domain == Domain.CAMERA
-    val fit = node.props["fit"] == "whole"
+    val fit = node.props[Tile.OPTION_FIT] == Tile.OPTION_WHOLE
     val contentScale = if (fit) RcContentScale.Fit else RcContentScale.Crop
-    val canStream = camera && node.props["stream"] == "true" && !hasLiveVideoOnCurrentPage()
+    val canStream = camera && node.props[Tile.OPTION_STREAM] == Tile.OPTION_TRUE && !hasLiveVideoOnCurrentPage()
     val slot = "img.${node.id}"
+
     picture(
         PictureSlot(
             name = slot,
@@ -242,30 +283,36 @@ internal fun DocContext.imageNode(node: Node, self: Dims, axis: Axis, pages: Pag
             crop = !fit,
         ),
     )
+
     // Put taps on a Box: Image drops onClick in the document (alpha22), so a camera never opened its card.
     if (canStream) {
         val video = liveVideo(id, crop = !fit)
         val waiting = int(Vars.entity(id, Vars.KEY_CAM_WAITING), Vars.VISIBLE)
         val still = int(Vars.entity(id, Vars.KEY_CAM_STILL), Vars.GONE)
+
         rcScope.Box(
-            modifier.background(role(Role.TRACK)).componentId(video),
+            modifier = modifier.background(role(Role.TRACK)).componentId(video),
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcVerticalPositioning.Center,
         ) {
             val doc = this@imageNode
+
             Image(
-                doc.image(slot, w, h),
-                Modifier.fillMaxSize().visibility(still),
+                image = doc.image(name = slot, width = w, height = h),
+                modifier = Modifier.fillMaxSize().visibility(still),
                 contentScale = contentScale,
             )
-            doc.spinner(CardChrome.CAMERA_SPINNER_DP, doc.role(Role.ACCENT), waiting)
+
+            doc.spinner(sizeDp = CAMERA_SPINNER_DP, color = doc.role(Role.ACCENT), visible = waiting)
         }
+
         return
     }
+
     rcScope.Box(modifier) {
         Image(
-            this@imageNode.image(slot, w, h),
-            Modifier.fillMaxSize(),
+            image = this@imageNode.image(name = slot, width = w, height = h),
+            modifier = Modifier.fillMaxSize(),
             contentScale = contentScale,
         )
     }
@@ -275,6 +322,7 @@ internal fun DocContext.imageNode(node: Node, self: Dims, axis: Axis, pages: Pag
 internal fun DocContext.tileNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
     val tile = node.tile
     val spec = tile?.let { Catalogue.of(it.effectiveKind()) }
+
     val modifier = sized(
         node,
         axis,
@@ -286,23 +334,28 @@ internal fun DocContext.tileNode(node: Node, self: Dims, axis: Axis, pages: Page
     } else {
         it
     } }
+
     val lacksEntity = tile?.entityId == null && spec?.needsEntity == true
+
     if (tile == null || spec == null || lacksEntity) {
         rcScope.Box(modifier)
+
         return
     }
-    val named = if (tile.effectiveKind() == "nav" && tile.name == null) {
+
+    val named = if (tile.tileKind() == TileKind.NAV && tile.name == null) {
         tile.copy(
             name = tile.options["page"]?.let(pages.title),
         )
     } else {
         tile
     }
+
     rcScope.Box(modifier) {
         this@tileNode.tile(
-            named,
-            TileBox(x = 0f, y = 0f, w = self.w, h = self.h, cols = 1, rows = 1, full = false),
-            pages.index,
+            tile = named,
+            box = TileBox(x = 0f, y = 0f, w = self.w, h = self.h, cols = 1, rows = 1, full = false),
+            pageIndex = pages.index,
         )
     }
 }
@@ -314,8 +367,10 @@ internal fun DocContext.clockNode(node: Node, axis: Axis, pages: Pages) {
     val ink = node.props["color"]?.let { paint(it) } ?: role(Role.INK)
     val show = node.props["show"] ?: "time"
     val textAlign = align(node.props["align"])
-    rcScope.Column(styled(node, axis, pages), horizontal = horizontal(node.props["align"])) {
+
+    rcScope.Column(styled(node = node, axis = axis, pages = pages), horizontal = horizontal(node.props["align"])) {
         val doc = this@clockNode
+
         if (show != "date") {
             doc.label(
                 text = doc.text(Vars.TIME),
@@ -325,6 +380,7 @@ internal fun DocContext.clockNode(node: Node, axis: Axis, pages: Pages) {
                 align = textAlign,
             )
         }
+
         if (show == "date") {
             doc.label(
                 text = doc.text(Vars.DATE),
@@ -335,6 +391,7 @@ internal fun DocContext.clockNode(node: Node, axis: Axis, pages: Pages) {
                 lines = 2,
             )
         }
+
         if (show == "both") {
             doc.label(
                 text = doc.text(Vars.DATE),
@@ -348,53 +405,77 @@ internal fun DocContext.clockNode(node: Node, axis: Axis, pages: Pages) {
     }
 }
 
-/** A pill with an icon and a word; bound, it shows the entity's state and lights up while it is on. */
-internal fun DocContext.badgeNode(node: Node, axis: Axis, pages: Pages) {
-    val id = node.bind?.entityId
-    val domain = id?.let { EntityId(it).domain }
-    if (id != null) bindEntity(id)
+private fun DocContext.badgeFace(
+    node: Node,
+    axis: Axis,
+    pages: Pages,
+    id: String?,
+    domain: Domain?,
+): Pair<Modifier, RcColor> {
     val explicit = node.props["color"]?.let { paint(it) }
+
     val (bg, ink) = when {
         explicit != null -> explicit to role(Role.KEY_ON_INK)
         id != null -> {
-            bindTileColors(node.id, id, Pastel.forDomain(domain?.value))
+            bindTileColors(tileId = node.id, entityId = id, pastel = Pastel.forDomain(domain?.value))
             color(Vars.tile(node.id, Vars.KEY_BG)) to color(Vars.tile(node.id, Vars.KEY_BG_INK))
         }
         else -> role(Role.KEY) to role(Role.INK)
     }
+
     var base = sized(node, axis)
+
     if (node.size.height == "wrap") base = base.height(units.px(Metrics.BADGE_NATURAL_H))
-    base = base.clip(
-        rounded(if (node.style.corner > 0f) node.style.corner else Metrics.BADGE_CORNER_DP),
-    )
+
+    val corner = if (node.style.corner > 0f) node.style.corner else Metrics.BADGE_CORNER_DP
+    base = base.clip(rounded(corner))
+
     if (node.style.background == null) base = base.background(bg)
-    val modifier = styled(node = node, axis = axis, pages = pages, base = base).let {
-        if (!node.style.padded) {
-            it.padding(
-                start = units.px(Metrics.BADGE_PAD_H_DP),
-                top = 0f,
-                end = units.px(Metrics.BADGE_PAD_H_DP),
-                bottom = 0f,
-            )
-        } else {
-            it
-        }
+
+    val framed = styled(node = node, axis = axis, pages = pages, base = base)
+
+    val modifier = if (node.style.padded) {
+        framed
+    } else {
+        framed.padding(
+            start = units.px(Metrics.BADGE_PAD_H_DP),
+            top = 0f,
+            end = units.px(Metrics.BADGE_PAD_H_DP),
+            bottom = 0f,
+        )
     }
+
+    return modifier to ink
+}
+
+/** A pill with an icon and a word; bound, it shows the entity's state and lights up while it is on. */
+internal fun DocContext.badgeNode(node: Node, axis: Axis, pages: Pages) {
+    val id = node.bind?.entityId
+    val domain = id?.let { EntityId(it).domain }
+
+    if (id != null) bindEntity(id)
+
+    val (modifier, ink) = badgeFace(node = node, axis = axis, pages = pages, id = id, domain = domain)
+
     val icon = node.props["icon"]?.takeIf { it.isNotEmpty() }
         ?: id?.let { states[it]?.common?.icon }
         ?: domain?.let { Catalogue.of(it.value)?.icon }
+
     val sp = node.props["fontSize"]?.toFloatOrNull() ?: Type.BODY
     val weight = node.props["weight"]?.toFloatOrNull() ?: Weight.MEDIUM
+
     rcScope.Row(
-        modifier,
+        modifier = modifier,
         horizontal = RcRowHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@badgeNode
+
         if (icon != null) {
-            doc.icon(icon, Metrics.BADGE_ICON_DP, ink)
+            doc.icon(name = icon, sizeDp = Metrics.BADGE_ICON_DP, color = ink)
             Spacer(Modifier.width(doc.units.px(Metrics.BADGE_ICON_GAP_DP)))
         }
+
         if (id != null && node.props["text"].isNullOrEmpty()) {
             doc.label(
                 text = doc.text(Vars.entity(id, Vars.KEY_STATE)),
@@ -414,13 +495,16 @@ internal fun DocContext.avatarNode(node: Node, axis: Axis, pages: Pages) {
         Metrics.AVATAR_MIN_DP,
         Metrics.AVATAR_MAX_DP,
     ) ?: Metrics.AVATAR_DEFAULT_DP
+
     val id = node.bind?.entityId
+
     rcScope.Box(
-        styled(node, axis, pages),
+        modifier = styled(node = node, axis = axis, pages = pages),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@avatarNode
+
         if (id != null) {
             doc.bindEntity(id)
             doc.photo(entityState = doc.states[id], entityId = id, slot = "pic.${node.id}", sizeDp = sizeDp)
@@ -442,14 +526,17 @@ fun nodeLevel(nodeId: String) = "n.$nodeId.level"
 internal fun DocContext.bindLevel(node: Node, id: String) {
     bind(id) { states ->
         val entityState = states[id]
+
         val level = Present.view(
             entityState,
             i18n,
         ).level ?: entityState?.numericState()?.let { value ->
             val lo = node.props["min"]?.toDoubleOrNull() ?: entityState.input.min ?: 0.0
             val hi = node.props["max"]?.toDoubleOrNull() ?: entityState.input.max ?: Metrics.LEVEL_RANGE_MAX
+
             if (hi > lo) ((value - lo) / (hi - lo)).toFloat() else 0f
         } ?: 0f
+
         listOf(VarValue.float(nodeLevel(node.id), level.coerceIn(0f, 1f)))
     }
 }
@@ -462,12 +549,18 @@ internal fun DocContext.progressNode(node: Node, self: Dims, axis: Axis, pages: 
     val id = node.bind?.entityId
     val w = units.px((self.w - node.style.padX).coerceAtLeast(1f))
     val h = (self.h - node.style.padY).coerceAtLeast(1f)
+
     val fill = node.props["color"]?.let { paint(
         it,
     ) } ?: fixed(Pastel.forDomain(id?.let { EntityId(it).domain.value }).argb)
+
     if (id != null) bindLevel(node, id)
-    rcScope.Box(styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))) {
+
+    rcScope.Box(
+        styled(node = node, axis = axis, pages = pages, base = measured(node = node, axis = axis, self = self))
+    ) {
         val doc = this@progressNode
+
         Box(
             Modifier.size(
                 w,
@@ -476,6 +569,7 @@ internal fun DocContext.progressNode(node: Node, self: Dims, axis: Axis, pages: 
         ) {
             if (id != null) {
                 val level = doc.float(nodeLevel(node.id))
+
                 Canvas(Modifier.size(w, doc.units.px(h))) {
                     paint { color(fill); style(RcPaintStyle.Fill) }
                     drawRect(left = 0f.rf, top = 0f.rf, right = level * w, bottom = doc.units.px(h).rf)
@@ -488,17 +582,28 @@ internal fun DocContext.progressNode(node: Node, self: Dims, axis: Axis, pages: 
 /** The entity's history from the recorder as a line, over the last `hours` (24 unless set). */
 internal fun DocContext.graphNode(node: Node, self: Dims, axis: Axis, pages: Pages) {
     val id = node.bind?.entityId
-    val modifier = styled(node = node, axis = axis, pages = pages, base = measured(node, axis, self))
+
+    val modifier = styled(
+        node = node,
+        axis = axis,
+        pages = pages,
+        base = measured(node = node, axis = axis, self = self)
+    )
+
     if (id == null) {
         rcScope.Box(modifier.background(role(Role.TRACK)))
+
         return
     }
+
     refreshEvery(Metrics.GRAPH_REFRESH_SEC)
     val line = node.props["color"]?.let { paint(it) } ?: fixed(Pastel.BLUE.argb)
     val w = (self.w - node.style.padX).coerceAtLeast(1f)
     val h = (self.h - node.style.padY).coerceAtLeast(1f)
+
     rcScope.Box(modifier) {
         val doc = this@graphNode
+
         doc.graph(
             points = doc.data.history[id].orEmpty(),
             wDp = w,

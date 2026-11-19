@@ -76,7 +76,7 @@ class PlayerSession(
     private val layoutRepository = context.layoutRepository
     private val sendMutex = Mutex()
     private val buildMutex = Mutex()
-    private val device = Device(hello.widthDp, hello.heightDp, hello.density)
+    private val device = Device(widthDp = hello.widthDp, heightDp = hello.heightDp, density = hello.density)
     private val supportsDeflate = Rc.DEFLATE in hello.capabilities
     private val supportsVideo = Protocol.CAPABILITY_VIDEO in hello.capabilities
     private val supportsMap = Protocol.CAPABILITY_MAP in hello.capabilities
@@ -140,6 +140,7 @@ class PlayerSession(
 
     suspend fun send(message: ServerMessage) {
         val text = Protocol.encode(message)
+
         sendMutex.withLock {
             try {
                 socket.send(Frame.Text(text))
@@ -171,16 +172,17 @@ class PlayerSession(
     private fun deviceVars(): List<VarValue> {
         val i18n = context.languageRepository.current()
         val isCharging = charging == true
+
         return listOf(
-            VarValue.string(Vars.BATTERY, battery?.let { i18n.percent(it) } ?: ""),
+            VarValue.string(Vars.BATTERY, battery?.let { i18n.percent(it) }.orEmpty()),
             VarValue.int(Vars.BATTERY_CHARGING, if (isCharging) Vars.VISIBLE else Vars.GONE),
             VarValue.int(Vars.BATTERY_IDLE, if (isCharging) Vars.GONE else Vars.VISIBLE),
-            VarValue.string(Vars.WIFI, wifi?.toString() ?: ""),
+            VarValue.string(Vars.WIFI, wifi?.toString().orEmpty()),
         )
     }
 
     private fun foresee(ref: ActionRef, entity: EntityState): EntityState? =
-        context.actionRouter.foresee(ref, context.actionRouter.target(ref, screen()), entity)
+        context.actionRouter.foresee(ref = ref, target = context.actionRouter.target(ref, screen()), entity = entity)
 
     /** Sends what changed in [states]; a document whose structure depends on a changed entity is built again. */
     suspend fun refresh(states: Map<String, EntityState>) = documents.refresh(states)
@@ -195,6 +197,7 @@ class PlayerSession(
         val previousIds = intercomReport?.stations?.map { it.clientId }
         intercomReport = report
         val main = shownDocuments[Slot.MAIN] ?: return
+
         if (previousIds != report.stations.map { it.clientId }) {
             documents.rebuild(main)
         } else {
@@ -203,22 +206,25 @@ class PlayerSession(
     }
 
     private fun intercomView() = IntercomView.from(
-        intercomReport,
-        supportsIntercom,
-        context.languageRepository.current(),
+        report = intercomReport,
+        supportsCalls = supportsIntercom,
+        i18n = context.languageRepository.current(),
     )
 
     /** Once a second: rebuilds timed documents, sends pictures that are due, and pushes current music vars. */
     suspend fun tick(states: Map<String, EntityState>) {
         if (!isAwake) return
+
         for (shown in shownDocuments.values.toList()) {
             val docContext = shown.renderedDoc.docContext
+
             if (docContext.refreshSeconds > 0 && shown.renderedDoc.stale(states)) {
                 documents.rebuild(shown)
             } else if (docContext.pictures.any { it.refreshSeconds > 0 }) {
-                media.sendPictures(shown, states, isForced = false)
+                media.sendPictures(shown = shown, states = states, isForced = false)
             }
         }
+
         documents.tickProgress(states)
     }
 
@@ -291,13 +297,16 @@ class PlayerSession(
     private suspend fun applyDeviceState(message: PlayerMessage.DeviceState) {
         val hasStatusChanged = isAwake != message.awake || page != message.page || kiosk != message.kiosk ||
             charging != message.charging
+
         isAwake = message.awake
         page = message.page
         battery = message.battery
         charging = message.charging
         wifi = message.wifi
         kiosk = message.kiosk
+
         if (hasStatusChanged) onStatusChanged()
+
         sendVars(deviceVars())
     }
 
@@ -308,31 +317,40 @@ class PlayerSession(
 
     private suspend fun logPlayerEntries(batch: PlayerMessage.AppLog) {
         if (screenId == null) return
+
         val acknowledged = context.appLogs.write(hello.deviceId, batch.entries)
+
         if (acknowledged.isNotEmpty()) send(ServerMessage.AppLogAck(acknowledged))
     }
 
     private suspend fun handleAction(message: PlayerMessage.Action) {
         val ref = ActionRef.decode(message.metadata) ?: return
         val shown = shownDocuments[message.slot]
+
         if (shown == null || shown.revision != message.rev) {
             logger.debug("Tap on an old document ({} rev {}), ignored", message.slot, message.rev)
+
             return
         }
+
         // Prefer the page from the tap: PageShown can lag, and rebuilds bake this into StateLayout.
         message.page?.let { page = it }
+
         when {
             ref.tile == "alert" -> handleAlertAction(ref)
             ref.local -> if (ref.verb == "close" && message.slot != Slot.MAIN) {
                 shownDocuments.remove(message.slot)
+
                 if (message.slot == Slot.ALERT) currentAlert = null
             }
             else -> {
-                val outcome = context.actionRouter.handle(ref, screen(), tapMemory)
+                val outcome = context.actionRouter.handle(ref = ref, screen = screen(), memory = tapMemory)
+
                 // Start HLS while the cameras page rebuilds, as openCard does for the camera dialog.
                 if (outcome == TapOutcome.Rebuild && ref.verb == "cameras_select") {
                     media.warmCameraStream(entityId = ref.arg)
                 }
+
                 handleOutcome(outcome)
                 rebuildTappedOverlay(outcome = outcome, slot = message.slot)
             }
@@ -363,6 +381,7 @@ class PlayerSession(
             is TapOutcome.Intercom,
             -> handleFeatureOutcome(outcome)
         }
+
         jobs.removeAll { !it.isActive }
     }
 
@@ -370,6 +389,7 @@ class PlayerSession(
         when (outcome) {
             is TapOutcome.Confirm -> {
                 send(ServerMessage.Vars(listOf(VarValue.string(outcome.varName, outcome.text))))
+
                 jobs += context.scope.launch {
                     delay(ActionRouter.CONFIRM_MS.milliseconds)
                     send(ServerMessage.Vars(listOf(VarValue.string(outcome.varName, ""))))
@@ -407,6 +427,7 @@ class PlayerSession(
                     outcome.tileId,
                     AlarmNotice(outcome.title, outcome.message),
                 )
+
                 shownDocuments[Slot.MAIN]?.let { documents.rebuild(it) }
             }
             is TapOutcome.Intercom -> if (supportsIntercom) {
@@ -420,20 +441,26 @@ class PlayerSession(
 
     suspend fun notify(request: NotificationRequest): String {
         val supportsNotifications = Protocol.CAPABILITY_NOTIFICATIONS in hello.capabilities
+
         if (!supportsNotifications && (request.presentation == "banner" || !request.wake)) return "unsupported"
+
         val alert = alertFromNotification(request)
         notificationMutex.lock()
+
         try {
             val failuresBefore = sendFailures.get()
+
             if (request.presentation == "alert") {
                 documents.showAlert(alert)
             } else {
-                sendNotificationBanner(alert, wake = request.wake, durationSeconds = request.duration)
+                sendNotificationBanner(alert = alert, wake = request.wake, durationSeconds = request.duration)
             }
+
             check(sendFailures.get() == failuresBefore) { "Notification dispatch failed" }
         } finally {
             notificationMutex.unlock()
         }
+
         return "sent"
     }
 
@@ -452,6 +479,7 @@ class PlayerSession(
                 emptyList()
             }
         }
+
         return Alert(
             title = request.title,
             message = request.message,
@@ -473,7 +501,9 @@ class PlayerSession(
         val id = UUID.randomUUID().toString()
         currentBanner = id to alert
         bannerExpiresAt = System.nanoTime() + durationSeconds.seconds.inWholeNanoseconds
+
         if (wake) send(ServerMessage.Wake(true))
+
         send(
             ServerMessage.NotificationBanner(
                 id = id,
@@ -493,11 +523,13 @@ class PlayerSession(
 
     private suspend fun handleNotificationAction(message: PlayerMessage.NotificationAction) {
         notificationMutex.lock()
+
         try {
             val current = currentBanner
             val alert = current?.second
             val isCurrent = screenId != null && current?.first == message.id && System.nanoTime() < bannerExpiresAt
             val isValidButton = message.button == null || message.button in (alert?.buttons?.indices ?: IntRange.EMPTY)
+
             if (isCurrent && alert != null && isValidButton) {
                 currentBanner = null
                 message.button?.let { pressAlertButton(alert, alert.buttons[it]) }
@@ -509,6 +541,7 @@ class PlayerSession(
 
     private fun calendarDialog(outcome: TapOutcome.OpenCalendar): ServerMessage.CalendarDialog {
         val event = outcome.event
+
         return if (outcome.mode == CalendarDialogMode.DELETE && event?.uid != null) {
             ServerMessage.CalendarDialog(
                 mode = CalendarDialogMode.DELETE,
@@ -539,12 +572,14 @@ class PlayerSession(
 
     private suspend fun createCalendarEvent(message: PlayerMessage.CalendarCreate) {
         if (!canMutateCalendar(message.tileId)) return
+
         when (val result = calendarMutations.create(message)) {
             is AgendaMutation.Accepted -> {
                 send(ServerMessage.CalendarDialog(
                     mode = CalendarDialogMode.CLOSE,
                     tileId = message.tileId,
                 ))
+
                 publishAgendaNotice(message.tileId, result.message)
             }
             is AgendaMutation.Rejected -> send(
@@ -559,6 +594,7 @@ class PlayerSession(
 
     private suspend fun deleteCalendarEvent(message: PlayerMessage.CalendarDelete) {
         if (!canMutateCalendar(message.tileId)) return
+
         send(ServerMessage.CalendarDialog(CalendarDialogMode.CLOSE, message.tileId))
 
         when (val result = calendarMutations.delete(message)) {
@@ -571,13 +607,16 @@ class PlayerSession(
         val agendas = context.renderDataRepository.calendarAgenda
         agendas.setNotice(tileId, message)
         val main = shownDocuments[Slot.MAIN]
+
         if (main != null) documents.rebuild(main)
 
         jobs += context.scope.launch {
             delay(AGENDA_NOTICE_MS.milliseconds)
+
             if (agendas.notice(tileId) == message) {
                 agendas.setNotice(tileId, null)
                 val shown = shownDocuments[Slot.MAIN]
+
                 if (shown != null) documents.rebuild(shown)
             }
         }
@@ -609,6 +648,7 @@ class PlayerSession(
             ) }
                 .onFailure { send(ServerMessage.Toast(it.message ?: "Failed")) }
         }
+
         runCatching {
             val eventData = buildJsonObject {
                 put("action", button.action ?: button.title)
@@ -616,26 +656,32 @@ class PlayerSession(
                 put("screen", screenId)
                 put("device", hello.deviceId)
             }
+
             homeAssistant.send(FireEvent(FollowedEvent.ALERT_ACTION, eventData))
         }
     }
 
     suspend fun openPage(pageId: String) {
         val screen = screen() ?: return
+
         val pageIndex = screen.pages
             .indexOfFirst { it.id == pageId || it.title.equals(pageId, ignoreCase = true) }
             .takeIf { it >= 0 }
             ?: pageId.toIntOrNull()?.minus(1)
             ?: return
+
         send(ServerMessage.Wake(true))
         send(ServerMessage.OpenPage(pageIndex))
     }
 
     suspend fun closeAll() {
         notificationMutex.lock()
+
         try {
             currentBanner = null
+
             if (Protocol.CAPABILITY_NOTIFICATIONS in hello.capabilities) send(ServerMessage.NotificationClear)
+
             lifecycle.closeAll()
         } finally {
             notificationMutex.unlock()

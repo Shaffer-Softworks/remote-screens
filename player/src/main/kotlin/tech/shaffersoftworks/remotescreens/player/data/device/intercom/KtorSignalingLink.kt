@@ -14,6 +14,7 @@ class KtorSignalingLink @Inject constructor(
     override suspend fun conversation(url: String, block: suspend SignalingConversation.() -> Unit) {
         httpClient.webSocket(url) {
             val socket = this
+
             val conversation = object : SignalingConversation {
                 override suspend fun send(text: String) {
                     socket.send(Frame.Text(text))
@@ -22,10 +23,12 @@ class KtorSignalingLink @Inject constructor(
                 override suspend fun receive(): String? {
                     while (true) {
                         val frame = incoming.receiveCatching().getOrNull() ?: return null
+
                         if (frame is Frame.Text) return frame.readText()
                     }
                 }
             }
+
             conversation.block()
         }
     }

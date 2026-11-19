@@ -38,6 +38,7 @@ fun AddressDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(CONTENT_SPACING)) {
                 Text(stringResource(R.string.address_body))
+
                 OutlinedTextField(
                     value = address,
                     onValueChange = { value -> address = value },

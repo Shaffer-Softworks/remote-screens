@@ -10,15 +10,21 @@ function edgeToEdgeKinds(): string[] {
   const kotlin = readFileSync(
     fileURLToPath(
       new URL(
-        '../../../server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/tiles/TileBox.kt',
+        '../../../shared/src/main/kotlin/tech/shaffersoftworks/remotescreens/shared/TileKind.kt',
         import.meta.url,
       ),
     ),
     'utf8',
   )
-  const setStart = kotlin.indexOf('setOf(', kotlin.indexOf('fun Tile.edgeToEdge()'))
+  const wireByConstant = new Map(
+    [...kotlin.matchAll(/^\s+([A-Z][A-Z0-9_]*)\("([a-z_]+)"\)/gm)].map(match => [match[1], match[2]]),
+  )
+  const pagesStart = kotlin.indexOf('EDGE_PAGES')
+  const setStart = kotlin.indexOf('setOf(', pagesStart)
   const set = kotlin.slice(setStart, kotlin.indexOf(')', setStart))
-  return [...set.matchAll(/"([a-z_]+)"/g)].map(match => match[1])
+  return [...set.matchAll(/\b([A-Z][A-Z0-9_]*)\b/g)]
+    .map(match => wireByConstant.get(match[1]))
+    .filter((wire): wire is string => wire != null)
 }
 
 const entity = (entityId: string): EntityInfo =>

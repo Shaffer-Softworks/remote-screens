@@ -78,24 +78,29 @@ class CalendarAgendaStore(private val homeAssistant: HomeAssistant) {
 
     suspend fun snapshot(states: Map<String, EntityState>, zone: ZoneId): AgendaSnapshot {
         cache.get()?.takeIf { it.isFresh() }?.let { return it.value }
+
         val loaded = runCatching { load(states, zone) }
             .onFailure { error ->
                 if (error is CancellationException) throw error
+
                 logger.debug("Calendar agenda failed: {}", error.message)
             }
             .getOrElse { AgendaSnapshot(errorMessage = it.message ?: AgendaCopy.ERROR) }
+
         cache.set(Cached(loaded, System.currentTimeMillis()))
         latest = loaded
+
         return loaded
     }
 
     private suspend fun load(states: Map<String, EntityState>, zone: ZoneId): AgendaSnapshot {
         val listBytes = homeAssistant.fetch(CALENDARS_PATH)
         val listed = listBytes?.let(::parseCalendarList).orEmpty()
+
         return when {
             listBytes == null -> AgendaSnapshot(errorMessage = AgendaCopy.ERROR)
             listed.isEmpty() -> AgendaSnapshot()
-            else -> eventsFor(listed, states, zone)
+            else -> eventsFor(listed = listed, states = states, zone = zone)
         }
     }
 
@@ -107,6 +112,7 @@ class CalendarAgendaStore(private val homeAssistant: HomeAssistant) {
         val calendars = listed.map { item ->
             val entity = states[item.entityId]
             val name = item.name?.takeIf { it.isNotBlank() } ?: entity?.name ?: item.entityId
+
             AgendaCalendar(
                 entityId = item.entityId,
                 name = name,
@@ -114,20 +120,25 @@ class CalendarAgendaStore(private val homeAssistant: HomeAssistant) {
                 canDelete = entity?.supports(FEATURE_DELETE) == true,
             )
         }
+
         val now = Instant.now()
         val rangeEnd = now.plus(LOOKAHEAD_DAYS, ChronoUnit.DAYS)
         val events = mutableListOf<AgendaEvent>()
         var firstError: String? = null
+
         for (calendar in calendars) {
             val fetched = fetchEvents(calendar = calendar, zone = zone, start = now, end = rangeEnd)
+
             if (fetched == null) {
                 if (firstError == null) firstError = AgendaCopy.ERROR
             } else {
                 events += fetched
             }
         }
+
         val sorted = events.sortedWith(compareBy({ it.start ?: Instant.MAX }, { it.summary }))
         val upcoming = sorted.filter { event -> event.end == null || !event.end.isBefore(now) }
+
         return if (events.isEmpty() && firstError != null) {
             AgendaSnapshot(errorMessage = firstError)
         } else {
@@ -145,7 +156,8 @@ class CalendarAgendaStore(private val homeAssistant: HomeAssistant) {
         val endText = URLEncoder.encode(end.toString(), StandardCharsets.UTF_8)
         val entityPath = URLEncoder.encode(calendar.entityId, StandardCharsets.UTF_8)
         val bytes = homeAssistant.fetch("$CALENDARS_PATH/$entityPath?start=$startText&end=$endText") ?: return null
-        return parseEvents(bytes, calendar, zone)
+
+        return parseEvents(bytes = bytes, calendar = calendar, zone = zone)
     }
 
     private data class Cached(val value: AgendaSnapshot, val fetchedAtMs: Long) {
@@ -184,8 +196,10 @@ private fun parseEvents(bytes: ByteArray, calendar: AgendaCalendar, zone: ZoneId
     val bodies = runCatching {
         CALENDAR_JSON.decodeFromString<List<CalendarEventBody>>(bytes.toString(StandardCharsets.UTF_8))
     }.getOrDefault(emptyList())
+
     return bodies.map { body ->
         val isAllDay = body.start?.dateTime.isNullOrBlank() && !body.start?.date.isNullOrBlank()
+
         AgendaEvent(
             uid = body.uid,
             recurrenceId = body.recurrenceId,
@@ -204,6 +218,7 @@ private fun parseEvents(bytes: ByteArray, calendar: AgendaCalendar, zone: ZoneId
 private fun resolveInstant(whenValue: CalendarWhen?, zone: ZoneId): Instant? {
     val dateTime = whenValue?.dateTime
     val date = whenValue?.date
+
     return when {
         !dateTime.isNullOrBlank() -> parseDateTime(dateTime, zone)
         date.isNullOrBlank() -> null
@@ -221,6 +236,7 @@ internal fun calendarEntityId(path: String): String? {
     val bare = path.substringBefore('?')
     val isList = bare == CALENDARS_PATH || bare == "$CALENDARS_PATH/"
     val id = bare.removePrefix("$CALENDARS_PATH/")
+
     return if (isList || !bare.startsWith("$CALENDARS_PATH/")) {
         null
     } else {
@@ -230,5 +246,6 @@ internal fun calendarEntityId(path: String): String? {
 
 internal fun isCalendarListPath(path: String): Boolean {
     val bare = path.substringBefore('?')
+
     return bare == CALENDARS_PATH || bare == "$CALENDARS_PATH/"
 }

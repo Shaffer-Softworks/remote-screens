@@ -46,6 +46,7 @@ internal fun detailFilledVar(tileId: String) = Vars.tile(tileId, KEY_DETAIL_FILL
 internal fun DocContext.bindDetailLevel(tileId: String, entityId: String) {
     bind(entityId) { states ->
         val percent = states[entityId].brightnessPercent()
+
         listOf(
             VarValue.float(detailLevelVar(tileId), percent / LightsMetrics.PERCENT.toFloat()),
             VarValue.int(detailFilledVar(tileId), if (percent > 0) Vars.VISIBLE else Vars.GONE),
@@ -57,6 +58,7 @@ internal fun DocContext.bindDetailLevel(tileId: String, entityId: String) {
 private fun DocContext.verticalTaps(widthPx: Float, heightPx: Float, refAt: (Int) -> ActionRef?) {
     rcScope.Column(Modifier.size(widthPx, heightPx)) {
         val doc = this@verticalTaps
+
         for (index in 0 until D.SLIDER_STEPS) {
             Box(doc.tap(Modifier.fillMaxWidth().verticalWeight(1f), refAt(index)))
         }
@@ -75,23 +77,29 @@ internal fun DocContext.verticalBrightnessSlider(tileId: String, entityState: En
     val fill = liftedForTrack(entityState.selectedColor())
     val canSet = entityState.supportsBrightness()
     val track = Modifier.size(w, h).clip(rounded(layout.dp(D.SLIDER_CORNER_DP))).background(fixed(Rpi.LightDetailTrack))
+
     rcScope.Box(track) {
         val doc = this@verticalBrightnessSlider
+
         Canvas(Modifier.size(w, h).visibility(doc.int(detailFilledVar(tileId), Vars.GONE))) {
             val fillTop = level * -h + h
+
             paint {
                 clearShader()
                 color(doc.fixed(fill))
                 alpha(1f)
                 style(RcPaintStyle.Fill)
             }
+
             drawRect(left = 0f.rf, top = fillTop, right = w.rf, bottom = h.rf)
             paint { color(doc.fixed(Rpi.White)) }
             drawRect(left = 0f.rf, top = fillTop - line, right = w.rf, bottom = fillTop)
         }
+
         doc.verticalTaps(w, h) { index ->
             val percent = (D.SLIDER_STEPS - index) * (LightsMetrics.PERCENT / D.SLIDER_STEPS)
-            if (canSet) ActionRef("e:${entityState.entityId}", "brightness", "$percent") else null
+
+            if (canSet) ActionRef(tile = "e:${entityState.entityId}", verb = "brightness", arg = "$percent") else null
         }
     }
 }
@@ -102,9 +110,12 @@ private fun liftedForTrack(argb: Int): Int {
     val green = argb.green() / CHANNEL_MAX
     val blue = argb.blue() / CHANNEL_MAX
     val luma = D.LUMA_R * red + D.LUMA_G * green + D.LUMA_B * blue
+
     if (luma >= D.DARK_LUMA) return argb
+
     fun lift(channel: Float) = ((channel + D.DARK_LIFT).coerceAtMost(1f) * CHANNEL_MAX).roundToInt()
-    return rgb(lift(red), lift(green), lift(blue))
+
+    return rgb(red = lift(red), green = lift(green), blue = lift(blue))
 }
 
 /** RPI's `VerticalColorTemperatureSlider`: warmest at the top, coolest at the bottom, a white line at the kelvin. */
@@ -116,11 +127,14 @@ internal fun DocContext.verticalTemperatureSlider(entityState: EntityState, layo
     val span = (range.last - range.first).coerceAtLeast(1)
     val lineY = (entityState.kelvin() - range.first).toFloat() / span * h
     val canSet = entityState.supportsColorTemp()
+
     rcScope.Box(Modifier.size(w, h).clip(rounded(layout.dp(D.SLIDER_CORNER_DP)))) {
         val doc = this@verticalTemperatureSlider
+
         Canvas(Modifier.size(w, h)) {
             paint {
                 style(RcPaintStyle.Fill)
+
                 linearGradient(
                     startX = 0f,
                     startY = 0f,
@@ -129,17 +143,22 @@ internal fun DocContext.verticalTemperatureSlider(entityState: EntityState, layo
                     colors = intArrayOf(blackbodyColor(range.first), blackbodyColor(range.last)),
                 )
             }
+
             drawRect(left = 0f, top = 0f, right = w, bottom = h)
+
             paint {
                 clearShader()
                 color(doc.fixed(Rpi.White))
                 alpha(1f)
             }
+
             drawRect(left = 0f, top = lineY - line / 2f, right = w, bottom = lineY + line / 2f)
         }
+
         doc.verticalTaps(w, h) { index ->
             val kelvin = (range.first + (index + HALF) / D.SLIDER_STEPS * span).roundToInt()
-            if (canSet) ActionRef("e:${entityState.entityId}", "kelvin", "$kelvin") else null
+
+            if (canSet) ActionRef(tile = "e:${entityState.entityId}", verb = "kelvin", arg = "$kelvin") else null
         }
     }
 }
@@ -152,23 +171,31 @@ internal fun DocContext.colorWheel(entityState: EntityState, layout: LightsLayou
     val h = units.px(layout.dp(D.CONTROL_H_DP))
     val padH = units.px(layout.dp(D.WHEEL_PAD_H_DP))
     val w = h - 2 * padH
+
     rcScope.Box(
-        Modifier.fillMaxWidth().height(h),
+        modifier = Modifier.fillMaxWidth().height(h),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@colorWheel
+
         Box(Modifier.size(w, h)) {
             doc.wheelDisc(entityState = entityState, w = w, h = h, layout = layout)
-            doc.wheelTaps(entityState, w, h)
+            doc.wheelTaps(entityState = entityState, w = w, h = h)
+
             Box(Modifier.size(w, h), horizontal = RcHorizontalPositioning.End) {
                 val buttonPx = doc.units.px(layout.dp(D.EYEDROPPER_DP))
+
                 Box(
-                    Modifier.size(buttonPx, buttonPx),
+                    modifier = Modifier.size(buttonPx, buttonPx),
                     horizontal = RcHorizontalPositioning.Center,
                     vertical = RcVerticalPositioning.Center,
                 ) {
-                    doc.icon("eyedropper", layout.dp(D.EYEDROPPER_ICON_DP), doc.fixed(Rpi.White))
+                    doc.icon(
+                        name = "eyedropper",
+                        sizeDp = layout.dp(D.EYEDROPPER_ICON_DP),
+                        color = doc.fixed(Rpi.White)
+                    )
                 }
             }
         }
@@ -181,18 +208,22 @@ private fun DocContext.wheelDisc(entityState: EntityState, w: Float, h: Float, l
     val radius = minOf(cx, cy)
     val ring = units.px(layout.dp(D.WHEEL_RING_DP))
     val hsb = entityState.rgbColor()?.let { Color.RGBtoHSB(it.red(), it.green(), it.blue(), null) }
+
     rcScope.Canvas(Modifier.size(w, h)) {
         paint {
             style(RcPaintStyle.Fill)
-            sweepGradient(cx, cy, Rpi.LightDetailWheelHues)
+            sweepGradient(centerX = cx, centerY = cy, colors = Rpi.LightDetailWheelHues)
         }
+
         drawOval(left = 0f, top = 0f, right = w, bottom = h)
         paint { radialGradient(centerX = cx, centerY = cy, radius = radius, colors = Rpi.LightDetailWheelCentre) }
         drawOval(left = 0f, top = 0f, right = w, bottom = h)
+
         if (hsb != null) {
             val angle = hsb[0] * 2 * PI
             val x = (cx + hsb[1] * radius * cos(angle)).toFloat()
             val y = (cy + hsb[1] * radius * sin(angle)).toFloat()
+
             paint {
                 clearShader()
                 color(Rpi.White)
@@ -200,13 +231,16 @@ private fun DocContext.wheelDisc(entityState: EntityState, w: Float, h: Float, l
                 strokeWidth(this@wheelDisc.units.px(layout.dp(D.WHEEL_RING_STROKE_DP)))
                 style(RcPaintStyle.Stroke)
             }
-            drawCircle(x, y, ring)
+
+            drawCircle(centerX = x, centerY = y, radius = ring)
+
             paint {
                 color(Rpi.Black)
                 alpha(D.WHEEL_RING_EDGE_ALPHA / CHANNEL_MAX)
                 strokeWidth(this@wheelDisc.units.px(layout.dp(D.WHEEL_RING_EDGE_DP)))
             }
-            drawCircle(x, y, ring)
+
+            drawCircle(centerX = x, centerY = y, radius = ring)
             paint { alpha(1f) }
         }
     }
@@ -218,21 +252,25 @@ private fun DocContext.wheelTaps(entityState: EntityState, w: Float, h: Float) {
     val radius = minOf(w, h) / 2f
     val cellW = w / D.WHEEL_CELLS
     val cellH = h / D.WHEEL_CELLS
+
     rcScope.Column(Modifier.size(w, h)) {
         val doc = this@wheelTaps
+
         for (row in 0 until D.WHEEL_CELLS) {
             Row(Modifier.size(w, cellH)) {
                 for (column in 0 until D.WHEEL_CELLS) {
                     val dx = (column + HALF) * cellW - w / 2f
                     val dy = (row + HALF) * cellH - h / 2f
                     val distance = hypot(dx, dy)
+
                     val ref = if (canSet && distance <= radius) {
                         val hue = ((atan2(dy, dx) / (2 * PI)).toFloat() + 1f) % 1f
                         val argb = Color.HSBtoRGB(hue, (distance / radius).coerceIn(0f, 1f), 1f)
-                        ActionRef("e:${entityState.entityId}", "rgb", argb.rgbArg())
+                        ActionRef(tile = "e:${entityState.entityId}", verb = "rgb", arg = argb.rgbArg())
                     } else {
                         null
                     }
+
                     Box(doc.tap(Modifier.size(cellW, cellH), ref))
                 }
             }

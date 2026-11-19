@@ -13,6 +13,7 @@ private const val WHITE_RGB = 0xFFFFFFFF.toInt()
 object QrBitmaps {
     fun encode(text: String, sizePx: Int): BufferedImage {
         val side = sizePx.coerceAtLeast(1)
+
         val matrix = QRCodeWriter().encode(
             text.ifBlank { " " },
             BarcodeFormat.QR_CODE,
@@ -20,12 +21,15 @@ object QrBitmaps {
             side,
             mapOf(EncodeHintType.MARGIN to QUIET_ZONE_MODULES),
         )
+
         val image = BufferedImage(side, side, BufferedImage.TYPE_INT_RGB)
+
         for (y in 0 until side) {
             for (x in 0 until side) {
                 image.setRGB(x, y, if (matrix.get(x, y)) BLACK_RGB else WHITE_RGB)
             }
         }
+
         return image
     }
 }

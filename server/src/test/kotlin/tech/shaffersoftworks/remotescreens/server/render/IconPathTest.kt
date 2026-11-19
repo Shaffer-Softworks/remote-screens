@@ -33,6 +33,7 @@ class IconPathTest {
     @Test
     fun anIconIsStoredInPixelsAndNotScaledOnTheCanvas() {
         val i18n = I18n("en", emptyMap(), emptyMap(), true)
+
         val (bytes, _) = DocContext.build(
             200,
             200,
@@ -50,13 +51,16 @@ class IconPathTest {
         ) { doc ->
             doc.icon("home", ICON_SIZE_DP, doc.fixed(0xFFFFFFFF.toInt()))
         }
+
         val document = CoreDocument()
         document.initFromBuffer(RemoteComposeBuffer.fromInputStream(ByteArrayInputStream(bytes)))
         val operations = everyOperation(documentRoots(document))
         assertTrue(operations.none { it is MatrixScale }, "a canvas scale stretches the 24-grid bitmap")
+
         val largest = operations.filterIsInstance<PathData>()
             .flatMap { it.floatPath.filter(Float::isFinite) }
             .maxOrNull()
+
         assertTrue(
             largest != null && largest > ICON_VIEWPORT,
             "path stays on the 24-grid (largest $largest)",
@@ -67,15 +71,19 @@ class IconPathTest {
         val operations = CoreDocument::class.java.getDeclaredField("mOperations")
         operations.isAccessible = true
         val roots = operations.get(document) as List<*>
+
         return roots.filterIsInstance<Operation>()
     }
 
     private fun everyOperation(roots: List<Operation>): List<Operation> {
         val found = mutableListOf<Operation>()
         val seen = Collections.newSetFromMap(IdentityHashMap<Operation, Boolean>())
+
         fun visit(operation: Operation) {
             if (!seen.add(operation)) return
+
             found += operation
+
             val nested = when (operation) {
                 is LayoutComponent -> listOfNotNull(
                     operation.canvasOperations,
@@ -85,9 +93,12 @@ class IconPathTest {
                 is Component -> operation.list
                 else -> emptyList()
             }
+
             nested.forEach { visit(it) }
         }
+
         roots.forEach { visit(it) }
+
         return found
     }
 

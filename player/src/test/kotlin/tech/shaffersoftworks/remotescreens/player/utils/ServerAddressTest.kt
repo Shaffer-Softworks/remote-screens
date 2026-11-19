@@ -16,6 +16,7 @@ class ServerAddressTest {
             "homeassistant.local:9000",
             normalizeServerAddress("  http://homeassistant.local:9000/ "),
         )
+
         assertEquals("10.0.0.5:8100", normalizeServerAddress("ws://10.0.0.5:8100"))
     }
 

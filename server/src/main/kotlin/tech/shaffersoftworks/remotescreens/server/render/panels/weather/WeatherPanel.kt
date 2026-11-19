@@ -4,7 +4,7 @@ package tech.shaffersoftworks.remotescreens.server.render.panels.weather
 
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.cards.CardChrome
+import tech.shaffersoftworks.remotescreens.server.render.cards.weather.WEATHER_REFRESH_S
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
 
@@ -91,6 +91,7 @@ private class PortraitFit(widthDp: Float) {
         } else {
             0f
         }
+
         return TOP_PAD_DP + titleSp * LINE + AFTER_TITLE_DP + nowRowDp + AFTER_TEMP_DP +
             NOW_CONDITION_SP * LINE + details + BEFORE_STRIP_DP
     }
@@ -160,15 +161,19 @@ private val DETAILS = listOf("wind_speed", "humidity", "pressure")
 fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
     val id = tile.entityId ?: return
     val entityState = states[id]
+
     structural(
         id,
-    ) { s -> (listOf(s?.state ?: "") + DETAILS.filter { s?.weather?.detail(it) != null }).joinToString() }
-    refreshEvery(CardChrome.WEATHER_REFRESH_S)
+    ) { s -> (listOf(s?.state.orEmpty()) + DETAILS.filter { s?.weather?.detail(it) != null }).joinToString() }
+
+    refreshEvery(WEATHER_REFRESH_S)
     val details = DETAILS.filter { entityState?.weather?.detail(it) != null }
     val zone = runCatching { ZoneId.of(homeAssistantConfig.timeZone) }.getOrDefault(ZoneId.of("UTC"))
+
     if (box.h > box.w) {
-        bindWeatherReadings(tile.id, id, details)
+        bindWeatherReadings(tileId = tile.id, entityId = id, details = details)
         val forecast = data.forecasts[id].orEmpty().take(FORECAST_DAYS_MAX)
+
         portraitWeather(
             PortraitPage(
                 tileId = tile.id,
@@ -183,15 +188,30 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
                 heightDp = box.h,
             ),
         )
+
         return
     }
-    bindWeatherDetails(tile.id, id, details)
 
+    bindWeatherDetails(tileId = tile.id, entityId = id, details = details)
+    landscapeWeather(tile = tile, entityId = id, entityState = entityState, details = details, zone = zone, box = box)
+}
+
+private fun DocContext.landscapeWeather(
+    tile: Tile,
+    entityId: String,
+    entityState: EntityState?,
+    details: List<String>,
+    zone: ZoneId,
+    box: TileBox,
+) {
     val layoutScale = minOf(box.w / BASE_W, box.h / BASE_H)
         .coerceIn(LAYOUT_SCALE_MIN, LAYOUT_SCALE_MAX)
+
     val ink = role(Role.INK)
     val soft = role(Role.INK_SOFT)
     val dayW = FORECAST_DAY_W_DP * layoutScale
+    val id = entityId
+
     val days = data.forecasts[id].orEmpty().take(
         ((box.w - DETAIL_GAP_BASE_DP) / dayW).toInt().coerceIn(0, FORECAST_DAYS_MAX),
     )
@@ -200,102 +220,152 @@ fun DocContext.weatherPanel(tile: Tile, box: TileBox) {
         Modifier.fillMaxSize().background(role(Role.PAGE)),
         horizontal = RcHorizontalPositioning.Center,
     ) {
-        val doc = this@weatherPanel
-        Spacer(Modifier.height(doc.units.px(WEEKDAY_SP * layoutScale)))
-        doc.label(
-            text = doc.text(Vars.entity(id, Vars.KEY_NAME)),
-            sp = TITLE_SP * layoutScale,
-            color = doc.role(Role.WEATHER_TITLE),
-            align = RcTextAlign.Center,
+        landscapeHero(
+            tile = tile,
+            entityId = id,
+            entityState = entityState,
+            details = details,
+            layoutScale = layoutScale,
+            ink = ink,
         )
-        Spacer(Modifier.verticalWeight(1f))
-        Row(vertical = RcVerticalPositioning.Center) {
-            doc.weatherStateIcon(
-                entityState?.state ?: "",
-                CONDITION_ICON_DP * layoutScale,
-                fallbackColor = ink,
-            )
-            Spacer(Modifier.width(doc.units.px(TEMP_ICON_GAP_DP * layoutScale)))
-            doc.label(
-                text = doc.text(Vars.entity(id, Vars.KEY_VALUE)),
-                sp = CONDITION_ICON_DP * layoutScale,
-                color = ink,
-                weight = TEMP_WEIGHT,
-            )
-        }
-        doc.label(
-            text = doc.i18n.state(Domain.WEATHER.value, entityState?.state ?: Availability.UNKNOWN.wire),
-            sp = small(CONDITION_LABEL_SP, layoutScale),
-            color = ink,
-            align = RcTextAlign.Center,
-        )
-        if (details.isNotEmpty()) {
-            Spacer(Modifier.height(doc.units.px(DETAILS_GAP_DP * layoutScale)))
-            Row(vertical = RcVerticalPositioning.Center) {
-                details.forEachIndexed { i, key ->
-                    if (i > 0) Spacer(Modifier.width(doc.units.px(DETAIL_COL_GAP_DP * layoutScale)))
-                    doc.label(
-                        doc.text(Vars.tile(tile.id, key)),
-                        small(DETAIL_GAP_BASE_DP, layoutScale),
-                        ink,
-                    )
-                }
-            }
-        }
-        Spacer(Modifier.verticalWeight(1f))
+
+        rcScope.Spacer(Modifier.verticalWeight(1f))
+
         if (days.isNotEmpty()) {
-            Row(
-                Modifier.fillMaxWidth().background(
-                    doc.role(Role.STRIP),
-                ).padding(doc.units.px(STRIP_PAD_DP)),
-                horizontal = RcRowHorizontalPositioning.SpaceEvenly,
+            landscapeForecast(
+                days = days,
+                dayW = dayW,
+                layoutScale = layoutScale,
+                zone = zone,
+                ink = ink,
+                soft = soft,
+            )
+        }
+
+    }
+}
+
+private fun DocContext.landscapeHero(
+    tile: Tile,
+    entityId: String,
+    entityState: EntityState?,
+    details: List<String>,
+    layoutScale: Float,
+    ink: RcColor,
+) {
+    rcScope.Spacer(Modifier.height(units.px(WEEKDAY_SP * layoutScale)))
+
+    label(
+        text = text(Vars.entity(entityId, Vars.KEY_NAME)),
+        sp = TITLE_SP * layoutScale,
+        color = role(Role.WEATHER_TITLE),
+        align = RcTextAlign.Center,
+    )
+
+    rcScope.Spacer(Modifier.verticalWeight(1f))
+
+    rcScope.Row(vertical = RcVerticalPositioning.Center) {
+        weatherStateIcon(
+            condition = entityState?.state.orEmpty(),
+            sizeDp = CONDITION_ICON_DP * layoutScale,
+            fallbackColor = ink,
+        )
+
+        rcScope.Spacer(Modifier.width(units.px(TEMP_ICON_GAP_DP * layoutScale)))
+
+        label(
+            text = text(Vars.entity(entityId, Vars.KEY_VALUE)),
+            sp = CONDITION_ICON_DP * layoutScale,
+            color = ink,
+            weight = TEMP_WEIGHT,
+        )
+    }
+
+    label(
+        text = i18n.state(Domain.WEATHER.value, entityState?.state ?: Availability.UNKNOWN.wire),
+        sp = small(CONDITION_LABEL_SP, layoutScale),
+        color = ink,
+        align = RcTextAlign.Center,
+    )
+
+    if (details.isEmpty()) return
+
+    rcScope.Spacer(Modifier.height(units.px(DETAILS_GAP_DP * layoutScale)))
+
+    rcScope.Row(vertical = RcVerticalPositioning.Center) {
+        details.forEachIndexed { index, key ->
+            if (index > 0) rcScope.Spacer(Modifier.width(units.px(DETAIL_COL_GAP_DP * layoutScale)))
+
+            label(
+                text = text(Vars.tile(tile.id, key)),
+                sp = small(DETAIL_GAP_BASE_DP, layoutScale),
+                color = ink,
+            )
+        }
+    }
+}
+
+private fun DocContext.landscapeForecast(
+    days: List<Forecast>,
+    dayW: Float,
+    layoutScale: Float,
+    zone: ZoneId,
+    ink: RcColor,
+    soft: RcColor,
+) {
+    rcScope.Row(
+        Modifier.fillMaxWidth().background(role(Role.STRIP)).padding(units.px(STRIP_PAD_DP)),
+        horizontal = RcRowHorizontalPositioning.SpaceEvenly,
+    ) {
+        for (day in days) {
+            rcScope.Column(
+                Modifier.width(units.px(dayW)).padding(
+                    start = 0f,
+                    top = units.px(STRIP_PAD_DP * layoutScale),
+                    end = 0f,
+                    bottom = units.px(STRIP_PAD_DP * layoutScale),
+                ),
+                horizontal = RcHorizontalPositioning.Center,
             ) {
-                for (day in days) {
-                    Column(
-                        Modifier.width(
-                            doc.units.px(dayW),
-                        ).padding(
-                            start = 0f,
-                            top = doc.units.px(STRIP_PAD_DP * layoutScale),
-                            end = 0f,
-                            bottom = doc.units.px(STRIP_PAD_DP * layoutScale),
-                        ),
-                        horizontal = RcHorizontalPositioning.Center,
-                    ) {
-                        doc.label(
-                            text = doc.i18n.fullWeekday(day.time.withZoneSameInstant(zone)),
-                            sp = small(WEEKDAY_SP, layoutScale),
-                            color = ink,
-                            align = RcTextAlign.Center,
-                        )
-                        Spacer(Modifier.height(doc.units.px(STRIP_PAD_DP * layoutScale)))
-                        doc.weatherStateIcon(
-                            day.condition,
-                            FORECAST_ICON_DP * layoutScale,
-                            fallbackColor = ink,
-                        )
-                        Spacer(Modifier.height(doc.units.px(FORECAST_GAP_DP * layoutScale)))
-                        doc.label(
-                            text = doc.i18n.state(Domain.WEATHER.value, day.condition),
-                            sp = small(CONDITION_SP, layoutScale),
-                            color = soft,
-                            align = RcTextAlign.Center,
-                        )
-                        Spacer(Modifier.height(doc.units.px(TEMP_ROW_GAP_DP * layoutScale)))
-                        Row(vertical = RcVerticalPositioning.Bottom) {
-                            doc.label(
-                                text = day.high?.let { "${it.roundToInt()}°" } ?: "–",
-                                sp = small(HIGH_TEMP_SP, layoutScale),
-                                color = ink,
-                                weight = Weight.MEDIUM,
-                            )
-                            doc.label(
-                                day.low?.let { " / ${it.roundToInt()}°" } ?: "",
-                                small(LOW_TEMP_SP, layoutScale),
-                                soft,
-                            )
-                        }
-                    }
+                label(
+                    text = i18n.fullWeekday(day.time.withZoneSameInstant(zone)),
+                    sp = small(WEEKDAY_SP, layoutScale),
+                    color = ink,
+                    align = RcTextAlign.Center,
+                )
+
+                rcScope.Spacer(Modifier.height(units.px(STRIP_PAD_DP * layoutScale)))
+
+                weatherStateIcon(
+                    condition = day.condition,
+                    sizeDp = FORECAST_ICON_DP * layoutScale,
+                    fallbackColor = ink,
+                )
+
+                rcScope.Spacer(Modifier.height(units.px(FORECAST_GAP_DP * layoutScale)))
+
+                label(
+                    text = i18n.state(Domain.WEATHER.value, day.condition),
+                    sp = small(CONDITION_SP, layoutScale),
+                    color = soft,
+                    align = RcTextAlign.Center,
+                )
+
+                rcScope.Spacer(Modifier.height(units.px(TEMP_ROW_GAP_DP * layoutScale)))
+
+                rcScope.Row(vertical = RcVerticalPositioning.Bottom) {
+                    label(
+                        text = day.high?.let { "${it.roundToInt()}°" } ?: "–",
+                        sp = small(HIGH_TEMP_SP, layoutScale),
+                        color = ink,
+                        weight = Weight.MEDIUM,
+                    )
+
+                    label(
+                        text = day.low?.let { " / ${it.roundToInt()}°" }.orEmpty(),
+                        sp = small(LOW_TEMP_SP, layoutScale),
+                        color = soft,
+                    )
                 }
             }
         }
@@ -317,11 +387,12 @@ private fun DocContext.portraitStack(page: PortraitPage) {
     ) {
         val doc = this@portraitStack
         doc.portraitHero(page)
+
         if (page.days.isNotEmpty()) {
             doc.portraitDays(
-                page,
-                Modifier.fillMaxWidth().verticalWeight(1f),
-                RcColumnVerticalPositioning.SpaceEvenly,
+                page = page,
+                modifier = Modifier.fillMaxWidth().verticalWeight(1f),
+                vertical = RcColumnVerticalPositioning.SpaceEvenly,
             )
         }
     }
@@ -330,8 +401,10 @@ private fun DocContext.portraitStack(page: PortraitPage) {
 /** The list fills the page and the hero is painted over it, so a scrolled row cannot cover the temperature. */
 private fun DocContext.portraitScroll(page: PortraitPage) {
     val viewport = units.px(page.heightDp)
+
     rcScope.Box(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@portraitScroll
+
         rcScope.Column(
             Modifier.fillMaxWidth()
                 .height(viewport)
@@ -340,11 +413,14 @@ private fun DocContext.portraitScroll(page: PortraitPage) {
                 .background(doc.role(Role.STRIP))
                 .keptVerticalScroll("weather.${page.tileId}"),
         ) {
-            Spacer(Modifier.height(doc.units.px(page.hero)))
-            Spacer(Modifier.height(doc.units.px(PortraitFit.STRIP_PAD_V_DP)))
+            rcScope.Spacer(Modifier.height(doc.units.px(page.hero)))
+            rcScope.Spacer(Modifier.height(doc.units.px(PortraitFit.STRIP_PAD_V_DP)))
+
             for (day in page.days) doc.portraitDay(page, day)
-            Spacer(Modifier.height(doc.units.px(PortraitFit.STRIP_PAD_V_DP)))
+
+            rcScope.Spacer(Modifier.height(doc.units.px(PortraitFit.STRIP_PAD_V_DP)))
         }
+
         doc.portraitHero(page)
     }
 }
@@ -355,7 +431,8 @@ private fun DocContext.portraitHero(page: PortraitPage) {
         horizontal = RcHorizontalPositioning.Center,
     ) {
         val doc = this@portraitHero
-        Spacer(Modifier.height(doc.units.px(PortraitFit.TOP_PAD_DP)))
+        rcScope.Spacer(Modifier.height(doc.units.px(PortraitFit.TOP_PAD_DP)))
+
         doc.label(
             text = doc.text(Vars.entity(page.entityId, Vars.KEY_NAME)),
             sp = page.fit.titleSp,
@@ -363,10 +440,18 @@ private fun DocContext.portraitHero(page: PortraitPage) {
             align = RcTextAlign.Center,
             modifier = Modifier.fillMaxWidth().height(doc.units.px(page.fit.titleSp * PortraitFit.LINE)),
         )
-        Spacer(Modifier.height(doc.units.px(PortraitFit.AFTER_TITLE_DP)))
+
+        rcScope.Spacer(Modifier.height(doc.units.px(PortraitFit.AFTER_TITLE_DP)))
+
         Row(Modifier.height(doc.units.px(page.fit.nowRowDp)), vertical = RcVerticalPositioning.Center) {
-            doc.weatherStateIcon(page.entityState?.state ?: "", page.fit.iconDp, fallbackColor = page.ink)
-            Spacer(Modifier.width(doc.units.px(PortraitFit.TEMP_GAP_DP)))
+            doc.weatherStateIcon(
+                condition = page.entityState?.state.orEmpty(),
+                sizeDp = page.fit.iconDp,
+                fallbackColor = page.ink
+            )
+
+            rcScope.Spacer(Modifier.width(doc.units.px(PortraitFit.TEMP_GAP_DP)))
+
             doc.label(
                 text = doc.text(Vars.entity(page.entityId, Vars.KEY_VALUE)),
                 sp = page.fit.tempSp,
@@ -374,7 +459,9 @@ private fun DocContext.portraitHero(page: PortraitPage) {
                 weight = TEMP_WEIGHT,
             )
         }
-        Spacer(Modifier.height(doc.units.px(PortraitFit.AFTER_TEMP_DP)))
+
+        rcScope.Spacer(Modifier.height(doc.units.px(PortraitFit.AFTER_TEMP_DP)))
+
         doc.label(
             text = doc.i18n.state(Domain.WEATHER.value, page.entityState?.state ?: Availability.UNKNOWN.wire),
             sp = PortraitFit.NOW_CONDITION_SP,
@@ -382,8 +469,10 @@ private fun DocContext.portraitHero(page: PortraitPage) {
             align = RcTextAlign.Center,
             modifier = Modifier.fillMaxWidth().height(doc.units.px(PortraitFit.NOW_CONDITION_SP * PortraitFit.LINE)),
         )
+
         if (page.details.isNotEmpty()) doc.portraitDetails(page)
-        Spacer(Modifier.height(doc.units.px(PortraitFit.BEFORE_STRIP_DP)))
+
+        rcScope.Spacer(Modifier.height(doc.units.px(PortraitFit.BEFORE_STRIP_DP)))
     }
 }
 
@@ -391,9 +480,11 @@ private fun DocContext.portraitDetails(page: PortraitPage) {
     val block = PortraitFit.LABEL_SP * PortraitFit.LINE +
         PortraitFit.LABEL_GAP_DP +
         PortraitFit.VALUE_SP * PortraitFit.LINE
+
     rcScope.Column(Modifier.fillMaxWidth().height(units.px(PortraitFit.AFTER_CONDITION_DP + block))) {
         val doc = this@portraitDetails
-        Spacer(Modifier.height(doc.units.px(PortraitFit.AFTER_CONDITION_DP)))
+        rcScope.Spacer(Modifier.height(doc.units.px(PortraitFit.AFTER_CONDITION_DP)))
+
         Row(
             Modifier.fillMaxWidth().padding(
                 start = doc.units.px(PortraitFit.STRIP_PAD_H_DP),
@@ -412,7 +503,9 @@ private fun DocContext.portraitDetails(page: PortraitPage) {
                         align = RcTextAlign.Center,
                         modifier = Modifier.height(doc.units.px(PortraitFit.LABEL_SP * PortraitFit.LINE)),
                     )
-                    Spacer(Modifier.height(doc.units.px(PortraitFit.LABEL_GAP_DP)))
+
+                    rcScope.Spacer(Modifier.height(doc.units.px(PortraitFit.LABEL_GAP_DP)))
+
                     doc.label(
                         text = doc.text(Vars.tile(page.tileId, key)),
                         sp = PortraitFit.VALUE_SP,
@@ -441,6 +534,7 @@ private fun DocContext.portraitDays(
         vertical = vertical,
     ) {
         val doc = this@portraitDays
+
         for (day in page.days) doc.portraitDay(page, day)
     }
 }
@@ -456,28 +550,33 @@ private fun DocContext.portraitDay(page: PortraitPage, day: Forecast) {
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@portraitDay
+
         doc.label(
             text = doc.i18n.fullWeekday(day.time.withZoneSameInstant(page.zone)),
             sp = WEEKDAY_SP,
             color = page.ink,
             modifier = Modifier.width(doc.units.px(page.fit.weekdayW)),
         )
-        Spacer(Modifier.width(doc.units.px(PortraitFit.ROW_GAP_DP)))
-        doc.weatherStateIcon(day.condition, PortraitFit.ROW_ICON_DP, fallbackColor = page.ink)
-        Spacer(Modifier.width(doc.units.px(PortraitFit.ROW_GAP_DP)))
+
+        rcScope.Spacer(Modifier.width(doc.units.px(PortraitFit.ROW_GAP_DP)))
+        doc.weatherStateIcon(condition = day.condition, sizeDp = PortraitFit.ROW_ICON_DP, fallbackColor = page.ink)
+        rcScope.Spacer(Modifier.width(doc.units.px(PortraitFit.ROW_GAP_DP)))
+
         doc.label(
             text = doc.i18n.state(Domain.WEATHER.value, day.condition),
             sp = CONDITION_SP,
             color = page.soft,
             modifier = Modifier.horizontalWeight(1f),
         )
+
         doc.label(
             text = day.high?.let { "${it.roundToInt()}°" } ?: "–",
             sp = HIGH_TEMP_SP,
             color = page.ink,
             weight = Weight.MEDIUM,
         )
-        doc.label(day.low?.let { " / ${it.roundToInt()}°" } ?: "", LOW_TEMP_SP, page.soft)
+
+        doc.label(text = day.low?.let { " / ${it.roundToInt()}°" }.orEmpty(), sp = LOW_TEMP_SP, color = page.soft)
     }
 }
 
@@ -485,8 +584,9 @@ private fun DocContext.portraitDay(page: PortraitPage, day: Forecast) {
 private fun DocContext.bindWeatherDetails(tileId: String, entityId: String, details: List<String>) {
     bind(entityId) { states ->
         val entityState = states[entityId]
+
         details.map { key ->
-            VarValue.string(Vars.tile(tileId, key), entityState?.let { detailPhrase(it, key) } ?: "")
+            VarValue.string(Vars.tile(tileId, key), entityState?.let { detailPhrase(it, key) }.orEmpty())
         }
     }
 }
@@ -495,14 +595,16 @@ private fun DocContext.bindWeatherDetails(tileId: String, entityId: String, deta
 private fun DocContext.bindWeatherReadings(tileId: String, entityId: String, details: List<String>) {
     bind(entityId) { states ->
         val entityState = states[entityId]
+
         details.map { key ->
-            VarValue.string(Vars.tile(tileId, key), entityState?.let { reading(it, key) } ?: "")
+            VarValue.string(Vars.tile(tileId, key), entityState?.let { reading(it, key) }.orEmpty())
         }
     }
 }
 
 private fun DocContext.detailPhrase(entityState: EntityState, key: String): String? {
     val value = reading(entityState, key) ?: return null
+
     return i18n.t(detailWord(key), "value" to value)
 }
 

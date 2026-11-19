@@ -15,6 +15,7 @@ object PlayerAuth {
      */
     fun mayConnect(hello: PlayerMessage.Hello, record: PlayerRecord?): Boolean {
         val tokenHash = record?.tokenHash ?: return true
+
         return isTrusted(hello.token, tokenHash)
     }
 }

@@ -31,11 +31,13 @@ fun DocContext.numericLabel(
     glyphs: Int = READING_GLYPHS,
 ) {
     val doc = this
+
     rcScope.FitBox(horizontal = RcHorizontalPositioning.Center, vertical = RcVerticalPositioning.Center) {
         for (scale in listOf(1f, COMPACT_SCALE, MINIMUM_SCALE)) {
             val fontPx = doc.units.sp(sp * scale)
             val width = fontPx * DIGIT_ADVANCE * glyphs
             val height = fontPx * NUMBER_LINE_HEIGHT
+
             Canvas(Modifier.size(width, height).requiredWidthIn(min = width).semantics { text(text) }) {
                 save {
                     paint {
@@ -47,7 +49,8 @@ fun DocContext.numericLabel(
                         textSize(fontPx)
                         typeface(RcFontType.Monospace, RcFontWeight(weight))
                     }
-                    drawTextAnchored(text, width / 2f, height / 2f, 0f, 0f)
+
+                    drawTextAnchored(text = text, x = width / 2f, y = height / 2f, panX = 0f, panY = 0f)
                 }
             }
         }
@@ -57,6 +60,7 @@ fun DocContext.numericLabel(
 /** Prefer full-size text, then a smaller label before ellipsizing. Width is a conservative hint. */
 fun DocContext.fittingLabel(text: RcText, sample: String, sp: Float, color: RcColor) {
     val doc = this
+
     rcScope.FitBox {
         doc.label(
             text = text,
@@ -64,6 +68,7 @@ fun DocContext.fittingLabel(text: RcText, sample: String, sp: Float, color: RcCo
             color = color,
             modifier = Modifier.requiredWidthIn(min = doc.units.sp(sp) * sample.length * LABEL_ADVANCE),
         )
+
         doc.label(text = text, sp = sp * COMPACT_SCALE, color = color)
     }
 }

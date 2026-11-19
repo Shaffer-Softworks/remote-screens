@@ -24,6 +24,7 @@ class ScreenClock(
     fun clockVars(): List<VarValue> {
         val now = now()
         val i18n = languageRepository.current()
+
         return listOf(
             VarValue.string(Vars.TIME, i18n.time(now)),
             VarValue.string(Vars.DATE, i18n.date(now)),

@@ -22,6 +22,7 @@ class MusicAssistantClient(private val homeAssistant: HomeAssistant) {
 
     suspend fun configEntryIdForEntity(entityId: String): String? {
         if (entityId.isBlank()) return null
+
         return runCatching { homeAssistant.send(EntityRegistryGet(entityId)) }
             .onFailure { logger.debug("entity registry get {}: {}", entityId, it.message) }
             .getOrNull()
@@ -34,7 +35,9 @@ class MusicAssistantClient(private val homeAssistant: HomeAssistant) {
         limit: Int = SEARCH_LIMIT,
     ): List<MusicListRow> {
         if (configEntryId.isBlank() || query.isBlank()) return emptyList()
+
         val result = callMa(MusicAssistantSearch(configEntryId = configEntryId, name = query, limit = limit))
+
         return result?.let(MusicResponseParsers::parseSearch).orEmpty()
     }
 
@@ -45,6 +48,7 @@ class MusicAssistantClient(private val homeAssistant: HomeAssistant) {
         limit: Int = LIBRARY_PAGE_SIZE,
     ): List<MusicListRow> {
         if (configEntryId.isBlank()) return emptyList()
+
         val result = callMa(
             MusicAssistantGetLibrary(
                 configEntryId = configEntryId,
@@ -53,12 +57,15 @@ class MusicAssistantClient(private val homeAssistant: HomeAssistant) {
                 offset = offset,
             ),
         )
+
         return result?.let(MusicResponseParsers::parseLibrary).orEmpty()
     }
 
     suspend fun getQueue(playerEntityId: String): MusicQueueSnapshot {
         if (playerEntityId.isBlank()) return MusicQueueSnapshot(emptyList(), 0)
+
         val result = callMa(MusicAssistantGetQueue(EntityId(playerEntityId)))
+
         return result?.let { MusicResponseParsers.parseQueue(it, playerEntityId) }
             ?: MusicQueueSnapshot(emptyList(), 0)
     }
@@ -69,14 +76,19 @@ class MusicAssistantClient(private val homeAssistant: HomeAssistant) {
         enqueue: String = "play",
     ): Boolean {
         if (playerEntityId.isBlank() || uri.isBlank()) return false
+
         return runCatching {
-            homeAssistant.call(MusicAssistantPlayMedia(EntityId(playerEntityId), mediaId = uri, enqueue = enqueue))
+            homeAssistant.call(
+                MusicAssistantPlayMedia(entityId = EntityId(playerEntityId), mediaId = uri, enqueue = enqueue)
+            )
+
             true
         }.onFailure { logger.warn("play_media failed: {}", it.message) }.getOrDefault(false)
     }
 
     suspend fun clearPlaylist(playerEntityId: String): Boolean {
         if (playerEntityId.isBlank()) return false
+
         return runCatching {
             homeAssistant.call(MediaPlayerClearPlaylist(EntityId(playerEntityId)))
             true

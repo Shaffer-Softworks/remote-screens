@@ -53,12 +53,14 @@ class UpdateCheckRouteTest {
             screenId = "home",
             tokenHash = PlayerTokens.hash(PLAYER_TOKEN),
         )
+
         dependencies.layoutRepository.update { layout -> layout.copy(players = listOf(tablet)) }
     }
 
     private fun withRoutes(test: suspend (HttpClient) -> Unit) = testApplication {
         install(io.ktor.server.plugins.contentnegotiation.ContentNegotiation) { json() }
         install(WebSockets)
+
         routing {
             playerRoutes(
                 dependencies.playerHub,
@@ -67,6 +69,7 @@ class UpdateCheckRouteTest {
                 cameraStreamService,
             )
         }
+
         test(client)
     }
 
@@ -85,14 +88,18 @@ class UpdateCheckRouteTest {
     fun metadataDescribesTheCurrentlyBundledApk() = withRoutes { client ->
         val apkDir = checkNotNull(config.apkDir)
         java.io.File(apkDir, "remote-screens.apk").writeText("apk")
+
         java.io.File(apkDir, "version.json").writeText(
             """{"versionCode":142,"versionName":"0.1.42"}""",
         )
+
         val response = client.get("/player/update?token=$PLAYER_TOKEN")
+
         val update = kotlinx.serialization.json.Json
             .decodeFromString<tech.shaffersoftworks.remotescreens.shared.ServerMessage.UpdateAvailable>(
                 response.bodyAsText(),
             )
+
         assertEquals(HttpStatusCode.OK, response.status)
         assertEquals(142, update.versionCode)
         assertEquals("0.1.42", update.versionName)

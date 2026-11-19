@@ -36,6 +36,7 @@ internal abstract class Cases(private val group: String) : PreviewParameterProvi
 @Composable
 private fun documentBytes(sample: PreviewCase): ByteArray {
     val context = LocalContext.current
+
     return remember(sample.asset) {
         context.assets.open(sample.asset).use { it.readBytes() }
     }
@@ -46,6 +47,7 @@ private fun documentBytes(sample: PreviewCase): ByteArray {
 internal fun ServerDocument(sample: PreviewCase) {
     val bytes = documentBytes(sample)
     val document = remember(bytes) { RemoteDocument(bytes) }
+
     key(sample.asset) {
         // Loading in factory also initializes canvas paths correctly in Layoutlib.
         AndroidView(
@@ -70,5 +72,6 @@ private fun ScreensPreview(@PreviewParameter(ScreensCases::class) sample: Previe
 private fun ToolingLibraryPreview() {
     val sample = generatedPreviews.firstOrNull { it.group == "Screens" && it.label.startsWith("Living room") }
         ?: generatedPreviews.first()
+
     RemoteDocumentPreview(documentBytes(sample))
 }

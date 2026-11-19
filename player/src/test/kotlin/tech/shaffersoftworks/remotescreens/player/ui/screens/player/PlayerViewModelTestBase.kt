@@ -97,6 +97,7 @@ abstract class PlayerViewModelTestBase {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+
         viewModel = PlayerViewModel(
             savedStateHandle = SavedStateHandle(),
             preferencesRepository = preferencesRepository,

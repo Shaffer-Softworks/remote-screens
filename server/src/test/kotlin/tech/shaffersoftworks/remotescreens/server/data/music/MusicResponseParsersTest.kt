@@ -16,21 +16,25 @@ class MusicResponseParsersTest {
     fun libraryParsesHaWebsocketResponseWrapper() {
         val body = buildJsonObject {
             putJsonObject("context") { put("id", "ctx") }
+
             putJsonObject("response") {
                 putJsonArray("items") {
                     add(
                         buildJsonObject {
                             put("uri", "library://track/1")
                             put("name", "Ænema")
+
                             putJsonArray("artists") {
                                 add(buildJsonObject { put("name", "TOOL") })
                             }
+
                             put("image", "https://example.com/art.jpg")
                         },
                     )
                 }
             }
         }
+
         val rows = MusicResponseParsers.parseLibrary(body)
         assertEquals(1, rows.size)
         assertEquals("Library · Ænema", rows[0].title)
@@ -42,22 +46,27 @@ class MusicResponseParsersTest {
     @Test
     fun queueParsesHaResponseKeyedByEntity() {
         val entityId = "media_player.office"
+
         val body = buildJsonObject {
             putJsonObject("response") {
                 putJsonObject(entityId) {
                     put("queue_id", "q1")
                     put("items", 5)
+
                     putJsonObject("current_item") {
                         put("queue_item_id", "c1")
                         put("name", "Now")
+
                         putJsonObject("media_item") {
                             put("uri", "demo://1")
                             put("name", "Now")
                         }
                     }
+
                     putJsonObject("next_item") {
                         put("queue_item_id", "n1")
                         put("name", "Next")
+
                         putJsonObject("media_item") {
                             put("uri", "demo://2")
                             put("name", "Next")
@@ -66,6 +75,7 @@ class MusicResponseParsersTest {
                 }
             }
         }
+
         val queue = MusicResponseParsers.parseQueue(body, entityId)
         assertEquals(2, queue.rows.size)
         assertTrue(queue.rows[0].isCurrentPlayback)
@@ -79,6 +89,7 @@ class MusicResponseParsersTest {
             {"service_response":{"tracks":[{"uri":"demo://t","name":"Night","artist":"Demo"}]}}
             """.trimIndent(),
         )
+
         val rows = MusicResponseParsers.parseSearch(body)
         assertEquals(1, rows.size)
         assertEquals("Track · Night", rows[0].title)

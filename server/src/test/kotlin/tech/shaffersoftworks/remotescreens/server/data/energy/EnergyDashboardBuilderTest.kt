@@ -17,7 +17,9 @@ class EnergyDashboardBuilderTest {
                 EnergyDashboardDevice(name = "Heat pump", statConsumption = "sensor.heat_pump_energy"),
             ),
         )
+
         val ui = EnergyDashboardUiState()
+
         val snapshot = EnergyDashboardBuilder.build(
             config = config,
             ui = ui,

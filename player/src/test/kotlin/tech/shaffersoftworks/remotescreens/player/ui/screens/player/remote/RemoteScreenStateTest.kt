@@ -62,10 +62,12 @@ class RemoteScreenStateTest {
             title = "Kitchen",
             items = listOf(tech.shaffersoftworks.remotescreens.shared.NavigationDrawerItem("Home", page = 0)),
         )
+
         val state = RemoteScreenState().withDocument(
             mainDocument().copy(navigationDrawer = drawer),
             documentBytes,
         )
+
         assertEquals(drawer, state.navigationDrawer)
         val overlay = ServerMessage.Document(slot = Slot.OVERLAY, rev = 2, data = "")
         assertEquals(drawer, state.withDocument(overlay, documentBytes).navigationDrawer)
@@ -112,6 +114,7 @@ class RemoteScreenStateTest {
     fun `back closes the alert before the card`() {
         val overlay = ServerMessage.Document(slot = Slot.OVERLAY, rev = 1, data = "")
         val alert = ServerMessage.Document(slot = Slot.ALERT, rev = 1, data = "")
+
         val state = RemoteScreenState().withDocument(
             overlay,
             documentBytes,
@@ -132,6 +135,7 @@ class RemoteScreenStateTest {
     @Test
     fun `a prediction applies the values the tap will change`() {
         val predicted = VarValue.string("light", "on")
+
         val document = ServerMessage.Document(
             slot = Slot.MAIN,
             rev = 1,
@@ -139,12 +143,14 @@ class RemoteScreenStateTest {
             vars = listOf(VarValue.string("light", "off")),
             predictions = mapOf("light|toggle|" to listOf(predicted)),
         )
+
         val state = RemoteScreenState().withDocument(document, documentBytes)
 
         assertEquals(
             predicted,
             state.withPrediction(Slot.MAIN, "light|toggle|")?.values?.get("light"),
         )
+
         assertNull(state.withPrediction(Slot.MAIN, "other|toggle|"))
     }
 
@@ -159,6 +165,7 @@ class RemoteScreenStateTest {
     fun `vars add predictions to every shown document without replacing them`() {
         val withDocument = RemoteScreenState().withDocument(mainDocument(), documentBytes)
         val loadedDocument = withDocument.documents.getValue(Slot.MAIN)
+
         val state = withDocument.withVars(
             ServerMessage.Vars(
                 vars = listOf(VarValue.int("count", 2)),
@@ -206,11 +213,13 @@ class RemoteScreenStateTest {
         val page = RemoteScreenState()
             .withDocument(overlay(Slot.MAIN, rev = 1), documentBytes)
             .withVideo(Slot.MAIN, video(rev = 1))
+
         assertEquals(Slot.MAIN to video(rev = 1), page.playingVideo)
 
         val withCard = page
             .withDocument(overlay(Slot.OVERLAY, rev = 2), documentBytes)
             .withVideo(Slot.OVERLAY, video(rev = 2))
+
         assertEquals(Slot.OVERLAY to video(rev = 2), withCard.playingVideo)
         assertEquals(Slot.MAIN to video(rev = 1), withCard.closed(Slot.OVERLAY).playingVideo)
 
@@ -227,6 +236,7 @@ class RemoteScreenStateTest {
             )
             .withVideo(Slot.MAIN, video(rev = 1).copy(page = 2))
             .withPage(2)
+
         assertEquals(Slot.MAIN to video(rev = 1).copy(page = 2), onCamerasPage.playingVideo)
 
         val onHome = onCamerasPage.withPage(0)
@@ -289,6 +299,7 @@ class RemoteScreenStateTest {
         assertTrue(
             playing.withDocument(overlay(Slot.OVERLAY, rev = 4), documentBytes).videos.isEmpty(),
         )
+
         assertTrue(playing.closed(Slot.OVERLAY).videos.isEmpty())
         assertTrue(playing.cleared().videos.isEmpty())
     }
@@ -296,15 +307,18 @@ class RemoteScreenStateTest {
     @Test
     fun `a stopped video is forgotten unless the add-on already sent a newer one`() {
         val stopped = video(rev = 2)
+
         val restarted = video(
             rev = 2,
             url = "http://addon:8100/stream/hls/def/master_playlist.m3u8",
         )
+
         val state = RemoteScreenState()
             .withDocument(overlay(Slot.OVERLAY, rev = 2), documentBytes)
             .withVideo(Slot.OVERLAY, stopped)
 
         assertNull(state.withoutVideo(Slot.OVERLAY, stopped).playingVideo)
+
         assertEquals(
             Slot.OVERLAY to restarted,
             state.withVideo(
@@ -362,6 +376,7 @@ class RemoteScreenStateTest {
                 calendars = listOf(CalendarChoice("calendar.family", "Family")),
             ),
         )
+
         assertEquals(CalendarDialogMode.CREATE, opened.calendarDialog?.mode)
         assertEquals("Family", opened.calendarDialog?.calendars?.single()?.name)
 
@@ -372,6 +387,7 @@ class RemoteScreenStateTest {
                 event = CalendarDeleteTarget("calendar.family", "event-1", summary = "Soccer practice"),
             ),
         )
+
         assertEquals("Soccer practice", deleting.calendarDialog?.event?.summary)
 
         val failed = deleting.withCalendarMutating(true).withCalendarDialog(
@@ -381,8 +397,10 @@ class RemoteScreenStateTest {
                 error = "Failed to create event",
             ),
         )
+
         assertEquals("Failed to create event", failed.calendarDialog?.error)
         assertFalse(failed.calendarDialog?.isMutating == true)
+
         assertNull(
             failed.withCalendarDialog(
                 ServerMessage.CalendarDialog(mode = CalendarDialogMode.CLOSE, tileId = "cal"),
@@ -406,6 +424,7 @@ class RemoteScreenStateTest {
     @Test
     fun aScreenWithoutAnEnergyPageDropsTheDashboard() {
         val showing = energyState(revision = 1)
+
         val rebuilt = showing.withDocument(
             mainDocument().copy(rev = 2, energyPages = emptyList()),
             byteArrayOf(9),

@@ -24,12 +24,14 @@ class CalendarMutations(
     suspend fun create(message: PlayerMessage.CalendarCreate): AgendaMutation {
         val summary = message.summary.trim()
         val calendar = agendas.latest.calendars.firstOrNull { it.entityId == message.entityId }
+
         val rejected = when {
             summary.isEmpty() -> AgendaMutation.Rejected(AgendaCopy.TITLE_REQUIRED)
             message.entityId.isBlank() || calendar?.canCreate != true ->
                 AgendaMutation.Rejected(AgendaCopy.SELECT_CALENDAR)
             else -> null
         }
+
         return rejected ?: sendCreate(message, summary)
     }
 
@@ -49,14 +51,17 @@ class CalendarMutations(
     @Suppress("TooGenericExceptionCaught")
     suspend fun delete(message: PlayerMessage.CalendarDelete): AgendaMutation {
         val calendar = agendas.latest.calendars.firstOrNull { it.entityId == message.entityId }
+
         if (message.uid.isBlank() || calendar?.canDelete != true) {
             return AgendaMutation.Rejected(AgendaCopy.CANNOT_DELETE)
         }
+
         val request = CalendarEventDelete(
             entityId = message.entityId,
             uid = message.uid,
             recurrenceId = message.recurrenceId?.takeIf { it.isNotBlank() },
         )
+
         return try {
             homeAssistant.send(request)
             agendas.invalidate()
@@ -74,6 +79,7 @@ class CalendarMutations(
             summary = summary,
             location = message.location?.trim()?.takeIf { it.isNotEmpty() },
         )
+
         return if (message.allDay) {
             event.copy(startDate = message.startDate, endDate = message.endDate)
         } else {
@@ -87,6 +93,7 @@ class CalendarMutations(
     private fun localDateTime(date: String, time: String?): String {
         val clock = time?.takeIf { it.isNotBlank() } ?: "00:00"
         val withSeconds = if (clock.length == HOUR_MINUTE_LENGTH) "$clock:00" else clock
+
         return "$date $withSeconds"
     }
 

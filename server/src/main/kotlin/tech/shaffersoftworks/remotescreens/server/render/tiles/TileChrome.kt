@@ -14,17 +14,33 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.toggleIcon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.statusIcon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.fittingLabel
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Tile
+import tech.shaffersoftworks.remotescreens.shared.TileKind
 import tech.shaffersoftworks.remotescreens.shared.TypeSpec
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.PresenceState
+import tech.shaffersoftworks.remotescreens.server.render.cards.map.mapPeople
 
 internal object TileChrome {
-    val ALWAYS_LIT = setOf("scene", "script", "button", "input_button", "nav", "favourite")
+    val ALWAYS_LIT = setOf(
+        TileKind.SCENE,
+        TileKind.SCRIPT,
+        TileKind.BUTTON,
+        TileKind.INPUT_BUTTON,
+        TileKind.NAV,
+        TileKind.FAVOURITE,
+    )
 
     /** Kinds whose card has no header strip: they show their own words, or none. */
-    val NO_HEADER = setOf("clock", "bedside", "energy", "person", "device_tracker")
+    val NO_HEADER = setOf(
+        TileKind.CLOCK,
+        TileKind.BEDSIDE,
+        TileKind.ENERGY,
+        TileKind.PERSON,
+        TileKind.DEVICE_TRACKER,
+    )
 
     const val CARD_EDGE = 2f
     const val HEADER_LINE = 3f
@@ -77,7 +93,6 @@ internal object TileChrome {
     const val PERSON_TALL_H_SHARE = 0.45f
     const val PERSON_TALL_W_SHARE = 0.4f
     const val PERSON_TALL_MIN_DP = 32f
-    const val WEATHER_REFRESH_S = 1800
     const val WEATHER_WIDE_DP = 300f
     const val WEATHER_MID_DP = 200f
     const val WEATHER_DAYS_WIDE = 5
@@ -107,7 +122,6 @@ internal object TileChrome {
     const val FAV_ART_MIN_W_DP = 120f
     const val FAV_ART_ALPHA = 0.45f
     const val FAV_ICON_DP = 28f
-    const val HISTORY_REFRESH_S = 300
     const val HISTORY_GAP_DP = 6f
     const val GRAPH_PAD_H_DP = 28f
     const val GRAPH_NAMED_RESERVE_DP = 90f
@@ -143,35 +157,42 @@ internal fun DocContext.edgeOf(tile: Tile) = tile.borderColor?.let { paint(
 ) } ?: role(Role.CARD_EDGE)
 
 /** The words of a card's header strip: the entity's name, or the tile's own for tiles without one. */
-internal fun DocContext.headerTitle(tile: Tile, kind: String, sp: Float) {
+internal fun DocContext.headerTitle(tile: Tile, kind: TileKind?, sp: Float) {
     val ink = color(Vars.tile(tile.id, Vars.KEY_INK))
     val entityId = tile.entityId
+
     when {
-        kind == "map" && entityId == null -> {
+        kind == TileKind.MAP && entityId == null -> {
             val who = mapPeople(tile)
+
             label(
-                tile.name ?: i18n.t(
+                text = tile.name ?: i18n.t(
                     "ui.people_home",
                     "count" to who.count { states[it]?.presenceState == PresenceState.HOME },
                 ),
-                sp,
-                ink,
+                sp = sp,
+                color = ink,
             )
         }
-        entityId != null && kind != "favourite" -> fittingLabel(
-            text(Vars.entity(entityId, Vars.KEY_NAME)),
-            tile.name ?: states[entityId]?.common?.friendlyName ?: entityId,
-            sp,
-            ink,
+        entityId != null && kind != TileKind.FAVOURITE -> fittingLabel(
+            text = text(Vars.entity(entityId, Vars.KEY_NAME)),
+            sample = tile.name ?: states[entityId]?.common?.friendlyName ?: entityId,
+            sp = sp,
+            color = ink,
         )
-        else -> label(tile.name ?: tile.options["title"] ?: Catalogue.of(kind)?.name ?: "", sp, ink)
+        else -> label(
+            text = tile.name ?: tile.options["title"] ?: Catalogue.of(tile.effectiveKind())?.name.orEmpty(),
+            sp = sp,
+            color = ink
+        )
     }
 }
 
 private fun DocContext.statusIconName(override: String?, entityState: EntityState?, spec: TypeSpec?): String? {
     if (override != null) return override
+
     return if (entityState != null) {
-        structural(entityState.entityId) { state -> state?.let { Present.view(it, i18n).icon } ?: "" }
+        structural(entityState.entityId) { state -> state?.let { Present.view(it, i18n).icon }.orEmpty() }
         Present.view(entityState, i18n).icon
     } else {
         spec?.icon
@@ -179,22 +200,35 @@ private fun DocContext.statusIconName(override: String?, entityState: EntityStat
 }
 
 private fun Tile.hasStatusMotion(): Boolean =
-    entityId != null && domain in setOf("fan", "climate", "alarm_control_panel")
+    entityId != null && domain in setOf(Domain.FAN.value, Domain.CLIMATE.value, Domain.ALARM_PANEL.value)
 
-internal fun DocContext.tileIcon(tile: Tile, spec: TypeSpec?, entityState: EntityState?, sizeDp: Float, colorKey: String = Vars.KEY_ICON) {
+internal fun DocContext.tileIcon(
+    tile: Tile,
+    spec: TypeSpec?,
+    entityState: EntityState?,
+    sizeDp: Float,
+    colorKey: String = Vars.KEY_ICON,
+) {
     val entityId = tile.entityId
     val ink = color(Vars.tile(tile.id, colorKey))
     val override = tile.icon ?: entityState?.common?.icon
+
     when {
         tile.hasStatusMotion() ->
-            statusIcon(requireNotNull(entityId), statusIconName(override, entityState, spec), sizeDp, ink)
-        override != null -> icon(override, sizeDp, ink)
-        entityId != null && entityState != null && spec != null && spec.toggle && (spec.domain != "cover" && spec.domain != "lock") ->
+            statusIcon(
+                entityId = requireNotNull(entityId),
+                name = statusIconName(override = override, entityState = entityState, spec = spec),
+                sizeDp = sizeDp,
+                color = ink
+            )
+        override != null -> icon(name = override, sizeDp = sizeDp, color = ink)
+        entityId != null && entityState != null && spec != null && spec.toggle &&
+            (spec.domain != Domain.COVER.value && spec.domain != Domain.LOCK.value) ->
             toggleIcon(entityId = entityId, off = spec.icon, on = spec.iconOn, sizeDp = sizeDp, color = ink)
         entityState != null -> {
-            structural(entityState.entityId) { s -> s?.let { Present.view(it, i18n).icon } ?: "" }
-            icon(Present.view(entityState, i18n).icon, sizeDp, ink)
+            structural(entityState.entityId) { s -> s?.let { Present.view(it, i18n).icon }.orEmpty() }
+            icon(name = Present.view(entityState, i18n).icon, sizeDp = sizeDp, color = ink)
         }
-        else -> icon(spec?.icon, sizeDp, ink)
+        else -> icon(name = spec?.icon, sizeDp = sizeDp, color = ink)
     }
 }

@@ -76,21 +76,25 @@ internal class DemoServiceHandlers(
 
     private fun ServiceCall.toggle() {
         val isOn = current.state in ON_STATES
+
         val next = when (current.domain) {
             Domain.SUN -> if (isOn) "below_horizon" else "above_horizon"
             Domain.PERSON -> if (isOn) PresenceState.NOT_HOME.wire else PresenceState.HOME.wire
             else -> if (isOn) off(current.domain) else on(current.domain)
         }
+
         set(entityId, next, emptyMap())
     }
 
     private fun ServiceCall.turnOn() {
         if (current.domain == Domain.SCENE || current.domain == Domain.SCRIPT) return
+
         val attrs = mutableMapOf<String, JsonElement>()
 
         num("brightness_pct")?.let {
             attrs["brightness"] = JsonPrimitive((it * BRIGHTNESS_PCT_SCALE).toInt())
         }
+
         num("percentage")?.let { attrs["percentage"] = JsonPrimitive(it.toInt()) }
         (data["hs_color"] as? JsonArray)?.let { attrs["hs_color"] = it }
         num("color_temp_kelvin")?.let { attrs["color_temp_kelvin"] = JsonPrimitive(it.toInt()) }
@@ -103,6 +107,7 @@ internal class DemoServiceHandlers(
         num("temperature")?.let { attrs["temperature"] = JsonPrimitive(it) }
         num("target_temp_high")?.let { attrs["target_temp_high"] = JsonPrimitive(it) }
         num("target_temp_low")?.let { attrs["target_temp_low"] = JsonPrimitive(it) }
+
         if (attrs.isNotEmpty()) set(entityId, current.state, attrs)
     }
 
@@ -132,7 +137,9 @@ internal class DemoServiceHandlers(
 
     private fun ServiceCall.updateTodoItem() {
         val uid = str("item") ?: return
+
         if (str("status") != "completed") return
+
         completedTodos += uid
         val open = (current.numericState()?.toInt() ?: DEFAULT_TODO_COUNT) - 1
         set(entityId, open.coerceAtLeast(0).toString(), emptyMap())

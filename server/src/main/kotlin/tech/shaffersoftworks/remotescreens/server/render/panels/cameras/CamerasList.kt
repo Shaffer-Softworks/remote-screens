@@ -2,6 +2,7 @@ package tech.shaffersoftworks.remotescreens.server.render.panels.cameras
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.Tile
+import tech.shaffersoftworks.remotescreens.shared.TileKind
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 /** The tile option that lists a cameras page's cameras: `camera.front_door=Front Door;camera.garage`. */
@@ -10,7 +11,7 @@ private const val CAMERA_SEPARATOR = ';'
 private const val LABEL_SEPARATOR = '='
 
 /** A full page of its own for a list of cameras: RPI's cameras screen rather than a card. */
-fun Tile.isCamerasPage(): Boolean = full && effectiveKind() == "cameras"
+fun Tile.isCamerasPage(): Boolean = full && tileKind() == TileKind.CAMERAS
 
 /** One camera on the cameras page: its entity and the name on its row (empty for the entity's own name). */
 data class CameraEntry(val entityId: String, val label: String)

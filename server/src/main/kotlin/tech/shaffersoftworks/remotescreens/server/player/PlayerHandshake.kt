@@ -12,6 +12,7 @@ import tech.shaffersoftworks.remotescreens.shared.Protocol
  */
 internal suspend fun WebSocketSession.receiveHello(): PlayerMessage.Hello? {
     val firstFrame = incoming.receiveCatching().getOrNull() as? Frame.Text
+
     return firstFrame
         ?.let { frame -> Protocol.decodePlayer(frame.readText()) as? PlayerMessage.Hello }
         ?.takeIf { hello -> hello.protocol >= 1 }

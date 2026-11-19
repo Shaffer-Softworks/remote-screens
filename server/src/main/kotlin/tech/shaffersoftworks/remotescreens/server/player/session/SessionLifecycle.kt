@@ -25,6 +25,7 @@ internal class SessionLifecycle(
     suspend fun welcome() {
         val record = layoutRepository.layout.value.players.firstOrNull { it.deviceId == host.hello.deviceId }
         val isTrusted = PlayerAuth.isTrusted(host.hello.token, record?.tokenHash)
+
         if (record?.tokenHash != null && !isTrusted) {
             // Leave the stored screen and token alone; the hub refuses this Hello.
             return
@@ -39,6 +40,7 @@ internal class SessionLifecycle(
                 screenId = if (isTrusted) record?.screenId else null,
                 tokenHash = if (isTrusted) record?.tokenHash else null,
             )
+
             layout.copy(
                 players = layout.players.filterNot { it.deviceId == host.hello.deviceId } + updated,
             )
@@ -55,6 +57,7 @@ internal class SessionLifecycle(
             val code = host.pairingCode ?: host.newPairingCode()
             host.pairingCode = code
             shownDocuments.clear()
+
             host.send(
                 ServerMessage.Welcome(
                     pairingCode = code,
@@ -63,11 +66,13 @@ internal class SessionLifecycle(
                     timeZone = timeZoneId(),
                 ),
             )
+
             return
         }
 
         host.pairingCode = null
         host.screenId = screen.id
+
         host.send(
             ServerMessage.Welcome(
                 screenId = screen.id,
@@ -77,16 +82,19 @@ internal class SessionLifecycle(
                 timeZone = timeZoneId(),
             ),
         )
+
         begin(screen)
     }
 
     suspend fun adopted(token: String?) {
         host.pairingCode = null
+
         host.screenId = layoutRepository.layout.value.players.firstOrNull {
             it.deviceId == host.hello.deviceId
         }?.screenId
 
         val screen = host.screen() ?: return welcome()
+
         host.send(
             ServerMessage.Welcome(
                 screenId = screen.id,
@@ -97,6 +105,7 @@ internal class SessionLifecycle(
                 timeZone = timeZoneId(),
             ),
         )
+
         begin(screen)
     }
 
@@ -108,6 +117,7 @@ internal class SessionLifecycle(
         val previousThemeId = host.themeId
         host.themeId = newThemeId
         host.palette = Themes.resolve(newThemeId, layoutRepository.layout.value.themes)
+
         return newThemeId != previousThemeId
     }
 
@@ -115,6 +125,7 @@ internal class SessionLifecycle(
         applyTheme(screen.settings)
         sendChrome(screen)
         documents.showMain(screen)
+
         context.playerApkRepository.current()
             ?.takeIf { it.versionCode > host.hello.appVersion }
             ?.let { apk -> host.send(
@@ -129,6 +140,7 @@ internal class SessionLifecycle(
     /** Rebuilds every document when night switches the screen to or from its dark theme. */
     suspend fun checkNight() {
         val screen = host.screen() ?: return
+
         if (applyTheme(screen.settings)) {
             for (shown in shownDocuments.values.toList()) {
                 documents.rebuild(shown)
@@ -138,12 +150,15 @@ internal class SessionLifecycle(
 
     suspend fun layoutChanged(screen: Screen?) {
         endPreview()
+
         if (host.screenId != null && screen == null) {
             closeAll()
+
             return welcome()
         }
 
         if (screen == null) return
+
         val main = shownDocuments[Slot.MAIN]
         applyTheme(screen.settings)
         sendChrome(screen)
@@ -159,6 +174,7 @@ internal class SessionLifecycle(
         endPreview()
         host.previewScreen = screen
         showWithSettings(screen)
+
         host.previewJob = context.scope.launch {
             delay(PREVIEW_MS.milliseconds)
             host.previewScreen = null
@@ -183,6 +199,7 @@ internal class SessionLifecycle(
             settings = screen.settings,
             sentry = layoutRepository.layout.value.preferences.sentry,
         ))
+
         host.send(intercomConfig(screen))
     }
 
@@ -192,7 +209,9 @@ internal class SessionLifecycle(
             ?.name
             ?.takeIf { it.isNotBlank() }
             ?: NOT_SET
+
         val pageIndexes = screen.intercomPageIndexes()
+
         return ServerMessage.IntercomConfig(
             enabled = host.supportsIntercom && pageIndexes.isNotEmpty(),
             displayName = name,
@@ -206,6 +225,7 @@ internal class SessionLifecycle(
                 host.send(ServerMessage.Close(slot))
             }
         }
+
         host.currentAlert = null
     }
 

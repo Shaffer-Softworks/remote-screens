@@ -6,9 +6,7 @@ import tech.shaffersoftworks.remotescreens.server.data.music.MusicListRow
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
-import tech.shaffersoftworks.remotescreens.server.render.SearchBoundsPx
 import tech.shaffersoftworks.remotescreens.server.render.Vars
-import tech.shaffersoftworks.remotescreens.server.render.liveSearch
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
 import androidx.compose.remote.creation.dsl.Modifier
@@ -61,6 +59,7 @@ fun DocContext.musicPanel(tile: Tile, box: TileBox) {
     val configured = data.musicConfigEntry[tile.id]?.isNotBlank() == true
     val frame = musicFrame(box)
     bindMusicNowPlaying(tile.id, entityId)
+
     // Structure follows MusicUiStore / browse rows only. Do not key off media_title — that rebuilt the
     // whole page on every track metadata update and flickered the tablet on transport taps.
     structural(entityId) {
@@ -72,6 +71,7 @@ fun DocContext.musicPanel(tile: Tile, box: TileBox) {
             queueRows.size.toString(),
         ).joinToString("|")
     }
+
     val layout = MusicPanelLayout(
         tileId = tile.id,
         entityId = entityId,
@@ -86,9 +86,11 @@ fun DocContext.musicPanel(tile: Tile, box: TileBox) {
         browseListDp = frame.browseList,
         queueListDp = frame.queueList,
     )
+
     // A plain height is stretched to the page, so the cards meet the nav bar. requiredHeightIn
     // is applied after that stretch and keeps this surface the gap above the bar.
     val panelH = (box.h - MusicMetrics.BOTTOM_PAD_DP).coerceAtLeast(1f)
+
     rcScope.Box(
         Modifier.size(units.px(box.w), units.px(panelH))
             .requiredHeightIn(max = units.px(panelH))
@@ -124,11 +126,14 @@ private fun musicFrame(box: TileBox): MusicFrame {
     val innerW = (box.w - pad * 2f).coerceAtLeast(1f)
     val innerH = (box.h - pad - bottom).coerceAtLeast(1f)
     val colW = ((innerW - columnGap) / 2f).coerceAtLeast(1f)
+
     val progressW = (
         colW - cardPad * 2f - MusicMetrics.ART_DP - columnGap
         ).coerceAtLeast(MusicMetrics.PROGRESS_BAR_MIN_W_DP)
+
     val searchChrome = cardPad * 2f + MusicMetrics.SEGMENT_H_DP + MusicMetrics.LISTEN_SEGMENT_GAP_DP
     val line = MusicMetrics.TEXT_LINE_FACTOR
+
     val nowMeta = Type.TITLE * line +
         Type.BODY * line +
         Type.CAPTION * line +
@@ -138,26 +143,32 @@ private fun musicFrame(box: TileBox): MusicFrame {
         MusicMetrics.PROGRESS_H_DP +
         MusicMetrics.CHIP_GAP_DP +
         MusicMetrics.TRANSPORT_DP
+
     val nowCard = max(MusicMetrics.ART_DP, nowMeta) + cardPad * 2f
+
     val browseHeader = Type.TITLE * line +
         MusicMetrics.BROWSE_TITLE_GAP_DP +
         MusicMetrics.CHIP_H_DP +
         MusicMetrics.CHIP_GAP_DP
+
     val browseList = (
         innerH - nowCard - sectionGap - cardPad * 2f - browseHeader - MusicMetrics.LIST_SHORTFALL_DP
         ).coerceAtLeast(MusicMetrics.ROW_H_DP)
+
     val queueList = (
         innerH - cardPad * 2f -
             MusicMetrics.SEGMENT_H_DP - MusicMetrics.LISTEN_SEGMENT_GAP_DP -
             MusicMetrics.CHIP_H_DP - MusicMetrics.CHIP_GAP_DP -
             MusicMetrics.LIST_SHORTFALL_DP
         ).coerceAtLeast(MusicMetrics.ROW_H_DP)
+
     val search = SearchSlot(
         xDp = box.x + pad + colW + columnGap + cardPad,
         yDp = box.y + pad + cardPad + MusicMetrics.SEGMENT_H_DP + MusicMetrics.LISTEN_SEGMENT_GAP_DP,
         widthDp = (colW - cardPad * 2f).coerceAtLeast(1f),
         heightDp = (innerH - searchChrome).coerceAtLeast(1f),
     )
+
     return MusicFrame(
         pad = pad,
         colW = colW,
@@ -195,6 +206,7 @@ private data class MusicPanelLayout(
 
 private fun DocContext.musicPlaced(layout: MusicPanelLayout, frame: MusicFrame) {
     val doc = this
+
     // Now playing hugs its content so the space under the transport buttons is only the
     // card padding. Browse takes whatever height is left in the column.
     at(frame.pad, frame.pad) {
@@ -207,6 +219,7 @@ private fun DocContext.musicPlaced(layout: MusicPanelLayout, frame: MusicFrame) 
             doc.browseCard(layout, Modifier.fillMaxWidth().verticalWeight(1f))
         }
     }
+
     at(frame.pad + frame.colW + frame.columnGap, frame.pad) {
         doc.listenCard(
             layout,
@@ -218,6 +231,7 @@ private fun DocContext.musicPlaced(layout: MusicPanelLayout, frame: MusicFrame) 
 
 private fun DocContext.nowPlayingCard(layout: MusicPanelLayout, modifier: Modifier) {
     val cardBg = fixed(withAlpha(roleArgb(Role.CARD), MusicMetrics.NOW_PLAYING_FILL_ALPHA))
+
     rcScope.Column(
         modifier
             .clip(rounded(MusicMetrics.CARD_CORNER_DP))
@@ -234,6 +248,7 @@ private fun DocContext.nowPlayingSection(layout: MusicPanelLayout) {
         val doc = this@nowPlayingSection
         doc.nowPlayingArt(layout.tileId, layout.entityId)
         Spacer(Modifier.width(doc.units.px(MusicMetrics.COLUMN_GAP_DP)))
+
         Column(Modifier.horizontalWeight(1f)) {
             doc.nowPlayingMeta(layout)
         }
@@ -243,6 +258,7 @@ private fun DocContext.nowPlayingSection(layout: MusicPanelLayout) {
 private fun DocContext.nowPlayingArt(tileId: String, entityId: String) {
     val art = MusicMetrics.ART_DP
     val px = units.px(art).toInt()
+
     picture(
         PictureSlot(
             name = "art.$entityId.$tileId",
@@ -252,9 +268,10 @@ private fun DocContext.nowPlayingArt(tileId: String, entityId: String) {
             refreshSeconds = 0,
         ),
     )
+
     rcScope.Image(
-        image("art.$entityId.$tileId", px, px),
-        Modifier.size(units.px(art), units.px(art))
+        image = image(name = "art.$entityId.$tileId", width = px, height = px),
+        modifier = Modifier.size(units.px(art), units.px(art))
             .clip(rounded(MusicMetrics.ART_CORNER_DP))
             .background(role(Role.TRACK)),
         contentScale = RcContentScale.Crop,
@@ -265,6 +282,7 @@ private fun DocContext.nowPlayingMeta(layout: MusicPanelLayout) {
     val entityId = layout.entityId
     val ink = role(Role.INK)
     val soft = role(Role.INK_SOFT)
+
     label(
         text = text(Vars.entity(entityId, "title")),
         sp = Type.TITLE,
@@ -272,7 +290,9 @@ private fun DocContext.nowPlayingMeta(layout: MusicPanelLayout) {
         weight = Weight.SEMI_BOLD,
         lines = 2,
     )
+
     label(text = text(Vars.entity(entityId, "artist")), sp = Type.BODY, color = soft, lines = 1)
+
     label(
         text = text(Vars.entity(entityId, "album")),
         sp = Type.CAPTION,
@@ -280,13 +300,16 @@ private fun DocContext.nowPlayingMeta(layout: MusicPanelLayout) {
         lines = 1,
         modifier = Modifier.visibility(int(Vars.entity(entityId, "album_vis"))),
     )
+
     spacer(MusicMetrics.CHIP_GAP_DP)
+
     nowPlayingProgress(
         tileId = layout.tileId,
         entityId = entityId,
         progressWidthDp = layout.progressWidthDp,
         soft = soft,
     )
+
     spacer(MusicMetrics.CHIP_GAP_DP)
     nowPlayingTransport(layout.tileId, entityId)
 }
@@ -300,15 +323,18 @@ private fun DocContext.nowPlayingProgress(
 ) {
     rcScope.Column(Modifier.fillMaxWidth()) {
         val doc = this@nowPlayingProgress
+
         Row(
-            Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             horizontal = RcRowHorizontalPositioning.SpaceBetween,
             vertical = RcVerticalPositioning.Center,
         ) {
-            doc.label(doc.text(Vars.entity(entityId, "pos")), Type.CAPTION, soft)
-            doc.label(doc.text(Vars.entity(entityId, "dur")), Type.CAPTION, soft)
+            doc.label(text = doc.text(Vars.entity(entityId, "pos")), sp = Type.CAPTION, color = soft)
+            doc.label(text = doc.text(Vars.entity(entityId, "dur")), sp = Type.CAPTION, color = soft)
         }
+
         doc.spacer(MusicMetrics.PROGRESS_TIME_GAP_DP)
+
         doc.levelBar(
             level = doc.float(Vars.entity(entityId, "progress")),
             widthDp = progressWidthDp,
@@ -318,9 +344,9 @@ private fun DocContext.nowPlayingProgress(
             steps = MusicMetrics.PROGRESS_STEPS,
         ) { step ->
             ActionRef(
-                tileId,
-                "seek",
-                (
+                tile = tileId,
+                verb = "seek",
+                arg = (
                     (doc.states[entityId]?.mediaPlayer?.mediaDuration ?: 0.0) *
                         step / MusicMetrics.PROGRESS_STEPS
                     ).roundToInt().toString(),
@@ -332,14 +358,16 @@ private fun DocContext.nowPlayingProgress(
 private fun DocContext.nowPlayingTransport(tileId: String, entityId: String) {
     val hit = MusicMetrics.TRANSPORT_DP
     val glyph = MusicMetrics.TRANSPORT_ICON_DP
+
     rcScope.Row(
         Modifier.fillMaxWidth().keptHorizontalScroll("music.$tileId.transport"),
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@nowPlayingTransport
         doc.transportIcon(ref = ActionRef(tileId, "previous"), name = "skip-previous", hitDp = hit, iconDp = glyph)
+
         Box(
-            doc.tap(
+            modifier = doc.tap(
                 Modifier.size(doc.units.px(hit), doc.units.px(hit)),
                 ActionRef(tileId, "play_pause"),
             ),
@@ -352,6 +380,7 @@ private fun DocContext.nowPlayingTransport(tileId: String, entityId: String) {
                 color = doc.role(Role.INK),
                 visible = doc.int(Vars.entity(entityId, "playing")),
             )
+
             doc.icon(
                 name = "play",
                 sizeDp = glyph,
@@ -359,14 +388,17 @@ private fun DocContext.nowPlayingTransport(tileId: String, entityId: String) {
                 visible = doc.int(Vars.entity(entityId, "notplaying")),
             )
         }
+
         doc.transportIcon(ref = ActionRef(tileId, "next"), name = "skip-next", hitDp = hit, iconDp = glyph)
         Spacer(Modifier.width(doc.units.px(MusicMetrics.TIME_GAP_DP)))
+
         doc.transportIcon(
             ref = ActionRef(tileId, "volume_down"),
             name = "volume-minus",
             hitDp = hit,
             iconDp = glyph,
         )
+
         doc.transportIcon(
             ref = ActionRef(tileId, "volume_up"),
             name = "volume-plus",
@@ -378,17 +410,18 @@ private fun DocContext.nowPlayingTransport(tileId: String, entityId: String) {
 
 private fun DocContext.transportIcon(ref: ActionRef, name: String, hitDp: Float, iconDp: Float) {
     rcScope.Box(
-        tap(Modifier.size(units.px(hitDp), units.px(hitDp)), ref),
+        modifier = tap(Modifier.size(units.px(hitDp), units.px(hitDp)), ref),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
     ) {
-        this@transportIcon.icon(name, iconDp, role(Role.INK))
+        this@transportIcon.icon(name = name, sizeDp = iconDp, color = role(Role.INK))
     }
 }
 
 private fun DocContext.browseCard(layout: MusicPanelLayout, modifier: Modifier) {
     val cardBg = fixed(withAlpha(roleArgb(Role.CARD), MusicMetrics.CARD_FILL_ALPHA))
     val pad = units.px(MusicMetrics.CARD_PAD_DP)
+
     rcScope.Column(
         modifier.clip(rounded(MusicMetrics.CARD_CORNER_DP))
             .background(cardBg)
@@ -399,15 +432,18 @@ private fun DocContext.browseCard(layout: MusicPanelLayout, modifier: Modifier) 
         val ui = layout.ui
         doc.label(text = "Browse", sp = Type.TITLE, color = doc.role(Role.INK), weight = Weight.SEMI_BOLD)
         doc.spacer(MusicMetrics.BROWSE_TITLE_GAP_DP)
+
         Row(
             Modifier.fillMaxWidth().keptHorizontalScroll("music.${layout.tileId}.types"),
             vertical = RcVerticalPositioning.Center,
         ) {
             MusicUiState.BROWSE_TYPES.forEachIndexed { index, type ->
                 if (index > 0) Spacer(Modifier.width(doc.units.px(MusicMetrics.CHIP_GAP_DP)))
+
                 val selected = ui.browseMediaType == type
+
                 doc.key(
-                    ref = ActionRef(tileId, "browse_type", type),
+                    ref = ActionRef(tile = tileId, verb = "browse_type", arg = type),
                     text = type.replaceFirstChar { it.uppercase() },
                     bg = if (selected) doc.role(Role.KEY_ON) else doc.role(Role.KEY),
                     ink = if (selected) doc.role(Role.KEY_ON_INK) else doc.role(Role.INK),
@@ -415,33 +451,49 @@ private fun DocContext.browseCard(layout: MusicPanelLayout, modifier: Modifier) 
                 )
             }
         }
+
         doc.spacer(MusicMetrics.CHIP_GAP_DP)
-        // Weight on a scroller is ignored and the rows paint to the card edge. An exact
-        // height is the viewport, short of the card padding, and the rect clip holds it.
-        Column(
-            Modifier.fillMaxWidth()
-                .height(doc.units.px(layout.browseListDp))
-                .requiredHeightIn(max = doc.units.px(layout.browseListDp))
-                .clip(RectShape(0f, 0f, 0f, 0f))
-                .keptVerticalScroll("music.${layout.tileId}.browse"),
-        ) {
-            if (!layout.configured) {
-                doc.label("Bind a Music Assistant player on this tile.", Type.BODY, doc.role(Role.INK_SOFT))
-            } else if (layout.browseRows.isEmpty()) {
-                doc.label("No items", Type.BODY, doc.role(Role.INK_SOFT))
-            } else {
-                layout.browseRows.forEachIndexed { index, row ->
-                    if (index > 0) doc.spacer(MusicMetrics.ROW_GAP_DP)
-                    doc.musicRow(tileId, row, showEnqueue = true)
-                }
-                if (layout.browseHasMore) {
-                    doc.spacer(MusicMetrics.CHIP_GAP_DP)
-                    Box(
-                        doc.tap(Modifier.fillMaxWidth(), ActionRef(tileId, "load_more")),
-                        vertical = RcVerticalPositioning.Center,
-                    ) {
-                        doc.label("Load more", Type.BODY, doc.role(Role.ACCENT))
-                    }
+        browseList(layout)
+    }
+}
+
+private fun DocContext.browseList(layout: MusicPanelLayout) {
+    val tileId = layout.tileId
+
+    // Weight on a scroller is ignored and the rows paint to the card edge. An exact
+    // height is the viewport, short of the card padding, and the rect clip holds it.
+    rcScope.Column(
+        Modifier.fillMaxWidth()
+            .height(units.px(layout.browseListDp))
+            .requiredHeightIn(max = units.px(layout.browseListDp))
+            .clip(RectShape(0f, 0f, 0f, 0f))
+            .keptVerticalScroll("music.${layout.tileId}.browse"),
+    ) {
+        val doc = this@browseList
+
+        if (!layout.configured) {
+            doc.label(
+                text = "Bind a Music Assistant player on this tile.",
+                sp = Type.BODY,
+                color = doc.role(Role.INK_SOFT),
+            )
+        } else if (layout.browseRows.isEmpty()) {
+            doc.label(text = "No items", sp = Type.BODY, color = doc.role(Role.INK_SOFT))
+        } else {
+            layout.browseRows.forEachIndexed { index, row ->
+                if (index > 0) doc.spacer(MusicMetrics.ROW_GAP_DP)
+
+                doc.musicRow(tileId = tileId, row = row, showEnqueue = true)
+            }
+
+            if (layout.browseHasMore) {
+                doc.spacer(MusicMetrics.CHIP_GAP_DP)
+
+                Box(
+                    doc.tap(Modifier.fillMaxWidth(), ActionRef(tileId, "load_more")),
+                    vertical = RcVerticalPositioning.Center,
+                ) {
+                    doc.label(text = "Load more", sp = Type.BODY, color = doc.role(Role.ACCENT))
                 }
             }
         }
@@ -451,6 +503,7 @@ private fun DocContext.browseCard(layout: MusicPanelLayout, modifier: Modifier) 
 private fun DocContext.listenCard(layout: MusicPanelLayout, modifier: Modifier) {
     val cardBg = fixed(withAlpha(roleArgb(Role.CARD), MusicMetrics.CARD_FILL_ALPHA))
     val pad = units.px(MusicMetrics.CARD_PAD_DP)
+
     rcScope.Column(
         modifier.clip(rounded(MusicMetrics.CARD_CORNER_DP))
             .background(cardBg)
@@ -459,6 +512,7 @@ private fun DocContext.listenCard(layout: MusicPanelLayout, modifier: Modifier) 
         val doc = this@listenCard
         doc.listenModeStrip(layout.tileId, layout.ui)
         doc.spacer(MusicMetrics.LISTEN_SEGMENT_GAP_DP)
+
         when (layout.ui.listenMode) {
             MusicUiState.LISTEN_SEARCH -> doc.searchHost(
                 tileId = layout.tileId,
@@ -481,14 +535,17 @@ private fun DocContext.listenCard(layout: MusicPanelLayout, modifier: Modifier) 
 private fun DocContext.listenModeStrip(tileId: String, ui: MusicUiState) {
     rcScope.Row(Modifier.fillMaxWidth()) {
         val doc = this@listenModeStrip
+
         listOf(
             MusicUiState.LISTEN_SEARCH to "Search",
             MusicUiState.LISTEN_QUEUE to "Queue",
         ).forEachIndexed { index, (mode, label) ->
             if (index > 0) Spacer(Modifier.width(doc.units.px(MusicMetrics.CHIP_GAP_DP)))
+
             val selected = ui.listenMode == mode
+
             doc.key(
-                ref = ActionRef(tileId, "listen_mode", mode),
+                ref = ActionRef(tile = tileId, verb = "listen_mode", arg = mode),
                 text = label,
                 icon = if (selected) "check" else null,
                 bg = if (selected) doc.role(Role.KEY_ON) else doc.role(Role.KEY),
@@ -512,18 +569,21 @@ private fun DocContext.searchHost(
         width = units.px(slot.widthDp).toInt(),
         height = units.px(slot.heightDp).toInt(),
     )
-    val componentId = liveSearch(tileId, entityId, bounds)
+
+    val componentId = liveSearch(tileId = tileId, playerEntityId = entityId, boundsPx = bounds)
+
     rcScope.Box(
-        Modifier.size(units.px(slot.widthDp), units.px(slot.heightDp))
+        modifier = Modifier.size(units.px(slot.widthDp), units.px(slot.heightDp))
             .componentId(componentId),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@searchHost
+
         if (!configured) {
-            doc.label("Configure the Music Assistant player.", Type.BODY, doc.role(Role.INK_SOFT))
+            doc.label(text = "Configure the Music Assistant player.", sp = Type.BODY, color = doc.role(Role.INK_SOFT))
         } else {
-            doc.label("Search opens on capable tablets.", Type.BODY, doc.role(Role.INK_SOFT))
+            doc.label(text = "Search opens on capable tablets.", sp = Type.BODY, color = doc.role(Role.INK_SOFT))
         }
     }
 }
@@ -538,14 +598,17 @@ private fun DocContext.queueSection(
 ) {
     rcScope.Column(modifier) {
         val doc = this@queueSection
+
         Row(Modifier.fillMaxWidth(), horizontal = RcRowHorizontalPositioning.End) {
             doc.key(
-                ActionRef(tileId, "clear_queue"),
+                ref = ActionRef(tileId, "clear_queue"),
                 text = "Clear",
                 heightDp = MusicMetrics.CHIP_H_DP,
             )
         }
+
         doc.spacer(MusicMetrics.CHIP_GAP_DP)
+
         Column(
             Modifier.fillMaxWidth()
                 .height(doc.units.px(listHeightDp))
@@ -555,22 +618,25 @@ private fun DocContext.queueSection(
         ) {
             when {
                 !configured -> doc.label(
-                    "Bind a Music Assistant player.",
-                    Type.BODY,
-                    doc.role(Role.INK_SOFT),
+                    text = "Bind a Music Assistant player.",
+                    sp = Type.BODY,
+                    color = doc.role(Role.INK_SOFT),
                 )
-                rows.isEmpty() -> doc.label("Queue is empty", Type.BODY, doc.role(Role.INK_SOFT))
+                rows.isEmpty() -> doc.label(text = "Queue is empty", sp = Type.BODY, color = doc.role(Role.INK_SOFT))
                 else -> {
                     rows.forEachIndexed { index, row ->
                         if (index > 0) doc.spacer(MusicMetrics.ROW_GAP_DP)
-                        doc.musicRow(tileId, row, showEnqueue = false)
+
+                        doc.musicRow(tileId = tileId, row = row, showEnqueue = false)
                     }
+
                     if (moreCount > 0) {
                         doc.spacer(MusicMetrics.CHIP_GAP_DP)
+
                         doc.label(
-                            "+$moreCount more",
-                            Type.CAPTION,
-                            doc.role(Role.INK_SOFT),
+                            text = "+$moreCount more",
+                            sp = Type.CAPTION,
+                            color = doc.role(Role.INK_SOFT),
                         )
                     }
                 }
@@ -585,8 +651,10 @@ private fun DocContext.musicRow(tileId: String, row: MusicListRow, showEnqueue: 
     } else {
         MusicMetrics.ROW_OTHER_ALPHA
     }
+
     val rowBg = fixed(withAlpha(roleArgb(Role.CARD), bgAlpha))
     val thumb = MusicMetrics.THUMB_DP
+
     rcScope.Row(
         Modifier.fillMaxWidth()
             .clip(rounded(MusicMetrics.ROW_CORNER_DP))
@@ -600,22 +668,26 @@ private fun DocContext.musicRow(tileId: String, row: MusicListRow, showEnqueue: 
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@musicRow
+
         Row(
-            doc.tap(Modifier.horizontalWeight(1f), ActionRef(tileId, "play_uri", row.uri)),
+            doc.tap(Modifier.horizontalWeight(1f), ActionRef(tile = tileId, verb = "play_uri", arg = row.uri)),
             vertical = RcVerticalPositioning.Center,
         ) {
-            doc.musicRowThumb(tileId, row, thumb)
+            doc.musicRowThumb(tileId = tileId, row = row, thumb = thumb)
             Spacer(Modifier.width(doc.units.px(MusicMetrics.ROW_THUMB_GAP_DP)))
+
             Column(Modifier.horizontalWeight(1f)) {
                 doc.label(text = row.title, sp = Type.BODY, color = doc.role(Role.INK), lines = 1)
+
                 row.subtitle?.let {
                     doc.label(text = it, sp = Type.CAPTION, color = doc.role(Role.INK_SOFT), lines = 1)
                 }
             }
         }
+
         if (showEnqueue) {
             doc.transportIcon(
-                ref = ActionRef(tileId, "enqueue_uri", row.uri),
+                ref = ActionRef(tile = tileId, verb = "enqueue_uri", arg = row.uri),
                 name = "dots-vertical",
                 hitDp = MusicMetrics.TRANSPORT_DP,
                 iconDp = MusicMetrics.TRANSPORT_ICON_DP,
@@ -627,6 +699,7 @@ private fun DocContext.musicRow(tileId: String, row: MusicListRow, showEnqueue: 
 private fun DocContext.musicRowThumb(tileId: String, row: MusicListRow, thumb: Float) {
     val px = units.px(thumb).toInt()
     val pictureName = "ma.$tileId.${row.uri.hashCode()}"
+
     if (!row.imagePathOrUrl.isNullOrBlank()) {
         picture(
             PictureSlot(
@@ -637,25 +710,27 @@ private fun DocContext.musicRowThumb(tileId: String, row: MusicListRow, thumb: F
                 refreshSeconds = 0,
             ),
         )
+
         rcScope.Image(
-            image(pictureName, px, px),
-            Modifier.size(units.px(thumb), units.px(thumb))
+            image = image(name = pictureName, width = px, height = px),
+            modifier = Modifier.size(units.px(thumb), units.px(thumb))
                 .clip(rounded(MusicMetrics.THUMB_CORNER_DP)),
             contentScale = RcContentScale.Crop,
         )
     } else {
         rcScope.Box(
-            Modifier.size(units.px(thumb), units.px(thumb))
+            modifier = Modifier.size(units.px(thumb), units.px(thumb))
                 .clip(rounded(MusicMetrics.THUMB_CORNER_DP))
                 .background(role(Role.ACCENT_SOFT)),
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcVerticalPositioning.Center,
         ) {
             val doc = this@musicRowThumb
+
             doc.label(
-                if (row.isCurrentPlayback) "♫" else "♪",
-                Type.BODY,
-                doc.role(Role.ACCENT),
+                text = if (row.isCurrentPlayback) "♫" else "♪",
+                sp = Type.BODY,
+                color = doc.role(Role.ACCENT),
             )
         }
     }
@@ -666,5 +741,6 @@ private fun DocContext.roleArgb(role: Role): Int = palette[role]
 
 private fun withAlpha(argb: Int, alpha: Float): Int {
     val a = (alpha.coerceIn(0f, 1f) * MusicMetrics.ALPHA_BYTE_MAX).toInt()
+
     return (argb and MusicMetrics.RGB_MASK) or (a shl MusicMetrics.ALPHA_SHIFT)
 }

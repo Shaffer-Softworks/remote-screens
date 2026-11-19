@@ -53,14 +53,17 @@ private const val RANK_BAR_MAX = 10
 @Composable
 internal fun ElectricityCard(series: EnergyBarSeries) {
     val locale = LocalLocale.current.platformLocale
+
     EnergyCard {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Electricity", color = LocalEnergyColors.current.ink, fontWeight = FontWeight.SemiBold)
+
             Text(
                 text = String.format(locale, "%.2f %s", series.totalKwh, series.unit),
                 color = LocalEnergyColors.current.inkDim,
             )
         }
+
         Spacer(Modifier.height(8.dp))
         ElectricityChart(series)
     }
@@ -69,14 +72,17 @@ internal fun ElectricityCard(series: EnergyBarSeries) {
 @Composable
 internal fun TotalsCard(rows: List<EnergyTotalRow>) {
     val locale = LocalLocale.current.platformLocale
+
     EnergyCard {
         Text("Totals", color = LocalEnergyColors.current.ink, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
+
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Source", color = LocalEnergyColors.current.inkDim, fontSize = 12.sp)
             Text("Energy", color = LocalEnergyColors.current.inkDim, fontSize = 12.sp)
             Text("Cost", color = LocalEnergyColors.current.inkDim, fontSize = 12.sp)
         }
+
         rows.forEach { row ->
             Row(
                 Modifier.fillMaxWidth().padding(top = 6.dp),
@@ -88,11 +94,13 @@ internal fun TotalsCard(rows: List<EnergyTotalRow>) {
                     fontSize = 13.sp,
                     modifier = Modifier.width(80.dp),
                 )
+
                 Text(
                     text = String.format(locale, "%.2f kWh", row.energyKwh),
                     color = LocalEnergyColors.current.ink,
                     fontSize = 13.sp,
                 )
+
                 Text(
                     text = row.cost?.let { String.format(locale, "$%.2f", it) } ?: "—",
                     color = LocalEnergyColors.current.ink,
@@ -108,10 +116,13 @@ internal fun DevicesDetailCard(series: List<EnergyNamedSeries>) {
     EnergyCard {
         Text("Individual devices detail", color = LocalEnergyColors.current.ink, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
+
         if (series.isEmpty()) {
             Text("No device data", color = LocalEnergyColors.current.inkDim)
+
             return@EnergyCard
         }
+
         DevicesStackedChart(series)
 
         Column (
@@ -125,7 +136,9 @@ internal fun DevicesDetailCard(series: List<EnergyNamedSeries>) {
                             .size(8.dp)
                             .background(Color(named.colorArgb.toInt()), RoundedCornerShape(2.dp)),
                     )
+
                     Spacer(Modifier.width(4.dp))
+
                     Text(
                         text = named.name,
                         color = LocalEnergyColors.current.inkDim,
@@ -145,6 +158,7 @@ internal fun DevicesDetailCard(series: List<EnergyNamedSeries>) {
 @Composable
 internal fun DevicesRankCard(bars: List<EnergyRankBar>) {
     val locale = LocalLocale.current.platformLocale
+
     EnergyCard {
         Text(
             text = "Individual devices",
@@ -160,6 +174,7 @@ internal fun DevicesRankCard(bars: List<EnergyRankBar>) {
         Spacer(Modifier.height(8.dp))
 
         val maxKwh = bars.maxOfOrNull { it.kwh }?.coerceAtLeast(0.01) ?: 1.0
+
         bars.take(RANK_BAR_MAX).forEach { bar ->
             Row(
                 Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -171,6 +186,7 @@ internal fun DevicesRankCard(bars: List<EnergyRankBar>) {
                     fontSize = 13.sp,
                     modifier = Modifier.width(140.dp),
                 )
+
                 Box(
                     Modifier
                         .weight(1f)
@@ -184,6 +200,7 @@ internal fun DevicesRankCard(bars: List<EnergyRankBar>) {
                             .background(Color(bar.colorArgb.toInt()), RoundedCornerShape(4.dp)),
                     )
                 }
+
                 Text(
                     text = String.format(locale, "%.1f", bar.kwh),
                     color = LocalEnergyColors.current.inkDim,
@@ -200,6 +217,7 @@ internal fun DistributionCard(distribution: EnergyDistribution) {
     EnergyCard {
         Text("Energy distribution", color = LocalEnergyColors.current.ink, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(12.dp))
+
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             DistNode("Low-carbon", distribution.lowCarbonKwh, Color(0xFF4CAF50))
             DistNode(distribution.homeName.ifBlank { "Home" }, distribution.homeKwh, LocalEnergyColors.current.accent)
@@ -211,6 +229,7 @@ internal fun DistributionCard(distribution: EnergyDistribution) {
 @Composable
 internal fun DistNode(label: String, kwh: Double, color: Color) {
     val locale = LocalLocale.current.platformLocale
+
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(10.dp).background(color, RoundedCornerShape(50)))
         Spacer(Modifier.width(8.dp))
@@ -222,15 +241,18 @@ internal fun DistNode(label: String, kwh: Double, color: Color) {
 @Composable
 internal fun GaugeCard(percent: Double) {
     val locale = LocalLocale.current.platformLocale
+
     EnergyCard {
         Text("Low-carbon electricity consumed", color = LocalEnergyColors.current.ink, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
         val colors = LocalEnergyColors.current
+
         Box(Modifier.fillMaxWidth().height(140.dp), contentAlignment = Alignment.Center) {
             Canvas(Modifier.size(160.dp)) {
                 val stroke = 18.dp.toPx()
                 val arcSize = Size(size.width - stroke, size.height - stroke)
                 val topLeft = Offset(stroke / 2f, stroke / 2f)
+
                 drawArc(
                     color = colors.track,
                     startAngle = GAUGE_START_DEG,
@@ -240,6 +262,7 @@ internal fun GaugeCard(percent: Double) {
                     size = arcSize,
                     style = Stroke(width = stroke, cap = StrokeCap.Round),
                 )
+
                 drawArc(
                     color = colors.accent,
                     startAngle = GAUGE_START_DEG,
@@ -250,6 +273,7 @@ internal fun GaugeCard(percent: Double) {
                     style = Stroke(width = stroke, cap = StrokeCap.Round),
                 )
             }
+
             Text(
                 text = String.format(locale, "%.0f%%", percent),
                 color = LocalEnergyColors.current.ink,
@@ -264,6 +288,7 @@ internal fun GaugeCard(percent: Double) {
 @Composable
 internal fun SankeyCard(sankey: EnergySankey) {
     val locale = LocalLocale.current.platformLocale
+
     EnergyCard {
         Text(
             text = "Energy flow",
@@ -280,12 +305,15 @@ internal fun SankeyCard(sankey: EnergySankey) {
 
         if (sankey.nodes.isEmpty()) {
             Text("No flow data", color = LocalEnergyColors.current.inkDim)
+
             return@EnergyCard
         }
+
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             sankey.links.take(12).forEach { link ->
                 val from = sankey.nodes.firstOrNull { it.id == link.fromId }?.label ?: link.fromId
                 val to = sankey.nodes.firstOrNull { it.id == link.toId }?.label ?: link.toId
+
                 Text(
                     text = String.format(locale, "%s → %s  %.1f kWh", from, to, link.kwh),
                     color = LocalEnergyColors.current.inkDim,

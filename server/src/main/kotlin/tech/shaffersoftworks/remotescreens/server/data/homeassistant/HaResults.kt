@@ -26,6 +26,7 @@ data class DisplayEntityRegistry(
     /** Each entity's area: its own, else its device's. */
     fun entityAreaIds(devices: List<DeviceEntry>): Map<String, String> {
         val deviceAreas = devices.mapNotNull { device -> device.areaId?.let { device.id to it } }.toMap()
+
         return entities.mapNotNull { entry ->
             (entry.areaId ?: entry.deviceId?.let(deviceAreas::get))?.let { entry.entityId to it }
         }.toMap()
@@ -98,6 +99,9 @@ data class EnergySource(
         const val GRID = "grid"
         const val SOLAR = "solar"
         const val BATTERY = "battery"
+
+        /** The house on the flow diagram and the energy dashboard. Not a Home Assistant source type. */
+        const val HOME = "home"
     }
 }
 

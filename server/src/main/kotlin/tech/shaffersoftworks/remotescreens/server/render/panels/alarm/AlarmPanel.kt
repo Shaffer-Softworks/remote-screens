@@ -43,15 +43,16 @@ import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.AlarmMetri
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Availability
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.AlarmState
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.AlarmVerb
 
 /** An arm or disarm button under the zones: the catalogue verb it sends, its word, and its icon. */
 private data class AlarmAction(val verb: String, val labelKey: String, val icon: String, val isDanger: Boolean = false)
 
 private val ALARM_ACTIONS = listOf(
-    AlarmAction("arm_home", "ui.alarm_arm_home", "shield-home"),
-    AlarmAction("arm_away", "ui.alarm_arm_away", "shield-lock"),
-    AlarmAction("arm_night", "ui.alarm_night_mode", "shield-moon"),
-    AlarmAction(verb = "disarm", labelKey = "ui.alarm_disarm", icon = "shield-lock-open", isDanger = true),
+    AlarmAction(verb = AlarmVerb.ARM_HOME, labelKey = "ui.alarm_arm_home", icon = "shield-home"),
+    AlarmAction(verb = AlarmVerb.ARM_AWAY, labelKey = "ui.alarm_arm_away", icon = "shield-lock"),
+    AlarmAction(verb = AlarmVerb.ARM_NIGHT, labelKey = "ui.alarm_night_mode", icon = "shield-moon"),
+    AlarmAction(verb = AlarmVerb.DISARM, labelKey = "ui.alarm_disarm", icon = "shield-lock-open", isDanger = true),
 )
 
 private const val KEY_CLEAR = "clear"
@@ -79,35 +80,42 @@ fun DocContext.alarmPanel(tile: Tile, box: TileBox) {
     val ui = data.alarmUi[tile.id] ?: AlarmUiState()
     val zones = tile.alarmZones()
     val zone = zones.selectedZone(ui.selectedZone) ?: return
+
     structural(zone.entityId) { zoneState ->
         listOf(zoneState?.state.orEmpty(), zoneState?.alarm?.armModeText.orEmpty()).joinToString("|")
     }
-    bind(entityId) { (0 until ALARM_PIN_LENGTH).map { VarValue.int(alarmDotVar(entityId, it), Vars.GONE) } }
+
+    bind(entityId) { (0 until ALARM_PIN_LENGTH).map { index -> VarValue.int(alarmDotVar(entityId, index), Vars.GONE) } }
     val scale = minOf(box.w / M.BASE_W, box.h / M.BASE_H).coerceIn(M.LAYOUT_SCALE_MIN, M.LAYOUT_SCALE_MAX)
     val panelsW = box.w - 2 * M.PAGE_PAD_H_DP * scale - M.PANEL_GAP_DP * scale
     val weights = M.ALARM_PANEL_WEIGHT + M.KEYPAD_PANEL_WEIGHT
+
     val layout = AlarmLayout(
         scale = scale,
         alarmW = panelsW * M.ALARM_PANEL_WEIGHT / weights,
         keypadW = panelsW * M.KEYPAD_PANEL_WEIGHT / weights,
         cardH = box.h - 2 * M.PAGE_PAD_V_DP * scale,
     )
+
     rcScope.Box(Modifier.fillMaxSize().background(role(Role.PAGE))) {
         val doc = this@alarmPanel
         val padH = doc.units.px(layout.dp(M.PAGE_PAD_H_DP))
         val padV = doc.units.px(layout.dp(M.PAGE_PAD_V_DP))
+
         Row(Modifier.fillMaxSize().padding(start = padH, top = padV, end = padH, bottom = padV)) {
             doc.alarmCard(tileId = tile.id, zones = zones, zone = zone, layout = layout)
             Spacer(Modifier.width(doc.units.px(layout.dp(M.PANEL_GAP_DP))))
-            doc.keypadCard(tile.id, entityId, layout)
+            doc.keypadCard(tileId = tile.id, entityId = entityId, layout = layout)
         }
-        ui.notice?.let { notice -> doc.alarmDialog(tile.id, notice, layout) }
+
+        ui.notice?.let { notice -> doc.alarmDialog(tileId = tile.id, notice = notice, layout = layout) }
     }
 }
 
 private fun DocContext.alarmCard(tileId: String, zones: List<AlarmZone>, zone: AlarmZone, layout: AlarmLayout) {
     val pad = layout.dp(M.ALARM_PAD_DP)
     val rowW = layout.alarmW - 2 * pad
+
     rcScope.Column(
         Modifier.size(units.px(layout.alarmW), units.px(layout.cardH))
             .clip(rounded(layout.dp(M.CARD_CORNER_DP)))
@@ -117,41 +125,49 @@ private fun DocContext.alarmCard(tileId: String, zones: List<AlarmZone>, zone: A
         val doc = this@alarmCard
         doc.alarmStatus(states[zone.entityId], layout)
         Spacer(Modifier.height(doc.units.px(layout.dp(M.DIVIDER_TOP_GAP_DP))))
+
         Box(
             Modifier.fillMaxWidth()
                 .height(doc.units.px(maxOf(layout.dp(M.DIVIDER_DP), M.DIVIDER_DP)))
                 .background(doc.role(Role.DIVIDER)),
         )
+
         Spacer(Modifier.height(doc.units.px(layout.dp(M.DIVIDER_BOTTOM_GAP_DP))))
+
         doc.label(
             text = doc.i18n.t("ui.alarm_select_zone"),
             sp = layout.sp(M.SELECT_ZONE_SP),
             color = doc.role(Role.INK),
             weight = Weight.SEMI_BOLD,
         )
+
         Spacer(Modifier.height(doc.units.px(layout.dp(M.SELECT_ZONE_GAP_DP))))
         doc.zoneChips(tileId = tileId, zones = zones, selected = zone, rowW = rowW, layout = layout)
         Spacer(Modifier.verticalWeight(1f))
-        doc.alarmActions(tileId, rowW, layout)
+        doc.alarmActions(tileId = tileId, rowW = rowW, layout = layout)
     }
 }
 
 /** The lock in its ringed circle, the status and whether the system is secure, and the teal bar. */
 private fun DocContext.alarmStatus(zoneState: EntityState?, layout: AlarmLayout) {
     val state = zoneState?.state
+
     rcScope.Row(Modifier.fillMaxWidth(), vertical = RcVerticalPositioning.Center) {
         val doc = this@alarmStatus
         doc.statusCircle(zoneState, layout)
         Spacer(Modifier.width(doc.units.px(layout.dp(M.STATUS_TEXT_GAP_DP))))
+
         Column(Modifier.horizontalWeight(1f)) {
             doc.statusWord(state, layout)
             Spacer(Modifier.height(doc.units.px(layout.dp(M.SECURE_GAP_DP))))
+
             doc.label(
-                doc.secureText(zoneState?.alarm?.armModeText ?: state),
-                layout.sp(M.SECURE_SP),
-                doc.role(Role.INK_SOFT),
+                text = doc.secureText(zoneState?.alarm?.armModeText ?: state),
+                sp = layout.sp(M.SECURE_SP),
+                color = doc.role(Role.INK_SOFT),
             )
         }
+
         Box(
             Modifier.size(
                 doc.units.px(layout.dp(M.ACCENT_BAR_W_DP)),
@@ -166,6 +182,7 @@ private fun DocContext.statusCircle(entity: EntityState?, layout: AlarmLayout) {
     val icon = if (entity?.alarmState == AlarmState.DISARMED) "lock-open-variant-outline" else "lock"
     val sizeDp = layout.dp(M.STATUS_CIRCLE_DP)
     val ringDp = maxOf(layout.dp(M.STATUS_RING_DP), 1f)
+
     rcScope.Box(
         Modifier.size(units.px(sizeDp), units.px(sizeDp))
             .clip(rounded(sizeDp / 2f))
@@ -173,15 +190,23 @@ private fun DocContext.statusCircle(entity: EntityState?, layout: AlarmLayout) {
             .padding(units.px(ringDp)),
     ) {
         val doc = this@statusCircle
+
         Box(
-            Modifier.fillMaxSize().clip(doc.rounded(sizeDp / 2f - ringDp)).background(doc.fixed(Rpi.AlarmCircle)),
+            modifier = Modifier.fillMaxSize().clip(
+                doc.rounded(sizeDp / 2f - ringDp)
+            ).background(doc.fixed(Rpi.AlarmCircle)),
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcVerticalPositioning.Center,
         ) {
             if (entity != null) {
-                doc.statusIcon(entity.entityId, icon, layout.dp(M.STATUS_ICON_DP), doc.fixed(Rpi.White))
+                doc.statusIcon(
+                    entityId = entity.entityId,
+                    name = icon,
+                    sizeDp = layout.dp(M.STATUS_ICON_DP),
+                    color = doc.fixed(Rpi.White)
+                )
             } else {
-                doc.icon(icon, layout.dp(M.STATUS_ICON_DP), doc.fixed(Rpi.White))
+                doc.icon(name = icon, sizeDp = layout.dp(M.STATUS_ICON_DP), color = doc.fixed(Rpi.White))
             }
         }
     }
@@ -190,6 +215,7 @@ private fun DocContext.statusCircle(entity: EntityState?, layout: AlarmLayout) {
 /** "Arming" fades out and back in orange, as RPI's `BlinkingText`; every other status is bold ink. */
 private fun DocContext.statusWord(state: String?, layout: AlarmLayout) {
     val alarmState = AlarmState.of(state)
+
     val word = when {
         alarmState == AlarmState.DISARMED -> i18n.t("ui.alarm_disarmed")
         alarmState == AlarmState.ARMED_HOME -> i18n.t("ui.alarm_armed_home")
@@ -199,7 +225,9 @@ private fun DocContext.statusWord(state: String?, layout: AlarmLayout) {
         state == null || Availability.of(state) != Availability.AVAILABLE -> i18n.t("ui.alarm_disarmed")
         else -> i18n.state(Domain.ALARM_PANEL.value, state)
     }
+
     val sizeSp = layout.sp(M.STATUS_SP)
+
     if (alarmState == AlarmState.ARMING) {
         armingLabel(word, sizeSp)
     } else {
@@ -215,6 +243,7 @@ private fun DocContext.statusWord(state: String?, layout: AlarmLayout) {
 private fun DocContext.armingLabel(word: String, sizeSp: Float) {
     val orange = (M.ARMING_ALPHA shl M.ALPHA_SHIFT) or (Role.WARN.argb and M.RGB_MASK)
     val fade = armingFade().toFloat()
+
     label(
         text = word,
         sp = sizeSp,
@@ -226,6 +255,7 @@ private fun DocContext.armingLabel(word: String, sizeSp: Float) {
 /** A triangle on the continuous clock: 1 at the ends of [AlarmMetrics.ARMING_CYCLE_SEC], 0 in the middle. */
 private fun DocContext.armingFade(): RcFloat {
     val phase = rcScope.continuousSeconds() % M.ARMING_CYCLE_SEC / M.ARMING_CYCLE_SEC
+
     return rcScope.abs(phase * M.ARMING_WAVE_SPAN - 1f)
 }
 
@@ -245,10 +275,13 @@ private fun DocContext.zoneChips(
 ) {
     val gap = layout.dp(M.CHIP_GAP_DP)
     val chipW = minOf(layout.dp(M.CHIP_W_DP), (rowW - gap * (zones.size - 1)) / zones.size)
+
     rcScope.Row(Modifier.fillMaxWidth()) {
         val doc = this@zoneChips
+
         zones.forEachIndexed { index, zone ->
             if (index > 0) Spacer(Modifier.width(doc.units.px(gap)))
+
             doc.zoneChip(
                 tileId = tileId,
                 zone = zone,
@@ -275,14 +308,17 @@ private fun DocContext.zoneChip(
     val fill = if (isSelected) fixed(Rpi.AlarmChipOn) else role(Role.KEY)
     val corner = layout.dp(M.CHIP_CORNER_DP)
     val border = if (isSelected) 0f else M.CHIP_BORDER_DP
+
     val label = zone.label.ifEmpty {
         if (index == 0) i18n.t("ui.alarm_all_zones") else states[zone.entityId]?.name ?: zone.entityId
     }
+
     val icon = when {
         index == 0 -> "apps"
         "garage" in label.lowercase() || "garage" in zone.entityId -> "garage"
         else -> "home-outline"
     }
+
     rcScope.Box(
         Modifier.size(units.px(chipW), units.px(layout.dp(M.CHIP_H_DP)))
             .clip(rounded(corner))
@@ -290,6 +326,7 @@ private fun DocContext.zoneChip(
             .padding(units.px(border)),
     ) {
         val doc = this@zoneChip
+
         Row(
             doc.tap(
                 Modifier.fillMaxSize()
@@ -301,13 +338,13 @@ private fun DocContext.zoneChip(
                         end = doc.units.px(layout.dp(M.CHIP_PAD_END_DP)),
                         bottom = 0f,
                     ),
-                ActionRef(tileId, "alarm_zone", zone.entityId),
+                ActionRef(tile = tileId, verb = "alarm_zone", arg = zone.entityId),
             ),
             vertical = RcVerticalPositioning.Center,
         ) {
-            doc.icon(icon, layout.dp(M.CHIP_ICON_DP), ink)
+            doc.icon(name = icon, sizeDp = layout.dp(M.CHIP_ICON_DP), color = ink)
             Spacer(Modifier.width(doc.units.px(layout.dp(M.CHIP_ICON_GAP_DP))))
-            doc.label(label, layout.sp(M.CHIP_LABEL_SP), ink)
+            doc.label(text = label, sp = layout.sp(M.CHIP_LABEL_SP), color = ink)
         }
     }
 }
@@ -317,25 +354,29 @@ private fun DocContext.alarmActions(tileId: String, rowW: Float, layout: AlarmLa
     val gap = layout.dp(M.ACTION_GAP_DP)
     val buttonW = (rowW - gap * (ALARM_ACTIONS.size - 1)) / ALARM_ACTIONS.size
     val padH = units.px(layout.dp(M.ACTION_PAD_H_DP))
+
     rcScope.Row(Modifier.fillMaxWidth()) {
         val doc = this@alarmActions
+
         ALARM_ACTIONS.forEachIndexed { index, action ->
             if (index > 0) Spacer(Modifier.width(doc.units.px(gap)))
+
             val ink = if (action.isDanger) doc.fixed(Rpi.White) else doc.role(Role.INK)
+
             Row(
-                doc.tap(
+                modifier = doc.tap(
                     Modifier.size(doc.units.px(buttonW), doc.units.px(layout.dp(M.ACTION_H_DP)))
                         .clip(doc.rounded(layout.dp(M.ACTION_CORNER_DP)))
                         .background(doc.role(if (action.isDanger) Role.DANGER else Role.KEY))
                         .padding(start = padH, top = 0f, end = padH, bottom = 0f),
-                    ActionRef(tileId, "alarm_arm", action.verb),
+                    ActionRef(tile = tileId, verb = "alarm_arm", arg = action.verb),
                 ),
                 horizontal = RcRowHorizontalPositioning.Center,
                 vertical = RcVerticalPositioning.Center,
             ) {
-                doc.icon(action.icon, layout.dp(M.ACTION_ICON_DP), ink)
+                doc.icon(name = action.icon, sizeDp = layout.dp(M.ACTION_ICON_DP), color = ink)
                 Spacer(Modifier.width(doc.units.px(layout.dp(M.ACTION_ICON_GAP_DP))))
-                doc.label(doc.i18n.t(action.labelKey), layout.sp(M.ACTION_SP), ink)
+                doc.label(text = doc.i18n.t(action.labelKey), sp = layout.sp(M.ACTION_SP), color = ink)
             }
         }
     }
@@ -346,13 +387,17 @@ private fun DocContext.keypadCard(tileId: String, entityId: String, layout: Alar
     val pad = layout.dp(M.KEYPAD_PAD_DP)
     val colGap = layout.dp(M.KEY_COL_GAP_DP)
     val rowGap = layout.dp(M.KEY_ROW_GAP_DP)
+
     val headerH = layout.sp(M.ENTER_CODE_SP) * M.LINE_HEIGHT_RATIO +
         layout.dp(M.ENTER_CODE_GAP_DP + M.DOT_DP + M.DOTS_GAP_DP)
+
     val keyW = (layout.keypadW - 2 * pad - colGap * (M.KEYPAD_COLS - 1)) / M.KEYPAD_COLS
+
     val keyH = minOf(
         keyW / M.KEY_ASPECT,
         (layout.cardH - 2 * pad - headerH - rowGap * (M.KEYPAD_ROWS - 1)) / M.KEYPAD_ROWS,
     ).coerceAtLeast(0f)
+
     rcScope.Column(
         Modifier.size(units.px(layout.keypadW), units.px(layout.cardH))
             .clip(rounded(layout.dp(M.CARD_CORNER_DP)))
@@ -361,20 +406,25 @@ private fun DocContext.keypadCard(tileId: String, entityId: String, layout: Alar
         horizontal = RcHorizontalPositioning.Center,
     ) {
         val doc = this@keypadCard
+
         doc.label(
             text = doc.i18n.t("ui.alarm_enter_code"),
             sp = layout.sp(M.ENTER_CODE_SP),
             color = doc.role(Role.INK),
             weight = Weight.MEDIUM,
         )
+
         Spacer(Modifier.height(doc.units.px(layout.dp(M.ENTER_CODE_GAP_DP))))
         doc.pinDots(entityId, layout)
         Spacer(Modifier.height(doc.units.px(layout.dp(M.DOTS_GAP_DP))))
+
         KEYPAD_ROWS.forEachIndexed { rowIndex, row ->
             if (rowIndex > 0) Spacer(Modifier.height(doc.units.px(rowGap)))
+
             Row {
                 row.forEachIndexed { index, key ->
                     if (index > 0) Spacer(Modifier.width(doc.units.px(colGap)))
+
                     doc.keypadKey(tileId = tileId, key = key, keyW = keyW, keyH = keyH, layout = layout)
                 }
             }
@@ -385,10 +435,13 @@ private fun DocContext.keypadCard(tileId: String, entityId: String, layout: Alar
 /** Grey dots that light in the nav teal as digits are typed; the add-on flips each one's visibility. */
 private fun DocContext.pinDots(entityId: String, layout: AlarmLayout) {
     val dotDp = layout.dp(M.DOT_DP)
+
     rcScope.Row {
         val doc = this@pinDots
+
         repeat(ALARM_PIN_LENGTH) { index ->
             if (index > 0) Spacer(Modifier.width(doc.units.px(layout.dp(M.DOT_GAP_DP))))
+
             Box(
                 Modifier.size(doc.units.px(dotDp), doc.units.px(dotDp))
                     .clip(doc.rounded(dotDp / 2f))
@@ -409,10 +462,11 @@ private fun DocContext.keypadKey(tileId: String, key: String, keyW: Float, keyH:
     val (ref, text) = when (key) {
         KEY_CLEAR -> ActionRef(tileId, "code_clear") to i18n.t("ui.clear")
         KEY_BACK -> ActionRef(tileId, "code_back") to BACKSPACE_GLYPH
-        else -> ActionRef(tileId, "code_digit", key) to key
+        else -> ActionRef(tile = tileId, verb = "code_digit", arg = key) to key
     }
+
     rcScope.Box(
-        tap(
+        modifier = tap(
             Modifier.size(units.px(keyW), units.px(keyH))
                 .clip(rounded(layout.dp(M.KEY_CORNER_DP)))
                 .background(role(Role.KEY)),
@@ -433,12 +487,14 @@ private fun DocContext.keypadKey(tileId: String, key: String, keyW: Float, keyH:
 /** RPI's Material 3 `AlertDialog`: icon, title, text, and Dismiss / Confirm, which both close it. */
 private fun DocContext.alarmDialog(tileId: String, notice: AlarmNotice, layout: AlarmLayout) {
     val dismiss = ActionRef(tileId, "alarm_dismiss")
+
     rcScope.Box(
-        tap(Modifier.fillMaxSize().background(role(Role.SCRIM)), dismiss),
+        modifier = tap(Modifier.fillMaxSize().background(role(Role.SCRIM)), dismiss),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
     ) {
         val doc = this@alarmDialog
+
         Column(
             doc.tap(
                 Modifier.width(doc.units.px(layout.dp(M.DIALOG_W_DP)))
@@ -449,15 +505,18 @@ private fun DocContext.alarmDialog(tileId: String, notice: AlarmNotice, layout: 
             horizontal = RcHorizontalPositioning.Center,
         ) {
             val gap = doc.units.px(layout.dp(M.DIALOG_GAP_DP))
-            doc.icon("alert-plus", layout.dp(M.DIALOG_ICON_DP), doc.role(Role.INK))
+            doc.icon(name = "alert-plus", sizeDp = layout.dp(M.DIALOG_ICON_DP), color = doc.role(Role.INK))
             Spacer(Modifier.height(gap))
+
             doc.label(
                 text = notice.title,
                 sp = layout.sp(M.DIALOG_TITLE_SP),
                 color = doc.role(Role.INK),
                 align = RcTextAlign.Center,
             )
+
             Spacer(Modifier.height(gap))
+
             doc.label(
                 text = notice.message,
                 sp = layout.sp(M.DIALOG_TEXT_SP),
@@ -465,11 +524,13 @@ private fun DocContext.alarmDialog(tileId: String, notice: AlarmNotice, layout: 
                 lines = 3,
                 modifier = Modifier.fillMaxWidth(),
             )
+
             Spacer(Modifier.height(gap))
+
             Row(Modifier.fillMaxWidth(), horizontal = RcRowHorizontalPositioning.End) {
-                doc.dialogButton(doc.i18n.t("ui.alarm_dismiss"), dismiss, layout)
+                doc.dialogButton(text = doc.i18n.t("ui.alarm_dismiss"), ref = dismiss, layout = layout)
                 Spacer(Modifier.width(doc.units.px(layout.dp(M.DIALOG_BUTTON_GAP_DP))))
-                doc.dialogButton(doc.i18n.t("ui.alarm_confirm"), dismiss, layout)
+                doc.dialogButton(text = doc.i18n.t("ui.alarm_confirm"), ref = dismiss, layout = layout)
             }
         }
     }
@@ -477,6 +538,7 @@ private fun DocContext.alarmDialog(tileId: String, notice: AlarmNotice, layout: 
 
 private fun DocContext.dialogButton(text: String, ref: ActionRef, layout: AlarmLayout) {
     val padH = units.px(layout.dp(M.DIALOG_GAP_DP))
+
     rcScope.Box(
         tap(
             Modifier.height(units.px(layout.dp(M.DIALOG_BUTTON_H_DP)))
@@ -486,6 +548,7 @@ private fun DocContext.dialogButton(text: String, ref: ActionRef, layout: AlarmL
         vertical = RcVerticalPositioning.Center,
     ) {
         val ink: RcColor = this@dialogButton.role(Role.ACCENT)
+
         this@dialogButton.label(
             text = text,
             sp = layout.sp(M.DIALOG_BUTTON_SP),

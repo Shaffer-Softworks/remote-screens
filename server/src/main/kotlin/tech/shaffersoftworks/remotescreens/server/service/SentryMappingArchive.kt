@@ -5,14 +5,15 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.PosixFilePermissions
 import java.security.MessageDigest
+import java.util.Locale
 import java.util.Properties
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.zip.ZipFile
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import tech.shaffersoftworks.remotescreens.server.data.apk.PlayerApkRepository
+import tech.shaffersoftworks.remotescreens.server.di.serverIoDispatcher
 
 private const val HASH_BUFFER_BYTES = 8192
 private const val UPLOAD_TIMEOUT_SECONDS = 120L
@@ -26,21 +27,33 @@ internal class SentryMappingArchive(dataDir: File, private val apks: PlayerApkRe
     fun archiveCurrent() {
         val apk = apks.current() ?: return
         val mapping = File(apk.file.parentFile, "mapping.txt").takeIf { it.isFile } ?: return
+
         val uuid = ZipFile(apk.file).use { zip ->
             val entry = zip.getEntry("assets/sentry-debug-meta.properties") ?: return
             val properties = Properties()
             zip.getInputStream(entry).use(properties::load)
             UUID.fromString(properties.getProperty("io.sentry.ProguardUuids")).toString()
         }
+
         val apkHash = mappingSha256(apk.file)
         val packagedHash = File(apk.file.parentFile, "mapping-apk.sha256")
         check(packagedHash.isFile && packagedHash.readText().trim() == apkHash) { "APK does not match mapping package" }
-        val build = MappingBuild(uuid, apk.displayVersion, apkHash, mappingSha256(mapping))
+
+        val build = MappingBuild(
+            uuid = uuid,
+            version = apk.displayVersion,
+            apkSha256 = apkHash,
+            mappingSha256 = mappingSha256(mapping)
+        )
+
         val record = File(directory, "build-$apkHash.json")
+
         if (record.isFile) {
             check(json.decodeFromString<MappingBuild>(record.readText()) == build) { "Mapping identity changed" }
+
             return
         }
+
         val archived = File(directory, "$uuid.txt")
         check(!archived.exists() || mappingSha256(archived) == build.mappingSha256) { "Mapping UUID collision" }
         Files.copy(mapping.toPath(), archived.toPath(), StandardCopyOption.REPLACE_EXISTING)
@@ -55,25 +68,32 @@ internal class SentryMappingArchive(dataDir: File, private val apks: PlayerApkRe
     fun verifiedMapping(build: MappingBuild): File {
         val mapping = File(directory, "${UUID.fromString(build.uuid)}.txt")
         check(mapping.isFile && mappingSha256(mapping) == build.mappingSha256) { "Stored mapping verification failed" }
+
         return mapping
     }
 }
 
 internal fun mappingSha256(file: File): String {
     val digest = MessageDigest.getInstance("SHA-256")
+
     file.inputStream().use { input ->
         val buffer = ByteArray(HASH_BUFFER_BYTES)
+
         while (true) {
             val count = input.read(buffer)
+
             if (count < 0) break
+
             digest.update(buffer, 0, count)
         }
     }
-    return digest.digest().joinToString("") { "%02x".format(it) }
+
+    return digest.digest().joinToString("") { "%02x".format(Locale.ROOT, it) }
 }
 
 internal fun privateMappingWrite(file: File, text: String) {
     val temporary = Files.createTempFile(file.parentFile.toPath(), ".sentry-", ".tmp")
+
     try {
         Files.setPosixFilePermissions(temporary, PosixFilePermissions.fromString("rw-------"))
         Files.writeString(temporary, text)
@@ -90,7 +110,7 @@ internal suspend fun uploadMapping(
     token: String,
     build: MappingBuild,
     mapping: File,
-): Boolean = withContext(Dispatchers.IO) {
+): Boolean = withContext(serverIoDispatcher()) {
     val process = ProcessBuilder(
         "sentry-cli", "--url", "https://sentry.io", "upload-proguard",
         "--org", organization, "--project", project, "--uuid", build.uuid, "--require-one", mapping.absolutePath,
@@ -102,6 +122,7 @@ internal suspend fun uploadMapping(
         redirectOutput(ProcessBuilder.Redirect.DISCARD)
         redirectError(ProcessBuilder.Redirect.DISCARD)
     }.start()
+
     try {
         process.waitFor(UPLOAD_TIMEOUT_SECONDS, TimeUnit.SECONDS) && process.exitValue() == 0
     } finally {

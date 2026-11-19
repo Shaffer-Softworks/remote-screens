@@ -59,17 +59,22 @@ class ScreenPowerRepository @Inject constructor(
 
     fun turnScreenOff() {
         if (isScreenOff || !canTurnScreenOff()) return
+
         @Suppress("WakelockTimeout")
         keepConnectedLock.acquire()
+
         isScreenOff = true
         devicePolicyManager.lockNow()
     }
 
     fun turnScreenOn() {
         val panelIsOff = isScreenOff || !powerManager.isInteractive
+
         if (!panelIsOff) return
+
         isScreenOff = false
         wakeUpLock.acquire(WAKE_UP_HOLD_MS)
+
         if (keepConnectedLock.isHeld) keepConnectedLock.release()
     }
 }

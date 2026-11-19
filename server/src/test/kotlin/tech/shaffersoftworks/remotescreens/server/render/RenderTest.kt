@@ -1,6 +1,9 @@
 package tech.shaffersoftworks.remotescreens.server.render
 
 import tech.shaffersoftworks.remotescreens.server.render.cards.CardRenderer
+import tech.shaffersoftworks.remotescreens.server.render.cards.CardType
+import tech.shaffersoftworks.remotescreens.server.render.cards.camera.LiveVideo
+import tech.shaffersoftworks.remotescreens.server.render.cards.map.LiveMap
 
 import androidx.compose.remote.core.CoreDocument
 import androidx.compose.remote.core.RemoteComposeBuffer
@@ -46,25 +49,94 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class RenderTest {
-    private val ha = DemoHome()
-    private val i18n = I18n("en", I18n.load("en"), emptyMap(), true)
-    private val tablet = Device(1280, 800, 1.5f)
+open class RenderFixture {
+    protected val ha = DemoHome()
+    protected val i18n = I18n("en", I18n.load("en"), emptyMap(), true)
+    protected val tablet = Device(1280, 800, 1.5f)
 
-    private fun input(data: RenderData = RenderData(), palette: Palette = Themes.RPI) = RenderInput(
+    protected fun input(data: RenderData = RenderData(), palette: Palette = Themes.RPI) = RenderInput(
         ha.states.value,
         i18n,
         ha.config.value,
         data,
         palette,
     )
-    private val Role.argb: Int get() = Themes.RPI[this]
-    private val Pastel.argb: Int get() = Themes.RPI[this]
+    protected val Role.argb: Int get() = Themes.RPI[this]
+    protected val Pastel.argb: Int get() = Themes.RPI[this]
 
-    private fun parse(bytes: ByteArray) = CoreDocument().also { it.initFromBuffer(
+    protected fun parse(bytes: ByteArray) = CoreDocument().also { it.initFromBuffer(
         RemoteComposeBuffer.fromInputStream(ByteArrayInputStream(bytes)),
     ) }
 
+    protected val lightsScreen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.lightsPage()) }
+
+    protected fun renderLights(ui: LightsUiState? = null): Pair<RenderedDoc, String> {
+        val data = runBlocking { RenderDataRepository(ha).forScreen(lightsScreen) }
+        val withUi = if (ui == null) data else data.copy(lightsUi = mapOf("li1" to ui))
+        val doc = ScreenRenderer.render(lightsScreen, tablet, input(withUi))
+
+        return doc to String(doc.bytes, Charsets.ISO_8859_1)
+    }
+
+    protected val camerasScreen = DemoLayout.screen().let {
+        it.copy(pages = it.pages.take(1) + DemoLayout.camerasPage() + it.pages.drop(1))
+    }
+
+    protected fun renderCameras(ui: CamerasUiState? = null): Pair<RenderedDoc, String> {
+        val data = runBlocking { RenderDataRepository(ha).forScreen(camerasScreen) }
+        val withUi = if (ui == null) data else data.copy(camerasUi = mapOf("cm1" to ui))
+        val doc = ScreenRenderer.render(camerasScreen, tablet, input(withUi))
+
+        return doc to String(doc.bytes, Charsets.ISO_8859_1)
+    }
+
+    protected val energyDashboardScreen = DemoLayout.screen().let {
+        it.copy(pages = it.pages + DemoLayout.energyDashboardPage())
+    }
+
+    protected fun renderEnergyDashboard(): Pair<RenderedDoc, String> {
+        val data = runBlocking { RenderDataRepository(ha).forScreen(energyDashboardScreen) }
+        val doc = ScreenRenderer.render(energyDashboardScreen, tablet, input(data))
+
+        return doc to String(doc.bytes, Charsets.ISO_8859_1)
+    }
+
+    protected fun assertEveryValueIsDeclared(doc: RenderedDoc) {
+        val core = parse(doc.bytes)
+
+        val declared = listOf(
+            NamedVariable.STRING_TYPE,
+            NamedVariable.INT_TYPE,
+            NamedVariable.FLOAT_TYPE,
+            NamedVariable.COLOR_TYPE,
+        ).flatMap { core.getNamedVariables(it).toList() }.toSet()
+
+        val unread = doc.vars(ha.states.value).keys.filter { "USER:$it" !in declared && !it.startsWith("sys.") }
+        assertTrue(unread.isEmpty(), "values sent but never declared: $unread")
+    }
+
+    protected val blindsScreen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.blindsPage()) }
+
+    protected fun renderBlinds(ui: BlindsUiState? = null): Pair<RenderedDoc, String> {
+        val data = runBlocking { RenderDataRepository(ha).forScreen(blindsScreen) }
+        val withUi = if (ui == null) data else data.copy(blindsUi = mapOf("bl1" to ui))
+        val doc = ScreenRenderer.render(blindsScreen, tablet, input(withUi))
+
+        return doc to String(doc.bytes, Charsets.ISO_8859_1)
+    }
+
+    protected val vacuumScreen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.vacuumPage()) }
+
+    protected fun renderVacuum(ui: VacuumUiState? = null): Pair<RenderedDoc, String> {
+        val data = runBlocking { RenderDataRepository(ha).forScreen(vacuumScreen) }
+        val withUi = if (ui == null) data else data.copy(vacuumUi = mapOf("va1" to ui))
+        val doc = ScreenRenderer.render(vacuumScreen, tablet, input(withUi))
+
+        return doc to String(doc.bytes, Charsets.ISO_8859_1)
+    }
+}
+
+class RenderTest : RenderFixture() {
     @Test
     fun everyPageOfTheDemoScreenIsOneDocument() {
         val screen = DemoLayout.screen()
@@ -77,12 +149,14 @@ class RenderTest {
         val vars = doc.vars(ha.states.value)
         assertEquals("Ceiling light", vars["e.light.living_room.name"]?.value)
         assertEquals(VarType.COLOR, vars["t.t1.line"]?.type)
+
         val declared = core.getNamedVariables(NamedVariable.STRING_TYPE).toSet() +
             core.getNamedVariables(
                 NamedVariable.INT_TYPE,
             ) + core.getNamedVariables(
                 NamedVariable.FLOAT_TYPE,
             ) + core.getNamedVariables(NamedVariable.COLOR_TYPE)
+
         val unread = vars.keys.filter { "USER:$it" !in declared && !it.startsWith("sys.") }
         assertTrue(unread.isEmpty(), "values sent but never declared: $unread")
     }
@@ -90,29 +164,36 @@ class RenderTest {
     @Test
     fun aCompressedDocumentIsSmallerAndReadsTheSame() {
         val screen = DemoLayout.screen()
+
         val doc = ScreenRenderer.render(
             screen,
             tablet,
             input(runBlocking { RenderDataRepository(ha).forScreen(screen) }),
         )
+
         val small = Rc.compress(doc.bytes)
         assertTrue(small.size * 2 < doc.bytes.size, "${small.size} of ${doc.bytes.size} bytes")
+
         val names = { b: ByteArray -> parse(
             b,
         ).getNamedVariables(NamedVariable.STRING_TYPE).toSet() }
+
         assertEquals(names(doc.bytes), names(small))
     }
 
     @Test
     fun everyDemoTileHasItsOwnCell() {
         val screen = DemoLayout.screen()
+
         for (page in screen.pages) {
             val placed = Reflow.place(page.tiles, screen.grid)
+
             assertEquals(
                 page.tiles.map { it.id }.sorted(),
                 placed.map { it.tile.id }.sorted(),
                 "tiles dropped from ${page.id}",
             )
+
             for (placement in placed) assertEquals(
                 placement.tile.col to placement.tile.row,
                 placement.col to placement.row,
@@ -133,9 +214,11 @@ class RenderTest {
         val doc = ScreenRenderer.render(DemoLayout.screen(), tablet, input())
         val states = ha.states.value
         val off = doc.vars(states)
+
         val on = doc.vars(
             states + ("light.table_lamp" to states.getValue("light.table_lamp").with("on")),
         )
+
         // Mockup domain tiles keep a soft teal header line while off; accent when on.
         assertEquals(Role.ACCENT_SOFT.argb, off["t.t2.line"]?.asColor())
         assertEquals(Pastel.YELLOW.argb, on["t.t2.line"]?.asColor())
@@ -147,23 +230,29 @@ class RenderTest {
         val doc = ScreenRenderer.render(DemoLayout.screen(), tablet, input(palette = Themes.LIGHT))
         val states = ha.states.value
         val off = doc.vars(states)
+
         val on = doc.vars(
             states + ("light.table_lamp" to states.getValue("light.table_lamp").with("on")),
         )
+
         assertEquals(Themes.LIGHT[Role.ACCENT_SOFT], off["t.t2.line"]?.asColor())
         assertEquals(Themes.LIGHT[Pastel.YELLOW], on["t.t2.line"]?.asColor())
         val page = Themes.LIGHT[Role.PAGE]
+
         val bytes = byteArrayOf(
             (page ushr 24).toByte(),
             (page ushr 16).toByte(),
             (page ushr 8).toByte(),
             page.toByte(),
         )
+
         assertTrue(
             doc.bytes.asList().windowed(4).any { it == bytes.asList() },
             "the light page colour is in the document",
         )
+
         val dark = ScreenRenderer.render(DemoLayout.screen(), tablet, input())
+
         assertFalse(
             dark.bytes.asList().windowed(4).any { it == bytes.asList() },
             "the RPI document has no light page",
@@ -216,9 +305,11 @@ class RenderTest {
         val screen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.alarmPage()) }
         val doc = ScreenRenderer.render(screen, tablet, input())
         val text = String(doc.bytes, Charsets.ISO_8859_1)
+
         for (word in listOf("Disarmed", "System not secure", "Select Zone", "All Zones", "Garage", "Enter code")) {
             assertContains(text, word)
         }
+
         for (meta in listOf(
             "a1|alarm_zone|alarm_control_panel.garage",
             "a1|alarm_arm|arm_night",
@@ -228,67 +319,37 @@ class RenderTest {
         )) {
             assertContains(text, meta)
         }
+
         assertFalse("a1|alarm_dismiss|" in text, "no dialog until an arm is refused")
         assertFalse("a1|card|" in text, "the page itself does not open the alarm card")
         val vars = doc.vars(ha.states.value)
+
         for (index in 0 until ALARM_PIN_LENGTH) {
             assertEquals(Vars.GONE.toString(), vars[alarmDotVar("alarm_control_panel.house", index)]?.value)
         }
+
         assertTrue(doc.docContext.structure.any { it.first == "alarm_control_panel.house" })
 
         val core = parse(doc.bytes)
+
         val declared = listOf(
             NamedVariable.STRING_TYPE,
             NamedVariable.INT_TYPE,
             NamedVariable.FLOAT_TYPE,
             NamedVariable.COLOR_TYPE,
         ).flatMap { core.getNamedVariables(it).toList() }.toSet()
+
         val unread = vars.keys.filter { "USER:$it" !in declared && !it.startsWith("sys.") }
         assertTrue(unread.isEmpty(), "values sent but never declared: $unread")
     }
 
-    private val lightsScreen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.lightsPage()) }
 
-    private fun renderLights(ui: LightsUiState? = null): Pair<RenderedDoc, String> {
-        val data = runBlocking { RenderDataRepository(ha).forScreen(lightsScreen) }
-        val withUi = if (ui == null) data else data.copy(lightsUi = mapOf("li1" to ui))
-        val doc = ScreenRenderer.render(lightsScreen, tablet, input(withUi))
-        return doc to String(doc.bytes, Charsets.ISO_8859_1)
-    }
 
     /** The cameras page sits second, with pages after it, so a video's page is not just the last one drawn. */
-    private val camerasScreen = DemoLayout.screen().let {
-        it.copy(pages = it.pages.take(1) + DemoLayout.camerasPage() + it.pages.drop(1))
-    }
 
-    private fun renderCameras(ui: CamerasUiState? = null): Pair<RenderedDoc, String> {
-        val data = runBlocking { RenderDataRepository(ha).forScreen(camerasScreen) }
-        val withUi = if (ui == null) data else data.copy(camerasUi = mapOf("cm1" to ui))
-        val doc = ScreenRenderer.render(camerasScreen, tablet, input(withUi))
-        return doc to String(doc.bytes, Charsets.ISO_8859_1)
-    }
 
-    private val energyDashboardScreen = DemoLayout.screen().let {
-        it.copy(pages = it.pages + DemoLayout.energyDashboardPage())
-    }
 
-    private fun renderEnergyDashboard(): Pair<RenderedDoc, String> {
-        val data = runBlocking { RenderDataRepository(ha).forScreen(energyDashboardScreen) }
-        val doc = ScreenRenderer.render(energyDashboardScreen, tablet, input(data))
-        return doc to String(doc.bytes, Charsets.ISO_8859_1)
-    }
 
-    private fun assertEveryValueIsDeclared(doc: RenderedDoc) {
-        val core = parse(doc.bytes)
-        val declared = listOf(
-            NamedVariable.STRING_TYPE,
-            NamedVariable.INT_TYPE,
-            NamedVariable.FLOAT_TYPE,
-            NamedVariable.COLOR_TYPE,
-        ).flatMap { core.getNamedVariables(it).toList() }.toSet()
-        val unread = doc.vars(ha.states.value).keys.filter { "USER:$it" !in declared && !it.startsWith("sys.") }
-        assertTrue(unread.isEmpty(), "values sent but never declared: $unread")
-    }
 
     @Test
     fun aFullEnergyDashboardTileRegistersNativeOverlayAndUpdateStub() {
@@ -304,7 +365,9 @@ class RenderTest {
     @Test
     fun aFullCamerasTileIsTheRpiCamerasPage() {
         val (doc, text) = renderCameras()
+
         for (word in listOf("CAMERAS", "Front Door", "Driveway camera")) assertContains(text, word)
+
         assertContains(text, "cm1|cameras_select|camera.front_door")
         assertContains(text, "cm1|cameras_select|camera.driveway")
         assertFalse("cm1|card|" in text, "the page itself opens no card")
@@ -332,31 +395,29 @@ class RenderTest {
         val screen = DemoLayout.screen().let {
             it.copy(pages = it.pages + DemoLayout.energyPage())
         }
+
         val data = runBlocking { RenderDataRepository(ha).forScreen(screen) }
         val doc = ScreenRenderer.render(screen, tablet, input(data))
         val text = String(doc.bytes, Charsets.ISO_8859_1)
+
         for (word in listOf("Solar", "Grid", "Battery", "Home")) {
             assertContains(text, word)
         }
+
         assertFalse("en1|card|" in text, "the page itself opens no card")
         assertEveryValueIsDeclared(doc)
     }
 
-    private val blindsScreen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.blindsPage()) }
 
-    private fun renderBlinds(ui: BlindsUiState? = null): Pair<RenderedDoc, String> {
-        val data = runBlocking { RenderDataRepository(ha).forScreen(blindsScreen) }
-        val withUi = if (ui == null) data else data.copy(blindsUi = mapOf("bl1" to ui))
-        val doc = ScreenRenderer.render(blindsScreen, tablet, input(withUi))
-        return doc to String(doc.bytes, Charsets.ISO_8859_1)
-    }
 
     @Test
     fun aFullBlindsTileIsTheBlindsPage() {
         val (doc, text) = renderBlinds()
+
         for (word in listOf("BLINDS", "Select a room to see its blinds", "Living room")) {
             assertContains(text, word)
         }
+
         assertContains(text, "bl1|blinds_room|living_room")
         assertFalse("bl1|card|" in text, "the page itself opens no card")
         assertFalse("bl1|blinds_room|bedroom" in text, "rooms without covers stay off the list")
@@ -376,14 +437,7 @@ class RenderTest {
         assertEveryValueIsDeclared(doc)
     }
 
-    private val vacuumScreen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.vacuumPage()) }
 
-    private fun renderVacuum(ui: VacuumUiState? = null): Pair<RenderedDoc, String> {
-        val data = runBlocking { RenderDataRepository(ha).forScreen(vacuumScreen) }
-        val withUi = if (ui == null) data else data.copy(vacuumUi = mapOf("va1" to ui))
-        val doc = ScreenRenderer.render(vacuumScreen, tablet, input(withUi))
-        return doc to String(doc.bytes, Charsets.ISO_8859_1)
-    }
 
     @Test
     fun aFullVacuumTileIsTheVacuumPage() {
@@ -412,6 +466,7 @@ class RenderTest {
                 selectedRooms = setOf("16", "17", "18"),
             ),
         )
+
         assertContains(text, "Select rooms")
         assertContains(text, "Living Room")
         assertContains(text, "Kitchen")
@@ -431,6 +486,7 @@ class RenderTest {
                 selectedRooms = setOf("16", "99"),
             ),
         )
+
         assertContains(text, "Clean 1 room")
         assertContains(text, "1 selected")
         assertFalse("Clean 2 rooms" in text)
@@ -439,24 +495,28 @@ class RenderTest {
     @Test
     fun aVacuumCardOpensItsRoomsDialogInTheCard() {
         val repository = RenderDataRepository(ha)
+
         val closed = CardRenderer.render(
             "vacuum.robot",
             null,
             tablet,
             input(runBlocking { repository.forCard("vacuum.robot", null) }),
         )
+
         val closedText = String(closed.bytes, Charsets.ISO_8859_1)
         assertContains(closedText, "e:vacuum.robot|vacuum_rooms|")
         assertFalse("e:vacuum.robot|vacuum_rooms_toggle|" in closedText)
 
         repository.vacuumUi.openRooms("e:vacuum.robot")
         repository.vacuumUi.toggleRoom("e:vacuum.robot", "17")
+
         val open = CardRenderer.render(
             "vacuum.robot",
             null,
             tablet,
             input(runBlocking { repository.forCard("vacuum.robot", null) }),
         )
+
         val openText = String(open.bytes, Charsets.ISO_8859_1)
         assertContains(openText, "Select rooms")
         assertContains(openText, "e:vacuum.robot|vacuum_rooms_toggle|16")
@@ -481,34 +541,44 @@ class RenderTest {
         val (doc, _) = renderVacuum()
         val states = ha.states.value
         val robot = states.getValue("vacuum.robot")
+
         val cleaningRobot = robot.with(
             state = "cleaning",
             attrs = mapOf("battery_level" to JsonPrimitive(84)),
         )
+
         val cleaning = states + (robot.entityId to cleaningRobot)
+
         assertFalse(
             doc.structureChanged(cleaning),
             "status and battery are bound vars, not structure",
         )
+
         val vars = doc.vars(cleaning)
         assertEquals("Cleaning · 84%", vars["e.vacuum.robot.state"]?.value)
     }
 
+}
+
+class RenderPanelsTest : RenderFixture() {
     private val securityScreen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.securityPage()) }
 
     private fun renderSecurity(ui: SecurityUiState? = null): Pair<RenderedDoc, String> {
         val data = runBlocking { RenderDataRepository(ha).forScreen(securityScreen) }
         val withUi = if (ui == null) data else data.copy(securityUi = mapOf("se1" to ui))
         val doc = ScreenRenderer.render(securityScreen, tablet, input(withUi))
+
         return doc to String(doc.bytes, Charsets.ISO_8859_1)
     }
 
     @Test
     fun aFullSecurityTileIsTheSecurityPage() {
         val (doc, text) = renderSecurity()
+
         for (word in listOf("SECURITY", "Overview", "Locks", "Doors & windows")) {
             assertContains(text, word)
         }
+
         assertContains(text, "se1|security_section|locks")
         assertContains(text, "se1|security_section|openings")
         assertFalse("se1|card|" in text, "the page itself opens no card")
@@ -538,9 +608,11 @@ class RenderTest {
     @Test
     fun aFullLightsTileIsTheRpiLightsPage() {
         val (doc, text) = renderLights()
+
         for (word in listOf("LIGHTING CONTROL", "Select a room to see its lights", "Bedroom", "Hallway", "Kitchen")) {
             assertContains(text, word)
         }
+
         assertContains(text, "li1|lights_room|hallway")
         assertFalse("li1|card|" in text, "the page itself opens no card")
         assertFalse("li1|lights_dismiss|" in text, "no dialog until a light is opened")
@@ -559,6 +631,7 @@ class RenderTest {
     @Test
     fun aChosenLightsRoomListsItsLightsSwitchesAndCovers() {
         val (living, livingText) = renderLights(LightsUiState(selectedAreaId = "living_room"))
+
         for (meta in listOf(
             "li1|lights_detail|light.living_room",
             "e:light.living_room|brightness|50",
@@ -568,6 +641,7 @@ class RenderTest {
         )) {
             assertContains(livingText, meta)
         }
+
         val vars = living.vars(ha.states.value)
         assertTrue("e.light.table_lamp.lightsOn" in vars)
         assertFalse("e.media_player.living_room.lightsOn" in vars, "only lights, switches and covers are listed")
@@ -589,17 +663,20 @@ class RenderTest {
                 paletteIndex = 2,
                 isEffectMenuOpen = true,
             )
+
             val (doc, text) = renderLights(ui)
             assertContains(text, "li1|lights_dismiss|")
             assertContains(text, "li1|lights_mode|wheel")
             assertContains(text, "li1|lights_palette|7")
             assertContains(text, "e:light.living_room|toggle|")
+
             when (mode) {
                 LightDetailMode.BRIGHTNESS -> assertContains(text, "e:light.living_room|brightness|100")
                 LightDetailMode.COLOR_TEMPERATURE -> assertContains(text, "e:light.living_room|kelvin|")
                 LightDetailMode.COLOR_WHEEL -> assertContains(text, "e:light.living_room|rgb|")
                 LightDetailMode.POWER -> Unit
             }
+
             assertTrue(doc.docContext.structure.any { it.first == "light.living_room" })
             assertEveryValueIsDeclared(doc)
         }
@@ -608,10 +685,12 @@ class RenderTest {
     @Test
     fun anAlarmPageShowsTheChosenZoneAndRpisDialog() {
         val screen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.alarmPage()) }
+
         val ui = AlarmUiState(
             selectedZone = "alarm_control_panel.garage",
             notice = AlarmNotice("Invalid Pin", "Pin Must Be 4 Digits"),
         )
+
         val doc = ScreenRenderer.render(screen, tablet, input(RenderData(alarmUi = mapOf("a1" to ui))))
         val text = String(doc.bytes, Charsets.ISO_8859_1)
         assertContains(text, "a1|alarm_dismiss|")
@@ -625,6 +704,7 @@ class RenderTest {
         val screen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.alarmPage()) }
         val states = ha.states.value
         val house = states.getValue("alarm_control_panel.house")
+
         fun renderAs(state: String): String {
             val input = RenderInput(
                 states + (house.entityId to house.with(state)),
@@ -633,12 +713,15 @@ class RenderTest {
                 RenderData(),
                 Themes.RPI,
             )
+
             return String(ScreenRenderer.render(screen, tablet, input).bytes, Charsets.ISO_8859_1)
         }
+
         val armedText = renderAs("armed_away")
         assertContains(armedText, "Armed Away")
         assertContains(armedText, "System secure")
         assertContains(renderAs("arming"), "Arming")
+
         for (state in listOf("arming", "armed_away", "disarmed", "triggered")) {
             val input = RenderInput(
                 states + (house.entityId to house.with(state)),
@@ -647,6 +730,7 @@ class RenderTest {
                 RenderData(),
                 Themes.RPI,
             )
+
             parse(ScreenRenderer.render(screen, tablet, input).bytes)
         }
     }
@@ -658,10 +742,12 @@ class RenderTest {
         val doc = ScreenRenderer.render(screen, tablet, input(data))
         val vars = doc.vars(ha.states.value)
         assertTrue(vars.containsKey("e.media_player.living_room.title"))
+
         assertTrue(
             "ma1|play_pause|" in doc.docContext.predicted ||
                 doc.docContext.predicted.keys.any { it.startsWith("ma1|play_pause") },
         )
+
         assertTrue(data.musicBrowse["ma1"].orEmpty().isNotEmpty())
         assertTrue(data.musicQueue["ma1"]?.rows.orEmpty().isNotEmpty())
         assertEquals("demo_music_assistant", data.musicConfigEntry["ma1"])
@@ -670,24 +756,30 @@ class RenderTest {
     @Test
     fun heatModeUsesASingleSetpointNotDualControls() {
         val states = ha.states.value
+
         val heatStates = states + (
             "climate.living_room" to states.getValue("climate.living_room").with("heat")
             )
+
         val doc = ScreenRenderer.render(
             DemoLayout.screen(),
             tablet,
             RenderInput(heatStates, i18n, ha.config.value, RenderData(), Themes.RPI),
         )
+
         assertTrue("c1|temperature|+0.5" in doc.docContext.predicted)
         assertTrue("c1|temperature|-0.5" in doc.docContext.predicted)
+
         assertFalse(
             doc.docContext.predicted.keys.any { it.startsWith("c1|temperature_low|") },
             "Heat must not keep dual low/high keys",
         )
+
         assertFalse(doc.docContext.predicted.keys.any { it.startsWith("c1|temperature_high|") })
         val vars = doc.vars(heatStates)
         assertEquals("21°", vars["t.c1.target"]?.value)
         assertEquals(Role.ACCENT_DARK.argb, vars["o.c1.seg.1.bg"]?.asColor(), "Heat is lit")
+
         assertTrue(
             doc.structureChanged(states),
             "switching Heat/Cool ↔ Heat must rebuild the dial and keys",
@@ -701,6 +793,7 @@ class RenderTest {
         assertFalse(doc.stale(states))
         assertFalse(doc.structureChanged(states))
         val lamp = states.getValue("light.table_lamp")
+
         assertFalse(
             doc.stale(states + ("light.table_lamp" to lamp.with("on"))),
             "a state change is a value, not a rebuild",
@@ -713,6 +806,7 @@ class RenderTest {
         val onHome = ScreenRenderer.render(screen, tablet, input(), initialPage = 0)
         val onLiving = ScreenRenderer.render(screen, tablet, input(), initialPage = 1)
         assertEquals(0, onHome.homePage)
+
         assertNotEquals(
             onHome.bytes.toList(),
             onLiving.bytes.toList(),
@@ -739,6 +833,7 @@ class RenderTest {
                 "current_tilt_position" to JsonPrimitive(91),
             ),
         )
+
         val tilt = cardDocument("cover.living_room_curtains")
         val tiltText = String(tilt.bytes, Charsets.ISO_8859_1)
         assertContains(tiltText, "Position")
@@ -751,6 +846,7 @@ class RenderTest {
 
     private fun cardDocument(entityId: String): RenderedDoc {
         val data = runBlocking { RenderDataRepository(ha).forCard(entityId, null) }
+
         return CardRenderer.render(entityId, null, tablet, input(data))
     }
 
@@ -758,15 +854,18 @@ class RenderTest {
     fun everyCardBuilds() {
         val ids = ha.states.value.keys.filter { Catalogue.of(
             it.substringBefore('.'),
-        )?.card?.let { c -> c != "none" } == true }
+        )?.card?.let { CardType.fromWire(it) != CardType.NONE } == true }
+
         for (id in ids) {
             val data = runBlocking { RenderDataRepository(ha).forCard(id, null) }
             val doc = CardRenderer.render(id, null, tablet, input(data))
+
             assertTrue(
                 parse(doc.bytes).getNamedVariables(NamedVariable.STRING_TYPE).isNotEmpty(),
                 id,
             )
         }
+
         val energy = runBlocking { RenderDataRepository(ha).forCard(null, "energy") }
         CardRenderer.render("card.energy", "energy", tablet, input(energy))
     }
@@ -774,6 +873,7 @@ class RenderTest {
     @Test
     fun aPortraitPhoneGetsTheSameScreen() {
         val doc = ScreenRenderer.render(DemoLayout.screen(), Device(400, 860, 2.75f), input())
+
         assertContains(
             parse(doc.bytes).getNamedVariables(NamedVariable.STRING_TYPE).toList(),
             "USER:e.light.living_room.name",
@@ -785,10 +885,12 @@ class RenderTest {
         val pink = Pastel.PINK.argb
         val bytes = listOf(24, 16, 8, 0).map { (pink ushr it).toByte() }
         val plain = ScreenRenderer.render(DemoLayout.screen(), tablet, input())
+
         assertFalse(
             plain.bytes.asList().windowed(4).any { it == bytes },
             "the demo screen has no pink",
         )
+
         for (labels in NavBar.LABELS) for (layout in NavBar.LAYOUTS) {
             val screen = DemoLayout.screen().let {
                 it.copy(
@@ -801,7 +903,9 @@ class RenderTest {
                     navBar = NavBar(height = 56, labels = labels, layout = layout, active = "pink"),
                 )
             }
+
             val doc = ScreenRenderer.render(screen, Device(400, 860, 2.75f), input())
+
             assertTrue(
                 doc.bytes.asList().windowed(4).any { it == bytes },
                 "$labels/$layout: the pink header is drawn",
@@ -823,6 +927,7 @@ class RenderTest {
             tablet,
             input(),
         )
+
         val strings = parse(on.bytes).getNamedVariables(NamedVariable.STRING_TYPE).toSet()
         val ints = parse(on.bytes).getNamedVariables(NamedVariable.INT_TYPE).toSet()
         assertContains(strings, "USER:sys.wifi")
@@ -843,6 +948,7 @@ class RenderTest {
             tablet,
             input(),
         )
+
         assertEquals(1, doc.docContext.pictures.size)
     }
 
@@ -855,10 +961,12 @@ class RenderTest {
         )
 
         val video = doc.docContext.videos.single()
+
         assertEquals(
             LiveVideo("camera.front_door", LiveVideo.FIRST_COMPONENT_ID, crop = true),
             video,
         )
+
         assertVideoTargetFound(doc, video.componentId)
     }
 
@@ -870,10 +978,12 @@ class RenderTest {
         assertTrue(doc.docContext.declares(Vars.entity("camera.front_door", Vars.KEY_CAM_WAITING)))
         assertTrue(doc.docContext.declares(Vars.entity("camera.front_door", Vars.KEY_CAM_STILL)))
         val video = doc.docContext.videos.single()
+
         assertEquals(
             LiveVideo("camera.front_door", LiveVideo.FIRST_COMPONENT_ID, crop = false),
             video,
         )
+
         assertVideoTargetFound(doc, video.componentId)
     }
 
@@ -888,17 +998,18 @@ class RenderTest {
                     entityId = "camera.front_door",
                     w = 2,
                     h = 2,
-                    options = mapOf("stream" to "true"),
+                    options = mapOf(Tile.OPTION_STREAM to Tile.OPTION_TRUE),
                 ),
                 Tile(
                     "c2",
                     entityId = "camera.driveway",
                     w = 2,
                     h = 2,
-                    options = mapOf("stream" to "true"),
+                    options = mapOf(Tile.OPTION_STREAM to Tile.OPTION_TRUE),
                 ),
             ),
         )
+
         val doc = ScreenRenderer.render(Screen("s", "S", pages = listOf(page)), tablet, input())
         val video = doc.docContext.videos.single()
         assertEquals("camera.front_door", video.entityId)
@@ -934,13 +1045,16 @@ class RenderTest {
     @Test
     fun aPageBackgroundIsAPictureInTheContentBox() {
         val token = "1700000000000"
+
         val withPhoto = Screen(
             "s",
             "Wall",
             pages = listOf(Page("home", "Home", backgroundImage = token)),
         )
+
         val picture = ScreenRenderer.render(withPhoto, tablet, input()).docContext.pictures
             .single { it.name == "bg.home" }
+
         assertEquals("file:s/home-$token", picture.source)
         assertTrue(picture.crop)
         val plain = ScreenRenderer.render(Screen("s", "Wall"), tablet, input())
@@ -953,6 +1067,7 @@ class RenderTest {
             parse(doc.bytes).getComponent(componentId),
             "component $componentId",
         )
+
         assertEquals(componentId, component.componentId)
     }
 }

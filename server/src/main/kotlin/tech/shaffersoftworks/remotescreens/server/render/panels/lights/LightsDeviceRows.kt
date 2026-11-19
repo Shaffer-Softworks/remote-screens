@@ -2,6 +2,7 @@
 
 package tech.shaffersoftworks.remotescreens.server.render.panels.lights
 
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ControlVerb
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Vars
@@ -49,11 +50,14 @@ private fun DocContext.bindRow(entityId: String) {
     bind(entityId) { states ->
         val entityState = states[entityId]
         val isOn = entityState.isRowOn()
+
         val level = when (entityState?.domain) {
             Domain.COVER -> (entityState.cover.currentTiltPosition ?: 0.0) / M.PERCENT
             else -> (entityState?.light?.brightness ?: 0.0) / M.BRIGHTNESS_MAX
         }
+
         val tint = if (entityState?.domain == Domain.LIGHT) entityState.selectedColor() else Rpi.White
+
         listOf(
             VarValue.int(rowOnVar(entityId), if (isOn) Vars.VISIBLE else Vars.GONE),
             VarValue.int(rowOffVar(entityId), if (isOn) Vars.GONE else Vars.VISIBLE),
@@ -71,6 +75,7 @@ private fun DocContext.bindRow(entityId: String) {
 internal fun DocContext.deviceRow(tileId: String, entityId: String, layout: LightsLayout) {
     val entityState = states[entityId] ?: return
     val domain = entityState.domain
+
     structural(entityId) { current ->
         listOf(
             current?.name,
@@ -79,19 +84,24 @@ internal fun DocContext.deviceRow(tileId: String, entityId: String, layout: Ligh
             current?.supportsLightDetail(),
         ).joinToString("|")
     }
+
     bindRow(entityId)
     val hasSlider = domain == Domain.COVER || (domain == Domain.LIGHT && entityState.hasLightSlider())
+
     val detailRef = if (domain == Domain.LIGHT && entityState.supportsLightDetail()) {
-        ActionRef(tileId, "lights_detail", entityId)
+        ActionRef(tile = tileId, verb = "lights_detail", arg = entityId)
     } else {
         null
     }
+
     val padH = units.px(layout.dp(M.ROW_PAD_H_DP))
+
     rcScope.Column(
         Modifier.fillMaxWidth()
             .padding(start = 0f, top = 0f, end = 0f, bottom = units.px(layout.dp(M.ROW_BOTTOM_DP))),
     ) {
         val doc = this@deviceRow
+
         Row(
             Modifier.padding(
                 start = padH,
@@ -102,16 +112,19 @@ internal fun DocContext.deviceRow(tileId: String, entityId: String, layout: Ligh
         ) {
             Row(doc.tap(Modifier, detailRef), vertical = RcVerticalPositioning.Center) {
                 doc.icon(
-                    entityState.rowIcon(),
-                    layout.dp(M.ROW_ICON_DP),
-                    doc.color(Vars.entity(entityId, KEY_ROW_TINT), Rpi.White),
+                    name = entityState.rowIcon(),
+                    sizeDp = layout.dp(M.ROW_ICON_DP),
+                    color = doc.color(Vars.entity(entityId, KEY_ROW_TINT), Rpi.White),
                 )
+
                 Spacer(Modifier.width(doc.units.px(layout.dp(M.ROW_ICON_GAP_DP))))
-                doc.label(entityState.name, layout.sp(M.ROW_TITLE_SP), doc.role(Role.INK))
+                doc.label(text = entityState.name, sp = layout.sp(M.ROW_TITLE_SP), color = doc.role(Role.INK))
             }
         }
+
         if (hasSlider) {
             val sliderW = layout.devicesW - layout.dp(M.ROW_PAD_H_DP + M.SLIDER_END_DP)
+
             Box(
                 Modifier.padding(
                     start = padH,
@@ -120,9 +133,10 @@ internal fun DocContext.deviceRow(tileId: String, entityId: String, layout: Ligh
                     bottom = 0f,
                 ),
             ) {
-                doc.rowSlider(entityId, sliderW, layout)
+                doc.rowSlider(entityId = entityId, widthDp = sliderW, layout = layout)
             }
         }
+
         Box(Modifier.padding(start = padH, top = doc.units.px(layout.dp(M.SWITCH_TOP_DP)), end = padH, bottom = 0f)) {
             doc.rowSwitch(entityState, layout)
         }
@@ -136,60 +150,84 @@ internal fun DocContext.deviceRow(tileId: String, entityId: String, layout: Ligh
 private fun DocContext.rowSlider(entityId: String, widthDp: Float, layout: LightsLayout) {
     val isCover = Domain.COVER.owns(entityId)
     val steps = if (isCover) M.TILT_STEPS else M.BRIGHTNESS_STEPS
-    val verb = if (isCover) "tilt" else "brightness"
+    val verb = if (isCover) ControlVerb.TILT else ControlVerb.BRIGHTNESS
     val w = units.px(widthDp)
     val h = units.px(layout.dp(M.SLIDER_H_DP))
     val level = float(Vars.entity(entityId, KEY_ROW_LEVEL))
+
     rcScope.Box(Modifier.size(w, h)) {
         val doc = this@rowSlider
+
         Canvas(Modifier.size(w, h)) {
-            val track = doc.units.px(layout.dp(M.SLIDER_TRACK_DP))
-            val thumbW = doc.units.px(layout.dp(M.SLIDER_THUMB_W_DP))
-            val gap = doc.units.px(layout.dp(M.SLIDER_THUMB_GAP_DP))
-            val inner = doc.units.px(layout.dp(M.SLIDER_INNER_CORNER_DP))
-            val top = (h - track) / 2f
-            val bottom = top + track
-            val thumbX = level * (w - thumbW) + thumbW / 2f
-            val activeEnd = max(thumbX - (gap + thumbW / 2f), 0f)
-            val inactiveStart = thumbX + (gap + thumbW / 2f)
-            sliderSegment(
-                left = 0f.rf,
-                right = activeEnd,
-                top = top,
-                bottom = bottom,
-                startCorner = track / 2f,
-                endCorner = inner,
-                fill = doc.fixed(Rpi.LightsOn),
-            )
-            sliderSegment(
-                left = inactiveStart,
-                right = w.rf,
-                top = top,
-                bottom = bottom,
-                startCorner = inner,
-                endCorner = track / 2f,
-                fill = doc.role(Role.TRACK),
-            )
-            paint { color(doc.fixed(Rpi.LightsOn)) }
-            val stop = doc.units.px(layout.dp(M.SLIDER_STOP_DP))
-            drawCircle(w - track / 2f, h / 2f, stop / 2f)
-            paint { color(doc.fixed(Rpi.White)) }
-            drawRoundRect(
-                left = thumbX - thumbW / 2f,
-                top = 0f.rf,
-                right = thumbX + thumbW / 2f,
-                bottom = h.rf,
-                radiusX = (thumbW / 2f).rf,
-                radiusY = (thumbW / 2f).rf,
-            )
+            paintRowSlider(doc = doc, layout = layout, widthPx = w, heightPx = h, level = level)
         }
+
         Row(Modifier.size(w, h)) {
             for (step in 1..steps) {
                 val value = step * M.PERCENT / steps
-                Box(doc.tap(Modifier.horizontalWeight(1f).fillMaxHeight(), ActionRef("e:$entityId", verb, "$value")))
+
+                Box(
+                    doc.tap(
+                        Modifier.horizontalWeight(1f).fillMaxHeight(),
+                        ActionRef(tile = "e:$entityId", verb = verb, arg = "$value")
+                    )
+                )
             }
         }
     }
+}
+
+private fun RcCanvasScope.paintRowSlider(
+    doc: DocContext,
+    layout: LightsLayout,
+    widthPx: Float,
+    heightPx: Float,
+    level: RcFloat,
+) {
+    val track = doc.units.px(layout.dp(M.SLIDER_TRACK_DP))
+    val thumbW = doc.units.px(layout.dp(M.SLIDER_THUMB_W_DP))
+    val gap = doc.units.px(layout.dp(M.SLIDER_THUMB_GAP_DP))
+    val inner = doc.units.px(layout.dp(M.SLIDER_INNER_CORNER_DP))
+    val top = (heightPx - track) / 2f
+    val bottom = top + track
+    val thumbX = level * (widthPx - thumbW) + thumbW / 2f
+    val activeEnd = max(thumbX - (gap + thumbW / 2f), 0f)
+    val inactiveStart = thumbX + (gap + thumbW / 2f)
+
+    sliderSegment(
+        left = 0f.rf,
+        right = activeEnd,
+        top = top,
+        bottom = bottom,
+        startCorner = track / 2f,
+        endCorner = inner,
+        fill = doc.fixed(Rpi.LightsOn),
+    )
+
+    sliderSegment(
+        left = inactiveStart,
+        right = widthPx.rf,
+        top = top,
+        bottom = bottom,
+        startCorner = inner,
+        endCorner = track / 2f,
+        fill = doc.role(Role.TRACK),
+    )
+
+    paint { color(doc.fixed(Rpi.LightsOn)) }
+    val stop = doc.units.px(layout.dp(M.SLIDER_STOP_DP))
+
+    drawCircle(centerX = widthPx - track / 2f, centerY = heightPx / 2f, radius = stop / 2f)
+    paint { color(doc.fixed(Rpi.White)) }
+
+    drawRoundRect(
+        left = thumbX - thumbW / 2f,
+        top = 0f.rf,
+        right = thumbX + thumbW / 2f,
+        bottom = heightPx.rf,
+        radiusX = (thumbW / 2f).rf,
+        radiusY = (thumbW / 2f).rf,
+    )
 }
 
 /** A track segment with [startCorner] at its left end and [endCorner] at its right, as Material rounds them. */
@@ -209,7 +247,9 @@ private fun RcCanvasScope.sliderSegment(
         alpha(1f)
         style(RcPaintStyle.Fill)
     }
+
     val corner = maxOf(startCorner, endCorner)
+
     drawRoundRect(
         left = left,
         top = top.rf,
@@ -218,9 +258,11 @@ private fun RcCanvasScope.sliderSegment(
         radiusX = corner.rf,
         radiusY = corner.rf,
     )
+
     val small = minOf(startCorner, endCorner)
     val squareLeft = if (startCorner < endCorner) left else max(left, right - corner)
     val squareRight = if (startCorner < endCorner) (left + corner).min(right) else right
+
     drawRoundRect(
         left = squareLeft,
         top = top.rf,
@@ -240,13 +282,17 @@ private fun DocContext.rowSwitch(entityState: EntityState, layout: LightsLayout)
     val (onVerb, offVerb) = if (entityState.domain == Domain.COVER) "open_tilt" to "close_tilt" else "on" to "off"
     val onRef = ActionRef("e:$entityId", onVerb)
     val offRef = ActionRef("e:$entityId", offVerb)
+
     Catalogue.of(entityState.domain.value)?.predict?.let { predictions ->
         if (onVerb in predictions) predict(onRef, entityId)
+
         if (offVerb in predictions) predict(offRef, entityId)
     }
+
     val w = units.px(layout.dp(M.SWITCH_W_DP))
     val trackH = layout.dp(M.SWITCH_H_DP)
     val touchH = units.px(layout.dp(M.SWITCH_TOUCH_H_DP))
+
     rcScope.Box(Modifier.size(w, touchH), vertical = RcVerticalPositioning.Center) {
         val doc = this@rowSwitch
         doc.switchTrack(entityId = entityId, isOn = true, trackH = trackH, layout = layout, ref = offRef)
@@ -265,6 +311,7 @@ private fun DocContext.switchTrack(
     val border = if (isOn) 0f else layout.dp(M.SWITCH_BORDER_DP)
     val thumb = layout.dp(if (isOn) M.SWITCH_THUMB_ON_DP else M.SWITCH_THUMB_OFF_DP)
     val thumbPad = units.px((trackH - 2 * border - thumb) / 2f)
+
     rcScope.Box(
         tap(
             Modifier.visibility(visible).size(units.px(layout.dp(M.SWITCH_W_DP)), units.px(trackH))
@@ -275,8 +322,9 @@ private fun DocContext.switchTrack(
         ),
     ) {
         val doc = this@switchTrack
+
         Box(
-            Modifier.fillMaxSize().clip(doc.rounded(trackH / 2f - border)).background(doc.role(Role.TRACK))
+            modifier = Modifier.fillMaxSize().clip(doc.rounded(trackH / 2f - border)).background(doc.role(Role.TRACK))
                 .padding(thumbPad),
             horizontal = if (isOn) RcHorizontalPositioning.End else RcHorizontalPositioning.Start,
             vertical = RcVerticalPositioning.Center,

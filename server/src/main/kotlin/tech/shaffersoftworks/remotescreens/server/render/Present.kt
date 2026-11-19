@@ -99,9 +99,15 @@ object Present {
         "exceptional" to "alert-circle-outline",
     )
 
-    fun view(entityState: EntityState?, i18n: I18n, nameOverride: String? = null, iconOverride: String? = null): EntityView {
+    fun view(
+        entityState: EntityState?,
+        i18n: I18n,
+        nameOverride: String? = null,
+        iconOverride: String? = null,
+    ): EntityView {
         if (entityState == null) {
             val unavailable = i18n.state("", Availability.UNAVAILABLE.wire)
+
             return EntityView(
                 name = nameOverride ?: "?",
                 stateText = unavailable,
@@ -112,17 +118,21 @@ object Present {
                 icon = iconOverride ?: Icons.FALLBACK,
             )
         }
+
         val spec = Catalogue.of(entityState.domain.value)
         val on = spec?.onStates?.contains(entityState.state) ?: entityState.isOn
+
         val word = i18n.state(
-            entityState.domain.value,
-            entityState.state,
-            entityState.common.deviceClass,
+            domain = entityState.domain.value,
+            state = entityState.state,
+            deviceClass = entityState.common.deviceClass,
         )
+
         val level = levelOf(entityState, on)
         val stateText = stateTextOf(entityState = entityState, i18n = i18n, on = on, level = level, word = word)
         val value = valueOf(entityState = entityState, i18n = i18n, stateText = stateText, word = word)
         val icon = iconOverride ?: entityState.common.icon ?: iconFor(entityState, on)
+
         return EntityView(
             name = nameOverride ?: entityState.name,
             stateText = stateText,
@@ -150,6 +160,7 @@ object Present {
             val humidity = entityState.humidifier.humidity ?: return null
             val min = entityState.humidifier.minHumidity ?: 0.0
             val max = entityState.humidifier.maxHumidity ?: DEFAULT_NUMBER_MAX
+
             if (max > min) ((humidity - min) / (max - min)).toFloat() else humidity.toFloat() / PERCENT
         }
         Domain.VALVE -> entityState.cover.currentPosition?.toFloat()?.div(PERCENT)
@@ -157,6 +168,7 @@ object Present {
             val temperature = entityState.climate.temperature ?: return null
             val min = entityState.climate.minTemp ?: 0.0
             val max = entityState.climate.maxTemp ?: DEFAULT_NUMBER_MAX
+
             if (max > min) ((temperature - min) / (max - min)).toFloat() else null
         }
         Domain.MEDIA_PLAYER -> entityState.mediaPlayer.volumeLevel?.toFloat()
@@ -164,6 +176,7 @@ object Present {
             val numeric = entityState.numericState()
             val min = entityState.input.min ?: 0.0
             val max = entityState.input.max ?: DEFAULT_NUMBER_MAX
+
             if (numeric != null && max > min) ((numeric - min) / (max - min)).toFloat() else null
         }
         Domain.VACUUM -> entityState.vacuum.batteryLevel?.toFloat()?.div(PERCENT)
@@ -181,6 +194,7 @@ object Present {
             Domain.COVER -> {
                 val shade = entityState.cover.currentPosition
                 val tilt = entityState.cover.currentTiltPosition
+
                 when {
                     shade != null && entityState.coverState == CoverState.OPEN -> i18n.percent(shade.roundToInt())
                     shade == null && tilt != null -> i18n.percent(tilt.roundToInt())
@@ -223,12 +237,17 @@ object Present {
         }
 
     @Suppress("CyclomaticComplexMethod")
-    private fun valueOf(entityState: EntityState, i18n: I18n, stateText: String, word: String): String = when (entityState.domain) {
+    private fun valueOf(
+        entityState: EntityState,
+        i18n: I18n,
+        stateText: String,
+        word: String,
+    ): String = when (entityState.domain) {
         Domain.SENSOR, Domain.NUMBER, Domain.INPUT_NUMBER, Domain.COUNTER, Domain.TODO ->
             entityState.numericState()?.let { numberOnly(
-                entityState,
-                it,
-                i18n,
+                entityState = entityState,
+                v = it,
+                i18n = i18n,
             ) } ?: entityState.state
         Domain.HUMIDIFIER -> entityState.humidifier.humidity?.let { i18n.percent(it.roundToInt()) } ?: word
         Domain.CLIMATE, Domain.WATER_HEATER ->
@@ -242,18 +261,21 @@ object Present {
     private fun numberOnly(entityState: EntityState, v: Double, i18n: I18n): String {
         val unit = entityState.common.unitOfMeasurement.orEmpty()
         val (scaled, _) = scale(v, unit)
+
         val decimals = when {
             abs(scaled) >= LARGE_VALUE -> 0
             entityState.common.deviceClass in setOf("temperature", "humidity") || abs(scaled) >= MEDIUM_VALUE -> 1
             else -> if (scaled % 1.0 == 0.0) 0 else 1
         }
+
         return i18n.number(scaled, decimals)
     }
 
     fun numberWithUnit(entityState: EntityState, i18n: I18n): String? {
         val numeric = entityState.numericState() ?: return null
-        val numberText = numberOnly(entityState, numeric, i18n)
+        val numberText = numberOnly(entityState = entityState, v = numeric, i18n = i18n)
         val (_, unit) = scale(numeric, entityState.common.unitOfMeasurement.orEmpty())
+
         return if (unit.isEmpty()) {
             numberText
         } else if (unit == "%") {
@@ -277,6 +299,7 @@ object Present {
         val deviceClass = entityState.common.deviceClass.orEmpty()
         val spec = Catalogue.of(entityState.domain.value)
         fun Pair<String, String>.pick() = if (on) first else second
+
         return when (entityState.domain) {
             Domain.SENSOR -> SENSOR_ICONS[deviceClass] ?: "eye"
             Domain.BINARY_SENSOR -> (BINARY_SENSOR_ICONS[deviceClass] ?: BINARY_SENSOR_DEFAULT).pick()

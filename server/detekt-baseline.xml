@@ -2,54 +2,5 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>CyclomaticComplexMethod:EntityTile.kt:internal fun DocContext.entityTile</ID>
-    <ID>CyclomaticComplexMethod:FreeForm.kt:internal fun DocContext.node</ID>
-    <ID>CyclomaticComplexMethod:FreeForm.kt:internal fun DocContext.styled: Modifier</ID>
-    <ID>CyclomaticComplexMethod:FreeFormControls.kt:internal fun DocContext.stepperNode</ID>
-    <ID>CyclomaticComplexMethod:FreeFormLayout.kt:internal fun DocContext.container</ID>
-    <ID>CyclomaticComplexMethod:FreeFormMedia.kt:internal fun DocContext.iconButtonNode</ID>
-    <ID>CyclomaticComplexMethod:FreeFormNodes.kt:internal fun DocContext.badgeNode</ID>
-    <ID>CyclomaticComplexMethod:FreeFormNodes.kt:internal fun DocContext.buttonNode</ID>
-    <ID>CyclomaticComplexMethod:FreeFormNodes.kt:internal fun DocContext.textNode</ID>
-    <ID>CyclomaticComplexMethod:InfoCards.kt:internal fun DocContext.weatherCard</ID>
-    <ID>CyclomaticComplexMethod:SpecialtyTiles.kt:fun DocContext.energyFlow</ID>
-    <ID>CyclomaticComplexMethod:ThermostatBind.kt:internal fun DocContext.bindThermostat</ID>
-    <ID>CyclomaticComplexMethod:TileBox.kt:fun tapRef: ActionRef?</ID>
-    <ID>LargeClass:FreeFormTest.kt:FreeFormTest</ID>
-    <ID>LargeClass:RenderTest.kt:RenderTest</ID>
-    <ID>LongMethod:Alerts.kt:AlertRenderer$fun render: RenderedDoc</ID>
-    <ID>LongMethod:ClimateCards.kt:internal fun DocContext.climateCard</ID>
-    <ID>LongMethod:ClimateCards.kt:internal fun DocContext.climateDualSetpoint</ID>
-    <ID>LongMethod:EntityTile.kt:internal fun DocContext.entityTile</ID>
-    <ID>LongMethod:FreeFormControls.kt:internal fun DocContext.stepperNode</ID>
-    <ID>LongMethod:FreeFormLayout.kt:internal fun DocContext.container</ID>
-    <ID>LongMethod:FreeFormMedia.kt:@Suppress("CyclomaticComplexMethod") internal fun DocContext.dialNode</ID>
-    <ID>LongMethod:FreeFormMedia.kt:internal fun DocContext.analogNode</ID>
-    <ID>LongMethod:FreeFormMedia.kt:internal fun DocContext.gaugeNode</ID>
-    <ID>LongMethod:InfoCards.kt:internal fun DocContext.weatherCard</ID>
-    <ID>LongMethod:MediaCards.kt:internal fun DocContext.mediaCard</ID>
-    <ID>LongMethod:SpecialtyTiles.kt:fun DocContext.energyFlow</ID>
-    <ID>LongMethod:SpecialtyTiles.kt:internal fun DocContext.climateTile</ID>
-    <ID>LongMethod:SpecialtyTiles.kt:internal fun DocContext.mediaTile</ID>
-    <ID>LongMethod:SpecialtyTiles.kt:internal fun DocContext.personTile</ID>
-    <ID>LongMethod:SpecialtyTiles.kt:internal fun DocContext.weatherTile</ID>
-    <ID>LongMethod:ThermostatBind.kt:internal fun DocContext.bindThermostat</ID>
-    <ID>LongMethod:WeatherPanel.kt:fun DocContext.weatherPanel</ID>
-    <ID>MaxLineLength:EntityTile.kt:internal</ID>
-    <ID>MaxLineLength:FreeFormControls.kt:ChoiceSet$internal</ID>
-    <ID>MaxLineLength:FreeFormMedia.kt:val inner = if (i % Metrics.ANALOG_QUARTER_STEP == 0) Metrics.ANALOG_TICK_INNER_MAJOR else Metrics.ANALOG_TICK_INNER_MINOR</ID>
-    <ID>MaxLineLength:FreeFormMetrics.kt:/** About the size [node]'s content takes: a leaf's natural size, a container's children laid end to end, plus padding. */</ID>
-    <ID>MaxLineLength:InfoCards.kt:(width - CardChrome.MEDIA_CTRL_DP - CardChrome.WEATHER_ICON_ROW_DP - CardChrome.PANEL_CORNER_DP - CardChrome.FLOW_KEY_H_DP - CardChrome.CLOSE_KEY_DP - CardChrome.CLOSE_KEY_DP - CardChrome.SECTION_GAP_DP)</ID>
-    <ID>MaxLineLength:Present.kt:Present$fun</ID>
-    <ID>MaxLineLength:Present.kt:Present$private</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:RenderedDoc$fun</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:RenderedDoc$val entities: Set&lt;String&gt; = (docContext.bindings.mapNotNull { it.entityId } + docContext.structure.map { it.first }).toSet()</ID>
-    <ID>MaxLineLength:ScreenRenderer.kt:ScreenRenderer.NavStyle$/** How navigation buttons look: icon, word or both, [layoutScale] against the default bar, the current page's fill. */</ID>
-    <ID>MaxLineLength:SpecialtyTiles.kt:/** Solar, the grid and the battery around the house, with the power of each, as Home Assistant's energy settings name them. */</ID>
-    <ID>MaxLineLength:SpecialtyTiles.kt:fun</ID>
-    <ID>MaxLineLength:SpecialtyTiles.kt:val tint = when (key) { "solar" -&gt; Pastel.YELLOW; "grid" -&gt; Pastel.BLUE; "battery" -&gt; Pastel.GREEN; else -&gt; Pastel.GREY }</ID>
-    <ID>MaxLineLength:ThermostatPanel.kt:val fanW = if (fans.isEmpty()) 0f else ThermostatMetrics.FAN_BUTTON_WIDTH_DP * layoutScale + ThermostatMetrics.MODE_ROW_GAP_DP * layoutScale</ID>
-    <ID>MaxLineLength:TileChrome.kt:entityId != null &amp;&amp; entityState != null &amp;&amp; spec != null &amp;&amp; spec.toggle &amp;&amp; (spec.domain != "cover" &amp;&amp; spec.domain != "lock")</ID>
-    <ID>MaxLineLength:TileChrome.kt:internal</ID>
   </CurrentIssues>
 </SmellBaseline>

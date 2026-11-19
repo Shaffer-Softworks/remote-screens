@@ -31,12 +31,15 @@ import tech.shaffersoftworks.remotescreens.player.utils.setWindowBrightness
 @Composable
 internal fun PlayerWindowEffects(viewState: PlayerViewModel.ViewState) {
     val activity = LocalActivity.current ?: return
+
     LaunchedEffect(
         viewState.brightnessPercent,
     ) { activity.setWindowBrightness(viewState.brightnessPercent) }
+
     LaunchedEffect(viewState.screenSettings.orientation) {
         activity.applyScreenOrientation(viewState.screenSettings.orientation)
     }
+
     LaunchedEffect(viewState.isAnyDialogVisible) {
         if (!viewState.isAnyDialogVisible) activity.hideSystemBars()
     }
@@ -48,27 +51,32 @@ internal fun PlayerEvents(viewModel: PlayerViewModel) {
     val activity = LocalActivity.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val prompts = remember { PermissionPrompts() }
+
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
         viewModel.onCameraPermissionResult(granted)
         prompts.finished()
     }
+
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { grants ->
         viewModel.onLocationPermissionResult(grants.values.any { it })
         prompts.finished()
     }
+
     val microphonePermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
         viewModel.onMicrophonePermissionResult(granted)
         prompts.finished()
     }
+
     val locationAccuracyLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
     ) { result -> viewModel.onLocationAccuracyResult(result.resultCode == Activity.RESULT_OK) }
+
     prompts.show = { prompt ->
         when (prompt) {
             PermissionPrompt.Camera -> cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
@@ -82,6 +90,7 @@ internal fun PlayerEvents(viewModel: PlayerViewModel) {
             )
         }
     }
+
     LaunchedEffect(
         viewModel,
         lifecycleOwner,
@@ -163,6 +172,7 @@ internal fun unrestrictedBatteryIntent(context: Context): Intent =
 
 private fun screenOffAdminIntent(context: Context): Intent {
     val adminComponent = ComponentName(context, ScreenOffAdminReceiver::class.java)
+
     return Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
         .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
         .putExtra(

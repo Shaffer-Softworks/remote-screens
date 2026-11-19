@@ -90,6 +90,7 @@ class HomeAssistantClient(
     fun start() {
         scope.launch {
             var backoffMs = INITIAL_BACKOFF_MS
+
             while (isActive) {
                 try {
                     connectAndListen()
@@ -122,9 +123,11 @@ class HomeAssistantClient(
 
             send(Frame.Text(outbound(type = AUTH, payload = encodePayload(HaAuth.serializer(), HaAuth(accessToken)))))
             val answer = readInbound()
+
             check(
                 answer is HaInbound.AuthOk,
             ) { "authentication failed: ${(answer as? HaInbound.AuthInvalid)?.message}" }
+
             session = this
             logger.info("Connected to Home Assistant {}", answer.haVersion)
 
@@ -133,6 +136,7 @@ class HomeAssistantClient(
                     if (frame is Frame.Text) decodeInbound(frame.readText())?.let(::handleMessage)
                 }
             }
+
             loadInitialState()
             _isConnected.value = true
             reader.join()
@@ -145,6 +149,7 @@ class HomeAssistantClient(
         _config.value = send(GetConfig).toConfig(REMOTE_SCREENS_DOMAIN)
         _states.value = send(GetStates).map(EntityStateDto::toEntityState).associateBy { it.entityId }
         send(SubscribeEvents(STATE_CHANGED_EVENT))
+
         for (eventType in FollowedEvent.TYPES) send(SubscribeEvents(eventType))
     }
 
@@ -160,6 +165,7 @@ class HomeAssistantClient(
         when (event.eventType) {
             STATE_CHANGED_EVENT -> readEventData(StateChangedData.serializer(), event)?.let { change ->
                 val newState = change.newState?.toEntityState()
+
                 _states.update { states ->
                     if (newState == null) states - change.entityId else states + (change.entityId to newState)
                 }
@@ -170,6 +176,7 @@ class HomeAssistantClient(
                 _config.update { homeAssistantConfig -> homeAssistantConfig.copy(isIntegrationLoaded = true) }
             }
         }
+
         _events.tryEmit(HomeAssistantEvent(event.eventType, event.data))
     }
 
@@ -184,9 +191,12 @@ class HomeAssistantClient(
         val response = CompletableDeferred<HaInbound.Result>()
         pendingCommands[id] = response
 
-        sendMutex.withLock { activeSession.send(Frame.Text(outbound(request.type, request.payload(), id))) }
+        sendMutex.withLock { activeSession.send(
+            Frame.Text(outbound(type = request.type, payload = request.payload(), id = id))
+        ) }
 
         val result = withTimeout(COMMAND_TIMEOUT_MS.milliseconds) { response.await() }
+
         if (!result.success) {
             val error = result.error ?: HaError()
             throw HomeAssistantException(code = error.code, message = error.message)
@@ -202,6 +212,7 @@ class HomeAssistantClient(
         returnResponse: Boolean,
     ): JsonElement? {
         val entityIds = target.ifEmpty { data.entityIds }
+
         return send(
             CallService(
                 domain = service.domain.value,
@@ -217,6 +228,7 @@ class HomeAssistantClient(
         val response = httpClient.get(
             restBaseUrl.removeSuffix("/api") + path,
         ) { bearerAuth(accessToken) }
+
         return if (response.status.isSuccess()) response.readRawBytes() else null
     }
 
@@ -233,6 +245,7 @@ class HomeAssistantClient(
                     response.bodyAsChannel(),
                 )
             }
+
             response.status.value
         }
 
@@ -250,6 +263,7 @@ class HomeAssistantClient(
             id?.let { put("id", JsonPrimitive(it)) }
             put("type", JsonPrimitive(type))
         }
+
         return JsonObject(payload + header).toString()
     }
 }

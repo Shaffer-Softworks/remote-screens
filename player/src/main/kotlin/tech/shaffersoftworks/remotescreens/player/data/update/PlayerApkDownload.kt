@@ -22,6 +22,7 @@ internal suspend fun HttpClient.downloadPlayerApk(url: String, destination: File
         }
     }.execute { response ->
         if (!response.status.isSuccess()) return@execute false
+
         destination.outputStream().use { output -> response.bodyAsChannel().copyTo(output) }
         true
     }

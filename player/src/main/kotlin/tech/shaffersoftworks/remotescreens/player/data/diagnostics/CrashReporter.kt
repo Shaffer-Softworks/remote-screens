@@ -47,6 +47,7 @@ private const val LOGGED_EXIT_KEY = "last_logged_exit_timestamp"
 internal fun exitCheckpoint(timestamps: List<Long>, firstUnsent: Int, previous: Long): Long {
     val unsentAt = timestamps.getOrNull(firstUnsent)
     val sent = timestamps.take(firstUnsent)
+
     return (if (unsentAt == null) sent else sent.filter { it < unsentAt }).lastOrNull() ?: previous
 }
 
@@ -65,10 +66,13 @@ class CrashReporter @Inject constructor(
         scope.launch {
             mutex.withLock {
                 val stored = preferences().getString("settings", null)
+
                 val settings = stored?.let {
                     runCatching { json.decodeFromString<SentrySettings>(it).validated() }.getOrNull()
                 } ?: SentrySettings()
+
                 apply(settings)
+
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     try {
                         logPreviousExits()
@@ -86,14 +90,19 @@ class CrashReporter @Inject constructor(
         mutex.withLock {
             val clean = runCatching { settings.validated() }.getOrElse {
                 Timber.w("Ignoring invalid crash reporting settings")
+
                 return@withLock
             }
+
             if (clean == applied) return@withLock
+
             // Persist before enabling so a crash or offline restart keeps the same configuration.
             if (!preferences().edit().putString("settings", json.encodeToString(clean)).commit()) {
                 Timber.w("Could not persist crash reporting settings")
+
                 return@withLock
             }
+
             apply(clean)
         }
     }
@@ -102,9 +111,11 @@ class CrashReporter @Inject constructor(
     suspend fun test(): CrashTestResult = withContext(Dispatchers.IO) {
         mutex.withLock {
             if (applied?.enabled != true || !Sentry.isEnabled()) return@withLock CrashTestResult("disabled")
+
             try {
                 val submitted = CompletableDeferred<Boolean>()
                 val successful = java.util.concurrent.atomic.AtomicBoolean()
+
                 val hint = HintUtils.createWithTypeCheckHint(object : SubmissionResult {
                     override fun isSuccess(): Boolean = successful.get()
                     override fun setResult(success: Boolean) {
@@ -112,18 +123,23 @@ class CrashReporter @Inject constructor(
                         submitted.complete(success)
                     }
                 })
+
                 val event = SentryEvent().apply {
                     level = SentryLevel.INFO
                     message = Message().apply { formatted = "Remote Screens connectivity test (nonfatal)" }
                     setTag("diagnostic", "connectivity-test")
                 }
+
                 val id = Sentry.captureEvent(event, hint)
+
                 if (id == SentryId.EMPTY_ID) return@withLock CrashTestResult("dropped")
+
                 val status = when (withTimeoutOrNull(TEST_TIMEOUT_MS) { submitted.await() }) {
                     true -> "accepted"
                     false -> "failed"
                     null -> "timeout"
                 }
+
                 CrashTestResult(status, id.toString())
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -148,16 +164,19 @@ class CrashReporter @Inject constructor(
         val prefs = preferences()
         val lastReported = prefs.getLong(REPORTED_EXIT_KEY, 0L)
         val exits = exitHistory().filter { it.timestamp > lastReported }
+
         // A nonempty ID means the SDK accepted the event for processing, not delivery.
         val firstRejected = exits.indexOfFirst { exit ->
             val reason = exitReason(exit.reason)
             reason != null && Sentry.captureEvent(exitEvent(exit, reason)) == SentryId.EMPTY_ID
         }
+
         val checkpoint = exitCheckpoint(
             timestamps = exits.map { it.timestamp },
             firstUnsent = if (firstRejected < 0) exits.size else firstRejected,
             previous = lastReported,
         )
+
         if (checkpoint != lastReported && !prefs.edit().putLong(REPORTED_EXIT_KEY, checkpoint).commit()) {
             Timber.w("Could not persist previous process exit checkpoint")
         }
@@ -186,8 +205,10 @@ class CrashReporter @Inject constructor(
         val prefs = preferences()
         val lastLogged = prefs.getLong(LOGGED_EXIT_KEY, 0L)
         val unlogged = exitHistory().filter { it.timestamp > lastLogged }
+
         for (exit in unlogged) {
             val reason = exitReason(exit.reason) ?: continue
+
             appLog.persistWarning(
                 tag = EXIT_LOG_TAG,
                 message = "Previous player process exit: reason=$reason timestampMs=${exit.timestamp} " +
@@ -196,6 +217,7 @@ class CrashReporter @Inject constructor(
                 eventId = "$PROCESS_EXIT_EVENT_PREFIX${exit.timestamp}:${exit.pid}",
             )
         }
+
         unlogged.lastOrNull()?.let { exit ->
             if (!prefs.edit().putLong(LOGGED_EXIT_KEY, exit.timestamp).commit()) {
                 appLog.warning(EXIT_LOG_TAG, "Could not persist process exit log checkpoint")
@@ -215,14 +237,18 @@ class CrashReporter @Inject constructor(
 
     private fun apply(settings: SentrySettings) {
         if (settings == applied) return
+
         runCatching {
             Sentry.close()
+
             if (settings.enabled) {
                 SentryAndroid.init(context) { options ->
                     options.dsn = settings.dsn
                     options.environment = settings.environment
+
                     options.release = "${BuildConfig.APPLICATION_ID}@" +
                         "${BuildConfig.VERSION_NAME}+${BuildConfig.VERSION_CODE}"
+
                     options.isAnrEnabled = settings.anrEnabled
                     options.isEnableNdk = true
                     options.isSendDefaultPii = false
@@ -232,14 +258,18 @@ class CrashReporter @Inject constructor(
                     options.tracesSampleRate = 0.0
                     options.profilesSampleRate = 0.0
                     options.maxBreadcrumbs = 0
+
                     // Never send cached reports for one project's DSN to a different project.
                     val key = MessageDigest.getInstance("SHA-256")
                         .digest(settings.dsn.toByteArray()).joinToString("") { "%02x".format(it) }
+
                     options.cacheDirPath = File(context.cacheDir, "sentry/$key").absolutePath
                     options.setTag("component", "android-player")
                 }
             }
+
             applied = settings
+
             if (settings.enabled && Sentry.isEnabled() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 runCatching { reportPreviousExits() }
                     .onFailure { Timber.tag(EXIT_LOG_TAG).w(it, "Could not report previous process exits") }

@@ -2,6 +2,7 @@ package tech.shaffersoftworks.remotescreens.server
 
 import tech.shaffersoftworks.remotescreens.server.config.ServerConfig
 import tech.shaffersoftworks.remotescreens.server.di.ServerDependencies
+import tech.shaffersoftworks.remotescreens.server.di.serverDefaultDispatcher
 import tech.shaffersoftworks.remotescreens.server.network.MdnsAdvertiser
 import tech.shaffersoftworks.remotescreens.server.network.SupervisorClient
 import tech.shaffersoftworks.remotescreens.server.plugins.IntegrationKey
@@ -29,7 +30,6 @@ import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -54,12 +54,13 @@ fun main() {
     val environmentConfig = ServerConfig.fromEnvironment()
     val supervisorClient = SupervisorClient(httpClient, environmentConfig.accessToken)
     val config = resolveIngressPort(environmentConfig, supervisorClient)
-    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    val dependencies = ServerDependencies(config, httpClient, scope)
+    val scope = CoroutineScope(SupervisorJob() + serverDefaultDispatcher())
+    val dependencies = ServerDependencies(config = config, httpClient = httpClient, scope = scope)
     dependencies.start()
     logger.info("Remote Screens {} ({})", config.version, describeMode(config))
 
     val mdnsAdvertiser = MdnsAdvertiser(config.playerPort, config.version).also { it.start() }
+
     if (config.isSupervisor) {
         scope.launch {
             runCatching { supervisorClient.announce(
@@ -71,15 +72,18 @@ fun main() {
     }
 
     // One server per port: Ktor routes `port(...)` by the Host header, which ingress sets to Home Assistant's.
-    val editorServer = embeddedServer(CIO, host = config.ingressHost, port = config.ingressPort) {
+    val editorServer = embeddedServer(factory = CIO, host = config.ingressHost, port = config.ingressPort) {
         editorModule(dependencies)
     }
-    val playerServer = embeddedServer(CIO, host = "0.0.0.0", port = config.playerPort) {
+
+    val playerServer = embeddedServer(factory = CIO, host = "0.0.0.0", port = config.playerPort) {
         playerModule(dependencies)
     }
-    val intercomServer = embeddedServer(CIO, host = "0.0.0.0", port = config.intercomPort) {
+
+    val intercomServer = embeddedServer(factory = CIO, host = "0.0.0.0", port = config.intercomPort) {
         intercomModule(dependencies.signaling)
     }
+
     Runtime.getRuntime().addShutdownHook(
         Thread {
             mdnsAdvertiser.stop()
@@ -88,6 +92,7 @@ fun main() {
             intercomServer.stop(SHUTDOWN_GRACE_PERIOD_MS, SHUTDOWN_TIMEOUT_MS)
         },
     )
+
     editorServer.start(wait = false)
     intercomServer.start(wait = false)
     playerServer.start(wait = true)
@@ -96,8 +101,11 @@ fun main() {
 /** Asks the Supervisor for the ingress port it chose, unless the environment fixes one. */
 private fun resolveIngressPort(config: ServerConfig, supervisorClient: SupervisorClient): ServerConfig {
     val isPortFixed = System.getenv("REMOTE_SCREENS_INGRESS_PORT") != null
+
     if (!config.isSupervisor || isPortFixed) return config
+
     val ingressPort = runBlocking { supervisorClient.ingressPort() } ?: config.ingressPort
+
     return config.copy(ingressPort = ingressPort)
 }
 
@@ -111,16 +119,20 @@ private fun describeMode(config: ServerConfig): String = when {
 fun Application.editorModule(dependencies: ServerDependencies) {
     configureSerialization()
     configureErrorHandling()
+
     install(WebSockets) {
         pingPeriod = INTERCOM_PING_SECONDS.seconds
         maxFrameSize = INTERCOM_MAX_FRAME_BYTES
     }
+
     val config = dependencies.config
+
     routing {
         install(OnlyIngress) { isEnforced = config.isSupervisor }
         signalingRoutes(dependencies.signaling)
         editorRoutes(dependencies)
         val staticDir = config.staticDir
+
         if (staticDir != null) {
             serveEditor(staticDir)
         } else {
@@ -137,6 +149,7 @@ fun Application.editorModule(dependencies: ServerDependencies) {
 private fun Route.serveEditor(staticDir: File) {
     staticFiles("/", staticDir) {
         default("index.html")
+
         // Built assets have hashed names; index.html must be refetched so an update reaches the browser.
         cacheControl { file ->
             if (file.parentFile?.name == "assets") {
@@ -159,6 +172,7 @@ fun Application.intercomModule(signaling: SignalingService) {
         pingPeriod = INTERCOM_PING_SECONDS.seconds
         maxFrameSize = INTERCOM_MAX_FRAME_BYTES
     }
+
     routing { signalingRoutes(signaling) }
 }
 
@@ -166,10 +180,12 @@ fun Application.intercomModule(signaling: SignalingService) {
 fun Application.playerModule(dependencies: ServerDependencies) {
     configureSerialization()
     configureErrorHandling()
+
     install(WebSockets) {
         pingPeriod = WEBSOCKET_PING_SECONDS.seconds
         maxFrameSize = MAX_WEBSOCKET_FRAME_BYTES
     }
+
     routing {
         playerRoutes(
             playerHub = dependencies.playerHub,
@@ -177,6 +193,7 @@ fun Application.playerModule(dependencies: ServerDependencies) {
             enrollmentService = dependencies.enrollmentService,
             cameraStreamService = dependencies.cameraStreamService,
         )
+
         route("/integration") {
             install(IntegrationKey) { apiKey = dependencies.apiKeyRepository.apiKey }
             integrationRoutes(dependencies.screenService, dependencies.playerHub)

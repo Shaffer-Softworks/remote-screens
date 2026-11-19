@@ -24,12 +24,14 @@ object LayoutMigrations {
     ): JsonObject {
         var migrated = raw
         var version = (migrated["schemaVersion"] as? JsonPrimitive)?.intOrNull ?: 1
+
         while (version < target) {
             val step = steps[version] ?: error("no migration from schema $version")
             migrated = step(migrated)
             version++
             migrated = JsonObject(migrated + ("schemaVersion" to JsonPrimitive(version)))
         }
+
         return migrated
     }
 }

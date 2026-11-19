@@ -9,6 +9,7 @@ object Icons {
         val stream = checkNotNull(
             Icons::class.java.getResourceAsStream("/mdi.json"),
         ) { "mdi.json is not bundled" }
+
         val text = stream.bufferedReader().use { it.readText() }
         MDI_JSON.decodeFromString(MdiFile.serializer(), text).icons
     }
@@ -32,6 +33,7 @@ object Icons {
 
     fun search(query: String, limit: Int = 60): List<String> {
         val queryKey = key(query)
+
         return data.keys.asSequence().filter { queryKey in it }.take(limit).toList()
     }
 }

@@ -34,6 +34,7 @@ class LogDatabaseTest {
         val name = "log-persistence-test.db"
         context.deleteDatabase(name)
         var database = Room.databaseBuilder(context, LogDatabase::class.java, name).build()
+
         try {
             database.logs().enqueue(entry("one"))
             database.logs().enqueue(entry("two"))
@@ -53,12 +54,15 @@ class LogDatabaseTest {
     @Test
     fun queueIsBoundedAndDuplicateEventIdsAreIgnored() = runBlocking {
         val database = inMemoryDatabase()
+
         try {
             val logs = database.logs()
             logs.enqueue(entry("same"))
             logs.enqueue(entry("same"))
             assertEquals(1, logs.count())
+
             for (index in 0..MAX_STORED_LOGS) logs.enqueue(entry("event-$index"))
+
             assertEquals(MAX_STORED_LOGS, logs.count())
             assertEquals("event-1", logs.oldestId())
         } finally {
@@ -69,11 +73,14 @@ class LogDatabaseTest {
     @Test
     fun aFullQueueDiscardsOrdinaryEntriesBeforeProcessExits() = runBlocking {
         val database = inMemoryDatabase()
+
         try {
             val logs = database.logs()
             val exitId = "${PROCESS_EXIT_EVENT_PREFIX}123:42"
             logs.enqueue(entry(exitId))
+
             for (index in 0..MAX_STORED_LOGS) logs.enqueue(entry("event-$index"))
+
             assertEquals(MAX_STORED_LOGS, logs.count())
             assertEquals(exitId, logs.oldestId())
             logs.acknowledge(listOf(exitId))

@@ -25,6 +25,7 @@ object ImageEncoder {
         isCropped: Boolean,
     ): BufferedImage {
         if (source.width == width && source.height == height) return source
+
         val widthScale = width / source.width.toDouble()
         val heightScale = height / source.height.toDouble()
         val scale = if (isCropped) max(widthScale, heightScale) else min(widthScale, heightScale)
@@ -32,11 +33,14 @@ object ImageEncoder {
         val scaledHeight = (source.height * scale).roundToInt()
         val output = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
         val graphics = output.createGraphics()
+
         graphics.setRenderingHint(
             RenderingHints.KEY_INTERPOLATION,
             RenderingHints.VALUE_INTERPOLATION_BILINEAR,
         )
+
         graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
+
         graphics.drawImage(
             /* img = */ source,
             /* x = */ (width - scaledWidth) / 2,
@@ -45,7 +49,9 @@ object ImageEncoder {
             /* height = */ scaledHeight,
             /* observer = */ null,
         )
+
         graphics.dispose()
+
         return output
     }
 
@@ -59,36 +65,47 @@ object ImageEncoder {
             image.height,
             BufferedImage.TYPE_INT_ARGB,
         )
+
         val graphics = masked.createGraphics()
+
         graphics.setRenderingHint(
             RenderingHints.KEY_ANTIALIASING,
             RenderingHints.VALUE_ANTIALIAS_ON,
         )
+
         graphics.clip = Ellipse2D.Double(0.0, 0.0, image.width.toDouble(), image.height.toDouble())
         graphics.drawImage(image, 0, 0, null)
         graphics.dispose()
         val output = ByteArrayOutputStream()
         ImageIO.write(masked, "png", output)
+
         return output.toByteArray()
     }
 
     private fun encodeJpeg(image: BufferedImage): ByteArray {
         val rgb = BufferedImage(image.width, image.height, BufferedImage.TYPE_INT_RGB)
+
         rgb.createGraphics().apply {
             drawImage(image, 0, 0, Color.BLACK, null)
             dispose()
         }
+
         val writer = ImageIO.getImageWritersByFormatName("jpeg").next()
+
         val parameters = writer.defaultWriteParam.apply {
             compressionMode = ImageWriteParam.MODE_EXPLICIT
             compressionQuality = JPEG_QUALITY
         }
+
         val output = ByteArrayOutputStream()
+
         ImageIO.createImageOutputStream(output).use { imageOutput ->
             writer.output = imageOutput
             writer.write(null, IIOImage(rgb, null, null), parameters)
         }
+
         writer.dispose()
+
         return output.toByteArray()
     }
 }

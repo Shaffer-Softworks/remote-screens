@@ -51,6 +51,7 @@ class PlayersChangedEvent(
     fun notifyDisconnected(isBack: () -> Boolean) {
         scope.launch {
             delay(DISCONNECT_GRACE)
+
             if (!isBack()) notifyChanged()
         }
     }

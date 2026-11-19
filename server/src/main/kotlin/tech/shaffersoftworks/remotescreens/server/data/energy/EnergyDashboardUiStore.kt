@@ -19,6 +19,7 @@ class EnergyDashboardUiStore : TileUiStore<EnergyDashboardUiState>(EnergyDashboa
                 EnergyDashboardPeriod.WEEK -> EnergyDashboardPeriod.MONTH
                 EnergyDashboardPeriod.MONTH -> EnergyDashboardPeriod.DAY
             }
+
             current.copy(period = next, offset = 0)
         }
     }

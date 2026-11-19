@@ -102,6 +102,7 @@ class SignalingHubTest {
     private fun register(clientId: String, displayName: String? = null): String = buildJsonObject {
         put("type", "register")
         put("clientId", clientId)
+
         if (displayName != null) put("displayName", displayName)
     }.toString()
 

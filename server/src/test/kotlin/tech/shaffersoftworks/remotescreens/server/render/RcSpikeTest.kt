@@ -26,24 +26,29 @@ class RcSpikeTest {
             val page = remoteNamedInteger("${Rc.USER}page", 0)
             val bg = remoteNamedColor("${Rc.USER}t.1.bg", 0xFFEEEEEE.toInt())
             val meta = remoteText("1|toggle|")
+
             Box(Modifier.size(200f, 200f).background(bg).padding(8f).onClick {
                 hostAction(1, meta)
             }) {
                 Text(label, fontSize = 24.rsp)
             }
+
             StateLayout(page) {
                 Box(Modifier.size(10f, 10f))
                 Box(Modifier.size(20f, 20f))
             }
         }
+
         assertTrue(bytes.size > 100, "a document has a body")
 
         val doc = CoreDocument()
         doc.initFromBuffer(RemoteComposeBuffer.fromInputStream(ByteArrayInputStream(bytes)))
+
         assertContains(
             doc.getNamedVariables(NamedVariable.STRING_TYPE).toList(),
             "USER:e.light.kitchen.label",
         )
+
         assertContains(doc.getNamedVariables(NamedVariable.INT_TYPE).toList(), "USER:page")
         assertContains(doc.getNamedVariables(NamedVariable.COLOR_TYPE).toList(), "USER:t.1.bg")
     }

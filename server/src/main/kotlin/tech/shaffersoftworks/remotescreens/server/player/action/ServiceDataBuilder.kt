@@ -2,6 +2,7 @@ package tech.shaffersoftworks.remotescreens.server.player.action
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.shared.ActionSpec
+import tech.shaffersoftworks.remotescreens.shared.Tile
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -11,6 +12,7 @@ import kotlinx.serialization.json.doubleOrNull
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ControlVerb
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceData
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ServiceRef
@@ -46,19 +48,25 @@ object ServiceDataBuilder {
         entity: EntityState?,
         code: String? = null,
     ): ServiceData {
-        var resolvedArg = resolveArg(action, arg, entity)
+        var resolvedArg = resolveArg(action = action, arg = arg, entity = entity)
         val serviceData = LinkedHashMap<String, JsonElement>()
+
         if (verb == "play_media" && resolvedArg.contains('|')) {
             val (contentType, contentId) = resolvedArg.split('|', limit = 2)
             resolvedArg = contentId
             serviceData["media_content_type"] = JsonPrimitive(contentType)
         }
+
         for ((key, template) in action.data) {
             if (key in serviceData) continue
-            val filled = fill(template, resolvedArg, code)
+
+            val filled = fill(template = template, arg = resolvedArg, code = code)
+
             if (filled != JsonNull) serviceData[key] = filled
         }
-        completeClimateTemperatureRange(serviceData, action, entity)
+
+        completeClimateTemperatureRange(serviceData = serviceData, action = action, entity = entity)
+
         return ServiceData(JsonObject(serviceData))
     }
 
@@ -73,6 +81,7 @@ object ServiceDataBuilder {
         entity: EntityState?,
     ) {
         if (ServiceRef.parse(action.service) != CLIMATE_SET_TEMPERATURE || entity == null) return
+
         when {
             "temperature" in serviceData && entity.usesTemperatureRange() ->
                 rewriteSingleTemperatureToRange(serviceData, entity)
@@ -88,18 +97,22 @@ object ServiceDataBuilder {
     ) {
         val changedLow = ATTR_TARGET_TEMP_LOW in serviceData
         val changedHigh = ATTR_TARGET_TEMP_HIGH in serviceData
+
         if (!changedLow && !changedHigh) return
+
         if (!changedLow) {
             entity.climate.targetTempLow?.let {
                 serviceData[ATTR_TARGET_TEMP_LOW] = JsonPrimitive(wholeOrDecimal(it))
             }
         }
+
         if (!changedHigh) {
             entity.climate.targetTempHigh?.let {
                 serviceData[ATTR_TARGET_TEMP_HIGH] = JsonPrimitive(wholeOrDecimal(it))
             }
         }
-        coerceTemperatureRange(serviceData, changedLow = changedLow, changedHigh = changedHigh)
+
+        coerceTemperatureRange(serviceData = serviceData, changedLow = changedLow, changedHigh = changedHigh)
     }
 
     /** Shift both ends of the range by the same delta the single setpoint would have applied. */
@@ -110,13 +123,15 @@ object ServiceDataBuilder {
         val newTemp = (serviceData.remove("temperature") as? JsonPrimitive)?.doubleOrNull
         val low = entity.climate.targetTempLow
         val high = entity.climate.targetTempHigh
+
         if (newTemp == null || low == null || high == null) return
+
         val oldTemp = entity.climate.temperature ?: ((low + high) / 2.0)
         val delta = newTemp - oldTemp
         val limits = limits(entity, "temperature")
         serviceData[ATTR_TARGET_TEMP_LOW] = JsonPrimitive(wholeOrDecimal((low + delta).coerceIn(limits)))
         serviceData[ATTR_TARGET_TEMP_HIGH] = JsonPrimitive(wholeOrDecimal((high + delta).coerceIn(limits)))
-        coerceTemperatureRange(serviceData, changedLow = true, changedHigh = true)
+        coerceTemperatureRange(serviceData = serviceData, changedLow = true, changedHigh = true)
     }
 
     private fun coerceTemperatureRange(
@@ -126,7 +141,9 @@ object ServiceDataBuilder {
     ) {
         val low = (serviceData[ATTR_TARGET_TEMP_LOW] as? JsonPrimitive)?.doubleOrNull
         val high = (serviceData[ATTR_TARGET_TEMP_HIGH] as? JsonPrimitive)?.doubleOrNull
+
         if (low == null || high == null || low <= high) return
+
         when {
             changedLow && !changedHigh ->
                 serviceData[ATTR_TARGET_TEMP_HIGH] = JsonPrimitive(wholeOrDecimal(low))
@@ -152,11 +169,16 @@ object ServiceDataBuilder {
     ): String {
         val relativeTo = action.relative
         val delta = arg.takeIf { it.startsWith('+') || it.startsWith('-') }?.toDoubleOrNull()
+
         if (relativeTo == null || entity == null || delta == null) return arg
+
         return scaledValue(relativeTo, entity)
             ?.let { base ->
                 val stepped = (base + delta).coerceIn(limits(entity, relativeTo))
-                formatNumber(snapClimateFahrenheitToWholeCelsius(stepped, relativeTo, entity))
+
+                formatNumber(
+                    snapClimateFahrenheitToWholeCelsius(value = stepped, relativeTo = relativeTo, entity = entity)
+                )
             }
             ?: arg
     }
@@ -173,24 +195,30 @@ object ServiceDataBuilder {
         if (!shouldSnapClimateFahrenheit(relativeTo = relativeTo, entity = entity)) {
             return value
         }
+
         val celsius = (value - FAHRENHEIT_FREEZE_POINT) / FAHRENHEIT_SCALE
+
         val wholeCelsiusFahrenheit =
             kotlin.math.round(celsius) * FAHRENHEIT_SCALE + FAHRENHEIT_FREEZE_POINT
+
         return kotlin.math.round(wholeCelsiusFahrenheit)
     }
 
     private fun shouldSnapClimateFahrenheit(relativeTo: String, entity: EntityState): Boolean {
         val isClimateTemperature = entity.domain == Domain.CLIMATE &&
             relativeTo in setOf(ATTR_TEMPERATURE, ATTR_TARGET_TEMP_LOW, ATTR_TARGET_TEMP_HIGH)
+
         val unit = entity.climate.temperatureUnit?.trim().orEmpty()
+
         return isClimateTemperature && unit in FAHRENHEIT_UNIT_MARKERS
     }
 
     /** `$arg`, `$arg*2.55` or `$arg/100`, as a number where the argument is one. */
     fun argValue(expression: String, arg: String): JsonPrimitive {
-        if (expression == ARG_PLACEHOLDER && (arg == "true" || arg == "false")) {
-            return JsonPrimitive(arg == "true")
+        if (expression == ARG_PLACEHOLDER && (arg == Tile.OPTION_TRUE || arg == Tile.OPTION_FALSE)) {
+            return JsonPrimitive(arg == Tile.OPTION_TRUE)
         }
+
         val (_, operator, factor) = parseExpression(expression)
         val number = arg.toDoubleOrNull()
 
@@ -202,6 +230,7 @@ object ServiceDataBuilder {
                 '/' -> number / factor
                 else -> number
             }
+
             if (operator == '*') {
                 JsonPrimitive(
                     value.roundToInt(),
@@ -226,7 +255,9 @@ object ServiceDataBuilder {
 
     private fun parseExpression(expression: String): Expression {
         val operatorIndex = expression.indexOfFirst { it == '*' || it == '/' }
-        if (operatorIndex < 0) return Expression(expression, null, 1.0)
+
+        if (operatorIndex < 0) return Expression(key = expression, operator = null, factor = 1.0)
+
         return Expression(
             key = expression.substring(0, operatorIndex),
             operator = expression[operatorIndex],
@@ -237,7 +268,8 @@ object ServiceDataBuilder {
     private fun scaledValue(expression: String, entity: EntityState): Double? {
         val (key, operator, factor) = parseExpression(expression)
         val raw = if (key == "state") entity.numericState() else entity.attributeNumber(key)
-        raw ?: return if (key == "brightness" && entity.switchState == SwitchState.OFF) 0.0 else null
+        raw ?: return if (key == ControlVerb.BRIGHTNESS && entity.switchState == SwitchState.OFF) 0.0 else null
+
         return when (operator) {
             '*' -> raw * factor
             '/' -> raw / factor
@@ -264,14 +296,14 @@ object ServiceDataBuilder {
             isArgExpression(template) -> argValue(template, arg)
             else -> JsonPrimitive(template)
         }
-        is List<*> -> JsonArray(template.filterNotNull().map { fill(it, arg, code) })
+        is List<*> -> JsonArray(template.filterNotNull().map { fill(template = it, arg = arg, code = code) })
         is Map<*, *> -> JsonObject(
             template.entries
                 .filter { (_, value) -> value != null }
                 .associate { (key, value) -> key.toString() to fill(
-                    checkNotNull(value),
-                    arg,
-                    code,
+                    template = checkNotNull(value),
+                    arg = arg,
+                    code = code,
                 ) },
         )
         is Boolean -> JsonPrimitive(template)
@@ -283,6 +315,7 @@ object ServiceDataBuilder {
     private fun argPart(template: String, arg: String): JsonElement {
         val part = arg.split(',').getOrNull(template.removePrefix(ARG_PLACEHOLDER).toInt())?.trim()
             ?: return JsonNull
+
         return argValue(ARG_PLACEHOLDER, part)
     }
 

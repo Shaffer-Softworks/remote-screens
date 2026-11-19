@@ -3,6 +3,7 @@ package tech.shaffersoftworks.remotescreens.server.render.panels.alarm
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.shared.Tile
+import tech.shaffersoftworks.remotescreens.shared.TileKind
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
 
@@ -18,7 +19,7 @@ const val ALARM_PIN_LENGTH = 4
 fun alarmDotVar(entityId: String, index: Int): String = Vars.tile("e:$entityId", "dot.$index")
 
 /** A full page of its own for an alarm entity: RPI's alarm screen rather than a card. */
-fun Tile.isAlarmPage(): Boolean = full && effectiveKind() == Domain.ALARM_PANEL.value
+fun Tile.isAlarmPage(): Boolean = full && tileKind() == TileKind.ALARM_PANEL
 
 /** One zone chip on the alarm page: an alarm entity and the word on its chip (empty for the entity's name). */
 data class AlarmZone(val entityId: String, val label: String)
@@ -26,16 +27,19 @@ data class AlarmZone(val entityId: String, val label: String)
 /** The tile's own entity first (All Zones, labelled by the page), then the zones of its `zones` option. */
 fun Tile.alarmZones(): List<AlarmZone> {
     val ownEntityId = entityId ?: return emptyList()
+
     val listed = options[ALARM_ZONES_OPTION].orEmpty()
         .split(ZONE_SEPARATOR)
         .mapNotNull { entry ->
             val zoneEntityId = entry.substringBefore(LABEL_SEPARATOR).trim()
             val label = entry.substringAfter(LABEL_SEPARATOR, "").trim()
+
             AlarmZone(zoneEntityId, label).takeIf {
                 EntityId(zoneEntityId).domain == Domain.ALARM_PANEL && zoneEntityId != ownEntityId
             }
         }
         .distinctBy { it.entityId }
+
     return listOf(AlarmZone(ownEntityId, "")) + listed
 }
 

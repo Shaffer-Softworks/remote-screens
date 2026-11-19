@@ -18,8 +18,10 @@ import kotlinx.serialization.json.JsonObject
 /** The API the Home Assistant integration polls and calls, under `/integration` and its key. */
 fun Route.integrationRoutes(screenService: ScreenService, playerHub: PlayerHub) {
     notificationRoutes(playerHub)
+
     get("/screens") {
         val players = playerHub.status()
+
         val screens = screenService.screens().map { screen ->
             IntegrationScreenResponse(
                 id = screen.id,
@@ -29,31 +31,39 @@ fun Route.integrationRoutes(screenService: ScreenService, playerHub: PlayerHub) 
                 players = players.filter { it.screenId == screen.id },
             )
         }
+
         call.respond(screens)
     }
+
     get("/players") {
         call.respond(playerHub.status())
     }
+
     post("/screens/{id}/settings") {
         val isPatched = screenService.patchSettings(
             call.parameters.getOrFail("id"),
             call.receive<JsonObject>(),
         )
+
         call.respond(if (isPatched) HttpStatusCode.NoContent else HttpStatusCode.NotFound)
     }
+
     post("/alert") {
         playerHub.showAlert(call.receive<Alert>())
         call.respond(HttpStatusCode.NoContent)
     }
+
     post("/open_page") {
         val request = call.receive<OpenPageRequest>()
         playerHub.openPage(request.targets, request.page)
         call.respond(HttpStatusCode.NoContent)
     }
+
     post("/wake") {
         playerHub.wake(call.receive<TargetsRequest>().targets)
         call.respond(HttpStatusCode.NoContent)
     }
+
     post("/close") {
         playerHub.closeOverlays(call.receive<TargetsRequest>().targets)
         call.respond(HttpStatusCode.NoContent)

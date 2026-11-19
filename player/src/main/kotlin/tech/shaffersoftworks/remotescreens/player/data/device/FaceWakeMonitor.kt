@@ -53,6 +53,7 @@ class FaceWakeMonitor @Inject constructor(
 
     private fun detectorOrNull(): FaceDetector? {
         detector?.let { return it }
+
         return runCatching {
             FaceDetection.getClient(
                 FaceDetectorOptions.Builder()
@@ -82,23 +83,32 @@ class FaceWakeMonitor @Inject constructor(
 
     fun start(onFace: () -> Unit) {
         val canStart = isUsable() && detectorOrNull() != null
+
         if (!canStart) {
             Timber.d("Face wake not usable")
+
             return
         }
+
         if (!isRunning.compareAndSet(false, true)) return
+
         this.onFace = onFace
+
         ProcessCameraProvider.getInstance(context).addListener(
             {
                 if (!isRunning.get()) return@addListener
+
                 try {
                     val provider = ProcessCameraProvider.getInstance(context).get()
                     cameraProvider = provider
+
                     if (!provider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA)) {
                         Timber.d("Face wake: CameraX found no front camera")
                         stop()
+
                         return@addListener
                     }
+
                     bindCamera(provider)
                 } catch (error: IllegalStateException) {
                     Timber.w(error, "Face wake: provider failed")
@@ -121,11 +131,14 @@ class FaceWakeMonitor @Inject constructor(
 
     private fun bindCamera(provider: ProcessCameraProvider) {
         provider.unbindAll()
+
         val owner = ControlledLifecycleOwner().also {
             lifecycleOwner = it
             it.start()
         }
+
         val analysisSize = Size(ANALYSIS_WIDTH, ANALYSIS_HEIGHT)
+
         val analysis = ImageAnalysis.Builder()
             .setResolutionSelector(
                 ResolutionSelector.Builder()
@@ -142,6 +155,7 @@ class FaceWakeMonitor @Inject constructor(
             .also { useCase ->
                 useCase.setAnalyzer(analysisExecutor) { image -> analyze(image) }
             }
+
         try {
             provider.bindToLifecycle(owner, CameraSelector.DEFAULT_FRONT_CAMERA, analysis)
             Timber.d("Face wake started")
@@ -159,18 +173,25 @@ class FaceWakeMonitor @Inject constructor(
     private fun analyze(imageProxy: ImageProxy) {
         val now = android.os.SystemClock.elapsedRealtime()
         val previous = lastAnalyzedAtMs.get()
+
         if (now - previous < MIN_FRAME_INTERVAL_MS) {
             imageProxy.close()
+
             return
         }
+
         lastAnalyzedAtMs.set(now)
         val faceDetector = detector
         val mediaImage = imageProxy.image
+
         if (faceDetector == null || mediaImage == null) {
             imageProxy.close()
+
             return
         }
+
         val input = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+
         faceDetector.process(input)
             .addOnSuccessListener { faces ->
                 if (faces.isNotEmpty()) {
@@ -182,7 +203,9 @@ class FaceWakeMonitor @Inject constructor(
 
     fun stop() {
         if (!isRunning.getAndSet(false) && cameraProvider == null && lifecycleOwner == null) return
+
         onFace = null
+
         mainExecutor.execute {
             runCatching { cameraProvider?.unbindAll() }
             cameraProvider = null

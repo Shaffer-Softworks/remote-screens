@@ -30,8 +30,10 @@ fun DocContext.statusIcon(entityId: String, name: String?, sizeDp: Float, color:
     val domain = EntityId(entityId).domain
     val moving = Vars.entity(entityId, "icon_moving")
     val resting = Vars.entity(entityId, "icon_resting")
+
     bind(entityId) { states ->
         val entity = states[entityId]
+
         val active = when (domain) {
             Domain.FAN -> entity?.isOn == true
             Domain.CLIMATE -> entity != null && entity.isAvailable && entity.hvacMode != HvacMode.OFF &&
@@ -39,22 +41,32 @@ fun DocContext.statusIcon(entityId: String, name: String?, sizeDp: Float, color:
             Domain.ALARM_PANEL -> entity?.alarmState?.isAlerting == true
             else -> false
         }
+
         listOf(
             VarValue.int(moving, if (active) Vars.VISIBLE else Vars.GONE),
             VarValue.int(resting, if (active) Vars.GONE else Vars.VISIBLE),
         )
     }
+
     rcScope.Box(Modifier.size(units.px(sizeDp), units.px(sizeDp))) {
         val doc = this@statusIcon
-        doc.icon(name, sizeDp, color, doc.int(resting, Vars.VISIBLE))
+        doc.icon(name = name, sizeDp = sizeDp, color = color, visible = doc.int(resting, Vars.VISIBLE))
         // Three fan blades repeat every 120 degrees, so the minute-clock wrap is seamless.
         val angle = if (domain == Domain.FAN) continuousSeconds() * FAN_DEGREES_PER_SECOND else null
+
         val pulse = if (domain != Domain.FAN) {
             PULSE_MIN_ALPHA.rf + (sin(continuousSeconds() * PI.toFloat()) + 1f) * PULSE_AMPLITUDE
         } else {
             null
         }
-        doc.icon(name, sizeDp, color, doc.int(moving), motion = IconMotion(angle, pulse))
+
+        doc.icon(
+            name = name,
+            sizeDp = sizeDp,
+            color = color,
+            visible = doc.int(moving),
+            motion = IconMotion(angle, pulse)
+        )
     }
 }
 

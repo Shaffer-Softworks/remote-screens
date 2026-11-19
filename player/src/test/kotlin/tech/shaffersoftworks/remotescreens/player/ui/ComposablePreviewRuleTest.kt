@@ -26,9 +26,12 @@ class ComposablePreviewRuleTest {
 
     private fun findings(file: File): List<String> {
         val functions = parseFunctions(file.readText())
+
         val missing = functions.filter { isUi(it) && !isCovered(it, functions, emptySet()) }
             .map { "${file.name} ${it.name} has no @Preview in this file that calls it" }
+
         val shape = functions.filter { isPreview(it) }.flatMap { previewProblems(file.name, it) }
+
         return missing + shape
     }
 
@@ -38,8 +41,10 @@ class ComposablePreviewRuleTest {
         val sideEffect = !callsLayout(function.body)
         val wiring = "hiltViewModel()" in function.signature && function.name !in seen
         val callees = functions.filter { isUi(it) && calls(function.body, it.name) }
+
         val calleesCovered = wiring && callees.isNotEmpty() &&
             callees.all { callee -> isCovered(callee, functions, seen + function.name) }
+
         return coveredByCall || sideEffect || calleesCovered
     }
 
@@ -47,19 +52,24 @@ class ComposablePreviewRuleTest {
         val where = "$fileName ${function.name}"
         val width = WIDTH.find(function.annotations)?.groupValues?.get(1)
         val height = HEIGHT.find(function.annotations)?.groupValues?.get(1)
+
         val canvas = when {
             width == null || height == null -> "$where needs widthDp and heightDp"
             width != WALL_WIDTH_DP.toString() || height != WALL_HEIGHT_DP.toString() ->
                 if (function.annotations.contains("name")) null else "$where uses a custom canvas and needs a name"
             else -> null
         }
+
         val privacy = if (function.modifiers.contains("private")) null else "$where must be private"
+
         val theme = if (function.body.contains("RemoteScreensTheme")) {
             null
         } else {
             "$where must wrap RemoteScreensTheme"
         }
+
         val named = if (function.name.endsWith("Preview")) null else "$where must end with Preview"
+
         return listOfNotNull(canvas, privacy, theme, named)
     }
 
@@ -123,6 +133,7 @@ class ComposablePreviewRuleTest {
 
         fun isUi(function: SourceFunction): Boolean {
             val returnsValue = function.returnType != null && function.returnType != "Unit"
+
             return "@Composable" in function.annotations && !isPreview(function) && !returnsValue
         }
 
@@ -135,6 +146,7 @@ class ComposablePreviewRuleTest {
             FUNCTION.findAll(text).map { match ->
                 val paramsEnd = endOfParameters(text, match.range.last + 1)
                 val (returnType, bodyStart) = splitReturn(text, paramsEnd)
+
                 SourceFunction(
                     name = match.groupValues[3],
                     annotations = match.groupValues[1],
@@ -151,6 +163,7 @@ class ComposablePreviewRuleTest {
             var brace = 0
             var end = index
             var closed = index >= text.length || text[index] != '('
+
             while (index < text.length && !closed) {
                 if (text[index] == '"') {
                     index = readString(text, index)
@@ -159,6 +172,7 @@ class ComposablePreviewRuleTest {
                         '(' -> paren++
                         ')' -> {
                             paren--
+
                             if (paren == 0 && brace == 0) {
                                 end = index + 1
                                 closed = true
@@ -167,9 +181,11 @@ class ComposablePreviewRuleTest {
                         '{' -> brace++
                         '}' -> if (brace > 0) brace--
                     }
+
                     if (!closed) index++
                 }
             }
+
             return end
         }
 
@@ -177,19 +193,24 @@ class ComposablePreviewRuleTest {
             var index = skipSpace(text, paramsEnd)
             val typeStart = index + 1
             val hasType = index < text.length && text[index] == ':'
+
             val returnType = if (hasType) {
                 var typeEnd = typeStart
+
                 while (typeEnd < text.length && text[typeEnd] != '{' && text[typeEnd] != '=') typeEnd++
+
                 index = typeEnd
                 text.substring(typeStart, typeEnd).trim()
             } else {
                 null
             }
+
             return returnType to index
         }
 
         fun readBlock(text: String, start: Int): String {
             val index = skipSpace(text, start)
+
             return when {
                 index < text.length && text[index] == '{' -> text.substring(index, endOfBrace(text, index))
                 index < text.length && text[index] == '=' -> text.substring(index, endOfExpression(text, index))
@@ -202,21 +223,26 @@ class ComposablePreviewRuleTest {
             var brace = 0
             var end = text.length
             var closed = false
+
             while (index < text.length && !closed) {
                 if (text[index] == '"') {
                     index = readString(text, index)
                 } else {
                     if (text[index] == '{') brace++
+
                     if (text[index] == '}') {
                         brace--
+
                         if (brace == 0) {
                             end = index + 1
                             closed = true
                         }
                     }
+
                     if (!closed) index++
                 }
             }
+
             return end
         }
 
@@ -226,6 +252,7 @@ class ComposablePreviewRuleTest {
             var brace = 0
             var end = text.length
             var closed = false
+
             while (index < text.length && !closed) {
                 if (text[index] == '"') {
                     index = readString(text, index)
@@ -240,21 +267,26 @@ class ComposablePreviewRuleTest {
                             closed = true
                         }
                     }
+
                     if (!closed) index++
                 }
             }
+
             return end
         }
 
         fun readString(text: String, start: Int): Int {
             val triple = text.startsWith("\"\"\"", start)
             var end = text.length
+
             if (triple) {
                 val close = text.indexOf("\"\"\"", start + TRIPLE_QUOTE_LENGTH)
+
                 if (close >= 0) end = close + TRIPLE_QUOTE_LENGTH
             } else {
                 var index = start + 1
                 var closed = false
+
                 while (index < text.length && !closed) {
                     val escaped = text[index] == '\\'
                     val quote = !escaped && text[index] == '"'
@@ -263,12 +295,15 @@ class ComposablePreviewRuleTest {
                     index = if (escaped) index + 2 else index + 1
                 }
             }
+
             return end
         }
 
         fun skipSpace(text: String, start: Int): Int {
             var index = start
+
             while (index < text.length && text[index].isWhitespace()) index++
+
             return index
         }
     }

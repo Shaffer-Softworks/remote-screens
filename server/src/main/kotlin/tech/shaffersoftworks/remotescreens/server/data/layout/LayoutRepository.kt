@@ -29,18 +29,23 @@ class LayoutRepository(dataDir: File) {
     @Synchronized
     fun update(change: (LayoutData) -> LayoutData): LayoutData {
         val next = change(_layout.value)
+
         if (next != _layout.value) {
             save(next)
             _layout.value = next
         }
+
         return next
     }
 
     private fun load(): LayoutData {
         if (!file.exists()) return LayoutData()
+
         val raw = JSON.parseToJsonElement(file.readText()).jsonObject
+
         val version = runCatching { JSON.decodeFromJsonElement(SchemaHeader.serializer(), raw) }
             .getOrNull()?.schemaVersion ?: 1
+
         return if (version > SCHEMA_VERSION) setAsideNewerLayout(version) else migrate(raw, version)
     }
 
@@ -48,6 +53,7 @@ class LayoutRepository(dataDir: File) {
     private fun setAsideNewerLayout(version: Int): LayoutData {
         val keep = File(file.parentFile, "layouts.v$version.json")
         file.copyTo(keep, overwrite = true)
+
         logger.error(
             "{} is schema {} but this add-on knows {}; kept a copy at {}",
             LAYOUT_FILE_NAME,
@@ -55,6 +61,7 @@ class LayoutRepository(dataDir: File) {
             SCHEMA_VERSION,
             keep,
         )
+
         return LayoutData()
     }
 
@@ -64,12 +71,16 @@ class LayoutRepository(dataDir: File) {
 
     private fun migrate(raw: JsonObject, version: Int): LayoutData {
         val migrated = LayoutMigrations.migrate(raw)
+
         if (version < SCHEMA_VERSION) {
             file.copyTo(File(file.parentFile, "layouts.v$version.bak.json"), overwrite = true)
         }
+
         val layout = JSON.decodeFromJsonElement(LayoutData.serializer(), migrated)
+
         return layout.copy(screens = layout.screens.map { screen ->
             val drawer = screen.drawer.validated()
+
             screen.copy(
                 drawer = drawer,
                 navBar = if (drawer.modal) screen.navBar else screen.navBar.copy(show = true),
@@ -80,6 +91,7 @@ class LayoutRepository(dataDir: File) {
     private fun save(layout: LayoutData) {
         val temporaryFile = File(file.parentFile, "$LAYOUT_FILE_NAME.tmp")
         temporaryFile.writeText(JSON.encodeToString(LayoutData.serializer(), layout))
+
         Files.move(
             temporaryFile.toPath(),
             file.toPath(),

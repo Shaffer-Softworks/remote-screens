@@ -48,9 +48,11 @@ class SentrySettingsTest {
             "https://key@host/abc",
             "https://key@host/123?token=secret",
         )
+
         for (dsn in invalidDsns) {
             assertFailsWith<IllegalArgumentException>(dsn) { SentrySettings(true, dsn).validated() }
         }
+
         assertFailsWith<IllegalArgumentException> {
             SentrySettings(environment = "has spaces").validated()
         }

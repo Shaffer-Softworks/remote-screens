@@ -32,16 +32,20 @@ class HeaderConditionIconTest {
             pages = listOf(Page(id = "home", title = "Home")),
             topBar = TopBar(temperatureEntity = "weather.home", people = false),
         )
+
         val weatherDoc = ScreenRenderer.render(screen, tablet, input())
         val diskX = partlyCloudyDiskX(tablet.density)
+
         assertTrue(
             contains(weatherDoc.bytes, floatBytes(diskX)),
             "the partly cloudy sun disk is drawn",
         )
+
         assertTrue(
             contains(weatherDoc.bytes, colorBytes(HaWeatherIcons.SUN)),
             "the sun is the weather page's yellow",
         )
+
         val sunny = ha.states.value.getValue("weather.home").copy(state = "sunny")
         assertTrue(weatherDoc.structureChanged(ha.states.value + ("weather.home" to sunny)))
 
@@ -52,10 +56,12 @@ class HeaderConditionIconTest {
             tablet,
             input(),
         )
+
         assertFalse(
             contains(sensorDoc.bytes, floatBytes(diskX)),
             "a temperature sensor keeps the thermometer",
         )
+
         assertFalse(sensorDoc.docContext.structure.any { it.first == "sensor.outdoor_temperature" })
     }
 

@@ -61,16 +61,19 @@ class ConnectionRepositoryTest {
         outgoingFor: (index: Int) -> SendChannel<Frame>,
     ): HttpClient {
         var connections = 0
+
         val engine = MockEngine {
             val index = connections++
             val sender = outgoingFor(index)
             val context = currentCoroutineContext()
+
             val socket = object : DefaultWebSocketSession by mock<DefaultWebSocketSession>() {
                 override val coroutineContext = context
                 override val incoming = incomingFrames[index]
                 override val outgoing = sender
                 override suspend fun send(frame: Frame) = sender.send(frame)
             }
+
             HttpResponseData(
                 HttpStatusCode.SwitchingProtocols,
                 GMTDate(),
@@ -80,10 +83,13 @@ class ConnectionRepositoryTest {
                 context,
             )
         }
+
         engine.config.dispatcher = StandardTestDispatcher(testScheduler)
+
         val webSocketEngine = object : HttpClientEngine by engine {
             override val supportedCapabilities = engine.supportedCapabilities + WebSocketCapability
         }
+
         return HttpClient(webSocketEngine) { install(WebSockets) }
     }
 
@@ -93,6 +99,7 @@ class ConnectionRepositoryTest {
         val incoming = List(2) { Channel<Frame>(Channel.UNLIMITED) }
         val client = socketClient(incoming) { outgoing[it] }
         val repository = ConnectionRepository(client, backgroundScope)
+
         try {
             repository.connect("server") { hello() }
             runCurrent()
@@ -127,6 +134,7 @@ class ConnectionRepositoryTest {
         val client = socketClient(incoming) { index -> outgoing[index] }
         val repository = ConnectionRepository(client, backgroundScope)
         var hasReconnected = false
+
         // Like viewModelScope's Main.immediate on the main thread: the collector runs inside the state update.
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             repository.connectionState.collect { state ->
@@ -136,6 +144,7 @@ class ConnectionRepositoryTest {
                 }
             }
         }
+
         try {
             repository.connect("server") { hello() }
             runCurrent()
@@ -156,6 +165,7 @@ class ConnectionRepositoryTest {
         val repository = ConnectionRepository(client, backgroundScope)
         val oldScreen = Any()
         val newScreen = Any()
+
         try {
             repository.connect("server", oldScreen) { hello() }
             runCurrent()
@@ -188,11 +198,14 @@ class ConnectionRepositoryTest {
         val outgoing = List(2) { Channel<Frame>(Channel.UNLIMITED) }
         val incoming = List(2) { Channel<Frame>(Channel.UNLIMITED) }
         var delayedHello: kotlin.coroutines.Continuation<Unit>? = null
+
         val client = socketClient(incoming) { index ->
             val sent = outgoing[index]
+
             object : SendChannel<Frame> by sent {
                 override suspend fun send(element: Frame) {
                     sent.send(element)
+
                     if (index == 0 && element is Frame.Text) {
                         // Model IO completing after cancellation, immediately before publication.
                         suspendCancellableCoroutine { delayedHello = it }
@@ -200,12 +213,16 @@ class ConnectionRepositoryTest {
                 }
             }
         }
+
         val repository = ConnectionRepository(client, backgroundScope)
+
         try {
             repository.connect("server") { hello() }
             runCurrent()
             assertTrue(delayedHello != null)
+
             if (reconnect) repository.reconnect() else repository.disconnect()
+
             runCurrent()
             val replacement = repository.connectionState.value
             val expectedStatus = if (reconnect) ConnectionStatus.CONNECTED else ConnectionStatus.IDLE
@@ -215,6 +232,7 @@ class ConnectionRepositoryTest {
             runCurrent()
             assertEquals(replacement, repository.connectionState.value)
             val action = PlayerMessage.Ping
+
             if (reconnect) {
                 val helloFrame = outgoing[1].tryReceive().getOrNull() as Frame.Text
                 assertTrue(Protocol.decodePlayer(helloFrame.readText()) is PlayerMessage.Hello)
@@ -239,28 +257,35 @@ class ConnectionRepositoryTest {
         val (firstIncoming, secondIncoming) = List(2) { Channel<Frame>(Channel.UNLIMITED) }
         val (firstOutgoing, secondOutgoing) = List(2) { Channel<Frame>(Channel.UNLIMITED) }
         var connections = 0
+
         val client = socketClient(listOf(firstIncoming, secondIncoming)) { index ->
             connections++
             val sent = if (index == 0) firstOutgoing else secondOutgoing
+
             object : SendChannel<Frame> by sent {
                 override suspend fun send(element: Frame) {
                     if (index == 0 && element is Frame.Close) {
                         cleanupStarted.complete(Unit)
                         withContext(NonCancellable) { releaseCleanup.await() }
                     }
+
                     sent.send(element)
                 }
             }
         }
+
         val repository = ConnectionRepository(client, backgroundScope)
         val received = mutableListOf<ConnectionRepository.ReceivedMessage>()
         backgroundScope.launch { repository.receivedMessages.collect { received += it } }
         var hellos = 0
+
         try {
             repository.connect("server") {
                 if (hellos++ > 0) releaseSecondHello.await()
+
                 hello()
             }
+
             runCurrent()
             assertEquals(ConnectionStatus.CONNECTED, repository.connectionState.value.status)
             assertTrue(firstOutgoing.receive() is Frame.Text)

@@ -82,14 +82,17 @@ fun DocContext.at(xDp: Float, yDp: Float, content: () -> Unit) {
 
 fun DocContext.tap(modifier: Modifier, ref: ActionRef?, hold: ActionRef? = null): Modifier {
     var out = modifier
+
     if (ref != null) {
         val meta = meta(ref)
         out = out.onClick { hostAction(TAP, meta) }
     }
+
     if (hold != null) {
         val meta = meta(hold)
         out = out.onLongClick { hostAction(TAP, meta) }
     }
+
     return out
 }
 
@@ -104,10 +107,13 @@ fun DocContext.icon(
     // Pixel coordinates, not a canvas scale of the 24-grid. On Android 8 the scale is a bitmap stretch.
     val iconPath = path(name, scale = px / ICON_VIEWPORT)
     var modifier = Modifier.size(px, px)
+
     if (visible != null) modifier = modifier.visibility(visible)
+
     rcScope.Canvas(modifier) {
         save {
-            motion?.angle?.let { rotate(it, (px / 2f).rf, (px / 2f).rf) }
+            motion?.angle?.let { rotate(angle = it, centerX = (px / 2f).rf, centerY = (px / 2f).rf) }
+
             // Paint is shared for the whole document. The dial's gradient stays installed
             // until cleared, so icons drawn later (nav, modes) fill with it and look grey.
             paint {
@@ -117,6 +123,7 @@ fun DocContext.icon(
                 antiAlias(true)
                 style(RcPaintStyle.Fill)
             }
+
             drawPath(iconPath)
         }
     }
@@ -133,15 +140,20 @@ fun DocContext.weatherStateIcon(
     fallbackColor: RcColor = role(Role.INK),
 ) {
     val pieces = HaWeatherIcons.pieces(condition, nightTime)
+
     if (pieces == null) {
-        icon(Present.weatherIcon(condition), sizeDp, fallbackColor)
+        icon(name = Present.weatherIcon(condition), sizeDp = sizeDp, color = fallbackColor)
+
         return
     }
+
     val px = units.px(sizeDp)
     val pathScale = px / HaWeatherIcons.VIEWPORT
+
     val layers = pieces.map { piece ->
         path(rawSvg = piece.path, scale = pathScale) to fixed(HaWeatherIcons.color(piece.layer))
     }
+
     rcScope.Canvas(Modifier.size(px, px)) {
         save {
             for ((iconPath, color) in layers) {
@@ -152,6 +164,7 @@ fun DocContext.weatherStateIcon(
                     antiAlias(true)
                     style(RcPaintStyle.Fill)
                 }
+
                 drawPath(iconPath)
             }
         }
@@ -161,9 +174,11 @@ fun DocContext.weatherStateIcon(
 /** An icon that shows [on] when the entity is on and [off] otherwise, both drawn and one hidden. */
 fun DocContext.toggleIcon(entityId: String, off: String, on: String?, sizeDp: Float, color: RcColor) {
     if (on == null || on == off) {
-        icon(off, sizeDp, color)
+        icon(name = off, sizeDp = sizeDp, color = color)
+
         return
     }
+
     rcScope.Box(Modifier.size(units.px(sizeDp), units.px(sizeDp))) {
         this@toggleIcon.icon(
             name = off,
@@ -171,6 +186,7 @@ fun DocContext.toggleIcon(entityId: String, off: String, on: String?, sizeDp: Fl
             color = color,
             visible = int(Vars.entity(entityId, Vars.KEY_OFF)),
         )
+
         this@toggleIcon.icon(
             name = on,
             sizeDp = sizeDp,
@@ -190,16 +206,20 @@ fun DocContext.spinner(sizeDp: Float, color: RcColor, visible: RcInteger? = null
     val inset = px * SPINNER_INSET_RATIO
     val stroke = px * SPINNER_STROKE_RATIO
     var modifier = Modifier.size(px, px)
+
     if (visible != null) modifier = modifier.visibility(visible)
+
     rcScope.Canvas(modifier) {
         save {
-            rotate(continuousSeconds() * SPINNER_DEG_PER_SEC, mid.rf, mid.rf)
+            rotate(angle = continuousSeconds() * SPINNER_DEG_PER_SEC, centerX = mid.rf, centerY = mid.rf)
+
             paint {
                 color(color)
                 style(RcPaintStyle.Stroke)
                 strokeWidth(stroke)
                 strokeCap(RcStrokeCap.Round)
             }
+
             drawArc(
                 left = inset,
                 top = inset,
@@ -268,26 +288,31 @@ fun DocContext.key(
 ) {
     var box = modifier.height(units.px(heightDp))
     box = if (widthDp != null) box.width(units.px(widthDp)) else box
+
     box = box.clip(
         rounded(if (round) heightDp / 2f else heightDp / KEY_CORNER_DIVISOR),
     ).background(bg)
+
     box = tap(box, ref)
     // Fixed padding can leave less room than the icon in small, square keys.
     val horizontalPadding = if (text == null) 0f else units.px(KEY_PADDING_DP)
     val padded = box.padding(start = horizontalPadding, top = 0f, end = horizontalPadding, bottom = 0f)
+
     rcScope.Row(
-        padded,
+        modifier = padded,
         horizontal = RcRowHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,
     ) {
         if (icon != null) {
             this@key.icon(
-                icon,
-                if (text == null) heightDp * KEY_ICON_ONLY_RATIO else KEY_ICON_DP,
-                ink,
+                name = icon,
+                sizeDp = if (text == null) heightDp * KEY_ICON_ONLY_RATIO else KEY_ICON_DP,
+                color = ink,
             )
         }
+
         if (icon != null && text != null) Spacer(Modifier.width(this@key.units.px(KEY_ICON_GAP_DP)))
+
         if (text != null) this@key.label(text = text, sp = Type.BODY, color = ink, weight = Weight.MEDIUM)
     }
 }
@@ -297,13 +322,15 @@ fun DocContext.initials(name: String, sizeDp: Float, bg: RcColor, ink: RcColor) 
     val letters = name.split(
         ' ',
     ).filter { it.isNotBlank() }.take(2).joinToString("") { it.take(1).uppercase() }
+
     val circle = Modifier.size(
         units.px(sizeDp),
         units.px(sizeDp),
     ).clip(rounded(sizeDp / 2f)).background(fixed(0xFF000000.toInt())).padding(1f)
+
     rcScope.Box(circle) {
         Box(
-            Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize()
                 .clip(this@initials.rounded((sizeDp / 2f - 1f / units.density).coerceAtLeast(0f)))
                 .background(bg),
             horizontal = RcHorizontalPositioning.Center,

@@ -74,11 +74,13 @@ internal val PREVIEW_DEVICE_SERIES = listOf(
 @Composable
 internal fun ElectricityChart(series: EnergyBarSeries) {
     val values = series.values.ifEmpty { listOf(0.0) }
+
     val column = rememberLineComponent(
         fill = fill(LocalEnergyColors.current.accent),
         thickness = COLUMN_THICKNESS_DP.dp,
         shape = CorneredShape.rounded(allPercent = COLUMN_CORNER_PERCENT),
     )
+
     EnergyColumnChartHost(
         columnProvider = ColumnCartesianLayer.ColumnProvider.series(column),
         mergeMode = { ColumnCartesianLayer.MergeMode.grouped() },
@@ -104,6 +106,7 @@ internal fun DevicesStackedChart(series: List<EnergyNamedSeries>) {
             )
         }
     }
+
     EnergyColumnChartHost(
         columnProvider = ColumnCartesianLayer.ColumnProvider.series(columns),
         mergeMode = { ColumnCartesianLayer.MergeMode.stacked() },
@@ -141,6 +144,7 @@ internal fun EnergyColumnChartHost(
     modifier: Modifier,
 ) {
     val axisLabel = rememberAxisLabelComponent(color = LocalEnergyColors.current.inkDim)
+
     val chart = rememberCartesianChart(
         rememberColumnCartesianLayer(
             columnProvider = columnProvider,
@@ -150,10 +154,12 @@ internal fun EnergyColumnChartHost(
         startAxis = VerticalAxis.rememberStart(label = axisLabel),
         bottomAxis = HorizontalAxis.rememberBottom(label = axisLabel),
     )
+
     if (LocalInspectionMode.current) {
         val model = remember(producerKeys) {
             CartesianChartModel(buildModel())
         }
+
         CartesianChartHost(
             chart = chart,
             model = model,
@@ -161,9 +167,11 @@ internal fun EnergyColumnChartHost(
         )
     } else {
         val modelProducer = remember { CartesianChartModelProducer() }
+
         LaunchedEffect(producerKeys) {
             modelProducer.runTransaction(updateProducer)
         }
+
         CartesianChartHost(
             chart = chart,
             modelProducer = modelProducer,
@@ -209,6 +217,7 @@ private fun EnergyColumnChartHostPreview() {
                 thickness = COLUMN_THICKNESS_DP.dp,
                 shape = CorneredShape.rounded(allPercent = COLUMN_CORNER_PERCENT),
             )
+
             EnergyColumnChartHost(
                 columnProvider = ColumnCartesianLayer.ColumnProvider.series(column),
                 mergeMode = { ColumnCartesianLayer.MergeMode.grouped() },

@@ -35,6 +35,7 @@ class PlayerApplication : Application() {
 
     private fun initializeLogging() {
         Timber.plant(appLog)
+
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }

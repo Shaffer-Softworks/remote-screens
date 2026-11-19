@@ -61,22 +61,29 @@ class PictureRepository(
      */
     suspend fun load(slot: PictureSlot, states: Map<String, EntityState>): ByteArray? {
         val cacheKey = loadCacheKey(slot, states)
+
         while (true) {
             val existing = inflightLoads[cacheKey]
+
             if (existing != null) return existing.await()
+
             val created = CompletableDeferred<ByteArray?>()
+
             if (inflightLoads.putIfAbsent(cacheKey, created) != null) continue
+
             try {
                 created.complete(loadOnce(slot, states))
             } finally {
                 inflightLoads.remove(cacheKey, created)
             }
+
             return created.await()
         }
     }
 
     private fun loadCacheKey(slot: PictureSlot, states: Map<String, EntityState>): String {
         val source = sourceKey(slot, states) ?: slot.source
+
         return "$source|${slot.widthPx}x${slot.heightPx}|${slot.crop}|${slot.round}"
     }
 
@@ -87,6 +94,7 @@ class PictureRepository(
             slot.source.startsWith(MAP_SOURCE_PREFIX) -> {
                 val style = slot.source.removePrefix(MAP_SOURCE_PREFIX).substringBefore(':')
                 val people = mapEntityIds(slot).mapNotNull { states[it] }
+
                 mapRenderer.draw(
                     entities = people,
                     width = slot.widthPx,
@@ -98,6 +106,7 @@ class PictureRepository(
                 QrBitmaps.encode(qrPayload(slot.source, states), maxOf(slot.widthPx, slot.heightPx))
             else -> fetchImage(slot, states)
         }
+
         image?.let { ImageEncoder.encode(
             ImageEncoder.fit(source = it, width = slot.widthPx, height = slot.heightPx, isCropped = slot.crop),
             slot.round,
@@ -112,6 +121,7 @@ class PictureRepository(
         } else {
             slot.source
         }
+
         val bytes = url?.let { if (it.startsWith(
                 "http",
             )) {
@@ -119,6 +129,7 @@ class PictureRepository(
         } else {
             homeAssistant.fetch(it)
         } }
+
         return bytes?.let { ImageIO.read(ByteArrayInputStream(it)) }
     }
 
@@ -128,6 +139,7 @@ class PictureRepository(
     /** Static text after `qr:`, or an entity's state when the source is `qr:@entity.id`. */
     private fun qrPayload(source: String, states: Map<String, EntityState>): String {
         val payload = source.removePrefix(QR_SOURCE_PREFIX)
+
         return if (payload.startsWith("@")) {
             states[payload.removePrefix("@")]?.state.orEmpty()
         } else {
@@ -137,6 +149,7 @@ class PictureRepository(
 
     private suspend fun fetchUrl(url: String): ByteArray? {
         val response = httpClient.get(url) { header("User-Agent", USER_AGENT) }
+
         return if (response.status.isSuccess()) response.readRawBytes() else null
     }
 
@@ -145,13 +158,17 @@ class PictureRepository(
         val key = "$zoom/$x/$y"
         tileCache[key]?.let { return it }
         val url = tileUrl.replace("{z}", "$zoom").replace("{x}", "$x").replace("{y}", "$y")
+
         val image = runCatching { fetchUrl(
             url,
         ) }.getOrNull()?.let { ImageIO.read(ByteArrayInputStream(it)) }
+
         if (image != null) {
             if (tileCache.size > MAX_CACHED_TILES) tileCache.clear()
+
             tileCache[key] = image
         }
+
         return image
     }
 }

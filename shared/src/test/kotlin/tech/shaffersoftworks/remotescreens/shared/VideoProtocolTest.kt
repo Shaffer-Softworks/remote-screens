@@ -15,6 +15,7 @@ class VideoProtocolTest {
         )
 
         assertEquals(video, Protocol.decodeServer(Protocol.encode(video)))
+
         assertEquals(
             """{"type":"video","slot":"alert","rev":7,"componentId":6029312,""" +
                 """"path":"/stream/hls/abc/master_playlist.m3u8","crop":true}""",
@@ -43,6 +44,7 @@ class VideoProtocolTest {
         )
 
         assertEquals(state, Protocol.decodePlayer(Protocol.encode(state)))
+
         assertEquals(
             PlayerMessage.DeviceState(awake = false, page = 0),
             Protocol.decodePlayer(

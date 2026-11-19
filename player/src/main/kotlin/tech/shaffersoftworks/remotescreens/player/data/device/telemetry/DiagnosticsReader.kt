@@ -44,14 +44,17 @@ class DiagnosticsReader @Inject constructor(
             null,
             IntentFilter(Intent.ACTION_BATTERY_CHANGED),
         ) ?: return null
+
         val temperatureTenths = batteryIntent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, Int.MIN_VALUE)
         val voltageMv = batteryIntent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1)
         val currentMicroamps = batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+
         val cycles = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             batteryIntent.getIntExtra(CYCLE_COUNT_EXTRA, -1)
         } else {
             -1
         }
+
         return BatteryTelemetry(
             health = healthName(batteryIntent.getIntExtra(BatteryManager.EXTRA_HEALTH, -1)),
             temperatureC = temperatureTenths.takeIf { it != Int.MIN_VALUE }?.let { it / TENTHS_PER_DEGREE },
@@ -66,6 +69,7 @@ class DiagnosticsReader @Inject constructor(
     fun readNetwork(): NetworkTelemetry? {
         @Suppress("DEPRECATION")
         val wifiInfo = wifiManager?.takeIf { it.isWifiEnabled }?.connectionInfo?.takeIf { it.networkId != -1 }
+
         val ipAddress = runCatching {
             connectivityManager?.getLinkProperties(connectivityManager.activeNetwork)
                 ?.linkAddresses
@@ -73,7 +77,9 @@ class DiagnosticsReader @Inject constructor(
                 ?.firstOrNull { it is Inet4Address && !it.isLoopbackAddress }
                 ?.hostAddress
         }.getOrNull()
+
         if (wifiInfo == null && ipAddress == null) return null
+
         return NetworkTelemetry(
             ssid = wifiInfo?.ssid?.removeSurrounding("\"")?.takeIf { it.isNotBlank() && it != UNKNOWN_SSID },
             bssid = wifiInfo?.bssid?.takeIf { it != HIDDEN_BSSID },
@@ -87,9 +93,11 @@ class DiagnosticsReader @Inject constructor(
     fun readSystem(): SystemTelemetry {
         val storage = runCatching { StatFs(Environment.getDataDirectory().path) }.getOrNull()
         val memoryInfo = ActivityManager.MemoryInfo().also { activityManager?.getMemoryInfo(it) }
+
         val appVersionName = runCatching {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName
         }.getOrNull()
+
         return SystemTelemetry(
             storageFreeBytes = storage?.availableBytes,
             storageTotalBytes = storage?.totalBytes,

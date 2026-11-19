@@ -40,6 +40,7 @@ class RemoteDocumentControllerTest {
                 posted.add(invocation.getArgument(0))
                 true
             }
+
             whenever(player.postOnAnimation(any())).doAnswer { invocation ->
                 posted.add(invocation.getArgument(0))
                 Unit
@@ -204,16 +205,19 @@ class RemoteDocumentControllerTest {
 
     private fun document(revision: Int): SlotDocument {
         val profiles = RcProfiles.PROFILE_ANDROIDX or RcProfiles.PROFILE_EXPERIMENTAL
+
         val profile = Profile(CoreDocument.DOCUMENT_API_LEVEL, profiles, JvmRcPlatformServices()) {
                 info, writerProfile, callback ->
             RemoteComposeWriter(info, null, writerProfile, callback)
         }
+
         val bytes = createRcBuffer(
             RcProfile(profile),
             RemoteComposeWriter.HTag(Header.DOC_WIDTH, 200),
             RemoteComposeWriter.HTag(Header.DOC_HEIGHT, 200),
             RemoteComposeWriter.HTag(Header.DOC_PROFILES, profiles),
         ) { Box(Modifier.size(200f, 200f)) }
+
         return SlotDocument(revision, bytes, mutableMapOf())
     }
 }

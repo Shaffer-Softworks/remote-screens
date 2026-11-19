@@ -39,12 +39,14 @@ class CameraStreamService(
     /** The path on the player port that plays [entityId], or null when the camera cannot stream. */
     suspend fun hlsPath(entityId: String): String? {
         forgetIdle()
+
         return cachedPath(entityId) ?: newPath(entityId)
     }
 
     /** A still-warm token for [entityId], or null when the cache misses or the token was forgotten. */
     private fun cachedPath(entityId: String): String? {
         val active = byEntity[entityId] ?: return null
+
         return if (tokens.containsKey(active.token)) {
             tokens[active.token] = now()
             "$PLAYER_PATH/${active.token}/${active.file}"
@@ -60,6 +62,7 @@ class CameraStreamService(
         val (token, file) = match.destructured
         tokens[token] = now()
         byEntity[entityId] = ActiveStream(token, file)
+
         return "$PLAYER_PATH/$token/$file"
     }
 
@@ -67,16 +70,17 @@ class CameraStreamService(
     private suspend fun startStream(entityId: String): String? {
         val result = try {
             homeAssistant.send(CameraStream(entityId))
+        } catch (e: TimeoutCancellationException) {
+            logger.info("Home Assistant did not start a stream for {}: {}", entityId, e.message)
+            null
         } catch (e: HomeAssistantException) {
             logger.info("{} has no stream: {}", entityId, e.message)
             null
         } catch (e: IllegalStateException) {
             logger.info("No stream for {}: {}", entityId, e.message)
             null
-        } catch (e: TimeoutCancellationException) {
-            logger.info("Home Assistant did not start a stream for {}: {}", entityId, e.message)
-            null
         }
+
         return result?.url
     }
 
@@ -91,24 +95,31 @@ class CameraStreamService(
         onBody: suspend (contentType: String?, body: ByteReadChannel) -> Unit,
     ): Int? {
         forgetIdle()
+
         if (tokens.computeIfPresent(
                 token,
             ) { _, _ -> now() } == null || !STREAM_FILE.matches(file)) {
             logger.info("Refused stream file {}: unknown token or not a stream file", file)
+
             return null
         }
+
         val suffix = if (query.isEmpty()) "" else "?$query"
         val status = homeAssistant.stream("/api/hls/$token/$file$suffix", onBody)
+
         if (status !in SUCCESS_STATUSES) logger.info("Home Assistant answered {} for stream file {}", status, file)
+
         return status
     }
 
     private fun forgetIdle() {
         val oldest = now() - IDLE_STREAM_MINUTES * MILLISECONDS_PER_MINUTE
         val dropped = mutableSetOf<String>()
+
         tokens.entries.removeIf { (token, lastUsed) ->
             (lastUsed < oldest).also { if (it) dropped += token }
         }
+
         if (dropped.isNotEmpty()) {
             byEntity.entries.removeIf { (_, active) -> active.token in dropped }
         }

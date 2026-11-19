@@ -31,6 +31,7 @@ class ScreenServiceTest {
     fun importMakesANewScreenAndLeavesTheOriginalTablet() {
         val (repository, service) = opened()
         val original = screen(id = "keep", name = "Kitchen")
+
         repository.update { layout ->
             layout.copy(
                 screens = listOf(original),
@@ -96,6 +97,7 @@ class ScreenServiceTest {
     @Test
     fun importDropsABareBackgroundToken() {
         val (_, service) = opened()
+
         val original = screen().copy(
             pages = listOf(Page(id = "home", title = "Home", backgroundImage = "1700000000000")),
         )
@@ -109,6 +111,7 @@ class ScreenServiceTest {
     fun importRestoresAnEmbeddedBackground() {
         val opened = opened()
         val jpeg = sampleJpeg()
+
         val original = screen().copy(
             pages = listOf(Page(id = "home", title = "Home")),
         )
@@ -135,6 +138,7 @@ class ScreenServiceTest {
     @Test
     fun importSkipsAnInvalidEmbeddedBackground() {
         val opened = opened()
+
         val imported = opened.service.importScreen(
             file(
                 screen().copy(pages = listOf(Page(id = "home", title = "Home"))),
@@ -155,18 +159,23 @@ class ScreenServiceTest {
     fun importRejectsAFileItCannotUse() {
         val opened = opened()
         val sample = screen()
+
         assertFailsWith<BadRequestException> {
             opened.service.importScreen(file(sample).copy(kind = "layout"))
         }
+
         assertFailsWith<BadRequestException> {
             opened.service.importScreen(file(sample).copy(schemaVersion = SCHEMA_VERSION + 1))
         }
+
         assertFailsWith<BadRequestException> {
             opened.service.importScreen(file(sample.copy(pages = emptyList())))
         }
+
         assertFailsWith<SerializationException> {
             ApiJson.decodeFromString(ScreenFile.serializer(), """{"kind":"${ScreenFile.KIND}"}""")
         }
+
         assertTrue(opened.repository.layout.value.screens.isEmpty())
     }
 
@@ -180,6 +189,7 @@ class ScreenServiceTest {
         val directory = Files.createTempDirectory("screen-import").toFile()
         val repository = LayoutRepository(directory)
         val store = BackgroundStore(directory)
+
         return Opened(repository, ScreenService(repository, store), store)
     }
 
@@ -215,6 +225,7 @@ class ScreenServiceTest {
         graphics.dispose()
         val output = ByteArrayOutputStream()
         check(ImageIO.write(image, "jpg", output))
+
         return output.toByteArray()
     }
 }

@@ -36,6 +36,7 @@ class CalendarAgendaStoreTest {
     @Test
     fun createSendsTheRpiServiceBody() = runBlocking {
         val agendas = loadedAgenda()
+
         val result = CalendarMutations(ha, agendas).create(
             PlayerMessage.CalendarCreate(
                 tileId = "cal",
@@ -49,6 +50,7 @@ class CalendarAgendaStoreTest {
                 endTime = "18:30",
             ),
         )
+
         assertIs<AgendaMutation.Accepted>(result)
         val (domain, service, data) = ha.calls.last()
         assertEquals("calendar", domain)
@@ -62,6 +64,7 @@ class CalendarAgendaStoreTest {
     @Test
     fun deleteSendsTheCalendarEventCommand() = runBlocking {
         val agendas = loadedAgenda()
+
         val result = CalendarMutations(ha, agendas).delete(
             PlayerMessage.CalendarDelete(
                 tileId = "cal",
@@ -70,6 +73,7 @@ class CalendarAgendaStoreTest {
                 recurrenceId = "r1",
             ),
         )
+
         assertIs<AgendaMutation.Accepted>(result)
         val (type, payload) = ha.commands.last()
         assertEquals("calendar/event/delete", type)
@@ -82,6 +86,7 @@ class CalendarAgendaStoreTest {
     fun createRejectsACalendarThatCannotBeWritten() = runBlocking {
         val agendas = loadedAgenda()
         val mutations = CalendarMutations(ha, agendas)
+
         val unknown = mutations.create(
             PlayerMessage.CalendarCreate(
                 tileId = "cal",
@@ -91,6 +96,7 @@ class CalendarAgendaStoreTest {
                 endDate = "2026-07-15",
             ),
         )
+
         val holidays = mutations.create(
             PlayerMessage.CalendarCreate(
                 tileId = "cal",
@@ -100,6 +106,7 @@ class CalendarAgendaStoreTest {
                 endDate = "2026-07-15",
             ),
         )
+
         assertIs<AgendaMutation.Rejected>(unknown)
         assertIs<AgendaMutation.Rejected>(holidays)
         assertTrue(ha.calls.none { it.first == "calendar" })
@@ -114,6 +121,7 @@ class CalendarAgendaStoreTest {
                 uid = "demo-holiday",
             ),
         )
+
         assertIs<AgendaMutation.Rejected>(result)
         assertTrue(ha.commands.none { it.first == "calendar/event/delete" })
     }
@@ -121,6 +129,7 @@ class CalendarAgendaStoreTest {
     private suspend fun loadedAgenda(): CalendarAgendaStore {
         val agendas = CalendarAgendaStore(ha)
         agendas.snapshot(ha.states.value, ZoneOffset.UTC)
+
         return agendas
     }
 
@@ -130,11 +139,13 @@ class CalendarAgendaStoreTest {
             val home = HangingCalendarList()
             val store = CalendarAgendaStore(home)
             val pulses = MutableStateFlow(0)
+
             val job = launch {
                 pulses.collectLatest {
                     store.snapshot(home.states.value, ZoneOffset.UTC)
                 }
             }
+
             delay(PULSE_GAP_MS.milliseconds)
             pulses.value = 1
             delay(PULSE_GAP_MS.milliseconds)
@@ -152,6 +163,7 @@ private const val HANG_MS = 60_000L
 private class HangingCalendarList(private val inner: DemoHome = DemoHome()) : HomeAssistant by inner {
     override suspend fun fetch(path: String): ByteArray? {
         if (isCalendarListPath(path)) delay(HANG_MS.milliseconds)
+
         return inner.fetch(path)
     }
 }
