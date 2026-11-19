@@ -58,6 +58,7 @@ import tech.shaffersoftworks.remotescreens.shared.TopBar
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.PresenceState
+import tech.shaffersoftworks.remotescreens.shared.Tile
 
 private const val CLOCK_WIDTH_SHARE = 0.42f
 private const val NAV_BOTH_ICON_SHARE = 0.4f
@@ -388,7 +389,7 @@ object ScreenRenderer {
         }
     }
 
-    private fun DocContext.tileUsable(tile: tech.shaffersoftworks.remotescreens.shared.Tile): Boolean {
+    private fun DocContext.tileUsable(tile: Tile): Boolean {
         val spec = Catalogue.of(tile.effectiveKind())
         return spec != null && (tile.entityId != null || !spec.needsEntity)
     }
@@ -397,7 +398,13 @@ object ScreenRenderer {
      * The RPI header: the time and date on a dark block at the left, the outdoor temperature and who is home at the
      * right. A hidden page puts a Back key and its title in between. Text and icons grow and shrink with the bar.
      */
-    private fun DocContext.topBar(screen: Screen, page: Page, spec: GridSpec, back: Boolean, home: Int) {
+    private fun DocContext.topBar(
+        screen: Screen,
+        page: Page,
+        spec: GridSpec,
+        back: Boolean,
+        home: Int
+    ) {
         val bar = screen.topBar
         val ink = role(Role.INK)
         val layoutScale = (spec.topBar / Grid.TOP_BAR).coerceIn(TOP_BAR_MIN_SCALE, LAYOUT_SCALE_MAX)
@@ -410,6 +417,7 @@ object ScreenRenderer {
         val clockBackground = bar.clockBackground?.let { paint(it) } ?: role(Role.HEADER_DARK)
         val keyDp = minOf(BACK_KEY_BASE_DP * layoutScale, spec.topBar - BACK_KEY_INSET_DP)
         val drawer = screen.drawer
+
         rcScope.Row(
             Modifier.size(units.px(spec.widthDp), units.px(spec.topBar)).background(background),
             vertical = RcVerticalPositioning.Center,

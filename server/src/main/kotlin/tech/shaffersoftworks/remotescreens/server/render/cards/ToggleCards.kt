@@ -32,6 +32,8 @@ import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
 import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.padding
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
+import java.util.Locale
 
 internal fun DocContext.toggleCard(entityId: String, entityState: EntityState?) {
     spacer(CardChrome.PANEL_PAD_DP)
@@ -77,6 +79,12 @@ internal fun DocContext.sirenCard(entityId: String, entityState: EntityState?) {
     }
 }
 
+internal fun cleaningModeEntityId(vacuumId: String): String =
+        "select.${EntityId(vacuumId).objectId}_cleaning_mode"
+
+internal fun vaccumBatteryEntityId(vacuumId: String): String =
+    "sensor.${EntityId(vacuumId).objectId}_cleaning_mode"
+
 internal fun DocContext.vacuumCard(
     entityId: String,
     entityState: EntityState?,
@@ -112,11 +120,31 @@ internal fun DocContext.vacuumCard(
     }
     spacer(CardChrome.PANEL_CORNER_DP)
     vacuumLocateRow(entityId = entityId, uiTileId = uiTileId, ui = ui)
+
     val speeds = entityState?.vacuum?.fanSpeedList.orEmpty()
     if (speeds.isNotEmpty()) {
         structural(entityId) { it?.vacuum?.fanSpeedList?.joinToString() ?: "" }
         section(i18n.t("ui.suction"))
-        flowKeys(entityId, "fan_speed", speeds.map { it to it }) { it.vacuum.fanSpeed }
+        flowKeys(
+            entityId = entityId,
+            verb = "fan_speed",
+            choices = speeds.map { it to i18n.optionLabel(it) }) {
+            it.vacuum.fanSpeed
+        }
+    }
+
+    val cleaningModeId = cleaningModeEntityId(entityId)
+    val cleaningMode = cleaningModeId.let { states[it] }
+    val cleaningModes = cleaningMode?.input?.options.orEmpty()
+    if (cleaningModes.isNotEmpty()) {
+        structural(cleaningModeId) { it?.input?.options?.joinToString() ?: "" }
+        section(i18n.t("ui.cleaning_mode"))
+        flowKeys(
+            entityId = cleaningModeId,
+            verb = "option",
+            choices = cleaningModes.map { it to i18n.optionLabel(it)  }) {
+            it.state
+        }
     }
 }
 

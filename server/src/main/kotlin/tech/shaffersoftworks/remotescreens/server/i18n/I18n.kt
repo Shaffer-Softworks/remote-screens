@@ -80,6 +80,11 @@ class I18n(
     fun shortDate(time: ZonedDateTime): String =
         time.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale))
 
+    fun optionLabel(value: String): String =
+        value.replace('_', ' ')
+            .lowercase(locale)
+            .replaceFirstChar { it.titlecase(locale) }
+
     companion object {
         val SUPPORTED = listOf("en", "nl", "de", "fr", "es", "it", "pl", "pt")
 
