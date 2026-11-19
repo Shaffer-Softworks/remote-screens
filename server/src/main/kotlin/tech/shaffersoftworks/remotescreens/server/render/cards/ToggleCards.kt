@@ -150,6 +150,18 @@ internal fun DocContext.vacuumCard(
             ) {
                 it.state
             }
+    val cleaningModeId = cleaningModeEntityId(entityId)
+    val cleaningMode = cleaningModeId.let { states[it] }
+    val cleaningModes = cleaningMode?.input?.options.orEmpty()
+    if (cleaningModes.isNotEmpty()) {
+        structural(cleaningModeId) { it?.input?.options?.joinToString() ?: "" }
+        section(i18n.t("ui.cleaning_mode"))
+        flowKeys(
+            entityId = cleaningModeId,
+            verb = "option",
+            choices = cleaningModes.map { it to i18n.optionLabel(it) },
+        ) {
+            it.state
         }
     }
 }
