@@ -91,6 +91,7 @@
   "ui.rooms_clean_many": "Clean {count} rooms",
   "ui.rooms_clears_after_start": "Selection clears after start",
   "ui.suction": "Suction",
+  "ui.cleaning_mode": "Cleaning mode",
   "ui.battery": "Battery {value}",
   "ui.code": "Code",
   "ui.clear": "Clear",

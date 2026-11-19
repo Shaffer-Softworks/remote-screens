@@ -36,6 +36,7 @@
   "ui.rooms_clean_many": "Sprzątaj pokoje: {count}",
   "ui.rooms_clears_after_start": "Wybór zostanie wyczyszczony po starcie",
   "ui.suction": "Siła ssania",
+  "ui.cleaning_mode": "Tryb czyszczenia",
   "ui.battery": "Bateria {value}",
   "ui.code": "Kod",
   "ui.clear": "Wyczyść",

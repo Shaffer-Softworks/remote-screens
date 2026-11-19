@@ -36,6 +36,7 @@
   "ui.rooms_clean_many": "{count} kamers reinigen",
   "ui.rooms_clears_after_start": "Keuze wordt na de start gewist",
   "ui.suction": "Zuigkracht",
+  "ui.cleaning_mode": "Reinigingsmodus",
   "ui.battery": "Accu {value}",
   "ui.code": "Code",
   "ui.clear": "Wissen",

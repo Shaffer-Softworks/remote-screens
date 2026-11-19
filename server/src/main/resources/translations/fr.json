@@ -36,6 +36,7 @@
   "ui.rooms_clean_many": "Nettoyer {count} pièces",
   "ui.rooms_clears_after_start": "La sélection s'efface au démarrage",
   "ui.suction": "Aspiration",
+  "ui.cleaning_mode": "Mode de nettoyage",
   "ui.battery": "Batterie {value}",
   "ui.code": "Code",
   "ui.clear": "Effacer",

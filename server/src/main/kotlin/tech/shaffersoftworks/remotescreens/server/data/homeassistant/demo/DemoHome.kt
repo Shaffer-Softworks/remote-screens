@@ -650,7 +650,7 @@ class DemoHome : HomeAssistant {
                     "friendly_name" to "Robot",
                     "battery_level" to 100,
                     "fan_speed" to "Standard",
-                    "fan_speed_list" to listOf("Quiet", "Standard", "Turbo", "Max"),
+                    "fan_speed_list" to listOf("Off", "Quiet", "Standard", "Turbo", "Max", "Max plus"),
                     "room_list" to listOf(
                         "Living Room",
                         "Kitchen",
