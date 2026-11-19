@@ -11,6 +11,7 @@ import androidx.compose.remote.core.operations.layout.modifiers.ScrollModifierOp
 import androidx.compose.remote.creation.JvmRcPlatformServices
 import androidx.compose.remote.creation.RemoteComposeWriter
 import androidx.compose.remote.creation.dsl.Modifier
+import androidx.compose.remote.creation.dsl.RcHeaderTag
 import androidx.compose.remote.creation.dsl.RcProfile
 import androidx.compose.remote.creation.dsl.componentId
 import androidx.compose.remote.creation.dsl.createRcBuffer
@@ -88,11 +89,11 @@ class DocumentScrollTest {
     }
 
     private fun scrollDocument(): ByteArray = createRcBuffer(
-        RcProfile(profile),
-        RemoteComposeWriter.HTag(Header.DOC_WIDTH, WIDTH),
-        RemoteComposeWriter.HTag(Header.DOC_HEIGHT, HEIGHT),
-        RemoteComposeWriter.HTag(Header.DOC_CONTENT_DESCRIPTION, "scroll"),
-        RemoteComposeWriter.HTag(Header.DOC_PROFILES, PROFILES),
+        profile = RcProfile(profile),
+        RcHeaderTag.docWidth(WIDTH),
+        RcHeaderTag.docHeight(HEIGHT),
+        RcHeaderTag.contentDescription("scroll"),
+        RcHeaderTag.raw(tag = Header.DOC_PROFILES, value = PROFILES),
     ) {
         Column(Modifier.size(LIST_SIZE, LIST_SIZE).componentId(LIST_ID).verticalScroll()) {
             Box(Modifier.size(LIST_SIZE, LIST_SIZE * TALL))

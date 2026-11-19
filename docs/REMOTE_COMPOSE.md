@@ -1,8 +1,12 @@
 # Remote Compose: what this project leans on
 
-Remote Screens builds its screens with `androidx.compose.remote` **1.0.0-alpha22**. The library is alpha, so this
+Remote Screens builds its screens with `androidx.compose.remote` **1.0.0-alpha24**. The library is alpha, so this
 page records the parts of its API we depend on, what the phase 0 spike proved, and the workarounds. When the
-library is upgraded, check each item here.
+library is upgraded, check each item here. Documents are written with the creation DSL (`Rc.document`) and played
+with `remote-player-view`.
+
+`CoreDocument.DOCUMENT_API_LEVEL` is still 8, the same value as alpha23. Server and player still move together:
+the creation DSL and the player internals changed in this release.
 
 All creation calls go through `server/.../render/Rc.kt` and the tile renderers; all player calls go through
 `player/.../remote/RemoteDocumentController.kt`.
@@ -12,22 +16,22 @@ All creation calls go through `server/.../render/Rc.kt` and the tile renderers; 
 - `remote-creation-jvm` brings `JvmRcPlatformServices`, so the add-on builds documents without Android.
 - The profile is `PROFILE_ANDROIDX | PROFILE_EXPERIMENTAL` at `CoreDocument.DOCUMENT_API_LEVEL`, with a plain
   `RemoteComposeWriter` as the factory, and the same value in the `DOC_PROFILES` header. Long press
-  (`MODIFIER_MULTI_CLICK`, operation 83) and `Flow` are still experimental in alpha22; without the flag the writer
-  throws "Operation 83 is not supported for this version".
-- **`drawTextOnCircle` can't be used.** alpha21 adds it to the DSL, but operation 57 is still in no profile's table, so
-  the writer throws "Operation 57 is not supported for this version" and our player could not read it anyway.
-  Clock numbers and gauge captions use `drawTextAnchored` (pan 0, 0 centres the text on the point).
+  (`MODIFIER_MULTI_CLICK`, operation 83) and `Flow` stay on the experimental profile.
+- **`drawTextOnCircle` still can't be used.** `RcSpikeTest` builds a tiny document with it against the profile
+  above and the writer still rejects operation 57 ("not supported"). Clock numbers and gauge captions stay on
+  `drawTextAnchored` (pan 0, 0 centres the text on the point). That call draws text at a point; `drawTextOnCircle`
+  warps a string along an arc, so accepting the operation would not by itself replace the clock numerals.
 - Texts for canvas operations (`drawTextAnchored` takes an `RcText`, not a string) are declared through
   `DocContext.literal`, so they are hoisted like every other declaration.
-- **Declarations inside a layout component are lost.** A `remoteNamedText` (or colour, path, text) declared inside
-  a `Box`'s content is written, but `CoreDocument` drops it when it reads the document back. `DocContext.build`
-  therefore builds every document twice: a dry run records what the content declares, and the real build declares
-  all of it at the top before the layout. `NestingProbeTest` fails the day the library stops losing them.
-- **Paths.** `JvmRcPlatformServices.pathToFloatArray` accepts only its own `RemotePath`, which is not the
-  `RcPathArrayCreator` that `remotePathData` takes, so every path fails with "Invalid path data". `Rc` wraps the
-  platform services to accept any `RcPathArrayCreator`. The library's SVG parsers know neither relative commands
-  nor `V`/`T` nor numbers like `1-2.5.5`, so `tools/generate_icons.py` rewrites every icon to absolute `M L C Z`
-  and `Rc.path` reads that into a core `RemotePathBase` itself.
+- **Declarations inside a layout component are still lost.** `NestingProbeTest` writes a named string inside a
+  `Box` and reads back an empty name list on alpha24. `DocContext.build` therefore still builds every document
+  twice: a dry run records what the content declares, and the real build declares all of it at the top before the
+  layout. That test fails the day the library keeps the name.
+- **Paths.** `Rc.path` builds an `RcPathData` from absolute `M L C Z`, and `remotePathData` writes it. Alpha24
+  calls `createFloatArray` on that path itself, so the old platform wrapper around `JvmRcPlatformServices` is gone
+  (`IconPathTest` still sees scaled coordinates and an unscaled icon canvas). The library's SVG parsers know
+  neither relative commands nor `V`/`T` nor numbers like `1-2.5.5`, so `tools/generate_icons.py` rewrites every
+  icon to absolute `M L C Z`.
 - `CoreDocument.width` is the measured root layout's width, so it is 0 for a document read on the JVM.
 - The Kotlin DSL (`createRcBuffer { Box { Text(...) } }`, `Modifier.size/padding/background/onClick`) is marked
   `@RestrictTo(LIBRARY_GROUP)`. That is a lint rule for Android; on the JVM it compiles, and we accept the risk.
@@ -43,9 +47,9 @@ Android Studio's **Split** or **Design** view. See [the preview guide](../previe
 - Generation calls the production renderers using demo entities and render data. No server process is required.
 - `snapshot` in `PreviewDocuments.kt` replaces initial named text, integer, float and colour constants with sample values.
   It also supplies clock/battery defaults and synthetic bitmaps. Production documents remain unchanged.
-- The main galleries use the player's native `RemoteComposePlayer`. In alpha22 the official
-  `remote-tooling-preview` / `RemoteDocumentPreview` renderer omitted canvas icons during verification;
-  `ToolingLibraryPreview` remains available for comparison after library upgrades.
+- The main galleries use the player's native `RemoteComposePlayer`. On alpha22 the official
+  `remote-tooling-preview` / `RemoteDocumentPreview` renderer omitted canvas icons; that check was not repeated
+  for alpha24, and `ToolingLibraryPreview` stays a comparison path. Galleries keep the native player.
 - The native player receives its document inside `AndroidView.factory` so Layoutlib initializes canvas paths.
   Gallery canvases use mdpi to match the generated pixel dimensions.
 - Rebuild after server-side edits before refreshing previews. Generated assets and the preview index live under
@@ -59,8 +63,8 @@ Android Studio's **Split** or **Design** view. See [the preview guide](../previe
 - The player overrides it with `setUserLocalString/Int/Color("<name>", value)`; the player adds the `USER:` prefix.
 - An override is sticky until cleared, so the document never sets these itself: every change of a named
   variable comes from the add-on (a state change) or the player (a prediction, a page change).
-- `remoteThemedColor(Int, Int)` still passes the colours as ids in alpha22. Don't use it; the add-on picks the
-  colour of the screen's theme itself and sends it as a named colour.
+- `remoteThemedColor(Int, Int)` still passes the two colours as ids (`light.toShort()`, `dark.toShort()`) on
+  alpha24. Don't use it. The add-on picks the colour of the screen's theme itself and sends it as a named colour.
 - So a theme is the add-on's, not the document's: `PlayerHub` resolves the screen's theme (or its dark theme, in
   dark mode and at night) to a `Palette` (`render/theme/Themes.kt`), and `DocContext` draws fixed colours and computes
   live colours from it. Switching theme rebuilds the document; there is no in-document theme switch.
@@ -68,7 +72,7 @@ Android Studio's **Split** or **Design** view. See [the preview guide](../previe
 ## Compression (since alpha21)
 
 - A document whose header has `COMPRESS = COMPRESSION_DEFLATE` has everything after the header deflated, and
-  alpha22's `RemoteComposeBuffer` inflates it on read. Older players can't read one.
+  the player inflates it on read. Older players that lack the capability can't read one.
 - So the add-on builds documents uncompressed and `PlayerHub` deflates each with `Rc.compress`
   (`Header.compressDocument`) only for a player whose hello lists the `deflate` capability. Documents shrink to
   well under half.
@@ -83,12 +87,16 @@ Android Studio's **Split** or **Design** view. See [the preview guide](../previe
 - `Modifier.onClick { hostAction(id, metadataText) }` reaches the player's `addIdActionListener { id, metadata -> }`.
 - The metadata is a static text `tile|verb|arg` (`ActionRef` in `shared`). A slider is a row of steps, each its
   own action with its value, rather than a drag with a dynamic value. Free-form dials use the same stepped taps;
-  continuous drag value reporting is still unavailable in alpha22.
+  continuous drag value reporting is still unavailable on alpha24.
 - `addIdActionListener` can only be added after a document is set, so the player adds it on every new document.
-- **`Image` drops `onClick`.** Putting the click on the `Image` itself writes no click modifier in alpha22. Free-form
-  camera (and other) images wrap the bitmap in a `Box` that carries the tap, so a tap still opens the card.
-- **`Text` clicks go on a `Box` too.** A click modifier can sit on `Text`/`CoreText` in the document and still miss
-  taps on device; free-form text wraps the label in a `Box` that carries the tap, same as images.
+- **`Image` taps stay on a `Box`.** `imageOnClickIsWrittenOnTheImage` reads a click back on `ImageLayout`, and
+  the same document already had that click on alpha23. The image writer is unchanged through alpha24. A tablet
+  camera never opened its card when the tap sat on the `Image`, so a free-form still keeps the tap on a `Box`.
+  A stream uses that `Box` for the spinner and the live-video id as well.
+- **`Text` clicks stay on a `Box`.** A click modifier can sit on `Text`/`CoreText` in the document and still miss
+  taps on device; free-form text wraps the label in a `Box` that carries the tap. Alpha24's touch-padding change
+  (long press, double click, and cancel coordinates include preceding padding) does not match our order: the tap
+  is applied, then padding.
 - **Live video must not take touches.** The HLS overlay uses a non-interactive `TextureView` in `AndroidView`.
   It sits above its owning document, below later slots, so card/alert/text taps still reach the document.
 
@@ -103,6 +111,9 @@ Android Studio's **Split** or **Design** view. See [the preview guide](../previe
   `RemoteDocumentStack`). A later render must not hide it in that gap. Queued reveals check that their document is
   still current and are invalidated on disposal. The native Energy dashboard is kept across MAIN rebuilds until its
   follow-up message arrives; its chrome colours come from `EnergyDashboard.theme` (screen palette roles).
+- List position is restored by writing the player's private scroll fields (`DocumentScroll`). Alpha24's
+  `scrollByOffset` applies a delta. Restoring a list needs the offset and the maximum, which those fields still
+  hold under the same names, and `DocumentScrollTest` still passes.
 - Overlay bounds come from the active document before drawing. `DocumentOverlay` measures and places children
   in physical document pixels, avoiding a second density conversion. Search uses the add-on's explicit rectangle
   when supplied, because its remote component can be unmeasured.

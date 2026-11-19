@@ -32,14 +32,14 @@ RPI computes `numberOfLightsOn` and the wording, then passes `subText = ""`. Her
 
 - Not a platform dialog. `ScreenRenderer.page` draws tiles, then the nav bar, then `lightsDialogLayer` with `at(0f, 0f)`, so the backdrop and card cover the bars. Drawn inside the tile it sat under the nav bar and never reached the top bar.
 - Backdrop is `role(Role.SCRIM)`. A `fixed(0x99000000)` backdrop did not show on the tablet; use the theme role, as the alarm and entity-card dialogs do.
-- The card scroller has an exact viewport height (`cardH` minus padding), `requiredHeightIn(max)` and a `RectShape` clip, as `MusicPanel`'s lists. Remote Compose ignores `verticalWeight` on a scroller: the content painted past the card from top bar to nav bar. The effect menu is capped the same way.
+- The card scroller has an exact viewport height (`cardH` minus padding), `requiredHeightIn(max)` and an `RcShape.Rectangle` clip, as `MusicPanel`'s lists. Remote Compose ignores `verticalWeight` on a scroller: the content painted past the card from top bar to nav bar. The effect menu is capped the same way.
 - The layout keeps the page's scale (from the tile box) but centres on the screen size.
 
 ## Room and device lists (scroll, Oct 26 2026; bottom bleed Nov 2026)
 
 The lists do scroll. "Sometimes it won't" was a drag that started on a row drawn past the list: that hit the nav bar and changed page. Verified on the BLU M8L (1280×800). Mid-list drag moves the rooms scroller; a press in the bottom nav band (`y` ≳ 700 on 800px) does not scroll and can fire `page` (HOME).
 
-Remote Compose translates a `verticalScroll` column's children and its `clip(RectShape)` does not keep them inside the viewport. `verticalWeight` on a scroller is ignored. An exact height, `requiredHeightIn(max)` and the clip are still required, and they are not enough: after that alone, "Master Bedroom" still painted through "LIGHTING CONTROL".
+Remote Compose translates a `verticalScroll` column's children and its `clip(RcShape.Rectangle)` does not keep them inside the viewport. `verticalWeight` on a scroller is ignored. An exact height, `requiredHeightIn(max)` and the clip are still required, and they are not enough: after that alone, "Master Bedroom" still painted through "LIGHTING CONTROL".
 
 Draw the title after the scroller as a later sibling of the same `Box` (`roomsHeader` on `Role.STRIP`, the device name plate on `Role.PAGE`). A `Box` paints later children on top, so the opaque plate covers rows that slide under it. The list's leading spacer is only the title block (`roomsHeaderHeight` / `devicesHeaderHeight`) so at scroll 0 the first row still starts under the title.
 

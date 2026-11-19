@@ -10,6 +10,7 @@ import androidx.compose.remote.core.operations.Header
 import androidx.compose.remote.creation.JvmRcPlatformServices
 import androidx.compose.remote.creation.RemoteComposeWriter
 import androidx.compose.remote.creation.dsl.Modifier
+import androidx.compose.remote.creation.dsl.RcHeaderTag
 import androidx.compose.remote.creation.dsl.RcProfile
 import androidx.compose.remote.creation.dsl.createRcBuffer
 import androidx.compose.remote.creation.dsl.size
@@ -212,12 +213,16 @@ class RemoteDocumentControllerTest {
         }
 
         val bytes = createRcBuffer(
-            RcProfile(profile),
-            RemoteComposeWriter.HTag(Header.DOC_WIDTH, 200),
-            RemoteComposeWriter.HTag(Header.DOC_HEIGHT, 200),
-            RemoteComposeWriter.HTag(Header.DOC_PROFILES, profiles),
-        ) { Box(Modifier.size(200f, 200f)) }
+            profile = RcProfile(profile),
+            RcHeaderTag.docWidth(DOCUMENT_SIZE),
+            RcHeaderTag.docHeight(DOCUMENT_SIZE),
+            RcHeaderTag.raw(tag = Header.DOC_PROFILES, value = profiles),
+        ) { Box(Modifier.size(DOCUMENT_SIZE.toFloat(), DOCUMENT_SIZE.toFloat())) }
 
         return SlotDocument(revision, bytes, mutableMapOf())
+    }
+
+    private companion object {
+        const val DOCUMENT_SIZE = 200
     }
 }

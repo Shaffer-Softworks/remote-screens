@@ -13,6 +13,7 @@ import androidx.compose.remote.creation.dsl.RcColor
 import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
+import androidx.compose.remote.creation.dsl.RcShape
 import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
@@ -25,7 +26,6 @@ import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.requiredHeightIn
 import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
-import androidx.compose.remote.creation.modifiers.RectShape
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.WeatherAttributes
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.Forecast
@@ -409,7 +409,7 @@ private fun DocContext.portraitScroll(page: PortraitPage) {
             Modifier.fillMaxWidth()
                 .height(viewport)
                 .requiredHeightIn(max = viewport)
-                .clip(RectShape(0f, 0f, 0f, 0f))
+                .clip(RcShape.Rectangle)
                 .background(doc.role(Role.STRIP))
                 .keptVerticalScroll("weather.${page.tileId}"),
         ) {

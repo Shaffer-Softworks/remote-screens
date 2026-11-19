@@ -2,10 +2,10 @@
 
 package tech.shaffersoftworks.remotescreens.server.render.freeform
 
-import androidx.compose.remote.core.operations.layout.animation.AnimationSpec
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcBorderShape
 import androidx.compose.remote.creation.dsl.RcColor
+import androidx.compose.remote.creation.dsl.RcEnterExitAnimation
 import androidx.compose.remote.creation.dsl.animationSpec
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.border
@@ -74,9 +74,7 @@ internal fun DocContext.sized(node: Node, axis: Axis): Modifier {
 
     modifier = when (val sizeSpec = Spec.of(node.size.width)) {
         Spec.Fill -> if (axis == Axis.ROW) {
-            modifier.horizontalWeight(
-                1f,
-            )
+            modifier.horizontalWeight(1f)
         } else {
             modifier.fillMaxWidth()
         }
@@ -93,17 +91,13 @@ internal fun DocContext.sized(node: Node, axis: Axis): Modifier {
 
     modifier = when (val sizeSpec = Spec.of(node.size.height)) {
         Spec.Fill -> if (axis == Axis.COLUMN) {
-            modifier.verticalWeight(
-                1f,
-            )
+            modifier.verticalWeight(1f)
         } else {
             modifier.fillMaxHeight()
         }
         is Spec.Dp -> modifier.height(units.px(sizeSpec.value))
         is Spec.Weight -> if (axis == Axis.COLUMN) {
-            modifier.verticalWeight(
-                sizeSpec.value,
-            )
+            modifier.verticalWeight(sizeSpec.value)
         } else {
             modifier.fillMaxHeight()
         }
@@ -145,7 +139,11 @@ private fun DocContext.shownWhen(node: Node, base: Modifier): Modifier {
 }
 
 /** Clip, fill and outline, in the order a key builds them. */
-private fun DocContext.framed(node: Node, base: Modifier, applyBorder: Boolean): Modifier {
+private fun DocContext.framed(
+    node: Node,
+    base: Modifier,
+    applyBorder: Boolean
+): Modifier {
     var modifier = base
     val bg = node.style.background?.let { paint(it) }
 
@@ -166,7 +164,11 @@ private fun DocContext.framed(node: Node, base: Modifier, applyBorder: Boolean):
 }
 
 private fun DocContext.borderShape(corner: Float): RcBorderShape =
-    if (corner > 0f) RcBorderShape.RoundedRectangle else RcBorderShape.Rectangle
+    if (corner > 0f) {
+        RcBorderShape.RoundedRectangle
+    } else {
+        RcBorderShape.Rectangle
+    }
 
 /**
  * The size, the rounded background and outline, the taps, then the padding: the order `key` builds its own modifier
@@ -180,11 +182,21 @@ internal fun DocContext.styled(
     applyBorder: Boolean = true,
 ): Modifier {
     var modifier = shownWhen(node, base)
-    modifier = framed(node = node, base = modifier, applyBorder = applyBorder)
+
+    modifier = framed(
+        node = node,
+        base = modifier,
+        applyBorder = applyBorder
+    )
 
     if (node.type !in OWN_TAPS) {
         val (onTap, onHold) = refs(node, pages)
-        modifier = tap(modifier = modifier, ref = onTap, hold = onHold)
+
+        modifier = tap(
+            modifier = modifier,
+            ref = onTap,
+            hold = onHold
+        )
     }
 
     val style = node.style
@@ -202,21 +214,37 @@ internal fun DocContext.styled(
 }
 
 /** How a component that shows and hides comes and goes: a fade unless [animate] names a slide, or `none`. */
-internal fun appear(animate: String?): Pair<AnimationSpec.ANIMATION, AnimationSpec.ANIMATION>? = when (animate) {
+internal fun appear(animate: String?): Pair<RcEnterExitAnimation, RcEnterExitAnimation>? = when (animate) {
     "none" -> null
-    "left" -> AnimationSpec.ANIMATION.SLIDE_LEFT to AnimationSpec.ANIMATION.SLIDE_LEFT
-    "right" -> AnimationSpec.ANIMATION.SLIDE_RIGHT to AnimationSpec.ANIMATION.SLIDE_RIGHT
-    "up" -> AnimationSpec.ANIMATION.SLIDE_TOP to AnimationSpec.ANIMATION.SLIDE_TOP
-    "down" -> AnimationSpec.ANIMATION.SLIDE_BOTTOM to AnimationSpec.ANIMATION.SLIDE_BOTTOM
-    else -> AnimationSpec.ANIMATION.FADE_IN to AnimationSpec.ANIMATION.FADE_OUT
+    "left" -> RcEnterExitAnimation.SlideLeft to RcEnterExitAnimation.SlideLeft
+    "right" -> RcEnterExitAnimation.SlideRight to RcEnterExitAnimation.SlideRight
+    "up" -> RcEnterExitAnimation.SlideTop to RcEnterExitAnimation.SlideTop
+    "down" -> RcEnterExitAnimation.SlideBottom to RcEnterExitAnimation.SlideBottom
+    else -> RcEnterExitAnimation.FadeIn to RcEnterExitAnimation.FadeOut
 }
 
 /** What a tap and a hold on [node] send, through the same router as a tile's. */
 internal fun DocContext.refs(node: Node, pages: Pages): Pair<ActionRef?, ActionRef?> {
     val tile = node.asTile() ?: return null to null
+
     val spec = Catalogue.of(tile.effectiveKind())
-    val tap = tapRef(tile = tile, action = tile.tap, spec = spec, pageIndex = pages.index, hold = false)
-    val hold = tapRef(tile = tile, action = tile.hold, spec = spec, pageIndex = pages.index, hold = true)
+
+    val tap = tapRef(
+        tile = tile,
+        action = tile.tap,
+        spec = spec,
+        pageIndex = pages.index,
+        hold = false
+    )
+
+    val hold = tapRef(
+        tile = tile,
+        action = tile.hold,
+        spec = spec,
+        pageIndex = pages.index,
+        hold = true
+    )
+
     val id = tile.entityId
 
     if (tap != null && id != null && spec?.predict?.containsKey(tap.verb) == true) predict(tap, id)

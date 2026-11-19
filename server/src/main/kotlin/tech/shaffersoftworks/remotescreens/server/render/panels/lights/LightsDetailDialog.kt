@@ -33,7 +33,7 @@ import androidx.compose.remote.creation.dsl.requiredHeightIn
 import androidx.compose.remote.creation.dsl.size
 import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import androidx.compose.remote.creation.dsl.width
-import androidx.compose.remote.creation.modifiers.RectShape
+import androidx.compose.remote.creation.dsl.RcShape
 import tech.shaffersoftworks.remotescreens.server.render.panels.lights.LightsDialogMetrics as D
 
 private const val KEY_HEADLINE = "lightsHeadline"
@@ -82,7 +82,7 @@ internal fun DocContext.lightDetailDialog(
                 Modifier.fillMaxWidth()
                     .height(viewportH)
                     .requiredHeightIn(max = viewportH)
-                    .clip(RectShape(0f, 0f, 0f, 0f))
+                    .clip(RcShape.Rectangle)
                     .keptVerticalScroll("lights.$tileId.detail"),
                 horizontal = RcHorizontalPositioning.Center,
             ) {

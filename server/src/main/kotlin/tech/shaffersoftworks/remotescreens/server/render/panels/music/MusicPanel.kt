@@ -14,12 +14,12 @@ import androidx.compose.remote.creation.dsl.RcColor
 import androidx.compose.remote.creation.dsl.RcContentScale
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
+import androidx.compose.remote.creation.dsl.RcShape
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
 import androidx.compose.remote.creation.dsl.componentId
 import androidx.compose.remote.creation.dsl.fillMaxWidth
-import androidx.compose.remote.creation.modifiers.RectShape
 import androidx.compose.remote.creation.dsl.height
 import tech.shaffersoftworks.remotescreens.server.render.keptHorizontalScroll
 import androidx.compose.remote.creation.dsl.horizontalWeight
@@ -94,7 +94,7 @@ fun DocContext.musicPanel(tile: Tile, box: TileBox) {
     rcScope.Box(
         Modifier.size(units.px(box.w), units.px(panelH))
             .requiredHeightIn(max = units.px(panelH))
-            .clip(RectShape(0f, 0f, 0f, 0f))
+            .clip(RcShape.Rectangle)
             .background(role(Role.PAGE)),
     ) {
         this@musicPanel.musicPlaced(layout, frame)
@@ -466,7 +466,7 @@ private fun DocContext.browseList(layout: MusicPanelLayout) {
         Modifier.fillMaxWidth()
             .height(units.px(layout.browseListDp))
             .requiredHeightIn(max = units.px(layout.browseListDp))
-            .clip(RectShape(0f, 0f, 0f, 0f))
+            .clip(RcShape.Rectangle)
             .keptVerticalScroll("music.${layout.tileId}.browse"),
     ) {
         val doc = this@browseList
@@ -613,7 +613,7 @@ private fun DocContext.queueSection(
             Modifier.fillMaxWidth()
                 .height(doc.units.px(listHeightDp))
                 .requiredHeightIn(max = doc.units.px(listHeightDp))
-                .clip(RectShape(0f, 0f, 0f, 0f))
+                .clip(RcShape.Rectangle)
                 .keptVerticalScroll("music.$tileId.queue"),
         ) {
             when {

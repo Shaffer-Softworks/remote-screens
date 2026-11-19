@@ -14,7 +14,7 @@ import java.io.ByteArrayInputStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** Why [DocContext.build] declares everything at the top: alpha20 loses what a layout component declares. */
+/** Why [DocContext.build] declares everything at the top: a layout component still drops what it declares. */
 class NestingProbeTest {
     private fun names(bytes: ByteArray): List<String> {
         val doc = CoreDocument()
@@ -32,7 +32,7 @@ class NestingProbeTest {
         assertEquals(
             emptyList(),
             names(bytes),
-            "if this fails, alpha20's loss is fixed and DocContext.build may go back to one pass",
+            "if this fails, the library keeps nested names and DocContext.build may go back to one pass",
         )
     }
 

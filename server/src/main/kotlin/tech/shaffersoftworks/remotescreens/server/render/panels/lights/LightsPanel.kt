@@ -20,6 +20,7 @@ import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcPaintStyle
+import androidx.compose.remote.creation.dsl.RcShape
 import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
@@ -33,7 +34,6 @@ import androidx.compose.remote.creation.dsl.requiredHeightIn
 import androidx.compose.remote.creation.dsl.size
 import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import androidx.compose.remote.creation.dsl.width
-import androidx.compose.remote.creation.modifiers.RectShape
 import tech.shaffersoftworks.remotescreens.server.render.panels.lights.LightsMetrics as M
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
@@ -378,7 +378,7 @@ private fun DocContext.scrollingList(name: String, heightDp: Float): Modifier {
     return Modifier.fillMaxWidth()
         .height(viewport)
         .requiredHeightIn(max = viewport)
-        .clip(RectShape(0f, 0f, 0f, 0f))
+        .clip(RcShape.Rectangle)
         .keptVerticalScroll(name)
 }
 

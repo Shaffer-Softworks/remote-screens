@@ -21,7 +21,7 @@ import androidx.compose.remote.creation.dsl.size
 import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
-import androidx.compose.remote.creation.modifiers.RectShape
+import androidx.compose.remote.creation.dsl.RcShape
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
@@ -203,7 +203,7 @@ private fun DocContext.stationList(tileId: String, view: IntercomView, layout: I
 
         Modifier.fillMaxWidth().height(viewport).requiredHeightIn(max = viewport)
             .padding(start = start, top = 0f, end = end, bottom = bottom)
-            .clip(RectShape(0f, 0f, 0f, 0f))
+            .clip(RcShape.Rectangle)
             .keptVerticalScroll("intercom.$tileId")
     } else {
         Modifier.horizontalWeight(1f).fillMaxHeight().keptVerticalScroll("intercom.$tileId")

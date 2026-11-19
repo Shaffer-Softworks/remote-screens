@@ -34,7 +34,7 @@ import androidx.compose.remote.creation.dsl.padding
 import androidx.compose.remote.creation.dsl.requiredHeightIn
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.width
-import androidx.compose.remote.creation.modifiers.RectShape
+import androidx.compose.remote.creation.dsl.RcShape
 import tech.shaffersoftworks.remotescreens.server.render.panels.lights.LightsMetrics as M
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.CoverState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
@@ -276,7 +276,7 @@ private fun DocContext.scrollingList(name: String, heightDp: Float): Modifier {
     return Modifier.fillMaxWidth()
         .height(viewport)
         .requiredHeightIn(max = viewport)
-        .clip(RectShape(0f, 0f, 0f, 0f))
+        .clip(RcShape.Rectangle)
         .keptVerticalScroll(name)
 }
 

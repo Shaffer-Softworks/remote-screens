@@ -9,6 +9,7 @@ import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcInteger
 import androidx.compose.remote.creation.dsl.RcPaintStyle
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
+import androidx.compose.remote.creation.dsl.RcShape
 import androidx.compose.remote.creation.dsl.RcStrokeCap
 import androidx.compose.remote.creation.dsl.RcText
 import androidx.compose.remote.creation.dsl.RcTextAlign
@@ -25,7 +26,6 @@ import androidx.compose.remote.creation.dsl.rsp
 import androidx.compose.remote.creation.dsl.size
 import androidx.compose.remote.creation.dsl.visibility
 import androidx.compose.remote.creation.dsl.width
-import androidx.compose.remote.creation.modifiers.RoundedRectShape
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.Present
 import tech.shaffersoftworks.remotescreens.server.render.Vars
@@ -68,7 +68,7 @@ private const val SPINNER_SWEEP_DEG = 270f
 /** One turn per second: continuousSeconds runs 0–60 over a minute. */
 private const val SPINNER_DEG_PER_SEC = 360f
 
-fun DocContext.rounded(dp: Float) = units.px(dp).let { RoundedRectShape(it, it, it, it) }
+fun DocContext.rounded(dp: Float): RcShape = RcShape.roundedCorner(units.px(dp))
 
 /**
  * Places [content] at ([xDp], [yDp]) of the parent. `Modifier.offset` only moves the drawing; the player finds what

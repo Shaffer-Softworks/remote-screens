@@ -50,8 +50,6 @@ internal object ThermostatMetrics {
     const val ADJUST_KEY_DP = 64f
     /** RPI tick gap outside the ring (`gap = 15f` on a 500.dp dial). */
     const val TICK_GAP_SHARE = 15f / 500f
-    /** Both stops of the dial fill gradient are remote colour ids. */
-    const val DIAL_GRADIENT_COLOR_MASK = 0b11
     const val OPAQUE_ALPHA = 0xFF
     const val ALPHA_SHIFT = 24
     const val RGB_MASK = 0xFFFFFF
