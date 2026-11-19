@@ -128,28 +128,12 @@ internal fun DocContext.vacuumCard(
             entityId = entityId,
             verb = "fan_speed",
             choices = speeds.map { it to i18n.optionLabel(it) },
-            isSegmented = false
+            isSegmented = false,
         ) {
             it.vacuum.fanSpeed
         }
     }
 
-    //spacer(CardChrome.FLOW_PAD_DP)
-    section(i18n.t("ui.cleaning_mode"))
-    rcScope.Row(Modifier.fillMaxWidth()) {
-        val cleaningModeId = cleaningModeEntityId(entityId)
-        val cleaningMode = cleaningModeId.let { states[it] }
-        val cleaningModes = cleaningMode?.input?.options.orEmpty()
-        if (cleaningModes.isNotEmpty()) {
-            structural(cleaningModeId) { it?.input?.options?.joinToString() ?: "" }
-            flowKeys(
-                entityId = cleaningModeId,
-                verb = "option",
-                choices = cleaningModes.map { it to i18n.optionLabel(it) },
-                isSegmented = true
-            ) {
-                it.state
-            }
     val cleaningModeId = cleaningModeEntityId(entityId)
     val cleaningMode = cleaningModeId.let { states[it] }
     val cleaningModes = cleaningMode?.input?.options.orEmpty()
@@ -160,6 +144,7 @@ internal fun DocContext.vacuumCard(
             entityId = cleaningModeId,
             verb = "option",
             choices = cleaningModes.map { it to i18n.optionLabel(it) },
+            isSegmented = true,
         ) {
             it.state
         }
