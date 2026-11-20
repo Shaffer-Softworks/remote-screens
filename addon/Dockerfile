@@ -4,13 +4,18 @@ FROM getsentry/sentry-cli:3.8.2 AS sentry-cli
 FROM eclipse-temurin:21-jre-alpine
 COPY --from=sentry-cli /bin/sentry-cli /usr/local/bin/sentry-cli
 
-# Java2D draws the maps and needs a font.
-RUN apk add --no-cache fontconfig ttf-dejavu android-tools
+# Java2D draws the maps and needs a font. aiortc turns Tessera's 16 kHz PCM into the intercom's Opus.
+RUN apk add --no-cache fontconfig ttf-dejavu android-tools python3 py3-pip ffmpeg opus \
+    && apk add --no-cache --virtual .build-aiortc \
+        gcc musl-dev python3-dev pkgconfig ffmpeg-dev opus-dev libffi-dev openssl-dev \
+    && pip3 install --no-cache-dir --break-system-packages 'aiortc==1.11.0' \
+    && apk del .build-aiortc
 
 WORKDIR /app
 COPY dist/remote-screens-server.jar /app/remote-screens-server.jar
 COPY dist/static /app/static
 COPY dist/apk /app/apk
+COPY tessera_media.py /app/tessera_media.py
 
 ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=40 -XX:+UseSerialGC -Djava.awt.headless=true"
 EXPOSE 8099 8100

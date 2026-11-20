@@ -210,9 +210,8 @@ private fun DocContext.landscapeWeather(
     val ink = role(Role.INK)
     val soft = role(Role.INK_SOFT)
     val dayW = FORECAST_DAY_W_DP * layoutScale
-    val id = entityId
 
-    val days = data.forecasts[id].orEmpty().take(
+    val days = data.forecasts[entityId].orEmpty().take(
         ((box.w - DETAIL_GAP_BASE_DP) / dayW).toInt().coerceIn(0, FORECAST_DAYS_MAX),
     )
 
@@ -222,7 +221,7 @@ private fun DocContext.landscapeWeather(
     ) {
         landscapeHero(
             tile = tile,
-            entityId = id,
+            entityId = entityId,
             entityState = entityState,
             details = details,
             layoutScale = layoutScale,

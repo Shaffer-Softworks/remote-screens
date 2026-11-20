@@ -40,6 +40,15 @@ Browser microphone and playback requirements are the same as in the editor. If *
 press it to retry playback. Ending a call releases the microphone and remote audio; closing the editor
 panel or removing the dashboard card also cleans up its connection.
 
+## Tessera screens
+
+A Tessera screen (firmware 0.62.0, Tessera Screen Manager 0.4.99) with a microphone and a speaker
+joins this roster once Tessera's call hook is installed (`docs/TESSERA_CALL_HOOK.md`). It is listed
+like another station, and a Tessera Call tile lists the tablets and dashboard cards that are online here.
+The call is audio only. Tessera keeps busy, decline, no answer, and Do not disturb.
+
+Until that hook answers, no Tessera screen is added to the roster.
+
 ## Network and troubleshooting
 
 - Remote Screens tablet signaling uses **8766**. The separate standalone signaling add-on keeps **8765**.

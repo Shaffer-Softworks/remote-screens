@@ -12,6 +12,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EnergySourc
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityRegistryGet
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityRegistryListForDisplay
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.FireEvent
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.SubscribeEvents
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.FossilEnergyConsumption
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.GetTranslations
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HA_JSON
@@ -42,6 +43,7 @@ internal class DemoCommandHandlers(
 
         val result = registryAnswer(request) ?: when (request) {
             is FireEvent -> fireEvent(request)
+            is SubscribeEvents -> JsonNull
             is HistoryDuringPeriod -> historyDuringPeriod(request.entityIds)
             EnergyGetPrefs -> energyGetPrefs()
             is StatisticsDuringPeriod -> energyStatistics()

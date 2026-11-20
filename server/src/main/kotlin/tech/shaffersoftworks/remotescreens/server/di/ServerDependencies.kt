@@ -23,6 +23,7 @@ import tech.shaffersoftworks.remotescreens.server.service.HomeAssistantCatalogSe
 import tech.shaffersoftworks.remotescreens.server.service.ScreenService
 import tech.shaffersoftworks.remotescreens.server.service.ThemeService
 import tech.shaffersoftworks.remotescreens.server.intercom.SignalingService
+import tech.shaffersoftworks.remotescreens.server.intercom.tessera.TesseraGateway
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -83,6 +84,11 @@ class ServerDependencies(
     )
     val adbService = AdbService(config.dataDir, playerApkRepository)
     val signaling = SignalingService(scope)
+    private val tesseraGateway = TesseraGateway(
+        homeAssistant = homeAssistant,
+        port = config.intercomPort,
+        scope = scope,
+    )
 
     val playerHub = PlayerHub(
         PlayerSessionContext(
@@ -112,6 +118,7 @@ class ServerDependencies(
         sentryMappings.start(scope)
         playerHub.start()
         signaling.start()
+        tesseraGateway.start()
 
         scope.launch {
             homeAssistant.isConnected.collect { isConnected ->

@@ -1,0 +1,42 @@
+---
+description: Tessera screen calls through the add-on gateway. The hook is a Tessera Screen Manager pull request, not a plugin.
+globs: server/src/main/kotlin/**/intercom/tessera/**/*.kt,server/src/test/kotlin/**/intercom/tessera/**/*.kt,addon/tessera_media.py,addon/tessera_media_test.py,addon/Dockerfile,docs/INTERCOM.md,docs/TESSERA_CALL_HOOK.md
+alwaysApply: false
+---
+
+# Tessera intercom bridge (Nov 2026)
+
+Tablets and `custom:remote-screens-intercom` call a Tessera screen, and a Tessera Call tile calls them back, through the add-on gateway beside the port 8766 hub. Audio only. No new tile and no new card. Busy, decline, no answer, and Do not disturb stay Tessera's. The hub still allows one call per station. Same LAN limit as the other intercom: no STUN or TURN, and the dashboard microphone still needs HTTPS.
+
+## Not a plugin, and not installed from this app
+
+A Tessera plugin cannot do this. In the Tessera app a plugin is a description; Tessera draws the tile and never runs the plugin's code. A call is owned by Tessera Screen Manager (`screen_manager/app/server.py` `call_screens()` and `call_send()`). Stock 0.4.99 drops `l` and `tk` for a caller it does not know, and a return call fails because the tablet is not in `call_screens()`.
+
+The hook is a pull request against `MaxGramser/homeassistant_espscreen`, specified in `docs/TESSERA_CALL_HOOK.md`. It is the add-on, not screen firmware. Port 8555 is not enabled, so every call stays relayed through Tessera. Do not copy Tessera source into this repo. Tessera is AGPL. This gateway only speaks the events and the PCM URLs.
+
+The Remote Screens app and add-on cannot install that hook. Tessera starts `python3 /app/server.py` from its own image (`esp_screen_manager`, ingress 8099). Nothing this add-on writes is on that program's path, and a file in `config/tessera-plugins` is not executed. Until a Tessera Screen Manager build answers the peer event, the gateway logs that Tessera has no external peers and does not add those screens. This Home Assistant already has the Tessera Screen Manager update entity.
+
+## The hook Tessera must grow
+
+- `remote_screens_intercom_peers` replaces the whole external set: node, name, online, hears, speaks. No camera, so Tessera offers them sound only. Node ids have no `_`, because `esphome.screen_call` rewrites `_` to `-` on `screen` only. `to` keeps the Tessera node, underscores included.
+- A `call` or `contacts` message for one of those peers is fired as `esp_screens_call_peer` (the message plus `node` and `peer`, including `l` and `tk`) instead of `send_auxiliary`.
+- Dial, answer, decline, and hang up stay `esphome.screen_call`. `video` is the string `"0"`. `calls.py` still rings, misses after 45 seconds, and reports busy.
+
+## This add-on
+
+`TesseraGateway` starts from `ServerDependencies` after the signaling hub. It uses its own HTTP client (`requestTimeout` 0). The shared client times out at 15 seconds.
+
+- One hub registration per Tessera screen: client id `tessera-` plus the node id, display name from Tessera. Those are the stations the tablet and the card already call.
+- One external peer per other station on the 8766 roster, so a Tessera Call tile lists tablets and the signed-in dashboard user. Peer node ids are sorted, and the name is cut at 60 characters.
+- An offer to a `tessera-` station becomes `action: dial`. On `live`, POST the microphone to `tk` and read `audio/x-s16le` parts from `l`.
+- A ring for a Remote Screens peer becomes a WebRTC offer to that one station. The tablet and the card already answer an offer.
+- Hangup, busy, and a failed PCM connection hang up both sides. A Tessera `end` does not fire `end` again.
+- Contacts mark `a` as 0 while a screen is busy, so a screen that was callable stays registered until it is offline.
+- `custom_components/remote_screens/manifest.json` stays free of native packages. Opus is `aiortc==1.11.0` inside the add-on image (`addon/tessera_media.py`). Kotlin owns signaling and the multipart framing. PCM is 16 kHz 16-bit mono in 20 ms parts, 640 bytes each. `take_parts` is tested without importing aiortc.
+
+## Verify
+
+```bash
+python3 addon/tessera_media_test.py
+./gradlew :server:detekt :server:test --tests '*tessera*' --tests '*ProjectRuleIndexTest'
+```
