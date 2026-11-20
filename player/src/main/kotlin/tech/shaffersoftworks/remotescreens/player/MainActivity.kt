@@ -84,6 +84,12 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        // One UI holds the rest of a gesture in a batch. Ask for it raw on the down, or the
+        // press reaches the buttons a frame or two late on the Samsung tablets.
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            window.decorView.requestUnbufferedDispatch(event)
+        }
+
         val action = event.actionMasked
 
         val logEvent = BuildConfig.DEBUG && (action == MotionEvent.ACTION_DOWN ||

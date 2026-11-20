@@ -157,6 +157,26 @@ class RemoteDocumentControllerTest {
     }
 
     @Test
+    fun valueUpdatesPaintDuringAGestureWhileAReplacementWaits() {
+        controller.render(state(document(1)))
+        drainFrames()
+        val front = controller.primaryPlayer(Slot.MAIN)
+        clearInvocations(front)
+
+        controller.setTouchActive(true)
+
+        controller.render(
+            state(document(1)).copy(values = mapOf("title" to VarValue.string("title", "On"))),
+        )
+
+        verify(front).setUserLocalString("title", "On")
+        verify(front).invalidate()
+
+        controller.render(state(document(2)))
+        verify(controller.mainBackPlayer, never()).setDocument(any<RemoteDocument>())
+    }
+
+    @Test
     fun queuedSwapWaitsForGestureToEnd() {
         controller.render(state(document(1)))
         drainFrames()
