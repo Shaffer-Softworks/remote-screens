@@ -80,7 +80,7 @@ internal class RemoteDocumentController(
         for (slot in loadedDocuments.keys) fullLayoutIfDirty(documentPlayer(slot))
     }
 
-    /** Finish the current gesture before applying server updates or revealing a replacement view. */
+    /** Finish the current gesture before revealing a replacement view. Values paint immediately. */
     fun setTouchActive(active: Boolean) {
         if (isTouchActive == active) return
 
@@ -105,6 +105,7 @@ internal class RemoteDocumentController(
 
         if (isTouchActive) {
             needsRenderAfterTouch = true
+            applyLiveUpdates(state)
 
             return
         }
@@ -130,6 +131,38 @@ internal class RemoteDocumentController(
         invalidateDocuments()
         pendingMainSwap?.let { document -> revealMainSwap(document) }
         pendingMainFirstReveal?.let { document -> revealMainFirst(document) }
+    }
+
+    /**
+     * A gesture holds a document swap so a rebuild cannot change the page under the finger.
+     * Values, bitmaps and the current page still apply now. A tap's prediction has to paint
+     * before the finger lifts, and Samsung palm rejection often keeps a second pointer down
+     * after that tap, which used to hold the paint until the palm lifted too.
+     */
+    private fun applyLiveUpdates(state: RemoteScreenState) {
+        if (loadedDocuments.isEmpty()) return
+
+        val valuesChanged = state.values != appliedValues
+        val bitmapsChanged = state.bitmaps != appliedBitmaps
+
+        val canMovePage = pendingMainSwap == null && pendingMainFirstReveal == null &&
+            Slot.MAIN in loadedDocuments
+
+        val pageChanged = canMovePage && (state.page != appliedPage || state.localInts != appliedLocalInts)
+
+        if (valuesChanged) {
+            applyChangedValues(state.values, excludeSlots = emptySet())
+            appliedValues = state.values
+        }
+
+        if (bitmapsChanged) {
+            applyChangedBitmaps(state.bitmaps, excludeSlots = emptySet())
+            appliedBitmaps = state.bitmaps
+        }
+
+        if (pageChanged) syncMainPage(state, newlyLoaded = emptySet())
+
+        if (valuesChanged || bitmapsChanged || pageChanged) invalidateDocuments()
     }
 
     private fun syncMainPage(state: RemoteScreenState, newlyLoaded: Set<Slot>) {
@@ -215,9 +248,9 @@ internal class RemoteDocumentController(
         prepareHiddenDraw(player = newFront, coverCurrentPage = true)
 
         newFront.postOnAnimation {
-            if (!swapStillPending(document)) {
+            if (loadedDocuments[Slot.MAIN] !== document || pendingMainSwap !== document) {
                 mainSwapPosted = false
-                pendingMainSwap?.takeIf(::swapStillPending)?.let(::revealMainSwap)
+                pendingMainSwap?.takeIf { loadedDocuments[Slot.MAIN] === it }?.let(::revealMainSwap)
 
                 return@postOnAnimation
             }
@@ -228,9 +261,9 @@ internal class RemoteDocumentController(
             newFront.invalidate()
 
             newFront.postOnAnimation {
-                if (!swapStillPending(document)) {
+                if (loadedDocuments[Slot.MAIN] !== document || pendingMainSwap !== document) {
                     mainSwapPosted = false
-                    pendingMainSwap?.takeIf(::swapStillPending)?.let(::revealMainSwap)
+                    pendingMainSwap?.takeIf { loadedDocuments[Slot.MAIN] === it }?.let(::revealMainSwap)
 
                     return@postOnAnimation
                 }
@@ -239,9 +272,9 @@ internal class RemoteDocumentController(
                 newFront.invalidate()
 
                 newFront.postOnAnimation {
-                    if (!swapStillPending(document)) {
+                    if (loadedDocuments[Slot.MAIN] !== document || pendingMainSwap !== document) {
                         mainSwapPosted = false
-                        pendingMainSwap?.takeIf(::swapStillPending)?.let(::revealMainSwap)
+                        pendingMainSwap?.takeIf { loadedDocuments[Slot.MAIN] === it }?.let(::revealMainSwap)
 
                         return@postOnAnimation
                     }
@@ -323,9 +356,6 @@ internal class RemoteDocumentController(
         player.setUserLocalInt(PAGE_VARIABLE, appliedPage ?: 0)
         player.invalidate()
     }
-
-    private fun swapStillPending(document: SlotDocument): Boolean =
-        loadedDocuments[Slot.MAIN] === document && pendingMainSwap === document
 
     private fun loadNewDocuments(state: RemoteScreenState): Set<Slot> {
         if (state.timeZone != appliedTimeZone) {
