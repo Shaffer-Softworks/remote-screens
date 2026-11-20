@@ -29,7 +29,7 @@ const free = computed(() => page.value.root !== undefined)
 const design = useDesigner(page, toast)
 provide(DESIGN, design)
 const node = design.selected
-const view = ref<'design' | 'split' | 'code'>('design')
+const view = ref<'design' | 'split' | 'code' | 'esphome'>('design')
 const railTool = ref<'insert' | 'layers' | 'page' | 'screen' | null>(null)
 
 const previewDark = ref(screen.value.settings.darkMode)
@@ -320,6 +320,7 @@ const online = computed(() => playersOf(screen.value.id).filter(player => player
       :free="free"
       :device="device"
       :view="view"
+      :theme-id="activeThemeId"
       :selected-id="selectedId"
       :selected="selected"
       :node="node"

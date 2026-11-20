@@ -20,5 +20,7 @@ server/src/main/resources/static/
 *.jks
 # Unrelated file that predates this project
 /tools.yaml
+# Local ESPHome Wi-Fi and API key for a bench flash. Never commit.
+/firmware/esphome/secrets.yaml
 # Local concept mockups — product shots live under docs/screenshots/
 /docs/mockups/

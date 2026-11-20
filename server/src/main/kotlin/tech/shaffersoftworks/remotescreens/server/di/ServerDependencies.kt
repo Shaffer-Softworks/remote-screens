@@ -20,6 +20,8 @@ import tech.shaffersoftworks.remotescreens.server.player.action.ActionRouter
 import tech.shaffersoftworks.remotescreens.server.service.CameraStreamService
 import tech.shaffersoftworks.remotescreens.server.service.EnrollmentService
 import tech.shaffersoftworks.remotescreens.server.service.HomeAssistantCatalogService
+import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
+import tech.shaffersoftworks.remotescreens.server.service.EspHomePanelService
 import tech.shaffersoftworks.remotescreens.server.service.ScreenService
 import tech.shaffersoftworks.remotescreens.server.service.ThemeService
 import tech.shaffersoftworks.remotescreens.server.intercom.SignalingService
@@ -74,6 +76,13 @@ class ServerDependencies(
     )
     val screenService = ScreenService(layoutRepository, backgroundStore)
     val themeService = ThemeService(layoutRepository)
+    val espHomePanel = EspHomePanelService(
+        homeAssistant = homeAssistant,
+        screens = { screenService.screens() },
+        paletteOf = { themeId -> Themes.resolve(id = themeId, custom = layoutRepository.layout.value.themes) },
+        actions = actionRouter,
+        words = { languageRepository.current() },
+    )
     val homeAssistantCatalogService = HomeAssistantCatalogService(homeAssistant)
     val cameraStreamService = CameraStreamService(homeAssistant)
     val enrollmentService = EnrollmentService(

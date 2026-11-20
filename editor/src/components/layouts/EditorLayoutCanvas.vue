@@ -20,7 +20,8 @@ const props = defineProps<{
   page: Page
   free: boolean
   device: { key: string; label: string; w: number; h: number }
-  view: 'design' | 'split' | 'code'
+  view: 'design' | 'split' | 'code' | 'esphome'
+  themeId: string
   selectedId: string | null
   selected?: Tile
   node?: Node
@@ -30,7 +31,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'update:view': [value: 'design' | 'split' | 'code']
+  'update:view': [value: 'design' | 'split' | 'code' | 'esphome']
   'update:selectedId': [id: string | null]
   'update:pageId': [id: string]
   'update:railTool': [value: RailTool | null]
@@ -226,6 +227,7 @@ function onLibraryAdd(source: TileSource): void {
           :free="free"
           :device="device"
           :view="view"
+          :theme-id="themeId"
           :selected-id="selectedId"
           :moved-ids="movedIds"
           :moved-dropped="movedDropped"

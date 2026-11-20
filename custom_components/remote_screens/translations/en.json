@@ -187,6 +187,16 @@
       "fields": {
         "screens": { "name": "Screens", "description": "The screens; none is every screen." }
       }
+    },
+    "panel_tap": {
+      "name": "Panel tap",
+      "description": "Runs a tap from an ESPHome panel through the same actions as the tablet.",
+      "fields": {
+        "screen_id": { "name": "Screen", "description": "The screen id the page belongs to." },
+        "page_id": { "name": "Page", "description": "The free-form page id." },
+        "node_id": { "name": "Component", "description": "The component that was tapped." },
+        "hold": { "name": "Hold", "description": "Use the component's hold action." }
+      }
     }
   }
 }

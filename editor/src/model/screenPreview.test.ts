@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createSSRApp } from 'vue'
+import { computed, createSSRApp, provide, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
+import DesignCanvas from '../components/DesignCanvas.vue'
+import { DESIGN, type DesignContext } from './design'
 import { dashboardPlayers, dashboardScreens, dashboardThemes, pendingTablets } from '../../dev/dashboardFixtures'
 import ScreenPreview from '../components/ScreenPreview.vue'
 import ScreensView from '../components/ScreensView.vue'
@@ -66,10 +68,49 @@ describe('saved screen previews', () => {
     expect(grid).toContain('--rc-page:#1B1E24')
     expect(free).toContain('--rc-page:#2B2423')
     expect(free).toContain('Good evening')
+    expect(free).toContain('topbar')
     expect(grid).toContain('inert')
     expect(free).toContain('aria-hidden="true"')
     expect(JSON.stringify(dashboardScreens)).toBe(before)
     expect(activeThemeId.value).toBe('rpi')
+  })
+
+  it('fills the free-form editor with the page and leaves the tablet bars off', async () => {
+    const screen = dashboardScreens[2]
+    const page = screen.pages.find(entry => entry.root) ?? screen.pages[0]
+    const noop = () => {}
+    const context: DesignContext = {
+      root: computed(() => page.root),
+      selectedId: ref(null),
+      selected: computed(() => undefined),
+      hint: ref(null),
+      select: noop,
+      canDrop: () => false,
+      drop: noop,
+      add: noop,
+      addComponent: noop,
+      addEntity: noop,
+      removeSelected: noop,
+      duplicateSelected: noop,
+      wrapSelected: noop,
+      step: noop,
+      shift: noop,
+    }
+    const html = await renderToString(
+      createSSRApp({
+        components: { DesignCanvas },
+        setup() {
+          provide(DESIGN, context)
+          return { screen, page, device: { w: 1280, h: 800 } }
+        },
+        template: '<DesignCanvas :screen="screen" :page="page" :device="device" />',
+      }),
+    )
+    expect(html).toContain('Good evening')
+    expect(html).toContain('top:0px')
+    expect(html).toContain('height:800px')
+    expect(html).not.toContain('topbar')
+    expect(html).not.toContain('class="nav')
   })
 })
 

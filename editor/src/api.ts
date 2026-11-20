@@ -8,6 +8,7 @@ import type {
   GridSize,
   Info,
   LayoutData,
+  Node,
   PlayerStatus,
   Preferences,
   ResolvedTheme,
@@ -105,4 +106,23 @@ export const api = {
   searchIcons: (query: string) => call<string[]>('GET', `icons?q=${encodeURIComponent(query)}`),
   iconPaths: (names: string[]) =>
     call<Record<string, string>>('GET', `icons/paths?names=${encodeURIComponent(names.join(','))}`),
+  exportEspHome: (request: EspHomeExportRequest) =>
+    call<EspHomeDocument>('POST', 'esphome/export', request),
+  sendEspHome: (request: { device: string; payload: string }) =>
+    call<{ service: string }>('POST', 'esphome/send', request),
+}
+
+export interface EspHomeDocument {
+  yaml: string
+  payload: string
+  skipped: string[]
+}
+
+export interface EspHomeExportRequest {
+  root: Node
+  themeId: string
+  widthPx: number
+  heightPx: number
+  screenId: string
+  pageId: string
 }

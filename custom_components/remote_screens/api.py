@@ -58,6 +58,14 @@ class RemoteScreensClient:
     async def close(self, targets: list[str]) -> None:
         await self._request("POST", "/close", {"targets": targets})
 
+    async def panel_tap(self, screen_id: str, page_id: str, node_id: str, hold: bool = False) -> dict[str, Any]:
+        """A tap on a free-form component drawn by an ESPHome panel."""
+        return await self._request(
+            "POST",
+            "/panel_tap",
+            {"screenId": screen_id, "pageId": page_id, "nodeId": node_id, "hold": hold},
+        )
+
     async def _request(self, method: str, path: str, body: dict[str, Any] | None = None) -> Any:
         try:
             async with self._session.request(

@@ -5,6 +5,9 @@ import tech.shaffersoftworks.remotescreens.server.render.Alert
 import tech.shaffersoftworks.remotescreens.server.routes.model.IntegrationScreenResponse
 import tech.shaffersoftworks.remotescreens.server.routes.model.OpenPageRequest
 import tech.shaffersoftworks.remotescreens.server.routes.model.TargetsRequest
+import tech.shaffersoftworks.remotescreens.server.service.EspHomePanelService
+import tech.shaffersoftworks.remotescreens.server.service.PanelTapRequest
+import tech.shaffersoftworks.remotescreens.server.service.PanelTapResponse
 import tech.shaffersoftworks.remotescreens.server.service.ScreenService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
@@ -16,7 +19,11 @@ import io.ktor.server.util.getOrFail
 import kotlinx.serialization.json.JsonObject
 
 /** The API the Home Assistant integration polls and calls, under `/integration` and its key. */
-fun Route.integrationRoutes(screenService: ScreenService, playerHub: PlayerHub) {
+fun Route.integrationRoutes(
+    screenService: ScreenService,
+    playerHub: PlayerHub,
+    panel: EspHomePanelService? = null,
+) {
     notificationRoutes(playerHub)
 
     get("/screens") {
@@ -67,5 +74,34 @@ fun Route.integrationRoutes(screenService: ScreenService, playerHub: PlayerHub) 
     post("/close") {
         playerHub.closeOverlays(call.receive<TargetsRequest>().targets)
         call.respond(HttpStatusCode.NoContent)
+    }
+
+    panelTapRoute(panel)
+}
+
+private fun Route.panelTapRoute(panel: EspHomePanelService?) {
+    post("/panel_tap") {
+        val taps = panel
+
+        if (taps == null) {
+            call.respond(HttpStatusCode.NotFound)
+
+            return@post
+        }
+
+        val request = call.receive<PanelTapRequest>()
+
+        val outcome = taps.tap(
+            screenId = request.screenId,
+            pageId = request.pageId,
+            nodeId = request.nodeId,
+            hold = request.hold,
+        )
+
+        if (outcome == null) {
+            call.respond(HttpStatusCode.NotFound)
+        } else {
+            call.respond(PanelTapResponse(outcome = outcome))
+        }
     }
 }

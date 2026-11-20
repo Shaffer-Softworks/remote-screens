@@ -21,6 +21,7 @@ SERVICE_SHOW_ALERT: Final = "show_alert"
 SERVICE_OPEN_PAGE: Final = "open_page"
 SERVICE_WAKE: Final = "wake"
 SERVICE_CLOSE: Final = "close"
+SERVICE_PANEL_TAP: Final = "panel_tap"
 
 ATTR_SCREENS: Final = "screens"
 ATTR_TITLE: Final = "title"

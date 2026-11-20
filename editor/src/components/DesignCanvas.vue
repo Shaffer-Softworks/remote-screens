@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// The design surface of a free-form page: the device as the grid mockup draws it, with the page's components in
-// its content area instead of the grid.
+// The design surface of a free-form page. The page fills the device; the tablet's top and bottom bars stay on
+// grid pages and on the dashboard thumbnails.
 import { inject } from 'vue'
 import { DESIGN } from '../model/design'
 import type { Page, Screen } from '../model/types'
@@ -19,6 +19,7 @@ const NONE = new Set<string>()
     :device="device"
     :selected-id="null"
     :moved="NONE"
+    :show-bars="false"
     class="design"
     @select="ctx.select(null)"
   >

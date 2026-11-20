@@ -17,6 +17,10 @@ import tech.shaffersoftworks.remotescreens.server.service.EnrollmentService
 import tech.shaffersoftworks.remotescreens.server.service.EnrollmentUnavailableException
 import tech.shaffersoftworks.remotescreens.server.service.HomeAssistantCatalogService
 import tech.shaffersoftworks.remotescreens.server.service.ScreenFile
+import tech.shaffersoftworks.remotescreens.server.service.EspHomePanelService
+import tech.shaffersoftworks.remotescreens.server.service.EspHomeExportRequest
+import tech.shaffersoftworks.remotescreens.server.service.EspHomeSendRequest
+import tech.shaffersoftworks.remotescreens.server.service.EspHomeSendResponse
 import tech.shaffersoftworks.remotescreens.server.service.ScreenService
 import tech.shaffersoftworks.remotescreens.server.service.ThemeService
 import tech.shaffersoftworks.remotescreens.server.service.validation.ScreenValidator
@@ -60,6 +64,7 @@ fun Route.editorRoutes(dependencies: ServerDependencies) {
         playerManagementRoutes(dependencies.playerHub, dependencies.playerApkRepository)
         enrollmentRoutes(dependencies.enrollmentService)
         homeAssistantRoutes(dependencies.homeAssistantCatalogService)
+        esphomeRoutes(dependencies.espHomePanel)
 
         post("/alert") {
             dependencies.playerHub.showAlert(call.receive<Alert>())
@@ -270,6 +275,18 @@ private fun Route.enrollmentRoutes(enrollmentService: EnrollmentService) {
         } catch (exception: EnrollmentUnavailableException) {
             call.respond(HttpStatusCode.Conflict, ErrorResponse(exception.message.orEmpty()))
         }
+    }
+}
+
+private fun Route.esphomeRoutes(panel: EspHomePanelService) {
+    post("/esphome/export") {
+        call.respond(panel.export(request = call.receive<EspHomeExportRequest>()))
+    }
+
+    post("/esphome/send") {
+        val request = call.receive<EspHomeSendRequest>()
+        val service = panel.send(device = request.device, payload = request.payload)
+        call.respond(EspHomeSendResponse(service = service))
     }
 }
 

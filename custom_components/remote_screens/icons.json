@@ -57,6 +57,7 @@
     "show_alert": { "service": "mdi:message-alert" },
     "open_page": { "service": "mdi:book-open-page-variant" },
     "wake": { "service": "mdi:monitor" },
-    "close": { "service": "mdi:close-box" }
+    "close": { "service": "mdi:close-box" },
+    "panel_tap": { "service": "mdi:gesture-tap" }
   }
 }

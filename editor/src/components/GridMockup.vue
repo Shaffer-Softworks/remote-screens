@@ -26,14 +26,19 @@ import { entityById, state } from '../store'
 import HaWeatherIcon from './HaWeatherIcon.vue'
 import MdiIcon from './MdiIcon.vue'
 
-const props = defineProps<{
-  screen: Screen
-  page: Page
-  device: { w: number; h: number }
-  selectedId: string | null
-  moved: Set<string>
-  thumbnail?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    screen: Screen
+    page: Page
+    device: { w: number; h: number }
+    selectedId: string | null
+    moved: Set<string>
+    thumbnail?: boolean
+    /** Tablet top and bottom bars. The free-form editor turns them off; the page then fills the screen. */
+    showBars?: boolean
+  }>(),
+  { showBars: true },
+)
 const emit = defineEmits<{
   select: [id: string | null]
   move: [id: string, col: number, row: number]
@@ -61,13 +66,14 @@ onMounted(() => {
 })
 onBeforeUnmount(() => observer?.disconnect())
 
+const barsShown = computed(() => props.showBars !== false)
 const gridLayout = computed(() =>
   spec(
     props.screen.grid,
     props.device.w,
     props.device.h,
-    topBarHeight(props.screen.topBar),
-    navBarHeight(props.screen.navBar, props.device.w),
+    barsShown.value ? topBarHeight(props.screen.topBar) : 0,
+    barsShown.value ? navBarHeight(props.screen.navBar, props.device.w) : 0,
   ),
 )
 // Dashboard thumbnails use the whole available area; the designer keeps its device frame.
@@ -497,7 +503,7 @@ const highlight = computed(() => {
       @dragleave.self="hover = null"
     >
       <div
-        v-if="screen.topBar.show"
+        v-if="barsShown && screen.topBar.show"
         class="topbar"
         :style="{
           height: `${gridLayout.topBar}px`,
@@ -1118,7 +1124,7 @@ const highlight = computed(() => {
       </p>
 
       <div
-        v-if="navShown"
+        v-if="barsShown && navShown"
         class="nav"
         :class="`labels-${nav.labels}`"
         :style="{
@@ -1148,7 +1154,7 @@ const highlight = computed(() => {
       </div>
 
       <span
-        v-if="modal && !screen.topBar.show"
+        v-if="barsShown && modal && !screen.topBar.show"
         class="back menu-key floating"
         title="Open the navigation drawer"
         :style="{
@@ -1159,7 +1165,7 @@ const highlight = computed(() => {
         ><MdiIcon name="menu" :size="24"
       /></span>
 
-      <div v-if="modal && drawerOpen" class="scrim" @click.stop="drawerOpen = false">
+      <div v-if="barsShown && modal && drawerOpen" class="scrim" @click.stop="drawerOpen = false">
         <div
           class="drawer"
           :class="{ end: drawerPanel.end }"

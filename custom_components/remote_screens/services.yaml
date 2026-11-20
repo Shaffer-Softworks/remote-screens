@@ -135,3 +135,22 @@ close:
         device:
           integration: remote_screens
           multiple: true
+
+panel_tap:
+  fields:
+    screen_id:
+      required: true
+      selector:
+        text:
+    page_id:
+      required: true
+      selector:
+        text:
+    node_id:
+      required: true
+      selector:
+        text:
+    hold:
+      default: false
+      selector:
+        boolean:

@@ -196,7 +196,12 @@ fun Application.playerModule(dependencies: ServerDependencies) {
 
         route("/integration") {
             install(IntegrationKey) { apiKey = dependencies.apiKeyRepository.apiKey }
-            integrationRoutes(dependencies.screenService, dependencies.playerHub)
+
+            integrationRoutes(
+                screenService = dependencies.screenService,
+                playerHub = dependencies.playerHub,
+                panel = dependencies.espHomePanel,
+            )
         }
     }
 }

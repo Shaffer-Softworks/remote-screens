@@ -32,6 +32,7 @@ from .const import (
     MANUFACTURER,
     SERVICE_CLOSE,
     SERVICE_OPEN_PAGE,
+    SERVICE_PANEL_TAP,
     SERVICE_SHOW_ALERT,
     SERVICE_WAKE,
 )
@@ -94,6 +95,14 @@ SEND_NOTIFICATION_SCHEMA = vol.Schema(
 
 OPEN_PAGE_SCHEMA = vol.Schema({SCREENS: vol.All(cv.ensure_list, [cv.string]), vol.Required(ATTR_PAGE): cv.string})
 TARGETS_SCHEMA = vol.Schema({SCREENS: vol.All(cv.ensure_list, [cv.string])})
+PANEL_TAP_SCHEMA = vol.Schema(
+    {
+        vol.Required("screen_id"): cv.string,
+        vol.Required("page_id"): cv.string,
+        vol.Required("node_id"): cv.string,
+        vol.Optional("hold", default=False): cv.boolean,
+    }
+)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -160,10 +169,16 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     async def close(call: ServiceCall) -> None:
         await run(client().close(targets(call)))
 
+    async def panel_tap(call: ServiceCall) -> None:
+        await run(
+            client().panel_tap(call.data["screen_id"], call.data["page_id"], call.data["node_id"], call.data["hold"])
+        )
+
     hass.services.async_register(DOMAIN, SERVICE_SHOW_ALERT, show_alert, SHOW_ALERT_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_OPEN_PAGE, open_page, OPEN_PAGE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_WAKE, wake, TARGETS_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_CLOSE, close, TARGETS_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_PANEL_TAP, panel_tap, PANEL_TAP_SCHEMA)
     hass.services.async_register(
         DOMAIN, "send_notification", send_notification, SEND_NOTIFICATION_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,

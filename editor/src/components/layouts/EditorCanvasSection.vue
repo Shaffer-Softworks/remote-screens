@@ -2,6 +2,7 @@
 import type { Page, Screen, TileSource } from '../../model/types'
 import CodeView from '../CodeView.vue'
 import DesignCanvas from '../DesignCanvas.vue'
+import EspHomeView from '../EspHomeView.vue'
 import GridMockup from '../GridMockup.vue'
 import MdiIcon from '../MdiIcon.vue'
 
@@ -11,7 +12,8 @@ withDefaults(
     page: Page
     free: boolean
     device: { key: string; label: string; w: number; h: number }
-    view: 'design' | 'split' | 'code'
+    view: 'design' | 'split' | 'code' | 'esphome'
+    themeId: string
     selectedId: string | null
     movedIds: Set<string>
     movedDropped: number
@@ -27,7 +29,7 @@ withDefaults(
 )
 
 const emit = defineEmits<{
-  'update:view': [value: 'design' | 'split' | 'code']
+  'update:view': [value: 'design' | 'split' | 'code' | 'esphome']
   'update:selectedId': [id: string | null]
   move: [id: string, col: number, row: number]
   add: [source: TileSource, at?: { col: number; row: number }]
@@ -70,6 +72,13 @@ function onAdd(
         >
           <MdiIcon name="code-json" :size="16" /> Code
         </button>
+        <button
+          :class="{ active: view === 'esphome' }"
+          title="ESPHome"
+          @click="emit('update:view', 'esphome')"
+        >
+          <MdiIcon name="chip" :size="16" /> ESPHome
+        </button>
       </div>
       <span class="grow" />
       <span v-if="showShortcutHint" class="muted keys"
@@ -78,8 +87,20 @@ function onAdd(
     </div>
     <template v-if="free">
       <div class="views" :class="view">
-        <DesignCanvas v-if="view !== 'code'" :screen="screen" :page="page" :device="device" />
-        <CodeView v-if="view !== 'design'" :page="page" />
+        <DesignCanvas
+          v-if="view === 'design' || view === 'split'"
+          :screen="screen"
+          :page="page"
+          :device="device"
+        />
+        <CodeView v-if="view === 'code' || view === 'split'" :page="page" />
+        <EspHomeView
+          v-if="view === 'esphome'"
+          :screen="screen"
+          :page="page"
+          :device="device"
+          :theme-id="themeId"
+        />
       </div>
       <p v-if="showNote" class="muted note">
         The canvas is close to the tablet, not exact; Preview on device shows the real thing.
@@ -160,7 +181,8 @@ function onAdd(
   gap: 12px;
 }
 
-.views.split > * {
+.views.split > *,
+.views.esphome > * {
   flex: 1 1 0;
 }
 

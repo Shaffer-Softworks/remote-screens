@@ -1,0 +1,37 @@
+# A panel that draws a Remote Screens free-form page.
+# Point `external_components` at the `components` directory beside this file.
+# Add the board's display, touch and output pins, then
+# compile once. After that, Save & send from the editor calls
+# esphome.kitchen_panel_set_layout and the page changes without another flash.
+# The editor's device name is the ESPHome name with hyphens turned into underscores.
+# `api.custom_services` and `api.homeassistant_services` are required.
+
+esphome:
+  name: kitchen-panel
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+api:
+  custom_services: true
+  homeassistant_services: true
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [remote_screens_panel]
+
+remote_screens_panel:
+  screen_id: living
+  page_id: home
+
+# The display block is the board's own. This page is what shows until the first Save & send.
+lvgl:
+  pages:
+    - widgets:
+        - label:
+            text: Waiting for Remote Screens
+            align: center
