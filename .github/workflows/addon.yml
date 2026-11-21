@@ -17,6 +17,8 @@ permissions:
 # version input (stamping VERSION/config only in the runner), then opens a PR to sync those
 # files on main. GITHUB_TOKEN tag pushes do not start a second run; a manual v* tag push still
 # builds via the push path alone.
+# HACS integration releases share the v* tag namespace. Their body contains
+# "hacs-integration-release"; those tag pushes do not build the add-on.
 jobs:
   tag:
     name: Create release tag
@@ -52,12 +54,40 @@ jobs:
           git push origin "$tag"
           echo "Created $tag on $(git rev-parse --short HEAD); continuing with the release build."
 
+  classify:
+    name: Add-on tag or integration tag
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    outputs:
+      is_addon: ${{ steps.check.outputs.is_addon }}
+    steps:
+      - name: Skip HACS integration tags
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          # The integration release is created in the same API call as the tag. Give that
+          # release a moment to show up before treating a missing release as an add-on tag.
+          is_addon=true
+          for _attempt in 1 2 3 4; do
+            if body=$(gh release view "${GITHUB_REF_NAME}" --json body --jq .body 2>/dev/null); then
+              if printf '%s\n' "$body" | grep -q 'hacs-integration-release'; then
+                echo "HACS integration release ${GITHUB_REF_NAME}; not building the add-on."
+                is_addon=false
+              fi
+              break
+            fi
+            sleep 5
+          done
+          echo "is_addon=${is_addon}" >> "$GITHUB_OUTPUT"
+
   package:
     name: Player app and add-on files
-    needs: [tag]
+    needs: [tag, classify]
     if: |
       always() && !cancelled() && (
-        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && needs.classify.outputs.is_addon == 'true') ||
         (github.event_name == 'workflow_dispatch' && needs.tag.result == 'success')
       )
     runs-on: ubuntu-latest
@@ -118,6 +148,14 @@ jobs:
           cp player/build/outputs/apk/release/player-release.apk remote-screens.apk
       - name: Add-on files
         run: tools/package_addon.sh remote-screens.apk
+      - name: Integration zip
+        run: |
+          set -eu
+          root="$(pwd)"
+          rm -f remote_screens.zip
+          # Same layout as the HACS release: zip root is the integration, not custom_components/.
+          ( cd custom_components/remote_screens && zip -r "$root/remote_screens.zip" . \
+            -x "*__pycache__/*" -x "*.pyc" -x "*.DS_Store" )
       - uses: actions/upload-artifact@v7
         with:
           name: addon-dist
@@ -126,6 +164,10 @@ jobs:
         with:
           name: apk
           path: remote-screens.apk
+      - uses: actions/upload-artifact@v7
+        with:
+          name: hacs-zip
+          path: remote_screens.zip
 
   image:
     name: Image (${{ matrix.arch }})
@@ -186,6 +228,9 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: apk
+      - uses: actions/download-artifact@v8
+        with:
+          name: hacs-zip
       - name: Release with the player app
         env:
           GH_TOKEN: ${{ github.token }}
@@ -195,11 +240,11 @@ jobs:
           set -eu
           if grep -q "^## ${VERSION}$" addon/CHANGELOG.md; then
             notes=$(awk '/^## /{n++} n==1 && !/^## /' addon/CHANGELOG.md)
-            gh release create "$TAG" remote-screens.apk --title "$TAG" --notes "$notes" \
-              || gh release upload "$TAG" remote-screens.apk --clobber
+            gh release create "$TAG" remote-screens.apk remote_screens.zip --title "$TAG" --notes "$notes" \
+              || gh release upload "$TAG" remote-screens.apk remote_screens.zip --clobber
           else
-            gh release create "$TAG" remote-screens.apk --title "$TAG" --generate-notes \
-              || gh release upload "$TAG" remote-screens.apk --clobber
+            gh release create "$TAG" remote-screens.apk remote_screens.zip --title "$TAG" --generate-notes \
+              || gh release upload "$TAG" remote-screens.apk remote_screens.zip --clobber
           fi
 
   version-pr:
@@ -230,11 +275,21 @@ jobs:
             exit 0
           fi
 
+          # Prefer the notes already published on the GitHub release (CHANGELOG or --generate-notes).
+          notes=$(gh release view "$TAG" --json body --jq .body 2>/dev/null || true)
+          if [ -z "$(printf '%s' "$notes" | tr -d '[:space:]')" ]; then
+            notes=""
+          else
+            # Nest headings under ## <version> in CHANGELOG / the PR body.
+            notes=$(printf '%s\n' "$notes" | sed -E 's/^(#{1,5}) /\1# /')
+          fi
+
           branch="chore/sync-version-$VERSION"
           git checkout -B "$branch" origin/main
 
           printf '%s\n' "$VERSION" > addon/VERSION
           sed -i "s|^version: \".*\"$|version: \"$VERSION\"|" addon/config.yaml
+          changelog_added=0
           if [ ! -f addon/CHANGELOG.md ] || ! grep -q "^## ${VERSION}$" addon/CHANGELOG.md; then
             rest=""
             if [ -f addon/CHANGELOG.md ]; then
@@ -246,13 +301,18 @@ jobs:
               echo
               echo "## $VERSION"
               echo
-              echo "- See the [$TAG](https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG) release notes; replace this line with curated notes before merging."
+              if [ -n "$notes" ]; then
+                printf '%s\n' "$notes"
+              else
+                echo "- See the [$TAG](https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG) release notes; replace this line with curated notes before merging."
+              fi
               echo
               if [ -n "$rest" ]; then
                 printf '%s\n' "$rest"
               fi
             } > addon/CHANGELOG.md.new
             mv addon/CHANGELOG.md.new addon/CHANGELOG.md
+            changelog_added=1
           fi
 
           if git diff --quiet; then
@@ -266,28 +326,44 @@ jobs:
           git commit -m "chore(release): sync $VERSION on main"
           git push -u origin "HEAD:$branch" --force-with-lease
 
-          body=$(printf '%s\n' \
-            "## Summary" \
-            "- Sets \`addon/VERSION\` and \`addon/config.yaml\` to **${VERSION}** so main matches tag \`${TAG}\`." \
-            "- Adds a changelog stub if one was missing (edit before merge if you want curated notes)." \
-            "" \
-            "Opened automatically after the Release workflow finished building \`${TAG}\`." \
-            "" \
-            "## Test plan" \
-            "- [ ] Confirm version files match \`${VERSION}\`" \
-            "- [ ] Replace the changelog stub with real notes if needed" \
-            "- [ ] Merge so Supervisor / the repo stay in sync with the published add-on")
+          body_file=$(mktemp)
+          {
+            echo "## Summary"
+            echo "- Sets \`addon/VERSION\` and \`addon/config.yaml\` to **${VERSION}** so main matches tag \`${TAG}\`."
+            if [ "$changelog_added" = 1 ]; then
+              if [ -n "$notes" ]; then
+                echo "- Adds \`addon/CHANGELOG.md\` notes copied from the [${TAG}](https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG) release (edit before merge if you want curated notes)."
+              else
+                echo "- Adds a changelog stub if one was missing (edit before merge if you want curated notes)."
+              fi
+            fi
+            echo
+            echo "Opened automatically after the Release workflow finished building \`${TAG}\`."
+            echo
+            if [ -n "$notes" ]; then
+              echo "## Release notes"
+              echo
+              printf '%s\n' "$notes"
+              echo
+            fi
+            echo "## Test plan"
+            echo "- [ ] Confirm version files match \`${VERSION}\`"
+            if [ "$changelog_added" = 1 ]; then
+              echo "- [ ] Review or curate the changelog notes if needed"
+            fi
+            echo "- [ ] Merge so Supervisor / the repo stay in sync with the published add-on"
+          } > "$body_file"
 
           if gh pr view "$branch" --json number --jq .number >/dev/null 2>&1; then
             echo "PR for $branch already exists; branch updated."
-            gh pr edit "$branch" --body "$body"
+            gh pr edit "$branch" --body-file "$body_file"
             gh pr view "$branch" --json url --jq .url
             exit 0
           fi
 
           if gh pr create --base main --head "$branch" \
             --title "chore(release): sync $VERSION on main" \
-            --body "$body"; then
+            --body-file "$body_file"; then
             exit 0
           fi
 

@@ -1,0 +1,217 @@
+name: Create HACS release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Semver (e.g. 0.1.52). A leading v is optional. Must not already be an add-on tag.
+        required: true
+        type: string
+      draft:
+        description: Create as draft release
+        required: false
+        type: boolean
+        default: false
+      prerelease:
+        description: Mark as prerelease
+        required: false
+        type: boolean
+        default: false
+      release_notes:
+        description: Release notes (optional). If empty, GitHub generates notes from commits.
+        required: false
+        type: string
+        default: ""
+
+# actions:write — allow gh workflow run when PR checks must be triggered without a PAT.
+# The release itself is published with the default GITHUB_TOKEN so the v* tag does not start
+# the add-on Release workflow (GitHub does not run workflows for that token's tag pushes).
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  normalize:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      tag: ${{ steps.meta.outputs.tag }}
+      branch: ${{ steps.meta.outputs.branch }}
+    steps:
+      - id: meta
+        env:
+          RAW: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+          VERSION="${RAW#v}"
+          if [ -z "$VERSION" ]; then
+            echo "::error::version is empty"
+            exit 1
+          fi
+          # Same shape as the add-on release. Digits and [A-Za-z0-9.-] only — no '/' (breaks sed/paths).
+          echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.+-][0-9A-Za-z.-]+)*$' \
+            || { echo "::error::Invalid version: $RAW (expected e.g. 0.1.52)"; exit 1; }
+          TAG="v${VERSION}"
+          BRANCH="release/${TAG}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: normalize
+    runs-on: ubuntu-latest
+    concurrency:
+      group: create-hacs-release-${{ github.repository }}-${{ needs.normalize.outputs.version }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          # Optional PAT. A branch push or PR opened with the default token does not start
+          # pull_request workflows, so required checks stay pending without this secret.
+          token: ${{ secrets.WORKFLOW_TRIGGER_TOKEN != '' && secrets.WORKFLOW_TRIGGER_TOKEN || github.token }}
+
+      - name: Bump manifest, push release branch, publish release
+        env:
+          # Release tag is created with this token so it does not start .github/workflows/addon.yml.
+          GH_TOKEN: ${{ github.token }}
+          PR_TOKEN: ${{ secrets.WORKFLOW_TRIGGER_TOKEN != '' && secrets.WORKFLOW_TRIGGER_TOKEN || github.token }}
+          HAS_WORKFLOW_PAT: ${{ secrets.WORKFLOW_TRIGGER_TOKEN != '' }}
+          VERSION: ${{ needs.normalize.outputs.version }}
+          TAG: ${{ needs.normalize.outputs.tag }}
+          BRANCH: ${{ needs.normalize.outputs.branch }}
+          INPUT_DRAFT: ${{ github.event.inputs.draft }}
+          INPUT_PRERELEASE: ${{ github.event.inputs.prerelease }}
+          RELEASE_NOTES: ${{ github.event.inputs.release_notes }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin "refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}" 2>/dev/null || true
+          if git rev-parse "refs/remotes/origin/${BRANCH}" >/dev/null 2>&1; then
+            git checkout -B "$BRANCH" "refs/remotes/origin/${BRANCH}"
+          else
+            git checkout -b "$BRANCH"
+          fi
+
+          export MANIFEST_VERSION="$VERSION"
+          python3 << 'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          version = os.environ["MANIFEST_VERSION"]
+          path = Path("custom_components/remote_screens/manifest.json")
+          with path.open(encoding="utf-8") as handle:
+              data = json.load(handle)
+          data["version"] = version
+          path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+          PY
+
+          git add custom_components/remote_screens/manifest.json
+          if git diff --staged --quiet; then
+            echo "::notice::Manifest already at ${VERSION}; reusing existing release branch."
+          else
+            git commit -m "chore: bump manifest to ${VERSION} for ${TAG}"
+          fi
+
+          # Re-runs reuse branch name release/v*. Force-with-lease updates that branch only
+          # when the remote ref still matches what we fetched.
+          if git rev-parse "refs/remotes/origin/${BRANCH}" >/dev/null 2>&1; then
+            git push -u origin "$BRANCH" --force-with-lease="refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}"
+          else
+            git push -u origin "$BRANCH"
+          fi
+
+          git fetch origin --tags
+          HEAD_SHA=$(git rev-parse HEAD)
+          if git show-ref --verify --quiet "refs/tags/${TAG}"; then
+            TAG_SHA=$(git rev-parse "${TAG}^{}" 2>/dev/null || git rev-parse "refs/tags/${TAG}")
+            if [ "$TAG_SHA" != "$HEAD_SHA" ]; then
+              echo "::error::Tag ${TAG} already exists at ${TAG_SHA}, but branch HEAD is ${HEAD_SHA}. Add-on releases use the same v* tags. Delete that tag only if it is unused, or pick a version that has not been released."
+              exit 1
+            fi
+          fi
+
+          # HACS zip_release: HACS extracts into custom_components/remote_screens/,
+          # so archive paths must be integration-root (manifest.json, __init__.py, …),
+          # not custom_components/remote_screens/… (that would double-nest).
+          ROOT="$(git rev-parse --show-toplevel)"
+          ZIP_NAME="remote_screens.zip"
+          rm -f "${ROOT}/${ZIP_NAME}"
+          ( cd "${ROOT}/custom_components/remote_screens" && zip -r "${ROOT}/${ZIP_NAME}" . \
+            -x "*__pycache__/*" -x "*.pyc" -x "*.DS_Store" )
+
+          EXTRA=( )
+          if [ "$INPUT_DRAFT" = "true" ]; then EXTRA+=(--draft); fi
+          if [ "$INPUT_PRERELEASE" = "true" ]; then EXTRA+=(--prerelease); fi
+
+          # Marker lets the add-on Release workflow ignore this tag if a PAT push starts it.
+          # --latest=false keeps GitHub's Latest release on the player app (editor download link).
+          # HACS still sees this release: it uses the newest published release, not the Latest flag.
+          MARKER='<!-- hacs-integration-release -->'
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            body=$(gh release view "$TAG" --json body --jq .body)
+            if ! printf '%s\n' "$body" | grep -q 'hacs-integration-release'; then
+              echo "::error::Tag ${TAG} is already a GitHub release and is not an integration release. Pick a version that is not an add-on tag."
+              exit 1
+            fi
+            echo "::notice::Release ${TAG} already exists; uploading/replacing ${ZIP_NAME}."
+            gh release upload "$TAG" "${ZIP_NAME}" --clobber
+          elif [ -n "$RELEASE_NOTES" ]; then
+            {
+              echo "$MARKER"
+              echo
+              printf '%s\n' "$RELEASE_NOTES"
+            } > /tmp/release-notes.md
+            gh release create "$TAG" "${ZIP_NAME}" --target "$BRANCH" --title "$TAG" --latest=false -F /tmp/release-notes.md "${EXTRA[@]}"
+          else
+            gh release create "$TAG" "${ZIP_NAME}" --target "$BRANCH" --title "$TAG" --latest=false \
+              --notes "${MARKER}" --generate-notes "${EXTRA[@]}"
+          fi
+
+          if [ "$(GH_TOKEN="$PR_TOKEN" gh pr list --head "$BRANCH" --base "$DEFAULT_BRANCH" --state open --json number -q 'length')" -eq 0 ]; then
+            if GH_TOKEN="$PR_TOKEN" gh pr create \
+              --base "$DEFAULT_BRANCH" \
+              --head "$BRANCH" \
+              --title "Merge ${TAG} manifest bump" \
+              --body "Automated manifest bump for [${TAG}](https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}). Merge after checks pass so \`${DEFAULT_BRANCH}\` matches the HACS release. This does not publish the add-on image."; then
+              echo "Opened the manifest bump PR."
+            else
+              PR_URL="https://github.com/${GITHUB_REPOSITORY}/compare/${DEFAULT_BRANCH}...${BRANCH}?expand=1"
+              echo "::warning::Could not open the manifest bump PR (often: repo setting 'Allow GitHub Actions to create and approve pull requests' is off, or WORKFLOW_TRIGGER_TOKEN is missing)."
+              echo "Open the manifest bump PR manually: ${PR_URL}"
+              echo "Open the manifest bump PR manually: ${PR_URL}" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo "::notice::An open PR already exists for ${BRANCH}; skipping pr create."
+          fi
+
+          # Without a PAT, GitHub does not run pull_request workflows for this push/PR.
+          if [ "${HAS_WORKFLOW_PAT}" != "true" ]; then
+            echo "::notice::No WORKFLOW_TRIGGER_TOKEN — triggering CI on ${TAG}."
+            gh workflow run ci.yml --ref "$TAG"
+          fi
+
+      - name: Summary
+        if: success()
+        env:
+          BRANCH: ${{ needs.normalize.outputs.branch }}
+          TAG: ${{ needs.normalize.outputs.tag }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          {
+            echo "## Create HACS release"
+            echo "Published **${TAG}** with \`remote_screens.zip\` (HACS \`zip_release\`). The zip root is the integration (\`manifest.json\`, \`__init__.py\`, …). HACS unpacks it into \`custom_components/remote_screens/\`."
+            echo ""
+            echo "The manifest bump is on **\`${BRANCH}\`**. Merge the pull request **Merge ${TAG} manifest bump** so **\`${DEFAULT_BRANCH}\`** matches the release."
+            echo ""
+            echo "This did not build the add-on or the player app. The release is not marked Latest, so the editor's player download stays on the add-on release."
+            echo ""
+            echo "HACS installs from the newest published release. The next add-on release also attaches \`remote_screens.zip\`, so a later add-on publish does not leave HACS without that asset."
+          } >> "$GITHUB_STEP_SUMMARY"
