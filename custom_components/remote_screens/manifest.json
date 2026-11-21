@@ -1,8 +1,12 @@
 {
   "domain": "remote_screens",
   "name": "Remote Screens",
-  "after_dependencies": ["http"],
-  "codeowners": ["@sickkick"],
+  "after_dependencies": [
+    "http"
+  ],
+  "codeowners": [
+    "@sickkick"
+  ],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/Shaffer-Softworks/remote-screens/wiki",
