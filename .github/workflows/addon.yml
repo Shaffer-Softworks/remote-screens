@@ -17,8 +17,8 @@ permissions:
 # version input (stamping VERSION/config only in the runner), then opens a PR to sync those
 # files on main. GITHUB_TOKEN tag pushes do not start a second run; a manual v* tag push still
 # builds via the push path alone.
-# HACS integration releases share the v* tag namespace. Their body contains
-# "hacs-integration-release"; those tag pushes do not build the add-on.
+# HACS integration releases are unprefixed tags (0.1.51), so they do not match v*.
+# A v* tag whose release body contains "hacs-integration-release" is still skipped.
 jobs:
   tag:
     name: Create release tag

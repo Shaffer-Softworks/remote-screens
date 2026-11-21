@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Semver (e.g. 0.1.52). A leading v is optional. Must not already be an add-on tag.
+        description: Semver (e.g. 0.1.51). A leading v is ignored. Published as 0.1.51, not v0.1.51.
         required: true
         type: string
       draft:
@@ -24,8 +24,9 @@ on:
         default: ""
 
 # actions:write — allow gh workflow run when PR checks must be triggered without a PAT.
-# The release itself is published with the default GITHUB_TOKEN so the v* tag does not start
-# the add-on Release workflow (GitHub does not run workflows for that token's tag pushes).
+# Integration tags are the bare semver (0.1.51). Add-on releases own the v* tags (v0.1.51),
+# and the add-on workflow only runs on those. The release is still published with the
+# default GITHUB_TOKEN so a tag push does not start other workflows.
 permissions:
   contents: write
   pull-requests: write
@@ -49,11 +50,12 @@ jobs:
             echo "::error::version is empty"
             exit 1
           fi
-          # Same shape as the add-on release. Digits and [A-Za-z0-9.-] only — no '/' (breaks sed/paths).
+          # Digits and [A-Za-z0-9.-] only — no '/' (breaks sed/paths).
+          # No leading v: add-on releases already use v0.1.51, v0.2.67, and so on.
           echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.+-][0-9A-Za-z.-]+)*$' \
-            || { echo "::error::Invalid version: $RAW (expected e.g. 0.1.52)"; exit 1; }
-          TAG="v${VERSION}"
-          BRANCH="release/${TAG}"
+            || { echo "::error::Invalid version: $RAW (expected e.g. 0.1.51)"; exit 1; }
+          TAG="${VERSION}"
+          BRANCH="release/hacs-${VERSION}"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
@@ -101,16 +103,22 @@ jobs:
 
           export MANIFEST_VERSION="$VERSION"
           python3 << 'PY'
-          import json
           import os
+          import re
           from pathlib import Path
 
           version = os.environ["MANIFEST_VERSION"]
           path = Path("custom_components/remote_screens/manifest.json")
-          with path.open(encoding="utf-8") as handle:
-              data = json.load(handle)
-          data["version"] = version
-          path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+          text = path.read_text(encoding="utf-8")
+          updated, count = re.subn(
+              r'("version"\s*:\s*")[^"]*"',
+              lambda match: f'{match.group(1)}{version}"',
+              text,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit("custom_components/remote_screens/manifest.json has no version field")
+          path.write_text(updated, encoding="utf-8")
           PY
 
           git add custom_components/remote_screens/manifest.json
@@ -120,8 +128,8 @@ jobs:
             git commit -m "chore: bump manifest to ${VERSION} for ${TAG}"
           fi
 
-          # Re-runs reuse branch name release/v*. Force-with-lease updates that branch only
-          # when the remote ref still matches what we fetched.
+          # Re-runs reuse branch name release/hacs-<version>. Force-with-lease updates that
+          # branch only when the remote ref still matches what we fetched.
           if git rev-parse "refs/remotes/origin/${BRANCH}" >/dev/null 2>&1; then
             git push -u origin "$BRANCH" --force-with-lease="refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}"
           else
@@ -129,11 +137,14 @@ jobs:
           fi
 
           git fetch origin --tags
+          if git show-ref --verify --quiet "refs/tags/v${VERSION}"; then
+            echo "::notice::Add-on tag v${VERSION} already exists. This release uses tag ${TAG} so the two do not collide."
+          fi
           HEAD_SHA=$(git rev-parse HEAD)
           if git show-ref --verify --quiet "refs/tags/${TAG}"; then
             TAG_SHA=$(git rev-parse "${TAG}^{}" 2>/dev/null || git rev-parse "refs/tags/${TAG}")
             if [ "$TAG_SHA" != "$HEAD_SHA" ]; then
-              echo "::error::Tag ${TAG} already exists at ${TAG_SHA}, but branch HEAD is ${HEAD_SHA}. Add-on releases use the same v* tags. Delete that tag only if it is unused, or pick a version that has not been released."
+              echo "::error::Integration tag ${TAG} already exists at ${TAG_SHA}, but branch HEAD is ${HEAD_SHA}. Delete that tag only if it is unused, or pick another integration version."
               exit 1
             fi
           fi
@@ -151,9 +162,9 @@ jobs:
           if [ "$INPUT_DRAFT" = "true" ]; then EXTRA+=(--draft); fi
           if [ "$INPUT_PRERELEASE" = "true" ]; then EXTRA+=(--prerelease); fi
 
-          # Marker lets the add-on Release workflow ignore this tag if a PAT push starts it.
           # --latest=false keeps GitHub's Latest release on the player app (editor download link).
           # HACS still sees this release: it uses the newest published release, not the Latest flag.
+          # The marker is how the add-on workflow recognizes an integration release.
           MARKER='<!-- hacs-integration-release -->'
           if gh release view "$TAG" >/dev/null 2>&1; then
             body=$(gh release view "$TAG" --json body --jq .body)
@@ -169,9 +180,9 @@ jobs:
               echo
               printf '%s\n' "$RELEASE_NOTES"
             } > /tmp/release-notes.md
-            gh release create "$TAG" "${ZIP_NAME}" --target "$BRANCH" --title "$TAG" --latest=false -F /tmp/release-notes.md "${EXTRA[@]}"
+            gh release create "$TAG" "${ZIP_NAME}" --target "$BRANCH" --title "Remote Screens ${VERSION}" --latest=false -F /tmp/release-notes.md "${EXTRA[@]}"
           else
-            gh release create "$TAG" "${ZIP_NAME}" --target "$BRANCH" --title "$TAG" --latest=false \
+            gh release create "$TAG" "${ZIP_NAME}" --target "$BRANCH" --title "Remote Screens ${VERSION}" --latest=false \
               --notes "${MARKER}" --generate-notes "${EXTRA[@]}"
           fi
 
@@ -179,8 +190,8 @@ jobs:
             if GH_TOKEN="$PR_TOKEN" gh pr create \
               --base "$DEFAULT_BRANCH" \
               --head "$BRANCH" \
-              --title "Merge ${TAG} manifest bump" \
-              --body "Automated manifest bump for [${TAG}](https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}). Merge after checks pass so \`${DEFAULT_BRANCH}\` matches the HACS release. This does not publish the add-on image."; then
+              --title "Merge HACS ${VERSION} manifest bump" \
+              --body "Automated manifest bump for [${TAG}](https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}). Merge after checks pass so \`${DEFAULT_BRANCH}\` matches the HACS release. This does not publish the add-on image. Add-on releases keep the \`v*\` tags."; then
               echo "Opened the manifest bump PR."
             else
               PR_URL="https://github.com/${GITHUB_REPOSITORY}/compare/${DEFAULT_BRANCH}...${BRANCH}?expand=1"
@@ -209,9 +220,9 @@ jobs:
             echo "## Create HACS release"
             echo "Published **${TAG}** with \`remote_screens.zip\` (HACS \`zip_release\`). The zip root is the integration (\`manifest.json\`, \`__init__.py\`, …). HACS unpacks it into \`custom_components/remote_screens/\`."
             echo ""
-            echo "The manifest bump is on **\`${BRANCH}\`**. Merge the pull request **Merge ${TAG} manifest bump** so **\`${DEFAULT_BRANCH}\`** matches the release."
+            echo "The manifest bump is on **\`${BRANCH}\`**. Merge the pull request **Merge HACS ${TAG} manifest bump** when that pull request exists, so **\`${DEFAULT_BRANCH}\`** matches the release."
             echo ""
-            echo "This did not build the add-on or the player app. The release is not marked Latest, so the editor's player download stays on the add-on release."
+            echo "Tag **\`${TAG}\`** is separate from add-on tag **\`v${TAG}\`**. This did not build the add-on or the player app, and it is not marked Latest, so the editor's player download stays on the add-on release."
             echo ""
             echo "HACS installs from the newest published release. The next add-on release also attaches \`remote_screens.zip\`, so a later add-on publish does not leave HACS without that asset."
           } >> "$GITHUB_STEP_SUMMARY"
