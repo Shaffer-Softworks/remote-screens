@@ -69,8 +69,7 @@ internal fun DocContext.thermostatDial(tileId: String, diameterDp: Float, dual: 
                     centerX = cx,
                     centerY = cx,
                     radius = r,
-                    colors = intArrayOf(inner.id, outer.id),
-                    colorMask = ThermostatMetrics.DIAL_GRADIENT_COLOR_MASK,
+                    colors = listOf(inner, outer),
                 )
             }
 

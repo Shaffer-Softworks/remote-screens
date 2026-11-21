@@ -94,41 +94,58 @@ class DocContext(
         }
 
     fun text(name: String): RcText =
-        declare(cache = texts, key = name, again = { text(name) }) { rcScope.remoteNamedText(Rc.USER + name, "") }
+        declare(
+            cache = texts,
+            key = name,
+            again = { text(name) }
+        ) {
+            rcScope.remoteNamedText(Rc.USER + name, "")
+        }
 
     fun int(name: String, initial: Int = 0): RcInteger =
         declare(
             cache = ints,
             key = name,
             again = { int(name, initial) },
-        ) { rcScope.remoteNamedInteger(Rc.USER + name, initial) }
+        ) {
+            rcScope.remoteNamedInteger(Rc.USER + name, initial)
+        }
 
     fun float(name: String, initial: Float = 0f): RcFloat =
         declare(
             cache = floats,
             key = name,
             again = { float(name, initial) },
-        ) { rcScope.remoteNamedFloat(Rc.USER + name, initial) }
+        ) {
+            rcScope.remoteNamedFloat(Rc.USER + name, initial)
+        }
 
     fun color(name: String, initial: Int = 0): RcColor =
         declare(
             cache = colors,
             key = name,
             again = { color(name, initial) },
-        ) { rcScope.remoteNamedColor(Rc.USER + name, initial) }
+        ) {
+            rcScope.remoteNamedColor(Rc.USER + name, initial)
+        }
 
     /** A fixed text for canvas text operations, which take a declared text rather than a string. */
     fun literal(s: String): RcText = declare(
         cache = literals,
         key = s,
         again = { literal(s) }
-    ) { rcScope.remoteText(s) }
+    ) {
+        rcScope.remoteText(s)
+    }
+
     fun fixed(argb: Int): RcColor =
         declare(
             cache = colors,
             key = "#" + argb.toUInt().toString(HEX_RADIX),
             again = { fixed(argb) },
-        ) { rcScope.remoteColor(argb) }
+        ) {
+            rcScope.remoteColor(argb)
+        }
 
     fun role(r: Role): RcColor = fixed(palette[r])
     fun pastel(p: Pastel): RcColor = fixed(palette[p])
@@ -150,12 +167,18 @@ class DocContext(
     ): RcImage = declare(
         cache = images,
         key = name,
-        again = { image(name = name, width = width, height = height) },
+        again = {
+            image(
+                name = name,
+                width = width,
+                height = height
+            )
+        }
     ) {
         val placeholder = BufferedImage(
             width.coerceAtLeast(1),
             height.coerceAtLeast(1),
-            BufferedImage.TYPE_INT_ARGB,
+            BufferedImage.TYPE_INT_ARGB
         )
 
         rcScope.remoteNamedBitmap(Rc.USER + name, placeholder)
@@ -165,11 +188,25 @@ class DocContext(
      * MDI icon [icon], or raw SVG [rawSvg] (HA weather layers). Exactly one should be set.
      * [scale] writes the path in pixels (see [Rc.path]).
      */
-    fun path(icon: String? = null, rawSvg: String? = null, scale: Float = 1f): RcPath {
+    fun path(
+        icon: String? = null,
+        rawSvg: String? = null,
+        scale: Float = 1f
+    ): RcPath {
         val svg = rawSvg ?: Icons.path(icon)
         val key = "${scale.toRawBits()}:$svg"
 
-        return declare(cache = paths, key = key, again = { path(icon = icon, rawSvg = rawSvg, scale = scale) }) {
+        return declare(
+            cache = paths,
+            key = key,
+            again = {
+                path(
+                    icon = icon,
+                    rawSvg = rawSvg,
+                    scale = scale
+                )
+            }
+        ) {
             rcScope.remotePathData(Rc.path(svg, scale))
         }
     }
@@ -177,7 +214,13 @@ class DocContext(
     fun meta(ref: ActionRef): RcText {
         val encoded = ref.encode()
 
-        return declare(cache = metas, key = encoded, again = { meta(ref) }) { rcScope.remoteText(encoded) }
+        return declare(
+            cache = metas,
+            key = encoded,
+            again = { meta(ref) }
+        ) {
+            rcScope.remoteText(encoded)
+        }
     }
 
     fun bind(entityId: String?, compute: (Map<String, EntityState>) -> List<VarValue>) {
@@ -195,25 +238,39 @@ class DocContext(
     /** The component id to give the box [entityId]'s live video plays over, with `Modifier.componentId`. */
     fun liveVideo(entityId: String, crop: Boolean): Int {
         val componentId = LiveVideo.FIRST_COMPONENT_ID + videos.size
-        videos += LiveVideo(entityId = entityId, componentId = componentId, crop = crop, page = renderingPage)
+
+        videos += LiveVideo(
+            entityId = entityId,
+            componentId = componentId,
+            crop = crop,
+            page = renderingPage
+        )
 
         return componentId
     }
 
     /** The document is built again when [what] of the entity changes, such as its icon or its list of modes. */
     fun structural(entityId: String, what: (EntityState?) -> String) {
-        structure += Triple(first = entityId, second = what, third = what(states[entityId]))
+        structure += Triple(
+            first = entityId,
+            second = what,
+            third = what(states[entityId])
+        )
     }
 
     fun refreshEvery(seconds: Int) {
-        refreshSeconds = if (refreshSeconds == 0) seconds else minOf(refreshSeconds, seconds)
+        refreshSeconds = if (refreshSeconds == 0) {
+            seconds
+        } else {
+            minOf(refreshSeconds, seconds)
+        }
     }
 
     companion object {
         /**
          * Builds a document twice. Variables, colours, paths and texts declared inside a layout component are lost
-         * when the player reads the document (alpha20 through alpha22), so a first pass finds what [content]
-         * declares and the second declares all of it at the top before laying anything out.
+         * when the player reads the document (still true on alpha24; see `NestingProbeTest`). A first pass finds
+         * what [content] declares and the second declares all of it at the top before laying anything out.
          */
         fun build(
             widthPx: Int,
@@ -224,17 +281,27 @@ class DocContext(
         ): Pair<ByteArray, DocContext> {
             val dry = newContext()
 
-            Rc.document(widthPx = widthPx, heightPx = heightPx, description = description) {
+            Rc.document(
+                widthPx = widthPx,
+                heightPx = heightPx,
+                description = description
+            ) {
                 dry.rcScope = this
                 content(dry)
             }
 
             val docContext = newContext()
 
-            val bytes = Rc.document(widthPx = widthPx, heightPx = heightPx, description = description) {
+            val bytes = Rc.document(
+                widthPx = widthPx,
+                heightPx = heightPx,
+                description = description
+            ) {
                 docContext.rcScope = this
 
-                for (declaration in dry.declarations) declaration(docContext)
+                for (declaration in dry.declarations) {
+                    declaration(docContext)
+                }
 
                 content(docContext)
             }

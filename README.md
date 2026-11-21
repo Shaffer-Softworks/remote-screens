@@ -139,7 +139,7 @@ one, so uninstall the old build first (kiosk tablets need a factory reset and a 
 [preview/README.md](preview/README.md) explains the Android Studio preview gallery for server-rendered screens,
 tiles, cards, panels and free-form components. Build it with `./gradlew :preview:assembleDebug`.
 
-[docs/REMOTE_COMPOSE.md](docs/REMOTE_COMPOSE.md) lists what we learned about Remote Compose `1.0.0-alpha22`
+[docs/REMOTE_COMPOSE.md](docs/REMOTE_COMPOSE.md) lists what we learned about Remote Compose `1.0.0-alpha24`
 and the workarounds the code relies on. Architecture notes are on the
 [wiki](https://github.com/Shaffer-Softworks/remote-screens/wiki/Architecture).
 

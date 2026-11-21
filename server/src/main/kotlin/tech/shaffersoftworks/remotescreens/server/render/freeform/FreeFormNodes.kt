@@ -284,7 +284,9 @@ internal fun DocContext.imageNode(node: Node, self: Dims, axis: Axis, pages: Pag
         ),
     )
 
-    // Put taps on a Box: Image drops onClick in the document (alpha22), so a camera never opened its card.
+    // Put taps on a Box. A click can be written on Image, and was on alpha23, but a tablet camera
+    // never opened its card with the tap on the Image. A stream also shares this Box with the spinner
+    // and the live-video id.
     if (canStream) {
         val video = liveVideo(id, crop = !fit)
         val waiting = int(Vars.entity(id, Vars.KEY_CAM_WAITING), Vars.VISIBLE)

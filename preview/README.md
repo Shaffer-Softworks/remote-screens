@@ -68,9 +68,9 @@ The snapshot adapter also has unit tests under `server/src/test`.
 
 The main previews use the same native `RemoteComposePlayer` as the Android player app.
 The official `remote-tooling-preview` library is included, and `ToolingLibraryPreview` uses its
-`RemoteDocumentPreview` API. In alpha22 that renderer omitted canvas icons during verification, so it is
-kept as a comparison rather than used for the main gallery. The native view must receive its document in
-`AndroidView.factory` for canvas paths to initialize reliably in Layoutlib.
+`RemoteDocumentPreview` API. On alpha22 that renderer omitted canvas icons. That check was not repeated for
+alpha24, so `ToolingLibraryPreview` stays a comparison and the main gallery keeps the native player. The native
+view must receive its document in `AndroidView.factory` for canvas paths to initialize reliably in Layoutlib.
 
 ## Coverage limits
 

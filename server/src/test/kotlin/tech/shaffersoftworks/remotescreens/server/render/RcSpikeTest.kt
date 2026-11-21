@@ -12,6 +12,7 @@ import androidx.compose.remote.creation.dsl.size
 import java.io.ByteArrayInputStream
 import kotlin.test.Test
 import kotlin.test.assertContains
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -51,5 +52,32 @@ class RcSpikeTest {
 
         assertContains(doc.getNamedVariables(NamedVariable.INT_TYPE).toList(), "USER:page")
         assertContains(doc.getNamedVariables(NamedVariable.COLOR_TYPE).toList(), "USER:t.1.bg")
+    }
+
+    @Test
+    fun drawTextOnCircleIsRejectedByTheDocumentProfile() {
+        val failure = runCatching {
+            Rc.document(widthPx = CIRCLE_EDGE, heightPx = CIRCLE_EDGE, description = "circle-text") {
+                Canvas(Modifier.size(CIRCLE_EDGE_PX, CIRCLE_EDGE_PX)) {
+                    drawTextOnCircle(
+                        text = remoteText("12"),
+                        centerX = CIRCLE_CENTER,
+                        centerY = CIRCLE_CENTER,
+                        radius = CIRCLE_RADIUS,
+                        startAngle = CIRCLE_START,
+                    )
+                }
+            }
+        }.exceptionOrNull()
+
+        assertEquals("Operation 57 is not supported for this version", failure?.message)
+    }
+
+    private companion object {
+        const val CIRCLE_EDGE = 120
+        const val CIRCLE_EDGE_PX = 120f
+        const val CIRCLE_CENTER = 60f
+        const val CIRCLE_RADIUS = 40f
+        const val CIRCLE_START = 0f
     }
 }

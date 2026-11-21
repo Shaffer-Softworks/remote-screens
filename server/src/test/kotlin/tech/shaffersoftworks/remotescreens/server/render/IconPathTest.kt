@@ -8,6 +8,8 @@ import androidx.compose.remote.core.operations.PathData
 import androidx.compose.remote.core.operations.layout.Component
 import androidx.compose.remote.core.operations.layout.Container
 import androidx.compose.remote.core.operations.layout.LayoutComponent
+import androidx.compose.remote.creation.dsl.Modifier
+import androidx.compose.remote.creation.dsl.size
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistantConfig
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
@@ -25,8 +27,25 @@ import kotlin.test.assertTrue
 class IconPathTest {
     @Test
     fun pathCoordinatesAreMultipliedByTheScale() {
-        val path = Rc.path("M 1 2 L 3 4 Z", scale = COORDINATE_SCALE)
-        val coordinates = path.createFloatArray().filter { it.isFinite() }
+        val bytes = Rc.document(
+            widthPx = PATH_DOCUMENT_PX,
+            heightPx = PATH_DOCUMENT_PX,
+            description = "path",
+        ) {
+            val iconPath = remotePathData(Rc.path(commands = "M 1 2 L 3 4 Z", scale = COORDINATE_SCALE))
+
+            Canvas(Modifier.size(PATH_DOCUMENT_PX.toFloat(), PATH_DOCUMENT_PX.toFloat())) {
+                drawPath(iconPath)
+            }
+        }
+
+        val document = CoreDocument()
+        document.initFromBuffer(RemoteComposeBuffer.fromInputStream(ByteArrayInputStream(bytes)))
+
+        val coordinates = everyOperation(documentRoots(document))
+            .filterIsInstance<PathData>()
+            .flatMap { it.floatPath.filter(Float::isFinite) }
+
         assertEquals(SCALED_END, coordinates.maxOrNull())
     }
 
@@ -108,5 +127,6 @@ class IconPathTest {
         const val ICON_VIEWPORT = 24f
         const val COORDINATE_SCALE = 10f
         const val SCALED_END = 40f
+        const val PATH_DOCUMENT_PX = 100
     }
 }

@@ -9,6 +9,7 @@ import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
+import androidx.compose.remote.creation.dsl.RcShape
 import androidx.compose.remote.creation.dsl.RcTextAlign
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.clip
@@ -18,7 +19,6 @@ import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.requiredHeightIn
 import androidx.compose.remote.creation.dsl.requiredWidthIn
-import androidx.compose.remote.creation.modifiers.RectShape
 import tech.shaffersoftworks.remotescreens.server.render.keptHorizontalScroll
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import androidx.compose.remote.creation.dsl.padding
@@ -28,10 +28,21 @@ import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
 import tech.shaffersoftworks.remotescreens.shared.Node
 
-internal fun DocContext.resolve(node: Node, avail: Dims, axis: Axis, share: Dims): Dims {
+internal fun DocContext.resolve(
+    node: Node,
+    avail: Dims,
+    axis: Axis,
+    share: Dims
+): Dims {
     val nat = node.natural()
 
-    fun one(spec: Spec, room: Float, shared: Float, natural: Float, main: Boolean) = when (spec) {
+    fun one(
+        spec: Spec,
+        room: Float,
+        shared: Float,
+        natural: Float,
+        main: Boolean
+    ) = when (spec) {
         Spec.Fill -> if (main) shared else room
         is Spec.Dp -> spec.value
         is Spec.Weight -> shared
@@ -57,7 +68,11 @@ internal fun DocContext.resolve(node: Node, avail: Dims, axis: Axis, share: Dims
 }
 
 /** [sized], with a wrapped side set to what the server worked out, for components that draw to a known size. */
-internal fun DocContext.measured(node: Node, axis: Axis, self: Dims): Modifier {
+internal fun DocContext.measured(
+    node: Node,
+    axis: Axis,
+    self: Dims
+): Modifier {
     var modifier = sized(node, axis)
 
     if (node.size.width == "wrap") modifier = modifier.width(units.px(self.w))
@@ -111,9 +126,18 @@ internal fun Node.looseChildren(looseW: Boolean, looseH: Boolean): List<Node> =
         }
     }
 
-private data class Wrap(val children: List<Node>, val pinH: Boolean, val pinW: Boolean)
+private data class Wrap(
+    val children: List<Node>,
+    val pinH: Boolean,
+    val pinW: Boolean
+)
 
-internal fun DocContext.container(node: Node, given: Dims, axis: Axis, pages: Pages) {
+internal fun DocContext.container(
+    node: Node,
+    given: Dims,
+    axis: Axis,
+    pages: Pages
+) {
     val wrap = node.wrap()
 
     val self = if (wrap.pinH || wrap.pinW) {
@@ -140,7 +164,13 @@ internal fun DocContext.container(node: Node, given: Dims, axis: Axis, pages: Pa
         else -> Axis.BOX
     }
 
-    val sizes = childSizes(children = wrap.children, inner = inner, axis = mine, gap = gap)
+    val sizes = childSizes(
+        children = wrap.children,
+        inner = inner,
+        axis = mine,
+        gap = gap
+    )
+
     var base = sized(node, axis)
 
     if (wrap.pinH) base = base.height(units.px(self.h))
@@ -148,7 +178,12 @@ internal fun DocContext.container(node: Node, given: Dims, axis: Axis, pages: Pa
     if (wrap.pinW) base = base.width(units.px(self.w))
 
     val modifier = scrolled(
-        modifier = styled(node = node, axis = axis, pages = pages, base = base),
+        modifier = styled(
+            node = node,
+            axis = axis,
+            pages = pages,
+            base = base
+        ),
         node = node,
         mine = mine,
         self = self,
@@ -176,7 +211,12 @@ private fun Node.wrap(): Wrap {
     return Wrap(children = children, pinH = pinH, pinW = pinW)
 }
 
-private fun DocContext.scrolled(modifier: Modifier, node: Node, mine: Axis, self: Dims): Modifier {
+private fun DocContext.scrolled(
+    modifier: Modifier,
+    node: Node,
+    mine: Axis,
+    self: Dims
+): Modifier {
     if (node.props["scroll"] != Tile.OPTION_TRUE) return modifier
 
     // Weight and fillMaxHeight are ignored on a scroller, so the list never moves and its children
@@ -187,7 +227,7 @@ private fun DocContext.scrolled(modifier: Modifier, node: Node, mine: Axis, self
 
             modifier.width(viewport)
                 .requiredWidthIn(max = viewport)
-                .clip(RectShape(0f, 0f, 0f, 0f))
+                .clip(RcShape.Rectangle)
                 .keptHorizontalScroll("freeform.${node.id}")
         }
         Axis.COLUMN -> {
@@ -195,7 +235,7 @@ private fun DocContext.scrolled(modifier: Modifier, node: Node, mine: Axis, self
 
             modifier.height(viewport)
                 .requiredHeightIn(max = viewport)
-                .clip(RectShape(0f, 0f, 0f, 0f))
+                .clip(RcShape.Rectangle)
                 .keptVerticalScroll("freeform.${node.id}")
         }
         Axis.BOX -> modifier
@@ -232,12 +272,28 @@ private fun DocContext.layOut(
             modifier = modifier,
             horizontal = horizontal(alignment),
             vertical = columnArrangement(arrangement),
-        ) { drawChildren(children = children, sizes = sizes, mine = mine, gap = gap, pages = pages) }
+        ) {
+            drawChildren(
+                children = children,
+                sizes = sizes,
+                mine = mine,
+                gap = gap,
+                pages = pages
+            )
+        }
         Axis.ROW -> rcScope.Row(
             modifier = modifier,
             horizontal = rowArrangement(arrangement),
             vertical = vertical(alignment),
-        ) { drawChildren(children = children, sizes = sizes, mine = mine, gap = gap, pages = pages) }
+        ) {
+            drawChildren(
+                children = children,
+                sizes = sizes,
+                mine = mine,
+                gap = gap,
+                pages = pages
+            )
+        }
         Axis.BOX -> boxChildren(
             children = children,
             sizes = sizes,
@@ -265,8 +321,20 @@ private fun DocContext.flowChildren(
     ) {
         children.forEachIndexed { i, child ->
             Box(
-                Modifier.padding(start = 0f, top = 0f, end = units.px(gap), bottom = units.px(gap)),
-            ) { this@flowChildren.node(node = child, self = sizes[i], axis = Axis.BOX, pages = pages) }
+                Modifier.padding(
+                    start = 0f,
+                    top = 0f,
+                    end = units.px(gap),
+                    bottom = units.px(gap)
+                )
+            ) {
+                this@flowChildren.node(
+                    node = child,
+                    self = sizes[i],
+                    axis = Axis.BOX,
+                    pages = pages
+                )
+            }
         }
     }
 }
@@ -280,13 +348,26 @@ private fun DocContext.boxChildren(
     pages: Pages,
 ) {
     val parts = (alignment ?: "top-start").split('-')
-    val (vertAlign, horizAlign) = if (parts.size == 2) parts[0] to parts[1] else parts[0] to parts[0]
+
+    val (vertAlign, horizonAlign) = if (parts.size == 2) {
+        parts[0] to parts[1]
+    } else {
+        parts[0] to parts[0]
+    }
 
     rcScope.Box(
         modifier = modifier,
-        horizontal = horizontal(horizAlign),
+        horizontal = horizontal(horizonAlign),
         vertical = vertical(vertAlign),
-    ) { drawChildren(children = children, sizes = sizes, mine = Axis.BOX, gap = gap, pages = pages) }
+    ) {
+        drawChildren(
+            children = children,
+            sizes = sizes,
+            mine = Axis.BOX,
+            gap = gap,
+            pages = pages
+        )
+    }
 }
 
 private fun DocContext.drawChildren(
@@ -310,9 +391,20 @@ private fun DocContext.drawChildren(
         val place = child.props["place"]
 
         if (place == null) {
-            node(node = child, self = sizes[i], axis = mine, pages = pages)
+            node(
+                node = child,
+                self = sizes[i],
+                axis = mine,
+                pages = pages
+            )
         } else {
-            placed(child = child, place = place, self = sizes[i], axis = mine, pages = pages)
+            placed(
+                child = child,
+                place = place,
+                self = sizes[i],
+                axis = mine,
+                pages = pages
+            )
         }
     }
 }
@@ -322,10 +414,21 @@ private fun DocContext.drawChildren(
  * center, bottom) or anywhere in a box (`top-end`). A box spanning the parent's cross axis, sized like [child] along
  * the main one, holds it where it asks.
  */
-internal fun DocContext.placed(child: Node, place: String, self: Dims, axis: Axis, pages: Pages) {
+internal fun DocContext.placed(
+    child: Node,
+    place: String,
+    self: Dims,
+    axis: Axis,
+    pages: Pages
+) {
     val doc = this
 
-    fun main(spec: String, weight: (Float) -> Modifier, fill: Modifier, dp: (Float) -> Modifier): Modifier =
+    fun main(
+        spec: String,
+        weight: (Float) -> Modifier,
+        fill: Modifier,
+        dp: (Float) -> Modifier
+    ): Modifier =
         when (val sizeSpec = Spec.of(spec)) {
             is Spec.Weight -> weight(sizeSpec.value)
             Spec.Fill -> fill
@@ -334,7 +437,12 @@ internal fun DocContext.placed(child: Node, place: String, self: Dims, axis: Axi
         }
 
     val parts = place.split('-')
-    val (vertAlign, horizAlign) = if (parts.size == 2) parts[0] to parts[1] else parts[0] to parts[0]
+
+    val (vertAlign, horizonAlign) = if (parts.size == 2) {
+        parts[0] to parts[1]
+    } else {
+        parts[0] to parts[0]
+    }
 
     when (axis) {
         Axis.COLUMN -> rcScope.Box(
@@ -346,7 +454,14 @@ internal fun DocContext.placed(child: Node, place: String, self: Dims, axis: Axi
             ).fillMaxWidth(),
             horizontal = horizontal(place),
             vertical = RcVerticalPositioning.Top,
-        ) { doc.node(node = child, self = self, axis = Axis.BOX, pages = pages) }
+        ) {
+            doc.node(
+                node = child,
+                self = self,
+                axis = Axis.BOX,
+                pages = pages
+            )
+        }
         Axis.ROW -> rcScope.Box(
             modifier = main(
                 spec = child.size.width,
@@ -356,45 +471,98 @@ internal fun DocContext.placed(child: Node, place: String, self: Dims, axis: Axi
             ).fillMaxHeight(),
             horizontal = RcHorizontalPositioning.Start,
             vertical = vertical(place),
-        ) { doc.node(node = child, self = self, axis = Axis.BOX, pages = pages) }
+        ) {
+            doc.node(
+                node = child,
+                self = self,
+                axis = Axis.BOX,
+                pages = pages
+            )
+        }
         Axis.BOX -> rcScope.Box(
             modifier = Modifier.fillMaxSize(),
-            horizontal = horizontal(horizAlign),
+            horizontal = horizontal(horizonAlign),
             vertical = vertical(vertAlign),
-        ) { doc.node(node = child, self = self, axis = Axis.BOX, pages = pages) }
+        ) {
+            doc.node(
+                node = child,
+                self = self,
+                axis = Axis.BOX,
+                pages = pages
+            )
+        }
     }
 }
 
 /** The size of each child: fixed and wrapped ones first, then what is left shared out by weight. */
-internal fun DocContext.childSizes(children: List<Node>, inner: Dims, axis: Axis, gap: Float): List<Dims> {
-    if (axis == Axis.BOX) return children.map { resolve(node = it, avail = inner, axis = Axis.BOX, share = inner) }
+internal fun DocContext.childSizes(
+    children: List<Node>,
+    inner: Dims,
+    axis: Axis,
+    gap: Float
+): List<Dims> {
+    if (axis == Axis.BOX) {
+        return children.map {
+            resolve(
+                node = it,
+                avail = inner,
+                axis = Axis.BOX,
+                share = inner
+            )
+        }
+    }
 
-    val main = { dims: Dims -> if (axis == Axis.ROW) dims.w else dims.h }
+    val main = { dims: Dims -> if (axis == Axis.ROW) {
+        dims.w
+    } else {
+        dims.h
+    } }
 
     val mainSpec = { node: Node -> Spec.of(
-        if (axis == Axis.ROW) node.size.width else node.size.height,
+        if (axis == Axis.ROW) {
+            node.size.width
+        } else {
+            node.size.height
+        },
     ) }
 
     val weightOf = { node: Node -> when (val sizeSpec = mainSpec(
         node,
     )) { is Spec.Weight -> sizeSpec.value; Spec.Fill -> 1f; else -> 0f } }
 
-    val fixed = children.filter { weightOf(
-        it,
-    ) == 0f }.sumOf { main(resolve(node = it, avail = inner, axis = axis, share = Dims(0f, 0f))).toDouble() }.toFloat()
+    val fixed = children.filter { weightOf(it) == 0f }.sumOf {
+        main(
+            resolve(
+                node = it,
+                avail = inner,
+                axis = axis,
+                share = Dims(0f, 0f)
+            )
+        ).toDouble()
+    }.toFloat()
 
     val weights = children.sumOf { weightOf(it).toDouble() }.toFloat()
+
     val left = (main(inner) - fixed - gap * (children.size - 1).coerceAtLeast(0)).coerceAtLeast(0f)
 
     return children.map { child ->
         val weight = weightOf(child)
-        val part = if (weights > 0f) left * weight / weights else 0f
+
+        val part = if (weights > 0f) {
+            left * weight / weights
+        } else {
+            0f
+        }
 
         resolve(
             node = child,
             avail = inner,
             axis = axis,
-            share = if (axis == Axis.ROW) Dims(part, inner.h) else Dims(inner.w, part),
+            share = if (axis == Axis.ROW) {
+                Dims(part, inner.h)
+            } else {
+                Dims(inner.w, part)
+            },
         )
     }
 }

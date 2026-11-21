@@ -1,6 +1,5 @@
 package tech.shaffersoftworks.remotescreens.server.render
 
-import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
 import androidx.compose.remote.core.CoreDocument
 import androidx.compose.remote.core.Operation
 import androidx.compose.remote.core.RemoteComposeBuffer
@@ -11,7 +10,12 @@ import androidx.compose.remote.core.operations.layout.LayoutComponent
 import androidx.compose.remote.core.operations.layout.MultiClickModifier
 import androidx.compose.remote.core.operations.layout.managers.CoreText
 import androidx.compose.remote.core.operations.layout.managers.ImageLayout
+import androidx.compose.remote.creation.dsl.Modifier
+import androidx.compose.remote.creation.dsl.onClick
+import androidx.compose.remote.creation.dsl.size
+import java.awt.image.BufferedImage
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoHome
+import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.shared.Node
 import tech.shaffersoftworks.remotescreens.shared.NodeBinding
@@ -83,6 +87,26 @@ class CameraImageClickTest {
             c.getComponents(kids)
 
             return kids.any(::walk)
+        }
+
+        return walk(root)
+    }
+
+    /** True when an Image itself carries a click modifier (the path Image used to drop). */
+    private fun imageItselfHasClick(root: Component?): Boolean {
+        if (root == null) return false
+
+        fun walk(component: Component): Boolean {
+            if (component is ImageLayout) {
+                val modifiers = component.componentModifiers.modifiersList.orEmpty()
+
+                if (modifiers.any { it is ClickModifierOperation || it is MultiClickModifier }) return true
+            }
+
+            val children = ArrayList<Component>()
+            component.getComponents(children)
+
+            return children.any(::walk)
         }
 
         return walk(root)
@@ -294,5 +318,42 @@ class CameraImageClickTest {
             textParentHasClick(core.rootLayoutComponent),
             "plain text's Box must not carry a click (chrome clicks elsewhere are fine)",
         )
+    }
+
+    @Test
+    fun imageOnClickIsWrittenOnTheImage() {
+        val placeholder = BufferedImage(PLACEHOLDER_PX, PLACEHOLDER_PX, BufferedImage.TYPE_INT_ARGB)
+
+        val bytes = Rc.document(
+            widthPx = PROBE_EDGE,
+            heightPx = PROBE_EDGE,
+            description = "image-click",
+        ) {
+            val document = this
+            val picture = remoteNamedBitmap(name = "USER:pic.probe", image = placeholder)
+
+            Image(
+                image = picture,
+                modifier = Modifier.size(IMAGE_EDGE, IMAGE_EDGE).onClick {
+                    hostAction(TAP_ID, document.remoteText("1|card|"))
+                },
+            )
+        }
+
+        val core = parse(bytes)
+
+        assertTrue(hasImage(core.rootLayoutComponent), "the image is in the document")
+
+        assertTrue(
+            imageItselfHasClick(core.rootLayoutComponent),
+            "Image must keep onClick so a free-form picture can be the tap target",
+        )
+    }
+
+    private companion object {
+        const val PLACEHOLDER_PX = 1
+        const val PROBE_EDGE = 100
+        const val IMAGE_EDGE = 40f
+        const val TAP_ID = 1
     }
 }

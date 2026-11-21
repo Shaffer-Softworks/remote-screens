@@ -3,12 +3,12 @@
 package tech.shaffersoftworks.remotescreens.server.render
 
 import androidx.compose.remote.core.CoreDocument
-import androidx.compose.remote.core.RcPlatformServices
 import androidx.compose.remote.core.RcProfiles
-import androidx.compose.remote.core.RemotePathBase
 import androidx.compose.remote.core.operations.Header
 import androidx.compose.remote.creation.JvmRcPlatformServices
 import androidx.compose.remote.creation.RemoteComposeWriter
+import androidx.compose.remote.creation.dsl.RcHeaderTag
+import androidx.compose.remote.creation.dsl.RcPathData
 import androidx.compose.remote.creation.dsl.RcProfile
 import androidx.compose.remote.creation.dsl.RcScope
 import androidx.compose.remote.creation.dsl.createRcBuffer
@@ -25,15 +25,15 @@ object Rc {
     private const val ERROR_SNIPPET_LENGTH = 40
 
     /**
-     * AndroidX operations plus the experimental ones: long press (`MODIFIER_MULTI_CLICK`) and `Flow` are still only
-     * there in alpha22. The player reads the same profile from the header.
+     * AndroidX operations plus the experimental ones. Long press (`MODIFIER_MULTI_CLICK`) and `Flow` stay on the
+     * experimental profile. The player reads the same profile from the header.
      */
     const val PROFILES = RcProfiles.PROFILE_ANDROIDX or RcProfiles.PROFILE_EXPERIMENTAL
 
     val profile: Profile = Profile(
         CoreDocument.DOCUMENT_API_LEVEL,
         PROFILES,
-        Platform,
+        JvmRcPlatformServices(),
     ) { info, p, callback ->
         RemoteComposeWriter(info, null, p, callback)
     }
@@ -41,13 +41,13 @@ object Rc {
     fun document(widthPx: Int, heightPx: Int, description: String, content: RcScope.() -> Unit): ByteArray =
         createRcBuffer(
             profile = RcProfile(profile),
-            RemoteComposeWriter.HTag(Header.DOC_WIDTH, widthPx),
-            RemoteComposeWriter.HTag(Header.DOC_HEIGHT, heightPx),
-            RemoteComposeWriter.HTag(Header.DOC_CONTENT_DESCRIPTION, description),
-            RemoteComposeWriter.HTag(Header.DOC_PROFILES, PROFILES),
+            RcHeaderTag.docWidth(widthPx),
+            RcHeaderTag.docHeight(heightPx),
+            RcHeaderTag.contentDescription(description),
+            RcHeaderTag.raw(tag = Header.DOC_PROFILES, value = PROFILES),
         ) { content() }
 
-    /** The player capability that says it reads documents [compress]ed (alpha22 players do). */
+    /** The player capability that says it reads documents [compress]ed. */
     const val DEFLATE = "deflate"
 
     /** [document] with everything after its header deflated, for players with the [DEFLATE] capability. */
@@ -60,8 +60,8 @@ object Rc {
      * [scale] multiplies every coordinate. Icons are authored on a small grid; scaling them with the canvas
      * makes the player rasterise that grid and stretch the bitmap. Scaling the coordinates keeps the path sharp.
      */
-    fun path(commands: String, scale: Float = 1f): RemotePathBase {
-        val remotePath = RemotePathBase()
+    fun path(commands: String, scale: Float = 1f): RcPathData {
+        val remotePath = RcPathData()
         val tokens = commands.split(' ')
         var i = 0
         fun nextNumber() = tokens[i++].toFloat() * scale
@@ -71,12 +71,12 @@ object Rc {
                 "M" -> remotePath.moveTo(nextNumber(), nextNumber())
                 "L" -> remotePath.lineTo(nextNumber(), nextNumber())
                 "C" -> remotePath.cubicTo(
-                    nextNumber(),
-                    nextNumber(),
-                    nextNumber(),
-                    nextNumber(),
-                    nextNumber(),
-                    nextNumber(),
+                    x1 = nextNumber(),
+                    y1 = nextNumber(),
+                    x2 = nextNumber(),
+                    y2 = nextNumber(),
+                    x3 = nextNumber(),
+                    y3 = nextNumber(),
                 )
                 "Z" -> remotePath.close()
                 "" -> Unit
@@ -87,11 +87,5 @@ object Rc {
         }
 
         return remotePath
-    }
-
-    /** The JVM services, except that any path that can write itself out is taken (alpha20 takes only its own class). */
-    private object Platform : RcPlatformServices by JvmRcPlatformServices() {
-        override fun pathToFloatArray(path: Any): FloatArray? =
-            (path as? RcPlatformServices.RcPathArrayCreator)?.createFloatArray()
     }
 }

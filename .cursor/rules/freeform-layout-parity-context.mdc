@@ -22,7 +22,7 @@ A page that looks right in the editor and wrong on the device means CSS and Comp
 
 ## A scrolling row or column
 
-`props.scroll == "true"` on a row or column. Remote Compose ignores `verticalWeight` and `fillMaxHeight` on a scroller: the drag never starts, and children paint through the header. The modifier is an exact main-axis size, `requiredHeightIn` / `requiredWidthIn` max of that size, a `RectShape` clip, then `keptVerticalScroll` / `keptHorizontalScroll` (`FreeFormLayout.kt`, same pattern as the lights lists).
+`props.scroll == "true"` on a row or column. Remote Compose ignores `verticalWeight` and `fillMaxHeight` on a scroller: the drag never starts, and children paint through the header. The modifier is an exact main-axis size, `requiredHeightIn` / `requiredWidthIn` max of that size, an `RcShape.Rectangle` clip, then `keptVerticalScroll` / `keptHorizontalScroll` (`FreeFormLayout.kt`, same pattern as the lights lists).
 
 ## Other CSS vs Compose gaps
 
