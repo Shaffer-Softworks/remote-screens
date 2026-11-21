@@ -230,11 +230,21 @@ jobs:
             exit 0
           fi
 
+          # Prefer the notes already published on the GitHub release (CHANGELOG or --generate-notes).
+          notes=$(gh release view "$TAG" --json body --jq .body 2>/dev/null || true)
+          if [ -z "$(printf '%s' "$notes" | tr -d '[:space:]')" ]; then
+            notes=""
+          else
+            # Nest headings under ## <version> in CHANGELOG / the PR body.
+            notes=$(printf '%s\n' "$notes" | sed -E 's/^(#{1,5}) /\1# /')
+          fi
+
           branch="chore/sync-version-$VERSION"
           git checkout -B "$branch" origin/main
 
           printf '%s\n' "$VERSION" > addon/VERSION
           sed -i "s|^version: \".*\"$|version: \"$VERSION\"|" addon/config.yaml
+          changelog_added=0
           if [ ! -f addon/CHANGELOG.md ] || ! grep -q "^## ${VERSION}$" addon/CHANGELOG.md; then
             rest=""
             if [ -f addon/CHANGELOG.md ]; then
@@ -246,13 +256,18 @@ jobs:
               echo
               echo "## $VERSION"
               echo
-              echo "- See the [$TAG](https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG) release notes; replace this line with curated notes before merging."
+              if [ -n "$notes" ]; then
+                printf '%s\n' "$notes"
+              else
+                echo "- See the [$TAG](https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG) release notes; replace this line with curated notes before merging."
+              fi
               echo
               if [ -n "$rest" ]; then
                 printf '%s\n' "$rest"
               fi
             } > addon/CHANGELOG.md.new
             mv addon/CHANGELOG.md.new addon/CHANGELOG.md
+            changelog_added=1
           fi
 
           if git diff --quiet; then
@@ -266,28 +281,44 @@ jobs:
           git commit -m "chore(release): sync $VERSION on main"
           git push -u origin "HEAD:$branch" --force-with-lease
 
-          body=$(printf '%s\n' \
-            "## Summary" \
-            "- Sets \`addon/VERSION\` and \`addon/config.yaml\` to **${VERSION}** so main matches tag \`${TAG}\`." \
-            "- Adds a changelog stub if one was missing (edit before merge if you want curated notes)." \
-            "" \
-            "Opened automatically after the Release workflow finished building \`${TAG}\`." \
-            "" \
-            "## Test plan" \
-            "- [ ] Confirm version files match \`${VERSION}\`" \
-            "- [ ] Replace the changelog stub with real notes if needed" \
-            "- [ ] Merge so Supervisor / the repo stay in sync with the published add-on")
+          body_file=$(mktemp)
+          {
+            echo "## Summary"
+            echo "- Sets \`addon/VERSION\` and \`addon/config.yaml\` to **${VERSION}** so main matches tag \`${TAG}\`."
+            if [ "$changelog_added" = 1 ]; then
+              if [ -n "$notes" ]; then
+                echo "- Adds \`addon/CHANGELOG.md\` notes copied from the [${TAG}](https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG) release (edit before merge if you want curated notes)."
+              else
+                echo "- Adds a changelog stub if one was missing (edit before merge if you want curated notes)."
+              fi
+            fi
+            echo
+            echo "Opened automatically after the Release workflow finished building \`${TAG}\`."
+            echo
+            if [ -n "$notes" ]; then
+              echo "## Release notes"
+              echo
+              printf '%s\n' "$notes"
+              echo
+            fi
+            echo "## Test plan"
+            echo "- [ ] Confirm version files match \`${VERSION}\`"
+            if [ "$changelog_added" = 1 ]; then
+              echo "- [ ] Review or curate the changelog notes if needed"
+            fi
+            echo "- [ ] Merge so Supervisor / the repo stay in sync with the published add-on"
+          } > "$body_file"
 
           if gh pr view "$branch" --json number --jq .number >/dev/null 2>&1; then
             echo "PR for $branch already exists; branch updated."
-            gh pr edit "$branch" --body "$body"
+            gh pr edit "$branch" --body-file "$body_file"
             gh pr view "$branch" --json url --jq .url
             exit 0
           fi
 
           if gh pr create --base main --head "$branch" \
             --title "chore(release): sync $VERSION on main" \
-            --body "$body"; then
+            --body-file "$body_file"; then
             exit 0
           fi
 
