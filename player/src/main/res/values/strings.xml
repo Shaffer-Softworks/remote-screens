@@ -30,6 +30,8 @@
     <string name="allow_self_start">Open by itself after a restart or update</string>
     <string name="allow_screen_off">Allow turning the screen off in standby</string>
     <string name="allow_camera_for_face_wake">Allow camera for wake on face</string>
+    <string name="allow_microphone_for_assist">Allow the microphone for Assist</string>
+    <string name="assist_listening">Listening for Assist</string>
     <string name="camera_permission_denied">Camera permission is needed to wake on face.</string>
     <string name="allow_location_sharing">Allow location for Home Assistant</string>
     <string name="location_permission_denied">Location permission is needed to share this tablet\'s location.</string>

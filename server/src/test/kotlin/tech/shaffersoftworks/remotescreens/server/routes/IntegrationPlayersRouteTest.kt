@@ -101,6 +101,7 @@ class IntegrationPlayersRouteTest {
                 dependencies.playerApkRepository,
                 dependencies.enrollmentService,
                 CameraStreamService(StreamingHome()),
+                dependencies.assistRuns,
             )
 
             route("/integration") { integrationRoutes(dependencies.screenService, dependencies.playerHub) }

@@ -49,6 +49,7 @@ fun ScreenSettingsDialog(
     canOfferScreenOff: Boolean,
     canOfferUnrestrictedBattery: Boolean,
     canOfferCameraPermission: Boolean = false,
+    canOfferMicrophonePermission: Boolean = false,
     canOfferLocationPermission: Boolean = false,
     wakeOnFaceUnavailableNote: Int? = null,
     kioskAction: KioskAction?,
@@ -62,6 +63,7 @@ fun ScreenSettingsDialog(
     onAllowScreenOff: () -> Unit,
     onAllowUnrestrictedBattery: () -> Unit,
     onAllowCameraPermission: () -> Unit = {},
+    onAllowMicrophonePermission: () -> Unit = {},
     onAllowLocationPermission: () -> Unit = {},
     onUnlockKiosk: () -> Unit,
     onLockKioskAgain: () -> Unit,
@@ -188,6 +190,11 @@ fun ScreenSettingsDialog(
                     }
                 }
 
+                AssistMicrophoneButton(
+                    isVisible = canOfferMicrophonePermission,
+                    onAllow = onAllowMicrophonePermission,
+                )
+
                 if (canOfferLocationPermission) {
                     TextButton(onClick = onAllowLocationPermission) {
                         Text(stringResource(R.string.allow_location_sharing))
@@ -240,6 +247,17 @@ private fun standbyLabel(standbyMinutes: Int): String =
     } else {
         stringResource(R.string.minutes, standbyMinutes)
     }
+
+@Composable
+private fun AssistMicrophoneButton(isVisible: Boolean, onAllow: () -> Unit) {
+    if (!isVisible) {
+        return
+    }
+
+    TextButton(onClick = onAllow) {
+        Text(stringResource(R.string.allow_microphone_for_assist))
+    }
+}
 
 @Composable
 fun ForgetScreenDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
@@ -312,6 +330,14 @@ private fun ScreenSettingsDialogLockAgainPreview() {
             onLockKioskAgain = {},
             onRemoveDeviceOwner = {},
         )
+    }
+}
+
+@Preview(widthDp = 800, heightDp = 480)
+@Composable
+private fun AssistMicrophoneButtonPreview() {
+    RemoteScreensTheme {
+        AssistMicrophoneButton(isVisible = true, onAllow = {})
     }
 }
 

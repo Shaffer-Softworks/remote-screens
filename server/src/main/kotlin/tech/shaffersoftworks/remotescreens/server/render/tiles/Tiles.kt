@@ -9,6 +9,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.freeform.accent
 import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.alarmPanel
+import tech.shaffersoftworks.remotescreens.server.render.panels.assist.assistPanel
 import tech.shaffersoftworks.remotescreens.server.render.widgets.at
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.bindTileColors
@@ -93,6 +94,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
             TileKind.INTERCOM,
             TileKind.ENERGY,
             TileKind.ENERGY_DASHBOARD,
+            TileKind.ASSIST,
         )
 
         val pageTap = if (hasOwnTaps) null else tapRef
@@ -118,6 +120,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
                 TileKind.INTERCOM -> this@tile.intercomPanel(tile, box)
                 TileKind.ENERGY -> this@tile.energyPanel(tile, box)
                 TileKind.ENERGY_DASHBOARD -> this@tile.energyDashboardPanel(tile, box)
+                TileKind.ASSIST -> this@tile.assistPanel(tile, box)
                 else -> this@tile.weatherPanel(tile, box)
             }
         } }

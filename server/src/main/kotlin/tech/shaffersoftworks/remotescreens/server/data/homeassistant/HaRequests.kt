@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import tech.shaffersoftworks.remotescreens.server.assist.AssistPipelineCatalog
 
 // The WebSocket commands the add-on sends. Each names its `type` and the type of its `result`.
 
@@ -163,6 +164,12 @@ data class CameraStream(
     override val resultSerializer: KSerializer<CameraStreamResult> get() = CameraStreamResult.serializer()
 
     override fun payload(): JsonObject = encodePayload(serializer(), this)
+}
+
+/** Assist pipelines configured in Home Assistant. A failure leaves the screen on the preferred pipeline. */
+data object ListAssistPipelines : HaRequest<AssistPipelineCatalog> {
+    override val type: String get() = "assist_pipeline/pipeline/list"
+    override val resultSerializer: KSerializer<AssistPipelineCatalog> get() = AssistPipelineCatalog.serializer()
 }
 
 @Serializable

@@ -65,6 +65,12 @@ PANEL_PAGES = {
         "icon": "chart-box",
         "tiles": [{"id": "ed1", "kind": "energy_dashboard", "full": True}],
     },
+    "assist": {
+        "id": "assist",
+        "title": "Assist",
+        "icon": "microphone",
+        "tiles": [{"id": "as1", "kind": "assist", "full": True}],
+    },
 }
 
 

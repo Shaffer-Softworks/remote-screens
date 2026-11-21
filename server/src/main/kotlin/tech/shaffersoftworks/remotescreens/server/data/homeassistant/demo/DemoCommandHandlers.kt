@@ -8,6 +8,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.BrowseMedia
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.CalendarEventDelete
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.DeviceRegistryList
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EnergyGetPrefs
+import tech.shaffersoftworks.remotescreens.server.data.homeassistant.ListAssistPipelines
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EnergySource
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityRegistryGet
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityRegistryListForDisplay
@@ -49,6 +50,7 @@ internal class DemoCommandHandlers(
             is BrowseMedia -> mediaPlayerBrowseMedia()
             is GetTranslations -> buildJsonObject { put("resources", buildJsonObject { }) }
             is CalendarEventDelete -> JsonNull
+            ListAssistPipelines -> assistPipelines()
             else -> throw HomeAssistantException(code = "unknown_command", message = "Demo has no ${request.type}")
         }
 
@@ -61,6 +63,17 @@ internal class DemoCommandHandlers(
         DeviceRegistryList -> deviceRegistryList()
         EntityRegistryListForDisplay -> entityRegistryListForDisplay()
         else -> null
+    }
+
+    private fun assistPipelines(): JsonElement = buildJsonObject {
+        put("preferred_pipeline", "preferred")
+
+        put("pipelines", buildJsonArray {
+            add(buildJsonObject {
+                put("id", "preferred")
+                put("name", "Home")
+            })
+        })
     }
 
     private fun fireEvent(request: FireEvent): JsonElement {

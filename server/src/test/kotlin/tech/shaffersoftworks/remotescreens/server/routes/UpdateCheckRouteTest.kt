@@ -67,6 +67,7 @@ class UpdateCheckRouteTest {
                 dependencies.playerApkRepository,
                 dependencies.enrollmentService,
                 cameraStreamService,
+                dependencies.assistRuns,
             )
         }
 

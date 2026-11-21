@@ -83,6 +83,7 @@ class PlayerSession(
     private val supportsMusicSearch = Protocol.CAPABILITY_MUSIC_SEARCH in hello.capabilities
     private val supportsCalendarDialogs = Protocol.CAPABILITY_CALENDAR_DIALOGS in hello.capabilities
     private val supportsEnergyDashboard = Protocol.CAPABILITY_ENERGY_DASHBOARD in hello.capabilities
+    private val supportsAssist = Protocol.CAPABILITY_ASSIST in hello.capabilities
     private val supportsIntercom = Protocol.CAPABILITY_INTERCOM in hello.capabilities
     private val tapMemory = TapMemory()
 
@@ -699,6 +700,7 @@ class PlayerSession(
         override val supportsMusicSearch get() = this@PlayerSession.supportsMusicSearch
         override val supportsCalendarDialogs get() = this@PlayerSession.supportsCalendarDialogs
         override val supportsEnergyDashboard get() = this@PlayerSession.supportsEnergyDashboard
+        override val supportsAssist get() = this@PlayerSession.supportsAssist
         override val supportsIntercom get() = this@PlayerSession.supportsIntercom
         override val intercomView get() = this@PlayerSession.intercomView()
         override val buildMutex get() = this@PlayerSession.buildMutex
@@ -753,6 +755,7 @@ class PlayerSession(
             Protocol.CAPABILITY_MUSIC_SEARCH,
             Protocol.CAPABILITY_CALENDAR_DIALOGS,
             Protocol.CAPABILITY_ENERGY_DASHBOARD,
+            Protocol.CAPABILITY_ASSIST,
             Protocol.CAPABILITY_TELEMETRY,
             Protocol.CAPABILITY_APP_LOG,
             Protocol.CAPABILITY_INTERCOM,

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { api } from '../api'
 import { MODAL_DRAWER, navBar as defaultNavBar, TOP_BAR } from '../model/grid'
 import { BACKGROUND_SWATCHES, DEFAULT_THEME, INK_SWATCHES, themes } from '../model/palette'
 import type { Drawer, DrawerSide, DrawerStyle, NavBar, Screen } from '../model/types'
@@ -7,6 +8,27 @@ import { state } from '../store'
 import ColorSwatches from './ColorSwatches.vue'
 
 const props = defineProps<{ screen: Screen; deviceWidth?: number }>()
+
+const assistWakeWords = [
+  { id: 'okay_nabu', label: 'Okay Nabu' },
+  { id: 'hey_jarvis', label: 'Hey Jarvis' },
+  { id: 'hey_mycroft', label: 'Hey Mycroft' },
+  { id: 'alexa', label: 'Alexa' },
+]
+const assistPipelines = ref<{ id: string; name: string }[]>([])
+
+onMounted(async () => {
+  try {
+    assistPipelines.value = (await api.assistPipelines()).pipelines
+  } catch {
+    assistPipelines.value = []
+  }
+})
+
+function setAssistPipeline(value: string): void {
+  if (value) props.screen.settings.assistPipeline = value
+  else delete props.screen.settings.assistPipeline
+}
 
 if (!props.screen.navBar) props.screen.navBar = {}
 const nav = computed<NavBar>(() => props.screen.navBar!)
@@ -390,6 +412,34 @@ function pin(e: Event): string | null {
       front camera and is skipped on low-RAM tablets. When this is on and in use, standby keeps a
       black screen instead of turning the panel fully off. Can be used together with proximity.
     </p>
+    <label class="check"><input v-model="screen.settings.assist" type="checkbox" /> Assist</label>
+    <p class="note muted">
+      The tablet listens for a wake word on the device. After the phrase, Home Assistant transcribes
+      the command and speaks the reply. The microphone stays on the tablet until the wake word.
+    </p>
+    <template v-if="screen.settings.assist">
+      <label class="field">
+        Wake word
+        <select
+          :value="screen.settings.assistWakeWord || 'okay_nabu'"
+          @change="screen.settings.assistWakeWord = ($event.target as HTMLSelectElement).value"
+        >
+          <option v-for="word in assistWakeWords" :key="word.id" :value="word.id">{{ word.label }}</option>
+        </select>
+      </label>
+      <label class="field">
+        Pipeline
+        <select
+          :value="screen.settings.assistPipeline || ''"
+          @change="setAssistPipeline(($event.target as HTMLSelectElement).value)"
+        >
+          <option value="">Preferred</option>
+          <option v-for="pipeline in assistPipelines" :key="pipeline.id" :value="pipeline.id">
+            {{ pipeline.name }}
+          </option>
+        </select>
+      </label>
+    </template>
 
     <h3>Tablet sensors</h3>
     <label class="check">

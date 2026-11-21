@@ -30,6 +30,7 @@ internal interface SessionHost {
     val supportsMusicSearch: Boolean
     val supportsCalendarDialogs: Boolean
     val supportsEnergyDashboard: Boolean
+    val supportsAssist: Boolean
     val supportsIntercom: Boolean
     val intercomView: IntercomView
     val buildMutex: Mutex

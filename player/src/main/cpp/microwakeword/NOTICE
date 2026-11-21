@@ -1,0 +1,8 @@
+MicroWakeWord JNI engine
+Adapted from the Home Assistant Android companion app module microwakeword
+(https://github.com/home-assistant/android), Copyright Home Assistant and contributors.
+Licensed under the Apache License, Version 2.0.
+
+The bundled wake word models in src/main/assets/wakewords are from
+esphome/micro-wake-word-models, Copyright 2024-2026 Open Home Foundation,
+Apache License 2.0. Wake word names identify the phrase a model detects.

@@ -133,6 +133,9 @@ export function deviceInfoSections(player: PlayerStatus, screen?: Screen): Devic
       row('Back to home after', cfg.backToHomeSeconds, 's'), row('Kiosk lock configured', cfg.kiosk ?? false),
       row('Kiosk PIN', cfg.kioskPin ? 'Configured' : 'Not configured'),
       row('Sensor reporting', cfg.reportTelemetry ?? true), row('Location sharing', cfg.shareLocation ?? false),
+      row('Assist', cfg.assist ?? false),
+      row('Wake word', cfg.assistWakeWord ?? 'okay_nabu'),
+      row('Assist pipeline', cfg.assistPipeline ?? 'Preferred'),
     ]))
   }
   return groups

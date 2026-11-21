@@ -40,6 +40,10 @@ export const dashboardScreens: Screen[] = ['Kitchen', 'Living room', 'Bedroom'].
     },
     { id: 'lights', title: 'Lights', icon: 'lightbulb-outline', tiles: [] },
     { id: 'climate', title: 'Climate', icon: 'thermometer', tiles: [] },
+    { id: 'assist', title: 'Assist', icon: 'microphone', tiles: [{
+      id: 'as1', kind: 'assist', name: 'Assist', col: 0, row: 0, w: 4, h: 2, full: true,
+      tap: { type: 'none' }, hold: { type: 'none' }, options: {},
+    }] },
   ],
 }))
 export const dashboardPlayers: PlayerStatus[] = dashboardScreens.map((screen, i) => ({

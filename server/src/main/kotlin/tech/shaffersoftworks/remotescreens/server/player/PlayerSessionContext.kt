@@ -1,5 +1,7 @@
 package tech.shaffersoftworks.remotescreens.server.player
 
+import tech.shaffersoftworks.remotescreens.server.assist.AssistRuns
+import tech.shaffersoftworks.remotescreens.server.assist.DemoAssistRuns
 import tech.shaffersoftworks.remotescreens.server.config.ServerConfig
 import tech.shaffersoftworks.remotescreens.server.data.apk.PlayerApkRepository
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
@@ -29,4 +31,5 @@ class PlayerSessionContext(
     /** OpenStreetMap-style tile URL with `{z}`, `{x}` and `{y}`, for interactive map cards. */
     val mapTileUrl: String = ServerConfig.OPENSTREETMAP_TILE_URL,
     val appLogs: PlayerAppLogs = PlayerAppLogs(),
+    val assistRuns: AssistRuns = DemoAssistRuns(),
 )

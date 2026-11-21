@@ -105,4 +105,6 @@ export const api = {
   searchIcons: (query: string) => call<string[]>('GET', `icons?q=${encodeURIComponent(query)}`),
   iconPaths: (names: string[]) =>
     call<Record<string, string>>('GET', `icons/paths?names=${encodeURIComponent(names.join(','))}`),
+  assistPipelines: () =>
+    call<{ pipelines: { id: string; name: string }[]; preferred_pipeline?: string }>('GET', 'assist/pipelines'),
 }

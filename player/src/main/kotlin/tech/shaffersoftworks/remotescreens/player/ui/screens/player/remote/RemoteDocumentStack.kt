@@ -27,6 +27,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
 import coil3.ImageLoader
+import tech.shaffersoftworks.remotescreens.player.data.device.assist.AssistUiState
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 import tech.shaffersoftworks.remotescreens.shared.Slot
 
@@ -41,6 +42,8 @@ internal fun RemoteDocumentStack(
     onSearchPlay: (String, String) -> Unit,
     onSearchEnqueue: (String, String) -> Unit,
     onEnergyAction: (tileId: String, verb: String) -> Unit = { _, _ -> },
+    assist: AssistUiState = AssistUiState(),
+    onToggleAssistMute: () -> Unit = {},
     imageLoader: ImageLoader,
 ) {
     val context = LocalContext.current
@@ -73,6 +76,8 @@ internal fun RemoteDocumentStack(
             bounds = measured.copy(
                 energy = measured.energy
                     ?: bounds.energy.takeIf { currentState.playingEnergyDashboard != null },
+                assist = measured.assist
+                    ?: bounds.assist.takeIf { currentState.playingAssist != null },
             )
 
             true
@@ -127,6 +132,8 @@ internal fun RemoteDocumentStack(
                     onSearchPlay = onSearchPlay,
                     onSearchEnqueue = onSearchEnqueue,
                     onEnergyAction = onEnergyAction,
+                    assist = assist,
+                    onToggleAssistMute = onToggleAssistMute,
                     imageLoader = imageLoader,
                 )
             }
@@ -158,6 +165,7 @@ internal data class OverlayBounds(
     val map: Rect? = null,
     val search: Rect? = null,
     val energy: Rect? = null,
+    val assist: Rect? = null,
 )
 
 private fun overlayBounds(controller: RemoteDocumentController, state: RemoteScreenState): OverlayBounds {
@@ -176,6 +184,7 @@ private fun overlayBounds(controller: RemoteDocumentController, state: RemoteScr
 
     val search = state.playingSearch
     val energy = state.playingEnergyDashboard
+    val assist = state.playingAssist
 
     return OverlayBounds(
         video = state.playingVideo?.let { (slot, video) -> bounds(slot, video.componentId) },
@@ -188,6 +197,7 @@ private fun overlayBounds(controller: RemoteDocumentController, state: RemoteScr
             }
         },
         energy = energy?.let { dashboard -> energyBounds(dashboard.message.componentId) },
+        assist = assist?.let { page -> energyBounds(page.message.componentId) },
     )
 }
 

@@ -3,11 +3,14 @@ package tech.shaffersoftworks.remotescreens.server.player.session
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.render.cards.camera.LiveVideo
 import tech.shaffersoftworks.remotescreens.server.render.cards.map.LiveMap
+import tech.shaffersoftworks.remotescreens.server.render.panels.assist.LiveAssist
 import tech.shaffersoftworks.remotescreens.server.render.panels.energydashboard.LiveEnergyDashboard
 import tech.shaffersoftworks.remotescreens.server.render.panels.music.LiveSearch
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
+import tech.shaffersoftworks.remotescreens.shared.AssistTheme
+import tech.shaffersoftworks.remotescreens.shared.AssistWakeWords
 import tech.shaffersoftworks.remotescreens.shared.EnergyDashboardTheme
 import tech.shaffersoftworks.remotescreens.shared.MapMarker
 import tech.shaffersoftworks.remotescreens.shared.MusicSearchRow
@@ -136,6 +139,42 @@ internal class SessionMedia(
                 ),
             )
         }
+    }
+
+    /** Sends the native Assist page shell. Live lines stay on the tablet. Older players keep the update stub. */
+    fun sendAssist(shown: ShownDocument, assist: LiveAssist) {
+        if (!host.supportsAssist) return
+
+        context.scope.launch {
+            if (shownDocuments[shown.slot] !== shown) return@launch
+
+            val settings = host.screen()?.settings
+            val pipelineId = settings?.assistPipeline
+
+            host.send(
+                ServerMessage.AssistPage(
+                    slot = shown.slot,
+                    rev = shown.revision,
+                    page = assist.page,
+                    tileId = assist.tileId,
+                    componentId = assist.componentId,
+                    wakeWord = AssistWakeWords.phrase(settings?.assistWakeWord ?: AssistWakeWords.OKAY_NABU),
+                    pipelineLabel = pipelineLabel(pipelineId),
+                    theme = shown.renderedDoc.docContext.palette.toAssistTheme(),
+                ),
+            )
+        }
+    }
+
+    private suspend fun pipelineLabel(pipelineId: String?): String {
+        if (pipelineId.isNullOrBlank()) return PREFERRED_PIPELINE
+
+        val name = runCatching { context.assistRuns.listPipelines() }.getOrNull()
+            ?.pipelines
+            ?.firstOrNull { it.id == pipelineId }
+            ?.name
+
+        return name?.takeIf { it.isNotBlank() } ?: PREFERRED_PIPELINE
     }
 
     /** Opens the native Music Assistant search overlay; no-op for older players. */
@@ -308,8 +347,16 @@ internal class SessionMedia(
 
     companion object {
         const val MAX_VIDEO_RESTARTS = 3
+        const val PREFERRED_PIPELINE = "Preferred"
     }
 }
+
+private fun Palette.toAssistTheme(): AssistTheme = AssistTheme(
+    page = argb(Role.PAGE),
+    ink = argb(Role.INK),
+    inkDim = argb(Role.INK_DIM),
+    accent = argb(Role.ACCENT),
+)
 
 private fun Palette.toEnergyTheme(): EnergyDashboardTheme = EnergyDashboardTheme(
     page = argb(Role.PAGE),

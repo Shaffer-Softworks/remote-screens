@@ -342,6 +342,12 @@ data class ScreenSettings(
     val reportTelemetry: Boolean = true,
     /** Tablets showing the screen also report their location; needs [reportTelemetry] and location permission. */
     val shareLocation: Boolean = false,
+    /** The tablet listens for a wake word and runs Home Assistant Assist. Off until a screen turns it on. */
+    val assist: Boolean = false,
+    /** One of [AssistWakeWords.IDS]. Anything else becomes [AssistWakeWords.OKAY_NABU]. */
+    val assistWakeWord: String = AssistWakeWords.OKAY_NABU,
+    /** Assist pipeline id, or null for Home Assistant's preferred pipeline. */
+    val assistPipeline: String? = null,
 ) {
     fun validated(): ScreenSettings = copy(
         kioskPin = kioskPin?.takeIf { KIOSK_PIN.matches(it) },
@@ -355,6 +361,8 @@ data class ScreenSettings(
         nightStart = nightStart?.takeIf { HHMM.matches(it) },
         nightEnd = nightEnd?.takeIf { HHMM.matches(it) },
         orientation = orientation.takeIf { it in setOf(0, 1, 2) } ?: 0,
+        assistWakeWord = AssistWakeWords.validated(assistWakeWord),
+        assistPipeline = assistPipeline?.takeIf { it.isNotBlank() && it.length <= MAX_PIPELINE_ID },
     )
 
     companion object {
@@ -363,6 +371,7 @@ data class ScreenSettings(
         const val MAX_BACK_TO_HOME_SECONDS = 3600
         private val HHMM = Regex("^([01]\\d|2[0-3]):[0-5]\\d$")
         val KIOSK_PIN = Regex("^\\d{4,8}$")
+        const val MAX_PIPELINE_ID = 80
     }
 }
 

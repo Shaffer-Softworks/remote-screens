@@ -69,6 +69,7 @@ class CameraStreamRouteTest {
                 dependencies.playerApkRepository,
                 dependencies.enrollmentService,
                 cameraStreamService,
+                dependencies.assistRuns,
             )
         }
 

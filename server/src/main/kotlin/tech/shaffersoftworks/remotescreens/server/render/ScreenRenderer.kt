@@ -158,6 +158,7 @@ class RenderInput(
     val palette: Palette = Themes.RPI,
     val supportsCalendarDialogs: Boolean = false,
     val supportsEnergyDashboard: Boolean = false,
+    val supportsAssist: Boolean = false,
     val intercom: IntercomView? = null,
 ) {
     fun context(device: Device) = DocContext(
@@ -169,6 +170,7 @@ class RenderInput(
         data = data,
         supportsCalendarDialogs = supportsCalendarDialogs,
         supportsEnergyDashboard = supportsEnergyDashboard,
+        supportsAssist = supportsAssist,
         intercom = intercom,
     )
 }

@@ -83,6 +83,7 @@ data class RemoteScreenState(
     val searches: Map<Slot, SlotSearch> = emptyMap(),
     /** Native Energy dashboard payloads for a shown document; they go with the document. */
     val energyDashboards: Map<Slot, List<SlotEnergyDashboard>> = emptyMap(),
+    val assistPages: Map<Slot, List<SlotAssistPage>> = emptyMap(),
     /** Named integers the player sets itself (free-form tabs), kept across document rebuilds. */
     val localInts: Map<String, Int> = emptyMap(),
     val page: Int = 0,
@@ -153,6 +154,18 @@ data class RemoteScreenState(
             return onPage.firstOrNull { it.revision == revision } ?: onPage.last()
         }
 
+    /** Assist conversation for the current main page. Live lines are not part of this message. */
+    val playingAssist: SlotAssistPage?
+        get() {
+            val onPage = assistPages[Slot.MAIN].orEmpty().filter { it.page == page }
+
+            if (onPage.isEmpty()) return null
+
+            val revision = documents[Slot.MAIN]?.revision
+
+            return onPage.firstOrNull { it.revision == revision } ?: onPage.last()
+        }
+
     /** The page to show after a new main document: the same one if it still exists, otherwise home. */
     val pageAfterNewDocument: Int get() = if (page < pageCount) page else homePage
 
@@ -171,6 +184,7 @@ data class RemoteScreenState(
             maps = maps - message.slot,
             searches = searches - message.slot,
             energyDashboards = retainedEnergyDashboards(message),
+            assistPages = retainedAssistPages(message),
         )
 
         if (message.slot != Slot.MAIN) return updated
@@ -288,6 +302,16 @@ data class RemoteScreenState(
         return if (shouldKeep) this else copy(energyDashboards = energyDashboards + (slot to forSlot))
     }
 
+    fun withAssistPage(slot: Slot, assist: SlotAssistPage): RemoteScreenState {
+        val documentRevision = documents[slot]?.revision
+        val existing = assistPages[slot].orEmpty()
+        val previous = existing.firstOrNull { it.page == assist.page }
+        val shouldKeep = documentRevision != assist.revision || previous?.message == assist.message
+        val forSlot = existing.filterNot { it.page == assist.page } + assist
+
+        return if (shouldKeep) this else copy(assistPages = assistPages + (slot to forSlot))
+    }
+
     fun withPage(index: Int): RemoteScreenState = copy(page = index.coerceIn(0, pageCount - 1))
 
     fun withLocalInt(name: String, value: Int): RemoteScreenState = copy(
@@ -310,6 +334,7 @@ data class RemoteScreenState(
                 maps = maps - slot,
                 searches = searches - slot,
                 energyDashboards = energyDashboards - slot,
+                assistPages = assistPages - slot,
             )
         }
 
@@ -323,6 +348,7 @@ data class RemoteScreenState(
             maps = emptyMap(),
             searches = emptyMap(),
             energyDashboards = emptyMap(),
+            assistPages = emptyMap(),
             localInts = emptyMap(),
             calendarDialog = null,
             navigationDrawer = null,
@@ -350,6 +376,32 @@ private fun RemoteScreenState.retainedEnergyDashboards(
         energyDashboards + (message.slot to kept)
     }
 }
+
+private fun RemoteScreenState.retainedAssistPages(
+    message: ServerMessage.Document,
+): Map<Slot, List<SlotAssistPage>> {
+    val pages = message.assistPages
+
+    val kept = when {
+        message.slot != Slot.MAIN -> emptyList()
+        pages == null -> assistPages[message.slot].orEmpty()
+        else -> assistPages[message.slot].orEmpty().filter { it.page in pages }
+    }
+
+    return if (message.slot != Slot.MAIN || kept.isEmpty() && pages != null) {
+        assistPages - message.slot
+    } else {
+        assistPages + (message.slot to kept)
+    }
+}
+
+/** Native Assist page for [page] of document [revision]. The live line is not in [message]. */
+data class SlotAssistPage(
+    val revision: Int,
+    val page: Int,
+    val tileId: String,
+    val message: ServerMessage.AssistPage,
+)
 
 /** Native Energy dashboard for [page] of document [revision]. */
 data class SlotEnergyDashboard(

@@ -21,6 +21,7 @@ Product images live in [`docs/screenshots/`](screenshots/). The README and the
 | `editor-security.png` | Editor | Security page |
 | `editor-vacuum.png` | Editor | Vacuum page |
 | `editor-energy-dashboard.png` | Editor | Energy dashboard page |
+| `editor-assist.png` | Editor | Assist page |
 | `editor-enroll.png` | Editor | Enroll a tablet (needs `REMOTE_SCREENS_APK`) |
 | `themes.png` | Editor | Themes page |
 | `player-pairing.png` | Player | Six-digit pairing code |
@@ -35,6 +36,7 @@ Product images live in [`docs/screenshots/`](screenshots/). The README and the
 | `player-security.png` | Player | Security page |
 | `player-vacuum.png` | Player | Vacuum page |
 | `player-energy-dashboard.png` | Player | Energy dashboard page |
+| `player-assist.png` | Player | Assist page |
 | `player-card.png` | Player | Detail card open |
 
 Do not commit concept mockups; capture live editor and player shots instead.
@@ -64,7 +66,7 @@ accessibility still has the content. Prefer a physical tablet (e.g. BLU M8L) and
 4. For each panel:
 
 ```sh
-python3 tools/docs_demo_layout.py one lights   # or cameras, blinds, security, vacuum, energy_dashboard
+python3 tools/docs_demo_layout.py one lights   # or cameras, blinds, security, vacuum, energy_dashboard, assist
 # open that page on the tablet, then:
 adb exec-out screencap -p > docs/screenshots/player-lights.png
 ```

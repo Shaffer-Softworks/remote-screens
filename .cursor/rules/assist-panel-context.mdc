@@ -1,0 +1,31 @@
+---
+description: Home Assistant Assist on the tablet. On-device wake word, pipeline from speech-to-text, native mic.
+globs: player/**/assist/**,player/**/microwakeword/**,server/**/assist/**,shared/**/Assist.kt,editor/**/ScreenPanel.vue
+alwaysApply: false
+---
+
+# Assist on the tablet
+
+Wake word detection runs on the tablet. Speech-to-text, the conversation, and the spoken reply stay on the Assist pipeline the screen already uses. Room audio leaves the tablet only after the wake word, for that command.
+
+## Why detection is on the device
+
+Streaming the microphone into Home Assistant's wake-word stage would upload audio all day and hold a pipeline run open. The bundled models are microWakeWord: a micro_speech frontend, then a streaming model and a sliding window. A TensorFlow interpreter on the raw `.tflite` skips that frontend and misses the phrase. The player wraps the same JNI engine the Home Assistant companion uses (`player/src/main/cpp/microwakeword`). The JNI class is `tech.shaffersoftworks.remotescreens.player.microwakeword.MicroWakeWord`. Each model ships its own `probability_cutoff`, `sliding_window_size`, and `feature_step_size`; those construct the detector. Bundled phrases are okay_nabu (default), hey_jarvis, hey_mycroft, and alexa. A custom openWakeWord-only phrase is not heard.
+
+Native libraries are `arm64-v8a` and `armeabi-v7a` only.
+
+## Why the pipeline starts at speech-to-text
+
+After a hit the engine resets and the add-on opens `assist_pipeline/run` with `start_stage: stt` and `end_stage: tts`. Audio from before the hit is not sent. Binary PCM goes to `stt_binary_handler_id` from the `run-start` event. The handler id is one byte in front of each PCM frame. An empty frame ends the utterance. The pipeline's own wake-word stage is not used. A follow-up (`continue_conversation`) is another speech-to-text run with the same `conversation_id`, after the reply finishes, and then local listening starts again. `run-end`, a timeout, or an error closes `/assist` and returns to the local detector. It does not start a Home Assistant wake-word run.
+
+The tablet socket is `/assist` on the player port. It opens for one turn. PCM is binary, not a `Protocol` text message. The add-on uses a separate Home Assistant websocket for the run because `HomeAssistantClient` reads text only and owns state.
+
+## Why the microphone control is native
+
+The header mic and the conversation are drawn by the player, not Remote Compose, so a partial transcript does not rebuild the document. The page is a hole (`LiveAssist`, component id `0x62_0000`) the same way the energy dashboard is. The wake word does not change pages. On any other page a caption shows what was heard and the reply, then clears when speech ends.
+
+Assist is off until the screen setting `assist` is on. Mute, and an intercom call, stop the detector and release the mic; Assist resumes after the call. The mic and the speaker are never open together: capture stops before the reply plays and starts again after playback. `AcousticEchoCanceler` and `NoiseSuppressor` attach while listening when the device has them. There is no echo-cancellation JNI and no barge-in.
+
+Dimmed standby keeps listening. Real screen-off uses `AssistListenService` (`foregroundServiceType="microphone"`) plus the partial wake lock the player already holds. Some panels still drop the microphone when the display is off.
+
+Demo mode shows the sample conversation and does not open a pipeline or the microphone. Sendspin is not part of this path.

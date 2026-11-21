@@ -34,6 +34,21 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = major * 10000 + minor * 100 + patch
         versionName = addonVersion
+        // Wake-word native code is arm only. x86 libraries made tablet updates too large to install.
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
+        externalNativeBuild {
+            cmake {
+                arguments += listOf("-DANDROID_STL=c++_shared")
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/microwakeword/CMakeLists.txt")
+        }
     }
 
     val keystore = System.getenv("PLAYER_KEYSTORE")?.let(::file)?.takeIf { it.isFile }
