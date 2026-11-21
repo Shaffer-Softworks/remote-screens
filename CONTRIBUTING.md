@@ -72,11 +72,12 @@ step 1; otherwise the release uses GitHub’s generated notes.
 The integration versions on its own, with the same kind of release used in the other HACS repositories.
 
 1. Run [Create HACS release](.github/workflows/hacs-release.yml) from **Actions → Create HACS release → Run
-   workflow**. Enter a semver that is not already an add-on tag (a leading `v` is optional).
-2. The workflow bumps `custom_components/remote_screens/manifest.json` on branch `release/v<version>`,
-   publishes that tag with `remote_screens.zip`, and opens a pull request to merge the manifest bump.
-   It does not build the player app or the add-on image, and it does not take the GitHub **Latest** badge
-   (that stays on the player-app release).
+   workflow**. Enter the integration semver (a leading `v` is ignored).
+2. The workflow bumps `custom_components/remote_screens/manifest.json` on branch `release/hacs-<version>`
+   when that file is not already at that version, publishes tag `<version>` (not `v<version>`) with
+   `remote_screens.zip`, and opens a pull request when the manifest changed. Add-on tags stay `v*`, so
+   `0.1.51` does not collide with `v0.1.51`. It does not build the player app or the add-on image, and it
+   does not take the GitHub **Latest** badge (that stays on the player-app release).
 3. Merge the manifest pull request after checks pass.
 
 HACS installs `remote_screens.zip` from the newest published release. Add-on releases attach that zip too,
