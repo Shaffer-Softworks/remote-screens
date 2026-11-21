@@ -50,11 +50,14 @@ Domain tiles and cards are YAML under `catalogue/`. Regenerate Kotlin/TS with
 
 ## Releases
 
+### Add-on and player app
+
 1. Run [the release workflow](.github/workflows/addon.yml) from **Actions → Release → Run workflow** on
    `main` and enter the new version (e.g. `0.1.14`). You do not need to bump version files first.
 2. The workflow tags `v<version>` on the current `main` tip, builds the signed player app (stamping that
    version into the build), packages the add-on, pushes
-   `ghcr.io/<owner>/remote-screens-{amd64,aarch64}`, and attaches the APK to the GitHub release.
+   `ghcr.io/<owner>/remote-screens-{amd64,aarch64}`, and attaches the APK and `remote_screens.zip` to the
+   GitHub release.
 3. When `main` still has an older `addon/VERSION` / `config.yaml`, it opens a sync PR so those files (and a
    changelog stub, if missing) match the tag. Merge that PR so the repo stays aligned with the published
    add-on. Optionally edit the changelog in that PR for curated notes next time.
@@ -63,6 +66,26 @@ You can still push tag `v<version>` yourself; the same build runs, and a sync PR
 
 For curated GitHub release notes, add a `## <version>` section to `addon/CHANGELOG.md` on `main` before
 step 1; otherwise the release uses GitHub’s generated notes.
+
+### HACS integration
+
+The integration versions on its own, with the same kind of release used in the other HACS repositories.
+
+1. Run [Create HACS release](.github/workflows/hacs-release.yml) from **Actions → Create HACS release → Run
+   workflow**. Enter a semver that is not already an add-on tag (a leading `v` is optional).
+2. The workflow bumps `custom_components/remote_screens/manifest.json` on branch `release/v<version>`,
+   publishes that tag with `remote_screens.zip`, and opens a pull request to merge the manifest bump.
+   It does not build the player app or the add-on image, and it does not take the GitHub **Latest** badge
+   (that stays on the player-app release).
+3. Merge the manifest pull request after checks pass.
+
+HACS installs `remote_screens.zip` from the newest published release. Add-on releases attach that zip too,
+so a later add-on publish still has the asset. Merge the integration manifest pull request before the next
+add-on release if you want that zip to include the bump.
+
+Optional repository secret `WORKFLOW_TRIGGER_TOKEN` (a PAT with contents and pull requests) lets the
+manifest pull request start checks the way a normal PR does. Without it, the workflow still opens the PR
+when Actions is allowed to, and it dispatches CI on the tag.
 
 Tablets only accept an update signed with the key the app was first installed with, so every release must use
 the same key. The workflow reads it from these repository secrets:
