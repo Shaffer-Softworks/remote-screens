@@ -40,6 +40,12 @@ object Protocol {
     /** A player that can place and answer an intercom call ([ServerMessage.IntercomCommand]). */
     const val CAPABILITY_INTERCOM = "intercom"
 
+    /** A player that listens for a wake word and speaks Home Assistant Assist replies. */
+    const val CAPABILITY_ASSIST = "assist"
+
+    /** Player WebSocket path for one Assist turn. Audio is binary PCM; control messages are JSON text. */
+    const val ASSIST_PATH = "/assist"
+
     const val CAPABILITY_NOTIFICATIONS = "notifications"
     const val CAPABILITY_SENTRY_TEST = "sentry_test"
 
@@ -351,6 +357,11 @@ sealed interface ServerMessage {
          * so the player keeps the dashboard it already has. An empty list means this screen has none.
          */
         val energyPages: List<Int>? = null,
+        /**
+         * Pages that have a native Assist conversation. Null means an older add-on did not say,
+         * so the player keeps the page it already has. An empty list means this screen has none.
+         */
+        val assistPages: List<Int>? = null,
     ) : ServerMessage
 
     @Serializable
@@ -545,6 +556,23 @@ sealed interface ServerMessage {
         /** Page, card, ink, and accent from the screen theme. Older add-ons omit it. */
         val theme: EnergyDashboardTheme = EnergyDashboardTheme(),
     ) : ServerMessage
+
+    /**
+     * Native Assist conversation for page [page] of document [rev] in [slot].
+     * Only for players with [Protocol.CAPABILITY_ASSIST]. Live lines stay on the tablet.
+     */
+    @Serializable
+    @SerialName("assist_page")
+    data class AssistPage(
+        val slot: Slot,
+        val rev: Int,
+        val page: Int,
+        val tileId: String,
+        val componentId: Int,
+        val wakeWord: String,
+        val pipelineLabel: String,
+        val theme: AssistTheme = AssistTheme(),
+    ) : ServerMessage
 }
 
 /**
@@ -569,6 +597,15 @@ data class EnergyDashboardTheme(
         const val TRACK = 0xFF333333L
     }
 }
+
+/** Colours for the native Assist page, packed ARGB. The add-on fills them from the screen theme. */
+@Serializable
+data class AssistTheme(
+    val page: Long = EnergyDashboardTheme.PAGE,
+    val ink: Long = EnergyDashboardTheme.INK,
+    val inkDim: Long = EnergyDashboardTheme.INK_DIM,
+    val accent: Long = EnergyDashboardTheme.ACCENT,
+)
 
 /** One electricity / source total in [ServerMessage.EnergyDashboard.totals]. */
 @Serializable

@@ -58,7 +58,7 @@ The fixture is [`DemoLayout`](../server/src/main/kotlin/tech/shaffersoftworks/re
 
 Themes and the entity library come from the same demo home. Helper builders
 (`lightsPage()`, `camerasPage()`, `blindsPage()`, `securityPage()`, `vacuumPage()`,
-`energyDashboardPage()`, `alarmPage()`, `energyPage()`, …) stay available for tests, previews,
+`energyDashboardPage()`, `assistPage()`, `alarmPage()`, `energyPage()`, …) stay available for tests, previews,
 and documentation capture without sitting on the default demo screen.
 
 ## Pair a tablet or emulator

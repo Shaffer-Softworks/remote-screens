@@ -4,6 +4,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -16,14 +18,23 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.ImageLoader
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteDocumentStack
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotVideo
+import androidx.compose.ui.unit.dp
+import tech.shaffersoftworks.remotescreens.player.data.device.assist.AssistUiState
+import tech.shaffersoftworks.remotescreens.player.ui.screens.player.assist.AssistCaption
+import tech.shaffersoftworks.remotescreens.player.ui.screens.player.assist.AssistHeaderMic
 import tech.shaffersoftworks.remotescreens.player.ui.theme.Page
 import tech.shaffersoftworks.remotescreens.player.ui.views.IdentifyBadge
 import tech.shaffersoftworks.remotescreens.player.ui.views.InfoPanel
+import tech.shaffersoftworks.remotescreens.shared.AssistPhases
+import tech.shaffersoftworks.remotescreens.shared.ScreenSettings
 import tech.shaffersoftworks.remotescreens.shared.Slot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteScreenState
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
+
+private val HEADER_MIC_INSET = 12.dp
+private val CAPTION_ABOVE_NAV = 72.dp
 
 @Composable
 fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
@@ -42,6 +53,7 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
         onSearchPlay = viewModel::onSearchPlay,
         onSearchEnqueue = viewModel::onSearchEnqueue,
         onEnergyAction = viewModel::onEnergyDashboardAction,
+        onToggleAssistMute = viewModel::toggleAssistMute,
         onEnterAddress = viewModel::openAddressDialog,
         onAllowUnrestrictedBattery = viewModel::onAllowUnrestrictedBatteryRequested,
         onReconnect = viewModel::onReconnectRequested,
@@ -62,6 +74,7 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
         onAllowScreenOff = viewModel::onAllowScreenOffRequested,
         onAllowUnrestrictedBattery = viewModel::onAllowUnrestrictedBatteryRequested,
         onAllowCameraPermission = viewModel::onAllowCameraPermissionRequested,
+        onAllowMicrophonePermission = viewModel::onAllowMicrophonePermissionRequested,
         onAllowLocationPermission = viewModel::onAllowLocationPermissionRequested,
         onUnlockKiosk = viewModel::onUnlockKioskRequested,
         onLockKioskAgain = viewModel::onLockKioskAgainRequested,
@@ -89,6 +102,7 @@ internal fun PlayerScreenContent(
     onSearchPlay: (String, String) -> Unit = { _, _ -> },
     onSearchEnqueue: (String, String) -> Unit = { _, _ -> },
     onEnergyAction: (String, String) -> Unit = { _, _ -> },
+    onToggleAssistMute: () -> Unit = {},
     onEnterAddress: () -> Unit = {},
     onAllowUnrestrictedBattery: () -> Unit = {},
     onReconnect: () -> Unit = {},
@@ -129,6 +143,8 @@ internal fun PlayerScreenContent(
                 onSearchPlay = onSearchPlay,
                 onSearchEnqueue = onSearchEnqueue,
                 onEnergyAction = onEnergyAction,
+                assist = viewState.assist,
+                onToggleAssistMute = onToggleAssistMute,
                 imageLoader = imageLoader,
             )
         }
@@ -139,6 +155,7 @@ internal fun PlayerScreenContent(
             onAllowUnrestrictedBattery = onAllowUnrestrictedBattery,
             onReconnect = onReconnect,
             onNotificationAction = onNotificationAction,
+            onToggleAssistMute = onToggleAssistMute,
         )
     }
 }
@@ -150,6 +167,7 @@ private fun PlayerChromeOverlays(
     onAllowUnrestrictedBattery: () -> Unit,
     onReconnect: () -> Unit,
     onNotificationAction: (Int?) -> Unit,
+    onToggleAssistMute: () -> Unit = {},
 ) {
     if (Slot.ALERT !in viewState.remoteScreen.documents && !viewState.isAnyDialogVisible) {
         viewState.notificationBanner?.let { banner ->
@@ -181,8 +199,37 @@ private fun PlayerChromeOverlays(
 
     viewState.identifyScreenName?.let { screenName -> IdentifyBadge(screenName = screenName) }
 
+    AssistPageChrome(viewState = viewState, onToggleAssistMute = onToggleAssistMute)
+
     if (viewState.isBlackout) {
         Box(Modifier.fillMaxSize().background(Color.Black))
+    }
+}
+
+@Composable
+private fun AssistPageChrome(
+    viewState: PlayerViewModel.ViewState,
+    onToggleAssistMute: () -> Unit,
+) {
+    if (!viewState.screenSettings.assist || viewState.isBlackout) {
+        return
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        AssistHeaderMic(
+            assist = viewState.assist,
+            onToggleMute = onToggleAssistMute,
+            modifier = Modifier.align(Alignment.TopEnd).padding(HEADER_MIC_INSET),
+        )
+
+        val caption = viewState.assist.caption
+
+        if (caption != null && viewState.remoteScreen.playingAssist == null) {
+            AssistCaption(
+                text = caption,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = CAPTION_ABOVE_NAV),
+            )
+        }
     }
 }
 
@@ -240,15 +287,34 @@ private fun PlayerScreenBlackoutPreview() {
 
 @Preview(widthDp = 800, heightDp = 480)
 @Composable
+private fun AssistPageChromePreview() {
+    RemoteScreensTheme {
+        AssistPageChrome(
+            viewState = PlayerViewModel.ViewState(
+                screenSettings = ScreenSettings(assist = true),
+                assist = AssistUiState(
+                    phase = AssistPhases.LISTENING,
+                    caption = "Turn off the kitchen lights",
+                ),
+            ),
+            onToggleAssistMute = {},
+        )
+    }
+}
+
+@Preview(widthDp = 800, heightDp = 480)
+@Composable
 private fun PlayerChromeOverlaysPreview() {
     RemoteScreensTheme {
-        PlayerChromeOverlays(
-            viewState = PlayerViewModel.ViewState(infoPanel = InfoPanelState.Searching),
-            onEnterAddress = {},
-            onAllowUnrestrictedBattery = {},
-            onReconnect = {},
-            onNotificationAction = {},
-        )
+        Box(Modifier.fillMaxSize()) {
+            PlayerChromeOverlays(
+                viewState = PlayerViewModel.ViewState(infoPanel = InfoPanelState.Searching),
+                onEnterAddress = {},
+                onAllowUnrestrictedBattery = {},
+                onReconnect = {},
+                onNotificationAction = {},
+            )
+        }
     }
 }
 

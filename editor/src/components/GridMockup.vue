@@ -227,6 +227,8 @@ const blindsRooms = computed(() => blindsRoomRows(state.areas, state.entities))
 /** RPI's cameras page (CamerasPanel.kt): the tile's cameras in a list on the left, the chosen one's video on the right. */
 const isCamerasPanel = (tile: Tile) => kindOf(tile) === 'cameras' && tile.full === true
 const isIntercomPanel = (tile: Tile) => kindOf(tile) === 'intercom' && tile.full === true
+const isAssistPanel = (tile: Tile) => kindOf(tile) === 'assist' && tile.full === true
+const assistIsStacked = computed(() => props.device.w < 700)
 const isEnergyDashboardPanel = (tile: Tile) => kindOf(tile) === 'energy_dashboard' && tile.full === true
 const intercomPage = computed(() => ({
   w: props.device.w,
@@ -276,6 +278,7 @@ function place(placement: { tile: Tile; col: number; row: number; w: number; h: 
     isSecurityPanel(placement.tile) ||
     isEnergyPanel(placement.tile) ||
     isEnergyDashboardPanel(placement.tile) ||
+    isAssistPanel(placement.tile) ||
     isCalendarPanel(placement)
   ) {
     return {
@@ -609,6 +612,8 @@ const highlight = computed(() => {
           'energy-panel': isEnergyPanel(placement.tile),
           'cameras-panel': isCamerasPanel(placement.tile),
           'intercom-panel': isIntercomPanel(placement.tile),
+          'assist-panel': isAssistPanel(placement.tile),
+          'assist-stacked': isAssistPanel(placement.tile) && assistIsStacked,
           'intercom-compact': isIntercomPanel(placement.tile) && intercomIsStacked,
           'intercom-narrow': isIntercomPanel(placement.tile) && intercomIsNarrow,
           'energy-dashboard-panel': isEnergyDashboardPanel(placement.tile),
@@ -905,6 +910,21 @@ const highlight = computed(() => {
               <span class="ic-who"><span>Kitchen</span><small>In Call</small></span>
               <span class="ic-button ic-call"><MdiIcon name="phone-outline" :size="28" />Call</span>
             </span>
+          </div>
+        </template>
+        <template v-else-if="isAssistPanel(placement.tile)">
+          <div class="as-side">
+            <i class="as-accent" />
+            <span class="as-title">ASSIST</span>
+            <span class="as-phase">Speaking</span>
+            <span class="as-key">Mute</span>
+            <span class="as-pipeline">Preferred</span>
+          </div>
+          <div class="as-talk">
+            <span class="as-who">You</span>
+            <span class="as-line">Turn off the kitchen lights</span>
+            <span class="as-who">Assist</span>
+            <span class="as-line">The kitchen lights are off</span>
           </div>
         </template>
         <template v-else-if="isEnergyDashboardPanel(placement.tile)">
@@ -1539,13 +1559,84 @@ const highlight = computed(() => {
 .tile.lights-panel,
 .tile.blinds-panel,
 .tile.vacuum-panel,
-.tile.security-panel {
+.tile.security-panel,
+.tile.assist-panel {
   flex-direction: row;
   align-items: stretch;
   padding: 0;
   background: var(--rc-page);
   border: none;
   border-radius: 0;
+}
+
+.tile.assist-panel.assist-stacked {
+  flex-direction: column;
+}
+
+.as-side {
+  width: 350px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 28px 0 16px;
+  background: var(--rc-strip);
+}
+
+.tile.assist-stacked .as-side {
+  width: 100%;
+}
+
+.as-accent {
+  width: 100px;
+  height: 10px;
+  margin-left: 20px;
+  background: var(--rc-accent-dark);
+}
+
+.as-title,
+.as-phase,
+.as-pipeline,
+.as-who,
+.as-line {
+  margin-left: 20px;
+}
+
+.as-title {
+  font-size: 15px;
+  color: var(--rc-ink);
+}
+
+.as-phase,
+.as-line {
+  font-size: 22px;
+  color: var(--rc-ink);
+}
+
+.as-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+  margin-left: 20px;
+  color: var(--rc-page);
+  background: var(--rc-accent-dark);
+}
+
+.as-pipeline,
+.as-who {
+  color: var(--rc-ink-dim);
+  font-size: 14px;
+}
+
+.as-talk {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 28px 20px;
+  min-width: 0;
 }
 
 .tile.energy-panel {

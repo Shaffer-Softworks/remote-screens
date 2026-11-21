@@ -1,5 +1,8 @@
 package tech.shaffersoftworks.remotescreens.server.routes
 
+import tech.shaffersoftworks.remotescreens.server.assist.AssistBridge
+import tech.shaffersoftworks.remotescreens.server.assist.AssistRuns
+import tech.shaffersoftworks.remotescreens.shared.Protocol
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.server.data.apk.PlayerApkRepository
 import tech.shaffersoftworks.remotescreens.server.player.PlayerHub
@@ -34,9 +37,11 @@ fun Route.playerRoutes(
     playerApkRepository: PlayerApkRepository,
     enrollmentService: EnrollmentService,
     cameraStreamService: CameraStreamService,
+    assistRuns: AssistRuns,
 ) {
     get("/health") { call.respondText("ok") }
     webSocket("/player") { playerHub.serve(this, call.request.origin.remoteAddress) }
+    webSocket(Protocol.ASSIST_PATH) { AssistBridge(runs = assistRuns, playerHub = playerHub).serve(this) }
     playerUpdateRoute(playerHub, playerApkRepository)
 
     get("/player/apk") {

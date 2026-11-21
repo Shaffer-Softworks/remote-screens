@@ -16,6 +16,7 @@ import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderData
 import tech.shaffersoftworks.remotescreens.server.i18n.I18n
 import tech.shaffersoftworks.remotescreens.server.render.cards.camera.LiveVideo
 import tech.shaffersoftworks.remotescreens.server.render.cards.map.LiveMap
+import tech.shaffersoftworks.remotescreens.server.render.panels.assist.LiveAssist
 import tech.shaffersoftworks.remotescreens.server.render.panels.energydashboard.LiveEnergyDashboard
 import tech.shaffersoftworks.remotescreens.server.render.panels.music.LiveSearch
 import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
@@ -46,6 +47,8 @@ class DocContext(
     val supportsCalendarDialogs: Boolean = false,
     /** When true, the Energy page hole stays blank; the player paints the native dashboard over it. */
     val supportsEnergyDashboard: Boolean = false,
+    /** When true, the Assist page hole stays blank; the player paints the conversation over it. */
+    val supportsAssist: Boolean = false,
     /** The intercom page for this tablet. Null on a document that has no intercom tile. */
     val intercom: IntercomView? = null,
 ) {
@@ -70,6 +73,8 @@ class DocContext(
     val searches = mutableListOf<LiveSearch>()
     /** Energy dashboard pages for players with CAPABILITY_ENERGY_DASHBOARD. */
     val energyDashboards = mutableListOf<LiveEnergyDashboard>()
+    /** Assist pages for players with CAPABILITY_ASSIST. */
+    val assistPages = mutableListOf<LiveAssist>()
     /** Page index currently being drawn, so a search overlay can hide on the other pages. */
     var renderingPage: Int = 0
     /** Action metadata to the action and the entity it changes. */

@@ -66,6 +66,10 @@ fun Route.editorRoutes(dependencies: ServerDependencies) {
             call.respond(HttpStatusCode.NoContent)
         }
 
+        get("/assist/pipelines") {
+            call.respond(dependencies.assistRuns.listPipelines())
+        }
+
         get("/grid") {
             val width = call.request.queryParameters["w"]?.toFloatOrNull() ?: throw BadRequestException(
                 "w",

@@ -175,6 +175,12 @@ export interface ScreenSettings {
   reportTelemetry?: boolean
   /** Tablets also report their location; absent is off. */
   shareLocation?: boolean
+  /** The tablet listens for a wake word and runs Home Assistant Assist. Absent is off. */
+  assist?: boolean
+  /** Bundled wake word id. Absent is okay_nabu. */
+  assistWakeWord?: string
+  /** Assist pipeline id. Absent uses Home Assistant's preferred pipeline. */
+  assistPipeline?: string
 }
 
 /** A custom theme as stored: hex colours laid over a built-in [base]. */

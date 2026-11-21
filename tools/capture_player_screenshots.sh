@@ -219,6 +219,7 @@ tap_nav Blinds; shot player-blinds
 tap_nav Security; shot player-security
 tap_nav Vacuum; shot player-vacuum
 tap_nav Energy; shot player-energy-dashboard
+tap_nav Assist; shot player-assist
 tap_nav "Living room"; shot player-living
 # Open a tile card on Living room (center-ish of the grid).
 size="$(screen_size)"

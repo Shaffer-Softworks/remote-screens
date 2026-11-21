@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import coil3.ImageLoader
+import tech.shaffersoftworks.remotescreens.player.data.device.assist.AssistUiState
+import tech.shaffersoftworks.remotescreens.player.ui.screens.player.assist.AssistScreen
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.energy.EnergyDashboardScreen
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 import tech.shaffersoftworks.remotescreens.shared.Slot
@@ -30,6 +32,8 @@ internal fun DocumentOverlays(
     onSearchPlay: (String, String) -> Unit,
     onSearchEnqueue: (String, String) -> Unit,
     onEnergyAction: (tileId: String, verb: String) -> Unit = { _, _ -> },
+    assist: AssistUiState = AssistUiState(),
+    onToggleAssistMute: () -> Unit = {},
     imageLoader: ImageLoader,
 ) {
     // A MAIN rebuild can briefly clear playingEnergyDashboard before the follow-up payload.
@@ -96,6 +100,24 @@ internal fun DocumentOverlays(
                             onAction = { verb -> onEnergyAction(dashboard.tileId, verb) },
                         )
                     }
+                }
+            }
+        }
+
+        state.playingAssist?.takeIf { slot == Slot.MAIN }?.let { assistPage ->
+            key(assistPage.tileId, assistPage.page) {
+                val screen = @Composable {
+                    AssistScreen(
+                        page = assistPage.message,
+                        assist = assist,
+                        onToggleMute = onToggleAssistMute,
+                    )
+                }
+
+                if (bounds.assist != null) {
+                    DocumentOverlay(bounds.assist) { screen() }
+                } else {
+                    Box(Modifier.fillMaxSize()) { screen() }
                 }
             }
         }

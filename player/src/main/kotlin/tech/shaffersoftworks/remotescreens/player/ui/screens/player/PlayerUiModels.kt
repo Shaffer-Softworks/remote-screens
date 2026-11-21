@@ -23,6 +23,8 @@ data class SettingsDialogState(
     val canOfferUnrestrictedBattery: Boolean = false,
     /** Whether to offer the camera permission face wake needs. */
     val canOfferCameraPermission: Boolean = false,
+    /** Whether to offer the microphone Assist needs. */
+    val canOfferMicrophonePermission: Boolean = false,
     /** Whether to offer the location permission that sharing the tablet's location needs. */
     val canOfferLocationPermission: Boolean = false,
     /** One-shot note when face wake is on but this tablet cannot run it. */

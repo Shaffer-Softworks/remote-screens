@@ -49,6 +49,7 @@ object DemoLayout {
         securityPage(),
         vacuumPage(),
         energyDashboardPage(),
+        assistPage(),
     )
 
     /**
@@ -103,6 +104,14 @@ object DemoLayout {
         title = "Intercom",
         tiles = listOf(Tile(id = "ic1", kind = TileKind.INTERCOM.wire, full = true)),
         icon = "phone",
+    )
+
+    /** Assist conversation page. Added where it is wanted, like [intercomPage]. */
+    fun assistPage(): Page = Page(
+        id = "assist",
+        title = "Assist",
+        tiles = listOf(Tile(id = "as1", kind = TileKind.ASSIST.wire, full = true)),
+        icon = "microphone",
     )
 
     /** HA-style Energy dashboard page. Added where it is wanted, like [lightsPage]. */

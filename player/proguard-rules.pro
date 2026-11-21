@@ -16,6 +16,11 @@
 }
 -keep class androidx.compose.remote.** { *; }
 
+# microWakeWord JNI. The native methods are registered by name.
+-keep class tech.shaffersoftworks.remotescreens.player.microwakeword.MicroWakeWord {
+    native <methods>;
+}
+
 # osmdroid (interactive map cards)
 -keep class org.osmdroid.** { *; }
 -dontwarn org.osmdroid.**

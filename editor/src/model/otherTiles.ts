@@ -17,6 +17,7 @@ export const OTHER_TILE_KINDS = [
   'security',
   'cameras',
   'intercom',
+  'assist',
 ]
 
 /**
@@ -33,6 +34,7 @@ export const OTHER_TILE_FULL_KINDS = [
   'intercom',
   'energy',
   'energy_dashboard',
+  'assist',
 ]
 
 /** Source for an Other-tiles kind click or drag. */

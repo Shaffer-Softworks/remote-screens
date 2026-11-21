@@ -27,6 +27,10 @@ import tech.shaffersoftworks.remotescreens.player.data.preferences.PlayerPrefere
 import tech.shaffersoftworks.remotescreens.player.data.update.UpdateRepository
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.CalendarCreateForm
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteScreenState
+import tech.shaffersoftworks.remotescreens.player.data.device.assist.AssistCoordinator
+import tech.shaffersoftworks.remotescreens.player.data.device.assist.AssistSessionConfig
+import tech.shaffersoftworks.remotescreens.player.data.device.assist.AssistUiState
+import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotAssistPage
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotEnergyDashboard
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotMap
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotSearch
@@ -90,6 +94,7 @@ private val PLAYER_CAPABILITIES =
         Protocol.CAPABILITY_ENERGY_DASHBOARD,
         Protocol.CAPABILITY_TELEMETRY,
         Protocol.CAPABILITY_INTERCOM,
+        Protocol.CAPABILITY_ASSIST,
         Protocol.CAPABILITY_NOTIFICATIONS,
         Protocol.CAPABILITY_SENTRY_TEST,
     )
@@ -117,6 +122,7 @@ class PlayerViewModel @Inject constructor(
     private val appLog: AppLog,
     private val locationAccuracy: LocationAccuracy,
     private val intercomCoordinator: IntercomCoordinator,
+    private val assistCoordinator: AssistCoordinator,
     @HaImageLoaderQualifier val haImageLoaderQualifier: ImageLoader,
 ) : ViewModel() {
 
@@ -142,6 +148,7 @@ class PlayerViewModel @Inject constructor(
         val isBatteryRestricted: Boolean = false,
         /** A call is up, so this tablet's camera video and music stay quiet until it ends. */
         val isIntercomCall: Boolean = false,
+        val assist: AssistUiState = AssistUiState(),
         val notificationBanner: ServerMessage.NotificationBanner? = null,
     ) {
         private val scheduledBrightnessPercent: Int
@@ -196,7 +203,14 @@ class PlayerViewModel @Inject constructor(
         observeServerMessages()
         observeNightSchedule()
         observeKiosk()
+        observeAssist()
         onUserInteraction()
+    }
+
+    private fun observeAssist() {
+        viewModelScope.launch {
+            assistCoordinator.state.collect { assist -> _viewState.update { it.copy(assist = assist) } }
+        }
     }
 
     override fun onCleared() {
@@ -204,6 +218,7 @@ class PlayerViewModel @Inject constructor(
         faceWakeMonitor.stop()
         telemetryReporter.stop()
         appLog.forwardOn(null)
+        assistCoordinator.stop()
         connectionRepository.disconnect(this)
     }
 
@@ -404,6 +419,7 @@ class PlayerViewModel @Inject constructor(
             is ServerMessage.SearchResults -> onSearchResults(message)
             is ServerMessage.CalendarDialog -> updateRemoteScreen { it.withCalendarDialog(message) }
             is ServerMessage.EnergyDashboard -> onEnergyDashboard(message)
+            is ServerMessage.AssistPage -> onAssistPage(message)
             is ServerMessage.IntercomConfig -> onIntercomConfig(message)
             is ServerMessage.IntercomCommand -> intercomCoordinator.command(message.verb, message.clientId)
             is ServerMessage.NotificationBanner -> showNotificationBanner(message)
@@ -569,6 +585,22 @@ class PlayerViewModel @Inject constructor(
             )
         }
     }
+
+    private fun onAssistPage(message: ServerMessage.AssistPage) {
+        updateRemoteScreen {
+            it.withAssistPage(
+                slot = message.slot,
+                assist = SlotAssistPage(
+                    revision = message.rev,
+                    page = message.page,
+                    tileId = message.tileId,
+                    message = message,
+                ),
+            )
+        }
+    }
+
+    fun toggleAssistMute() = assistCoordinator.toggleMute()
 
     fun onEnergyDashboardAction(tileId: String, verb: String) {
         val revision = _viewState.value.remoteScreen.documents[Slot.MAIN]?.revision ?: return
@@ -871,6 +903,8 @@ class PlayerViewModel @Inject constructor(
         } else {
             screenPowerRepository.turnScreenOn()
         }
+
+        syncAssist()
     }
 
     /**
@@ -981,6 +1015,7 @@ class PlayerViewModel @Inject constructor(
                 displayName = config.displayName,
                 onReport = { report ->
                     _viewState.update { it.copy(isIntercomCall = report.busy) }
+                    syncAssist()
                     viewModelScope.launch { connectionRepository.send(report) }
                 },
                 onWake = { onUserInteraction() },
@@ -1055,6 +1090,36 @@ class PlayerViewModel @Inject constructor(
 
         if (settings.kiosk != _viewState.value.isKioskEnabled) {
             viewModelScope.launch { preferencesRepository.setKioskEnabled(settings.kiosk) }
+        }
+
+        requestAssistMicrophone(settings = settings, previousSettings = previousSettings)
+        syncAssist()
+    }
+
+    private fun requestAssistMicrophone(settings: ScreenSettings, previousSettings: ScreenSettings) {
+        if (!settings.assist || previousSettings.assist || intercomCoordinator.hasMicrophone()) {
+            return
+        }
+
+        viewModelScope.launch { requestMicrophoneIfNeeded() }
+    }
+
+    private fun syncAssist() {
+        val state = _viewState.value
+
+        viewModelScope.launch {
+            assistCoordinator.apply(
+                config = AssistSessionConfig(
+                    isEnabled = state.screenSettings.assist,
+                    wakeWordId = state.screenSettings.assistWakeWord,
+                    pipelineId = state.screenSettings.assistPipeline,
+                    isPaused = state.isIntercomCall,
+                    isScreenOff = screenPowerRepository.isScreenOff,
+                    server = connectionRepository.server.value,
+                    token = preferencesRepository.token.first(),
+                ),
+                onWake = { onUserInteraction() },
+            )
         }
     }
 
@@ -1205,6 +1270,10 @@ class PlayerViewModel @Inject constructor(
                     canOfferCameraPermission = !isKioskLocked &&
                         currentState.screenSettings.wakeOnFace &&
                         !faceWakeMonitor.hasCameraPermission(),
+                    canOfferMicrophonePermission = canOfferAssistMicrophone(
+                        isKioskLocked = isKioskLocked,
+                        settings = currentState.screenSettings,
+                    ),
                     canOfferLocationPermission = !isKioskLocked && canOfferLocationPermission(),
                     wakeOnFaceUnavailableNote = wakeOnFaceUnavailableNote(
                         currentState.screenSettings.wakeOnFace,
@@ -1215,6 +1284,9 @@ class PlayerViewModel @Inject constructor(
             )
         }
     }
+
+    private fun canOfferAssistMicrophone(isKioskLocked: Boolean, settings: ScreenSettings): Boolean =
+        !isKioskLocked && settings.assist && !intercomCoordinator.hasMicrophone()
 
     fun onSettingsBrightnessPreview(brightnessPercent: Int) {
         _viewState.update { it.copy(previewBrightnessPercent = brightnessPercent) }
@@ -1287,6 +1359,11 @@ class PlayerViewModel @Inject constructor(
     fun onAllowCameraPermissionRequested() {
         onSettingsDismissed()
         viewModelScope.launch { _events.send(PlayerEvent.RequestCameraPermission) }
+    }
+
+    fun onAllowMicrophonePermissionRequested() {
+        onSettingsDismissed()
+        viewModelScope.launch { _events.send(PlayerEvent.RequestMicrophonePermission) }
     }
 
     private fun canOfferLocationPermission(): Boolean =

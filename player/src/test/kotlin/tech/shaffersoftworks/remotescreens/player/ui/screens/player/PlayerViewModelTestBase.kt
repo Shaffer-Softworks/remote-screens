@@ -8,6 +8,8 @@ import tech.shaffersoftworks.remotescreens.player.data.device.DeviceRepository
 import tech.shaffersoftworks.remotescreens.player.data.device.FaceWakeMonitor
 import tech.shaffersoftworks.remotescreens.player.data.device.ProximityWakeMonitor
 import tech.shaffersoftworks.remotescreens.player.data.device.ScreenPowerRepository
+import tech.shaffersoftworks.remotescreens.player.data.device.assist.AssistCoordinator
+import tech.shaffersoftworks.remotescreens.player.data.device.assist.AssistUiState
 import tech.shaffersoftworks.remotescreens.player.data.device.intercom.IntercomCoordinator
 import tech.shaffersoftworks.remotescreens.player.data.device.telemetry.LocationAccuracy
 import tech.shaffersoftworks.remotescreens.player.data.device.telemetry.TelemetryReporter
@@ -66,6 +68,9 @@ abstract class PlayerViewModelTestBase {
     protected val intercomCoordinator: IntercomCoordinator = mock {
         on { hasMicrophone() } doReturn false
     }
+    protected val assistCoordinator: AssistCoordinator = mock {
+        on { state } doReturn MutableStateFlow(AssistUiState())
+    }
     protected val deviceRepository: DeviceRepository = mock {
         on { batteryStatus() } doReturn BatteryStatus(levelPercent = 50, isCharging = true)
     }
@@ -115,6 +120,7 @@ abstract class PlayerViewModelTestBase {
             appLog = appLog,
             locationAccuracy = locationAccuracy,
             intercomCoordinator = intercomCoordinator,
+            assistCoordinator = assistCoordinator,
             haImageLoaderQualifier = mock(),
         )
     }

@@ -15,3 +15,4 @@ kinds:
   security: {name: Security, icon: shield-home, sizes: [full], card: none}
   cameras: {name: Cameras, icon: cctv, sizes: [full], card: none}
   intercom: {name: Intercom, icon: phone, sizes: [full], card: none}
+  assist: {name: Assist, icon: microphone, sizes: [full], card: none}

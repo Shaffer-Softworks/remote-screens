@@ -41,6 +41,7 @@ internal class SessionDocument(
         palette = host.palette,
         supportsCalendarDialogs = host.supportsCalendarDialogs,
         supportsEnergyDashboard = host.supportsEnergyDashboard,
+        supportsAssist = host.supportsAssist,
         intercom = host.intercomView,
     )
 
@@ -168,6 +169,11 @@ internal class SessionDocument(
                 } else {
                     null
                 },
+                assistPages = if (shown.slot == Slot.MAIN) {
+                    renderedDoc.docContext.assistPages.map { it.page }.distinct()
+                } else {
+                    null
+                },
             ),
         )
     }
@@ -226,6 +232,10 @@ internal class SessionDocument(
 
         for (dashboard in shown.renderedDoc.docContext.energyDashboards) {
             media.sendEnergyDashboard(shown, dashboard)
+        }
+
+        for (assist in shown.renderedDoc.docContext.assistPages) {
+            media.sendAssist(shown, assist)
         }
 
         if (!isForced) return

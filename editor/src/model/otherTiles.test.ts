@@ -76,6 +76,12 @@ describe('other tiles', () => {
     expect(newTile(kindSource('blinds'), 0, 0)).toMatchObject({ kind: 'blinds', full: true })
   })
 
+  it('opens assist from Other tiles as a full page', () => {
+    expect(OTHER_TILE_FULL_KINDS).toContain('assist')
+    expect(kindSource('assist')).toEqual({ kind: 'assist', full: true })
+    expect(newTile(kindSource('assist'), 0, 0)).toMatchObject({ kind: 'assist', full: true })
+  })
+
   it('opens security from Other tiles as a full page', () => {
     expect(OTHER_TILE_FULL_KINDS).toContain('security')
     expect(kindSource('security')).toEqual({ kind: 'security', full: true })

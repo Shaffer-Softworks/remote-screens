@@ -43,6 +43,7 @@ const PAGE_IDS = {
   Security: 'security',
   Vacuum: 'vacuum',
   Energy: 'energy_dashboard',
+  Assist: 'assist',
 }
 const selectPage = async (title) => {
   const picker = page.locator('select[aria-label="Page"]')
@@ -94,6 +95,7 @@ await shotPage('Blinds', 'editor-blinds')
 await shotPage('Security', 'editor-security')
 await shotPage('Vacuum', 'editor-vacuum')
 await shotPage('Energy', 'editor-energy-dashboard')
+await shotPage('Assist', 'editor-assist')
 
 await home()
 await page.getByRole('button', { name: 'Themes' }).click()

@@ -7,6 +7,7 @@ package tech.shaffersoftworks.remotescreens.shared
  */
 enum class TileKind(val wire: String) {
     ALARM_PANEL("alarm_control_panel"),
+    ASSIST("assist"),
     BEDSIDE("bedside"),
     BLINDS("blinds"),
     BUTTON("button"),
@@ -48,6 +49,7 @@ enum class TileKind(val wire: String) {
             MUSIC,
             CALENDAR,
             ALARM_PANEL,
+            ASSIST,
             LIGHTS,
             BLINDS,
             VACUUM,

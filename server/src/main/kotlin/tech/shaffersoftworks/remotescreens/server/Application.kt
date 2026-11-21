@@ -192,6 +192,7 @@ fun Application.playerModule(dependencies: ServerDependencies) {
             playerApkRepository = dependencies.playerApkRepository,
             enrollmentService = dependencies.enrollmentService,
             cameraStreamService = dependencies.cameraStreamService,
+            assistRuns = dependencies.assistRuns,
         )
 
         route("/integration") {

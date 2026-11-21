@@ -352,6 +352,20 @@ class RenderTest : RenderFixture() {
 
 
     @Test
+    fun aFullAssistTileRegistersNativeOverlayAndUpdateStub() {
+        val screen = DemoLayout.screen().let { it.copy(pages = it.pages + DemoLayout.assistPage()) }
+        val data = runBlocking { RenderDataRepository(ha).forScreen(screen) }
+        val doc = ScreenRenderer.render(screen, tablet, input(data))
+        val text = String(doc.bytes, Charsets.ISO_8859_1)
+
+        assertContains(text, "Update the tablet app for Assist")
+        val assist = doc.docContext.assistPages.single()
+        assertEquals("as1", assist.tileId)
+        assertTrue(assist.componentId >= 0x62_0000)
+        assertEveryValueIsDeclared(doc)
+    }
+
+    @Test
     fun aFullEnergyDashboardTileRegistersNativeOverlayAndUpdateStub() {
         val (doc, text) = renderEnergyDashboard()
         assertContains(text, "Update the tablet app for the Energy dashboard")

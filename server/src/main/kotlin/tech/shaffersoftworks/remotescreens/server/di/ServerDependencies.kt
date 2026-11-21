@@ -1,5 +1,9 @@
 package tech.shaffersoftworks.remotescreens.server.di
 
+import tech.shaffersoftworks.remotescreens.server.assist.AssistRuns
+import tech.shaffersoftworks.remotescreens.server.assist.DemoAssistRuns
+import tech.shaffersoftworks.remotescreens.server.assist.HomeAssistRuns
+import tech.shaffersoftworks.remotescreens.server.assist.KtorAssistSockets
 import tech.shaffersoftworks.remotescreens.server.config.ServerConfig
 import tech.shaffersoftworks.remotescreens.server.data.apk.PlayerApkRepository
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
@@ -46,6 +50,17 @@ class ServerDependencies(
         )
     }
     val homeAssistant: HomeAssistant = homeAssistantClient ?: DemoHome()
+    val assistRuns: AssistRuns = if (config.isDemo) {
+        DemoAssistRuns()
+    } else {
+        HomeAssistRuns(
+            homeAssistant = homeAssistant,
+            sockets = KtorAssistSockets(
+                webSocketUrl = config.homeAssistantWebSocketUrl,
+                accessToken = config.accessToken,
+            ),
+        )
+    }
 
     val layoutRepository = LayoutRepository(config.dataDir)
     val backgroundStore = BackgroundStore(config.dataDir)
@@ -99,6 +114,7 @@ class ServerDependencies(
             screenClock = ScreenClock(homeAssistant, languageRepository),
             scope = scope,
             mapTileUrl = config.mapTileUrl,
+            assistRuns = assistRuns,
         ),
     )
 
