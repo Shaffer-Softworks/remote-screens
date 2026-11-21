@@ -1,5 +1,7 @@
 package tech.shaffersoftworks.remotescreens.player.di
 
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -28,6 +30,7 @@ interface AssistModule {
     fun bindTurns(turns: KtorAssistTurnClient): AssistTurnClient
 
     @Binds
+    @OptIn(UnstableApi::class)
     fun bindPlayback(playback: Media3SpeechPlayback): SpeechPlayback
 
     @Binds

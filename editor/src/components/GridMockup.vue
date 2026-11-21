@@ -613,7 +613,7 @@ const highlight = computed(() => {
           'cameras-panel': isCamerasPanel(placement.tile),
           'intercom-panel': isIntercomPanel(placement.tile),
           'assist-panel': isAssistPanel(placement.tile),
-          'assist-stacked': isAssistPanel(placement.tile) && assistIsStacked.value,
+          'assist-stacked': isAssistPanel(placement.tile) && assistIsStacked,
           'intercom-compact': isIntercomPanel(placement.tile) && intercomIsStacked,
           'intercom-narrow': isIntercomPanel(placement.tile) && intercomIsNarrow,
           'energy-dashboard-panel': isEnergyDashboardPanel(placement.tile),
