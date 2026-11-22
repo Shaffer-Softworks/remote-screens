@@ -8,17 +8,16 @@ import android.media.AudioFocusRequest
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioRecord
+import android.media.AudioTrack
 import android.media.MediaRecorder
-import android.net.Uri
-import android.util.Log
 import android.media.audiofx.AcousticEchoCanceler
 import android.media.audiofx.NoiseSuppressor
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.ByteArrayDataSource
-import androidx.media3.datasource.DataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
@@ -42,6 +41,7 @@ import tech.shaffersoftworks.remotescreens.player.di.MainDispatcher
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlin.coroutines.coroutineContext
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 private const val SAMPLE_RATE = 16_000
@@ -135,14 +135,42 @@ class Media3SpeechPlayback @Inject constructor(
     }
 
     override suspend fun playListeningChime() {
-        val uri = Uri.parse("android.resource://${context.packageName}/${R.raw.wake_word_triggered}")
-
-        runCatching { withContext(main) { playItem(MediaItem.fromUri(uri)) } }
+        runCatching { playCue() }
             .onFailure { error -> Log.w(CHIME_LOG_TAG, "Listening chime failed", error) }
     }
 
+    /** The keypad never opens an AudioTrack for the FLAC. This is the same recording as PCM. */
+    private suspend fun playCue() {
+        val pcm = context.resources.openRawResource(R.raw.wake_word_triggered_cue).use { stream -> stream.readBytes() }
+
+        if (pcm.isEmpty()) return
+
+        val audioManager = context.getSystemService(AudioManager::class.java)
+        val attributes = cueAttributes()
+
+        val focus = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+            .setAudioAttributes(attributes)
+            .build()
+
+        audioManager.requestAudioFocus(focus)
+        val track = cueTrack(pcm = pcm, attributes = attributes)
+
+        try {
+            val written = track.write(pcm, 0, pcm.size)
+
+            if (written <= 0) return
+
+            track.play()
+            delay(cueLength(byteCount = written))
+        } finally {
+            runCatching { track.stop() }
+            track.release()
+            audioManager.abandonAudioFocusRequest(focus)
+        }
+    }
+
     private suspend fun playOnMain(audio: ByteArray) {
-        val source = ProgressiveMediaSource.Factory(DataSource.Factory { ByteArrayDataSource(audio) })
+        val source = ProgressiveMediaSource.Factory { ByteArrayDataSource(audio) }
             .createMediaSource(MediaItem.fromUri(SPEECH_URI))
 
         playItem(
@@ -205,9 +233,42 @@ private fun speechAttributes(): AudioAttributes = AudioAttributes.Builder()
     .build()
 
 private const val CHIME_LOG_TAG = "AssistChime"
+private const val CUE_SAMPLE_RATE = 48_000
+private const val CUE_BYTES_PER_FRAME = 2
+private const val CUE_TAIL_MS = 100
+private const val MILLISECONDS_PER_SECOND = 1_000
 private const val PLAYBACK_LIMIT_SEC = 60
 private val PLAYBACK_LIMIT = PLAYBACK_LIMIT_SEC.seconds
 private val PLAYBACK_TAIL = 1.seconds
+
+private fun cueAttributes(): AudioAttributes = AudioAttributes.Builder()
+    .setUsage(AudioAttributes.USAGE_MEDIA)
+    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+    .build()
+
+private fun cueTrack(pcm: ByteArray, attributes: AudioAttributes): AudioTrack {
+    val minBytes = AudioTrack.getMinBufferSize(
+        CUE_SAMPLE_RATE,
+        AudioFormat.CHANNEL_OUT_MONO,
+        AudioFormat.ENCODING_PCM_16BIT,
+    )
+
+    return AudioTrack.Builder()
+        .setAudioAttributes(attributes)
+        .setAudioFormat(
+            AudioFormat.Builder()
+                .setSampleRate(CUE_SAMPLE_RATE)
+                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                .build(),
+        )
+        .setBufferSizeInBytes(pcm.size.coerceAtLeast(minBytes))
+        .setTransferMode(AudioTrack.MODE_STATIC)
+        .build()
+}
+
+private fun cueLength(byteCount: Int) =
+    (byteCount / CUE_BYTES_PER_FRAME * MILLISECONDS_PER_SECOND / CUE_SAMPLE_RATE + CUE_TAIL_MS).milliseconds
 
 /**
  * Finishes when the audio stops. ExoPlayer keeps a short Home Assistant clip in BUFFERING
