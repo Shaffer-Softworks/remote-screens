@@ -19,10 +19,11 @@ permissions:
 # builds via the push path alone.
 # HACS integration releases are unprefixed tags (0.1.51), so they do not match v*.
 # A v* tag whose release body contains "hacs-integration-release" is still skipped.
+# tag and classify must finish on every trigger. A skipped job cancels every later job in the
+# dependency chain (image, GitHub release, version sync), even after package ran via always().
 jobs:
   tag:
     name: Create release tag
-    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -35,6 +36,10 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
         run: |
           set -eu
+          if [ "${GITHUB_EVENT_NAME}" != "workflow_dispatch" ]; then
+            echo "Tag ${GITHUB_REF_NAME} was pushed; nothing to create."
+            exit 0
+          fi
           version="${INPUT_VERSION#v}"
           # Digits and [A-Za-z0-9.-] only — no '/' (breaks sed/paths) or other shell metacharacters.
           echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.+-][0-9A-Za-z.-]+)*$' \
@@ -56,7 +61,6 @@ jobs:
 
   classify:
     name: Add-on tag or integration tag
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     outputs:
       is_addon: ${{ steps.check.outputs.is_addon }}
@@ -67,6 +71,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -eu
+          # A manual run is always an add-on release. Skipping this job would cancel image
+          # and the GitHub release after the player build.
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            echo "workflow_dispatch is an add-on release."
+            echo "is_addon=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           # The integration release is created in the same API call as the tag. Give that
           # release a moment to show up before treating a missing release as an add-on tag.
           is_addon=true
@@ -172,6 +183,8 @@ jobs:
   image:
     name: Image (${{ matrix.arch }})
     needs: package
+    # always() so a skipped ancestor cannot drop the image after package succeeded.
+    if: always() && !cancelled() && needs.package.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -218,6 +231,7 @@ jobs:
   release:
     name: GitHub release
     needs: [package, image]
+    if: always() && !cancelled() && needs.package.result == 'success' && needs.image.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -250,7 +264,7 @@ jobs:
   version-pr:
     name: Version sync PR
     needs: [package, release]
-    if: needs.release.result == 'success'
+    if: always() && !cancelled() && needs.release.result == 'success'
     # Publish already succeeded; a blocked sync PR should not fail the release run.
     continue-on-error: true
     runs-on: ubuntu-latest
