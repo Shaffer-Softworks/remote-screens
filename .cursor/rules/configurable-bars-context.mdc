@@ -24,6 +24,7 @@ alwaysApply: false
 
 - Top bar scale `k = (spec.topBar / Grid.TOP_BAR).coerceIn(0.7, 2)` multiplies the header text, the icons, the Back key (capped at `topBar - 6`) and the spacers. The date shows only when `date` is on and the screen is at least `Grid.NARROW` wide.
 - A weather temperature entity draws `weatherStateIcon` for its current condition (the weather page’s coloured sun, cloud and rain). The condition is structural, so a change rebuilds the document. A temperature sensor keeps the blue thermometer.
+- When `screen.settings.assist` is on, the first trailing stat is the Assist microphone (`microphone` / `microphone-off`, accent, same 26 dp). `GridMockup.vue` shows it in that place. Change the renderer and the mockup together. The player owns mute visibility; see `assist-panel-context.mdc`.
 - Bottom bar scale is the bar height against that width's default bar, so the defaults draw as before. `navArrangement()` picks the row arrangement. `fill` makes each button `width / count` wide; the other layouts use square buttons.
 - `GridMockup.vue` repeats this sizing. Change the renderer and the mockup together. Sliders need `v-range` (see `editor-sliders-and-theme-preview-context.mdc`).
 - Content that spans the page (free-form root, edge-to-edge panels, page photo, empty-page message) uses `spec.widthDp`, below the top bar and above the bottom bar. Full-screen dialogs (the lights dialog) use the whole screen.

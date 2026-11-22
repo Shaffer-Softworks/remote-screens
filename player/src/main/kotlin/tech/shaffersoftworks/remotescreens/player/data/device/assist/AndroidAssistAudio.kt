@@ -9,6 +9,8 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.net.Uri
+import android.util.Log
 import android.media.audiofx.AcousticEchoCanceler
 import android.media.audiofx.NoiseSuppressor
 import androidx.core.content.ContextCompat
@@ -18,21 +20,29 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.ByteArrayDataSource
 import androidx.media3.datasource.DataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.coroutines.coroutineContext
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import tech.shaffersoftworks.remotescreens.player.R
 import tech.shaffersoftworks.remotescreens.player.di.IoScope
 import tech.shaffersoftworks.remotescreens.player.di.MainDispatcher
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
-import kotlin.coroutines.resume
+import kotlin.coroutines.coroutineContext
+import kotlin.time.Duration.Companion.seconds
 
 private const val SAMPLE_RATE = 16_000
 private const val CHUNK_SAMPLES = 320
@@ -74,11 +84,14 @@ class AndroidMicrophone @Inject constructor(
         record.startRecording()
         val samples = Channel<ShortArray>(capacity = CHANNEL_CAPACITY)
         val job = scope.launch { readLoop(record = record, samples = samples) }
+        val isClosed = AtomicBoolean(false)
 
         return object : MicrophoneSession {
             override val samples: ReceiveChannel<ShortArray> = samples
 
             override fun close() {
+                if (!isClosed.compareAndSet(false, true)) return
+
                 job.cancel()
                 samples.close()
                 effects.forEach { it.release() }
@@ -94,7 +107,9 @@ class AndroidMicrophone @Inject constructor(
         while (coroutineContext.isActive) {
             val read = record.read(buffer, 0, buffer.size)
 
-            if (read > 0) samples.send(buffer.copyOf(read))
+            if (read <= 0) continue
+
+            samples.send(buffer.copyOf(read))
         }
     }
 }
@@ -119,10 +134,32 @@ class Media3SpeechPlayback @Inject constructor(
         withContext(main) { playOnMain(audio) }
     }
 
+    override suspend fun playListeningChime() {
+        val uri = Uri.parse("android.resource://${context.packageName}/${R.raw.wake_word_triggered}")
+
+        runCatching { withContext(main) { playItem(MediaItem.fromUri(uri)) } }
+            .onFailure { error -> Log.w(CHIME_LOG_TAG, "Listening chime failed", error) }
+    }
+
     private suspend fun playOnMain(audio: ByteArray) {
+        val source = ProgressiveMediaSource.Factory(DataSource.Factory { ByteArrayDataSource(audio) })
+            .createMediaSource(MediaItem.fromUri(SPEECH_URI))
+
+        playItem(
+            item = MediaItem.fromUri(SPEECH_URI),
+            source = source,
+            focusGain = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE,
+        )
+    }
+
+    private suspend fun playItem(
+        item: MediaItem,
+        source: MediaSource? = null,
+        focusGain: Int = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT,
+    ) {
         val audioManager = context.getSystemService(AudioManager::class.java)
 
-        val focus = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+        val focus = AudioFocusRequest.Builder(focusGain)
             .setAudioAttributes(speechAttributes())
             .build()
 
@@ -130,32 +167,31 @@ class Media3SpeechPlayback @Inject constructor(
         val player = ExoPlayer.Builder(context).build()
 
         try {
-            val source = ProgressiveMediaSource.Factory(DataSource.Factory { ByteArrayDataSource(audio) })
-                .createMediaSource(MediaItem.fromUri(SPEECH_URI))
+            if (source != null) player.setMediaSource(source) else player.setMediaItem(item)
 
-            player.setMediaSource(source)
             player.prepare()
             player.play()
-            awaitEnded(player)
+            awaitPlayback(player)
         } finally {
             player.release()
             audioManager.abandonAudioFocusRequest(focus)
         }
     }
 
-    private suspend fun awaitEnded(player: ExoPlayer) = suspendCancellableCoroutine { continuation ->
-        val listener = object : Player.Listener {
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_ENDED && continuation.isActive) continuation.resume(Unit)
-            }
-
-            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                if (continuation.isActive) continuation.resume(Unit)
-            }
-        }
-
+    /** Returns when the clip has been heard. A short file often ends in a buffer stall the player never closes. */
+    private suspend fun awaitPlayback(player: ExoPlayer) = coroutineScope {
+        val done = CompletableDeferred<Unit>()
+        val listener = PlaybackEnd(done = done, scope = this)
         player.addListener(listener)
-        continuation.invokeOnCancellation { player.removeListener(listener) }
+
+        try {
+            if (player.playbackState == Player.STATE_ENDED) done.complete(Unit)
+
+            withTimeoutOrNull(PLAYBACK_LIMIT) { done.await() }
+        } finally {
+            player.removeListener(listener)
+            coroutineContext.cancelChildren()
+        }
     }
 
     private companion object {
@@ -167,3 +203,47 @@ private fun speechAttributes(): AudioAttributes = AudioAttributes.Builder()
     .setUsage(AudioAttributes.USAGE_ASSISTANT)
     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
     .build()
+
+private const val CHIME_LOG_TAG = "AssistChime"
+private const val PLAYBACK_LIMIT_SEC = 60
+private val PLAYBACK_LIMIT = PLAYBACK_LIMIT_SEC.seconds
+private val PLAYBACK_TAIL = 1.seconds
+
+/**
+ * Finishes when the audio stops. ExoPlayer keeps a short Home Assistant clip in BUFFERING
+ * and reports a duration much longer than the sound, so the reply bar used to wait that out.
+ */
+private class PlaybackEnd(
+    private val done: CompletableDeferred<Unit>,
+    private val scope: CoroutineScope,
+) : Player.Listener {
+    private var hasPlayed: Boolean = false
+    private var tail: Job? = null
+
+    override fun onPlaybackStateChanged(playbackState: Int) {
+        val gaveUp = playbackState == Player.STATE_IDLE && hasPlayed
+
+        if (playbackState == Player.STATE_ENDED || gaveUp) done.complete(Unit)
+    }
+
+    override fun onIsPlayingChanged(isPlaying: Boolean) {
+        if (isPlaying) {
+            hasPlayed = true
+            tail?.cancel()
+            tail = null
+
+            return
+        }
+
+        if (!hasPlayed || tail != null) return
+
+        tail = scope.launch {
+            delay(PLAYBACK_TAIL)
+            done.complete(Unit)
+        }
+    }
+
+    override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+        done.complete(Unit)
+    }
+}

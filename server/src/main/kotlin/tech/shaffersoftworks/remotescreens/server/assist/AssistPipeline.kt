@@ -2,10 +2,10 @@ package tech.shaffersoftworks.remotescreens.server.assist
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HA_JSON
 
@@ -44,7 +44,7 @@ sealed interface PipelineNotice {
  * The handler id arrives on `run-start`, not in the empty result that only confirms the subscription.
  */
 fun parsePipelineMessage(text: String): PipelineNotice {
-    val root = runCatching { HA_JSON.parseToJsonElement(text).jsonObject }.getOrNull()
+    val root = runCatching { HA_JSON.parseToJsonElement(text).jsonObjectOrNull() }.getOrNull()
 
     return if (root == null) PipelineNotice.Ignored else noticeFor(root)
 }
@@ -62,14 +62,14 @@ private fun noticeFor(root: JsonObject): PipelineNotice {
 }
 
 private fun eventNotice(root: JsonObject): PipelineNotice {
-    val event = root["event"]?.jsonObject
+    val event = root["event"].jsonObjectOrNull()
 
     return if (event == null) PipelineNotice.Ignored else typedFrom(event)
 }
 
 private fun typedFrom(event: JsonObject): PipelineNotice {
     val eventType = event.string("type")
-    val data = event["data"]?.jsonObject ?: JsonObject(emptyMap())
+    val data = event["data"].jsonObjectOrNull() ?: JsonObject(emptyMap())
 
     return if (eventType == null) PipelineNotice.Ignored else typedNotice(eventType = eventType, data = data)
 }
@@ -113,9 +113,12 @@ private fun ttsNotice(data: JsonObject): PipelineNotice {
 }
 
 private fun JsonObject.errorMessage(): String =
-    this["error"]?.jsonObject?.string("message") ?: "Assist pipeline failed"
+    this["error"].jsonObjectOrNull()?.string("message") ?: "Assist pipeline failed"
 
-private fun JsonObject.obj(name: String): JsonObject = this[name]?.jsonObject ?: JsonObject(emptyMap())
+/** Home Assistant sends JSON null for an absent object. [JsonElement.jsonObject] throws on that. */
+private fun JsonElement?.jsonObjectOrNull(): JsonObject? = this as? JsonObject
+
+private fun JsonObject.obj(name: String): JsonObject = this[name].jsonObjectOrNull() ?: JsonObject(emptyMap())
 
 private fun JsonObject.string(name: String): String? = this[name]?.jsonPrimitive?.contentOrNull
 

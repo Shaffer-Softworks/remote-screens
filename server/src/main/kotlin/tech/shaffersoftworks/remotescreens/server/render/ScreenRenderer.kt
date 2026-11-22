@@ -47,6 +47,7 @@ import tech.shaffersoftworks.remotescreens.server.render.widgets.label
 import tech.shaffersoftworks.remotescreens.server.render.widgets.tap
 import tech.shaffersoftworks.remotescreens.server.render.widgets.weatherStateIcon
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
+import tech.shaffersoftworks.remotescreens.shared.AssistLayout
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.Grid
 import tech.shaffersoftworks.remotescreens.shared.GridSpec
@@ -54,10 +55,10 @@ import tech.shaffersoftworks.remotescreens.shared.NavBar
 import tech.shaffersoftworks.remotescreens.shared.Page
 import tech.shaffersoftworks.remotescreens.shared.Reflow
 import tech.shaffersoftworks.remotescreens.shared.Screen
-import tech.shaffersoftworks.remotescreens.shared.TopBar
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.PresenceState
+import tech.shaffersoftworks.remotescreens.shared.NavigationDrawer
 import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.shared.TileKind
 
@@ -93,7 +94,7 @@ class RenderedDoc(
     val homePage: Int = 0,
     val swipePages: List<Int> = emptyList(),
     val builtAt: Long = System.currentTimeMillis(),
-    val navigationDrawer: tech.shaffersoftworks.remotescreens.shared.NavigationDrawer? = null,
+    val navigationDrawer: NavigationDrawer? = null,
 ) {
     val entities: Set<String> =
         (docContext.bindings.mapNotNull { it.entityId } + docContext.structure.map { it.first }).toSet()
@@ -292,9 +293,9 @@ object ScreenRenderer {
             }
         }
 
-        for (placement in placed.filter { it.tile.tileKind() == TileKind.VACUUM && it.tile.edgeToEdge() }) {
+        for ((tile) in placed.filter { it.tile.tileKind() == TileKind.VACUUM && it.tile.edgeToEdge() }) {
             at(0f, 0f) {
-                vacuumDialogLayer(tile = placement.tile, screenW = spec.widthDp)
+                vacuumDialogLayer(tile = tile, screenW = spec.widthDp)
             }
         }
 
@@ -502,7 +503,7 @@ object ScreenRenderer {
                 }
             }
 
-            doc.topBarTrailing(bar = bar, headerSp = headerSp, layoutScale = layoutScale, ink = ink)
+            doc.topBarTrailing(screen = screen, headerSp = headerSp, layoutScale = layoutScale, ink = ink)
 
             if (!doc.menuKey(drawer = drawer, end = true, sizeDp = keyDp, gapDp = MENU_KEY_GAP_DP)) {
                 Spacer(Modifier.width(doc.units.px(NAV_ICON_LABEL_GAP_DP)))
@@ -511,7 +512,11 @@ object ScreenRenderer {
     }
 
     /** Outdoor temperature, people at home, Wi‑Fi and battery on the right of the header. */
-    private fun DocContext.topBarTrailing(bar: TopBar, headerSp: Float, layoutScale: Float, ink: RcColor) {
+    private fun DocContext.topBarTrailing(screen: Screen, headerSp: Float, layoutScale: Float, ink: RcColor) {
+        val bar = screen.topBar
+
+        if (screen.settings.assist) topBarAssistMic(layoutScale)
+
         val temperatureEntity = bar.temperatureEntity
 
         if (temperatureEntity != null) {
@@ -560,6 +565,35 @@ object ScreenRenderer {
         }
 
         if (bar.battery) topBarBattery(headerSp = headerSp, layoutScale = layoutScale, ink = ink)
+    }
+
+    /** Assist microphone, same size as the other header icons. A tap mutes. */
+    private fun DocContext.topBarAssistMic(layoutScale: Float) {
+        val sizeDp = STAT_ICON_DP * layoutScale
+        val tint = role(Role.ACCENT_SOFT)
+
+        rcScope.Box(
+            tap(
+                modifier = Modifier.size(units.px(sizeDp), units.px(sizeDp)),
+                ref = ActionRef(tile = "_", verb = "assist"),
+            ),
+        ) {
+            icon(
+                name = "microphone",
+                sizeDp = sizeDp,
+                color = tint,
+                visible = int(name = AssistLayout.MIC_VARIABLE, initial = AssistLayout.VISIBLE),
+            )
+
+            icon(
+                name = "microphone-off",
+                sizeDp = sizeDp,
+                color = tint,
+                visible = int(name = AssistLayout.MUTED_VARIABLE, initial = AssistLayout.GONE),
+            )
+        }
+
+        rcScope.Spacer(Modifier.width(units.px(STAT_GAP_DP * layoutScale)))
     }
 
     /** An icon and a value on the right of the header, with the usual gap after it. */

@@ -1,6 +1,7 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote
 
 import android.graphics.Bitmap
+import tech.shaffersoftworks.remotescreens.shared.AssistLayout
 import tech.shaffersoftworks.remotescreens.shared.CalendarChoice
 import tech.shaffersoftworks.remotescreens.shared.CalendarDeleteTarget
 import tech.shaffersoftworks.remotescreens.shared.CalendarDialogMode
@@ -317,6 +318,25 @@ data class RemoteScreenState(
     fun withLocalInt(name: String, value: Int): RemoteScreenState = copy(
         localInts = localInts + (name to value),
     )
+
+    /** Header mic icons. Unchanged values keep the current document from being treated as new. */
+    fun withAssistMic(isMuted: Boolean): RemoteScreenState {
+        val mic = if (isMuted) AssistLayout.GONE else AssistLayout.VISIBLE
+        val muted = if (isMuted) AssistLayout.VISIBLE else AssistLayout.GONE
+
+        val unchanged = localInts[AssistLayout.MIC_VARIABLE] == mic &&
+            localInts[AssistLayout.MUTED_VARIABLE] == muted
+
+        return if (unchanged) {
+            this
+        } else {
+            copy(
+                localInts = localInts +
+                    (AssistLayout.MIC_VARIABLE to mic) +
+                    (AssistLayout.MUTED_VARIABLE to muted),
+            )
+        }
+    }
 
     val isDrawerOpen: Boolean get() = localInts[DRAWER_VARIABLE] == 1
 

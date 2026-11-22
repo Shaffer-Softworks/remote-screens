@@ -3,6 +3,7 @@ package tech.shaffersoftworks.remotescreens.player.data.device.assist
 import android.util.Log
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
@@ -23,16 +24,18 @@ import javax.inject.Singleton
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val IDLE_POLL_MS = 250
+private const val BARGE_IN_GRACE_MS = 700
 private const val MAX_TURNS = 12
 private const val BYTES_PER_SAMPLE = 2
 private const val BITS_PER_BYTE = 8
 private const val SPEAKER_YOU = "You"
 private const val SPEAKER_ASSIST = "Assist"
 private const val LOG_TAG = "AssistCoordinator"
+private val BARGE_IN_GRACE = BARGE_IN_GRACE_MS.milliseconds
 
 /**
  * Listens on the tablet until the bundled wake word, then opens one Assist turn.
- * The microphone stays closed for the whole of the spoken reply.
+ * Saying the wake word again, including during the reply, cancels that turn and starts another.
  */
 @Singleton
 class AssistCoordinator @Inject constructor(
@@ -58,8 +61,9 @@ class AssistCoordinator @Inject constructor(
         refreshForeground()
 
         val changed = previous.copy(isScreenOff = config.isScreenOff) != config
+        val willRestart = changed || listenJob?.isActive != true
 
-        if (changed || listenJob?.isActive != true) {
+        if (willRestart) {
             listenJob?.cancel()
             listenJob = scope.launch { listen() }
         }
@@ -143,103 +147,168 @@ class AssistCoordinator @Inject constructor(
 
             detector.reset()
             onWake()
-            runTurn(session = session, config = config)
+            session.close()
+            playback.playListeningChime()
+
+            var again = true
+
+            while (again && canListen(sessionConfig)) {
+                val command = microphone.open()
+
+                try {
+                    again = runTurn(session = command, detector = detector, config = config)
+                } finally {
+                    command.close()
+                }
+
+                if (again && canListen(sessionConfig)) {
+                    onWake()
+                    playback.playListeningChime()
+                }
+            }
 
             return
         }
     }
 
-    private suspend fun runTurn(session: MicrophoneSession, config: AssistSessionConfig) {
+    private suspend fun runTurn(
+        session: MicrophoneSession,
+        detector: WakeWordDetector,
+        config: AssistSessionConfig,
+    ): Boolean {
+        val barge = WakeBargeIn(microphone = microphone, detector = detector)
         val pcm = Channel<ByteArray>(capacity = Channel.UNLIMITED)
         var heard: String? = null
         var spoken: String? = null
         var activeSession: MicrophoneSession = session
         var followUpAudio: Channel<ByteArray>? = null
 
-        coroutineScope {
-            val pump = launch {
-                for (samples in session.samples) {
-                    if (pcm.trySend(pcmBytes(samples)).isClosed) break
-                }
-            }
+        try {
+            coroutineScope {
+                val turn = this
+                barge.arm(scope = turn)
 
-            val events = object : AssistTurnEvents {
-                override suspend fun phase(phase: String) {
-                    _state.update { it.copy(phase = phase) }
+                val pump = launch {
+                    try {
+                        for (samples in session.samples) {
+                            barge.hear(samples)
 
-                    if (phase == AssistPhases.THINKING || phase == AssistPhases.SPEAKING) {
-                        pcm.close()
-                        followUpAudio?.close()
-                        activeSession.close()
+                            if (barge.hasHeard || pcm.trySend(pcmBytes(samples)).isClosed) break
+                        }
+                    } finally {
+                        if (isActive && !barge.hasHeard) barge.listenOnEar(scope = turn)
                     }
                 }
 
-                override suspend fun transcript(text: String) {
-                    heard = text
-                    _state.update { it.copy(caption = text, phase = AssistPhases.HEARING) }
-                }
+                val events = object : AssistTurnEvents {
+                    override suspend fun phase(phase: String) {
+                        _state.update { it.copy(phase = phase) }
 
-                override suspend fun reply(text: String, followUp: Boolean) {
-                    spoken = text
-                    _state.update { it.copy(caption = text) }
-                }
-
-                override suspend fun speech(mimeType: String, audio: ByteArray) {
-                    pcm.close()
-                    followUpAudio?.close()
-                    activeSession.close()
-                    _state.update { it.copy(phase = AssistPhases.SPEAKING, caption = spoken) }
-                    playback.play(mimeType = mimeType, audio = audio)
-                    commit(heard = heard, spoken = spoken)
-                    heard = null
-                    spoken = null
-                }
-
-                override suspend fun ended() {
-                    _state.update { it.copy(phase = AssistPhases.LISTENING, caption = null) }
-                }
-
-                override suspend fun failed(message: String) {
-                    _state.update { it.copy(phase = AssistPhases.LISTENING, caption = null) }
-                }
-
-                override suspend fun followUpAudio(): ReceiveChannel<ByteArray> {
-                    val next = microphone.open()
-                    val channel = Channel<ByteArray>(capacity = Channel.UNLIMITED)
-                    activeSession = next
-                    followUpAudio = channel
-
-                    launch {
-                        try {
-                            for (samples in next.samples) {
-                                if (channel.trySend(pcmBytes(samples)).isClosed) break
-                            }
-                        } finally {
-                            next.close()
-                            channel.close()
+                        if (phase == AssistPhases.THINKING || phase == AssistPhases.SPEAKING) {
+                            pcm.close()
+                            followUpAudio?.close()
+                            activeSession.close()
                         }
                     }
 
-                    return channel
+                    override suspend fun transcript(text: String) {
+                        heard = text
+                        _state.update { it.copy(caption = text, phase = AssistPhases.HEARING) }
+                    }
+
+                    override suspend fun reply(text: String, followUp: Boolean) {
+                        spoken = text
+                        _state.update { it.copy(caption = text) }
+                    }
+
+                    override suspend fun speech(mimeType: String, audio: ByteArray) {
+                        pcm.close()
+                        followUpAudio?.close()
+                        activeSession.close()
+                        _state.update { it.copy(phase = AssistPhases.SPEAKING, caption = spoken) }
+
+                        try {
+                            playback.play(mimeType = mimeType, audio = audio)
+                        } finally {
+                            commit(heard = heard, spoken = spoken)
+                            heard = null
+                            spoken = null
+                        }
+                    }
+
+                    override suspend fun ended() {
+                        _state.update { it.copy(phase = AssistPhases.LISTENING, caption = null) }
+                    }
+
+                    override suspend fun failed(message: String) {
+                        _state.update { it.copy(phase = AssistPhases.LISTENING, caption = null) }
+                    }
+
+                    override suspend fun followUpAudio(): ReceiveChannel<ByteArray> {
+                        barge.stopEar()
+                        val next = microphone.open()
+                        val channel = Channel<ByteArray>(capacity = Channel.UNLIMITED)
+                        activeSession = next
+                        followUpAudio = channel
+
+                        this@coroutineScope.launch {
+                            try {
+                                for (samples in next.samples) {
+                                    barge.hear(samples)
+
+                                    if (barge.hasHeard || channel.trySend(pcmBytes(samples)).isClosed) break
+                                }
+                            } finally {
+                                next.close()
+                                channel.close()
+
+                                if (isActive && !barge.hasHeard) barge.listenOnEar(scope = this@coroutineScope)
+                            }
+                        }
+
+                        return channel
+                    }
+                }
+
+                try {
+                    turns.run(
+                        request = AssistTurnRequest(
+                            server = config.server.orEmpty(),
+                            token = config.token.orEmpty(),
+                            pipelineId = config.pipelineId,
+                            wakeWord = config.wakeWordId,
+                        ),
+                        pcm = pcm,
+                        events = events,
+                    )
+                } finally {
+                    pcm.close()
+                    followUpAudio?.close()
+                    pump.cancel()
+                    barge.stopEar()
+                    dismissCaption()
                 }
             }
+        } catch (cancelled: CancellationException) {
+            if (!barge.hasHeard) throw cancelled
+        } catch (_: WakeAgain) {
+            barge.stopEar()
+        }
 
-            try {
-                turns.run(
-                    request = AssistTurnRequest(
-                        server = config.server.orEmpty(),
-                        token = config.token.orEmpty(),
-                        pipelineId = config.pipelineId,
-                        wakeWord = config.wakeWordId,
-                    ),
-                    pcm = pcm,
-                    events = events,
-                )
-            } finally {
-                pcm.close()
-                followUpAudio?.close()
-                pump.cancel()
-            }
+        return barge.hasHeard
+    }
+
+    /** Drops the snackbar once the turn is over, including when playback or the socket is cancelled. */
+    private fun dismissCaption() {
+        _state.update { current ->
+            val isTurn = current.phase == AssistPhases.HEARING ||
+                current.phase == AssistPhases.THINKING ||
+                current.phase == AssistPhases.SPEAKING
+
+            current.copy(
+                phase = if (isTurn) AssistPhases.LISTENING else current.phase,
+                caption = null,
+            )
         }
     }
 
@@ -262,6 +331,69 @@ class AssistCoordinator @Inject constructor(
             microphone.hasPermission &&
             !config.server.isNullOrBlank() &&
             !config.token.isNullOrBlank()
+}
+
+private class WakeAgain : RuntimeException()
+
+/** Hears the wake word during a turn. The command capture and the reply each feed [hear]. */
+private class WakeBargeIn(
+    private val microphone: Microphone,
+    private val detector: WakeWordDetector,
+) {
+    private val wake = CompletableDeferred<Unit>()
+    private val ready = CompletableDeferred<Unit>()
+    private var ear: Job? = null
+
+    val hasHeard: Boolean
+        get() = wake.isCompleted
+
+    fun arm(scope: CoroutineScope) {
+        scope.launch {
+            delay(BARGE_IN_GRACE)
+            detector.reset()
+            ready.complete(Unit)
+        }
+
+        scope.launch {
+            wake.await()
+            throw WakeAgain()
+        }
+    }
+
+    fun hear(samples: ShortArray) {
+        synchronized(this) {
+            if (!ready.isCompleted || hasHeard) return
+
+            if (detector.processAudio(samples)) wake.complete(Unit)
+        }
+    }
+
+    fun listenOnEar(scope: CoroutineScope) {
+        if (ear?.isActive == true || hasHeard) return
+
+        ear = scope.launch {
+            ready.await()
+
+            if (hasHeard) return@launch
+
+            val session = microphone.open()
+
+            try {
+                for (samples in session.samples) {
+                    hear(samples)
+
+                    if (hasHeard) break
+                }
+            } finally {
+                session.close()
+            }
+        }
+    }
+
+    fun stopEar() {
+        ear?.cancel()
+        ear = null
+    }
 }
 
 internal fun pcmBytes(samples: ShortArray): ByteArray {

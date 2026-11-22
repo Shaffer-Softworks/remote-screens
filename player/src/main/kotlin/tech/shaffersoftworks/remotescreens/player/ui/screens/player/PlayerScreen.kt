@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,10 +17,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.ImageLoader
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteDocumentStack
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotVideo
-import androidx.compose.ui.unit.dp
 import tech.shaffersoftworks.remotescreens.player.data.device.assist.AssistUiState
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.assist.AssistCaption
-import tech.shaffersoftworks.remotescreens.player.ui.screens.player.assist.AssistHeaderMic
 import tech.shaffersoftworks.remotescreens.player.ui.theme.Page
 import tech.shaffersoftworks.remotescreens.player.ui.views.IdentifyBadge
 import tech.shaffersoftworks.remotescreens.player.ui.views.InfoPanel
@@ -32,9 +29,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteScreenState
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
-
-private val HEADER_MIC_INSET = 12.dp
-private val CAPTION_ABOVE_NAV = 72.dp
 
 @Composable
 fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
@@ -155,7 +149,6 @@ internal fun PlayerScreenContent(
             onAllowUnrestrictedBattery = onAllowUnrestrictedBattery,
             onReconnect = onReconnect,
             onNotificationAction = onNotificationAction,
-            onToggleAssistMute = onToggleAssistMute,
         )
     }
 }
@@ -167,7 +160,6 @@ private fun PlayerChromeOverlays(
     onAllowUnrestrictedBattery: () -> Unit,
     onReconnect: () -> Unit,
     onNotificationAction: (Int?) -> Unit,
-    onToggleAssistMute: () -> Unit = {},
 ) {
     if (Slot.ALERT !in viewState.remoteScreen.documents && !viewState.isAnyDialogVisible) {
         viewState.notificationBanner?.let { banner ->
@@ -199,7 +191,7 @@ private fun PlayerChromeOverlays(
 
     viewState.identifyScreenName?.let { screenName -> IdentifyBadge(screenName = screenName) }
 
-    AssistPageChrome(viewState = viewState, onToggleAssistMute = onToggleAssistMute)
+    AssistPageChrome(viewState = viewState)
 
     if (viewState.isBlackout) {
         Box(Modifier.fillMaxSize().background(Color.Black))
@@ -207,27 +199,18 @@ private fun PlayerChromeOverlays(
 }
 
 @Composable
-private fun AssistPageChrome(
-    viewState: PlayerViewModel.ViewState,
-    onToggleAssistMute: () -> Unit,
-) {
+private fun AssistPageChrome(viewState: PlayerViewModel.ViewState) {
     if (!viewState.screenSettings.assist || viewState.isBlackout) {
         return
     }
 
     Box(Modifier.fillMaxSize()) {
-        AssistHeaderMic(
-            assist = viewState.assist,
-            onToggleMute = onToggleAssistMute,
-            modifier = Modifier.align(Alignment.TopEnd).padding(HEADER_MIC_INSET),
-        )
-
         val caption = viewState.assist.caption
 
         if (caption != null && viewState.remoteScreen.playingAssist == null) {
             AssistCaption(
                 text = caption,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = CAPTION_ABOVE_NAV),
+                modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
     }
@@ -297,7 +280,6 @@ private fun AssistPageChromePreview() {
                     caption = "Turn off the kitchen lights",
                 ),
             ),
-            onToggleAssistMute = {},
         )
     }
 }

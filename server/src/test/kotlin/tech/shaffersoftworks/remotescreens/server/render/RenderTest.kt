@@ -30,11 +30,13 @@ import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
+import tech.shaffersoftworks.remotescreens.shared.AssistLayout
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.NavBar
 import tech.shaffersoftworks.remotescreens.shared.Page
 import tech.shaffersoftworks.remotescreens.shared.Reflow
 import tech.shaffersoftworks.remotescreens.shared.Screen
+import tech.shaffersoftworks.remotescreens.shared.ScreenSettings
 import tech.shaffersoftworks.remotescreens.shared.Tile
 import tech.shaffersoftworks.remotescreens.shared.VarType
 import kotlinx.coroutines.runBlocking
@@ -194,10 +196,10 @@ class RenderTest : RenderFixture() {
                 "tiles dropped from ${page.id}",
             )
 
-            for (placement in placed) assertEquals(
-                placement.tile.col to placement.tile.row,
-                placement.col to placement.row,
-                "${placement.tile.id} moved on ${page.id}",
+            for ((tile, col, row) in placed) assertEquals(
+                tile.col to tile.row,
+                col to row,
+                "${tile.id} moved on ${page.id}",
             )
         }
     }
@@ -948,6 +950,24 @@ class RenderPanelsTest : RenderFixture() {
         assertContains(strings, "USER:sys.battery")
         assertContains(ints, "USER:sys.battery_charging")
         assertContains(ints, "USER:sys.battery_idle")
+    }
+
+    @Test
+    fun theHeaderMicSitsInTheTopBarWhenAssistIsOn() {
+        val off = ScreenRenderer.render(DemoLayout.screen(), tablet, input())
+        val offInts = parse(off.bytes).getNamedVariables(NamedVariable.INT_TYPE).toSet()
+        assertFalse("USER:${AssistLayout.MIC_VARIABLE}" in offInts)
+        assertFalse("USER:${AssistLayout.MUTED_VARIABLE}" in offInts)
+
+        val on = ScreenRenderer.render(
+            DemoLayout.screen().copy(settings = ScreenSettings(assist = true)),
+            tablet,
+            input(),
+        )
+
+        val ints = parse(on.bytes).getNamedVariables(NamedVariable.INT_TYPE).toSet()
+        assertContains(ints, "USER:${AssistLayout.MIC_VARIABLE}")
+        assertContains(ints, "USER:${AssistLayout.MUTED_VARIABLE}")
     }
 
     @Test

@@ -8,6 +8,14 @@ private const val DEFAULT_CUTOFF = 0.5f
 private const val DEFAULT_WINDOW = 5
 private const val DEFAULT_STEP_MS = 10
 
+/** Header microphone drawn with the other status icons. The player swaps the two by these ints. */
+object AssistLayout {
+    const val MIC_VARIABLE = "sys.assist_mic"
+    const val MUTED_VARIABLE = "sys.assist_muted"
+    const val VISIBLE = 1
+    const val GONE = 0
+}
+
 /** Wake word models bundled in the player. A phrase that exists only in openWakeWord is not heard. */
 object AssistWakeWords {
     const val OKAY_NABU = "okay_nabu"
