@@ -69,15 +69,11 @@ internal fun RemoteDocumentStack(
 
         val listener = ViewTreeObserver.OnPreDrawListener {
             controller.beforeDraw()
-            val measured = overlayBounds(controller, currentState)
 
-            // Keep the last Energy hole while the dashboard is still playing. A MAIN swap measures
-            // the incoming buffer before layout and would otherwise shrink the overlay to 0×0.
-            bounds = measured.copy(
-                energy = measured.energy
-                    ?: bounds.energy.takeIf { currentState.playingEnergyDashboard != null },
-                assist = measured.assist
-                    ?: bounds.assist.takeIf { currentState.playingAssist != null },
+            bounds = stickyOverlayBounds(
+                measured = overlayBounds(controller = controller, state = currentState),
+                previous = bounds,
+                state = currentState,
             )
 
             true
@@ -166,6 +162,16 @@ internal data class OverlayBounds(
     val search: Rect? = null,
     val energy: Rect? = null,
     val assist: Rect? = null,
+)
+
+/** Keep the last Energy and Assist holes across a MAIN swap that has not laid out yet. */
+private fun stickyOverlayBounds(
+    measured: OverlayBounds,
+    previous: OverlayBounds,
+    state: RemoteScreenState,
+): OverlayBounds = measured.copy(
+    energy = measured.energy ?: previous.energy.takeIf { state.playingEnergyDashboard != null },
+    assist = measured.assist ?: previous.assist.takeIf { state.playingAssist != null },
 )
 
 private fun overlayBounds(controller: RemoteDocumentController, state: RemoteScreenState): OverlayBounds {

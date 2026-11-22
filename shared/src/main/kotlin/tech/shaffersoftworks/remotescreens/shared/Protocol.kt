@@ -143,7 +143,18 @@ data class ActionRef(val tile: String, val verb: String, val arg: String = "") {
     val local: Boolean get() = tile == "_" && verb in LOCAL_VERBS
 
     companion object {
-        val LOCAL_VERBS = setOf("page", "next", "prev", "back", "close", "noop", "settings", "set", "url")
+        val LOCAL_VERBS = setOf(
+            "page",
+            "next",
+            "prev",
+            "back",
+            "close",
+            "noop",
+            "settings",
+            "set",
+            "url",
+            "assist",
+        )
         const val VERB_RUN = "run"
         const val ARG_TAP = "tap"
         const val ARG_HOLD = "hold"

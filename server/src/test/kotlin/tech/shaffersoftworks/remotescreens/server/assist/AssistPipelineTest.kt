@@ -34,6 +34,37 @@ class AssistPipelineTest {
     }
 
     @Test
+    fun aNullObjectDoesNotFailTheSocket() {
+        assertEquals(
+            PipelineNotice.Finished,
+            parsePipelineMessage("""{"type":"event","event":{"type":"run-end","data":null}}"""),
+        )
+
+        assertEquals(
+            PipelineNotice.Transcript(""),
+            parsePipelineMessage(
+                """{"type":"event","event":{"type":"stt-end","data":{"stt_output":null}}}""",
+            ),
+        )
+
+        assertEquals(
+            PipelineNotice.Reply(text = "", conversationId = "c1", followUp = false),
+            parsePipelineMessage(
+                """{"type":"event","event":{"type":"intent-end","data":{"intent_output":""" +
+                    """{"conversation_id":"c1","continue_conversation":false,""" +
+                    """"response":{"speech":{"plain":null}}}}}}""",
+            ),
+        )
+
+        assertEquals(
+            PipelineNotice.Failed("Assist pipeline failed"),
+            parsePipelineMessage("""{"id":1,"type":"result","success":false,"error":null}"""),
+        )
+
+        assertEquals(PipelineNotice.Ignored, parsePipelineMessage("""{"type":"event","event":null}"""))
+    }
+
+    @Test
     fun aRunStartsAtSpeechToTextAndReturnsToLocalListeningAfterRunEnd() = runTest {
         val socket = ScriptedAssistSocket()
         var closed = false

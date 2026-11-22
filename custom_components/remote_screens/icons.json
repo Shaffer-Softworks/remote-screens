@@ -16,6 +16,7 @@
       "standby_screen_off": { "default": "mdi:monitor-off" },
       "wake_on_proximity": { "default": "mdi:account-arrow-left" },
       "wake_on_face": { "default": "mdi:face-recognition" },
+      "assist": { "default": "mdi:microphone" },
       "kiosk": { "default": "mdi:lock" },
       "report_telemetry": { "default": "mdi:tablet-dashboard" },
       "share_location": { "default": "mdi:map-marker-radius" }

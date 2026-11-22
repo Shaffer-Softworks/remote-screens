@@ -39,6 +39,7 @@ import tech.shaffersoftworks.remotescreens.player.utils.decodeBase64OrNull
 import tech.shaffersoftworks.remotescreens.shared.isNightAt
 import tech.shaffersoftworks.remotescreens.player.utils.normalizeServerAddress
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
+import tech.shaffersoftworks.remotescreens.shared.AssistPhases
 import tech.shaffersoftworks.remotescreens.shared.PlayerMessage
 import tech.shaffersoftworks.remotescreens.shared.NOTIFICATION_MAX_DURATION
 import tech.shaffersoftworks.remotescreens.shared.Protocol
@@ -209,7 +210,16 @@ class PlayerViewModel @Inject constructor(
 
     private fun observeAssist() {
         viewModelScope.launch {
-            assistCoordinator.state.collect { assist -> _viewState.update { it.copy(assist = assist) } }
+            assistCoordinator.state.collect { assist ->
+                _viewState.update { state ->
+                    val isMuted = assist.isMuted || assist.phase == AssistPhases.MUTED
+
+                    state.copy(
+                        assist = assist,
+                        remoteScreen = state.remoteScreen.withAssistMic(isMuted),
+                    )
+                }
+            }
         }
     }
 
@@ -791,6 +801,7 @@ class PlayerViewModel @Inject constructor(
             "url" -> actionRef.arg.takeIf { it.isNotBlank() }?.let { url ->
                 viewModelScope.launch { _events.send(PlayerEvent.OpenUrl(url)) }
             }
+            "assist" -> toggleAssistMute()
         }
     }
 

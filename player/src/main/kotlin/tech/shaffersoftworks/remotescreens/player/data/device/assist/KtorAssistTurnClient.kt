@@ -36,10 +36,13 @@ class KtorAssistTurnClient @Inject constructor() : AssistTurnClient {
                 val nextAudio = Channel<ReceiveChannel<ByteArray>>(capacity = 1)
                 val forward = launch { forwardPcm(first = pcm, nextAudio = nextAudio) }
 
-                readDownlink(events = events, nextAudio = nextAudio)
-                nextAudio.close()
-                forward.cancel()
-                events.ended()
+                try {
+                    readDownlink(events = events, nextAudio = nextAudio)
+                } finally {
+                    nextAudio.close()
+                    forward.cancel()
+                    events.ended()
+                }
             }
         }
     }

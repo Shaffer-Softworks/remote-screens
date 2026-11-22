@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote
 
+import android.graphics.Rect
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -17,6 +18,8 @@ import tech.shaffersoftworks.remotescreens.player.data.device.assist.AssistUiSta
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.assist.AssistScreen
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.energy.EnergyDashboardScreen
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
+import tech.shaffersoftworks.remotescreens.shared.AssistPhases
+import tech.shaffersoftworks.remotescreens.shared.ServerMessage
 import tech.shaffersoftworks.remotescreens.shared.Slot
 
 /** Overlays share their owning slot's stacking level, below the next document and its alerts. */
@@ -104,23 +107,64 @@ internal fun DocumentOverlays(
             }
         }
 
-        state.playingAssist?.takeIf { slot == Slot.MAIN }?.let { assistPage ->
-            key(assistPage.tileId, assistPage.page) {
-                val screen = @Composable {
-                    AssistScreen(
-                        page = assistPage.message,
-                        assist = assist,
-                        onToggleMute = onToggleAssistMute,
-                    )
-                }
+        AssistPageOverlay(
+            slot = slot,
+            bounds = bounds.assist,
+            page = state.playingAssist,
+            assist = assist,
+            onToggleMute = onToggleAssistMute,
+        )
+    }
+}
 
-                if (bounds.assist != null) {
-                    DocumentOverlay(bounds.assist) { screen() }
-                } else {
-                    Box(Modifier.fillMaxSize()) { screen() }
-                }
-            }
+@Composable
+private fun AssistPageOverlay(
+    slot: Slot,
+    bounds: Rect?,
+    page: SlotAssistPage?,
+    assist: AssistUiState,
+    onToggleMute: () -> Unit,
+) {
+    if (slot != Slot.MAIN || bounds == null || page == null) return
+
+    key(page.tileId, page.page) {
+        DocumentOverlay(bounds) {
+            AssistScreen(
+                page = page.message,
+                assist = assist,
+                onToggleMute = onToggleMute,
+            )
         }
+    }
+}
+
+@Preview(name = "Assist page overlay", widthDp = 800, heightDp = 480)
+@Composable
+private fun AssistPageOverlayPreview() {
+    RemoteScreensTheme {
+        AssistPageOverlay(
+            slot = Slot.MAIN,
+            bounds = Rect(0, PREVIEW_HEADER_TOP, PREVIEW_ASSIST_RIGHT, PREVIEW_ASSIST_BOTTOM),
+            page = SlotAssistPage(
+                revision = 1,
+                page = 0,
+                tileId = "assist",
+                message = ServerMessage.AssistPage(
+                    slot = Slot.MAIN,
+                    rev = 1,
+                    page = 0,
+                    tileId = "assist",
+                    componentId = 0x62_0000,
+                    wakeWord = "Okay Nabu",
+                    pipelineLabel = "Preferred",
+                ),
+            ),
+            assist = AssistUiState(
+                phase = AssistPhases.SPEAKING,
+                caption = "The kitchen lights are off",
+            ),
+            onToggleMute = {},
+        )
     }
 }
 
@@ -145,3 +189,7 @@ private fun DocumentOverlaysPreview() {
         )
     }
 }
+
+private const val PREVIEW_HEADER_TOP = 48
+private const val PREVIEW_ASSIST_RIGHT = 800
+private const val PREVIEW_ASSIST_BOTTOM = 400

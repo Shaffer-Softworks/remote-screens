@@ -1,10 +1,12 @@
 package tech.shaffersoftworks.remotescreens.player.data.device.assist
 
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import tech.shaffersoftworks.remotescreens.shared.AssistPhases
@@ -42,9 +44,12 @@ class AssistCoordinatorTest {
 
         assertTrue("audio is sent only after the detector reports a hit", client.received.isNotEmpty())
         assertTrue(detector.callsBeforeHit >= 2)
+        assertTrue(playback.chimePlayed)
+        assertTrue(playback.chimeWhileMicClosed)
         assertTrue(playback.played)
         assertTrue(playback.micWasClosed)
         assertEquals(AssistPhases.LISTENING, coordinator.state.value.phase)
+        assertNull(coordinator.state.value.caption)
         assertEquals("The kitchen lights are off", coordinator.state.value.turns.last().text)
         coordinator.stop()
         testScheduler.advanceUntilIdle()
@@ -82,6 +87,41 @@ class AssistCoordinatorTest {
         coordinator.apply(config = listening.copy(isPaused = true), onWake = {})
         testScheduler.advanceUntilIdle()
         assertFalse(microphone.isOpen)
+        coordinator.stop()
+        testScheduler.advanceUntilIdle()
+    }
+
+    @Test
+    fun aSecondWakeWordCancelsTheReplyAndStartsAnotherTurn() = runTest {
+        val microphone = ScriptedMicrophone()
+        val detector = TwoHitDetector()
+        val client = RecordingTurnClient()
+        val playback = HangingPlayback()
+
+        val coordinator = AssistCoordinator(
+            scope = this,
+            microphone = microphone,
+            detectors = WakeWordDetectors { detector },
+            turns = client,
+            playback = playback,
+            foreground = RecordingForeground(),
+        )
+
+        coordinator.apply(
+            config = AssistSessionConfig(
+                isEnabled = true,
+                server = "10.0.0.5:8100",
+                token = "token",
+            ),
+            onWake = {},
+        )
+
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(2, client.runs)
+        assertEquals(2, playback.chimes)
+        assertTrue(playback.wasCancelled)
+        assertNull(coordinator.state.value.caption)
         coordinator.stop()
         testScheduler.advanceUntilIdle()
     }
@@ -154,14 +194,47 @@ private class ScriptedMicrophone : Microphone {
     }
 }
 
+private class TwoHitDetector : WakeWordDetector {
+    override val phrase: String = "Okay Nabu"
+    override val isReady: Boolean = true
+    private var seen: Int = 0
+    private var hitsLeft: Int = 2
+
+    override fun processAudio(samples: ShortArray): Boolean {
+        if (hitsLeft == 0) return false
+
+        seen += 1
+        val hit = seen >= HITS_ON_CALL
+
+        if (hit) {
+            seen = 0
+            hitsLeft -= 1
+        }
+
+        return hit
+    }
+
+    override fun reset() {
+        seen = 0
+    }
+
+    override fun close() = Unit
+
+    private companion object {
+        const val HITS_ON_CALL = 3
+    }
+}
+
 private class RecordingTurnClient : AssistTurnClient {
     val received = mutableListOf<ByteArray>()
+    var runs: Int = 0
 
     override suspend fun run(
         request: AssistTurnRequest,
         pcm: ReceiveChannel<ByteArray>,
         events: AssistTurnEvents,
     ) {
+        runs += 1
         events.phase(AssistPhases.HEARING)
         received += pcm.receive()
         events.phase(AssistPhases.THINKING)
@@ -180,10 +253,39 @@ private class RecordingTurnClient : AssistTurnClient {
 private class RecordingPlayback(private val microphone: ScriptedMicrophone) : SpeechPlayback {
     var played: Boolean = false
     var micWasClosed: Boolean = false
+    var chimePlayed: Boolean = false
+    var chimeWhileMicClosed: Boolean = false
+
+    override suspend fun playListeningChime() {
+        chimePlayed = true
+        chimeWhileMicClosed = !microphone.isOpen
+    }
 
     override suspend fun play(mimeType: String, audio: ByteArray) {
         micWasClosed = !microphone.isOpen
         played = true
+    }
+}
+
+private class HangingPlayback : SpeechPlayback {
+    var chimes: Int = 0
+    var wasCancelled: Boolean = false
+    private var plays: Int = 0
+
+    override suspend fun playListeningChime() {
+        chimes += 1
+    }
+
+    override suspend fun play(mimeType: String, audio: ByteArray) {
+        plays += 1
+
+        if (plays > 1) return
+
+        try {
+            awaitCancellation()
+        } finally {
+            wasCancelled = true
+        }
     }
 }
 

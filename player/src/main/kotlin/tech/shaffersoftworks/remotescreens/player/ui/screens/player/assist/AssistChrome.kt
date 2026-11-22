@@ -4,8 +4,12 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -14,16 +18,29 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import tech.shaffersoftworks.remotescreens.player.data.device.assist.AssistUiState
+import tech.shaffersoftworks.remotescreens.player.ui.theme.DialogBackground
+import tech.shaffersoftworks.remotescreens.player.ui.theme.DialogWhite
 import tech.shaffersoftworks.remotescreens.player.ui.theme.RemoteScreensTheme
 import tech.shaffersoftworks.remotescreens.shared.AssistPhases
 
-private val MIC_SIZE = 48.dp
+internal val ASSIST_HEADER_MIC_SIZE = 48.dp
+internal val ASSIST_HEADER_MIC_EDGE = 12.dp
 private val MIC_INSET = 12.dp
 private val CAPTION_BOTTOM = 72.dp
+private val SNACKBAR_HORIZONTAL = 16.dp
+private val SNACKBAR_VERTICAL = 12.dp
+private val SNACKBAR_RADIUS = 12.dp
+private val SNACKBAR_MAX_WIDTH = 720.dp
+private val SNACKBAR_ELEVATION = 6.dp
+private const val SNACKBAR_MAX_LINES = 3
 private const val MIC_STROKE = 4f
 private const val HEAD_RADIUS_DIVISOR = 4f
 private const val HEAD_Y_DIVISOR = 2.4f
@@ -33,7 +50,7 @@ private const val SLASH_END = 0.8f
 private val LISTENING = Color(0xFF3D7FD6)
 private val MUTED = Color(0xFF9E9E9E)
 
-/** Trailing header mic. Native so a phase change does not rebuild the document. */
+/** Header mic. Native so a phase change does not rebuild the document. The caller sizes the slot. */
 @Composable
 fun AssistHeaderMic(
     assist: AssistUiState,
@@ -43,7 +60,7 @@ fun AssistHeaderMic(
     val tint = if (assist.isMuted || assist.phase == AssistPhases.MUTED) MUTED else LISTENING
 
     Box(
-        modifier = modifier.size(MIC_SIZE).clickable(onClick = onToggleMute),
+        modifier = modifier.clickable(onClick = onToggleMute),
         contentAlignment = Alignment.Center,
     ) {
         Canvas(Modifier.fillMaxSize().padding(MIC_INSET)) {
@@ -78,18 +95,31 @@ fun AssistHeaderMic(
     }
 }
 
-/** Heard line, then the reply, on a page that is not Assist. Clears when speech ends. */
+/** Heard line, then the reply, in a bar above the nav. Clears when the spoken reply ends. */
 @Composable
 fun AssistCaption(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    Text(
-        text = text,
-        color = LISTENING,
-        fontSize = 18.sp,
-        modifier = modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-    )
+    Surface(
+        modifier = modifier
+            .padding(start = SNACKBAR_HORIZONTAL, end = SNACKBAR_HORIZONTAL, bottom = CAPTION_BOTTOM)
+            .widthIn(max = SNACKBAR_MAX_WIDTH)
+            .fillMaxWidth()
+            .semantics { liveRegion = LiveRegionMode.Polite },
+        shape = RoundedCornerShape(SNACKBAR_RADIUS),
+        color = DialogBackground,
+        shadowElevation = SNACKBAR_ELEVATION,
+    ) {
+        Text(
+            text = text,
+            color = DialogWhite,
+            fontSize = 16.sp,
+            maxLines = SNACKBAR_MAX_LINES,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = SNACKBAR_HORIZONTAL, vertical = SNACKBAR_VERTICAL),
+        )
+    }
 }
 
 @Preview(name = "Assist mic", widthDp = 800, heightDp = 480)
@@ -100,12 +130,15 @@ private fun AssistChromePreview() {
             AssistHeaderMic(
                 assist = AssistUiState(phase = AssistPhases.LISTENING),
                 onToggleMute = {},
-                modifier = Modifier.align(Alignment.TopEnd).padding(MIC_INSET),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(ASSIST_HEADER_MIC_EDGE)
+                    .size(ASSIST_HEADER_MIC_SIZE),
             )
 
             AssistCaption(
                 text = "Turn off the kitchen lights",
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = CAPTION_BOTTOM),
+                modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
     }

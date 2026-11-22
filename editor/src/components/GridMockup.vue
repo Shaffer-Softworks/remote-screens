@@ -538,6 +538,9 @@ const highlight = computed(() => {
             <span>{{ page.title }}</span>
           </template>
         </div>
+        <span v-if="screen.settings.assist" class="stat" title="Assist microphone">
+          <MdiIcon name="microphone" :size="26 * top.barScale" class="teal" />
+        </span>
         <span v-if="screen.topBar.temperatureEntity" class="stat">
           <HaWeatherIcon
             v-if="headerWeather"

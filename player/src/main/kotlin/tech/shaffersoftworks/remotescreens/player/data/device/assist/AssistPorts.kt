@@ -57,6 +57,9 @@ interface AssistTurnClient {
 
 interface SpeechPlayback {
     suspend fun play(mimeType: String, audio: ByteArray)
+
+    /** Short cue that the wake word was heard. The microphone is already closed. */
+    suspend fun playListeningChime() {}
 }
 
 /** Keeps a microphone foreground service while the screen is off and Assist is listening. */
