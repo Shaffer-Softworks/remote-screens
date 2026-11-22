@@ -14,17 +14,21 @@ import tech.shaffersoftworks.remotescreens.shared.AssistWakeWords
 
 class AssistCoordinatorTest {
     @Test
-    fun audioStaysOnTheTabletUntilTheWakeWordAndTheMicClosesForTheReply() = runTest {
+    fun audioStaysOnTheTabletUntilTheWakeWordAndTheSameCaptureStaysOpen() = runTest {
         val microphone = ScriptedMicrophone()
         val detector = HitOnceDetector(phrase = "Okay Nabu")
         val client = RecordingTurnClient()
         val playback = RecordingPlayback(microphone)
         val foreground = RecordingForeground()
+        var opened = 0
 
         val coordinator = AssistCoordinator(
             scope = this,
             microphone = microphone,
-            detectors = WakeWordDetectors { detector },
+            detectors = WakeWordDetectors {
+                opened += 1
+                detector
+            },
             turns = client,
             playback = playback,
             foreground = foreground,
@@ -44,13 +48,57 @@ class AssistCoordinatorTest {
 
         assertTrue("audio is sent only after the detector reports a hit", client.received.isNotEmpty())
         assertTrue(detector.callsBeforeHit >= 2)
+        assertEquals(1, detector.warmUps)
+        assertEquals(1, opened)
+        assertEquals(1, microphone.openCount)
+        assertTrue(microphone.isOpen)
         assertTrue(playback.chimePlayed)
-        assertTrue(playback.chimeWhileMicClosed)
         assertTrue(playback.played)
-        assertTrue(playback.micWasClosed)
         assertEquals(AssistPhases.LISTENING, coordinator.state.value.phase)
         assertNull(coordinator.state.value.caption)
         assertEquals("The kitchen lights are off", coordinator.state.value.turns.last().text)
+        coordinator.stop()
+        testScheduler.advanceUntilIdle()
+    }
+
+    @Test
+    fun theSameEngineHearsTheNextWakeWord() = runTest {
+        val microphone = ScriptedMicrophone()
+        val detector = TwoHitDetector()
+        val client = RecordingTurnClient()
+        var opened = 0
+
+        val coordinator = AssistCoordinator(
+            scope = this,
+            microphone = microphone,
+            detectors = WakeWordDetectors {
+                opened += 1
+                detector
+            },
+            turns = client,
+            playback = RecordingPlayback(microphone),
+            foreground = RecordingForeground(),
+        )
+
+        coordinator.apply(
+            config = AssistSessionConfig(
+                isEnabled = true,
+                server = "10.0.0.5:8100",
+                token = "token",
+            ),
+            onWake = {},
+        )
+
+        testScheduler.advanceUntilIdle()
+        assertEquals(1, client.runs)
+        assertEquals(1, opened)
+
+        microphone.push(EXTRA_CHUNKS)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(2, client.runs)
+        assertEquals(1, opened)
+        assertEquals(1, microphone.openCount)
         coordinator.stop()
         testScheduler.advanceUntilIdle()
     }
@@ -118,8 +166,15 @@ class AssistCoordinatorTest {
 
         testScheduler.advanceUntilIdle()
 
+        assertEquals(1, client.runs)
+        assertEquals(1, microphone.openCount)
+
+        microphone.push(EXTRA_CHUNKS)
+        testScheduler.advanceUntilIdle()
+
         assertEquals(2, client.runs)
         assertEquals(2, playback.chimes)
+        assertEquals(1, microphone.openCount)
         assertTrue(playback.wasCancelled)
         assertNull(coordinator.state.value.caption)
         coordinator.stop()
@@ -144,7 +199,12 @@ class AssistCoordinatorTest {
 private class HitOnceDetector(override val phrase: String, private val hits: Boolean = true) : WakeWordDetector {
     override val isReady: Boolean = true
     var callsBeforeHit: Int = 0
+    var warmUps: Int = 0
     private var seen = 0
+
+    override fun warmUp() {
+        warmUps += 1
+    }
 
     override fun processAudio(samples: ShortArray): Boolean {
         seen += 1
@@ -172,12 +232,14 @@ private class ScriptedMicrophone : Microphone {
     override val hasPermission: Boolean = true
     var openCount: Int = 0
     var isOpen: Boolean = false
+    private var live: Channel<ShortArray>? = null
 
     override fun open(): MicrophoneSession {
         openCount += 1
         isOpen = true
         val samples = Channel<ShortArray>(capacity = Channel.UNLIMITED)
         repeat(CHUNK_COUNT) { index -> samples.trySend(shortArrayOf(index.toShort())) }
+        live = samples
 
         return object : MicrophoneSession {
             override val samples: ReceiveChannel<ShortArray> = samples
@@ -189,10 +251,16 @@ private class ScriptedMicrophone : Microphone {
         }
     }
 
+    fun push(times: Int) {
+        repeat(times) { live?.trySend(shortArrayOf(1)) }
+    }
+
     private companion object {
         const val CHUNK_COUNT = 6
     }
 }
+
+private const val EXTRA_CHUNKS = 200
 
 private class TwoHitDetector : WakeWordDetector {
     override val phrase: String = "Okay Nabu"
@@ -252,17 +320,15 @@ private class RecordingTurnClient : AssistTurnClient {
 
 private class RecordingPlayback(private val microphone: ScriptedMicrophone) : SpeechPlayback {
     var played: Boolean = false
-    var micWasClosed: Boolean = false
     var chimePlayed: Boolean = false
-    var chimeWhileMicClosed: Boolean = false
 
     override suspend fun playListeningChime() {
         chimePlayed = true
-        chimeWhileMicClosed = !microphone.isOpen
+        check(microphone.isOpen)
     }
 
     override suspend fun play(mimeType: String, audio: ByteArray) {
-        micWasClosed = !microphone.isOpen
+        check(microphone.isOpen)
         played = true
     }
 }

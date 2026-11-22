@@ -3,6 +3,7 @@ package tech.shaffersoftworks.remotescreens.player.microwakeword
 import tech.shaffersoftworks.remotescreens.player.data.device.assist.WakeWordDetector
 import tech.shaffersoftworks.remotescreens.shared.WakeWordManifest
 import java.nio.ByteBuffer
+import java.util.Random
 
 /**
  * JNI microWakeWord. The audio frontend matches the model training, so a raw TensorFlow interpreter is not used.
@@ -22,12 +23,29 @@ class MicroWakeWord private constructor(
         if (handle != 0L) nativeReset(handle)
     }
 
+    override fun warmUp() {
+        val noise = Random(WARM_UP_SEED)
+        val chunk = ShortArray(WARM_UP_CHUNK_SAMPLES)
+
+        repeat(WARM_UP_CHUNKS) {
+            for (index in chunk.indices) {
+                chunk[index] = (noise.nextGaussian() * WARM_UP_NOISE_STDDEV).toInt().toShort()
+            }
+
+            processAudio(chunk)
+        }
+    }
+
     override fun close() {
         if (handle != 0L) nativeDestroy(handle)
     }
 
     companion object {
         private const val SAMPLE_RATE = 16_000
+        private const val WARM_UP_CHUNKS = 400
+        private const val WARM_UP_CHUNK_SAMPLES = 160
+        private const val WARM_UP_NOISE_STDDEV = 25.0
+        private const val WARM_UP_SEED = 42L
 
         private val isLibraryLoaded: Boolean = runCatching { System.loadLibrary("microwakeword") }.isSuccess
 

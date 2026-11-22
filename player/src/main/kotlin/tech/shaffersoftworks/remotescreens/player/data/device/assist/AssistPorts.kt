@@ -12,6 +12,9 @@ interface WakeWordDetector {
     fun processAudio(samples: ShortArray): Boolean
     fun reset()
     fun close()
+
+    /** Prime a new engine before the microphone. A cold frontend misses the next phrase. */
+    fun warmUp() = Unit
 }
 
 fun interface WakeWordDetectors {
@@ -36,7 +39,7 @@ interface AssistTurnEvents {
     suspend fun ended()
     suspend fun failed(message: String)
 
-    /** Opens the microphone again after the reply, with no wake word, for one follow-up. */
+    /** The same capture resumes after the reply, for one follow-up. */
     suspend fun followUpAudio(): ReceiveChannel<ByteArray>
 }
 
@@ -58,7 +61,7 @@ interface AssistTurnClient {
 interface SpeechPlayback {
     suspend fun play(mimeType: String, audio: ByteArray)
 
-    /** Short cue that the wake word was heard. The microphone is already closed. */
+    /** Short cue that the wake word was heard. The capture stays open; the cooldown ignores it. */
     suspend fun playListeningChime() {}
 }
 
