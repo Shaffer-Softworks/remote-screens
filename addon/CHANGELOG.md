@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.68
+
+### What's Changed
+* Bump minimatch, eslint, @typescript-eslint/parser and typescript-eslint in /editor by @dependabot[bot] in https://github.com/Shaffer-Softworks/remote-screens/pull/212
+* Fix/assist updates fix by @sickkick in https://github.com/Shaffer-Softworks/remote-screens/pull/214
+* Keep Assist listening for the wake word through the reply by @sickkick in https://github.com/Shaffer-Softworks/remote-screens/pull/215
+
+
+**Full Changelog**: https://github.com/Shaffer-Softworks/remote-screens/compare/0.1.51...v0.2.68
+
 ## 0.2.67
 
 - See the [v0.2.67](https://github.com/Shaffer-Softworks/remote-screens/releases/tag/v0.2.67) release notes; replace this line with curated notes before merging.
