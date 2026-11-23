@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.69
+
+### What's Changed
+* chore(release): sync 0.2.68 on main by @github-actions[bot] in https://github.com/Shaffer-Softworks/remote-screens/pull/216
+* Play assist wake cue as PCM through AudioTrack by @sickkick in https://github.com/Shaffer-Softworks/remote-screens/pull/217
+
+
+**Full Changelog**: https://github.com/Shaffer-Softworks/remote-screens/compare/v0.2.68...v0.2.69
+
 ## 0.2.68
 
 ### What's Changed
