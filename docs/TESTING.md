@@ -84,6 +84,19 @@ adb shell am start -n tech.shaffersoftworks.remotescreens.player/.MainActivity -
 The Remote Compose JVM spike is covered by `RcSpikeTest`; this section is the on-device check that taps reach the
 add-on and live variables update.
 
+## Assist checks
+
+Use an arm64 or armeabi-v7a tablet or emulator. The player APK has no x86 libraries. Turn **Assist** on for
+the screen, allow the microphone, and say the selected wake word (Okay Nabu unless you changed it). On any
+page except Assist, the heard line and the reply appear above the navigation bar and then clear. Open the
+Assist page and confirm the same turn is kept there, then mute from the top-bar microphone and from the
+page's Mute key. Start an intercom call and confirm listening stops until the call ends. With the screen
+turned off in standby, the **Listening for Assist** notification is posted; some panels still drop the
+microphone while the display is off.
+
+A demo server answers with the fixed kitchen-lights lines and does not call Home Assistant. The tablet still
+opens the microphone when Assist is on.
+
 ## Intercom checks
 
 Use two connected tablets on the local network, both showing an Intercom page. Call between them,

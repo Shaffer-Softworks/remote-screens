@@ -81,6 +81,13 @@ Call tablets from a full-page Intercom tile, **Tablets → Intercom** in the edi
 dashboard card. Browser calls need HTTPS and microphone permission; audio needs a direct local network path.
 See [Intercom](docs/INTERCOM.md) for setup and audio troubleshooting.
 
+## Assist
+
+Turn **Assist** on in a screen's settings (or the **Assist** switch in Home Assistant). The tablet listens
+on the device for Okay Nabu, Hey Jarvis, Hey Mycroft, or Alexa. After the phrase, Home Assistant transcribes
+the command and speaks the reply. Room audio stays on the tablet until the wake word.
+See [Assist](docs/ASSIST.md) for the pipeline, the microphone, and standby.
+
 ## Kiosk lock
 
 A screen's **Kiosk lock** (a switch in Home Assistant, or a setting in the editor) keeps its tablet on Remote
