@@ -6,7 +6,11 @@ plugins {
 // A development-only Android host. No dependency on the server or production player.
 android {
     namespace = "tech.shaffersoftworks.remotescreens.preview"
-    compileSdk = libs.versions.compileSdk.get().toInt()
+    compileSdk {
+        version = release(libs.versions.compileSdk.get().toInt()) {
+            minorApiLevel = libs.versions.compileSdkMinor.get().toInt()
+        }
+    }
     defaultConfig {
         applicationId = "tech.shaffersoftworks.remotescreens.preview"
         minSdk = 29 // remote-tooling-preview uses the Compose player, which requires API 29.
