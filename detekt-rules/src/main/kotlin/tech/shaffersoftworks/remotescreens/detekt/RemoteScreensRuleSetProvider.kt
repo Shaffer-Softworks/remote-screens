@@ -9,6 +9,6 @@ class RemoteScreensRuleSetProvider : RuleSetProvider {
 
     override fun instance(): RuleSet = RuleSet(
         id = ruleSetId,
-        rules = listOf(::StatementSpacingRule, ::NameCallArgumentsRule),
+        rules = listOf(::StatementSpacingRule, ::NameCallArgumentsRule, ::DocumentFlashRule),
     )
 }

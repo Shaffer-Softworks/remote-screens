@@ -222,7 +222,7 @@ class PlayerSession(
             if (docContext.refreshSeconds > 0 && shown.renderedDoc.stale(states)) {
                 documents.rebuild(shown)
             } else if (docContext.pictures.any { it.refreshSeconds > 0 }) {
-                media.sendPictures(shown = shown, states = states, isForced = false)
+                media.sendPictures(shown = shown, states = states)
             }
         }
 

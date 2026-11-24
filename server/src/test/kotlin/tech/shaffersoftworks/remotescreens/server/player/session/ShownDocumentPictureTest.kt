@@ -41,7 +41,6 @@ class ShownDocumentPictureTest {
                 name = "cam.still",
                 sourceKey = "/api/camera_proxy/camera.front",
                 nowMs = 1_000L,
-                isForced = true,
                 refreshSeconds = 0,
             ),
         )
@@ -61,7 +60,6 @@ class ShownDocumentPictureTest {
                 name = "cam.still",
                 sourceKey = "/api/camera_proxy/camera.front",
                 nowMs = 2_000L,
-                isForced = false,
                 refreshSeconds = 0,
             ),
         )
@@ -77,7 +75,6 @@ class ShownDocumentPictureTest {
                 name = "cam.still",
                 sourceKey = sourceKey,
                 nowMs = 1_000L,
-                isForced = true,
                 refreshSeconds = 4,
             ),
         )
@@ -97,7 +94,6 @@ class ShownDocumentPictureTest {
                 name = "cam.still",
                 sourceKey = sourceKey,
                 nowMs = 2_000L,
-                isForced = false,
                 refreshSeconds = 4,
             ),
         )
@@ -107,7 +103,6 @@ class ShownDocumentPictureTest {
                 name = "cam.still",
                 sourceKey = sourceKey,
                 nowMs = 6_000L,
-                isForced = false,
                 refreshSeconds = 4,
             ),
         )
@@ -124,7 +119,6 @@ class ShownDocumentPictureTest {
                 name = "cam.still",
                 sourceKey = "/api/camera_proxy/camera.side",
                 nowMs = 6_200L,
-                isForced = false,
                 refreshSeconds = 4,
             ),
         )
@@ -139,7 +133,6 @@ class ShownDocumentPictureTest {
                 name = "person",
                 sourceKey = "old",
                 nowMs = 1L,
-                isForced = true,
                 refreshSeconds = 0,
             ),
         )
@@ -149,7 +142,6 @@ class ShownDocumentPictureTest {
                 name = "person",
                 sourceKey = "new",
                 nowMs = 2L,
-                isForced = true,
                 refreshSeconds = 0,
             ),
         )
@@ -187,7 +179,6 @@ class ShownDocumentPictureTest {
                 name = "cam.still",
                 sourceKey = "same",
                 nowMs = 1L,
-                isForced = true,
                 refreshSeconds = 0,
             ),
         )
@@ -197,7 +188,6 @@ class ShownDocumentPictureTest {
                 name = "cam.still",
                 sourceKey = "same",
                 nowMs = 2L,
-                isForced = true,
                 refreshSeconds = 0,
             ),
         )

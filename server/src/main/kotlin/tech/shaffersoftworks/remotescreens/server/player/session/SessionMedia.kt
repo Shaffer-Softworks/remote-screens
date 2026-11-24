@@ -273,7 +273,6 @@ internal class SessionMedia(
     fun sendPictures(
         shown: ShownDocument,
         states: Map<String, EntityState>,
-        isForced: Boolean,
     ) {
         val nowMs = System.currentTimeMillis()
 
@@ -288,7 +287,6 @@ internal class SessionMedia(
                     name = picture.name,
                     sourceKey = sourceKey,
                     nowMs = nowMs,
-                    isForced = isForced,
                     refreshSeconds = picture.refreshSeconds,
                 )
             ) {

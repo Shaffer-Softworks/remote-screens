@@ -216,7 +216,8 @@ internal class SessionDocument(
     }
 
     /**
-     * Pictures and maps always; when [isForced], also warms and sends videos then search overlays
+     * Pictures, maps, energy, and assist follow the document. A picture already on the player is not fetched
+     * again; its refresh timer still sends a new frame. When [isForced], also warms videos and search
      * (new document path). Same-content updates skip video/search so a rebuild flash is avoided.
      */
     private suspend fun sendLiveAttachments(
@@ -224,7 +225,7 @@ internal class SessionDocument(
         states: Map<String, EntityState>,
         isForced: Boolean,
     ) {
-        media.sendPictures(shown = shown, states = states, isForced = isForced)
+        media.sendPictures(shown = shown, states = states)
 
         for (map in shown.renderedDoc.docContext.maps) {
             media.sendMap(shown = shown, map = map, states = states)

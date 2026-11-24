@@ -63,6 +63,8 @@ object Present {
         "door" to ("door-open" to "door-closed"),
     )
     private val COVER_DEFAULT = "window-shutter-open" to "window-shutter"
+    private const val PERSON_HOME_ICON = "account"
+    private const val PERSON_AWAY_ICON = "account-arrow-right"
 
     private val LOCK_ICONS = mapOf(
         LockState.LOCKED to "lock",
@@ -308,10 +310,25 @@ object Present {
             Domain.WEATHER -> weatherIcon(entityState.state)
             Domain.CLIMATE -> CLIMATE_ICONS[entityState.hvacMode] ?: "thermostat"
             Domain.ALARM_PANEL -> ALARM_ICONS[entityState.alarmState] ?: "shield-lock"
-            Domain.PERSON -> if (on) "account" else "account-arrow-right"
+            Domain.PERSON -> if (on) PERSON_HOME_ICON else PERSON_AWAY_ICON
             else -> (if (on) spec?.iconOn else null) ?: spec?.icon ?: Icons.FALLBACK
         }
     }
 
     fun weatherIcon(condition: String): String = WEATHER_ICONS[condition] ?: "weather-partly-cloudy"
+
+    /**
+     * On icon, then off icon, when the glyph only follows whether the entity is on.
+     * Null when the icon depends on a mode (lock, climate, alarm, weather) and has to be drawn into the document.
+     */
+    fun onOffIcons(entityState: EntityState): Pair<String, String>? {
+        val deviceClass = entityState.common.deviceClass.orEmpty()
+
+        return when (entityState.domain) {
+            Domain.BINARY_SENSOR -> BINARY_SENSOR_ICONS[deviceClass] ?: BINARY_SENSOR_DEFAULT
+            Domain.COVER -> COVER_ICONS[deviceClass] ?: COVER_DEFAULT
+            Domain.PERSON -> PERSON_HOME_ICON to PERSON_AWAY_ICON
+            else -> null
+        }
+    }
 }

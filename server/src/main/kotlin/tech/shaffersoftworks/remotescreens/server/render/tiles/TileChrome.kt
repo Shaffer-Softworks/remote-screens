@@ -2,6 +2,7 @@
 
 package tech.shaffersoftworks.remotescreens.server.render.tiles
 
+import androidx.compose.remote.creation.dsl.RcColor
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
 import tech.shaffersoftworks.remotescreens.server.render.HaRenderFlags
 import tech.shaffersoftworks.remotescreens.server.render.Present
@@ -219,12 +220,16 @@ internal fun DocContext.tileIcon(
                 entityId = requireNotNull(entityId),
                 name = statusIconName(override = override, entityState = entityState, spec = spec),
                 sizeDp = sizeDp,
-                color = ink
+                color = ink,
             )
         override != null -> icon(name = override, sizeDp = sizeDp, color = ink)
-        entityId != null && entityState != null && spec != null && spec.toggle &&
-            (spec.domain != Domain.COVER.value && spec.domain != Domain.LOCK.value) ->
-            toggleIcon(entityId = entityId, off = spec.icon, on = spec.iconOn, sizeDp = sizeDp, color = ink)
+        drawOnOffIcon(
+            entityId = entityId,
+            entityState = entityState,
+            spec = spec,
+            sizeDp = sizeDp,
+            color = ink,
+        ) -> Unit
         entityState != null -> {
             structural(entityState.entityId) { s -> s?.let { Present.view(it, i18n).icon }.orEmpty() }
             icon(name = Present.view(entityState, i18n).icon, sizeDp = sizeDp, color = ink)
@@ -232,3 +237,35 @@ internal fun DocContext.tileIcon(
         else -> icon(name = spec?.icon, sizeDp = sizeDp, color = ink)
     }
 }
+
+private fun DocContext.drawOnOffIcon(
+    entityId: String?,
+    entityState: EntityState?,
+    spec: TypeSpec?,
+    sizeDp: Float,
+    color: RcColor,
+): Boolean {
+    val glyph = onOffGlyph(entityId = entityId, entityState = entityState, spec = spec)
+
+    if (glyph != null) {
+        toggleIcon(entityId = glyph.first, off = glyph.second, on = glyph.third, sizeDp = sizeDp, color = color)
+    }
+
+    return glyph != null
+}
+
+private fun onOffGlyph(
+    entityId: String?,
+    entityState: EntityState?,
+    spec: TypeSpec?,
+): Triple<String, String, String?>? {
+    if (entityId == null || entityState == null) return null
+
+    val icons = Present.onOffIcons(entityState)
+    val off = icons?.second ?: spec?.takeIf { it.usesToggleIcon() }?.icon
+    val on = icons?.first ?: spec?.iconOn
+
+    return off?.let { Triple(first = entityId, second = it, third = on) }
+}
+
+private fun TypeSpec.usesToggleIcon(): Boolean = toggle && domain != Domain.LOCK.value
