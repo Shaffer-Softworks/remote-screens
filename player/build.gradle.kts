@@ -26,7 +26,11 @@ val (major, minor, patch) = addonVersion.split('.').map { it.toInt() }
 
 android {
     namespace = "tech.shaffersoftworks.remotescreens.player"
-    compileSdk = libs.versions.compileSdk.get().toInt()
+    compileSdk {
+        version = release(libs.versions.compileSdk.get().toInt()) {
+            minorApiLevel = libs.versions.compileSdkMinor.get().toInt()
+        }
+    }
 
     defaultConfig {
         applicationId = "tech.shaffersoftworks.remotescreens.player"
