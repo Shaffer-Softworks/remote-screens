@@ -409,7 +409,11 @@ class PlayerSession(
 
     private suspend fun handleDocumentOutcome(outcome: TapOutcome) {
         when (outcome) {
-            is TapOutcome.Card -> documents.openCard(outcome.entityId, outcome.kind)
+            is TapOutcome.Card -> documents.openCard(
+                entityId = outcome.entityId,
+                kind = outcome.kind,
+                accent = outcome.accent,
+            )
             TapOutcome.Done -> jobs += context.scope.launch {
                 delay(RESYNC_MS.milliseconds)
                 documents.resync()

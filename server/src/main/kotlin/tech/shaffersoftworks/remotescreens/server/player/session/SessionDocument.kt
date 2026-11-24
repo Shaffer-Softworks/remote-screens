@@ -327,7 +327,7 @@ internal class SessionDocument(
         }
     }
 
-    suspend fun openCard(entityId: String?, kind: String?) {
+    suspend fun openCard(entityId: String?, kind: String?, accent: String? = null) {
         // Start the HLS stream while the card builds so the first frame is not waiting on camera/stream.
         media.warmCameraStream(entityId = entityId, kind = kind)
 
@@ -343,6 +343,7 @@ internal class SessionDocument(
                 input = renderInput(renderData),
                 topInsetDp = screen?.let { Grid.topBarHeight(it.topBar) } ?: 0f,
                 bottomInsetDp = screen?.let { Grid.navBarHeight(it.navBar, host.device.widthDp.toFloat()) } ?: 0f,
+                colorKey = accent,
             )
         }
 

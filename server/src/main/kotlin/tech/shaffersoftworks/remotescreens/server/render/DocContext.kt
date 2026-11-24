@@ -23,6 +23,9 @@ import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.theme.Units
+import tech.shaffersoftworks.remotescreens.server.render.freeform.accent
+import tech.shaffersoftworks.remotescreens.server.render.theme.darkenAccent
+import tech.shaffersoftworks.remotescreens.server.render.theme.softenAccent
 import tech.shaffersoftworks.remotescreens.server.render.panels.intercom.IntercomView
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Icons
 import tech.shaffersoftworks.remotescreens.shared.ActionRef
@@ -77,6 +80,12 @@ class DocContext(
     val assistPages = mutableListOf<LiveAssist>()
     /** Page index currently being drawn, so a search overlay can hide on the other pages. */
     var renderingPage: Int = 0
+
+    /**
+     * The tile colour being drawn, when the tile names one. Accent roles and the home fill use it instead of the
+     * theme until [withTileAccent] restores the previous value.
+     */
+    internal var tileAccentArgb: Int? = null
     /** Action metadata to the action and the entity it changes. */
     val predicted = LinkedHashMap<String, Pair<ActionRef, String>>()
     /** What of an entity is drawn into the document itself (an icon, a list of modes), and what it was. */
@@ -152,7 +161,19 @@ class DocContext(
             rcScope.remoteColor(argb)
         }
 
-    fun role(r: Role): RcColor = fixed(palette[r])
+    fun role(r: Role): RcColor {
+        val chosen = tileAccentArgb
+
+        val argb = when {
+            chosen == null -> palette[r]
+            r == Role.ACCENT || r == Role.HOME || r == Role.WEATHER_TITLE -> chosen
+            r == Role.ACCENT_DARK -> darkenAccent(chosen)
+            r == Role.ACCENT_SOFT -> softenAccent(chosen)
+            else -> palette[r]
+        }
+
+        return fixed(argb)
+    }
     fun pastel(p: Pastel): RcColor = fixed(palette[p])
 
     /** A role or pastel in the screen's theme, so live colours sent later match the document. */
@@ -313,5 +334,22 @@ class DocContext(
 
             return bytes to docContext
         }
+    }
+}
+
+/**
+ * Draw [block] in [colorKey] when the tile names a colour. Accent, home and weather-title roles inside the block
+ * follow that colour; everything else stays on the theme.
+ */
+internal inline fun <T> DocContext.withTileAccent(colorKey: String?, fallback: Pastel, block: DocContext.() -> T): T {
+    if (colorKey == null) return block()
+
+    val previous = tileAccentArgb
+    tileAccentArgb = accent(colorKey, fallback)
+
+    return try {
+        block()
+    } finally {
+        tileAccentArgb = previous
     }
 }

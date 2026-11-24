@@ -69,7 +69,8 @@ private const val BASE_H = 360f
 private fun small(base: Float, layoutScale: Float) = maxOf(base * layoutScale, MIN_LABEL_SP)
 
 /**
- * The RPI home page: the weather and the next calendar event on teal, and who is home on a white strip below.
+ * The RPI home page: weather and the next event on the home colour, and who is home on a white strip below.
+ * A colour chosen on the tile replaces that fill and the accent marks.
  * The weather is the tile's entity (or the first weather entity); `calendars` and `people` options list entity ids,
  * all calendars and all people when left out.
  */

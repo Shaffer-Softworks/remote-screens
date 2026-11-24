@@ -1,6 +1,6 @@
 ---
-description: Document rebuild vs vars — bake initial page, covered swap, energy retention, avoid timed rebuilds that flash home
-globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/ScreenRenderer.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/**/*.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/remote/RemoteDocumentController.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/remote/RemoteDocumentStack.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/remote/RemoteScreenState.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/remote/DocumentOverlays.kt
+description: Document rebuild vs vars — covered swap, and the Nov 24 picture-decode flash (baked icon plus every picture resent)
+globs: server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/render/**/*.kt,server/src/main/kotlin/tech/shaffersoftworks/remotescreens/server/player/**/*.kt,player/src/main/kotlin/tech/shaffersoftworks/remotescreens/player/ui/screens/player/remote/**/*.kt,detekt-rules/**/*.kt,config/detekt/detekt.yml
 alwaysApply: false
 ---
 
@@ -56,6 +56,27 @@ Replacing the document used to start every `verticalScroll` / `horizontalScroll`
 - `keptVerticalScroll` / `keptHorizontalScroll` (`ScrollKeep.kt`) put a stable component id on each scroller. Ids are `0x60_0000` plus a hash of a name (`lights.<tile>.rooms`, `calendar.<tile>`, `freeform.<node>`, …), above video (`0x5C`), map (`0x5D`) and search (`0x5E`).
 - The player copies those offsets onto the new document (`DocumentScroll.kt`) **before** the covered swap is shown. The position float is what paint reads; the touch expression would otherwise write 0 back until the next drag. Copy `mMaxScrollY` / `mMaxScrollX` (and the touch expression's max) with the offset.
 - When the new bytes match the document already on screen, `SessionDocument.show` keeps that document and only sends changed vars and pictures.
+
+## Nov 24 2026 flash (not released)
+
+Branch `fix/document-flash`, cut from `main` at `0aed4de7` (add-on and player 0.2.69). The work is uncommitted on that branch until someone commits it. The Samsung tablet (SM-T725, serial `R32R5006XNT`, player 0.2.69) still flashes until this add-on is rebuilt and the player reconnects.
+
+The visible flash was a burst of JPEG decodes (`W/HWUI Image decoding logging dropped`, dozens of lines in one or two seconds), not a one-frame jump to home. One document holds every page, so a picture fetch for any page decodes on the player that is showing.
+
+What it was not:
+
+- The urgent "Water shutoff not confirmed" alert. That is `Slot.ALERT` with a scrim. The user saw the flash well before it. A 75-second recording of the Automations page at 30 fps, after the earlier bursts, had no pixel change.
+- The Saturday Nov 21 full-screen Assist mic overlay. The mic is a document icon (`sys.assist_mic`) on 0.2.69.
+- An alpha Remote Compose bug. Alpha24 is why a baked value must replace the whole document, and why the covered swap exists (the player still draws at alpha 0). The library already updates named variables in place. This flash was the add-on rebuilding that document and then fetching every picture again. The decodes arrived after the swap, on the page already showing.
+
+What caused the bursts on the night of Nov 23–24 (tablet `10.11.0.87`, device `b66d30bc-7d2d-4ef8-b720-0f4609f4ba26`, America/New_York):
+
+- Home Assistant HTTP 502 from 23:47:26–23:48:57 and 23:52:53–23:54:23. Reconnect ("Connected to Home Assistant 2026.11.2") at 23:49:27 and 23:54:53. The next state emit rebuilt the document. Image bursts at 23:49:28, then about every 60 seconds through 23:55:35 (`refreshEvery` is 60 while a calendar or to-do is on any page). Disconnect does not clear `_states`.
+- `binary_sensor.front_door_camera_motion` on at 00:09:04. The icon was `structural`, so the document bytes changed and `sendPictures(isForced = true)` ran. HWUI burst 00:09:19–00:09:20, about 15 seconds later, which is the snapshot fetch. A front-door camera HLS 404 at 23:52 only flipped `cam_waiting` / `cam_still` and did not rebuild the document.
+
+Fix on the branch: two-state icons (binary sensor, cover, person) use `toggleIcon`. Weather temperature is a variable; only the condition icon stays structural. `beginPictureFetch` skips a source key already sent. Camera stills still refresh when `refreshSeconds` elapses (default 60). A rebuild can still happen for a forecast, a history line, the calendar agenda, the to-do list, an alarm arm change, or a map when someone moves, and those must not resend pictures the tablet already has.
+
+`DocumentFlash` fails `:server:detekt` if a `structural` lambda reads a live value or if picture send takes `isForced`.
 
 ## Check
 
