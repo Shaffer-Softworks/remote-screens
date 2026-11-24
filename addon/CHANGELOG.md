@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.70
+
+### What's Changed
+* chore(release): sync 0.2.69 on main by @github-actions[bot] in https://github.com/Shaffer-Softworks/remote-screens/pull/218
+* Update dependencies and set compileSdk minor API level by @sickkick in https://github.com/Shaffer-Softworks/remote-screens/pull/219
+* Stop document rebuilds from live values and forced picture resends by @sickkick in https://github.com/Shaffer-Softworks/remote-screens/pull/221
+* Let tile colour drive card and home accents by @sickkick in https://github.com/Shaffer-Softworks/remote-screens/pull/222
+
+
+**Full Changelog**: https://github.com/Shaffer-Softworks/remote-screens/compare/v0.2.69...v0.2.70
+
 ## 0.2.69
 
 ### What's Changed
