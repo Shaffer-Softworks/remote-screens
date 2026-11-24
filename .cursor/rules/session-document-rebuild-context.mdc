@@ -20,6 +20,9 @@ One Remote Compose document holds every page. Live values are USER vars (no redr
 - `showSlots` / a later `render` must not `GONE` `mainInactive` while `pendingMainSwap` or `replacedMainPlayer` is set.
 - `ScreenRenderer.render(..., initialPage = …)` — bake the tablet’s current page into `Vars.PAGE` so a rebuild does not open on home before the player restores page.
 - Prefer vars for live values. Timed `refreshEvery` on media (etc.) caused home flashes — only use when the document tree itself must change (forecast lists, to-do rows). Calendar agenda still uses `refreshEvery(60)` + store TTL; a real content change still replaces the document.
+- A two-state icon (binary sensor, cover, person) is `toggleIcon` on `USER` on/off. Do not `structural` that glyph: motion, a door, or someone arriving used to rebuild the one document and force-send every picture.
+- A sensor reading, an `update` entity, and the weather temperature are variables. Only a baked drawing (the weather condition icon, a forecast list, a history line, the calendar agenda) is `structural` or `refreshEvery`.
+- `beginPictureFetch` does not fetch a source key the player already has. A replaced document copies those bitmaps onto the hidden buffer. Camera stills still update when `refreshSeconds` elapses or the source key changes. Video and search stay on the forced (new document) path.
 - Music playhead: HA `media_position` is a snapshot plus `media_position_updated_at`. RPI's `NowPlayingTrackTime` adds elapsed time while playing. `mediaPosition()` does that math; `tickProgress` sends only the changed `pos` / `progress` vars — no rebuild. `PlayerHub` applies each debounced snapshot (`conflate` + `collect`, so a slow refresh is not cancelled).
 
 ## Energy dashboard across rebuilds
@@ -53,3 +56,14 @@ Replacing the document used to start every `verticalScroll` / `horizontalScroll`
 - `keptVerticalScroll` / `keptHorizontalScroll` (`ScrollKeep.kt`) put a stable component id on each scroller. Ids are `0x60_0000` plus a hash of a name (`lights.<tile>.rooms`, `calendar.<tile>`, `freeform.<node>`, …), above video (`0x5C`), map (`0x5D`) and search (`0x5E`).
 - The player copies those offsets onto the new document (`DocumentScroll.kt`) **before** the covered swap is shown. The position float is what paint reads; the touch expression would otherwise write 0 back until the next drag. Copy `mMaxScrollY` / `mMaxScrollX` (and the touch expression's max) with the offset.
 - When the new bytes match the document already on screen, `SessionDocument.show` keeps that document and only sends changed vars and pictures.
+
+## Check
+
+`DocumentFlash` (detekt, `detekt-rules`) fails the build when a `structural` lambda reads a live value (`temperature`, `humidity`, `numericState`, `updatedLabel`, `lastChanged`, …) or when `beginPictureFetch` / `sendPictures` take `isForced` and would resend a bitmap the player already has. It runs with `:server:detekt` on every change.
+
+Render tests lock the cases detekt cannot see: a motion icon and a sensor or switch reading (`TileIconMotionTest`), a weather temperature (`WeatherNowStructureTest`), and an unchanged picture (`ShownDocumentPictureTest`).
+
+```bash
+./gradlew :detekt-rules:test :server:detekt :server:test \
+  --tests '*TileIconMotionTest' --tests '*WeatherNowStructureTest' --tests '*ShownDocumentPictureTest'
+```

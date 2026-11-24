@@ -22,21 +22,21 @@ internal class ShownDocument(
     val videoRestarts = HashMap<Int, Int>()
 
     /**
-     * Starts a fetch for [sourceKey] when it is not already in flight and either forced, due, or not yet
-     * successfully sent. Marks the slot in-flight; call [finishPictureFetch] when the load ends.
+     * Starts a fetch for [sourceKey] when it is not already in flight, not already on the player, or its
+     * refresh interval has elapsed. A replaced document keeps the bitmap it already sent. Marks the slot
+     * in-flight; call [finishPictureFetch] when the load ends.
      */
     fun beginPictureFetch(
         name: String,
         sourceKey: String?,
         nowMs: Long,
-        isForced: Boolean,
         refreshSeconds: Int,
     ): Boolean {
         val lastSentMs = pictureSentAtMs[name] ?: 0L
         val isDue = refreshSeconds > 0 && nowMs - lastSentMs >= refreshSeconds * MS_PER_SECOND
 
         val shouldSkip = pictureInflightKeys[name] == sourceKey ||
-            (!isForced && !isDue && pictureKeys[name] == sourceKey)
+            (!isDue && pictureKeys[name] == sourceKey)
 
         if (!shouldSkip) {
             pictureInflightKeys[name] = sourceKey

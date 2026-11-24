@@ -78,6 +78,11 @@ remotescreens:
   NameCallArguments:
     active: false
     autoCorrect: false
+  # Live readings stay variables. A replaced document does not resend pictures already on the player.
+  # See .cursor/rules/session-document-rebuild-context.mdc.
+  DocumentFlash:
+    active: true
+    autoCorrect: false
 
 ktlint:
   ArgumentListWrapping:

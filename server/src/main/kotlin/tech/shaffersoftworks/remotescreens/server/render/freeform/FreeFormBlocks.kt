@@ -759,9 +759,8 @@ private fun DocContext.weatherNowNode(node: Node, self: Dims, axis: Axis, pages:
 private fun DocContext.bindWeatherNow(node: Node, id: String) {
     bindEntity(id)
 
-    structural(id) { s ->
-        listOf(s?.state, s?.weather?.temperature, s?.weather?.temperatureUnit).joinToString("|")
-    }
+    // The condition icon is drawn into the document. The temperature is a variable.
+    structural(id) { s -> s?.state.orEmpty() }
 
     bind(id) { states ->
         val entityState = states[id]

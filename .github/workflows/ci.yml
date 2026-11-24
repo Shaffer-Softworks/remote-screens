@@ -23,7 +23,7 @@ jobs:
       - name: Detekt
         run: ./gradlew :shared:detekt :server:detekt :player:detekt
       - name: Tests
-        run: ./gradlew :shared:test :server:test :player:testDebugUnitTest
+        run: ./gradlew :detekt-rules:test :shared:test :server:test :player:testDebugUnitTest
       - name: Android lint
         run: ./gradlew :player:lintDebug
       - name: Player app
