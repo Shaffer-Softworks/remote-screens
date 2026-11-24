@@ -18,7 +18,7 @@ import {
 import { intercomStacks } from '../model/intercomLayout'
 import { blindsRoomRows } from '../model/blindsOpenCount'
 import { lightsRoomRows } from '../model/lightsOnCount'
-import { usePreviewPalette } from '../model/palette'
+import { accentStyleOf, usePreviewPalette } from '../model/palette'
 import { iconOf, nameOf, stateOf } from '../model/tiles'
 import type { Page, Screen, Tile, TileSource } from '../model/types'
 import { domainOf, kindOf } from '../model/types'
@@ -286,12 +286,17 @@ function place(placement: { tile: Tile; col: number; row: number; w: number; h: 
       top: `${gridLayout.value.topBar}px`,
       width: `${props.device.w}px`,
       height: `${props.device.h - gridLayout.value.topBar - gridLayout.value.navBar}px`,
+      ...accentStyleOf(placement.tile.color, domainOf(placement.tile) ?? kindOf(placement.tile)),
     }
   }
   const edge = placement.tile.borderColor
     ? { borderColor: colorOf(placement.tile.borderColor) }
     : {}
-  return { ...rect(placement.col, placement.row, placement.w, placement.h), ...edge }
+  return {
+    ...rect(placement.col, placement.row, placement.w, placement.h),
+    ...edge,
+    ...accentStyleOf(placement.tile.color, domainOf(placement.tile) ?? kindOf(placement.tile)),
+  }
 }
 
 function hasHeader(placement: { tile: Tile; w: number; h: number }): boolean {

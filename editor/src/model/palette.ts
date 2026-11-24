@@ -167,6 +167,29 @@ export function packHex(rgb: string, alpha: number = 0xff): string {
     : `#${alphaByte.toString(16).padStart(2, '0').toUpperCase()}${body}`
 }
 
+const ACCENT_DARK_KEEP_PERCENT = 72
+const ACCENT_SOFT_WHITE_PERCENT = 35
+
+/**
+ * CSS variables so a panel or card painted with the theme accent follows a colour chosen on the tile.
+ * Empty when the tile names none, so the theme's own accent stays.
+ */
+export function accentStyleOf(
+  color: string | undefined,
+  domain: string | undefined,
+): Record<string, string> {
+  if (!color) return {}
+  const chosen = pastel(color, domain).color
+  if (!chosen) return {}
+  return {
+    '--rc-home': chosen,
+    '--rc-accent': chosen,
+    '--rc-accent-dark': `color-mix(in srgb, ${chosen} ${ACCENT_DARK_KEEP_PERCENT}%, black)`,
+    '--rc-accent-soft': `color-mix(in srgb, ${chosen} ${ACCENT_SOFT_WHITE_PERCENT}%, white)`,
+    '--rc-weather-title': chosen,
+  }
+}
+
 /** The colour a tile lights up in: its own pastel or hex colour, else its domain's. */
 export function pastel(
   key: string | undefined,

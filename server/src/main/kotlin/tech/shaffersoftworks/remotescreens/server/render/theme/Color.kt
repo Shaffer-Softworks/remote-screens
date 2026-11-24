@@ -193,3 +193,32 @@ object Contrast {
     const val PastelGreen = 0xFF4CFF4C.toInt()
     const val PastelGrey = 0xFFFFFFFF.toInt()
 }
+
+private const val ACCENT_DARK_KEEP = 0.72f
+private const val ACCENT_SOFT_WHITE = 0.35f
+private const val COLOR_CHANNEL_MAX = 255
+private const val COLOR_CHANNEL_MASK = 0xFF
+private const val COLOR_ALPHA_SHIFT = 24
+private const val COLOR_RED_SHIFT = 16
+private const val COLOR_GREEN_SHIFT = 8
+
+/** The theme's accent-dark, as the same hue pulled toward black. */
+internal fun darkenAccent(argb: Int): Int = mixChannel(argb = argb, toward = 0, amount = 1f - ACCENT_DARK_KEEP)
+
+/** The theme's accent-soft, as the same hue pulled toward white. */
+internal fun softenAccent(argb: Int): Int = mixChannel(
+    argb = argb,
+    toward = COLOR_CHANNEL_MAX,
+    amount = ACCENT_SOFT_WHITE,
+)
+
+private fun mixChannel(argb: Int, toward: Int, amount: Float): Int {
+    fun mix(channel: Int): Int = (channel + (toward - channel) * amount).toInt().coerceIn(0, COLOR_CHANNEL_MAX)
+
+    val alpha = argb ushr COLOR_ALPHA_SHIFT
+    val red = mix((argb shr COLOR_RED_SHIFT) and COLOR_CHANNEL_MASK)
+    val green = mix((argb shr COLOR_GREEN_SHIFT) and COLOR_CHANNEL_MASK)
+    val blue = mix(argb and COLOR_CHANNEL_MASK)
+
+    return (alpha shl COLOR_ALPHA_SHIFT) or (red shl COLOR_RED_SHIFT) or (green shl COLOR_GREEN_SHIFT) or blue
+}

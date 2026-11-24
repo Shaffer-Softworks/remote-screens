@@ -3,6 +3,7 @@ package tech.shaffersoftworks.remotescreens.server.render
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
+import tech.shaffersoftworks.remotescreens.server.render.theme.softenAccent
 import tech.shaffersoftworks.remotescreens.shared.VarValue
 
 /**
@@ -107,7 +108,13 @@ fun DocContext.bindTileColors(tileId: String, entityId: String?, pastel: Pastel,
     bindTileColors(tileId = tileId, entityId = entityId, accent = pastel.argb, alwaysOn = alwaysOn)
 
 /** As above, lit in [accent] (ARGB). */
-fun DocContext.bindTileColors(tileId: String, entityId: String?, accent: Int, alwaysOn: Boolean = false) {
+fun DocContext.bindTileColors(
+    tileId: String,
+    entityId: String?,
+    accent: Int,
+    alwaysOn: Boolean = false,
+    explicitColor: Boolean = false,
+) {
     bind(entityId) { states ->
         val entityState = entityId?.let { states[it] }
         val view = Present.view(entityState, i18n)
@@ -121,17 +128,16 @@ fun DocContext.bindTileColors(tileId: String, entityId: String?, accent: Int, al
             else -> Role.INK_DIM.argb
         }
 
+        val line = lineArgb(lit = lit, explicitColor = explicitColor, accent = accent)
+
         listOf(
             VarValue.color(Vars.tile(tileId, Vars.KEY_BG), if (lit) accent else Role.KEY.argb),
             VarValue.color(
                 Vars.tile(tileId, Vars.KEY_BG_INK),
                 if (lit) Role.KEY_ON_INK.argb else Role.INK.argb,
             ),
-            // Mockup domain tiles: teal accent line under every header (brighter while on).
-            VarValue.color(
-                Vars.tile(tileId, Vars.KEY_LINE),
-                if (lit) accent else Role.ACCENT_SOFT.argb,
-            ),
+            // Off keeps the theme's soft accent. A colour chosen on the tile stays that hue, only lighter.
+            VarValue.color(Vars.tile(tileId, Vars.KEY_LINE), line),
             VarValue.color(
                 Vars.tile(tileId, Vars.KEY_INK),
                 if (!isAvailable) Role.INK_FAINT.argb else Role.INK.argb,
@@ -172,4 +178,10 @@ fun DocContext.bindChoices(
             )
         }
     }
+}
+
+private fun DocContext.lineArgb(lit: Boolean, explicitColor: Boolean, accent: Int): Int = when {
+    lit -> accent
+    explicitColor -> softenAccent(accent)
+    else -> Role.ACCENT_SOFT.argb
 }

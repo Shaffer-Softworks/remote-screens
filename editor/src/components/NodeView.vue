@@ -8,10 +8,10 @@ import { DESIGN } from '../model/design'
 import { dragged } from '../model/drag'
 import { isContainer, paddingOf, type Where } from '../model/nodes'
 import { MOCK_FORECAST_CONDITIONS } from '../model/haWeatherIcons'
-import { usePreviewPalette } from '../model/palette'
+import { accentStyleOf, usePreviewPalette } from '../model/palette'
 import { iconOf, nameOf, stateOf } from '../model/tiles'
 import type { EntityInfo, Node } from '../model/types'
-import { domainOf } from '../model/types'
+import { domainOf, kindOf } from '../model/types'
 import { entityById, state } from '../store'
 import HaWeatherIcon from './HaWeatherIcon.vue'
 import MdiIcon from './MdiIcon.vue'
@@ -107,6 +107,13 @@ const style = computed<CSSProperties>(() => {
   const nodeProps = viewNode.value.props
   if (viewNode.value.bind && nodeProps.showWhen && (nodeProps.showWhen === 'on') !== on.value)
     css.opacity = 0.35
+  const embeddedTile = viewNode.value.tile
+  if (embeddedTile?.color) {
+    Object.assign(
+      css,
+      accentStyleOf(embeddedTile.color, domainOf(embeddedTile) ?? kindOf(embeddedTile)),
+    )
+  }
   switch (viewNode.value.type) {
     case 'column':
     case 'row':
@@ -543,11 +550,14 @@ const card = computed(() => {
   if (!tile) return undefined
   const ent = tile.entityId ? entityById.value.get(tile.entityId) : undefined
   const lit = !!ent && ON_STATES.includes(ent.state)
+  const domain = domainOf(tile) ?? kindOf(tile)
+  const chosen = pastel(tile.color, domain).color
   return {
     name: nameOf(tile, ent),
     icon: iconOf(tile, ent),
     state: stateOf(ent),
-    accent: lit ? pastel(tile.color, domainOf(tile)).color : undefined,
+    accent: lit ? chosen : undefined,
+    line: lit ? chosen : accentStyleOf(tile.color, domain)['--rc-accent-soft'],
   }
 })
 
@@ -849,7 +859,7 @@ function end(): void {
     </div>
     <div v-else-if="node.type === 'tile' && card" class="card">
       <div class="head">{{ card.name }}</div>
-      <i class="line" :style="{ background: card.accent }" />
+      <i class="line" :style="{ background: card.line }" />
       <div class="body">
         <MdiIcon
           :name="card.icon"

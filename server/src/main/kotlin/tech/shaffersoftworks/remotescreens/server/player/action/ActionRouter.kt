@@ -147,8 +147,9 @@ class ActionRouter(
 
         return when (verb) {
             "card" -> TapOutcome.Card(
-                target.entityId,
-                if (ref.arg == CardType.HISTORY.wire) CardType.HISTORY.wire else target.kind,
+                entityId = target.entityId,
+                kind = if (ref.arg == CardType.HISTORY.wire) CardType.HISTORY.wire else target.kind,
+                accent = target.tile?.color,
             )
             ActionRef.VERB_RUN -> runTileAction(ref, target)
             "favourite" -> playFavourite(target)

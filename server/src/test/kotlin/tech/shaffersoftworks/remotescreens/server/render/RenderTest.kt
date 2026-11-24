@@ -30,6 +30,7 @@ import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
+import tech.shaffersoftworks.remotescreens.server.render.theme.softenAccent
 import tech.shaffersoftworks.remotescreens.shared.AssistLayout
 import tech.shaffersoftworks.remotescreens.shared.Catalogue
 import tech.shaffersoftworks.remotescreens.shared.NavBar
@@ -574,6 +575,55 @@ class RenderTest : RenderFixture() {
         assertEquals("Cleaning · 84%", vars["e.vacuum.robot.state"]?.value)
     }
 
+    @Test
+    fun aChosenColourPaintsTheHomePanelAndTheCardLine() {
+        fun home(color: String?) = Screen(
+            id = "colour",
+            name = "Colour",
+            pages = listOf(
+                Page(
+                    id = "home",
+                    title = "Home",
+                    tiles = listOf(Tile(id = "h", kind = "home", full = true, color = color)),
+                ),
+            ),
+        )
+
+        val orange = Pastel.ORANGE.argb
+        val plain = ScreenRenderer.render(home(color = null), tablet, input())
+        val painted = ScreenRenderer.render(home(color = "orange"), tablet, input())
+
+        assertFalse(containsArgb(bytes = plain.bytes, argb = orange))
+        assertTrue(containsArgb(bytes = painted.bytes, argb = orange))
+
+        val card = Screen(
+            id = "card",
+            name = "Card",
+            pages = listOf(
+                Page(
+                    id = "room",
+                    title = "Room",
+                    tiles = listOf(Tile(id = "lamp", entityId = "light.table_lamp", color = "orange")),
+                ),
+            ),
+        )
+
+        val off = ScreenRenderer.render(card, tablet, input()).vars(ha.states.value)
+
+        assertEquals(softenAccent(orange), off["t.lamp.line"]?.asColor())
+    }
+
+}
+
+private fun containsArgb(bytes: ByteArray, argb: Int): Boolean {
+    val needle = listOf(
+        (argb ushr 24).toByte(),
+        (argb ushr 16).toByte(),
+        (argb ushr 8).toByte(),
+        argb.toByte(),
+    )
+
+    return bytes.asList().windowed(size = needle.size).any { it == needle }
 }
 
 class RenderPanelsTest : RenderFixture() {

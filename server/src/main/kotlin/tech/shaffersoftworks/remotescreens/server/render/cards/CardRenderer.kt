@@ -6,6 +6,8 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiState
 import tech.shaffersoftworks.remotescreens.server.render.Device
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.freeform.accent
+import tech.shaffersoftworks.remotescreens.server.render.withTileAccent
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.RenderInput
 import tech.shaffersoftworks.remotescreens.server.render.RenderedDoc
@@ -71,6 +73,7 @@ object CardRenderer {
         input: RenderInput,
         topInsetDp: Float = 0f,
         bottomInsetDp: Float = 0f,
+        colorKey: String? = null,
     ): RenderedDoc {
         val entityState = input.states[entityId]
         val card = resolveCardType(kind = kind, entityId = entityId)
@@ -91,43 +94,50 @@ object CardRenderer {
         ) { docContext ->
             if (card != CardType.ENERGY) docContext.bindEntity(entityId)
 
-            docContext.bindTileColors(
-                tileId = TILE,
-                entityId = entityId,
-                pastel = Pastel.forDomain(entityState?.domain?.value),
-                alwaysOn = card in ALWAYS_ON_CARDS,
-            )
+            val fallback = Pastel.forDomain(entityState?.domain?.value)
 
-            Box(Modifier.fillMaxSize()) {
-                Column(
-                    docContext.tap(
-                        Modifier.fillMaxSize().background(docContext.role(Role.SCRIM)),
-                        ActionRef("_", "close"),
-                    ),
-                    horizontal = RcHorizontalPositioning.Center,
-                ) {
-                    // Centre the card in the page area; the scrim still covers the bars.
-                    Spacer(Modifier.height(docContext.units.px(topInsetDp)))
-                    Spacer(Modifier.verticalWeight(1f))
+            docContext.withTileAccent(colorKey = colorKey, fallback = fallback) {
+                val chosen = colorKey?.let { accent(it, fallback) }
 
-                    docContext.cardPanel(
-                        card = card,
-                        entityId = entityId,
-                        entityState = entityState,
-                        panelW = panelW,
-                        panelH = panelH,
-                    )
+                bindTileColors(
+                    tileId = TILE,
+                    entityId = entityId,
+                    accent = chosen ?: fallback.argb,
+                    alwaysOn = card in ALWAYS_ON_CARDS,
+                    explicitColor = colorKey != null,
+                )
 
-                    Spacer(Modifier.verticalWeight(1f))
-                    Spacer(Modifier.height(docContext.units.px(bottomInsetDp)))
-                }
+                Box(Modifier.fillMaxSize()) {
+                    Column(
+                        docContext.tap(
+                            Modifier.fillMaxSize().background(docContext.role(Role.SCRIM)),
+                            ActionRef("_", "close"),
+                        ),
+                        horizontal = RcHorizontalPositioning.Center,
+                    ) {
+                        // Centre the card in the page area; the scrim still covers the bars.
+                        Spacer(Modifier.height(docContext.units.px(topInsetDp)))
+                        Spacer(Modifier.verticalWeight(1f))
 
-                if (card == CardType.VACUUM) {
-                    docContext.vacuumRoomsLayer(
-                        entityId = entityId,
-                        entityState = entityState,
-                        screenW = device.widthDp.toFloat(),
-                    )
+                        docContext.cardPanel(
+                            card = card,
+                            entityId = entityId,
+                            entityState = entityState,
+                            panelW = panelW,
+                            panelH = panelH,
+                        )
+
+                        Spacer(Modifier.verticalWeight(1f))
+                        Spacer(Modifier.height(docContext.units.px(bottomInsetDp)))
+                    }
+
+                    if (card == CardType.VACUUM) {
+                        docContext.vacuumRoomsLayer(
+                            entityId = entityId,
+                            entityState = entityState,
+                            screenW = device.widthDp.toFloat(),
+                        )
+                    }
                 }
             }
         }

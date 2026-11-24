@@ -8,6 +8,7 @@ import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.freeform.accent
+import tech.shaffersoftworks.remotescreens.server.render.withTileAccent
 import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.alarmPanel
 import tech.shaffersoftworks.remotescreens.server.render.panels.assist.assistPanel
 import tech.shaffersoftworks.remotescreens.server.render.widgets.at
@@ -71,7 +72,14 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
     if (entityId != null) bindEntity(entityId = entityId, name = tile.name, icon = tile.icon)
 
     val lit = accent(tile.color, Pastel.forDomain(tile.domain ?: kindWire))
-    bindTileColors(tileId = tile.id, entityId = entityId, accent = lit, alwaysOn = kind in C.ALWAYS_LIT)
+
+    bindTileColors(
+        tileId = tile.id,
+        entityId = entityId,
+        accent = lit,
+        alwaysOn = kind in C.ALWAYS_LIT,
+        explicitColor = tile.color != null,
+    )
 
     val tapRef = tapRef(tile = tile, action = tile.tap, spec = spec, pageIndex = pageIndex, hold = false)
     val holdRef = tapRef(tile = tile, action = tile.hold, spec = spec, pageIndex = pageIndex, hold = true)
@@ -100,7 +108,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
         val pageTap = if (hasOwnTaps) null else tapRef
         val pageHold = if (hasOwnTaps) null else holdRef
 
-        at(
+        withTileAccent(colorKey = tile.color, fallback = Pastel.forDomain(tile.domain ?: kindWire)) { at(
             box.x,
             box.y,
         ) { rcScope.Box(
@@ -123,7 +131,7 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
                 TileKind.ASSIST -> this@tile.assistPanel(tile, box)
                 else -> this@tile.weatherPanel(tile, box)
             }
-        } }
+        } } }
 
         return
     }
@@ -154,7 +162,10 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
         units.px(box.h),
     ).clip(rounded(C.CARD_CORNER_DP)).background(edgeOf(tile)).padding(units.px(C.CARD_EDGE))
 
-    at(box.x, box.y) { rcScope.Box(tap(modifier = modifier, ref = tapRef, hold = holdRef)) {
+    withTileAccent(colorKey = tile.color, fallback = Pastel.forDomain(tile.domain ?: kindWire)) { at(
+        box.x,
+        box.y,
+    ) { rcScope.Box(tap(modifier = modifier, ref = tapRef, hold = holdRef)) {
         val docContext = this@tile
 
         Column(
@@ -262,5 +273,5 @@ fun DocContext.tile(tile: Tile, box: TileBox, pageIndex: (String) -> Int?) {
                 }
             }
         }
-    } }
+    } } }
 }

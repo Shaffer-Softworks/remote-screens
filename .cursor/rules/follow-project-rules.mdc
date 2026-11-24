@@ -49,7 +49,7 @@ Read the rule whose files you are changing. These describe behavior that is alre
 - `standby-screen-off-context.mdc` — standby countdown and screen off
 - `tablet-wake-orientation-context.mdc` — large-tablet wake stays portrait unless the device honors the landscape lock
 - `theme-roles-editor-context.mdc` — theme roles
-- `session-document-rebuild-context.mdc` — document rebuild versus vars
+- `session-document-rebuild-context.mdc` — document rebuild versus vars. Nov 24 flash: a baked on/off icon rebuilt the one document and every picture was decoded again. Fix is on branch `fix/document-flash`, not in player 0.2.69. Not an alpha Remote Compose bug, and not the water-shutoff alert.
 - `kiosk-lock-context.mdc` — kiosk lock and enrollment
 - `nav-icon-paint-context.mdc` — nav icon paint
 - `docs-wiki-screenshots-context.mdc` — docs, wiki, and screenshots
