@@ -5,6 +5,7 @@ package tech.shaffersoftworks.remotescreens.server.render.panels.cameras
 import tech.shaffersoftworks.remotescreens.server.data.cameras.CamerasUiState
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.fill
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
@@ -59,7 +60,7 @@ fun DocContext.camerasPanel(tile: Tile, box: TileBox) {
     val selected = cameras.selectedCamera(ui.selectedCamera)
     val layout = CamerasLayout(scale = pageScale(box), pageW = box.w, pageH = box.h)
 
-    rcScope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
+    rcScope.Row(Modifier.fillMaxSize().background(fill(Role.PAGE))) {
         val doc = this@camerasPanel
         doc.cameraList(tileId = tile.id, cameras = cameras, layout = layout)
         doc.selectedCameraPane(selected, layout)
@@ -72,7 +73,7 @@ private fun pageScale(box: TileBox): Float =
 /** The grey list: RPI's teal bar, "CAMERAS", and a row per camera. */
 private fun DocContext.cameraList(tileId: String, cameras: List<CameraEntry>, layout: CamerasLayout) {
     rcScope.Column(
-        Modifier.width(units.px(layout.listW)).fillMaxHeight().background(role(Role.STRIP))
+        Modifier.width(units.px(layout.listW)).fillMaxHeight().background(fill(Role.STRIP))
             .padding(start = 0f, top = units.px(layout.dp(M.LIST_TOP_DP)), end = 0f, bottom = 0f),
     ) {
         val doc = this@cameraList
@@ -84,7 +85,7 @@ private fun DocContext.cameraList(tileId: String, cameras: List<CameraEntry>, la
                 Modifier.size(
                     doc.units.px(layout.dp(M.ACCENT_BAR_W_DP - M.ACCENT_BAR_START_DP)),
                     doc.units.px(layout.dp(M.ACCENT_BAR_H_DP)),
-                ).background(doc.role(Role.ACCENT_DARK)),
+                ).background(doc.fill(Role.ACCENT_DARK)),
             )
         }
 

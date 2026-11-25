@@ -6,6 +6,7 @@ import tech.shaffersoftworks.remotescreens.server.data.music.MusicListRow
 import tech.shaffersoftworks.remotescreens.server.data.music.MusicUiState
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.PictureSlot
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.fill
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
@@ -95,7 +96,7 @@ fun DocContext.musicPanel(tile: Tile, box: TileBox) {
         Modifier.size(units.px(box.w), units.px(panelH))
             .requiredHeightIn(max = units.px(panelH))
             .clip(RcShape.Rectangle)
-            .background(role(Role.PAGE)),
+            .background(fill(Role.PAGE)),
     ) {
         this@musicPanel.musicPlaced(layout, frame)
     }
@@ -339,7 +340,7 @@ private fun DocContext.nowPlayingProgress(
             level = doc.float(Vars.entity(entityId, "progress")),
             widthDp = progressWidthDp,
             heightDp = MusicMetrics.PROGRESS_H_DP,
-            fill = doc.role(Role.ACCENT),
+            fill = doc.fill(Role.ACCENT),
             track = doc.role(Role.TRACK),
             steps = MusicMetrics.PROGRESS_STEPS,
         ) { step ->
@@ -721,7 +722,7 @@ private fun DocContext.musicRowThumb(tileId: String, row: MusicListRow, thumb: F
         rcScope.Box(
             modifier = Modifier.size(units.px(thumb), units.px(thumb))
                 .clip(rounded(MusicMetrics.THUMB_CORNER_DP))
-                .background(role(Role.ACCENT_SOFT)),
+                .background(fill(Role.ACCENT_SOFT)),
             horizontal = RcHorizontalPositioning.Center,
             vertical = RcVerticalPositioning.Center,
         ) {

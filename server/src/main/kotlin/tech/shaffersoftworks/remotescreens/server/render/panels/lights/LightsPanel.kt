@@ -5,6 +5,7 @@ package tech.shaffersoftworks.remotescreens.server.render.panels.lights
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsRoom
 import tech.shaffersoftworks.remotescreens.server.data.lights.LightsUiState
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.fill
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.theme.Rpi
@@ -99,7 +100,7 @@ fun DocContext.lightsPanel(tile: Tile, box: TileBox) {
     val room = rooms.firstOrNull { it.areaId == ui.selectedAreaId }
     val layout = LightsLayout(scale = pageScale(box), pageW = box.w, pageH = box.h)
 
-    rcScope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
+    rcScope.Row(Modifier.fillMaxSize().background(fill(Role.PAGE))) {
         val doc = this@lightsPanel
         doc.roomsColumn(tileId = tile.id, rooms = rooms, selected = room, layout = layout)
         doc.devicesColumn(tileId = tile.id, room = room, layout = layout)
@@ -151,7 +152,7 @@ private fun DocContext.roomsColumn(
     val listH = layout.roomsListHeight()
 
     rcScope.Column(
-        Modifier.width(units.px(layout.roomsW)).fillMaxHeight().background(role(Role.STRIP)),
+        Modifier.width(units.px(layout.roomsW)).fillMaxHeight().background(fill(Role.STRIP)),
     ) {
         val doc = this@roomsColumn
 
@@ -177,7 +178,7 @@ private fun DocContext.roomsColumn(
         }
 
         Box(
-            Modifier.fillMaxWidth().height(doc.units.px(bottomInset)).background(doc.role(Role.STRIP)),
+            Modifier.fillMaxWidth().height(doc.units.px(bottomInset)).background(doc.fill(Role.STRIP)),
         )
     }
 }
@@ -185,7 +186,7 @@ private fun DocContext.roomsColumn(
 /** The accent and "LIGHTING CONTROL", opaque, so a scrolled row cannot show through them. */
 private fun DocContext.roomsHeader(layout: LightsLayout, headerH: Float) {
     rcScope.Column(
-        Modifier.fillMaxWidth().height(units.px(headerH)).background(role(Role.STRIP)),
+        Modifier.fillMaxWidth().height(units.px(headerH)).background(fill(Role.STRIP)),
     ) {
         val doc = this@roomsHeader
         Spacer(Modifier.height(doc.units.px(layout.dp(M.COLUMN_TOP_DP))))
@@ -197,7 +198,7 @@ private fun DocContext.roomsHeader(layout: LightsLayout, headerH: Float) {
                 Modifier.size(
                     doc.units.px(layout.dp(M.ACCENT_BAR_W_DP - M.ACCENT_BAR_START_DP)),
                     doc.units.px(layout.dp(M.ACCENT_BAR_H_DP)),
-                ).background(doc.role(Role.ACCENT_DARK)),
+                ).background(doc.fill(Role.ACCENT_DARK)),
             )
         }
 
@@ -341,7 +342,7 @@ private fun DocContext.devicesColumn(tileId: String, room: LightsRoom?, layout: 
                     Box(
                         Modifier.fillMaxWidth()
                             .height(doc.units.px(maxOf(layout.dp(M.DIVIDER_DP), M.DIVIDER_DP)))
-                            .background(doc.role(Role.ACCENT_DARK)),
+                            .background(doc.fill(Role.ACCENT_DARK)),
                     )
                 }
             }
@@ -349,7 +350,7 @@ private fun DocContext.devicesColumn(tileId: String, room: LightsRoom?, layout: 
             Column(
                 Modifier.fillMaxWidth()
                     .height(doc.units.px(layout.devicesPlateHeight()))
-                    .background(doc.role(Role.PAGE)),
+                    .background(doc.fill(Role.PAGE)),
             ) {
                 doc.label(
                     text = room.name,

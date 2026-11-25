@@ -7,8 +7,11 @@ import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaCopy
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaEvent
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.AgendaSnapshot
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.fill
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
 import androidx.compose.remote.creation.dsl.Modifier
+import androidx.compose.remote.creation.dsl.RcColor
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.background
@@ -96,7 +99,7 @@ fun DocContext.calendarPanel(tile: Tile, box: TileBox) {
     }
 
     refreshEvery(AGENDA_REFRESH_SECONDS)
-    val background = fixed(AgendaColor.BACKGROUND)
+    val background = if (tileAccentArgb == null) fixed(AgendaColor.BACKGROUND) else fill(Role.PAGE)
     val showAdd = supportsCalendarDialogs && snapshot.calendars.any { it.canCreate }
 
     rcScope.Box(Modifier.size(units.px(box.w), units.px(box.h)).background(background)) {
@@ -108,6 +111,7 @@ fun DocContext.calendarPanel(tile: Tile, box: TileBox) {
 
 private fun DocContext.agendaColumn(tileId: String, snapshot: AgendaSnapshot, zone: ZoneId) {
     val teal = fixed(AgendaColor.TEAL)
+    val mark = agendaMark()
     val white = fixed(AgendaColor.WHITE)
 
     rcScope.Column(
@@ -121,7 +125,7 @@ private fun DocContext.agendaColumn(tileId: String, snapshot: AgendaSnapshot, zo
         val doc = this@agendaColumn
         doc.label(text = AgendaCopy.TITLE, sp = AgendaLayout.TITLE_SP, color = white, weight = Weight.LIGHT)
         Spacer(Modifier.height(doc.units.px(AgendaLayout.TITLE_GAP)))
-        Box(Modifier.fillMaxWidth().height(doc.units.px(AgendaLayout.RULE)).background(teal))
+        Box(Modifier.fillMaxWidth().height(doc.units.px(AgendaLayout.RULE)).background(mark))
         val notice = doc.data.agendaNotices[tileId]
 
         if (!notice.isNullOrBlank()) {
@@ -160,7 +164,7 @@ private fun DocContext.agendaStatus(message: String, showSpinner: Boolean) {
             val doc = this@agendaStatus
 
             if (showSpinner) {
-                doc.spinner(AgendaLayout.SPINNER, doc.fixed(AgendaColor.TEAL))
+                doc.spinner(AgendaLayout.SPINNER, agendaMark())
                 Spacer(Modifier.height(doc.units.px(AgendaLayout.SPINNER_GAP)))
             }
 
@@ -270,7 +274,7 @@ private fun DocContext.agendaAddButton(tileId: String) {
             modifier = doc.tap(
                 Modifier.size(doc.units.px(AgendaLayout.FAB))
                     .clip(doc.rounded(AgendaLayout.FAB_RADIUS))
-                    .background(doc.fixed(AgendaColor.TEAL)),
+                    .background(agendaMark()),
                 ActionRef(tileId, "calendar_create"),
             ),
             horizontal = RcHorizontalPositioning.Center,
@@ -280,6 +284,9 @@ private fun DocContext.agendaAddButton(tileId: String) {
         }
     }
 }
+
+private fun DocContext.agendaMark(): RcColor =
+    if (tileAccentArgb == null) fixed(AgendaColor.TEAL) else fill(Role.ACCENT)
 
 private fun DocContext.agendaZone(): ZoneId =
     runCatching { ZoneId.of(homeAssistantConfig.timeZone) }.getOrDefault(ZoneId.of("UTC"))

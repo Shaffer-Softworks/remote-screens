@@ -3,6 +3,8 @@
 package tech.shaffersoftworks.remotescreens.server.render.panels.thermostat
 
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.fill
+import tech.shaffersoftworks.remotescreens.server.render.surfaceArgb
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
@@ -117,7 +119,7 @@ fun DocContext.thermostatPanel(tile: Tile, box: TileBox) {
         box.h / ThermostatMetrics.BASE_H,
     ).coerceIn(ThermostatMetrics.LAYOUT_SCALE_MIN, ThermostatMetrics.LAYOUT_SCALE_MAX)
 
-    rcScope.Column(Modifier.fillMaxSize().background(role(Role.PAGE))) {
+    rcScope.Column(Modifier.fillMaxSize().background(fill(Role.PAGE))) {
         val doc = this@thermostatPanel
         doc.thermostatHeader(layoutScale)
 
@@ -144,7 +146,7 @@ fun DocContext.thermostatPanel(tile: Tile, box: TileBox) {
 /** Teal bar + "ADJUST THE TEMPERATURE" (RPI has no fan row). */
 private fun DocContext.thermostatHeader(layoutScale: Float) {
     val ink = role(Role.INK)
-    val accent = role(Role.ACCENT_DARK)
+    val accent = fill(Role.ACCENT_DARK)
     val pad = units.px(ThermostatMetrics.PANEL_PAD_DP * layoutScale)
     val top = units.px(ThermostatMetrics.TOP_PAD_DP * layoutScale)
 
@@ -301,7 +303,7 @@ private fun DocContext.thermostatModes(
     if (modes.isEmpty() && fans.isEmpty()) return
 
     val ink = role(Role.INK)
-    val accent = role(Role.ACCENT_DARK)
+    val accent = fill(Role.ACCENT_DARK)
     val corner = ThermostatMetrics.MODE_CORNER_DP * layoutScale
     val border = ThermostatMetrics.MODE_BORDER_DP * layoutScale
     val segH = ThermostatMetrics.SEG_HEIGHT_DP * layoutScale
@@ -370,7 +372,7 @@ private fun DocContext.thermostatModes(
 
                             val bg = doc.color(
                                 Vars.option(scope = tileId, group = "seg", index = i, key = Vars.KEY_BG),
-                                (if (on) Role.ACCENT_DARK else Role.PAGE).argb,
+                                if (on) surfaceArgb(Role.ACCENT_DARK) else surfaceArgb(Role.PAGE),
                             )
 
                             Row(
@@ -430,7 +432,7 @@ private fun DocContext.thermostatModes(
                         doc.tap(
                             Modifier.size(doc.units.px(fanInnerW), doc.units.px(segH))
                                 .clip(doc.rounded(innerCorner))
-                                .background(doc.role(Role.PAGE))
+                                .background(doc.fill(Role.PAGE))
                                 .padding(start = fanPad, top = 0f, end = fanPad, bottom = 0f),
                             ActionRef(tile = tileId, verb = "fan", arg = nextFan),
                         ),

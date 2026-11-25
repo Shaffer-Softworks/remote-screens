@@ -1228,7 +1228,7 @@ const highlight = computed(() => {
   left: 0;
   top: 0;
   transform-origin: 0 0;
-  background: var(--rc-page);
+  background: var(--rc-page-fill, var(--rc-page));
   color: var(--rc-ink);
   border-radius: 18px;
   box-shadow:
@@ -1354,7 +1354,7 @@ const highlight = computed(() => {
 .tile .line {
   flex: none;
   height: 3px;
-  background: var(--rc-accent-soft, var(--rc-accent));
+  background: var(--rc-accent-soft-fill, var(--rc-accent-soft, var(--rc-accent)));
 }
 
 .tile .body {
@@ -1373,7 +1373,7 @@ const highlight = computed(() => {
 .tile.panel {
   border: none;
   border-radius: 0;
-  background: var(--rc-home);
+  background: var(--rc-home-fill, var(--rc-home));
   cursor: pointer;
 }
 
@@ -1390,7 +1390,7 @@ const highlight = computed(() => {
 .tile.weather-panel {
   border: none;
   border-radius: 0;
-  background: var(--rc-page);
+  background: var(--rc-page-fill, var(--rc-page));
   align-items: center;
   cursor: pointer;
 }
@@ -1427,7 +1427,7 @@ const highlight = computed(() => {
   display: flex;
   justify-content: space-evenly;
   padding: 10px;
-  background: var(--rc-strip);
+  background: var(--rc-strip-fill, var(--rc-strip));
 }
 
 .wx-day {
@@ -1552,13 +1552,13 @@ const highlight = computed(() => {
 .tile.music-panel {
   align-items: stretch;
   padding: 16px;
-  background: var(--rc-page);
+  background: var(--rc-page-fill, var(--rc-page));
 }
 
 .tile.alarm-panel {
   align-items: stretch;
   padding: 0;
-  background: var(--rc-page);
+  background: var(--rc-page-fill, var(--rc-page));
   border: none;
   border-radius: 0;
   min-height: 0;
@@ -1572,7 +1572,7 @@ const highlight = computed(() => {
   flex-direction: row;
   align-items: stretch;
   padding: 0;
-  background: var(--rc-page);
+  background: var(--rc-page-fill, var(--rc-page));
   border: none;
   border-radius: 0;
 }
@@ -1588,7 +1588,7 @@ const highlight = computed(() => {
   flex-direction: column;
   gap: 8px;
   padding: 28px 0 16px;
-  background: var(--rc-strip);
+  background: var(--rc-strip-fill, var(--rc-strip));
 }
 
 .tile.assist-stacked .as-side {
@@ -1599,7 +1599,7 @@ const highlight = computed(() => {
   width: 100px;
   height: 10px;
   margin-left: 20px;
-  background: var(--rc-accent-dark);
+  background: var(--rc-accent-dark-fill, var(--rc-accent-dark));
 }
 
 .as-title,
@@ -1629,7 +1629,7 @@ const highlight = computed(() => {
   height: 88px;
   margin-left: 20px;
   color: var(--rc-page);
-  background: var(--rc-accent-dark);
+  background: var(--rc-accent-dark-fill, var(--rc-accent-dark));
 }
 
 .as-pipeline,
@@ -1649,7 +1649,7 @@ const highlight = computed(() => {
 
 .tile.energy-panel {
   padding: 0;
-  background: var(--rc-page);
+  background: var(--rc-page-fill, var(--rc-page));
   border: none;
   border-radius: 0;
 }
@@ -1756,14 +1756,14 @@ const highlight = computed(() => {
   padding-top: 28px;
   overflow-x: hidden;
   overflow-y: auto;
-  background: var(--rc-strip);
+  background: var(--rc-strip-fill, var(--rc-strip));
 }
 
 .li-accent {
   width: 100px;
   height: 10px;
   margin-left: 20px;
-  background: var(--rc-accent-dark);
+  background: var(--rc-accent-dark-fill, var(--rc-accent-dark));
 }
 
 .li-title {
@@ -1814,13 +1814,13 @@ const highlight = computed(() => {
   gap: 12px;
   padding: 28px 20px 20px;
   overflow-y: auto;
-  background: var(--rc-strip);
+  background: var(--rc-strip-fill, var(--rc-strip));
 }
 
 .va-accent {
   width: 100px;
   height: 10px;
-  background: var(--rc-accent-dark);
+  background: var(--rc-accent-dark-fill, var(--rc-accent-dark));
 }
 
 .va-title {
@@ -1878,7 +1878,7 @@ const highlight = computed(() => {
   justify-content: center;
   min-height: 56px;
   border-radius: 8px;
-  background: var(--rc-strip);
+  background: var(--rc-strip-fill, var(--rc-strip));
   color: var(--rc-ink);
   font-size: 16px;
 }
@@ -1898,14 +1898,14 @@ const highlight = computed(() => {
   gap: 4px;
   padding: 28px 0 0;
   overflow-y: auto;
-  background: var(--rc-strip);
+  background: var(--rc-strip-fill, var(--rc-strip));
 }
 
 .se-accent {
   width: 100px;
   height: 10px;
   margin-left: 20px;
-  background: var(--rc-accent-dark);
+  background: var(--rc-accent-dark-fill, var(--rc-accent-dark));
 }
 
 .se-title {
@@ -1968,7 +1968,7 @@ const highlight = computed(() => {
   flex-direction: row;
   align-items: stretch;
   padding: 0;
-  background: var(--rc-page);
+  background: var(--rc-page-fill, var(--rc-page));
   border: none;
   border-radius: 0;
 }
@@ -1977,7 +1977,7 @@ const highlight = computed(() => {
   flex-direction: row;
   align-items: stretch;
   padding: 0;
-  background: #494949;
+  background: var(--rc-page-fill, #494949);
   border: none;
   border-radius: 0;
   color: #fff;
@@ -1987,7 +1987,7 @@ const highlight = computed(() => {
   flex-direction: row;
   align-items: stretch;
   padding: 12px;
-  background: #121212;
+  background: var(--rc-page-fill, #121212);
   border: none;
   border-radius: 0;
   color: #e8e8e8;
@@ -2060,14 +2060,14 @@ const highlight = computed(() => {
   display: flex;
   flex-direction: column;
   padding: 28px 0 0;
-  background: #3b3b3b;
+  background: var(--rc-strip-fill, #3b3b3b);
 }
 
 .ic-accent {
   width: 120px;
   height: 10px;
   margin-left: 20px;
-  background: #1da48c;
+  background: var(--rc-accent-dark-fill, #1da48c);
 }
 
 .ic-title {
@@ -2125,7 +2125,7 @@ const highlight = computed(() => {
   right: 0;
   bottom: 0;
   height: 1px;
-  background: #1da48c;
+  background: var(--rc-accent-dark-fill, #1da48c);
 }
 
 .ic-who {
@@ -2214,14 +2214,14 @@ const highlight = computed(() => {
   gap: 20px;
   padding: 28px 20px 0;
   overflow: hidden;
-  background: var(--rc-strip);
+  background: var(--rc-strip-fill, var(--rc-strip));
 }
 
 .cm-accent {
   width: 100px;
   height: 10px;
   margin-bottom: -10px;
-  background: var(--rc-accent-dark);
+  background: var(--rc-accent-dark-fill, var(--rc-accent-dark));
 }
 
 .cm-title {
@@ -2252,7 +2252,7 @@ const highlight = computed(() => {
   padding-left: 5px;
   font-size: 12px;
   color: var(--rc-ink);
-  background: color-mix(in srgb, var(--rc-accent-dark) 50%, transparent);
+  background: color-mix(in srgb, var(--rc-accent-dark-fill, var(--rc-accent-dark)) 50%, transparent);
 }
 
 .cm-pane {
@@ -2304,7 +2304,7 @@ const highlight = computed(() => {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  border: 2px solid var(--rc-accent);
+  border: 2px solid var(--rc-accent-fill, var(--rc-accent));
   background: #0a1518;
   color: #ffffff;
 }
@@ -2329,7 +2329,7 @@ const highlight = computed(() => {
   width: var(--al-accent-w, 4px);
   height: var(--al-accent-h, 120px);
   border-radius: 8px;
-  background: var(--rc-accent);
+  background: var(--rc-accent-fill, var(--rc-accent));
   flex: none;
 }
 
@@ -2441,7 +2441,7 @@ const highlight = computed(() => {
   align-items: stretch;
   justify-content: flex-start;
   padding: 16px 24px 88px;
-  background: #333333;
+  background: var(--rc-page-fill, #333333);
   color: #ffffff;
   border: none;
   border-radius: 0;
@@ -2454,7 +2454,7 @@ const highlight = computed(() => {
 
 .cal-rule {
   height: 2px;
-  background: #03dac5;
+  background: var(--rc-accent-fill, #03dac5);
   margin: 12px 0 16px;
 }
 
@@ -2469,7 +2469,7 @@ const highlight = computed(() => {
   display: flex;
   align-items: center;
   height: 72px;
-  background: #3b3b3b;
+  background: var(--rc-strip-fill, #3b3b3b);
   padding: 10px 16px;
   gap: 16px;
 }
@@ -2508,7 +2508,7 @@ const highlight = computed(() => {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #03dac5;
+  background: var(--rc-accent-fill, #03dac5);
   color: #333333;
   display: flex;
   align-items: center;
@@ -2580,7 +2580,7 @@ const highlight = computed(() => {
   height: 4px;
   margin-top: 4px;
   border-radius: 2px;
-  background: color-mix(in srgb, var(--rc-accent) 70%, var(--rc-track));
+  background: color-mix(in srgb, var(--rc-accent-fill, var(--rc-accent)) 70%, var(--rc-track));
 }
 
 .ma-transport {
@@ -2607,7 +2607,7 @@ const highlight = computed(() => {
 }
 
 .ma-segments i.on {
-  background: var(--rc-accent, #14e1ba);
+  background: var(--rc-accent-fill, var(--rc-accent, #14e1ba));
   color: #10221e;
 }
 
@@ -2786,10 +2786,10 @@ const highlight = computed(() => {
 
 .th-modes {
   display: flex;
-  border: 2px solid var(--rc-accent-dark);
+  border: 2px solid var(--rc-accent-dark-fill, var(--rc-accent-dark));
   border-radius: 10px;
   overflow: hidden;
-  background: var(--rc-page);
+  background: var(--rc-page-fill, var(--rc-page));
 }
 
 .th-modes span {
@@ -2800,10 +2800,10 @@ const highlight = computed(() => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: var(--rc-page);
+  background: var(--rc-page-fill, var(--rc-page));
   color: var(--rc-ink);
   font-size: 16px;
-  box-shadow: inset -2px 0 0 var(--rc-accent-dark);
+  box-shadow: inset -2px 0 0 var(--rc-accent-dark-fill, var(--rc-accent-dark));
 }
 
 .th-modes span:last-child {
@@ -2811,7 +2811,7 @@ const highlight = computed(() => {
 }
 
 .th-modes span.on {
-  background: var(--rc-accent-dark);
+  background: var(--rc-accent-dark-fill, var(--rc-accent-dark));
   color: var(--rc-ink);
 }
 
@@ -2821,9 +2821,9 @@ const highlight = computed(() => {
   gap: 10px;
   height: 48px;
   padding: 0 14px;
-  border: 2px solid var(--rc-accent-dark);
+  border: 2px solid var(--rc-accent-dark-fill, var(--rc-accent-dark));
   border-radius: 10px;
-  background: var(--rc-page);
+  background: var(--rc-page-fill, var(--rc-page));
 }
 
 .th-fan span {
@@ -2918,7 +2918,7 @@ const highlight = computed(() => {
   width: 150px;
   height: 10px;
   margin-bottom: 20px;
-  background: var(--rc-accent-dark);
+  background: var(--rc-accent-dark-fill, var(--rc-accent-dark));
 }
 
 .bar.thin {

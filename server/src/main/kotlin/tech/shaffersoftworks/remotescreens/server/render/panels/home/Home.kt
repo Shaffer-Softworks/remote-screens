@@ -4,6 +4,7 @@ package tech.shaffersoftworks.remotescreens.server.render.panels.home
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.fill
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.panels.calendar.isToday
@@ -93,7 +94,7 @@ fun DocContext.homeTile(tile: Tile, box: TileBox) {
     bindHomeWeather(tile.id, weather)
     bindNextEvent(tile.id, calendars)
 
-    rcScope.Column(Modifier.fillMaxSize().background(role(Role.HOME))) {
+    rcScope.Column(Modifier.fillMaxSize().background(fill(Role.HOME))) {
         val doc = this@homeTile
 
         Row(Modifier.size(doc.units.px(box.w), doc.units.px(upperH))) {
@@ -138,7 +139,7 @@ private fun DocContext.homeWeather(tileId: String, weather: String?, wDp: Float,
             Modifier.size(
                 doc.units.px(ACCENT_BAR_WIDTH_DP * layoutScale),
                 doc.units.px(ACCENT_BAR_HEIGHT_DP * layoutScale),
-            ).background(doc.role(Role.ACCENT_DARK)),
+            ).background(doc.fill(Role.ACCENT_DARK)),
         )
 
         Spacer(Modifier.height(doc.units.px(SECTION_GAP_DP * layoutScale)))
@@ -184,7 +185,7 @@ private fun DocContext.homeEvent(tileId: String, wDp: Float, layoutScale: Float)
             Modifier.size(
                 doc.units.px(ACCENT_BAR_WIDTH_DP * layoutScale),
                 doc.units.px(STRIP_ACCENT_H_DP * layoutScale),
-            ).background(doc.role(Role.ACCENT_DARK)),
+            ).background(doc.fill(Role.ACCENT_DARK)),
         )
 
         Spacer(Modifier.height(doc.units.px(EVENT_META_SP * layoutScale)))

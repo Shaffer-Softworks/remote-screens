@@ -6,6 +6,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.security.SecuritySection
 import tech.shaffersoftworks.remotescreens.server.data.security.SecurityUiState
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.fill
 import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
@@ -96,7 +97,7 @@ fun DocContext.securityPanel(tile: Tile, box: TileBox) {
             .coerceIn(Metrics.LAYOUT_SCALE_MIN, Metrics.LAYOUT_SCALE_MAX),
     )
 
-    rcScope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
+    rcScope.Row(Modifier.fillMaxSize().background(fill(Role.PAGE))) {
         val doc = this@securityPanel
 
         doc.sectionList(
@@ -124,7 +125,7 @@ private fun DocContext.sectionList(
     layout: Layout,
 ) {
     rcScope.Column(
-        Modifier.width(units.px(layout.listW)).fillMaxHeight().background(role(Role.STRIP))
+        Modifier.width(units.px(layout.listW)).fillMaxHeight().background(fill(Role.STRIP))
             .padding(start = 0f, top = units.px(layout.dp(Metrics.LIST_TOP_DP)), end = 0f, bottom = 0f),
     ) {
         val doc = this@sectionList
@@ -136,7 +137,7 @@ private fun DocContext.sectionList(
                 Modifier.size(
                     doc.units.px(layout.dp(Metrics.ACCENT_BAR_W_DP - Metrics.ACCENT_BAR_START_DP)),
                     doc.units.px(layout.dp(Metrics.ACCENT_BAR_H_DP)),
-                ).background(doc.role(Role.ACCENT_DARK)),
+                ).background(doc.fill(Role.ACCENT_DARK)),
             )
         }
 
