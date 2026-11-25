@@ -1,0 +1,8 @@
+/third_party/
+/build/
+/host/build/
+/.cache/
+/sdkconfig
+/sdkconfig.old
+/managed_components/
+/dependencies.lock

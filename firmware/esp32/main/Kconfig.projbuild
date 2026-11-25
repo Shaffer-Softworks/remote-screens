@@ -1,0 +1,23 @@
+menu "Panel"
+
+config PANEL_WIFI_SSID
+    string "Wi-Fi network"
+    default ""
+    help
+        Stored in the firmware image on the device. The Home Assistant token is not.
+
+config PANEL_WIFI_PASSWORD
+    string "Wi-Fi password"
+    default ""
+
+config PANEL_WIDTH
+    int "Width in dp"
+    default 720
+    range 1 1920
+
+config PANEL_HEIGHT
+    int "Height in dp"
+    default 720
+    range 1 1920
+
+endmenu

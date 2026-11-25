@@ -32,6 +32,7 @@ internal interface SessionHost {
     val supportsEnergyDashboard: Boolean
     val supportsAssist: Boolean
     val supportsIntercom: Boolean
+    val supportsPanel: Boolean
     val intercomView: IntercomView
     val buildMutex: Mutex
     val shownDocuments: ConcurrentHashMap<Slot, ShownDocument>

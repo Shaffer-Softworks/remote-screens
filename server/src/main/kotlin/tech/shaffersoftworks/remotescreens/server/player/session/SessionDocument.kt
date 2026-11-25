@@ -11,6 +11,7 @@ import tech.shaffersoftworks.remotescreens.server.render.Rc
 import tech.shaffersoftworks.remotescreens.server.render.RenderInput
 import tech.shaffersoftworks.remotescreens.server.render.RenderedDoc
 import tech.shaffersoftworks.remotescreens.server.render.ScreenRenderer
+import tech.shaffersoftworks.remotescreens.server.render.panelProfile
 import tech.shaffersoftworks.remotescreens.shared.Grid
 import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.ServerMessage
@@ -45,13 +46,16 @@ internal class SessionDocument(
         intercom = host.intercomView,
     )
 
-    suspend fun renderScreen(screen: Screen): RenderedDoc =
-        ScreenRenderer.render(
-            screen = screen,
+    suspend fun renderScreen(screen: Screen): RenderedDoc {
+        val shown = if (host.supportsPanel) screen.panelProfile() else screen
+
+        return ScreenRenderer.render(
+            screen = shown,
             device = host.device,
-            input = renderInput(context.renderDataRepository.forScreen(screen)),
+            input = renderInput(context.renderDataRepository.forScreen(shown)),
             initialPage = host.page,
         )
+    }
 
     suspend fun showMain(screen: Screen) {
         val rebuild: suspend () -> RenderedDoc? = { host.screen()?.let { renderScreen(it) } }

@@ -1,0 +1,11 @@
+config ESP_HOSTED_HOST_USB_CDC_ACM_MANIFEST
+    int "ESP-Hosted USB CDC manifest gate"
+    default 0
+
+config ESP_HOSTED_HOST_USB_CHERRYUSB_MANIFEST
+    int "ESP-Hosted CherryUSB manifest gate"
+    default 0
+
+config ESP_HOSTED_HOST_USB_RNDIS_MANIFEST
+    int "ESP-Hosted USB RNDIS manifest gate"
+    default 0

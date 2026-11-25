@@ -52,6 +52,12 @@ object Protocol {
     /** An add-on that writes [PlayerMessage.AppLog] batches to its log and answers with [ServerMessage.AppLogAck]. */
     const val CAPABILITY_APP_LOG = "app_log"
 
+    /**
+     * A player that draws one clock-and-tiles page and nothing else. The add-on renders that smaller page;
+     * video, map, energy, music search, intercom and Assist stay off the hello.
+     */
+    const val CAPABILITY_PANEL = "panel"
+
     /** The most entries in one [PlayerMessage.AppLog]; the add-on rejects a larger batch. */
     const val MAX_APP_LOG_BATCH = 20
 

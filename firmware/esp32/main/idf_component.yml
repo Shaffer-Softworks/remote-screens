@@ -1,0 +1,9 @@
+dependencies:
+  espressif/mdns: "^1.0.3"
+  espressif/esp_websocket_client: "^1.2.3"
+  waveshare/esp_lcd_st7703: "^2.0.0"
+  espressif/esp_lcd_touch_gt911: "^1"
+  espressif/esp_hosted: ">=2.0.0,<3.0.0"
+  espressif/esp_wifi_remote: ">=1.0.0,<2.0.0"
+  idf:
+    version: ">=5.5"

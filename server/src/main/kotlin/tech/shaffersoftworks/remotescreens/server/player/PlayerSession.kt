@@ -85,6 +85,7 @@ class PlayerSession(
     private val supportsEnergyDashboard = Protocol.CAPABILITY_ENERGY_DASHBOARD in hello.capabilities
     private val supportsAssist = Protocol.CAPABILITY_ASSIST in hello.capabilities
     private val supportsIntercom = Protocol.CAPABILITY_INTERCOM in hello.capabilities
+    private val supportsPanel = Protocol.CAPABILITY_PANEL in hello.capabilities
     private val tapMemory = TapMemory()
 
     var pairingCode: String? = null
@@ -706,6 +707,7 @@ class PlayerSession(
         override val supportsEnergyDashboard get() = this@PlayerSession.supportsEnergyDashboard
         override val supportsAssist get() = this@PlayerSession.supportsAssist
         override val supportsIntercom get() = this@PlayerSession.supportsIntercom
+        override val supportsPanel get() = this@PlayerSession.supportsPanel
         override val intercomView get() = this@PlayerSession.intercomView()
         override val buildMutex get() = this@PlayerSession.buildMutex
         override val shownDocuments get() = this@PlayerSession.shownDocuments
