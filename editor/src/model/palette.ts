@@ -171,8 +171,8 @@ const ACCENT_DARK_KEEP_PERCENT = 72
 const ACCENT_SOFT_WHITE_PERCENT = 35
 
 /**
- * CSS variables so a panel or card painted with the theme accent follows a colour chosen on the tile.
- * Empty when the tile names none, so the theme's own accent stays.
+ * CSS variables for the surfaces of a panel or card. Empty when the tile names no colour, so the theme stays.
+ * Lettering keeps the theme variables (`--rc-accent`, `--rc-weather-title`); only these fills follow the swatch.
  */
 export function accentStyleOf(
   color: string | undefined,
@@ -181,12 +181,14 @@ export function accentStyleOf(
   if (!color) return {}
   const chosen = pastel(color, domain).color
   if (!chosen) return {}
+  const darkened = `color-mix(in srgb, ${chosen} ${ACCENT_DARK_KEEP_PERCENT}%, black)`
   return {
-    '--rc-home': chosen,
-    '--rc-accent': chosen,
-    '--rc-accent-dark': `color-mix(in srgb, ${chosen} ${ACCENT_DARK_KEEP_PERCENT}%, black)`,
-    '--rc-accent-soft': `color-mix(in srgb, ${chosen} ${ACCENT_SOFT_WHITE_PERCENT}%, white)`,
-    '--rc-weather-title': chosen,
+    '--rc-page-fill': chosen,
+    '--rc-home-fill': chosen,
+    '--rc-strip-fill': darkened,
+    '--rc-accent-fill': chosen,
+    '--rc-accent-dark-fill': darkened,
+    '--rc-accent-soft-fill': `color-mix(in srgb, ${chosen} ${ACCENT_SOFT_WHITE_PERCENT}%, white)`,
   }
 }
 

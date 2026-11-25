@@ -6,6 +6,7 @@ import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmNotice
 import tech.shaffersoftworks.remotescreens.server.data.alarm.AlarmUiState
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.fill
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.theme.Rpi
@@ -97,7 +98,7 @@ fun DocContext.alarmPanel(tile: Tile, box: TileBox) {
         cardH = box.h - 2 * M.PAGE_PAD_V_DP * scale,
     )
 
-    rcScope.Box(Modifier.fillMaxSize().background(role(Role.PAGE))) {
+    rcScope.Box(Modifier.fillMaxSize().background(fill(Role.PAGE))) {
         val doc = this@alarmPanel
         val padH = doc.units.px(layout.dp(M.PAGE_PAD_H_DP))
         val padV = doc.units.px(layout.dp(M.PAGE_PAD_V_DP))
@@ -172,7 +173,7 @@ private fun DocContext.alarmStatus(zoneState: EntityState?, layout: AlarmLayout)
             Modifier.size(
                 doc.units.px(layout.dp(M.ACCENT_BAR_W_DP)),
                 doc.units.px(layout.dp(M.ACCENT_BAR_H_DP)),
-            ).clip(doc.rounded(layout.dp(M.ACCENT_BAR_CORNER_DP))).background(doc.role(Role.ACCENT)),
+            ).clip(doc.rounded(layout.dp(M.ACCENT_BAR_CORNER_DP))).background(doc.fill(Role.ACCENT)),
         )
     }
 }
@@ -186,7 +187,7 @@ private fun DocContext.statusCircle(entity: EntityState?, layout: AlarmLayout) {
     rcScope.Box(
         Modifier.size(units.px(sizeDp), units.px(sizeDp))
             .clip(rounded(sizeDp / 2f))
-            .background(role(Role.ACCENT))
+            .background(fill(Role.ACCENT))
             .padding(units.px(ringDp)),
     ) {
         val doc = this@statusCircle

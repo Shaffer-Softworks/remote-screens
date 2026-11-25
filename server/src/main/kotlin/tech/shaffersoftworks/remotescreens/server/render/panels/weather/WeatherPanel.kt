@@ -3,6 +3,7 @@
 package tech.shaffersoftworks.remotescreens.server.render.panels.weather
 
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.fill
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.cards.weather.WEATHER_REFRESH_S
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
@@ -217,7 +218,7 @@ private fun DocContext.landscapeWeather(
     )
 
     rcScope.Column(
-        Modifier.fillMaxSize().background(role(Role.PAGE)),
+        Modifier.fillMaxSize().background(fill(Role.PAGE)),
         horizontal = RcHorizontalPositioning.Center,
     ) {
         landscapeHero(
@@ -314,7 +315,7 @@ private fun DocContext.landscapeForecast(
     soft: RcColor,
 ) {
     rcScope.Row(
-        Modifier.fillMaxWidth().background(role(Role.STRIP)).padding(units.px(STRIP_PAD_DP)),
+        Modifier.fillMaxWidth().background(fill(Role.STRIP)).padding(units.px(STRIP_PAD_DP)),
         horizontal = RcRowHorizontalPositioning.SpaceEvenly,
     ) {
         for (day in days) {
@@ -382,7 +383,7 @@ private fun DocContext.portraitWeather(page: PortraitPage) {
 
 private fun DocContext.portraitStack(page: PortraitPage) {
     rcScope.Column(
-        Modifier.fillMaxSize().background(role(Role.PAGE)),
+        Modifier.fillMaxSize().background(fill(Role.PAGE)),
         horizontal = RcHorizontalPositioning.Center,
     ) {
         val doc = this@portraitStack
@@ -402,7 +403,7 @@ private fun DocContext.portraitStack(page: PortraitPage) {
 private fun DocContext.portraitScroll(page: PortraitPage) {
     val viewport = units.px(page.heightDp)
 
-    rcScope.Box(Modifier.fillMaxSize().background(role(Role.PAGE))) {
+    rcScope.Box(Modifier.fillMaxSize().background(fill(Role.PAGE))) {
         val doc = this@portraitScroll
 
         rcScope.Column(
@@ -410,7 +411,7 @@ private fun DocContext.portraitScroll(page: PortraitPage) {
                 .height(viewport)
                 .requiredHeightIn(max = viewport)
                 .clip(RcShape.Rectangle)
-                .background(doc.role(Role.STRIP))
+                .background(doc.fill(Role.STRIP))
                 .keptVerticalScroll("weather.${page.tileId}"),
         ) {
             rcScope.Spacer(Modifier.height(doc.units.px(page.hero)))
@@ -427,7 +428,7 @@ private fun DocContext.portraitScroll(page: PortraitPage) {
 
 private fun DocContext.portraitHero(page: PortraitPage) {
     rcScope.Column(
-        Modifier.fillMaxWidth().height(units.px(page.hero)).background(role(Role.PAGE)),
+        Modifier.fillMaxWidth().height(units.px(page.hero)).background(fill(Role.PAGE)),
         horizontal = RcHorizontalPositioning.Center,
     ) {
         val doc = this@portraitHero
@@ -525,7 +526,7 @@ private fun DocContext.portraitDays(
     vertical: RcColumnVerticalPositioning,
 ) {
     rcScope.Column(
-        modifier.background(role(Role.STRIP)).padding(
+        modifier.background(fill(Role.STRIP)).padding(
             start = 0f,
             top = units.px(PortraitFit.STRIP_PAD_V_DP),
             end = 0f,

@@ -3,6 +3,7 @@
 package tech.shaffersoftworks.remotescreens.server.render.cards
 
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.fill
 import tech.shaffersoftworks.remotescreens.server.render.HaRenderFlags
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
@@ -203,7 +204,7 @@ internal fun DocContext.bar(
         level = float(Vars.entity(entityId, level)),
         widthDp = width,
         heightDp = CardChrome.LEVEL_BAR_H_DP,
-        fill = role(Role.ACCENT),
+        fill = fill(Role.ACCENT),
         track = role(Role.TRACK),
         steps = CardChrome.LEVEL_STEPS,
     ) { step ->

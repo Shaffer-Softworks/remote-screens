@@ -3,6 +3,7 @@
 package tech.shaffersoftworks.remotescreens.server.render.panels.thermostat
 
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.surfaceArgb
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.shared.VarValue
@@ -12,8 +13,20 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.Domain
 
 /** Readings, dial colours/sweeps, action, dual setpoints, fan word, and which mode is lit. */
 internal fun DocContext.bindThermostat(tileId: String, entityId: String, modes: List<String>, dual: Boolean) {
+    val chipOn = surfaceArgb(Role.ACCENT_DARK)
+    val chipOff = surfaceArgb(Role.PAGE)
+    val idleTint = surfaceArgb(Role.ACCENT_DARK)
+
     bind(entityId) { states ->
-        thermostatValues(tileId = tileId, modes = modes, dual = dual, entityState = states[entityId])
+        thermostatValues(
+            tileId = tileId,
+            modes = modes,
+            dual = dual,
+            entityState = states[entityId],
+            chipOn = chipOn,
+            chipOff = chipOff,
+            idleTint = idleTint,
+        )
     }
 }
 
@@ -22,6 +35,9 @@ private fun DocContext.thermostatValues(
     modes: List<String>,
     dual: Boolean,
     entityState: EntityState?,
+    chipOn: Int,
+    chipOff: Int,
+    idleTint: Int,
 ): List<VarValue> {
 
     val unit = if (homeAssistantConfig.temperatureUnit.contains(
@@ -35,7 +51,7 @@ private fun DocContext.thermostatValues(
     val unitSuffix = if (homeAssistantConfig.temperatureUnit.contains("F")) "°F" else "°"
     val action = entityState?.climate?.hvacAction
 
-    val tintArgb = dialTint(action)
+    val tintArgb = dialTint(action = action, idleTint = idleTint)
     val minValue = entityState?.climate?.minTemp ?: ThermostatMetrics.DEFAULT_MIN_TEMP_C
     val maxValue = entityState?.climate?.maxTemp ?: ThermostatMetrics.DEFAULT_MAX_TEMP_C
     val span = (maxValue - minValue).coerceAtLeast(1.0)
@@ -75,7 +91,7 @@ private fun DocContext.thermostatValues(
         tintArgb = tintArgb
     ) +
         targetValues(tileId = tileId, entityState = entityState, unitSuffix = unitSuffix, dual = dual, arc = arc) +
-        modeValues(tileId = tileId, state = entityState?.state, modes = modes)
+        modeValues(tileId = tileId, state = entityState?.state, modes = modes, chipOn = chipOn, chipOff = chipOff)
 }
 
 private data class ThermostatArc(
@@ -158,19 +174,25 @@ private fun DocContext.targetValues(
     ),
 )
 
-private fun DocContext.modeValues(tileId: String, state: String?, modes: List<String>): List<VarValue> =
+private fun DocContext.modeValues(
+    tileId: String,
+    state: String?,
+    modes: List<String>,
+    chipOn: Int,
+    chipOff: Int,
+): List<VarValue> =
     modes.mapIndexed { i, mode ->
         VarValue.color(
             Vars.option(scope = tileId, group = "seg", index = i, key = Vars.KEY_BG),
-            (if (modeSelected(state, mode)) Role.ACCENT_DARK else Role.PAGE).argb,
+            if (modeSelected(state, mode)) chipOn else chipOff,
         )
     }
 
-private fun DocContext.dialTint(action: String?): Int = when (action) {
-    "heating", "preheating" -> Role.WARN
-    "cooling" -> Role.BLUE
-    else -> Role.ACCENT_DARK
-}.argb
+private fun DocContext.dialTint(action: String?, idleTint: Int): Int = when (action) {
+    "heating", "preheating" -> Role.WARN.argb
+    "cooling" -> Role.BLUE.argb
+    else -> idleTint
+}
 
 private fun sweepAmount(value: Double?, minValue: Double, span: Double): Float {
     val fraction = value?.let { ((it - minValue) / span).coerceIn(0.0, 1.0) } ?: 0.0

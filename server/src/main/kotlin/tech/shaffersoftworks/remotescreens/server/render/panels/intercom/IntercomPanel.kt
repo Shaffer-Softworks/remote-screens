@@ -2,6 +2,7 @@ package tech.shaffersoftworks.remotescreens.server.render.panels.intercom
 
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcBorderShape
+import androidx.compose.remote.creation.dsl.RcColor
 import androidx.compose.remote.creation.dsl.RcColumnVerticalPositioning
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
 import androidx.compose.remote.creation.dsl.RcRowHorizontalPositioning
@@ -23,6 +24,8 @@ import androidx.compose.remote.creation.dsl.verticalWeight
 import androidx.compose.remote.creation.dsl.width
 import androidx.compose.remote.creation.dsl.RcShape
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.fill
+import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.widgets.icon
 import tech.shaffersoftworks.remotescreens.server.render.widgets.label
@@ -52,7 +55,7 @@ fun DocContext.intercomPanel(tile: Tile, box: TileBox) {
 }
 
 private fun DocContext.widePage(tileId: String, view: IntercomView, layout: IntercomLayout) {
-    rcScope.Row(Modifier.fillMaxSize().background(fixed(IntercomPaint.PAGE))) {
+    rcScope.Row(Modifier.fillMaxSize().background(intercomSurface(paint = IntercomPaint.PAGE, role = Role.PAGE))) {
         val doc = this@widePage
         doc.sideColumn(tileId = tileId, view = view, layout = layout)
         doc.stationList(tileId = tileId, view = view, layout = layout)
@@ -61,7 +64,7 @@ private fun DocContext.widePage(tileId: String, view: IntercomView, layout: Inte
 
 private fun DocContext.stackedPage(tileId: String, view: IntercomView, layout: IntercomLayout) {
     // The list is the full page. The header is drawn after it, so a scroll cannot cover the keys.
-    rcScope.Box(Modifier.fillMaxSize().background(fixed(IntercomPaint.PAGE))) {
+    rcScope.Box(Modifier.fillMaxSize().background(intercomSurface(paint = IntercomPaint.PAGE, role = Role.PAGE))) {
         val doc = this@stackedPage
         doc.stationList(tileId = tileId, view = view, layout = layout)
         doc.stackedHeader(tileId = tileId, view = view, layout = layout)
@@ -79,7 +82,7 @@ private fun DocContext.stackedHeader(tileId: String, view: IntercomView, layout:
 
     rcScope.Column(
         Modifier.fillMaxWidth().height(band).requiredHeightIn(max = band)
-            .background(fixed(IntercomPaint.COLUMN))
+            .background(intercomSurface(paint = IntercomPaint.COLUMN, role = Role.STRIP))
             .padding(start = 0f, top = top, end = 0f, bottom = bottom),
     ) {
         val doc = this@stackedHeader
@@ -105,8 +108,9 @@ private fun DocContext.stackedHeader(tileId: String, view: IntercomView, layout:
 /** The grey column: the accent, "INTERCOM", then the status and the two keys centred under it. */
 private fun DocContext.sideColumn(tileId: String, view: IntercomView, layout: IntercomLayout) {
     rcScope.Column(
-        Modifier.width(units.px(layout.columnW)).fillMaxHeight().background(fixed(IntercomPaint.COLUMN))
-            .padding(start = 0f, top = units.px(layout.dp(M.COLUMN_TOP_DP)), end = 0f, bottom = 0f),
+        Modifier.width(units.px(layout.columnW)).fillMaxHeight().background(
+            intercomSurface(paint = IntercomPaint.COLUMN, role = Role.STRIP),
+        ).padding(start = 0f, top = units.px(layout.dp(M.COLUMN_TOP_DP)), end = 0f, bottom = 0f),
     ) {
         val doc = this@sideColumn
         doc.accentBar(layout)
@@ -163,7 +167,7 @@ private fun DocContext.accentBar(layout: IntercomLayout) {
             Modifier.size(
                 doc.units.px(layout.dp(M.ACCENT_W_DP)),
                 doc.units.px(layout.dp(M.ACCENT_H_DP)),
-            ).background(doc.fixed(IntercomPaint.ACCENT)),
+            ).background(doc.intercomSurface(paint = IntercomPaint.ACCENT, role = Role.ACCENT_DARK)),
         )
     }
 }
@@ -250,7 +254,7 @@ private fun DocContext.stationCard(
 
             Box(
                 Modifier.fillMaxWidth().height(doc.units.px(layout.dp(M.ROW_BAR_DP)))
-                    .background(doc.fixed(IntercomPaint.ACCENT)),
+                    .background(doc.intercomSurface(paint = IntercomPaint.ACCENT, role = Role.ACCENT_DARK)),
             )
         }
     }
@@ -410,3 +414,6 @@ private fun DocContext.controlKey(
         label(text = caption, sp = layout.sp(M.BUTTON_SP), color = fixed(IntercomPaint.INK))
     }
 }
+
+private fun DocContext.intercomSurface(paint: Int, role: Role): RcColor =
+    if (tileAccentArgb == null) fixed(paint) else fill(role)

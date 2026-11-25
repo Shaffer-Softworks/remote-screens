@@ -6,6 +6,7 @@ import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.fillMaxWidth
 import androidx.compose.remote.creation.dsl.horizontalWeight
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.fill
 import tech.shaffersoftworks.remotescreens.server.render.cards.CardChrome
 import tech.shaffersoftworks.remotescreens.server.render.cards.media.PLAY_KEY_DP
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
@@ -50,7 +51,7 @@ internal fun DocContext.historyCard(entityId: String, width: Float, height: Floa
         points = points,
         wDp = width,
         hDp = (height - CardChrome.MEDIA_CTRL_DP).coerceAtLeast(PLAY_KEY_DP),
-        line = role(Role.ACCENT),
+        line = fill(Role.ACCENT),
         soft = role(Role.INK_SOFT),
     )
 }

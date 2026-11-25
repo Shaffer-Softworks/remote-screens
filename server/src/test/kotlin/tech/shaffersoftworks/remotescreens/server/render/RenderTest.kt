@@ -29,6 +29,7 @@ import tech.shaffersoftworks.remotescreens.server.render.panels.alarm.alarmDotVa
 import tech.shaffersoftworks.remotescreens.server.render.theme.Palette
 import tech.shaffersoftworks.remotescreens.server.render.theme.Pastel
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
+import tech.shaffersoftworks.remotescreens.server.render.theme.Rpi
 import tech.shaffersoftworks.remotescreens.server.render.theme.Themes
 import tech.shaffersoftworks.remotescreens.server.render.theme.softenAccent
 import tech.shaffersoftworks.remotescreens.shared.AssistLayout
@@ -611,6 +612,38 @@ class RenderTest : RenderFixture() {
         val off = ScreenRenderer.render(card, tablet, input()).vars(ha.states.value)
 
         assertEquals(softenAccent(orange), off["t.lamp.line"]?.asColor())
+    }
+
+    @Test
+    fun aChosenColourPaintsTheWeatherPageAndLeavesItsTitle() {
+        fun weather(color: String?) = Screen(
+            id = "colour",
+            name = "Colour",
+            pages = listOf(
+                Page(
+                    id = "outside",
+                    title = "Weather",
+                    tiles = listOf(
+                        Tile(
+                            id = "w",
+                            kind = "weather",
+                            entityId = "weather.home",
+                            full = true,
+                            color = color,
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val orange = Pastel.ORANGE.argb
+        val plain = ScreenRenderer.render(weather(color = null), tablet, input())
+        val painted = ScreenRenderer.render(weather(color = "orange"), tablet, input())
+
+        assertTrue(containsArgb(bytes = plain.bytes, argb = Rpi.WeatherTitle))
+        assertTrue(containsArgb(bytes = painted.bytes, argb = Rpi.WeatherTitle))
+        assertFalse(containsArgb(bytes = plain.bytes, argb = orange))
+        assertTrue(containsArgb(bytes = painted.bytes, argb = orange))
     }
 
 }

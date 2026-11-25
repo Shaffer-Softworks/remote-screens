@@ -10,6 +10,7 @@ import androidx.compose.remote.creation.dsl.componentId
 import androidx.compose.remote.creation.dsl.fillMaxSize
 import androidx.compose.remote.creation.dsl.padding
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.fill
 import tech.shaffersoftworks.remotescreens.server.render.theme.Role
 import tech.shaffersoftworks.remotescreens.server.render.tiles.TileBox
 import tech.shaffersoftworks.remotescreens.server.render.widgets.Type
@@ -34,7 +35,7 @@ fun DocContext.energyDashboardPanel(tile: Tile, box: TileBox) {
         modifier = Modifier
             .fillMaxSize()
             .componentId(componentId)
-            .background(role(Role.PAGE))
+            .background(fill(Role.PAGE))
             .padding(units.px(EnergyDashboardMetrics.STUB_PAD_DP)),
         horizontal = RcHorizontalPositioning.Center,
         vertical = RcVerticalPositioning.Center,

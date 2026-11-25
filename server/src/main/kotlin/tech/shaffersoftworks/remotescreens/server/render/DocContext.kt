@@ -82,8 +82,8 @@ class DocContext(
     var renderingPage: Int = 0
 
     /**
-     * The tile colour being drawn, when the tile names one. Accent roles and the home fill use it instead of the
-     * theme until [withTileAccent] restores the previous value.
+     * The tile colour being drawn, when the tile names one. [fill] uses it for the page and the accent marks.
+     * Lettering stays on the theme. [withTileAccent] restores the previous value.
      */
     internal var tileAccentArgb: Int? = null
     /** Action metadata to the action and the entity it changes. */
@@ -161,19 +161,8 @@ class DocContext(
             rcScope.remoteColor(argb)
         }
 
-    fun role(r: Role): RcColor {
-        val chosen = tileAccentArgb
+    fun role(r: Role): RcColor = fixed(palette[r])
 
-        val argb = when {
-            chosen == null -> palette[r]
-            r == Role.ACCENT || r == Role.HOME || r == Role.WEATHER_TITLE -> chosen
-            r == Role.ACCENT_DARK -> darkenAccent(chosen)
-            r == Role.ACCENT_SOFT -> softenAccent(chosen)
-            else -> palette[r]
-        }
-
-        return fixed(argb)
-    }
     fun pastel(p: Pastel): RcColor = fixed(palette[p])
 
     /** A role or pastel in the screen's theme, so live colours sent later match the document. */
@@ -338,8 +327,8 @@ class DocContext(
 }
 
 /**
- * Draw [block] in [colorKey] when the tile names a colour. Accent, home and weather-title roles inside the block
- * follow that colour; everything else stays on the theme.
+ * Draw [block] in [colorKey] when the tile names a colour. [fill] surfaces inside the block follow that colour.
+ * Lettering stays on the theme.
  */
 internal inline fun <T> DocContext.withTileAccent(colorKey: String?, fallback: Pastel, block: DocContext.() -> T): T {
     if (colorKey == null) return block()
@@ -351,5 +340,19 @@ internal inline fun <T> DocContext.withTileAccent(colorKey: String?, fallback: P
         block()
     } finally {
         tileAccentArgb = previous
+    }
+}
+
+/** A surface. A colour chosen on the tile replaces the page and the accent marks. Lettering keeps [DocContext.role]. */
+internal fun DocContext.fill(r: Role): RcColor = fixed(surfaceArgb(r))
+
+internal fun DocContext.surfaceArgb(r: Role): Int {
+    val chosen = tileAccentArgb ?: return palette[r]
+
+    return when (r) {
+        Role.PAGE, Role.HOME, Role.ACCENT -> chosen
+        Role.STRIP, Role.ACCENT_DARK -> darkenAccent(chosen)
+        Role.ACCENT_SOFT -> softenAccent(chosen)
+        else -> palette[r]
     }
 }

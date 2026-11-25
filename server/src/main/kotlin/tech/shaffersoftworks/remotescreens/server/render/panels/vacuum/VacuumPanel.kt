@@ -6,6 +6,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityState
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.VacuumUiState
 import tech.shaffersoftworks.remotescreens.server.data.vacuum.selectedVacuumId
 import tech.shaffersoftworks.remotescreens.server.render.DocContext
+import tech.shaffersoftworks.remotescreens.server.render.fill
 import tech.shaffersoftworks.remotescreens.server.render.Vars
 import tech.shaffersoftworks.remotescreens.server.render.bindEntity
 import tech.shaffersoftworks.remotescreens.server.render.keptVerticalScroll
@@ -52,7 +53,7 @@ fun DocContext.vacuumPanel(tile: Tile, box: TileBox) {
     val selected = selectedId?.let { states[it] }
     val layout = VacuumLayout(scale = pageScale(box), pageW = box.w, pageH = box.h)
 
-    rcScope.Row(Modifier.fillMaxSize().background(role(Role.PAGE))) {
+    rcScope.Row(Modifier.fillMaxSize().background(fill(Role.PAGE))) {
         val doc = this@vacuumPanel
         doc.vacuumList(tileId = tile.id, vacuums = vacuums, selectedId = selectedId, layout = layout)
         doc.vacuumDetail(tileId = tile.id, selected = selected, ui = ui, layout = layout)
@@ -105,7 +106,7 @@ private fun DocContext.vacuumList(
     layout: VacuumLayout,
 ) {
     rcScope.Column(
-        Modifier.width(units.px(layout.listW)).fillMaxHeight().background(role(Role.STRIP))
+        Modifier.width(units.px(layout.listW)).fillMaxHeight().background(fill(Role.STRIP))
             .padding(start = 0f, top = units.px(layout.dp(M.LIST_TOP_DP)), end = 0f, bottom = 0f),
     ) {
         val doc = this@vacuumList
@@ -117,7 +118,7 @@ private fun DocContext.vacuumList(
                 Modifier.size(
                     doc.units.px(layout.dp(M.ACCENT_BAR_W_DP - M.ACCENT_BAR_START_DP)),
                     doc.units.px(layout.dp(M.ACCENT_BAR_H_DP)),
-                ).background(doc.role(Role.ACCENT_DARK)),
+                ).background(doc.fill(Role.ACCENT_DARK)),
             )
         }
 

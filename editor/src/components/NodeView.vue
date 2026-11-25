@@ -557,7 +557,7 @@ const card = computed(() => {
     icon: iconOf(tile, ent),
     state: stateOf(ent),
     accent: lit ? chosen : undefined,
-    line: lit ? chosen : accentStyleOf(tile.color, domain)['--rc-accent-soft'],
+    line: lit ? chosen : accentStyleOf(tile.color, domain)['--rc-accent-soft-fill'],
   }
 })
 
@@ -1530,7 +1530,7 @@ function end(): void {
   width: 72px;
   height: 6px;
   margin-bottom: 6px;
-  background: var(--rc-accent-dark);
+  background: var(--rc-accent-dark-fill, var(--rc-accent-dark));
 }
 
 .th-middle {
@@ -1629,10 +1629,10 @@ function end(): void {
 
 .th-modes {
   display: flex;
-  border: 2px solid var(--rc-accent-dark);
+  border: 2px solid var(--rc-accent-dark-fill, var(--rc-accent-dark));
   border-radius: 8px;
   overflow: hidden;
-  background: var(--rc-page);
+  background: var(--rc-page-fill, var(--rc-page));
 }
 
 .th-modes span {
@@ -1643,9 +1643,9 @@ function end(): void {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  background: var(--rc-page);
+  background: var(--rc-page-fill, var(--rc-page));
   font-size: 11px;
-  box-shadow: inset -1px 0 0 var(--rc-accent-dark);
+  box-shadow: inset -1px 0 0 var(--rc-accent-dark-fill, var(--rc-accent-dark));
 }
 
 .th-modes span:last-child {
@@ -1653,7 +1653,7 @@ function end(): void {
 }
 
 .th-modes span.on {
-  background: var(--rc-accent-dark);
+  background: var(--rc-accent-dark-fill, var(--rc-accent-dark));
 }
 
 .th-fan {
@@ -1662,9 +1662,9 @@ function end(): void {
   gap: 6px;
   height: 32px;
   padding: 0 8px;
-  border: 2px solid var(--rc-accent-dark);
+  border: 2px solid var(--rc-accent-dark-fill, var(--rc-accent-dark));
   border-radius: 8px;
-  background: var(--rc-page);
+  background: var(--rc-page-fill, var(--rc-page));
 }
 
 .th-fan span {
@@ -1994,7 +1994,7 @@ function end(): void {
 .tab.on {
   color: var(--rc-ink);
   font-weight: 600;
-  border-bottom-color: var(--rc-accent);
+  border-bottom-color: var(--rc-accent-fill, var(--rc-accent));
 }
 
 .t-dial,
@@ -2157,7 +2157,7 @@ function end(): void {
 .media-volume > span {
   display: block;
   height: 100%;
-  background: var(--rc-accent);
+  background: var(--rc-accent-fill, var(--rc-accent));
 }
 
 .art {
