@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.71
+
+### What's Changed
+* chore(release): sync 0.2.70 on main by @github-actions[bot] in https://github.com/Shaffer-Softworks/remote-screens/pull/223
+* Fix/tile color on every page by @sickkick in https://github.com/Shaffer-Softworks/remote-screens/pull/224
+
+
+**Full Changelog**: https://github.com/Shaffer-Softworks/remote-screens/compare/v0.2.70...v0.2.71
+
 ## 0.2.70
 
 ### What's Changed
