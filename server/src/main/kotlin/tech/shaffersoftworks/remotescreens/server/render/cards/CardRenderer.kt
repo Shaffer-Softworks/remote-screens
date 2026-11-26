@@ -48,6 +48,7 @@ import tech.shaffersoftworks.remotescreens.server.render.panels.vacuum.vacuumCar
 import tech.shaffersoftworks.remotescreens.server.render.panels.vacuum.vacuumRoomsLayer
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
+import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
@@ -115,19 +116,23 @@ object CardRenderer {
                         ),
                         horizontal = RcHorizontalPositioning.Center,
                     ) {
-                        // Centre the card in the page area; the scrim still covers the bars.
+                        // Box-center in the page area; twin weight spacers pile leftover on the first.
                         Spacer(Modifier.height(docContext.units.px(topInsetDp)))
-                        Spacer(Modifier.verticalWeight(1f))
 
-                        docContext.cardPanel(
-                            card = card,
-                            entityId = entityId,
-                            entityState = entityState,
-                            panelW = panelW,
-                            panelH = panelH,
-                        )
+                        Box(
+                            Modifier.fillMaxWidth().verticalWeight(1f),
+                            horizontal = RcHorizontalPositioning.Center,
+                            vertical = RcVerticalPositioning.Center,
+                        ) {
+                            docContext.cardPanel(
+                                card = card,
+                                entityId = entityId,
+                                entityState = entityState,
+                                panelW = panelW,
+                                panelH = panelH,
+                            )
+                        }
 
-                        Spacer(Modifier.verticalWeight(1f))
                         Spacer(Modifier.height(docContext.units.px(bottomInsetDp)))
                     }
 
