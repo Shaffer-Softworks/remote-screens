@@ -116,7 +116,6 @@ object CardRenderer {
                         ),
                         horizontal = RcHorizontalPositioning.Center,
                     ) {
-                        // Box-center in the page area; twin weight spacers pile leftover on the first.
                         Spacer(Modifier.height(docContext.units.px(topInsetDp)))
 
                         Box(
