@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.71
+
+### What's Changed
+* chore(release): sync 0.2.71 on main by @github-actions[bot] in https://github.com/Shaffer-Softworks/remote-screens/pull/225
+* Centre card panel in page area with a Box by @sickkick in https://github.com/Shaffer-Softworks/remote-screens/pull/226
+* Add photo screensaver after standby by @sickkick in https://github.com/Shaffer-Softworks/remote-screens/pull/227
+
+
+**Full Changelog**: https://github.com/Shaffer-Softworks/remote-screens/compare/v0.2.71...v0.3.71
+
 ## 0.2.71
 
 ### What's Changed
