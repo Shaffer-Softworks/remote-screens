@@ -78,13 +78,10 @@ object CardRenderer {
     ): RenderedDoc {
         val entityState = input.states[entityId]
         val card = resolveCardType(kind = kind, entityId = entityId)
-
         val panelW = minOf(
             device.widthDp - CardChrome.PANEL_MARGIN_DP,
             CardChrome.PANEL_MAX_WIDTH_DP,
         )
-
-        // Same vertical inset as the lights detail dialog, measured in the page area between the bars.
         val panelH = device.heightDp - topInsetDp - bottomInsetDp - 2 * CardChrome.PANEL_MARGIN_V_DP
 
         val (bytes, docContext) = DocContext.build(
