@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.72
+
+### What's Changed
+* chore(release): sync 0.3.71 on main by @github-actions[bot] in https://github.com/Shaffer-Softworks/remote-screens/pull/228
+* Search Immich albums by metadata and drift screensaver overlay by @sickkick in https://github.com/Shaffer-Softworks/remote-screens/pull/229
+
+
+**Full Changelog**: https://github.com/Shaffer-Softworks/remote-screens/compare/v0.3.71...v0.3.72
+
 ## 0.3.71
 
 ### What's Changed
