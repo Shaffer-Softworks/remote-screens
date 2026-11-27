@@ -48,6 +48,7 @@ import tech.shaffersoftworks.remotescreens.server.render.panels.vacuum.vacuumCar
 import tech.shaffersoftworks.remotescreens.server.render.panels.vacuum.vacuumRoomsLayer
 import androidx.compose.remote.creation.dsl.Modifier
 import androidx.compose.remote.creation.dsl.RcHorizontalPositioning
+import androidx.compose.remote.creation.dsl.RcVerticalPositioning
 import androidx.compose.remote.creation.dsl.height
 import androidx.compose.remote.creation.dsl.background
 import androidx.compose.remote.creation.dsl.clip
@@ -65,6 +66,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
  * The card a long press opens: the whole of one entity, on a panel over the page. A card is its own document in the
  * overlay slot; its taps name the entity as `e:<entity_id>`, so they work whichever tile opened it.
  */
+@Suppress("LongMethod")
 object CardRenderer {
     fun render(
         entityId: String,
@@ -83,7 +85,6 @@ object CardRenderer {
             CardChrome.PANEL_MAX_WIDTH_DP,
         )
 
-        // Same vertical inset as the lights detail dialog, measured in the page area between the bars.
         val panelH = device.heightDp - topInsetDp - bottomInsetDp - 2 * CardChrome.PANEL_MARGIN_V_DP
 
         val (bytes, docContext) = DocContext.build(
@@ -115,19 +116,22 @@ object CardRenderer {
                         ),
                         horizontal = RcHorizontalPositioning.Center,
                     ) {
-                        // Centre the card in the page area; the scrim still covers the bars.
                         Spacer(Modifier.height(docContext.units.px(topInsetDp)))
-                        Spacer(Modifier.verticalWeight(1f))
 
-                        docContext.cardPanel(
-                            card = card,
-                            entityId = entityId,
-                            entityState = entityState,
-                            panelW = panelW,
-                            panelH = panelH,
-                        )
+                        Box(
+                            Modifier.fillMaxWidth().verticalWeight(1f),
+                            horizontal = RcHorizontalPositioning.Center,
+                            vertical = RcVerticalPositioning.Center,
+                        ) {
+                            docContext.cardPanel(
+                                card = card,
+                                entityId = entityId,
+                                entityState = entityState,
+                                panelW = panelW,
+                                panelH = panelH,
+                            )
+                        }
 
-                        Spacer(Modifier.verticalWeight(1f))
                         Spacer(Modifier.height(docContext.units.px(bottomInsetDp)))
                     }
 
