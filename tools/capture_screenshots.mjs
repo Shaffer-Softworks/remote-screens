@@ -73,6 +73,18 @@ await shot('screens')
 await openScreen()
 await shot('editor')
 
+await page.getByRole('button', { name: 'Screen' }).click()
+await page.getByRole('heading', { name: 'Standby' }).waitFor()
+const screensaver = page.getByRole('checkbox', { name: 'Screensaver' })
+if (await screensaver.count()) {
+  await screensaver.check()
+  await page.waitForTimeout(400)
+  await page.locator('.flyout').screenshot({ path: join(out, 'editor-screensaver.png') })
+  console.log('editor-screensaver.png')
+} else {
+  console.warn('skip editor-screensaver.png (no Screensaver checkbox)')
+}
+
 if (await selectPage('Living room')) {
   await shot('editor-room')
   await page.locator('.room .tile').first().click()

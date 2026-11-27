@@ -49,6 +49,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
+import tech.shaffersoftworks.remotescreens.server.player.session.ScreensaverFeed
 import tech.shaffersoftworks.remotescreens.server.player.session.SessionDiagnostics
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
@@ -133,6 +134,20 @@ class PlayerSession(
     private val documents = SessionDocument(host, media)
     private val lifecycle = SessionLifecycle(host, documents)
     private val diagnostics = SessionDiagnostics(::send)
+    private val screensaverFeed = ScreensaverFeed(
+        photos = context.screensaverPhotos,
+        screen = { screen() },
+        widthPx = (hello.widthDp * hello.density).toInt().coerceAtLeast(1),
+        heightPx = (hello.heightDp * hello.density).toInt().coerceAtLeast(1),
+        send = { message -> send(message) },
+        states = homeAssistant.states,
+    )
+
+    init {
+        if (Protocol.CAPABILITY_SCREENSAVER in hello.capabilities) {
+            jobs += context.scope.launch { screensaverFeed.run() }
+        }
+    }
 
     suspend fun testSentry() = diagnostics.test()
 
@@ -248,6 +263,7 @@ class PlayerSession(
             is PlayerMessage.DeviceState,
             is PlayerMessage.Telemetry,
             is PlayerMessage.SettingsChanged,
+            is PlayerMessage.Screensaver,
             -> receiveStatus(message)
             is PlayerMessage.Action,
             is PlayerMessage.VideoFailed,
@@ -278,6 +294,7 @@ class PlayerSession(
                 telemetryAt = System.currentTimeMillis()
             }
             is PlayerMessage.SettingsChanged -> applySettings(message)
+            is PlayerMessage.Screensaver -> screensaverFeed.setShowing(message.showing)
             else -> error("Unexpected status message: ${message::class.simpleName}")
         }
     }
@@ -313,7 +330,7 @@ class PlayerSession(
 
     private fun applySettings(message: PlayerMessage.SettingsChanged) {
         val id = screenId ?: return
-        context.screenService.updateSettings(id) { message.settings }
+        context.screenService.updateSettings(id) { current -> current.keepingSecrets(message.settings) }
     }
 
     private suspend fun logPlayerEntries(batch: PlayerMessage.AppLog) {
@@ -764,6 +781,7 @@ class PlayerSession(
             Protocol.CAPABILITY_APP_LOG,
             Protocol.CAPABILITY_INTERCOM,
             Protocol.CAPABILITY_NOTIFICATIONS,
+            Protocol.CAPABILITY_SCREENSAVER,
         )
         const val RESYNC_MS = 3000L
         const val AGENDA_NOTICE_MS = 4_000L

@@ -1,6 +1,10 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +19,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.ImageLoader
+import tech.shaffersoftworks.remotescreens.player.ui.screensaver.SCREENSAVER_FADE_MS
+import tech.shaffersoftworks.remotescreens.player.ui.screensaver.ScreensaverOverlay
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.RemoteDocumentStack
 import tech.shaffersoftworks.remotescreens.player.ui.screens.player.remote.SlotVideo
 import tech.shaffersoftworks.remotescreens.player.data.device.assist.AssistUiState
@@ -122,7 +128,7 @@ internal fun PlayerScreenContent(
             modifier = Modifier.fillMaxSize(),
             state = viewState.remoteScreen,
             isEnabled = viewState.remoteScreen.hasMainDocument && !viewState.remoteScreen.isOverlayShown &&
-                !viewState.isAnyDialogVisible && viewState.isAwake,
+                !viewState.isAnyDialogVisible && viewState.isAwake && !viewState.isScreensaver,
             onAction = { metadata ->
                 val revision = viewState.remoteScreen.documents.getValue(Slot.MAIN).revision
                 onDocumentAction(Slot.MAIN, revision, metadata)
@@ -130,7 +136,7 @@ internal fun PlayerScreenContent(
         ) {
             RemoteDocumentStack(
                 state = viewState.remoteScreen,
-                isVideoAllowed = viewState.isAwake && !viewState.isIntercomCall,
+                isVideoAllowed = viewState.isAwake && !viewState.isIntercomCall && !viewState.isScreensaver,
                 onAction = onDocumentAction,
                 onVideoFailed = onVideoFailed,
                 onSearchQuery = onSearchQuery,
@@ -140,6 +146,20 @@ internal fun PlayerScreenContent(
                 assist = viewState.assist,
                 onToggleAssistMute = onToggleAssistMute,
                 imageLoader = imageLoader,
+            )
+        }
+
+        AnimatedVisibility(
+            visible = viewState.isScreensaver,
+            enter = fadeIn(animationSpec = tween(durationMillis = SCREENSAVER_FADE_MS)),
+            exit = fadeOut(animationSpec = tween(durationMillis = SCREENSAVER_FADE_MS)),
+        ) {
+            ScreensaverOverlay(
+                photo = viewState.screensaverPhoto,
+                condition = viewState.screensaverCondition,
+                temperature = viewState.screensaverTemperature,
+                icon = viewState.screensaverIcon,
+                onDismiss = onUserInteraction,
             )
         }
 

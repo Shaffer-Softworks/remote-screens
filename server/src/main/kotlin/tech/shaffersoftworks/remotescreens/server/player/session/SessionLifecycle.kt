@@ -196,7 +196,7 @@ internal class SessionLifecycle(
 
     private suspend fun sendChrome(screen: Screen) {
         host.send(ServerMessage.Settings(
-            settings = screen.settings,
+            settings = screen.settings.forPlayer(),
             sentry = layoutRepository.layout.value.preferences.sentry,
         ))
 

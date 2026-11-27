@@ -19,7 +19,8 @@
       "assist": { "default": "mdi:microphone" },
       "kiosk": { "default": "mdi:lock" },
       "report_telemetry": { "default": "mdi:tablet-dashboard" },
-      "share_location": { "default": "mdi:map-marker-radius" }
+      "share_location": { "default": "mdi:map-marker-radius" },
+      "screensaver": { "default": "mdi:image-multiple" }
     },
     "binary_sensor": {
       "awake": { "default": "mdi:monitor-shimmer", "state": { "off": "mdi:monitor-off" } }

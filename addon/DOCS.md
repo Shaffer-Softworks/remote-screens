@@ -40,6 +40,12 @@ address of your Home Assistant host with port 8100.
   screen, then on the tablet open the app's settings and choose **Allow turning the screen off in standby** (Android
   asks to activate Remote Screens as a device admin). A screen that is off does not wake on a touch: press the power
   button, or call `remote_screens.wake` from Home Assistant.
+- A screen can show photos instead of dimming. Under Standby, tick **Screensaver**. The standby time is then how long
+  the dashboard sits idle before the photos start. The clock is always on the picture. Set **Turn the screen off
+  after** to leave the photos (0 keeps them up until something wakes the tablet). Photos come from a Home Assistant
+  media folder or an Immich album. The Immich API key stays in the screen file: it is not sent to the tablet and it
+  is not a Home Assistant entity. The **Screensaver** switch in Home Assistant only turns the photos on or off.
+  An old tablet that does not know the screensaver keeps dimming.
 
 ## Waking from standby
 

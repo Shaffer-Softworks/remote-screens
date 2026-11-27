@@ -139,6 +139,41 @@ data class FossilEnergyConsumption(
 }
 
 @Serializable
+data class BrowseMediaSource(
+    @SerialName("media_content_id") val mediaContentId: String,
+) : HaRequest<MediaSourceNode> {
+    override val type: String get() = "media_source/browse_media"
+    override val resultSerializer: KSerializer<MediaSourceNode> get() = MediaSourceNode.serializer()
+
+    override fun payload(): JsonObject = encodePayload(serializer(), this)
+}
+
+@Serializable
+data class ResolveMediaSource(
+    @SerialName("media_content_id") val mediaContentId: String,
+) : HaRequest<ResolvedMedia> {
+    override val type: String get() = "media_source/resolve_media"
+    override val resultSerializer: KSerializer<ResolvedMedia> get() = ResolvedMedia.serializer()
+
+    override fun payload(): JsonObject = encodePayload(serializer(), this)
+}
+
+@Serializable
+data class MediaSourceNode(
+    @SerialName("media_content_id") val mediaContentId: String? = null,
+    @SerialName("media_content_type") val mediaContentType: String? = null,
+    @SerialName("media_class") val mediaClass: String? = null,
+    @SerialName("can_expand") val canExpand: Boolean = false,
+    val children: List<MediaSourceNode> = emptyList(),
+)
+
+@Serializable
+data class ResolvedMedia(
+    val url: String? = null,
+    @SerialName("mime_type") val mimeType: String? = null,
+)
+
+@Serializable
 data class BrowseMedia(@SerialName("entity_id") val entityId: String) : HaRequest<BrowseMediaResult> {
     override val type: String get() = "media_player/browse_media"
     override val resultSerializer: KSerializer<BrowseMediaResult> get() = BrowseMediaResult.serializer()
