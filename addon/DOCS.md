@@ -181,8 +181,8 @@ The editor refuses it on a page that already has tiles ("A full-page tile needs 
 
 Panels that follow an entity — alarm, weather, thermostat, music, calendar, and vacuum — use the first entity of
 that domain. They stay unavailable until Home Assistant has one, and the tile's settings change which entity they
-follow. Home, lights, blinds, security, cameras, intercom, energy, the energy dashboard, and the bedside clock do
-not need an entity.
+follow. Home, lights, blinds, security, cameras, intercom, Assist, energy, the energy dashboard, and the
+bedside clock do not need an entity.
 
 - **Home** shows the first weather entity, the next event across every calendar, and who is home.
 - **Lights** lists Home Assistant areas. A light, switch, or cover uses its own area, or its device's area when
@@ -220,10 +220,14 @@ not need an entity.
 - **Calendar** lists upcoming events. On a current player, an add button creates an event when that calendar
   allows it, and holding a row deletes the event when it can be deleted.
 - **Vacuum** lists every vacuum. The right side is start, pause, return to dock, locate, and fan speed for the
-  one you pick. With only one vacuum it is already selected. The tile follows the first vacuum until its settings
+  one you pick. When Home Assistant has `select.<object_id>_cleaning_mode` for that vacuum
+  (`select.robot_cleaning_mode` for `vacuum.robot`), the same card lists those modes and sets the select when
+  you pick one. With only one vacuum it is already selected. The tile follows the first vacuum until its settings
   name another; that one is listed first. **Rooms** opens a dialog to pick rooms for a selective clean: vacuums
   that support Home Assistant's `vacuum.clean_area` use mapped areas; others fall back to room segment ids via
-  `vacuum.send_command` / `app_segment_clean`. The same Rooms control is on a vacuum's detail card.
+  `vacuum.send_command` / `app_segment_clean`. The same controls are on a vacuum's detail card.
+- **Assist** is the conversation page. It does not follow an entity. Listening stays off until **Assist** is
+  ticked in the screen's settings. See [Assist](#assist).
 - **Energy now** is the live solar, grid, and battery diagram from Home Assistant's energy settings, drawn edge
   to edge. The 2×2 energy tile is the same diagram inside a card. A source you have not configured is left out.
   A long press on solar, the grid, or the battery opens that source's history.
@@ -276,7 +280,7 @@ English in other languages.
 ## Settings from Home Assistant
 
 The **Remote Screens** integration (installed with HACS) adds, for each screen, entities for brightness, dark
-mode, standby, night mode, back-to-home, the page shown, kiosk lock, and wake-on-proximity /
+mode, standby, night mode, back-to-home, the page shown, kiosk lock, Assist, and wake-on-proximity /
 wake-on-face, and the services `remote_screens.show_alert`, `remote_screens.open_page`, `remote_screens.wake`,
 `remote_screens.close`, and `remote_screens.send_notification`. In the editor, open **Settings** and choose
 **Install integration** to open HACS on this repository (or add it as a custom repository of type Integration
@@ -460,6 +464,42 @@ add-on can see it. Each command stops after two minutes.
 | (free port) | The editor, through ingress only; the Supervisor picks a free port so it never clashes |
 
 The add-on uses the host network so tablets can find it over mDNS (`_remotescreens._tcp`).
+
+## Assist
+
+Assist is off until you turn it on. In the screen's settings, under **Standby**, tick **Assist**. The Home
+Assistant switch for that screen has the same name and only turns listening on or off. Choose a wake word
+and a pipeline in the editor; the switch does not change them. The wake words are
+**Okay Nabu** (the default), **Hey Jarvis**, **Hey Mycroft**, and **Alexa**. **Preferred** uses Home
+Assistant's preferred Assist pipeline; any other choice is one pipeline from the list Home Assistant reports.
+
+The tablet listens for that phrase on the device. Room audio stays on the tablet until the wake word. After
+the phrase, the tablet plays a short chime, then Home Assistant transcribes the command, runs the conversation,
+and speaks the reply. The bundled phrases are English. A custom openWakeWord phrase is not heard.
+
+When Assist is on, the top bar shows a microphone as the first status icon, ahead of Wi‑Fi and battery when
+those are shown. Tap it to mute or unmute.
+Saying the wake word does not change pages. On any other page, a line above the navigation bar shows what was
+heard and the reply, then clears when the turn ends. An **Assist** page from **Other tiles** keeps the recent
+lines (up to twelve), the phase (Listening, Hearing you, Thinking, Speaking, Muted, or Unavailable), the
+pipeline name, and a Mute key. When that page is narrower than 700 dp it stacks. An older player shows
+"Update the tablet app for Assist" in that page's place.
+
+The tablet asks for the microphone the first time Assist is turned on. A device-owner kiosk already has that
+permission. If you decline, long-press the top bar and choose **Allow the microphone for Assist**. While an
+intercom call is in progress, listening stops and the microphone is released; Assist starts again when the
+call ends.
+
+Dimmed standby keeps listening, and the wake word wakes the screen. With **Turn the screen off in standby**,
+the tablet posts a low-importance **Listening for Assist** notification and holds the microphone in a
+foreground service. Some panels still drop the microphone while the display is off.
+
+The player app includes `arm64-v8a` and `armeabi-v7a` only, so an x86 emulator will not install it. If the
+wake-word library does not load, the Assist page shows **Unavailable**. Update the add-on and the player
+together.
+
+A demo add-on does not open a Home Assistant pipeline. It answers with a fixed line ("Turn off the kitchen
+lights" / "The kitchen lights are off"). The tablet still listens locally when Assist is on.
 
 ## Intercom
 

@@ -8,6 +8,9 @@
   Agents in this repo follow `.cursor/skills/android-cli` (same text as `.agents/skills/android-cli`).
 - Node **24** (editor)
 - Python **3.13** (integration tests, catalogue tools)
+- Android **NDK** and CMake, for the player. The wake-word library is
+  `player/src/main/cpp/microwakeword`. The first native build downloads its pinned C++ dependencies and
+  needs network access. The APK ships `arm64-v8a` and `armeabi-v7a` only. See [docs/ASSIST.md](docs/ASSIST.md).
 
 Player work can use the Android skills in `.cursor/skills/` (the same copies are in `.agents/skills/`): `android-permissions-security`, `android-intent-security`, `anr-audit-and-fix`, `jetpack-compose-performance`, and `android-profiler`.
 
