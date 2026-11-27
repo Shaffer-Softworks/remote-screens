@@ -1,11 +1,14 @@
 package tech.shaffersoftworks.remotescreens.server.data.screensaver
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaSourceNode
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+
+private const val SEARCH_SIZE = 5
 
 class ScreensaverCatalogTest {
     @Test
@@ -51,5 +54,21 @@ class ScreensaverCatalogTest {
 
         assertEquals(listOf("1"), ScreensaverCatalog.imageIds(search))
         assertEquals(listOf("9", "8"), ScreensaverCatalog.imageIds(album))
+    }
+
+    @Test
+    fun namedAlbumSearchAsksForThatAlbum() {
+        val body = Json.decodeFromString(
+            ImmichMetadataSearch.serializer(),
+            ScreensaverCatalog.metadataSearch(size = SEARCH_SIZE, albumId = "abc"),
+        )
+
+        val library = ScreensaverCatalog.metadataSearch(size = SEARCH_SIZE)
+
+        assertEquals("IMAGE", body.type)
+        assertEquals(false, body.isArchived)
+        assertEquals(SEARCH_SIZE, body.size)
+        assertEquals(listOf("abc"), body.albumIds)
+        assertFalse(library.contains("albumIds"))
     }
 }

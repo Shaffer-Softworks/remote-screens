@@ -26,7 +26,6 @@ private const val USER_AGENT = "RemoteScreens/1 (Home Assistant add-on)"
 private const val API_KEY_HEADER = "x-api-key"
 private const val MAX_LISTED = 500
 private const val MAX_LONG_EDGE = 1920
-private const val SEARCH_BODY = """{"type":"IMAGE","isArchived":false,"size":500}"""
 
 /** One photo the screensaver can show. [id] changes when the bytes do. */
 data class ScreensaverSlide(val id: String)
@@ -129,12 +128,22 @@ class ScreensaverPhotos(
     }
 
     private suspend fun immichBody(server: String, apiKey: String, album: String?): String? = if (album == null) {
-        postJson(url = "$server/api/search/metadata", apiKey = apiKey, json = SEARCH_BODY)
+        postJson(
+            url = "$server/api/search/metadata",
+            apiKey = apiKey,
+            json = ScreensaverCatalog.metadataSearch(size = MAX_LISTED),
+        )
     } else {
         val albums = fetchText(url = "$server/api/albums", apiKey = apiKey)
         val albumId = albums?.let { ScreensaverCatalog.albumId(albumsBody = it, albumName = album) }
 
-        albumId?.let { fetchText(url = "$server/api/albums/$it", apiKey = apiKey) }
+        albumId?.let {
+            postJson(
+                url = "$server/api/search/metadata",
+                apiKey = apiKey,
+                json = ScreensaverCatalog.metadataSearch(size = MAX_LISTED, albumId = it),
+            )
+        }
     }
 
     private suspend fun immichPreview(settings: ScreensaverSettings, assetId: String): ByteArray? {

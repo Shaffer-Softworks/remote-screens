@@ -25,9 +25,9 @@ Off by default. Tablets that do not send capability `screensaver` keep today's d
 ## Photos and overlay
 
 - Home Assistant: `media_source/browse_media` and `media_source/resolve_media`, image files only, one folder level of subfolders.
-- Immich: the add-on calls the server with `x-api-key`. A named album is `GET /api/albums` then `GET /api/albums/{id}`. A blank album is `POST /api/search/metadata` for images that are not archived. Each slide is `GET /api/assets/{id}/thumbnail?size=preview`. Videos are skipped. A refused key, an unreachable server, or an empty album leaves the clock and weather on a dark background.
+- Immich: the add-on calls the server with `x-api-key`. A named album is `GET /api/albums`, then `POST /api/search/metadata` with that album id. Immich 3.4 no longer includes the photos on `GET /api/albums/{id}`. A blank album is the same search for images that are not archived. Each slide is `GET /api/assets/{id}/thumbnail?size=preview` (JPEG). Videos are skipped. A refused key, an unreachable server, or an empty album leaves the clock and weather on a dark background.
 - `ImageEncoder` resizes (long edge capped near 1920, otherwise the tablet size). The list is shuffled once per refresh (about an hour), then played through. The add-on prefetches the next slide while one is showing, and one slide while the dashboard is idle.
-- The player overlay is `ScreensaverOverlay`: full-bleed center crop, dark scrim, clock top-left (local time), weather chip bottom-left when `weatherEntity` is set. Fade about 400 ms, crossfade about 700 ms after the next JPEG has decoded, slow Ken Burns. The clock and chip stay opaque during the crossfade. The overlay consumes the first touch.
+- The player overlay is `ScreensaverOverlay`: full-bleed center crop, dark scrim, clock top-left and weather chip bottom-left drift slowly inward on different periods so the type does not rest on the same pixels. The tablet locale's short time is used, so 12-hour and 24-hour follow that locale. Weather shows when `weatherEntity` is set. Fade about 400 ms, crossfade about 700 ms after the next JPEG has decoded, slow Ken Burns. The clock and chip stay opaque during the crossfade. The overlay consumes the first touch.
 - The weather icon is a PNG rendered on the server from the coloured HA weather art, sent on `ServerMessage.ScreensaverWeather`.
 
 ## Out of scope

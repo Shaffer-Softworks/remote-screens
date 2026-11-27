@@ -1,13 +1,9 @@
 package tech.shaffersoftworks.remotescreens.server.data.screensaver
 
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.MediaSourceNode
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
 
 private const val IMAGE_TYPE = "IMAGE"
 private const val MEDIA_CLASS_IMAGE = "image"
@@ -30,51 +26,72 @@ object ScreensaverCatalog {
     /** Album id for [albumName], matched without case. Null when the list has no such album. */
     fun albumId(albumsBody: String, albumName: String): String? {
         val wanted = albumName.trim()
-        val albums = runCatching { CATALOG_JSON.parseToJsonElement(albumsBody).jsonArray }.getOrNull() ?: return null
 
-        return albums.firstNotNullOfOrNull { album ->
-            val objectAlbum = album as? JsonObject ?: return@firstNotNullOfOrNull null
-            val name = objectAlbum.text("albumName")
+        val albums = runCatching {
+            CATALOG_JSON.decodeFromString(ListSerializer(ImmichAlbum.serializer()), albumsBody)
+        }.getOrNull()
 
-            if (name.equals(wanted, ignoreCase = true)) objectAlbum.text("id") else null
-        }
+        return albums
+            ?.firstOrNull { album -> album.albumName.equals(wanted, ignoreCase = true) }
+            ?.id
+            ?.takeIf { id -> id.isNotBlank() }
     }
 
     /** Image asset ids from an Immich album body or a metadata search body. Videos are left out. */
-    fun imageIds(body: String): List<String> {
-        val root = runCatching { CATALOG_JSON.parseToJsonElement(body) }.getOrNull() ?: return emptyList()
+    fun imageIds(body: String): List<String> = decodedAssets(body)
+        .filter { asset -> asset.type == null || asset.type == IMAGE_TYPE }
+        .map { asset -> asset.id }
+        .filter { id -> id.isNotBlank() }
 
-        return imageIds(root)
-    }
+    /** Metadata search body. A blank [albumId] searches the library and omits `albumIds`. */
+    fun metadataSearch(size: Int, albumId: String? = null): String = CATALOG_JSON.encodeToString(
+        serializer = ImmichMetadataSearch.serializer(),
+        value = ImmichMetadataSearch(
+            type = IMAGE_TYPE,
+            isArchived = false,
+            size = size,
+            albumIds = listOfNotNull(albumId),
+        ),
+    )
 
-    fun imageIds(root: JsonElement): List<String> {
-        val items = when (root) {
-            is JsonArray -> root
-            is JsonObject -> assetItems(root)
-            else -> null
-        } ?: return emptyList()
+    private fun decodedAssets(body: String): List<ImmichAsset> =
+        searchAssets(body) ?: albumAssets(body) ?: listedAssets(body)
 
-        return items.mapNotNull { item ->
-            val asset = item as? JsonObject ?: return@mapNotNull null
-            val type = asset.text("type")
+    private fun searchAssets(body: String): List<ImmichAsset>? = runCatching {
+        CATALOG_JSON.decodeFromString(ImmichSearchResponse.serializer(), body)
+    }.getOrNull()?.let { response -> response.assets?.items.orEmpty() + response.items }
 
-            if (type != null && type != IMAGE_TYPE) {
-                null
-            } else {
-                asset.text("id")
-            }
-        }
-    }
+    private fun albumAssets(body: String): List<ImmichAsset>? = runCatching {
+        CATALOG_JSON.decodeFromString(ImmichAlbumAssets.serializer(), body)
+    }.getOrNull()?.assets
 
-    private fun assetItems(root: JsonObject): JsonArray? {
-        val assets = root["assets"]
-
-        return when (assets) {
-            is JsonArray -> assets
-            is JsonObject -> assets["items"] as? JsonArray
-            else -> root["items"] as? JsonArray
-        }
-    }
-
-    private fun JsonObject.text(key: String): String? = (this[key] as? JsonPrimitive)?.contentOrNull
+    private fun listedAssets(body: String): List<ImmichAsset> = runCatching {
+        CATALOG_JSON.decodeFromString(ListSerializer(ImmichAsset.serializer()), body)
+    }.getOrNull().orEmpty()
 }
+
+@Serializable
+internal data class ImmichMetadataSearch(
+    val type: String,
+    val isArchived: Boolean,
+    val size: Int,
+    val albumIds: List<String> = emptyList(),
+)
+
+@Serializable
+private data class ImmichAlbum(val id: String = "", val albumName: String = "")
+
+@Serializable
+private data class ImmichAsset(val id: String = "", val type: String? = null)
+
+@Serializable
+private data class ImmichAssetPage(val items: List<ImmichAsset> = emptyList())
+
+@Serializable
+private data class ImmichSearchResponse(
+    val assets: ImmichAssetPage? = null,
+    val items: List<ImmichAsset> = emptyList(),
+)
+
+@Serializable
+private data class ImmichAlbumAssets(val assets: List<ImmichAsset> = emptyList())

@@ -48,7 +48,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
 import kotlin.time.Duration.Companion.seconds
+import androidx.core.graphics.createBitmap
 
 internal const val SCREENSAVER_FADE_MS = 400
 
@@ -91,9 +94,10 @@ private const val NIGHT_HOUR = 22
 private const val NIGHT_MINUTE = 18
 private const val EMPTY_HOUR = 10
 private const val EMPTY_MINUTE = 18
-
-private val TIME_FORMAT = DateTimeFormatter.ofPattern("H:mm")
-private val DATE_FORMAT = DateTimeFormatter.ofPattern("EEEE, MMM d")
+private const val BURN_SHIFT_X_DP = 72f
+private const val BURN_SHIFT_Y_DP = 40f
+private const val BURN_SHIFT_X_MS = 180_000
+private const val BURN_SHIFT_Y_MS = 240_000
 
 private val SCRIM = Brush.verticalGradient(
     0f to Color.Black.copy(alpha = SCRIM_ALPHA),
@@ -132,6 +136,9 @@ private data class PhotoBlend(
     val amount: Float,
 )
 
+/** How far the clock and weather have wandered from their corners, in dp. */
+data class BurnShift(val xDp: Float, val yDp: Float)
+
 /** Full-screen photo, clock, and weather. The first touch is consumed so the dashboard underneath is not clicked. */
 @Composable
 internal fun ScreensaverOverlay(
@@ -145,11 +152,13 @@ internal fun ScreensaverOverlay(
     heldPrevious: Bitmap? = null,
     heldBlend: Float? = null,
     heldDrift: Float? = null,
+    heldBurn: BurnShift? = null,
 ) {
     val shownNow = now ?: rememberNow()
     val blend = rememberPhotoBlend(photo = photo, heldPrevious = heldPrevious, heldBlend = heldBlend)
     val drift = heldDrift ?: rememberDrift()
-    val driftsRight = (blend.current?.hashCode() ?: 0) % 2 == 0
+    val burn = heldBurn ?: rememberBurnShift()
+    val driftsRight = blend.current.hashCode() % 2 == 0
 
     Box(
         modifier = modifier
@@ -184,9 +193,13 @@ internal fun ScreensaverOverlay(
 
         Box(Modifier.fillMaxSize().background(SCRIM))
 
-        Column(modifier = Modifier.padding(EDGE_PADDING_DP.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(EDGE_PADDING_DP.dp)
+                .burnShift(shift = burn, rises = false),
+        ) {
             Text(
-                text = shownNow.format(TIME_FORMAT),
+                text = formatScreensaverTime(time = shownNow),
                 color = Color.White,
                 fontSize = CLOCK_SIZE_SP.sp,
                 fontWeight = FontWeight.Light,
@@ -194,7 +207,7 @@ internal fun ScreensaverOverlay(
             )
 
             Text(
-                text = shownNow.format(DATE_FORMAT),
+                text = formatScreensaverDate(time = shownNow),
                 color = Color.White.copy(alpha = DATE_ALPHA),
                 fontSize = DATE_SIZE_SP.sp,
                 fontWeight = FontWeight.Normal,
@@ -207,7 +220,10 @@ internal fun ScreensaverOverlay(
                 condition = condition,
                 temperature = temperature.orEmpty(),
                 icon = icon,
-                modifier = Modifier.align(Alignment.BottomStart).padding(EDGE_PADDING_DP.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(EDGE_PADDING_DP.dp)
+                    .burnShift(shift = burn, rises = true),
             )
         }
     }
@@ -313,6 +329,39 @@ private fun rememberDrift(): Float {
     return drift
 }
 
+/** Clock wanders down from the top corner. Weather wanders up from the bottom, on a different period. */
+@Composable
+private fun rememberBurnShift(): BurnShift {
+    val transition = rememberInfiniteTransition(label = "screensaverBurn")
+
+    val across by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = OPAQUE,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = BURN_SHIFT_X_MS, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "burnX",
+    )
+
+    val down by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = OPAQUE,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = BURN_SHIFT_Y_MS, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "burnY",
+    )
+
+    return BurnShift(xDp = across * BURN_SHIFT_X_DP, yDp = down * BURN_SHIFT_Y_DP)
+}
+
+private fun Modifier.burnShift(shift: BurnShift, rises: Boolean): Modifier = graphicsLayer {
+    translationX = shift.xDp.dp.toPx()
+    translationY = if (rises) -shift.yDp.dp.toPx() else shift.yDp.dp.toPx()
+}
+
 @Composable
 private fun rememberPhotoBlend(photo: Bitmap?, heldPrevious: Bitmap?, heldBlend: Float?): PhotoBlend {
     var current by remember { mutableStateOf(photo) }
@@ -351,7 +400,7 @@ private fun rememberPhotoBlend(photo: Bitmap?, heldPrevious: Bitmap?, heldBlend:
 }
 
 private fun swatch(color: Int): Bitmap {
-    val bitmap = Bitmap.createBitmap(SWATCH_PX, SWATCH_PX, Bitmap.Config.ARGB_8888)
+    val bitmap = createBitmap(SWATCH_PX, SWATCH_PX)
 
     bitmap.eraseColor(color)
 
@@ -360,6 +409,16 @@ private fun swatch(color: Int): Bitmap {
 
 private fun previewNow(hour: Int, minute: Int): LocalDateTime =
     LocalDateTime.of(PREVIEW_YEAR, PREVIEW_MONTH, PREVIEW_DAY, hour, minute)
+
+private val RESTING_BURN = BurnShift(xDp = 0f, yDp = 0f)
+
+/** Short local time: 12-hour or 24-hour, and the locale's own AM/PM marker. */
+internal fun formatScreensaverTime(time: LocalDateTime, locale: Locale = Locale.getDefault()): String =
+    time.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale))
+
+/** Weekday and date in [locale], so the names follow the tablet language. */
+internal fun formatScreensaverDate(time: LocalDateTime, locale: Locale = Locale.getDefault()): String =
+    time.format(DateTimeFormatter.ofPattern("EEEE, MMM d", locale))
 
 @Preview(name = "Day", widthDp = 800, heightDp = 480)
 @Composable
@@ -373,6 +432,7 @@ private fun ScreensaverOverlayPreview() {
             onDismiss = {},
             now = previewNow(hour = DAY_HOUR, minute = DAY_MINUTE),
             heldDrift = DRIFT_START,
+            heldBurn = RESTING_BURN,
         )
     }
 }
@@ -389,6 +449,7 @@ private fun ScreensaverOverlayNightPreview() {
             onDismiss = {},
             now = previewNow(hour = NIGHT_HOUR, minute = NIGHT_MINUTE),
             heldDrift = OPAQUE,
+            heldBurn = RESTING_BURN,
         )
     }
 }
@@ -407,6 +468,7 @@ private fun ScreensaverOverlayCrossfadePreview() {
             heldPrevious = swatch(DAY_SWATCH),
             heldBlend = PREVIEW_BLEND,
             heldDrift = DRIFT_START,
+            heldBurn = RESTING_BURN,
         )
     }
 }
@@ -423,6 +485,7 @@ private fun ScreensaverOverlayEmptyPreview() {
             onDismiss = {},
             now = previewNow(hour = EMPTY_HOUR, minute = EMPTY_MINUTE),
             heldDrift = DRIFT_START,
+            heldBurn = RESTING_BURN,
         )
     }
 }
