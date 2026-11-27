@@ -66,6 +66,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.EntityId
  * The card a long press opens: the whole of one entity, on a panel over the page. A card is its own document in the
  * overlay slot; its taps name the entity as `e:<entity_id>`, so they work whichever tile opened it.
  */
+@Suppress("LongMethod")
 object CardRenderer {
     fun render(
         entityId: String,
@@ -78,10 +79,12 @@ object CardRenderer {
     ): RenderedDoc {
         val entityState = input.states[entityId]
         val card = resolveCardType(kind = kind, entityId = entityId)
+
         val panelW = minOf(
             device.widthDp - CardChrome.PANEL_MARGIN_DP,
             CardChrome.PANEL_MAX_WIDTH_DP,
         )
+
         val panelH = device.heightDp - topInsetDp - bottomInsetDp - 2 * CardChrome.PANEL_MARGIN_V_DP
 
         val (bytes, docContext) = DocContext.build(
