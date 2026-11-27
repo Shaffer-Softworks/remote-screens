@@ -17,6 +17,8 @@ import tech.shaffersoftworks.remotescreens.shared.ScreenSettings
 import tech.shaffersoftworks.remotescreens.shared.Theme
 import io.ktor.server.plugins.BadRequestException
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
 import java.util.Base64
 import java.util.UUID
@@ -205,8 +207,9 @@ class ScreenService(
         updateSettings(screenId) { current ->
             val json = LayoutRepository.JSON
 
-            val merged = JsonObject(
-                json.encodeToJsonElement(ScreenSettings.serializer(), current).jsonObject + patch,
+            val merged = mergeJson(
+                base = json.encodeToJsonElement(ScreenSettings.serializer(), current).jsonObject,
+                patch = patch,
             )
 
             json.decodeFromJsonElement(ScreenSettings.serializer(), merged)
@@ -248,4 +251,21 @@ class ScreenService(
 
         return themes
     }
+}
+
+/** A nested object in [patch] merges into the same object in [base]. Other values replace. */
+private fun mergeJson(base: JsonObject, patch: JsonObject): JsonObject {
+    val merged = base.toMutableMap()
+
+    for ((key, value) in patch) {
+        val existing = merged[key]
+
+        merged[key] = if (existing is JsonObject && value is JsonObject) {
+            mergeJson(base = existing, patch = value)
+        } else {
+            value
+        }
+    }
+
+    return JsonObject(merged)
 }

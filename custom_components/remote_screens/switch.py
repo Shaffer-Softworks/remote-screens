@@ -17,6 +17,8 @@ from .entity import RemoteScreensEntity
 @dataclass(frozen=True, kw_only=True)
 class SettingSwitchDescription(SwitchEntityDescription):
     setting: str
+    #: When set, the boolean lives at settings[nested][setting] and a patch merges that object.
+    nested: str | None = None
 
 
 SWITCHES: tuple[SettingSwitchDescription, ...] = (
@@ -40,6 +42,12 @@ SWITCHES: tuple[SettingSwitchDescription, ...] = (
     ),
     SettingSwitchDescription(
         key="share_location", setting="shareLocation", entity_category=EntityCategory.CONFIG,
+    ),
+    SettingSwitchDescription(
+        key="screensaver",
+        setting="enabled",
+        nested="screensaver",
+        entity_category=EntityCategory.CONFIG,
     ),
 )
 
@@ -68,10 +76,25 @@ class SettingSwitch(RemoteScreensEntity, SwitchEntity):
 
     @property
     def is_on(self) -> bool | None:
-        return self.settings.get(self.entity_description.setting)
+        settings = self._setting_group()
+        return settings.get(self.entity_description.setting)
+
+    def _setting_group(self) -> dict[str, Any]:
+        nested = self.entity_description.nested
+        if nested is None:
+            return self.settings
+        group = self.settings.get(nested)
+        return group if isinstance(group, dict) else {}
+
+    def _patch(self, value: bool) -> dict[str, Any]:
+        patch: dict[str, Any] = {self.entity_description.setting: value}
+        nested = self.entity_description.nested
+        if nested is None:
+            return patch
+        return {nested: patch}
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        await self.coordinator.async_set_settings(self.screen_id, {self.entity_description.setting: True})
+        await self.coordinator.async_set_settings(self.screen_id, self._patch(True))
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        await self.coordinator.async_set_settings(self.screen_id, {self.entity_description.setting: False})
+        await self.coordinator.async_set_settings(self.screen_id, self._patch(False))

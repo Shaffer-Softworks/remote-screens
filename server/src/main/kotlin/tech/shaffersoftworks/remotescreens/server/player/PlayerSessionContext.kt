@@ -7,6 +7,7 @@ import tech.shaffersoftworks.remotescreens.server.data.apk.PlayerApkRepository
 import tech.shaffersoftworks.remotescreens.server.data.homeassistant.HomeAssistant
 import tech.shaffersoftworks.remotescreens.server.data.layout.LayoutRepository
 import tech.shaffersoftworks.remotescreens.server.data.pictures.PictureRepository
+import tech.shaffersoftworks.remotescreens.server.data.screensaver.ScreensaverPhotos
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.LanguageRepository
 import tech.shaffersoftworks.remotescreens.server.player.action.ActionRouter
@@ -32,4 +33,5 @@ class PlayerSessionContext(
     val mapTileUrl: String = ServerConfig.OPENSTREETMAP_TILE_URL,
     val appLogs: PlayerAppLogs = PlayerAppLogs(),
     val assistRuns: AssistRuns = DemoAssistRuns(),
+    val screensaverPhotos: ScreensaverPhotos,
 )

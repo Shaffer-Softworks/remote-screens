@@ -13,6 +13,7 @@ import tech.shaffersoftworks.remotescreens.server.data.homeassistant.demo.DemoLa
 import tech.shaffersoftworks.remotescreens.server.data.layout.LayoutRepository
 import tech.shaffersoftworks.remotescreens.server.data.pictures.BackgroundStore
 import tech.shaffersoftworks.remotescreens.server.data.pictures.PictureRepository
+import tech.shaffersoftworks.remotescreens.server.data.screensaver.ScreensaverPhotos
 import tech.shaffersoftworks.remotescreens.server.data.renderdata.RenderDataRepository
 import tech.shaffersoftworks.remotescreens.server.data.security.ApiKeyRepository
 import tech.shaffersoftworks.remotescreens.server.i18n.LanguageRepository
@@ -115,6 +116,7 @@ class ServerDependencies(
             scope = scope,
             mapTileUrl = config.mapTileUrl,
             assistRuns = assistRuns,
+            screensaverPhotos = ScreensaverPhotos(homeAssistant = homeAssistant, httpClient = httpClient),
         ),
     )
 

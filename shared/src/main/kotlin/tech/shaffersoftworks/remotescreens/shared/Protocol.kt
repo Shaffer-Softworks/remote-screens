@@ -52,6 +52,9 @@ object Protocol {
     /** An add-on that writes [PlayerMessage.AppLog] batches to its log and answers with [ServerMessage.AppLogAck]. */
     const val CAPABILITY_APP_LOG = "app_log"
 
+    /** A player that draws the photo screensaver ([ServerMessage.ScreensaverPhoto]). */
+    const val CAPABILITY_SCREENSAVER = "screensaver"
+
     /** The most entries in one [PlayerMessage.AppLog]; the add-on rejects a larger batch. */
     const val MAX_APP_LOG_BATCH = 20
 
@@ -303,6 +306,11 @@ sealed interface PlayerMessage {
     @Serializable
     @SerialName("ping")
     data object Ping : PlayerMessage
+
+    /** The photo screensaver is on screen, so the add-on should keep the next picture ready. */
+    @Serializable
+    @SerialName("screensaver")
+    data class Screensaver(val showing: Boolean) : PlayerMessage
 }
 
 /** One other intercom station, as the signaling roster reported it. */
@@ -501,6 +509,24 @@ sealed interface ServerMessage {
     @Serializable
     @SerialName("pong")
     data object Pong : ServerMessage
+
+    /** One screensaver photo, JPEG, base64. The player keeps the current picture until this has decoded. */
+    @Serializable
+    @SerialName("screensaver_photo")
+    data class ScreensaverPhoto(val id: String, val data: String) : ServerMessage
+
+    /**
+     * Weather for the screensaver chip. [icon] is a small PNG of the coloured Home Assistant condition, base64.
+     * Sent again when the condition or temperature changes.
+     */
+    @Serializable
+    @SerialName("screensaver_weather")
+    data class ScreensaverWeather(
+        val condition: String,
+        val temperature: String,
+        val humidity: String = "",
+        val icon: String = "",
+    ) : ServerMessage
 
     /**
      * Whether this tablet should join intercom signaling, and the name other stations see.

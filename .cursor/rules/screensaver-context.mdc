@@ -1,0 +1,35 @@
+---
+description: Photo screensaver after standby — HA or Immich photos, clock and weather, then the existing screen-off path
+globs: player/src/main/kotlin/**/screensaver/**,player/src/main/kotlin/**/ui/screens/player/PlayerViewModel.kt,player/src/main/kotlin/**/ui/screens/player/PlayerScreen.kt,server/src/main/kotlin/**/screensaver/**,server/src/main/kotlin/**/player/session/ScreensaverFeed.kt,server/src/main/kotlin/**/player/PlayerSession.kt,shared/src/main/kotlin/**/Layout.kt,shared/src/main/kotlin/**/Protocol.kt,editor/src/components/ScreenPanel.vue,editor/src/model/types.ts,custom_components/remote_screens/switch.py,addon/DOCS.md
+alwaysApply: false
+---
+
+# Photo screensaver
+
+Off by default. Tablets that do not send capability `screensaver` keep today's dim and screen-off. The add-on fetches the pictures. A slide is `ServerMessage.ScreensaverPhoto` and does not rebuild the Remote Compose document.
+
+## When it shows
+
+- `standbyMinutes` is the only idle delay. When `screensaver.enabled` is on and that delay elapses, `PlayerViewModel` sets the screensaver flag and does **not** call `setAwake(false)`. Day and night brightness stay as they are, so the photos are visible.
+- `screensaver.minutes` above 0 then calls `setAwake(false)`, which uses the existing screen-off path (`lockNow` when an admin is active, software blackout when face wake needs the camera). `0` leaves the photos up until something wakes the tablet. Default 30, max 240.
+- A touch, `Wake`, an alert, Assist starting, proximity, and face clear the flag and restart both clocks. Face listening runs while the screensaver is up, because the panel is still on.
+- `onServerSettings` restarts the clocks when `standbyMinutes`, `backToHomeSeconds`, or the screensaver enable or timeout changes. A settings push is not a touch. Disabling the screensaver, or setting `standbyMinutes` to 0, hides it.
+
+## Settings
+
+- Nested `ScreensaverSettings` on `ScreenSettings`: `enabled`, `minutes`, `source` (`ha` or `immich`), `mediaId`, `immichUrl`, `immichApiKey`, `immichAlbum`, `seconds` (5–120, default 20), `weatherEntity`.
+- The editor section is under Standby in `ScreenPanel.vue`. With the screensaver on, the standby label is the delay before the photos.
+- The Immich key is stored in the screen file. It is not a Home Assistant entity. `ScreenSettings.forPlayer()` clears it on the way to the tablet. `keepingSecrets` puts the stored key back when the tablet saves settings without one.
+- One integration switch, `screensaver`, patches `{"screensaver":{"enabled": bool}}`. `ScreenService.patchSettings` deep-merges objects so the rest of the screensaver, including the key, stays.
+
+## Photos and overlay
+
+- Home Assistant: `media_source/browse_media` and `media_source/resolve_media`, image files only, one folder level of subfolders.
+- Immich: the add-on calls the server with `x-api-key`. A named album is `GET /api/albums` then `GET /api/albums/{id}`. A blank album is `POST /api/search/metadata` for images that are not archived. Each slide is `GET /api/assets/{id}/thumbnail?size=preview`. Videos are skipped. A refused key, an unreachable server, or an empty album leaves the clock and weather on a dark background.
+- `ImageEncoder` resizes (long edge capped near 1920, otherwise the tablet size). The list is shuffled once per refresh (about an hour), then played through. The add-on prefetches the next slide while one is showing, and one slide while the dashboard is idle.
+- The player overlay is `ScreensaverOverlay`: full-bleed center crop, dark scrim, clock top-left (local time), weather chip bottom-left when `weatherEntity` is set. Fade about 400 ms, crossfade about 700 ms after the next JPEG has decoded, slow Ken Burns. The clock and chip stay opaque during the crossfade. The overlay consumes the first touch.
+- The weather icon is a PNG rendered on the server from the coloured HA weather art, sent on `ServerMessage.ScreensaverWeather`.
+
+## Out of scope
+
+Shuffle switches, transition pickers, fill modes, a clock toggle, a second brightness slider, video slides, and tablets talking to Home Assistant or Immich.

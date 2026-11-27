@@ -308,6 +308,62 @@ data class TapAction(
     val event: String? = null,
 )
 
+/**
+ * Photos after the standby wait, then the screen turns off. The clock is always drawn. A blank [weatherEntity]
+ * leaves the weather chip off. [immichApiKey] stays on the add-on; the copy sent to a tablet has it cleared.
+ */
+@Serializable
+data class ScreensaverSettings(
+    val enabled: Boolean = false,
+    /** Minutes of screensaver before the screen turns off. 0 keeps the photos up until something wakes the tablet. */
+    val minutes: Int = DEFAULT_MINUTES,
+    /** [SOURCE_HA] or [SOURCE_IMMICH]. */
+    val source: String = SOURCE_HA,
+    /** Home Assistant media folder, such as `media-source://media_source/local/Photos`. */
+    val mediaId: String? = null,
+    val immichUrl: String? = null,
+    val immichApiKey: String? = null,
+    /** Album name. Blank uses the whole Immich library. */
+    val immichAlbum: String? = null,
+    /** How long each photo stays. */
+    val seconds: Int = DEFAULT_SECONDS,
+    /** A `weather.*` entity. Blank hides the weather chip. */
+    val weatherEntity: String? = null,
+) {
+    fun validated(): ScreensaverSettings = copy(
+        minutes = minutes.coerceIn(0, MAX_MINUTES),
+        source = source.takeIf { it == SOURCE_HA || it == SOURCE_IMMICH } ?: SOURCE_HA,
+        mediaId = mediaId.kept(MAX_MEDIA_ID),
+        immichUrl = immichUrl.kept(MAX_URL),
+        immichApiKey = immichApiKey.kept(MAX_API_KEY),
+        immichAlbum = immichAlbum.kept(MAX_ALBUM),
+        seconds = seconds.coerceIn(MIN_SECONDS, MAX_SECONDS),
+        weatherEntity = weatherEntity.kept(MAX_ENTITY),
+    )
+
+    /** The tablet round-trips settings. A missing key must not wipe the one stored with the screen. */
+    fun keepingKey(stored: ScreensaverSettings): ScreensaverSettings =
+        if (immichApiKey.isNullOrBlank()) copy(immichApiKey = stored.immichApiKey) else this
+
+    private fun String?.kept(maxLength: Int): String? =
+        this?.trim()?.takeIf { it.isNotEmpty() && it.length <= maxLength }
+
+    companion object {
+        const val SOURCE_HA = "ha"
+        const val SOURCE_IMMICH = "immich"
+        const val DEFAULT_MINUTES = 30
+        const val MAX_MINUTES = 240
+        const val DEFAULT_SECONDS = 20
+        const val MIN_SECONDS = 5
+        const val MAX_SECONDS = 120
+        const val MAX_MEDIA_ID = 400
+        const val MAX_URL = 300
+        const val MAX_API_KEY = 200
+        const val MAX_ALBUM = 120
+        const val MAX_ENTITY = 255
+    }
+}
+
 @Serializable
 data class ScreenSettings(
     val brightness: Int = 80,
@@ -348,7 +404,18 @@ data class ScreenSettings(
     val assistWakeWord: String = AssistWakeWords.OKAY_NABU,
     /** Assist pipeline id, or null for Home Assistant's preferred pipeline. */
     val assistPipeline: String? = null,
+    val screensaver: ScreensaverSettings = ScreensaverSettings(),
 ) {
+    /** Standby, or a screensaver that has its own timeout, turns the panel off. */
+    fun wantsScreenOff(): Boolean = standbyScreenOff || (screensaver.enabled && screensaver.minutes > 0)
+
+    /** Settings for the tablet. The Immich key stays on the add-on. */
+    fun forPlayer(): ScreenSettings = copy(screensaver = screensaver.copy(immichApiKey = null))
+
+    /** [incoming] from the tablet, keeping the stored Immich key when the tablet does not have one. */
+    fun keepingSecrets(incoming: ScreenSettings): ScreenSettings =
+        incoming.copy(screensaver = incoming.screensaver.keepingKey(screensaver))
+
     fun validated(): ScreenSettings = copy(
         kioskPin = kioskPin?.takeIf { KIOSK_PIN.matches(it) },
         theme = theme.takeIf { Theme.ID.matches(it) } ?: "rpi",
@@ -363,6 +430,7 @@ data class ScreenSettings(
         orientation = orientation.takeIf { it in setOf(0, 1, 2) } ?: 0,
         assistWakeWord = AssistWakeWords.validated(assistWakeWord),
         assistPipeline = assistPipeline?.takeIf { it.isNotBlank() && it.length <= MAX_PIPELINE_ID },
+        screensaver = screensaver.validated(),
     )
 
     companion object {

@@ -9,9 +9,13 @@ import tech.shaffersoftworks.remotescreens.shared.PlayerRecord
 import tech.shaffersoftworks.remotescreens.shared.SCHEMA_VERSION
 import tech.shaffersoftworks.remotescreens.shared.Screen
 import tech.shaffersoftworks.remotescreens.shared.ScreenSettings
+import tech.shaffersoftworks.remotescreens.shared.ScreensaverSettings
 import tech.shaffersoftworks.remotescreens.shared.Theme
 import io.ktor.server.plugins.BadRequestException
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
@@ -71,6 +75,38 @@ class ScreenServiceTest {
         assertEquals("#445566", themes.first { it.id == "dusk" }.roles["card"])
         assertEquals("kitchen", imported.settings.theme)
         assertEquals("dusk", imported.settings.darkTheme)
+    }
+
+    @Test
+    fun patchKeepsTheImmichKeyWhenTheScreensaverSwitchChanges() {
+        val opened = opened()
+
+        val original = screen().copy(
+            settings = ScreenSettings(
+                screensaver = ScreensaverSettings(
+                    enabled = false,
+                    source = ScreensaverSettings.SOURCE_IMMICH,
+                    immichApiKey = "secret-key",
+                    immichUrl = "http://immich.local:2283",
+                ),
+            ),
+        )
+
+        opened.repository.update { layout -> layout.copy(screens = listOf(original)) }
+
+        val changed = opened.service.patchSettings(
+            screenId = original.id,
+            patch = buildJsonObject {
+                putJsonObject("screensaver") { put("enabled", true) }
+            },
+        )
+
+        val stored = opened.repository.layout.value.screens.single().settings.screensaver
+
+        assertTrue(changed)
+        assertTrue(stored.enabled)
+        assertEquals("secret-key", stored.immichApiKey)
+        assertEquals("http://immich.local:2283", stored.immichUrl)
     }
 
     @Test

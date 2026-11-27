@@ -181,6 +181,24 @@ export interface ScreenSettings {
   assistWakeWord?: string
   /** Assist pipeline id. Absent uses Home Assistant's preferred pipeline. */
   assistPipeline?: string
+  /** Photos after standby. Absent is off. */
+  screensaver?: ScreensaverSettings
+}
+
+/** Photos, clock, and an optional weather chip. The Immich key stays in the screen file. */
+export interface ScreensaverSettings {
+  enabled: boolean
+  /** Minutes before the screen turns off. 0 keeps the screensaver up. */
+  minutes: number
+  /** `ha` or `immich`. */
+  source: string
+  mediaId?: string
+  immichUrl?: string
+  immichApiKey?: string
+  /** Album name. Blank is the whole library. */
+  immichAlbum?: string
+  seconds: number
+  weatherEntity?: string
 }
 
 /** A custom theme as stored: hex colours laid over a built-in [base]. */

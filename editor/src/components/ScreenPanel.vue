@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { api } from '../api'
 import { MODAL_DRAWER, navBar as defaultNavBar, TOP_BAR } from '../model/grid'
 import { BACKGROUND_SWATCHES, DEFAULT_THEME, INK_SWATCHES, themes } from '../model/palette'
-import type { Drawer, DrawerSide, DrawerStyle, NavBar, Screen } from '../model/types'
+import type { Drawer, DrawerSide, DrawerStyle, NavBar, Screen, ScreensaverSettings } from '../model/types'
 import { state } from '../store'
 import ColorSwatches from './ColorSwatches.vue'
 
@@ -113,6 +113,19 @@ const night = computed({
 function num(e: Event, min: number, max: number): number {
   const value = Number((e.target as HTMLInputElement).value)
   return Math.min(Math.max(Number.isFinite(value) ? Math.round(value) : min, min), max)
+}
+
+function screensaverSettings(): ScreensaverSettings {
+  if (!props.screen.settings.screensaver) {
+    props.screen.settings.screensaver = {
+      enabled: false,
+      minutes: 30,
+      source: 'ha',
+      seconds: 20,
+    }
+  }
+
+  return props.screen.settings.screensaver
 }
 
 /** The kiosk PIN typed in, or null when empty or not 4 to 8 digits (the add-on drops those too). */
@@ -368,7 +381,11 @@ function pin(e: Event): string | null {
 
     <h3>Standby</h3>
     <label class="field">
-      Dim after (minutes, 0 is never)
+      {{
+        screensaverSettings().enabled
+          ? 'Show the screensaver after (minutes, 0 is never)'
+          : 'Dim after (minutes, 0 is never)'
+      }}
       <input
         :value="screen.settings.standbyMinutes"
         type="number"
@@ -377,6 +394,101 @@ function pin(e: Event): string | null {
         @change="screen.settings.standbyMinutes = num($event, 0, 240)"
       />
     </label>
+    <label class="check">
+      <input
+        :checked="screensaverSettings().enabled"
+        type="checkbox"
+        @change="screensaverSettings().enabled = ($event.target as HTMLInputElement).checked"
+      />
+      Screensaver
+    </label>
+    <template v-if="screensaverSettings().enabled">
+      <p class="note muted">
+        Photos start when the standby time runs out. The clock stays on the picture. The screen turns
+        off after the screensaver time, unless that time is 0.
+      </p>
+      <label class="field">
+        Turn the screen off after (minutes, 0 is never)
+        <input
+          :value="screensaverSettings().minutes"
+          type="number"
+          min="0"
+          max="240"
+          @change="screensaverSettings().minutes = num($event, 0, 240)"
+        />
+      </label>
+      <label class="field">
+        Photos
+        <select
+          :value="screensaverSettings().source"
+          @change="screensaverSettings().source = ($event.target as HTMLSelectElement).value"
+        >
+          <option value="ha">Home Assistant media</option>
+          <option value="immich">Immich</option>
+        </select>
+      </label>
+      <label v-if="screensaverSettings().source !== 'immich'" class="field">
+        Media folder
+        <input
+          :value="screensaverSettings().mediaId ?? ''"
+          type="text"
+          placeholder="media-source://media_source/local/Photos"
+          @change="screensaverSettings().mediaId = ($event.target as HTMLInputElement).value"
+        />
+      </label>
+      <template v-else>
+        <label class="field">
+          Immich address
+          <input
+            :value="screensaverSettings().immichUrl ?? ''"
+            type="text"
+            placeholder="http://immich.local:2283"
+            @change="screensaverSettings().immichUrl = ($event.target as HTMLInputElement).value"
+          />
+        </label>
+        <label class="field">
+          Immich API key
+          <input
+            :value="screensaverSettings().immichApiKey ?? ''"
+            type="password"
+            autocomplete="off"
+            @change="screensaverSettings().immichApiKey = ($event.target as HTMLInputElement).value"
+          />
+        </label>
+        <p class="note muted">
+          The key is saved with this screen and is not sent to the tablet or published in Home Assistant.
+          A blank album uses the whole library.
+        </p>
+        <label class="field">
+          Album
+          <input
+            :value="screensaverSettings().immichAlbum ?? ''"
+            type="text"
+            @change="screensaverSettings().immichAlbum = ($event.target as HTMLInputElement).value"
+          />
+        </label>
+      </template>
+      <label class="field">
+        Seconds on each photo
+        <input
+          :value="screensaverSettings().seconds"
+          type="number"
+          min="5"
+          max="120"
+          @change="screensaverSettings().seconds = num($event, 5, 120)"
+        />
+      </label>
+      <label class="field">
+        Weather entity
+        <input
+          :value="screensaverSettings().weatherEntity ?? ''"
+          type="text"
+          placeholder="weather.home"
+          @change="screensaverSettings().weatherEntity = ($event.target as HTMLInputElement).value"
+        />
+      </label>
+      <p class="note muted">Leave the weather entity blank to hide the weather chip.</p>
+    </template>
     <label class="field">
       Standby brightness {{ screen.settings.standbyBrightness }}%
       <input

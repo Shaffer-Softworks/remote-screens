@@ -1,5 +1,6 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
     "java.configuration.updateBuildConfiguration": "automatic",
-    "json.schemaDownload.enable": true
+    "json.schemaDownload.enable": true,
+    "idf.currentSetup": "/Users/michaelshaffer/esp/v5.5.2/esp-idf"
 }

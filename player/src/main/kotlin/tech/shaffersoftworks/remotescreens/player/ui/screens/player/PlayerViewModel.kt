@@ -1,5 +1,6 @@
 package tech.shaffersoftworks.remotescreens.player.ui.screens.player
 
+import android.graphics.Bitmap
 import androidx.annotation.StringRes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -61,6 +62,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import tech.shaffersoftworks.remotescreens.player.data.diagnostics.AppLog
 import tech.shaffersoftworks.remotescreens.player.data.diagnostics.CrashReporter
@@ -98,6 +100,7 @@ private val PLAYER_CAPABILITIES =
         Protocol.CAPABILITY_ASSIST,
         Protocol.CAPABILITY_NOTIFICATIONS,
         Protocol.CAPABILITY_SENTRY_TEST,
+        Protocol.CAPABILITY_SCREENSAVER,
     )
 
 /**
@@ -151,6 +154,14 @@ class PlayerViewModel @Inject constructor(
         val isIntercomCall: Boolean = false,
         val assist: AssistUiState = AssistUiState(),
         val notificationBanner: ServerMessage.NotificationBanner? = null,
+        val isScreensaver: Boolean = false,
+        val screensaverPhotoId: String? = null,
+        val screensaverPhoto: Bitmap? = null,
+        val screensaverNextId: String? = null,
+        val screensaverNextPhoto: Bitmap? = null,
+        val screensaverCondition: String? = null,
+        val screensaverTemperature: String? = null,
+        val screensaverIcon: Bitmap? = null,
     ) {
         private val scheduledBrightnessPercent: Int
             get() = when {
@@ -191,6 +202,7 @@ class PlayerViewModel @Inject constructor(
     private var hasOfferedLocationAccuracy = false
     private var discoveryJob: Job? = null
     private var standbyJob: Job? = null
+    private var slideJob: Job? = null
     private var backToHomeJob: Job? = null
     private var alertTimeoutJob: Job? = null
     private var bannerTimeoutJob: Job? = null
@@ -211,6 +223,8 @@ class PlayerViewModel @Inject constructor(
     private fun observeAssist() {
         viewModelScope.launch {
             assistCoordinator.state.collect { assist ->
+                val wasScreensaver = _viewState.value.isScreensaver
+
                 _viewState.update { state ->
                     val isMuted = assist.isMuted || assist.phase == AssistPhases.MUTED
 
@@ -219,6 +233,12 @@ class PlayerViewModel @Inject constructor(
                         remoteScreen = state.remoteScreen.withAssistMic(isMuted),
                     )
                 }
+
+                val isTurn = assist.phase == AssistPhases.HEARING ||
+                    assist.phase == AssistPhases.THINKING ||
+                    assist.phase == AssistPhases.SPEAKING
+
+                if (wasScreensaver && isTurn) onUserInteraction()
             }
         }
     }
@@ -438,6 +458,8 @@ class PlayerViewModel @Inject constructor(
                 send(PlayerMessage.SentryTestResult(message.requestId, crashReporter.test()))
             }
             is ServerMessage.AppLogAck -> Unit // AppLog handles delivery acknowledgements.
+            is ServerMessage.ScreensaverPhoto -> onScreensaverPhoto(message)
+            is ServerMessage.ScreensaverWeather -> onScreensaverWeather(message)
             ServerMessage.Pong -> Unit
         }
     }
@@ -512,6 +534,11 @@ class PlayerViewModel @Inject constructor(
             }
             Slot.ALERT -> {
                 if (document.restartTimeout) scheduleAlertTimeout(document.timeout)
+
+                if (_viewState.value.isScreensaver && !document.wakeOnShow) {
+                    hideScreensaver()
+                    restartClocks()
+                }
 
                 if (document.wakeOnShow) onUserInteraction()
             }
@@ -855,6 +882,8 @@ class PlayerViewModel @Inject constructor(
 
     /** Any touch: wake up, and start the standby and back-to-home clocks again. */
     fun onUserInteraction() {
+        hideScreensaver()
+
         if (!_viewState.value.isAwake) {
             setAwake(true)
         } else {
@@ -871,10 +900,20 @@ class PlayerViewModel @Inject constructor(
         val settings = _viewState.value.screenSettings
         Timber.d("Standby clock restarted: %d min", settings.standbyMinutes)
 
-        if (settings.standbyMinutes > 0) {
+        if (settings.screensaver.enabled && settings.standbyMinutes > 0) {
             standbyJob = viewModelScope.launch {
                 delay(settings.standbyMinutes.minutes)
-                setAwake(false)
+                showScreensaver()
+
+                if (settings.screensaver.minutes > 0) {
+                    delay(settings.screensaver.minutes.minutes)
+                    setAwake(isAwake = false)
+                }
+            }
+        } else if (settings.standbyMinutes > 0) {
+            standbyJob = viewModelScope.launch {
+                delay(settings.standbyMinutes.minutes)
+                setAwake(isAwake = false)
             }
         }
 
@@ -895,6 +934,8 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun setAwake(isAwake: Boolean) {
+        if (!isAwake) hideScreensaver()
+
         if (_viewState.value.isAwake == isAwake) return
 
         Timber.d("Awake: %b", isAwake)
@@ -905,11 +946,101 @@ class PlayerViewModel @Inject constructor(
         sendDeviceState()
     }
 
+    private fun showScreensaver() {
+        if (_viewState.value.isScreensaver || !_viewState.value.isAwake) return
+
+        _viewState.update { it.copy(isScreensaver = true) }
+        send(PlayerMessage.Screensaver(showing = true))
+        restartSlideClock()
+        updateWakeMonitors()
+    }
+
+    private fun hideScreensaver() {
+        slideJob?.cancel()
+
+        if (!_viewState.value.isScreensaver) return
+
+        _viewState.update { it.copy(isScreensaver = false) }
+        send(PlayerMessage.Screensaver(showing = false))
+        updateWakeMonitors()
+    }
+
+    private fun restartSlideClock() {
+        slideJob?.cancel()
+        val seconds = _viewState.value.screenSettings.screensaver.seconds
+
+        slideJob = viewModelScope.launch {
+            while (isActive) {
+                delay(seconds.seconds)
+
+                if (!_viewState.value.isScreensaver) return@launch
+
+                promoteScreensaverPhoto()
+            }
+        }
+    }
+
+    private fun promoteScreensaverPhoto() {
+        val state = _viewState.value
+        val nextPhoto = state.screensaverNextPhoto ?: return
+        val nextId = state.screensaverNextId ?: return
+
+        _viewState.update {
+            it.copy(
+                screensaverPhotoId = nextId,
+                screensaverPhoto = nextPhoto,
+                screensaverNextId = null,
+                screensaverNextPhoto = null,
+            )
+        }
+    }
+
+    private fun onScreensaverPhoto(message: ServerMessage.ScreensaverPhoto) {
+        viewModelScope.launch {
+            val bitmap = imageDecoder.decodeBitmap(message.data) ?: return@launch
+
+            ensureActive()
+
+            _viewState.update { state ->
+                val isCurrent = state.screensaverPhotoId == null || !state.isScreensaver
+
+                if (isCurrent) {
+                    state.copy(
+                        screensaverPhotoId = message.id,
+                        screensaverPhoto = bitmap,
+                        screensaverNextId = null,
+                        screensaverNextPhoto = null,
+                    )
+                } else if (message.id != state.screensaverPhotoId) {
+                    state.copy(screensaverNextId = message.id, screensaverNextPhoto = bitmap)
+                } else {
+                    state
+                }
+            }
+        }
+    }
+
+    private fun onScreensaverWeather(message: ServerMessage.ScreensaverWeather) {
+        viewModelScope.launch {
+            val icon = message.icon.takeIf { it.isNotEmpty() }?.let { imageDecoder.decodeBitmap(it) }
+
+            ensureActive()
+
+            _viewState.update {
+                it.copy(
+                    screensaverCondition = message.condition,
+                    screensaverTemperature = message.temperature,
+                    screensaverIcon = icon ?: it.screensaverIcon,
+                )
+            }
+        }
+    }
+
     private fun updateScreenPower() {
         val state = _viewState.value
 
         // Face wake needs the panel on (blackout); lockNow often stops the camera.
-        if (!state.isAwake && state.screenSettings.standbyScreenOff && !isFaceWakeActive()) {
+        if (!state.isAwake && state.screenSettings.wantsScreenOff() && !isFaceWakeActive()) {
             screenPowerRepository.turnScreenOff()
         } else {
             screenPowerRepository.turnScreenOn()
@@ -919,8 +1050,8 @@ class PlayerViewModel @Inject constructor(
     }
 
     /**
-     * Face listens only while asleep (the camera needs the panel, or a blackout). Proximity stays
-     * registered whenever it is turned on, including while the screen is on: a near sample then
+     * Face listens while the screen is asleep or the screensaver is showing (the camera needs the panel).
+     * Proximity stays registered whenever it is turned on, including while the screen is on: a near sample then
      * restarts the standby clock, and a short pulse is not missed between locking and listening.
      */
     private fun updateWakeMonitors() {
@@ -935,9 +1066,15 @@ class PlayerViewModel @Inject constructor(
 
         faceWakeMonitor.stop()
 
-        if (!state.isAwake && settings.wakeOnFace && faceWakeMonitor.isUsable()) {
+        if (shouldListenForFace(state)) {
             faceWakeMonitor.start { onUserInteraction() }
         }
+    }
+
+    private fun shouldListenForFace(state: ViewState): Boolean {
+        if (state.isAwake && !state.isScreensaver) return false
+
+        return state.screenSettings.wakeOnFace && faceWakeMonitor.isUsable()
     }
 
     /** Face path would run: setting on and a usable front camera (independent of proximity). */
@@ -1068,7 +1205,10 @@ class PlayerViewModel @Inject constructor(
      * the screen, and the clocks only start again when their own times change.
      */
     private fun onServerSettings(settings: ScreenSettings) {
-        val previousSettings = _viewState.value.screenSettings
+        val previous = _viewState.value
+        val previousSettings = previous.screenSettings
+
+        val screensaverChanged = screensaverTimersChanged(previous = previousSettings, settings = settings)
 
         _viewState.update {
             it.copy(
@@ -1077,18 +1217,25 @@ class PlayerViewModel @Inject constructor(
             )
         }
 
-        when {
-            !_viewState.value.isAwake && settings.standbyMinutes == 0 -> onUserInteraction()
-            settings.standbyMinutes != previousSettings.standbyMinutes ||
-                settings.backToHomeSeconds != previousSettings.backToHomeSeconds -> restartClocks()
+        if (shouldHideScreensaver(previous = previous, settings = settings)) {
+            hideScreensaver()
         }
 
-        val wakeSourcesChanged =
-            settings.standbyScreenOff != previousSettings.standbyScreenOff ||
-                settings.wakeOnFace != previousSettings.wakeOnFace ||
-                settings.wakeOnProximity != previousSettings.wakeOnProximity
+        when {
+            !_viewState.value.isAwake && settings.standbyMinutes == 0 -> onUserInteraction()
+            standbyClockChanged(
+                previous = previousSettings,
+                settings = settings,
+                screensaverChanged = screensaverChanged,
+            ) -> restartClocks()
+        }
 
-        if (wakeSourcesChanged) {
+        if (powerSettingsChanged(
+                previous = previousSettings,
+                settings = settings,
+                screensaverChanged = screensaverChanged,
+            )
+        ) {
             updateScreenPower()
             updateWakeMonitors()
         }
@@ -1105,6 +1252,32 @@ class PlayerViewModel @Inject constructor(
 
         requestAssistMicrophone(settings = settings, previousSettings = previousSettings)
         syncAssist()
+    }
+
+    private fun screensaverTimersChanged(previous: ScreenSettings, settings: ScreenSettings): Boolean =
+        previous.screensaver.enabled != settings.screensaver.enabled ||
+            previous.screensaver.minutes != settings.screensaver.minutes
+
+    private fun shouldHideScreensaver(previous: ViewState, settings: ScreenSettings): Boolean =
+        previous.isScreensaver && (!settings.screensaver.enabled || settings.standbyMinutes == 0)
+
+    private fun standbyClockChanged(
+        previous: ScreenSettings,
+        settings: ScreenSettings,
+        screensaverChanged: Boolean,
+    ): Boolean = settings.standbyMinutes != previous.standbyMinutes ||
+        settings.backToHomeSeconds != previous.backToHomeSeconds ||
+        screensaverChanged
+
+    private fun powerSettingsChanged(
+        previous: ScreenSettings,
+        settings: ScreenSettings,
+        screensaverChanged: Boolean,
+    ): Boolean {
+        val wakeChanged = settings.wakeOnFace != previous.wakeOnFace ||
+            settings.wakeOnProximity != previous.wakeOnProximity
+
+        return settings.standbyScreenOff != previous.standbyScreenOff || wakeChanged || screensaverChanged
     }
 
     private fun requestAssistMicrophone(settings: ScreenSettings, previousSettings: ScreenSettings) {
@@ -1273,7 +1446,7 @@ class PlayerViewModel @Inject constructor(
                     // Lock task blocks the system screens these buttons open.
                     canOfferSelfStart = !isKioskLocked && !deviceRepository.canSelfStart(),
                     canOfferScreenOff = !isKioskLocked &&
-                        currentState.screenSettings.standbyScreenOff &&
+                        currentState.screenSettings.wantsScreenOff() &&
                         !screenPowerRepository.canTurnScreenOff(),
                     canOfferUnrestrictedBattery = !isKioskLocked &&
                         currentState.screenSettings.standbyScreenOff &&

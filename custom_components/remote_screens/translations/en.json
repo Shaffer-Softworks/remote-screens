@@ -110,7 +110,8 @@
       "assist": { "name": "Assist" },
       "kiosk": { "name": "Kiosk lock" },
       "report_telemetry": { "name": "Report tablet sensors" },
-      "share_location": { "name": "Share tablet location" }
+      "share_location": { "name": "Share tablet location" },
+      "screensaver": { "name": "Screensaver" }
     },
     "text": {
       "kiosk_pin": { "name": "Kiosk PIN" }

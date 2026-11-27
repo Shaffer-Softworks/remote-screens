@@ -12,20 +12,21 @@ Wake sources (Home Assistant, proximity, face) are in `standby-wake-sources-cont
 
 - The player never lets Android turn the screen off on its own: `MainActivity` sets `FLAG_KEEP_SCREEN_ON`.
 - After `standbyMinutes` with no touch, `PlayerViewModel.setAwake(false)` drops window brightness to `standbyBrightness` (floor `0.01`, so the backlight stays on). At standby brightness 0, `PlayerScreen` also draws a full-screen black box (`ViewState.isBlackout`). On AMOLED that looks fully off; on LCD the backlight still glows.
+- With the screensaver enabled, that same countdown shows the photo screensaver instead of sleeping. The panel stays at day or night brightness. After `screensaver.minutes` (above 0) the screen-off path below runs. `ScreenSettings.wantsScreenOff()` is true for that timeout even when `standbyScreenOff` is false. See `screensaver-context.mdc`.
 - With `ScreenSettings.standbyScreenOff` and a device admin, standby calls `DevicePolicyManager.lockNow()` instead. The editor checkbox is under Standby; the HA switch is `standby_screen_off`. Default is false.
 
 ## Settings are not a touch
 
 - The add-on sends `ServerMessage.Settings` on every reconnect, layout save, HA settings patch, and preview. Those used to call `onUserInteraction()`, so the countdown never finished.
-- `onServerSettings` stores the settings without waking. It restarts the clocks only when `standbyMinutes` or `backToHomeSeconds` changed. Standby turned off (`standbyMinutes == 0`) while asleep does wake the screen. The tablet's own settings dialog (`applyScreenSettings`) still counts as a touch.
+- `onServerSettings` stores the settings without waking. It restarts the clocks only when `standbyMinutes`, `backToHomeSeconds`, or the screensaver enable or timeout changed. Standby turned off (`standbyMinutes == 0`) while asleep does wake the screen. Turning the screensaver off, or setting `standbyMinutes` to 0, hides a screensaver that is already up. The tablet's own settings dialog (`applyScreenSettings`) still counts as a touch.
 - Still restart the countdown: touches, alerts and overlays, `OpenPage`, `Wake(true)`, identify.
 
 ## Turning the screen off
 
 - `ScreenPowerRepository.turnScreenOff()` takes a partial wake lock (so the WebSocket survives and HA can wake the tablet) then `lockNow()`. `turnScreenOn()` takes a 5 s `SCREEN_BRIGHT_WAKE_LOCK | ACQUIRE_CAUSES_WAKEUP` and drops the partial lock. `canTurnScreenOff()` accepts `ScreenOffAdminReceiver` or the kiosk `LockTaskDeviceAdminReceiver`.
-- `updateScreenPower()` runs when awake changes and when `standbyScreenOff` or the wake-source settings change. When face wake is usable it skips `lockNow()` and stays on the software blackout, because the camera often dies with the panel off. Proximity-only may still turn the screen off.
+- `updateScreenPower()` runs when awake changes and when `standbyScreenOff`, the wake-source settings, or the screensaver timeout change. When face wake is usable it skips `lockNow()` and stays on the software blackout, because the camera often dies with the panel off. Proximity-only may still turn the screen off. Face also listens while the screensaver is showing, so a face dismisses the photos.
 - `onResumed()` treats a resume while `isScreenOff` as a power-button wake. `MainActivity.showOverLockScreen()` (`setShowWhenLocked(true)`) shows the player instead of the keyguard.
-- Without an admin, standby falls back to dimming. The settings dialog offers "Allow turning the screen off in standby" (`ACTION_ADD_DEVICE_ADMIN`) when the setting is on and no admin is active.
+- Without an admin, standby falls back to dimming. The settings dialog offers "Allow turning the screen off in standby" (`ACTION_ADD_DEVICE_ADMIN`) when `wantsScreenOff()` is true (standby screen-off, or a screensaver timeout above 0) and no admin is active.
 - A screen that is off cannot be woken by touch. Wake it with the power button, `remote_screens.wake`, an alert, or `OpenPage`.
 
 ## Diagnosing standby on a tablet
